@@ -14,7 +14,7 @@ export const siteConfig = {
   favicon: '/assets/Metworkfavicon.svg',
   links: {
     twitter: 'https://twitter.com/metworkdz',
-    linkedin: 'https://linkedin.com/company/metwork-dz',
+    linkedin: 'https://linkedin.com/company/metworkdz',
     instagram: 'https://instagram.com/metwork.dz',
     facebook: 'https://facebook.com/metwork.dz',
   },
