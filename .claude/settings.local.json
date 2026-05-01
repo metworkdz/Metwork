@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -o /dev/null -w 'HTTP %{http_code}  Location: %{redirect_url}\\\\n' http://localhost:3010/en/dashboard/admin)",
+      "Bash(curl -s -b /tmp/m.cookie -o /dev/null -w 'HTTP %{http_code}  Location: %{redirect_url}\\\\n' http://localhost:3010/en/dashboard/admin)",
+      "Bash(curl -s -b /tmp/m.cookie -o /dev/null -w 'HTTP %{http_code}  Location: %{redirect_url}\\\\n' http://localhost:3010/en/login)",
+      "Bash(curl -s -b /tmp/m.cookie http://localhost:3010/en/dashboard/admin)",
+      "Bash(PORT=3010 NEXT_PUBLIC_APP_URL=http://localhost:3010 NEXT_PUBLIC_API_URL=http://localhost:3010/api API_INTERNAL_URL=http://localhost:3010/api npx next dev -p 3010)",
+      "Bash(echo \"pid=$!\")",
+      "Bash(curl -s -o /dev/null http://localhost:3010/api/auth/me)",
+      "Bash(bash -c ' *)",
+      "Bash(pkill -f \"next dev -p 3010\")",
+      "Bash(lsof -nP -iTCP:3010 -sTCP:LISTEN)",
+      "Bash(curl -s -o /dev/null -w \"404 page → %{http_code}\\\\n\" http://localhost:3000/en/does-not-exist)",
+      "Bash(curl -s -o /dev/null -w \"API /me → %{http_code}\\\\n\" http://localhost:3000/api/auth/me)",
+      "Bash(curl -s -o /dev/null -w \"API /mentors → %{http_code}\\\\n\" http://localhost:3000/api/mentors)",
+      "Bash(curl -sL \"https://metwork.dz/assets/Metworkfavicon.svg\" -o /Users/macbookpro/Downloads/metwork/public/assets/Metworkfavicon.svg)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/en)",
+      "Bash(curl -s -o /dev/null -w \" %{http_code}\" http://localhost:3000/assets/metworklogo.svg)",
+      "Bash(curl -s -o /dev/null -w \" %{http_code}\" http://localhost:3000/assets/Metworkfavicon.svg)",
+      "Bash(curl -s -o /dev/null -w \"GET /api/startups → %{http_code}\\\\n\" http://localhost:3000/api/startups)",
+      "Bash(curl -s -o /dev/null -w \"POST /api/startups → %{http_code}\\\\n\" -X POST http://localhost:3000/api/startups -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(curl -s -o /dev/null -w \"GET /api/startups/missing → %{http_code}\\\\n\" http://localhost:3000/api/startups/missing)"
+    ]
+  }
+}

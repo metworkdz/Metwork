@@ -1,0 +1,41 @@
+# Caddy configuration for Metwork
+# Drop this on your VPS and Caddy auto-provisions Let's Encrypt certs.
+#
+# Usage:
+#   docker run -d --name caddy \
+#     -v $PWD/Caddyfile:/etc/caddy/Caddyfile \
+#     -v caddy_data:/data \
+#     -p 80:80 -p 443:443 \
+#     caddy:2
+
+metwork.dz, www.metwork.dz {
+    encode zstd gzip
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=(self)"
+    }
+
+    # Reverse-proxy to Next.js container
+    reverse_proxy web:3000 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Long cache for Next static assets
+    @nextStatic {
+        path /_next/static/*
+    }
+    header @nextStatic Cache-Control "public, max-age=31536000, immutable"
+}
+
+# API subdomain
+api.metwork.dz {
+    encode zstd gzip
+    reverse_proxy api:4000
+}

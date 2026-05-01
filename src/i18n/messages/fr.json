@@ -1,0 +1,280 @@
+{
+  "common": {
+    "appName": "Metwork",
+    "tagline": "L'écosystème startup d'Algérie, unifié.",
+    "loading": "Chargement…",
+    "error": "Une erreur s'est produite",
+    "retry": "Réessayer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "save": "Enregistrer",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "viewAll": "Voir tout",
+    "learnMore": "En savoir plus",
+    "getStarted": "Commencer",
+    "comingSoon": "Bientôt disponible",
+    "all": "Tout",
+    "city": "Ville",
+    "category": "Catégorie",
+    "price": "Prix",
+    "free": "Gratuit"
+  },
+  "nav": {
+    "programs": "Programmes",
+    "events": "Événements",
+    "spaces": "Espaces",
+    "mentors": "Mentors",
+    "investors": "Investisseurs",
+    "academy": "Startup Academy",
+    "login": "Se connecter",
+    "signup": "Commencer",
+    "dashboard": "Tableau de bord",
+    "logout": "Se déconnecter",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu"
+  },
+  "footer": {
+    "tagline": "Construisons ensemble l'avenir startup de l'Algérie.",
+    "platform": "Plateforme",
+    "company": "Société",
+    "legal": "Mentions légales",
+    "about": "À propos",
+    "careers": "Carrières",
+    "contact": "Contact",
+    "privacy": "Politique de confidentialité",
+    "terms": "Conditions d'utilisation",
+    "cookies": "Politique des cookies",
+    "copyright": "© {year} Metwork. Tous droits réservés.",
+    "madeIn": "Fait en Algérie"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Disponible en Algérie",
+      "title": "Construisez, lancez et développez votre startup",
+      "subtitle": "La plateforme unifiée qui connecte entrepreneurs, investisseurs et incubateurs partout en Algérie. Programmes, espaces de coworking, financement — tout en un.",
+      "ctaPrimary": "Rejoindre l'écosystème",
+      "ctaSecondary": "Voir les programmes"
+    },
+    "stats": {
+      "founders": "Fondateurs",
+      "investors": "Investisseurs",
+      "incubators": "Incubateurs",
+      "cities": "Villes"
+    },
+    "features": {
+      "title": "Tout ce dont les entrepreneurs ont besoin",
+      "subtitle": "De l'idée à la levée de fonds, sur une seule plateforme.",
+      "programs": {
+        "title": "Programmes de classe mondiale",
+        "description": "Accédez aux programmes d'incubation, d'accélération et de formation des meilleures organisations algériennes."
+      },
+      "spaces": {
+        "title": "Espaces de travail premium",
+        "description": "Réservez coworking, bureaux privés et salles de réunion dans toutes les grandes villes algériennes."
+      },
+      "fundraising": {
+        "title": "Connectez-vous aux investisseurs",
+        "description": "Soyez découvert par des investisseurs activement à la recherche de startups algériennes à financer."
+      },
+      "community": {
+        "title": "Communauté active",
+        "description": "Participez à des événements, rencontrez des fondateurs et créez des relations durables."
+      }
+    },
+    "roles": {
+      "title": "Conçu pour tous les acteurs de l'écosystème",
+      "entrepreneur": {
+        "title": "Pour les entrepreneurs",
+        "description": "Trouvez des programmes, réservez des espaces, levez des fonds — depuis un seul tableau de bord."
+      },
+      "investor": {
+        "title": "Pour les investisseurs",
+        "description": "Découvrez des startups algériennes vérifiées et connectez-vous directement avec les fondateurs."
+      },
+      "incubator": {
+        "title": "Pour les incubateurs",
+        "description": "Gérez programmes, espaces et réservations depuis un tableau de bord SaaS unique."
+      }
+    },
+    "cta": {
+      "title": "Prêt à rejoindre le mouvement startup algérien ?",
+      "subtitle": "Gratuit pour commencer. Rejoignez des milliers de fondateurs, investisseurs et innovateurs.",
+      "button": "Créer votre compte"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Bon retour",
+      "subtitle": "Connectez-vous à votre compte Metwork",
+      "emailLabel": "Adresse e-mail",
+      "emailPlaceholder": "vous@exemple.com",
+      "passwordLabel": "Mot de passe",
+      "passwordPlaceholder": "Entrez votre mot de passe",
+      "forgotPassword": "Mot de passe oublié ?",
+      "submit": "Se connecter",
+      "submitting": "Connexion…",
+      "noAccount": "Pas de compte ?",
+      "signupLink": "S'inscrire",
+      "rememberMe": "Rester connecté"
+    },
+    "signup": {
+      "title": "Créez votre compte",
+      "subtitle": "Rejoignez l'écosystème startup d'Algérie",
+      "step1Title": "Je suis…",
+      "step1Subtitle": "Choisissez votre rôle pour commencer",
+      "step2Title": "Vos informations",
+      "step2Subtitle": "Parlez-nous un peu de vous",
+      "fullNameLabel": "Nom complet",
+      "fullNamePlaceholder": "Votre nom complet",
+      "emailLabel": "Adresse e-mail",
+      "emailPlaceholder": "vous@exemple.com",
+      "phoneLabel": "Numéro de téléphone",
+      "phonePlaceholder": "+213 555 00 00 00",
+      "cityLabel": "Ville",
+      "cityPlaceholder": "Sélectionnez votre ville",
+      "passwordLabel": "Mot de passe",
+      "passwordPlaceholder": "Au moins 8 caractères",
+      "passwordHint": "Utilisez 8+ caractères avec lettres, chiffres et symboles",
+      "confirmPasswordLabel": "Confirmer le mot de passe",
+      "termsAgreement": "J'accepte les {termsLink} et la {privacyLink}",
+      "privacyAgreement": "J'accepte la {privacyLink} et consens au traitement de mes données personnelles conformément à la loi algérienne 18-07",
+      "termsLink": "conditions d'utilisation",
+      "privacyLink": "politique de confidentialité",
+      "submit": "Créer le compte",
+      "submitting": "Création du compte…",
+      "back": "Retour",
+      "continue": "Continuer",
+      "haveAccount": "Déjà un compte ?",
+      "loginLink": "Se connecter",
+      "roleEntrepreneur": "Entrepreneur",
+      "roleEntrepreneurDesc": "Je construis ou prévois de construire une startup",
+      "roleInvestor": "Investisseur",
+      "roleInvestorDesc": "Je cherche à financer des startups algériennes",
+      "roleIncubator": "Incubateur / espace de coworking",
+      "roleIncubatorDesc": "Je gère un incubateur, accélérateur ou coworking"
+    },
+    "verifyOtp": {
+      "title": "Vérifiez votre téléphone",
+      "subtitle": "Nous avons envoyé un code à 6 chiffres au {phone}",
+      "codeLabel": "Code de vérification",
+      "submit": "Vérifier",
+      "resend": "Renvoyer le code",
+      "resendIn": "Renvoyer dans {seconds}s",
+      "wrongNumber": "Mauvais numéro ?"
+    },
+    "errors": {
+      "invalidCredentials": "E-mail ou mot de passe invalide",
+      "emailExists": "Un compte avec cet e-mail existe déjà",
+      "phoneExists": "Un compte avec ce téléphone existe déjà",
+      "weakPassword": "Le mot de passe est trop faible",
+      "passwordMismatch": "Les mots de passe ne correspondent pas",
+      "invalidOtp": "Code invalide ou expiré",
+      "tooManyAttempts": "Trop de tentatives. Réessayez plus tard.",
+      "networkError": "Erreur réseau. Vérifiez votre connexion.",
+      "required": "Ce champ est requis",
+      "invalidEmail": "Veuillez entrer un e-mail valide",
+      "invalidPhone": "Veuillez entrer un numéro algérien valide",
+      "termsRequired": "Vous devez accepter les conditions",
+      "privacyRequired": "Vous devez accepter la politique de confidentialité et le traitement des données pour continuer"
+    }
+  },
+  "membership": {
+    "tiers": {
+      "free": {
+        "name": "Gratuit",
+        "description": "Démarrez, explorez l'écosystème"
+      },
+      "entrepreneur": {
+        "name": "Entrepreneur",
+        "description": "Réservez espaces et programmes au tarif membre"
+      },
+      "startup": {
+        "name": "Startup",
+        "description": "Tout d'Entrepreneur plus l'accès au financement"
+      }
+    },
+    "features": {
+      "profile": "Profil public",
+      "browse": "Parcourir toutes les annonces",
+      "events": "Participer aux événements publics",
+      "allFree": "Tout du plan Gratuit",
+      "bookSpaces": "Réserver coworking & bureaux",
+      "bookPrograms": "Postuler aux programmes",
+      "eventsDiscount": "Tarifs membres aux événements",
+      "prioritySupport": "Support prioritaire",
+      "allEntrepreneur": "Tout du plan Entrepreneur",
+      "listStartup": "Listez votre startup",
+      "fundraisingAccess": "Marketplace de financement",
+      "investorMeetings": "Demandes de rendez-vous investisseurs",
+      "featuredListing": "Mise en avant dans la marketplace"
+    },
+    "billingMonthly": "Mensuel",
+    "billingYearly": "Annuel",
+    "yearlySaveBadge": "Économisez {percent}%",
+    "perMonth": "/ mois",
+    "perYear": "/ an",
+    "currentPlan": "Plan actuel",
+    "upgrade": "Mettre à niveau",
+    "choosePlan": "Choisir le plan"
+  },
+  "incubator": {
+    "subscription": {
+      "commission": {
+        "name": "Avec commission",
+        "description": "20% de commission par réservation — sans frais mensuels"
+      },
+      "flat": {
+        "name": "Abonnement fixe",
+        "description": "6 000 DZD/mois — gardez 100% des réservations"
+      }
+    }
+  },
+  "dashboard": {
+    "overview": "Vue d'ensemble",
+    "bookings": "Réservations",
+    "startup": "Ma startup",
+    "marketplace": "Marketplace",
+    "wallet": "Portefeuille",
+    "membership": "Abonnement",
+    "settings": "Paramètres",
+    "startups": "Startups",
+    "meetings": "Rendez-vous",
+    "portfolio": "Portfolio",
+    "spaces": "Espaces",
+    "programs": "Programmes",
+    "events": "Événements",
+    "revenue": "Revenus",
+    "invoices": "Factures",
+    "users": "Utilisateurs",
+    "incubators": "Incubateurs",
+    "memberships": "Abonnements",
+    "commissions": "Commissions",
+    "content": "Contenu",
+    "consultations": "Consultations"
+  },
+  "pages": {
+    "programs": {
+      "title": "Programmes",
+      "subtitle": "Trouvez votre prochain programme d'accélération, d'incubation ou de formation en Algérie.",
+      "empty": "Aucun programme ne correspond à vos filtres."
+    },
+    "events": {
+      "title": "Événements",
+      "subtitle": "Connectez-vous, apprenez et grandissez lors d'événements partout en Algérie.",
+      "empty": "Aucun événement programmé. Revenez bientôt."
+    },
+    "spaces": {
+      "title": "Espaces",
+      "subtitle": "Coworking premium, bureaux privés et salles de réunion — partout en Algérie.",
+      "empty": "Aucun espace ne correspond à vos filtres."
+    },
+    "investors": {
+      "title": "Découvrez les startups algériennes",
+      "subtitle": "Startups vérifiées à la recherche de capital. Connectez-vous directement avec les fondateurs.",
+      "empty": "Aucune startup ne correspond à vos critères."
+    }
+  }
+}

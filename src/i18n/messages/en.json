@@ -1,0 +1,280 @@
+{
+  "common": {
+    "appName": "Metwork",
+    "tagline": "Algeria's startup ecosystem, unified.",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "search": "Search",
+    "filter": "Filter",
+    "viewAll": "View all",
+    "learnMore": "Learn more",
+    "getStarted": "Get started",
+    "comingSoon": "Coming soon",
+    "all": "All",
+    "city": "City",
+    "category": "Category",
+    "price": "Price",
+    "free": "Free"
+  },
+  "nav": {
+    "programs": "Programs",
+    "events": "Events",
+    "spaces": "Spaces",
+    "mentors": "Mentors",
+    "investors": "Investors",
+    "academy": "Startup Academy",
+    "login": "Log in",
+    "signup": "Get started",
+    "dashboard": "Dashboard",
+    "logout": "Log out",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "footer": {
+    "tagline": "Building Algeria's startup future, together.",
+    "platform": "Platform",
+    "company": "Company",
+    "legal": "Legal",
+    "about": "About us",
+    "careers": "Careers",
+    "contact": "Contact",
+    "privacy": "Privacy policy",
+    "terms": "Terms of service",
+    "cookies": "Cookie policy",
+    "copyright": "© {year} Metwork. All rights reserved.",
+    "madeIn": "Made in Algeria"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Now live in Algeria",
+      "title": "Build, launch, and grow your startup",
+      "subtitle": "The unified platform connecting entrepreneurs, investors, and incubators across Algeria. Programs, coworking spaces, funding — all in one place.",
+      "ctaPrimary": "Apply now",
+      "ctaSecondary": "Browse programs"
+    },
+    "stats": {
+      "founders": "Founders",
+      "investors": "Investors",
+      "incubators": "Incubators",
+      "cities": "Cities"
+    },
+    "features": {
+      "title": "Everything entrepreneurs need",
+      "subtitle": "From idea to funded startup, in one platform.",
+      "programs": {
+        "title": "World-class programs",
+        "description": "Access incubation, acceleration, and training programs from Algeria's top organizations."
+      },
+      "spaces": {
+        "title": "Premium workspaces",
+        "description": "Book coworking, private offices, and meeting rooms in every major Algerian city."
+      },
+      "fundraising": {
+        "title": "Connect with investors",
+        "description": "Get discovered by investors actively looking to fund Algerian startups."
+      },
+      "community": {
+        "title": "Active community",
+        "description": "Join events, meet founders, and build relationships that last."
+      }
+    },
+    "roles": {
+      "title": "Built for everyone in the ecosystem",
+      "entrepreneur": {
+        "title": "For entrepreneurs",
+        "description": "Find programs, book spaces, raise capital — all from one dashboard."
+      },
+      "investor": {
+        "title": "For investors",
+        "description": "Discover vetted Algerian startups and connect with founders directly."
+      },
+      "incubator": {
+        "title": "For incubators",
+        "description": "Manage programs, spaces, and bookings from a single SaaS dashboard."
+      }
+    },
+    "cta": {
+      "title": "Ready to join Algeria's startup movement?",
+      "subtitle": "Free to start. Join thousands of founders, investors, and innovators.",
+      "button": "Create your account"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Log in to your Metwork account",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "forgotPassword": "Forgot password?",
+      "submit": "Log in",
+      "submitting": "Logging in…",
+      "noAccount": "Don't have an account?",
+      "signupLink": "Sign up",
+      "rememberMe": "Keep me signed in"
+    },
+    "signup": {
+      "title": "Create your account",
+      "subtitle": "Join Algeria's startup ecosystem",
+      "step1Title": "I am a…",
+      "step1Subtitle": "Choose your role to get started",
+      "step2Title": "Your details",
+      "step2Subtitle": "Tell us a bit about yourself",
+      "fullNameLabel": "Full name",
+      "fullNamePlaceholder": "Your full name",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "phoneLabel": "Phone number",
+      "phonePlaceholder": "+213 555 00 00 00",
+      "cityLabel": "City",
+      "cityPlaceholder": "Select your city",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "At least 8 characters",
+      "passwordHint": "Use 8+ characters with letters, numbers, and symbols",
+      "confirmPasswordLabel": "Confirm password",
+      "termsAgreement": "I agree to metwork {privacyLink}",
+      "privacyAgreement": "I accept the {privacyLink} and consent to the processing of my personal data in accordance with Algerian Law 18-07",
+      "termsLink": "Terms of Service",
+      "privacyLink": "Privacy Policy",
+      "submit": "Create account",
+      "submitting": "Creating account…",
+      "back": "Back",
+      "continue": "Continue",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Log in",
+      "roleEntrepreneur": "Entrepreneur",
+      "roleEntrepreneurDesc": "I'm building or planning to build a startup",
+      "roleInvestor": "Investor",
+      "roleInvestorDesc": "I'm looking to fund Algerian startups",
+      "roleIncubator": "Incubator / coworking space",
+      "roleIncubatorDesc": "I run an incubator, accelerator, or coworking space"
+    },
+    "verifyOtp": {
+      "title": "Verify your phone",
+      "subtitle": "We sent a 6-digit code to {phone}",
+      "codeLabel": "Verification code",
+      "submit": "Verify",
+      "resend": "Resend code",
+      "resendIn": "Resend in {seconds}s",
+      "wrongNumber": "Wrong number?"
+    },
+    "errors": {
+      "invalidCredentials": "Invalid email or password",
+      "emailExists": "An account with this email already exists",
+      "phoneExists": "An account with this phone already exists",
+      "weakPassword": "Password is too weak",
+      "passwordMismatch": "Passwords don't match",
+      "invalidOtp": "Invalid or expired code",
+      "tooManyAttempts": "Too many attempts. Please try again later.",
+      "networkError": "Network error. Please check your connection.",
+      "required": "This field is required",
+      "invalidEmail": "Please enter a valid email",
+      "invalidPhone": "Please enter a valid Algerian phone number",
+      "termsRequired": "You must accept the terms to continue",
+      "privacyRequired": "You must accept the privacy policy and data processing to continue"
+    }
+  },
+  "membership": {
+    "tiers": {
+      "free": {
+        "name": "Free",
+        "description": "Get started, explore the ecosystem"
+      },
+      "entrepreneur": {
+        "name": "Entrepreneur",
+        "description": "Book spaces and programs at member rates"
+      },
+      "startup": {
+        "name": "Startup",
+        "description": "Everything in Entrepreneur plus fundraising access"
+      }
+    },
+    "features": {
+      "profile": "Public profile",
+      "browse": "Browse all listings",
+      "events": "Attend public events",
+      "allFree": "Everything in Free",
+      "bookSpaces": "Book coworking & offices",
+      "bookPrograms": "Apply to programs",
+      "eventsDiscount": "Member-only event pricing",
+      "prioritySupport": "Priority support",
+      "allEntrepreneur": "Everything in Entrepreneur",
+      "listStartup": "List your startup",
+      "fundraisingAccess": "Fundraising marketplace",
+      "investorMeetings": "Investor meeting requests",
+      "featuredListing": "Featured in marketplace"
+    },
+    "billingMonthly": "Monthly",
+    "billingYearly": "Yearly",
+    "yearlySaveBadge": "Save {percent}%",
+    "perMonth": "/ month",
+    "perYear": "/ year",
+    "currentPlan": "Current plan",
+    "upgrade": "Upgrade",
+    "choosePlan": "Choose plan"
+  },
+  "incubator": {
+    "subscription": {
+      "commission": {
+        "name": "Commission-based",
+        "description": "20% commission per booking — no monthly fee"
+      },
+      "flat": {
+        "name": "Flat subscription",
+        "description": "6,000 DZD/month — keep 100% of bookings"
+      }
+    }
+  },
+  "dashboard": {
+    "overview": "Overview",
+    "bookings": "Bookings",
+    "startup": "My startup",
+    "marketplace": "Marketplace",
+    "wallet": "Wallet",
+    "membership": "Membership",
+    "settings": "Settings",
+    "startups": "Startups",
+    "meetings": "Meetings",
+    "portfolio": "Portfolio",
+    "spaces": "Spaces",
+    "programs": "Programs",
+    "events": "Events",
+    "revenue": "Revenue",
+    "invoices": "Invoices",
+    "users": "Users",
+    "incubators": "Incubators",
+    "memberships": "Memberships",
+    "commissions": "Commissions",
+    "content": "Content",
+    "consultations": "Consultations"
+  },
+  "pages": {
+    "programs": {
+      "title": "Programs",
+      "subtitle": "Find your next acceleration, incubation, or training program in Algeria.",
+      "empty": "No programs match your filters yet."
+    },
+    "events": {
+      "title": "Events",
+      "subtitle": "Connect, learn, and grow at events across Algeria.",
+      "empty": "No events scheduled. Check back soon."
+    },
+    "spaces": {
+      "title": "Spaces",
+      "subtitle": "Premium coworking, private offices, and meeting rooms — anywhere in Algeria.",
+      "empty": "No spaces match your filters."
+    },
+    "investors": {
+      "title": "Discover Algerian startups",
+      "subtitle": "Vetted startups looking for capital. Connect directly with founders.",
+      "empty": "No startups match your criteria."
+    }
+  }
+}

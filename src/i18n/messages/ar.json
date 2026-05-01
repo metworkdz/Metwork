@@ -1,0 +1,280 @@
+{
+  "common": {
+    "appName": "Metwork",
+    "tagline": "منظومة الشركات الناشئة في الجزائر، موحّدة.",
+    "loading": "جارٍ التحميل…",
+    "error": "حدث خطأ ما",
+    "retry": "حاول مرة أخرى",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "save": "حفظ",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "search": "بحث",
+    "filter": "تصفية",
+    "viewAll": "عرض الكل",
+    "learnMore": "اعرف المزيد",
+    "getStarted": "ابدأ الآن",
+    "comingSoon": "قريباً",
+    "all": "الكل",
+    "city": "المدينة",
+    "category": "الفئة",
+    "price": "السعر",
+    "free": "مجاني"
+  },
+  "nav": {
+    "programs": "البرامج",
+    "events": "الفعاليات",
+    "spaces": "الفضاءات",
+    "mentors": "المرشدون",
+    "investors": "المستثمرون",
+    "academy": "أكاديمية الشركات الناشئة",
+    "login": "تسجيل الدخول",
+    "signup": "ابدأ الآن",
+    "dashboard": "لوحة التحكم",
+    "logout": "تسجيل الخروج",
+    "openMenu": "فتح القائمة",
+    "closeMenu": "إغلاق القائمة"
+  },
+  "footer": {
+    "tagline": "نبني مستقبل الشركات الناشئة في الجزائر، معًا.",
+    "platform": "المنصة",
+    "company": "الشركة",
+    "legal": "قانوني",
+    "about": "من نحن",
+    "careers": "الوظائف",
+    "contact": "تواصل معنا",
+    "privacy": "سياسة الخصوصية",
+    "terms": "شروط الاستخدام",
+    "cookies": "سياسة ملفات تعريف الارتباط",
+    "copyright": "© {year} Metwork. جميع الحقوق محفوظة.",
+    "madeIn": "صُنع في الجزائر"
+  },
+  "landing": {
+    "hero": {
+      "badge": "متوفر الآن في الجزائر",
+      "title": "ابنِ، أطلق، وطوّر شركتك الناشئة",
+      "subtitle": "المنصة الموحّدة التي تربط رواد الأعمال والمستثمرين والحاضنات في كل أنحاء الجزائر. برامج، فضاءات عمل، تمويل — كل شيء في مكان واحد.",
+      "ctaPrimary": "انضم إلى المنظومة",
+      "ctaSecondary": "تصفح البرامج"
+    },
+    "stats": {
+      "founders": "مؤسس",
+      "investors": "مستثمر",
+      "incubators": "حاضنة",
+      "cities": "مدينة"
+    },
+    "features": {
+      "title": "كل ما يحتاجه روّاد الأعمال",
+      "subtitle": "من الفكرة إلى التمويل، في منصة واحدة.",
+      "programs": {
+        "title": "برامج عالمية المستوى",
+        "description": "ادخل إلى برامج الاحتضان والتسريع والتدريب من أفضل المنظمات الجزائرية."
+      },
+      "spaces": {
+        "title": "فضاءات عمل متميّزة",
+        "description": "احجز فضاءات العمل المشترك والمكاتب الخاصة وقاعات الاجتماعات في كل المدن الجزائرية الكبرى."
+      },
+      "fundraising": {
+        "title": "تواصل مع المستثمرين",
+        "description": "اكتشف من قبل مستثمرين يبحثون فعليًا عن تمويل الشركات الناشئة الجزائرية."
+      },
+      "community": {
+        "title": "مجتمع نشط",
+        "description": "احضر الفعاليات، التقِ بالمؤسسين، وابنِ علاقات تدوم."
+      }
+    },
+    "roles": {
+      "title": "مصمم لكل أطراف المنظومة",
+      "entrepreneur": {
+        "title": "لروّاد الأعمال",
+        "description": "ابحث عن البرامج، احجز الفضاءات، اجمع رأس المال — من لوحة تحكم واحدة."
+      },
+      "investor": {
+        "title": "للمستثمرين",
+        "description": "اكتشف الشركات الناشئة الجزائرية المؤهلة وتواصل مباشرة مع المؤسسين."
+      },
+      "incubator": {
+        "title": "للحاضنات",
+        "description": "أدِر البرامج والفضاءات والحجوزات من لوحة تحكم SaaS واحدة."
+      }
+    },
+    "cta": {
+      "title": "هل أنت مستعد للانضمام إلى حركة الشركات الناشئة الجزائرية؟",
+      "subtitle": "البداية مجانية. انضم إلى آلاف المؤسسين والمستثمرين والمبتكرين.",
+      "button": "أنشئ حسابك"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "مرحبًا بعودتك",
+      "subtitle": "سجّل الدخول إلى حساب Metwork",
+      "emailLabel": "البريد الإلكتروني",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "كلمة المرور",
+      "passwordPlaceholder": "أدخل كلمة المرور",
+      "forgotPassword": "نسيت كلمة المرور؟",
+      "submit": "تسجيل الدخول",
+      "submitting": "جارٍ تسجيل الدخول…",
+      "noAccount": "ليس لديك حساب؟",
+      "signupLink": "أنشئ حسابًا",
+      "rememberMe": "أبقني مسجّلاً"
+    },
+    "signup": {
+      "title": "أنشئ حسابك",
+      "subtitle": "انضم إلى منظومة الشركات الناشئة في الجزائر",
+      "step1Title": "أنا…",
+      "step1Subtitle": "اختر دورك للبدء",
+      "step2Title": "بياناتك",
+      "step2Subtitle": "أخبرنا قليلاً عن نفسك",
+      "fullNameLabel": "الاسم الكامل",
+      "fullNamePlaceholder": "اسمك الكامل",
+      "emailLabel": "البريد الإلكتروني",
+      "emailPlaceholder": "you@example.com",
+      "phoneLabel": "رقم الهاتف",
+      "phonePlaceholder": "+213 555 00 00 00",
+      "cityLabel": "المدينة",
+      "cityPlaceholder": "اختر مدينتك",
+      "passwordLabel": "كلمة المرور",
+      "passwordPlaceholder": "8 أحرف على الأقل",
+      "passwordHint": "استخدم 8+ أحرف مع حروف وأرقام ورموز",
+      "confirmPasswordLabel": "تأكيد كلمة المرور",
+      "termsAgreement": "أوافق على {termsLink} و{privacyLink}",
+      "privacyAgreement": "أوافق على {privacyLink} وأقبل معالجة بياناتي الشخصية وفقًا للقانون الجزائري 18-07",
+      "termsLink": "شروط الاستخدام",
+      "privacyLink": "سياسة الخصوصية",
+      "submit": "إنشاء الحساب",
+      "submitting": "جارٍ إنشاء الحساب…",
+      "back": "رجوع",
+      "continue": "متابعة",
+      "haveAccount": "لديك حساب بالفعل؟",
+      "loginLink": "سجّل الدخول",
+      "roleEntrepreneur": "رائد أعمال",
+      "roleEntrepreneurDesc": "أبني أو أخطط لبناء شركة ناشئة",
+      "roleInvestor": "مستثمر",
+      "roleInvestorDesc": "أبحث عن تمويل الشركات الناشئة الجزائرية",
+      "roleIncubator": "حاضنة / فضاء عمل مشترك",
+      "roleIncubatorDesc": "أدير حاضنة، مسرّعة، أو فضاء عمل مشترك"
+    },
+    "verifyOtp": {
+      "title": "تحقّق من هاتفك",
+      "subtitle": "أرسلنا رمزًا من 6 أرقام إلى {phone}",
+      "codeLabel": "رمز التحقّق",
+      "submit": "تحقّق",
+      "resend": "إعادة إرسال الرمز",
+      "resendIn": "إعادة الإرسال خلال {seconds}ث",
+      "wrongNumber": "رقم خاطئ؟"
+    },
+    "errors": {
+      "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+      "emailExists": "يوجد حساب بهذا البريد الإلكتروني",
+      "phoneExists": "يوجد حساب بهذا الرقم",
+      "weakPassword": "كلمة المرور ضعيفة جدًا",
+      "passwordMismatch": "كلمتا المرور غير متطابقتين",
+      "invalidOtp": "رمز غير صحيح أو منتهي الصلاحية",
+      "tooManyAttempts": "محاولات كثيرة جدًا. حاول لاحقًا.",
+      "networkError": "خطأ في الشبكة. تحقق من اتصالك.",
+      "required": "هذا الحقل مطلوب",
+      "invalidEmail": "أدخل بريدًا إلكترونيًا صحيحًا",
+      "invalidPhone": "أدخل رقمًا جزائريًا صحيحًا",
+      "termsRequired": "يجب الموافقة على الشروط للمتابعة",
+      "privacyRequired": "يجب قبول سياسة الخصوصية والموافقة على معالجة البيانات للمتابعة"
+    }
+  },
+  "membership": {
+    "tiers": {
+      "free": {
+        "name": "مجاني",
+        "description": "ابدأ، استكشف المنظومة"
+      },
+      "entrepreneur": {
+        "name": "رائد الأعمال",
+        "description": "احجز الفضاءات والبرامج بأسعار الأعضاء"
+      },
+      "startup": {
+        "name": "شركة ناشئة",
+        "description": "كل ميزات رائد الأعمال مع الوصول إلى التمويل"
+      }
+    },
+    "features": {
+      "profile": "ملف عام",
+      "browse": "تصفّح كل القوائم",
+      "events": "حضور الفعاليات العامة",
+      "allFree": "كل ميزات الباقة المجانية",
+      "bookSpaces": "حجز فضاءات العمل والمكاتب",
+      "bookPrograms": "التقديم للبرامج",
+      "eventsDiscount": "أسعار خاصة للأعضاء",
+      "prioritySupport": "دعم بأولوية",
+      "allEntrepreneur": "كل ميزات رائد الأعمال",
+      "listStartup": "أدرج شركتك الناشئة",
+      "fundraisingAccess": "سوق التمويل",
+      "investorMeetings": "طلبات اجتماعات المستثمرين",
+      "featuredListing": "إدراج مميّز في السوق"
+    },
+    "billingMonthly": "شهري",
+    "billingYearly": "سنوي",
+    "yearlySaveBadge": "وفّر {percent}%",
+    "perMonth": "/ شهر",
+    "perYear": "/ سنة",
+    "currentPlan": "الباقة الحالية",
+    "upgrade": "ترقية",
+    "choosePlan": "اختر الباقة"
+  },
+  "incubator": {
+    "subscription": {
+      "commission": {
+        "name": "بنظام العمولة",
+        "description": "20% عمولة لكل حجز — بدون اشتراك شهري"
+      },
+      "flat": {
+        "name": "اشتراك ثابت",
+        "description": "6 000 د.ج/شهر — احتفظ بـ100% من الحجوزات"
+      }
+    }
+  },
+  "dashboard": {
+    "overview": "نظرة عامة",
+    "bookings": "الحجوزات",
+    "startup": "شركتي الناشئة",
+    "marketplace": "السوق",
+    "wallet": "المحفظة",
+    "membership": "العضوية",
+    "settings": "الإعدادات",
+    "startups": "الشركات الناشئة",
+    "meetings": "الاجتماعات",
+    "portfolio": "المحفظة الاستثمارية",
+    "spaces": "الفضاءات",
+    "programs": "البرامج",
+    "events": "الفعاليات",
+    "revenue": "الإيرادات",
+    "invoices": "الفواتير",
+    "users": "المستخدمون",
+    "incubators": "الحاضنات",
+    "memberships": "العضويات",
+    "commissions": "العمولات",
+    "content": "المحتوى",
+    "consultations": "الاستشارات"
+  },
+  "pages": {
+    "programs": {
+      "title": "البرامج",
+      "subtitle": "ابحث عن برنامجك القادم للتسريع أو الاحتضان أو التدريب في الجزائر.",
+      "empty": "لا توجد برامج تطابق فلاترك."
+    },
+    "events": {
+      "title": "الفعاليات",
+      "subtitle": "تواصل، تعلّم، وانمُ في فعاليات عبر الجزائر.",
+      "empty": "لا فعاليات مجدولة. عُد قريبًا."
+    },
+    "spaces": {
+      "title": "الفضاءات",
+      "subtitle": "فضاءات عمل مشتركة، مكاتب خاصة، وقاعات اجتماعات — في كل أنحاء الجزائر.",
+      "empty": "لا توجد فضاءات تطابق فلاترك."
+    },
+    "investors": {
+      "title": "اكتشف الشركات الناشئة الجزائرية",
+      "subtitle": "شركات ناشئة مؤهلة تبحث عن تمويل. تواصل مباشرة مع المؤسسين.",
+      "empty": "لا توجد شركات ناشئة تطابق معاييرك."
+    }
+  }
+}
