@@ -85,6 +85,17 @@ function h1(text: string): string {
   return `<h1 style="margin:0 0 20px;font-size:22px;font-weight:700;color:#09090b;letter-spacing:-0.3px;">${text}</h1>`;
 }
 
+export function otpEmailHtml(code: string): string {
+  return layout(`
+    ${h1('Your verification code')}
+    ${p('Use the code below to complete your Metwork registration. It expires in <strong>10 minutes</strong>.')}
+    <div style="text-align:center;margin:32px 0;">
+      <span style="display:inline-block;padding:18px 40px;background:#f4f4f5;border-radius:12px;font-size:36px;font-weight:700;letter-spacing:10px;color:#09090b;font-family:monospace;">${code}</span>
+    </div>
+    ${p('<span style="color:#71717a;font-size:13px;">If you did not request this code, you can safely ignore this email.</span>')}
+  `);
+}
+
 export function verificationEmailHtml(link: string): string {
   return layout(`
     ${h1('Verify your email address')}

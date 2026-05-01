@@ -13,6 +13,7 @@
 import { sendTwilioSms } from './sms';
 import {
   sendResendEmail,
+  otpEmailHtml,
   verificationEmailHtml,
   passwordResetEmailHtml,
   contactNotificationHtml,
@@ -41,6 +42,29 @@ export function sendOtpSms(phone: string, code: string): void {
 
   // eslint-disable-next-line no-console
   console.log(`${banner} SMS → ${phone} :: ${body}`);
+}
+
+/**
+ * Send OTP via email (Resend).  Used as a reliable fallback when SMS
+ * cannot be trusted (carrier geo-filtering, test environments, etc.).
+ * Falls back to console.log when Resend is not configured.
+ */
+export function sendOtpEmail(email: string, code: string): void {
+  sendResendEmail({
+    to: email,
+    subject: `${code} is your Metwork verification code`,
+    html: otpEmailHtml(code),
+  })
+    .then((sent) => {
+      if (!sent) {
+        // eslint-disable-next-line no-console
+        console.log(`${banner} EMAIL (otp) → ${email} :: code = ${code}`);
+      }
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Resend OTP email failed →`, err.message),
+    );
 }
 
 /* ─────────────────────────── Email ─────────────────────────── */

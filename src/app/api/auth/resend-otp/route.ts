@@ -13,7 +13,7 @@ import { resendOtpRequestSchema } from '@/server/auth/schemas';
 import { db } from '@/server/db/store';
 import { issueOtp } from '@/server/auth/otp';
 import { reissuePendingOtp } from '@/server/auth/pending-users';
-import { sendOtpSms } from '@/server/notifications/mock';
+import { sendOtpSms, sendOtpEmail } from '@/server/notifications/mock';
 import { fromZod, jsonError, noContent } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
   const pending = await reissuePendingOtp(input.userId);
   if (pending !== null) {
     sendOtpSms(pending.phone, pending.code);
+    sendOtpEmail(pending.email, pending.code);
     return noContent();
   }
 

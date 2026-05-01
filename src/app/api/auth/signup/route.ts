@@ -17,7 +17,7 @@ import { db } from '@/server/db/store';
 import { hashPassword } from '@/server/auth/password';
 import { issuePendingUser } from '@/server/auth/pending-users';
 import { maskPhone, normalizePhone } from '@/server/auth/serialize';
-import { sendOtpSms } from '@/server/notifications/mock';
+import { sendOtpSms, sendOtpEmail } from '@/server/notifications/mock';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import type { Locale } from '@/i18n/config';
 
@@ -73,7 +73,10 @@ export async function POST(req: NextRequest) {
     locale,
   });
 
+  // Send OTP via SMS and also via email — SMS delivery to Algerian numbers
+  // can be filtered by carriers, so email ensures the code always arrives.
   sendOtpSms(phone, otpCode);
+  sendOtpEmail(email, otpCode);
 
   return json(
     { userId: id, requiresOtp: true, maskedPhone: maskPhone(phone) },

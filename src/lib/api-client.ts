@@ -49,7 +49,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const response = await fetch(url, {
     ...rest,
     headers: finalHeaders,
-    credentials: skipAuth ? 'omit' : 'include',
+    // Always include credentials so the browser stores Set-Cookie headers
+    // from auth responses (login, verify-otp) and sends the session cookie
+    // on authenticated requests. 'skipAuth' controls business logic only —
+    // it must not suppress cookie storage or the login flow breaks.
+    credentials: 'include',
     body: body ? JSON.stringify(body) : undefined,
   });
 

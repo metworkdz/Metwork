@@ -37,10 +37,13 @@ export default function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Guest guard: bounce already-authenticated users away from auth pages
+  // Guest guard: bounce already-authenticated users away from auth pages.
+  // We don't decode the session token here (Edge runtime — no crypto), so
+  // we redirect to /dashboard and let the dashboard layout redirect to the
+  // role-specific sub-path via the requireRole guard.
   if (GUEST_ONLY_PREFIXES.some((p) => path.startsWith(p)) && session) {
     const url = req.nextUrl.clone();
-    url.pathname = `${localePrefix || '/en'}/dashboard/entrepreneur`;
+    url.pathname = `${localePrefix || '/en'}/dashboard`;
     return NextResponse.redirect(url);
   }
 

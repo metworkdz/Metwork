@@ -14,7 +14,13 @@ import path from 'node:path';
 import type { UserRole, UserStatus } from '@/types/auth';
 import type { LandingContent } from '@/types/cms';
 
-const DATA_DIR = path.join(process.cwd(), '.data');
+// Vercel (and most serverless platforms) mount the project directory as
+// read-only. Use /tmp instead, which is writable per-lambda.
+// Note: /tmp is ephemeral — data resets on cold starts. This is acceptable
+// for staging; swap the store for a real DB before going to production.
+const DATA_DIR = process.env.VERCEL
+  ? path.join('/tmp', '.data')
+  : path.join(process.cwd(), '.data');
 const DB_FILE = path.join(DATA_DIR, 'auth.json');
 
 export interface UserRecord {

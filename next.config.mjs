@@ -7,7 +7,9 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
-  output: 'standalone',
+  // 'standalone' is for self-hosted Docker deployments. Vercel manages its
+  // own output format — keep this unset so Vercel's build pipeline works.
+  // output: 'standalone',
 
   // ESLint 9.x removed options that Next.js 14 passes internally (useEslintrc,
   // extensions). Skip ESLint during `next build` — TypeScript covers type safety

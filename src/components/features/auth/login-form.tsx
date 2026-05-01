@@ -13,6 +13,14 @@ import { loginSchema, type LoginInput } from '@/lib/validators';
 import { authService } from '@/services/auth.service';
 import { ApiClientError } from '@/lib/api-client';
 import { useAuth } from '@/components/providers/auth-provider';
+import type { UserRole } from '@/types/auth';
+
+const DASHBOARD_BY_ROLE: Record<UserRole, string> = {
+  ADMIN: '/dashboard/admin',
+  ENTREPRENEUR: '/dashboard/entrepreneur',
+  INVESTOR: '/dashboard/investor',
+  INCUBATOR: '/dashboard/incubator',
+};
 
 export function LoginForm() {
   const t = useTranslations('auth');
@@ -36,10 +44,9 @@ export function LoginForm() {
     setSubmitError(null);
     startTransition(async () => {
       try {
-        await authService.login(values);
+        const session = await authService.login(values);
         await refresh();
-        router.push('/dashboard/entrepreneur');
-        router.refresh();
+        router.push(DASHBOARD_BY_ROLE[session.user.role] ?? '/dashboard/entrepreneur');
       } catch (err) {
         if (err instanceof ApiClientError) {
           if (err.status === 401) setSubmitError(t('errors.invalidCredentials'));

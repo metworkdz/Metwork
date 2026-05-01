@@ -164,21 +164,21 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
 /**
  * Issue a fresh OTP for an existing pending user (resend path).
  *
- * Returns `{ code, phone }` so the caller can send the SMS without a
- * second DB read, or `null` if the pending record no longer exists.
+ * Returns `{ code, phone, email }` so the caller can notify the user
+ * without a second DB read, or `null` if the pending record no longer exists.
  */
 export async function reissuePendingOtp(
   pendingId: string,
-): Promise<{ code: string; phone: string } | null> {
+): Promise<{ code: string; phone: string; email: string } | null> {
   const code = generateCode();
   const expiresAt = new Date(Date.now() + OTP_TTL_MIN * 60_000).toISOString();
 
-  return db.update<{ code: string; phone: string } | null>((d) => {
+  return db.update<{ code: string; phone: string; email: string } | null>((d) => {
     const pending = d.pendingUsers.find((p) => p.id === pendingId);
     if (!pending) return null;
     pending.otpHash = hashOtp(code);
     pending.otpAttempts = 0;
     pending.expiresAt = expiresAt;
-    return { code, phone: pending.phone };
+    return { code, phone: pending.phone, email: pending.email };
   });
 }
