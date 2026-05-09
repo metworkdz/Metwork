@@ -253,7 +253,12 @@
     "memberships": "العضويات",
     "commissions": "العمولات",
     "content": "المحتوى",
-    "consultations": "الاستشارات"
+    "consultations": "الاستشارات",
+    "clients": "العملاء",
+    "services": "الخدمات",
+    "expenses": "المصاريف",
+    "income": "الإيرادات",
+    "analytics": "التحليلات"
   },
   "pages": {
     "programs": {

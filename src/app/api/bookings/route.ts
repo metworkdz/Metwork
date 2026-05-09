@@ -15,6 +15,9 @@ import { createSpaceBooking, listBookingsForUser } from '@/server/bookings/servi
 import { toBookingDto } from '@/server/bookings/serialize';
 import { toTransactionDto, toWalletDto } from '@/server/wallet/serialize';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { db } from '@/server/db/store';
+import { findIncubatorById } from '@/server/incubator/service';
+import { sendBookingReceiptEmail } from '@/server/notifications/mock';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -42,9 +45,11 @@ export async function POST(req: NextRequest) {
     userId: guard.user.id,
     spaceId: input.spaceId,
     unit: input.unit,
-    quantity: input.quantity,
     startsAt: input.startsAt,
+    endsAt: input.endsAt,
     clientReference: input.clientReference,
+    promoCode: input.promoCode,
+    paymentMethod: input.paymentMethod,
   });
 
   if (!result.ok) {
@@ -66,7 +71,46 @@ export async function POST(req: NextRequest) {
           balance: result.balance,
           required: result.required,
         });
+      case 'OUTSIDE_WORKING_HOURS':
+        return jsonError(422, 'OUTSIDE_WORKING_HOURS',
+          `Booking must be between ${result.openingTime} and ${result.closingTime}`, {
+            openingTime: result.openingTime,
+            closingTime: result.closingTime,
+          });
+      case 'NOT_A_WORKING_DAY':
+        return jsonError(422, 'NOT_A_WORKING_DAY', 'Selected day is not a working day', {
+          workingDays: result.workingDays,
+        });
+      case 'OVERLAP_CONFLICT':
+        return jsonError(409, 'OVERLAP_CONFLICT', 'This time slot is already booked', {
+          conflictingBookingId: result.conflictingBookingId,
+        });
     }
+  }
+
+  // Send receipt email on first successful booking only (idempotency guard via replayed flag)
+  if (!result.replayed) {
+    void (async () => {
+      try {
+        const data  = await db.read();
+        const user  = data.users.find((u) => u.id === guard.user.id);
+        if (!user) return;
+
+        // Find the incubator via the space record
+        const space = (data.spaces ?? []).find((s) => s.id === input.spaceId);
+        const incubator = space ? await findIncubatorById(space.incubatorId) : null;
+        if (!incubator) return;
+
+        const lang = user.locale === 'en' ? 'en' : 'fr';
+        sendBookingReceiptEmail({
+          booking:     result.booking,
+          clientName:  user.fullName,
+          clientEmail: user.email,
+          incubator,
+          lang,
+        });
+      } catch { /* receipt errors must never break the booking response */ }
+    })();
   }
 
   return json(

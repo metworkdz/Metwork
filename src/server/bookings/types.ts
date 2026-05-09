@@ -16,7 +16,13 @@ export type CreateSpaceBookingResult =
   | { ok: false; reason: 'UNIT_NOT_AVAILABLE'; available: ('HOUR' | 'DAY' | 'MONTH')[] }
   | { ok: false; reason: 'CAPACITY_EXCEEDED'; capacity: number }
   | { ok: false; reason: 'WALLET_FROZEN' }
-  | { ok: false; reason: 'INSUFFICIENT_FUNDS'; balance: number; required: number };
+  | { ok: false; reason: 'INSUFFICIENT_FUNDS'; balance: number; required: number }
+  /** The requested time window falls outside the space's working hours. */
+  | { ok: false; reason: 'OUTSIDE_WORKING_HOURS'; openingTime: string; closingTime: string }
+  /** The start/end day is not among the space's configured working days. */
+  | { ok: false; reason: 'NOT_A_WORKING_DAY'; workingDays: number[] }
+  /** Another confirmed booking occupies all or part of the requested window. */
+  | { ok: false; reason: 'OVERLAP_CONFLICT'; conflictingBookingId: string };
 
 /** Quote returned to the UI before the user confirms a booking. */
 export interface BookingQuote {

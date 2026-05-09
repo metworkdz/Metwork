@@ -1,30 +1,43 @@
 import { setRequestLocale } from 'next-intl/server';
-import { Clock } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
-import { EmptyState } from '@/components/shared/empty-state';
+import { Badge } from '@/components/ui/badge';
+import { AdminIncubatorsManager } from '@/components/features/admin/incubators-manager';
+import { db } from '@/server/db/store';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const metadata = { title: 'Incubators' };
 
 interface PageProps {
   params: Promise<{ locale: string }>;
 }
-
-export const metadata = { title: 'Incubators' };
 
 export default async function AdminIncubatorsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   await requireRole(['ADMIN']);
 
+  const data = await db.read();
+  const incubators = (data.incubators ?? [])
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const activeCount = incubators.filter((i) => i.status === 'ACTIVE').length;
+
   return (
     <div className="space-y-6">
       <DashboardPageHeader
         title="Incubators"
         subtitle="Manage registered incubators and their platform access."
+        action={
+          <Badge variant="outline" className="gap-1">
+            <Building2 className="size-3" />
+            {activeCount} active
+          </Badge>
+        }
       />
-      <EmptyState
-        icon={<Clock className="size-6 text-muted-foreground" />}
-        message="This section is coming soon. We're working on it."
-      />
+      <AdminIncubatorsManager initial={incubators} />
     </div>
   );
 }

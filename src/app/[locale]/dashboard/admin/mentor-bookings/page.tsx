@@ -6,6 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { MentorBookingsTable, type BookingRow } from '@/components/features/admin/mentor-bookings-table';
 import { db } from '@/server/db/store';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface PageProps {
   params: Promise<{ locale: string }>;
 }

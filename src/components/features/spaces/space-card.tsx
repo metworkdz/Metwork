@@ -1,10 +1,16 @@
 /**
- * Marketplace card for a single space. Click anywhere on the card → opens
- * the detail sheet on the parent (see `SpacesExplorer`).
+ * Premium marketplace card for a single coworking space.
+ *
+ * Design:
+ *  - Full-bleed image / illustrated placeholder (top, 4:3 ratio)
+ *  - Category badge floated on image, glassmorphism pill
+ *  - Rating badge (top-right) when available
+ *  - Clean two-row metadata (name + location)
+ *  - Subtle description (2 lines)
+ *  - Price row with animated "View →" CTA
+ *  - Hover: shadow lift + very subtle scale; no jarring transitions
  */
-import { MapPin, Star } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { ArrowRight, MapPin, Star } from 'lucide-react';
 import { SpaceImage } from './space-image';
 import { categoryLabel } from './space-meta';
 import { formatCurrency } from '@/lib/format';
@@ -19,77 +25,113 @@ interface SpaceCardProps {
 }
 
 function startingPrice(space: Space): { amount: number; suffix: string } | null {
-  if (space.pricePerHour != null) return { amount: space.pricePerHour, suffix: '/hour' };
-  if (space.pricePerDay != null) return { amount: space.pricePerDay, suffix: '/day' };
-  if (space.pricePerMonth != null) return { amount: space.pricePerMonth, suffix: '/month' };
+  if (space.pricePerHour  != null) return { amount: space.pricePerHour,  suffix: '/hr'  };
+  if (space.pricePerDay   != null) return { amount: space.pricePerDay,   suffix: '/day' };
+  if (space.pricePerMonth != null) return { amount: space.pricePerMonth, suffix: '/mo'  };
   return null;
 }
 
 export function SpaceCard({ space, locale, onSelect }: SpaceCardProps) {
   const price = startingPrice(space);
+
   return (
-    <Card
+    <article
       role="article"
       tabIndex={0}
       onClick={() => onSelect(space)}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect(space);
-        }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(space); }
       }}
+      aria-label={`${space.name} — ${categoryLabel[space.category]}, ${space.city}`}
       className={cn(
-        'group flex cursor-pointer flex-col overflow-hidden p-0 transition-all',
-        'hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-lg',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        'group cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white',
+        'shadow-sm transition-all duration-200',
+        'hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.10)]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
       )}
     >
-      <div className="relative aspect-[16/10] w-full">
-        <SpaceImage category={space.category} imageUrl={space.imageUrl} alt={space.name} />
-      </div>
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex items-start justify-between gap-3">
-          <Badge variant="outline">{categoryLabel[space.category]}</Badge>
-          {space.rating != null && (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <Star className="size-3 fill-amber-400 stroke-amber-400" />
-              <span className="font-medium text-foreground">{space.rating.toFixed(1)}</span>
-              <span>({space.reviewCount})</span>
-            </span>
-          )}
+      {/* ── Image / Placeholder ── */}
+      <div className="relative aspect-[4/3] overflow-hidden">
+        {/* scale on hover via the image wrapper, not the whole card */}
+        <div className="size-full transition-transform duration-500 group-hover:scale-[1.03]">
+          <SpaceImage
+            category={space.category}
+            imageUrl={space.imageUrl}
+            alt={space.name}
+            className="size-full object-cover"
+          />
         </div>
 
-        <h3 className="mt-3 line-clamp-1 text-base font-semibold text-foreground">
+        {/* Category badge — glassmorphism pill */}
+        <div className="absolute start-3 top-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-800 shadow-sm backdrop-blur-sm">
+            {categoryLabel[space.category]}
+          </span>
+        </div>
+
+        {/* Rating badge */}
+        {space.rating != null && (
+          <div className="absolute end-3 top-3">
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-800 shadow-sm backdrop-blur-sm">
+              <Star className="size-3 fill-amber-400 stroke-amber-400" />
+              {space.rating.toFixed(1)}
+              {space.reviewCount > 0 && (
+                <span className="font-normal text-slate-400">({space.reviewCount})</span>
+              )}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Content ── */}
+      <div className="flex flex-col p-5">
+        {/* Name */}
+        <h3 className="line-clamp-1 text-[0.9375rem] font-bold text-slate-900 transition-colors group-hover:text-primary">
           {space.name}
         </h3>
-        <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
-          <MapPin className="size-3" />
-          {space.city} · {space.incubatorName}
+
+        {/* Location */}
+        <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
+          <MapPin className="size-3 shrink-0" />
+          <span className="line-clamp-1">
+            {space.city}
+            {space.incubatorName && (
+              <> · <span className="text-slate-500">{space.incubatorName}</span></>
+            )}
+          </span>
         </p>
 
-        <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
+        {/* Description */}
+        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-500">
           {space.description}
         </p>
 
-        <div className="mt-auto flex items-end justify-between pt-5">
+        {/* ── Price + CTA ── */}
+        <div className="mt-4 flex items-end justify-between border-t border-slate-100 pt-4">
           {price ? (
             <div>
-              <p className="text-xs text-muted-foreground">From</p>
-              <p className="text-lg font-semibold tabular-nums">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">From</p>
+              <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-900">
                 {formatCurrency(price.amount, locale)}
-                <span className="ms-1 text-xs font-normal text-muted-foreground">
-                  {price.suffix}
-                </span>
+                <span className="ms-1 text-xs font-normal text-slate-400">{price.suffix}</span>
               </p>
             </div>
           ) : (
-            <span className="text-sm text-muted-foreground">Contact for pricing</span>
+            <p className="text-sm text-slate-400">Contact for pricing</p>
           )}
-          <span className="text-xs font-medium text-primary-700 group-hover:underline">
-            View details →
+
+          <span
+            aria-hidden
+            className={cn(
+              'inline-flex items-center gap-1 text-xs font-semibold text-primary',
+              'transition-all duration-150 group-hover:gap-2',
+            )}
+          >
+            View details
+            <ArrowRight className="size-3.5" />
           </span>
         </div>
       </div>
-    </Card>
+    </article>
   );
 }

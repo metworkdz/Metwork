@@ -1,23 +1,45 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useLocale } from 'next-intl';
-import { Briefcase } from 'lucide-react';
+import { Briefcase, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
+import { ProgramFormDialog } from './program-form-dialog';
 import { formatCurrency, formatDate } from '@/lib/format';
 import type { Program, ProgramType } from '@/types/domain';
 import type { Locale } from '@/i18n/config';
 
 const typeLabel: Record<ProgramType, string> = {
-  INCUBATION: 'Incubation',
+  INCUBATION:   'Incubation',
   ACCELERATION: 'Acceleration',
-  TRAINING: 'Training',
-  BOOTCAMP: 'Bootcamp',
-  WORKSHOP: 'Workshop',
+  TRAINING:     'Training',
+  BOOTCAMP:     'Bootcamp',
+  WORKSHOP:     'Workshop',
 };
 
-export function ProgramsManager({ initial }: { initial: Program[] }) {
+export function ProgramsManager() {
   const locale = useLocale() as Locale;
+  const [rows, setRows] = useState<Program[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  async function fetchPrograms() {
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const res = await fetch('/api/incubator/programs', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to load programs');
+      const data = await res.json() as { items: Program[] };
+      setRows(data.items);
+    } catch (e: unknown) {
+      setFetchError(e instanceof Error ? e.message : 'Error loading programs');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { void fetchPrograms(); }, []);
 
   const columns: ListingColumn<Program>[] = [
     {
@@ -59,7 +81,7 @@ export function ProgramsManager({ initial }: { initial: Program[] }) {
             </div>
             <div className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full bg-primary-500"
+                className="h-full bg-primary"
                 style={{ width: `${Math.min(100, Math.round(ratio * 100))}%` }}
               />
             </div>
@@ -78,14 +100,40 @@ export function ProgramsManager({ initial }: { initial: Program[] }) {
           <span className="tabular-nums">{formatCurrency(p.price, locale)}</span>
         ),
     },
+    {
+      key: 'payment',
+      label: 'Payment',
+      render: (p) => (
+        <span className="text-xs text-muted-foreground">
+          {(p.acceptedPaymentMethods ?? ['ONLINE']).join(' · ')}
+        </span>
+      ),
+    },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12 text-muted-foreground">
+        <Loader2 className="mr-2 size-5 animate-spin" />
+        Loading…
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+        {fetchError}
+      </div>
+    );
+  }
 
   return (
     <ListingManagementTable
-      rows={initial}
+      rows={rows}
       columns={columns}
       rowKey={(p) => p.id}
-      onCreate={() => {}}
+      createSlot={<ProgramFormDialog onCreated={() => void fetchPrograms()} />}
       emptyIcon={<Briefcase className="size-5 text-muted-foreground" />}
       emptyTitle="No programs yet"
       emptyDescription="Create incubation, acceleration, or training programs."

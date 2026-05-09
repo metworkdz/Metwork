@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, X, ChevronDown } from 'lucide-react';
+import { Check, X, ChevronDown, Calendar, Clock, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,6 +27,9 @@ export interface BookingRow {
   message: string;
   status: MentorBookingStatus;
   adminNote: string | null;
+  consultationDate?: string | null;
+  consultationTime?: string | null;
+  durationMinutes?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -217,6 +220,26 @@ export function MentorBookingsTable({ initial }: MentorBookingsTableProps) {
                       <p className="text-xs text-muted-foreground">
                         {row.userEmail} · {row.userPhone}
                       </p>
+                      {row.consultationDate && (
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="inline-flex items-center gap-1">
+                            <Calendar className="size-3" />
+                            {row.consultationDate}
+                          </span>
+                          {row.consultationTime && (
+                            <span className="inline-flex items-center gap-1">
+                              <Clock className="size-3" />
+                              {row.consultationTime}
+                            </span>
+                          )}
+                          {row.durationMinutes && (
+                            <span className="inline-flex items-center gap-1">
+                              <Timer className="size-3" />
+                              {row.durationMinutes} min
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">
                         {row.message}
                       </p>

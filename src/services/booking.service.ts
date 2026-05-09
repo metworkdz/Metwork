@@ -13,15 +13,23 @@ import type {
 export interface CreateSpaceBookingInput {
   spaceId: string;
   unit: BookingUnit;
-  quantity: number;
   startsAt: string;
+  endsAt: string;
   /** Idempotency key. Generate one (e.g. crypto.randomUUID()) per booking attempt. */
   clientReference: string;
+  /** Optional promotional code — applied server-side before wallet debit. */
+  promoCode?: string;
+  /** Payment method. CASH = reserve without wallet debit (PENDING_PAYMENT). Default ONLINE. */
+  paymentMethod?: 'ONLINE' | 'CASH';
 }
 
 export interface ApplyOrRegisterInput {
   /** Idempotency key. Generate one per attempt. */
   clientReference: string;
+  /** Optional promotional code — applied server-side before wallet debit. */
+  promoCode?: string;
+  /** Payment method. CASH = reserve without wallet debit (PENDING_PAYMENT). Default ONLINE. */
+  paymentMethod?: 'ONLINE' | 'CASH';
 }
 
 export const bookingService = {

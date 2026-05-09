@@ -253,7 +253,12 @@
     "memberships": "Memberships",
     "commissions": "Commissions",
     "content": "Content",
-    "consultations": "Consultations"
+    "consultations": "Consultations",
+    "clients": "Clients",
+    "services": "Services",
+    "expenses": "Expenses",
+    "income": "Income",
+    "analytics": "Analytics"
   },
   "pages": {
     "programs": {

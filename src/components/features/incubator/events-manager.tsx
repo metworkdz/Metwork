@@ -1,15 +1,37 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useLocale } from 'next-intl';
-import { Calendar } from 'lucide-react';
+import { Calendar, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
+import { EventFormDialog } from './event-form-dialog';
 import { formatCurrency, formatDate } from '@/lib/format';
 import type { Event as PlatformEvent } from '@/types/domain';
 import type { Locale } from '@/i18n/config';
 
-export function EventsManager({ initial }: { initial: PlatformEvent[] }) {
+export function EventsManager() {
   const locale = useLocale() as Locale;
+  const [rows, setRows] = useState<PlatformEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  async function fetchEvents() {
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const res = await fetch('/api/incubator/events', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to load events');
+      const data = await res.json() as { items: PlatformEvent[] };
+      setRows(data.items);
+    } catch (e: unknown) {
+      setFetchError(e instanceof Error ? e.message : 'Error loading events');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { void fetchEvents(); }, []);
 
   const columns: ListingColumn<PlatformEvent>[] = [
     {
@@ -68,14 +90,40 @@ export function EventsManager({ initial }: { initial: PlatformEvent[] }) {
           <span className="tabular-nums">{formatCurrency(e.price, locale)}</span>
         ),
     },
+    {
+      key: 'payment',
+      label: 'Payment',
+      render: (e) => (
+        <span className="text-xs text-muted-foreground">
+          {(e.acceptedPaymentMethods ?? ['ONLINE']).join(' · ')}
+        </span>
+      ),
+    },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12 text-muted-foreground">
+        <Loader2 className="mr-2 size-5 animate-spin" />
+        Loading…
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+        {fetchError}
+      </div>
+    );
+  }
 
   return (
     <ListingManagementTable
-      rows={initial}
+      rows={rows}
       columns={columns}
       rowKey={(e) => e.id}
-      onCreate={() => {}}
+      createSlot={<EventFormDialog onCreated={() => void fetchEvents()} />}
       emptyIcon={<Calendar className="size-5 text-muted-foreground" />}
       emptyTitle="No events yet"
       emptyDescription="Schedule pitch nights, demo days, and meetups."

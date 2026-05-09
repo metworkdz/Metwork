@@ -40,6 +40,12 @@ export interface ListingManagementTableProps<T> {
   rowKey: (row: T) => string;
   /** Called when the user clicks "New" — pass undefined to hide the button. */
   onCreate?: () => void;
+  /**
+   * Custom ReactNode rendered in the header instead of the auto-generated
+   * "New listing" button. Also shown in the empty-state action slot.
+   * Takes precedence over `onCreate`.
+   */
+  createSlot?: ReactNode;
   emptyTitle: string;
   emptyDescription: string;
   emptyIcon?: ReactNode;
@@ -52,6 +58,7 @@ export function ListingManagementTable<T>({
   columns,
   rowKey,
   onCreate,
+  createSlot,
   emptyTitle,
   emptyDescription,
   emptyIcon,
@@ -62,18 +69,20 @@ export function ListingManagementTable<T>({
     { label: 'Delete', icon: <Trash2 className="size-4" />, onSelect: () => {}, destructive: true },
   ];
 
+  const headerCreate = createSlot ?? (onCreate ? (
+    <Button size="sm" onClick={onCreate}>
+      <Plus />
+      New listing
+    </Button>
+  ) : null);
+
   return (
     <Card>
       <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3">
         <p className="text-sm text-muted-foreground">
           {rows.length} listing{rows.length === 1 ? '' : 's'}
         </p>
-        {onCreate && (
-          <Button size="sm" onClick={onCreate}>
-            <Plus />
-            New listing
-          </Button>
-        )}
+        {headerCreate}
       </div>
       <CardContent className="p-0">
         {rows.length === 0 ? (
@@ -81,14 +90,14 @@ export function ListingManagementTable<T>({
             title={emptyTitle}
             description={emptyDescription}
             icon={emptyIcon}
-            action={
+            action={createSlot ?? (
               onCreate && (
                 <Button size="sm" onClick={onCreate}>
                   <Plus />
                   Create
                 </Button>
               )
-            }
+            )}
           />
         ) : (
           <div className="overflow-x-auto">

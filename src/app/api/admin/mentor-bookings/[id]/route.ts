@@ -1,13 +1,22 @@
 /**
  * PATCH /api/admin/mentor-bookings/:id
- * Approve or reject a booking request. Admin only.
+ * Approve or reject a consultation booking request. Admin only.
  * Body: { status: 'APPROVED' | 'REJECTED', adminNote?: string }
+ *
+ * On APPROVED → sends confirmation PDF email to client.
+ * On REJECTED → sends rejection email with optional admin note.
+ * Only PENDING bookings can be reviewed (idempotency guard).
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
-import { db } from '@/server/db/store';
+import { db, type MentorBookingRecord } from '@/server/db/store';
+import { findMentorById } from '@/server/mentors/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import {
+  sendConsultationConfirmationEmail,
+  sendConsultationRejectedEmail,
+} from '@/server/notifications/mock';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,7 +46,17 @@ export async function PATCH(
     throw err;
   }
 
-  type Result = { ok: true; booking: object } | { ok: false };
+  // Snapshot before update so we can find the mentor for emails
+  const snapshot = await db.read();
+  const existing = (snapshot.mentorBookings ?? []).find((b) => b.id === id);
+  if (!existing) return jsonError(404, 'NOT_FOUND', 'Booking not found');
+
+  // Idempotency: only PENDING bookings can be transitioned
+  if (existing.status !== 'PENDING') {
+    return jsonError(409, 'ALREADY_REVIEWED', 'This booking has already been reviewed');
+  }
+
+  type Result = { ok: true; booking: MentorBookingRecord } | { ok: false };
   const result = await db.update<Result>((d) => {
     if (!Array.isArray(d.mentorBookings)) return { ok: false };
     const booking = d.mentorBookings.find((b) => b.id === id);
@@ -49,5 +68,21 @@ export async function PATCH(
   });
 
   if (!result.ok) return jsonError(404, 'NOT_FOUND', 'Booking not found');
+
+  // Send outcome email — fire-and-forget, never blocks response
+  const mentor = await findMentorById(existing.mentorId);
+  if (mentor) {
+    if (input.status === 'APPROVED') {
+      sendConsultationConfirmationEmail({ booking: result.booking, mentor, lang: 'fr' });
+    } else {
+      sendConsultationRejectedEmail({
+        booking:   result.booking,
+        mentor,
+        adminNote: input.adminNote ?? null,
+        lang:      'fr',
+      });
+    }
+  }
+
   return json(result.booking);
 }

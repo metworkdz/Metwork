@@ -18,6 +18,7 @@ import {
 import { findSpaceById } from './space-catalog';
 import { findProgramById } from './program-catalog';
 import { findEventById } from './event-catalog';
+import { validatePromoCode, consumePromoCode, ensurePromoCodesSeeded } from '@/server/promo-codes/service';
 import type {
   ApplyToProgramResult,
   CreateSpaceBookingResult,
@@ -29,9 +30,12 @@ export interface CreateSpaceBookingArgs {
   userId: string;
   spaceId: string;
   unit: BookingUnit;
-  quantity: number;
   startsAt: string;
+  endsAt: string;
   clientReference: string;
+  promoCode?: string;
+  /** Default 'ONLINE'. CASH = reserve only, no wallet debit, status PENDING_PAYMENT. */
+  paymentMethod?: 'ONLINE' | 'CASH';
 }
 
 function unitPrice(space: Space, unit: BookingUnit): number | null {
@@ -50,21 +54,65 @@ function availableUnits(space: Space): BookingUnit[] {
   return out;
 }
 
-function computeEndsAt(startsAt: string, unit: BookingUnit, quantity: number): string {
-  const start = new Date(startsAt);
-  const end = new Date(start);
+/** Derive how many billing units the [startsAt, endsAt) window covers. */
+function computeQuantity(startsAt: string, endsAt: string, unit: BookingUnit): number {
+  const diffMs = new Date(endsAt).getTime() - new Date(startsAt).getTime();
   switch (unit) {
-    case 'HOUR':
-      end.setUTCHours(end.getUTCHours() + quantity);
-      break;
-    case 'DAY':
-      end.setUTCDate(end.getUTCDate() + quantity);
-      break;
-    case 'MONTH':
-      end.setUTCMonth(end.getUTCMonth() + quantity);
-      break;
+    case 'HOUR':  return Math.max(1, Math.ceil(diffMs / 3_600_000));
+    case 'DAY':   return Math.max(1, Math.ceil(diffMs / 86_400_000));
+    case 'MONTH': {
+      const s = new Date(startsAt);
+      const e = new Date(endsAt);
+      const months = (e.getUTCFullYear() - s.getUTCFullYear()) * 12 + (e.getUTCMonth() - s.getUTCMonth());
+      return Math.max(1, months);
+    }
   }
-  return end.toISOString();
+}
+
+/** "HH:MM" → minutes since midnight */
+function timeToMinutes(t: string): number {
+  const parts = t.split(':');
+  return Number(parts[0]) * 60 + Number(parts[1]);
+}
+
+/** Extract UTC HH:MM minutes from an ISO datetime string. */
+function isoToUtcMinutes(iso: string): number {
+  const d = new Date(iso);
+  return d.getUTCHours() * 60 + d.getUTCMinutes();
+}
+
+/** Extract UTC day-of-week (0=Sun…6=Sat) from an ISO datetime string. */
+function isoToUtcDow(iso: string): number {
+  return new Date(iso).getUTCDay();
+}
+
+/**
+ * Validate a booking window against the space's working-hours config.
+ * Returns null if valid, or the specific error reason.
+ */
+function validateWorkingHours(
+  startsAt: string,
+  endsAt: string,
+  space: Space,
+): null | 'OUTSIDE_WORKING_HOURS' | 'NOT_A_WORKING_DAY' {
+  const workingDays  = space.workingDays  ?? [1, 2, 3, 4, 5];
+  const openingMins  = timeToMinutes(space.openingTime ?? '09:00');
+  const closingMins  = timeToMinutes(space.closingTime ?? '18:00');
+
+  const startDow  = isoToUtcDow(startsAt);
+  const endDow    = isoToUtcDow(endsAt);
+  const startMins = isoToUtcMinutes(startsAt);
+  const endMins   = isoToUtcMinutes(endsAt);
+
+  // Working day check: both start and end day must be in workingDays
+  if (!workingDays.includes(startDow) || !workingDays.includes(endDow)) {
+    return 'NOT_A_WORKING_DAY';
+  }
+  // Time window check: start >= opening, end <= closing
+  if (startMins < openingMins || endMins > closingMins) {
+    return 'OUTSIDE_WORKING_HOURS';
+  }
+  return null;
 }
 
 function newWallet(userId: string): WalletRecord {
@@ -92,8 +140,29 @@ export async function createSpaceBooking(
   if (price == null) {
     return { ok: false, reason: 'UNIT_NOT_AVAILABLE', available: availableUnits(space) };
   }
-  const total = price * args.quantity;
-  const endsAt = computeEndsAt(args.startsAt, args.unit, args.quantity);
+
+  // ── Working hours validation (outside lock — no writes) ────────────
+  const whError = validateWorkingHours(args.startsAt, args.endsAt, space);
+  if (whError === 'NOT_A_WORKING_DAY') {
+    return { ok: false, reason: 'NOT_A_WORKING_DAY', workingDays: space.workingDays ?? [1,2,3,4,5] };
+  }
+  if (whError === 'OUTSIDE_WORKING_HOURS') {
+    return {
+      ok: false,
+      reason: 'OUTSIDE_WORKING_HOURS',
+      openingTime: space.openingTime ?? '09:00',
+      closingTime: space.closingTime ?? '18:00',
+    };
+  }
+
+  const quantity  = computeQuantity(args.startsAt, args.endsAt, args.unit);
+  const { endsAt } = args;
+  const baseTotal = price * quantity;
+
+  // Ensure promo codes are seeded before entering the critical section.
+  if (args.promoCode) await ensurePromoCodesSeeded();
+
+  const isCash = args.paymentMethod === 'CASH';
 
   return db.update<CreateSpaceBookingResult>((d) => {
     // Idempotency: same clientReference for the same user → return existing.
@@ -101,10 +170,36 @@ export async function createSpaceBooking(
       (b) => b.userId === args.userId && b.clientReference === args.clientReference,
     );
     if (existing) {
-      const tx = d.transactions.find((t) => t.id === existing.transactionId);
-      const w = d.wallets.find((x) => x.userId === args.userId);
-      if (tx && w) {
-        return { ok: true, replayed: true, booking: existing, transaction: tx, wallet: w };
+      const tx = existing.transactionId
+        ? d.transactions.find((t) => t.id === existing.transactionId) ?? null
+        : null;
+      const w = d.wallets.find((x) => x.userId === args.userId) ?? newWallet(args.userId);
+      if (tx) return { ok: true, replayed: true, booking: existing, transaction: tx, wallet: w };
+    }
+
+    // ── Overlap check: reject if an active booking occupies part of the window ──
+    const newStart = new Date(args.startsAt).getTime();
+    const newEnd   = new Date(args.endsAt).getTime();
+    const conflict = d.bookings.find((b) => {
+      if (b.itemKind !== 'SPACE' || b.itemId !== space.id) return false;
+      if (b.status === 'CANCELLED' || b.status === 'REFUNDED') return false;
+      const bStart = new Date(b.startsAt).getTime();
+      const bEnd   = new Date(b.endsAt).getTime();
+      // Overlap when: newStart < bEnd && newEnd > bStart
+      return newStart < bEnd && newEnd > bStart;
+    });
+    if (conflict) {
+      return { ok: false, reason: 'OVERLAP_CONFLICT', conflictingBookingId: conflict.id };
+    }
+
+    // Apply promo code discount (only for online payment)
+    let total = baseTotal;
+    let promoCodeId: string | null = null;
+    if (!isCash && args.promoCode && args.promoCode.trim()) {
+      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal);
+      if (promo.valid) {
+        total       = promo.finalAmount;
+        promoCodeId = promo.promoCodeId;
       }
     }
 
@@ -114,10 +209,56 @@ export async function createSpaceBooking(
       wallet = newWallet(args.userId);
       d.wallets.push(wallet);
     }
+
+    // ── Cash path: reserve without charging ────────────────────────────
+    if (isCash) {
+      const now = new Date().toISOString();
+      const booking: BookingRecord = {
+        id: randomUUID(),
+        userId: args.userId,
+        itemKind: 'SPACE',
+        itemId: space.id,
+        itemName: space.name,
+        vendorName: space.incubatorName,
+        city: space.city,
+        unit: args.unit,
+        quantity,
+        startsAt: args.startsAt,
+        endsAt,
+        totalAmount: baseTotal,
+        status: 'PENDING_PAYMENT',
+        clientReference: args.clientReference,
+        transactionId: null,
+        paymentMethod: 'CASH',
+        createdAt: now,
+        updatedAt: now,
+      };
+      d.bookings.push(booking);
+      // Return a placeholder zero transaction so the route shape stays consistent.
+      const tx: TransactionRecord = {
+        id: randomUUID(),
+        walletId: wallet.id,
+        userId: args.userId,
+        type: 'PAYMENT',
+        amount: 0,
+        balanceAfter: wallet.balance,
+        status: 'PENDING',
+        description: `Cash reservation — ${space.name}`,
+        reference: args.clientReference,
+        provider: 'cash',
+        providerTxnId: null,
+        metadata: { bookingItemKind: 'SPACE', bookingItemId: space.id },
+        createdAt: now,
+        completedAt: null,
+      };
+      return { ok: true, replayed: false, booking, transaction: tx, wallet };
+    }
+
+    // ── Online path ─────────────────────────────────────────────────────
     if (wallet.status === 'FROZEN') {
       return { ok: false, reason: 'WALLET_FROZEN' };
     }
-    if (wallet.balance < total) {
+    if (total > 0 && wallet.balance < total) {
       return {
         ok: false,
         reason: 'INSUFFICIENT_FUNDS',
@@ -126,33 +267,67 @@ export async function createSpaceBooking(
       };
     }
 
-    // Atomic: deduct → write transaction → write booking.
     const now = new Date().toISOString();
-    wallet.balance -= total;
-    wallet.updatedAt = now;
 
-    const tx: TransactionRecord = {
-      id: randomUUID(),
-      walletId: wallet.id,
-      userId: args.userId,
-      type: 'PAYMENT',
-      amount: -total,
-      balanceAfter: wallet.balance,
-      status: 'COMPLETED',
-      description: `Booking — ${space.name}`,
-      reference: args.clientReference,
-      provider: 'internal',
-      providerTxnId: null,
-      metadata: {
-        bookingItemKind: 'SPACE',
-        bookingItemId: space.id,
-        unit: args.unit,
-        quantity: args.quantity,
-      },
-      createdAt: now,
-      completedAt: now,
-    };
-    d.transactions.push(tx);
+    // Consume promo code use count
+    if (promoCodeId) consumePromoCode(d.promoCodes ?? [], promoCodeId);
+
+    // Atomic: deduct wallet (only when total > 0) → write transaction → write booking.
+    let tx: TransactionRecord;
+    if (total > 0) {
+      wallet.balance -= total;
+      wallet.updatedAt = now;
+      tx = {
+        id: randomUUID(),
+        walletId: wallet.id,
+        userId: args.userId,
+        type: 'PAYMENT',
+        amount: -total,
+        balanceAfter: wallet.balance,
+        status: 'COMPLETED',
+        description: `Booking — ${space.name}`,
+        reference: args.clientReference,
+        provider: 'internal',
+        providerTxnId: null,
+        metadata: {
+          bookingItemKind: 'SPACE',
+          bookingItemId: space.id,
+          unit: args.unit,
+          quantity,
+          promoCode: args.promoCode ?? null,
+          originalAmount: baseTotal,
+        },
+        createdAt: now,
+        completedAt: now,
+      };
+      d.transactions.push(tx);
+    } else {
+      // Free booking (promo made it 0) — create a zero-amount placeholder transaction
+      tx = {
+        id: randomUUID(),
+        walletId: wallet.id,
+        userId: args.userId,
+        type: 'PAYMENT',
+        amount: 0,
+        balanceAfter: wallet.balance,
+        status: 'COMPLETED',
+        description: `Booking — ${space.name} (promo applied)`,
+        reference: args.clientReference,
+        provider: 'internal',
+        providerTxnId: null,
+        metadata: {
+          bookingItemKind: 'SPACE',
+          bookingItemId: space.id,
+          unit: args.unit,
+          quantity,
+          promoCode: args.promoCode ?? null,
+          originalAmount: baseTotal,
+        },
+        createdAt: now,
+        completedAt: now,
+      };
+      d.transactions.push(tx);
+    }
 
     const booking: BookingRecord = {
       id: randomUUID(),
@@ -163,13 +338,14 @@ export async function createSpaceBooking(
       vendorName: space.incubatorName,
       city: space.city,
       unit: args.unit,
-      quantity: args.quantity,
+      quantity,
       startsAt: args.startsAt,
       endsAt,
       totalAmount: total,
       status: 'CONFIRMED',
       clientReference: args.clientReference,
       transactionId: tx.id,
+      paymentMethod: 'ONLINE',
       createdAt: now,
       updatedAt: now,
     };
@@ -192,6 +368,8 @@ export interface ApplyToProgramArgs {
   userId: string;
   programId: string;
   clientReference: string;
+  promoCode?: string;
+  paymentMethod?: 'ONLINE' | 'CASH';
 }
 
 /**
@@ -211,6 +389,10 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
     return { ok: false, reason: 'DEADLINE_PASSED', deadline: program.deadline };
   }
 
+  if (args.promoCode) await ensurePromoCodesSeeded();
+
+  const isCash = args.paymentMethod === 'CASH';
+
   return db.update<ApplyToProgramResult>((d) => {
     // Replay (same clientReference) → return the existing booking.
     const replay = d.bookings.find(
@@ -220,8 +402,8 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
       const tx = replay.transactionId
         ? d.transactions.find((t) => t.id === replay.transactionId) ?? null
         : null;
-      const w = d.wallets.find((x) => x.userId === args.userId);
-      if (w) return { ok: true, replayed: true, booking: replay, transaction: tx, wallet: w };
+      const w = d.wallets.find((x) => x.userId === args.userId) ?? newWallet(args.userId);
+      return { ok: true, replayed: true, booking: replay, transaction: tx, wallet: w };
     }
 
     // Already-applied dedup (active = not cancelled/refunded).
@@ -247,15 +429,54 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
       return { ok: false, reason: 'CAPACITY_EXCEEDED', capacity: program.seatsTotal, taken };
     }
 
-    // Wallet — auto-create on first access.
+    const baseTotal = program.price;
     let wallet = d.wallets.find((w) => w.userId === args.userId);
     if (!wallet) {
       wallet = newWallet(args.userId);
       d.wallets.push(wallet);
     }
+
+    // ── Cash path ──────────────────────────────────────────────────────
+    if (isCash && baseTotal > 0) {
+      const now = new Date().toISOString();
+      const booking: BookingRecord = {
+        id: randomUUID(),
+        userId: args.userId,
+        itemKind: 'PROGRAM',
+        itemId: program.id,
+        itemName: program.title,
+        vendorName: program.incubatorName,
+        city: program.city,
+        unit: 'DAY',
+        quantity: 1,
+        startsAt: program.startDate,
+        endsAt: program.endDate,
+        totalAmount: baseTotal,
+        status: 'PENDING_PAYMENT',
+        clientReference: args.clientReference,
+        transactionId: null,
+        paymentMethod: 'CASH',
+        createdAt: now,
+        updatedAt: now,
+      };
+      d.bookings.push(booking);
+      return { ok: true, replayed: false, booking, transaction: null, wallet };
+    }
+
+    // ── Online path ─────────────────────────────────────────────────────
+    // Apply promo code discount
+    let total = baseTotal;
+    let promoCodeId: string | null = null;
+    if (args.promoCode && args.promoCode.trim() && baseTotal > 0) {
+      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal);
+      if (promo.valid) {
+        total       = promo.finalAmount;
+        promoCodeId = promo.promoCodeId;
+      }
+    }
+
     if (wallet.status === 'FROZEN') return { ok: false, reason: 'WALLET_FROZEN' };
 
-    const total = program.price;
     if (total > 0 && wallet.balance < total) {
       return {
         ok: false,
@@ -267,8 +488,10 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
 
     const now = new Date().toISOString();
 
-    // Wallet debit only when there's a fee. Free programs skip the
-    // ledger entirely so a 0-DZD row doesn't pollute the history.
+    // Consume promo code use count
+    if (promoCodeId) consumePromoCode(d.promoCodes ?? [], promoCodeId);
+
+    // Wallet debit only when there's a fee. Free (or fully discounted) programs skip the ledger.
     let tx: TransactionRecord | null = null;
     if (total > 0) {
       wallet.balance -= total;
@@ -285,7 +508,12 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
         reference: args.clientReference,
         provider: 'internal',
         providerTxnId: null,
-        metadata: { bookingItemKind: 'PROGRAM', bookingItemId: program.id },
+        metadata: {
+          bookingItemKind: 'PROGRAM',
+          bookingItemId: program.id,
+          promoCode: args.promoCode ?? null,
+          originalAmount: baseTotal,
+        },
         createdAt: now,
         completedAt: now,
       };
@@ -308,6 +536,7 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
       status: 'CONFIRMED',
       clientReference: args.clientReference,
       transactionId: tx?.id ?? null,
+      paymentMethod: 'ONLINE',
       createdAt: now,
       updatedAt: now,
     };
@@ -346,6 +575,8 @@ export interface RegisterForEventArgs {
   userId: string;
   eventId: string;
   clientReference: string;
+  promoCode?: string;
+  paymentMethod?: 'ONLINE' | 'CASH';
 }
 
 export async function registerForEvent(
@@ -358,6 +589,10 @@ export async function registerForEvent(
     return { ok: false, reason: 'EVENT_PASSED', eventDate: event.eventDate };
   }
 
+  if (args.promoCode) await ensurePromoCodesSeeded();
+
+  const isCash = args.paymentMethod === 'CASH';
+
   return db.update<RegisterForEventResult>((d) => {
     const replay = d.bookings.find(
       (b) => b.userId === args.userId && b.clientReference === args.clientReference,
@@ -366,8 +601,8 @@ export async function registerForEvent(
       const tx = replay.transactionId
         ? d.transactions.find((t) => t.id === replay.transactionId) ?? null
         : null;
-      const w = d.wallets.find((x) => x.userId === args.userId);
-      if (w) return { ok: true, replayed: true, booking: replay, transaction: tx, wallet: w };
+      const w = d.wallets.find((x) => x.userId === args.userId) ?? newWallet(args.userId);
+      return { ok: true, replayed: true, booking: replay, transaction: tx, wallet: w };
     }
 
     const active = d.bookings.find(
@@ -393,14 +628,54 @@ export async function registerForEvent(
       return { ok: false, reason: 'CAPACITY_EXCEEDED', capacity: event.capacity, taken };
     }
 
+    const baseTotal = event.price;
     let wallet = d.wallets.find((w) => w.userId === args.userId);
     if (!wallet) {
       wallet = newWallet(args.userId);
       d.wallets.push(wallet);
     }
+
+    // ── Cash path ──────────────────────────────────────────────────────
+    if (isCash && baseTotal > 0) {
+      const now = new Date().toISOString();
+      const booking: BookingRecord = {
+        id: randomUUID(),
+        userId: args.userId,
+        itemKind: 'EVENT',
+        itemId: event.id,
+        itemName: event.title,
+        vendorName: event.incubatorName,
+        city: event.city,
+        unit: 'HOUR',
+        quantity: 1,
+        startsAt: event.eventDate,
+        endsAt: event.eventDate,
+        totalAmount: baseTotal,
+        status: 'PENDING_PAYMENT',
+        clientReference: args.clientReference,
+        transactionId: null,
+        paymentMethod: 'CASH',
+        createdAt: now,
+        updatedAt: now,
+      };
+      d.bookings.push(booking);
+      return { ok: true, replayed: false, booking, transaction: null, wallet };
+    }
+
+    // ── Online path ─────────────────────────────────────────────────────
+    // Apply promo code discount
+    let total = baseTotal;
+    let promoCodeId: string | null = null;
+    if (args.promoCode && args.promoCode.trim() && baseTotal > 0) {
+      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal);
+      if (promo.valid) {
+        total       = promo.finalAmount;
+        promoCodeId = promo.promoCodeId;
+      }
+    }
+
     if (wallet.status === 'FROZEN') return { ok: false, reason: 'WALLET_FROZEN' };
 
-    const total = event.price;
     if (total > 0 && wallet.balance < total) {
       return {
         ok: false,
@@ -411,6 +686,10 @@ export async function registerForEvent(
     }
 
     const now = new Date().toISOString();
+
+    // Consume promo code
+    if (promoCodeId) consumePromoCode(d.promoCodes ?? [], promoCodeId);
+
     let tx: TransactionRecord | null = null;
     if (total > 0) {
       wallet.balance -= total;
@@ -427,7 +706,12 @@ export async function registerForEvent(
         reference: args.clientReference,
         provider: 'internal',
         providerTxnId: null,
-        metadata: { bookingItemKind: 'EVENT', bookingItemId: event.id },
+        metadata: {
+          bookingItemKind: 'EVENT',
+          bookingItemId: event.id,
+          promoCode: args.promoCode ?? null,
+          originalAmount: baseTotal,
+        },
         createdAt: now,
         completedAt: now,
       };
@@ -450,6 +734,7 @@ export async function registerForEvent(
       status: 'CONFIRMED',
       clientReference: args.clientReference,
       transactionId: tx?.id ?? null,
+      paymentMethod: 'ONLINE',
       createdAt: now,
       updatedAt: now,
     };
