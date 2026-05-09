@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { ImageUploadField } from '@/components/shared/image-upload-field';
 
 interface EventFormDialogProps {
   onCreated: () => void;
@@ -37,6 +38,7 @@ export function EventFormDialog({ onCreated }: EventFormDialogProps) {
   const [isOnline, setIsOnline] = useState(false);
   const [eventDate, setEventDate] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
+  const [imageUrl, setImageUrl] = useState('');
 
   function toggleMethod(m: 'ONLINE' | 'CASH') {
     setAcceptedMethods((prev) => {
@@ -52,6 +54,7 @@ export function EventFormDialog({ onCreated }: EventFormDialogProps) {
     setTitle(''); setDescription(''); setCity('');
     setPrice('0'); setCapacity('50'); setIsOnline(false); setEventDate('');
     setAcceptedMethods(['ONLINE', 'CASH']);
+    setImageUrl('');
     setError(null);
   }
 
@@ -72,6 +75,7 @@ export function EventFormDialog({ onCreated }: EventFormDialogProps) {
           isOnline,
           eventDate: new Date(`${eventDate}T12:00:00`).toISOString(),
           acceptedPaymentMethods: acceptedMethods,
+          imageUrl: imageUrl || null,
         }),
       });
       if (!res.ok) {
@@ -129,6 +133,14 @@ export function EventFormDialog({ onCreated }: EventFormDialogProps) {
                 onChange={(e) => setDescription(e.target.value)}
                 required
                 minLength={10}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <ImageUploadField
+                label="Event banner (optional)"
+                currentUrl={imageUrl || null}
+                onUpload={(url) => setImageUrl(url)}
+                onRemove={() => setImageUrl('')}
               />
             </div>
           </div>

@@ -5,7 +5,7 @@
 import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiSession } from '@/server/auth/api-guards';
+import { requireApiRole } from '@/server/auth/api-guards';
 import { db, type InvestmentRecord } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -22,7 +22,7 @@ const createSchema = z.object({
 });
 
 export async function GET() {
-  const guard = await requireApiSession();
+  const guard = await requireApiRole(['INVESTOR']);
   if (!guard.ok) return guard.response;
 
   const data = await db.read();
@@ -34,7 +34,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApiSession();
+  const guard = await requireApiRole(['INVESTOR']);
   if (!guard.ok) return guard.response;
 
   let body: unknown;
