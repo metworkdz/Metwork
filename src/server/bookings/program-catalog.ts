@@ -2,28 +2,9 @@
  * Program catalog. DB-first with demo fallback.
  * See `space-catalog.ts` for the same pattern.
  */
-import { db, type IncubatorProgramRecord, type IncubatorRecord } from '@/server/db/store';
+import { db } from '@/server/db/store';
 import { demoPublicPrograms } from '@/lib/demo-data';
 import type { Program } from '@/types/domain';
-
-function dbProgramToProgram(p: IncubatorProgramRecord, incubator: IncubatorRecord): Program {
-  return {
-    id: p.id,
-    incubatorId: p.incubatorId,
-    incubatorName: incubator.name,
-    title: p.title,
-    description: p.description,
-    type: p.type,
-    city: p.city,
-    imageUrl: p.imageUrl,
-    price: p.price,
-    seatsTotal: p.seatsTotal,
-    seatsTaken: 0, // computed below when listing
-    deadline: p.deadline,
-    startDate: p.startDate,
-    endDate: p.endDate,
-  };
-}
 
 function fromRecord(r: import('@/server/db/store').ProgramRecord): Program {
   return {

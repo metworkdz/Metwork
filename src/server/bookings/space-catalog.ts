@@ -8,29 +8,9 @@
  * When the DB has spaces for a given incubator, demo spaces from that
  * incubator are excluded so there's no double-listing.
  */
-import { db, type IncubatorSpaceRecord, type IncubatorRecord } from '@/server/db/store';
+import { db } from '@/server/db/store';
 import { demoPublicSpaces } from '@/lib/demo-data';
 import type { Space } from '@/types/domain';
-
-function dbSpaceToSpace(s: IncubatorSpaceRecord, incubator: IncubatorRecord): Space {
-  return {
-    id: s.id,
-    incubatorId: s.incubatorId,
-    incubatorName: incubator.name,
-    name: s.name,
-    description: s.description,
-    category: s.category,
-    city: s.city,
-    imageUrl: s.imageUrl,
-    pricePerHour: s.pricePerHour,
-    pricePerDay: s.pricePerDay,
-    pricePerMonth: s.pricePerMonth,
-    capacity: s.capacity,
-    amenities: s.amenities,
-    rating: null,
-    reviewCount: 0,
-  };
-}
 
 const DEFAULT_WORKING_DAYS = [1, 2, 3, 4, 5]; // Sat–Thu
 const DEFAULT_OPENING_TIME = '09:00';

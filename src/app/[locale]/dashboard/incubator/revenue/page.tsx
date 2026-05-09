@@ -36,10 +36,10 @@ export default async function IncubatorRevenuePage({ params }: PageProps) {
     incubator.subscriptionTier === 'COMMISSION' ? platformCommissions.incubatorBooking : 0;
 
   const ownedSpaceIds = new Set(
-    data.incubatorSpaces.filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
+    (data.spaces ?? []).filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
   );
   const ownedProgramIds = new Set(
-    data.incubatorPrograms.filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
+    (data.programs ?? []).filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
   );
 
   const relevant = data.bookings.filter(
@@ -87,7 +87,7 @@ export default async function IncubatorRevenuePage({ params }: PageProps) {
     incubator: {
       id: incubator.id,
       name: incubator.name,
-      subscriptionTier: incubator.subscriptionTier,
+      subscriptionTier: incubator.subscriptionTier ?? 'COMMISSION',
       commissionRate,
     },
     totals,

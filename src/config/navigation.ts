@@ -21,6 +21,10 @@ import {
   ArrowDownCircle,
   BarChart2,
   ArrowUpCircle,
+  UserCheck,
+  Gift,
+  MessageSquare,
+  ShieldAlert,
 } from 'lucide-react';
 import type { UserRole } from '@/types/auth';
 

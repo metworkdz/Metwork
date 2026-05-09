@@ -64,8 +64,8 @@ export interface CreateSpaceBookingArgs {
   endsAt: string;
   clientReference: string;
   promoCode?: string;
-  /** Default 'ONLINE'. CASH = reserve only, no wallet debit, status PENDING_PAYMENT. */
-  paymentMethod?: 'ONLINE' | 'CASH';
+  /** Default 'wallet'. manual = reserve only, no wallet debit, status PENDING_PAYMENT. */
+  paymentMethod?: 'wallet' | 'manual';
 }
 
 function unitPrice(space: Space, unit: BookingUnit): number | null {
@@ -192,12 +192,12 @@ export async function createSpaceBooking(
   // Ensure promo codes are seeded before entering the critical section.
   if (args.promoCode) await ensurePromoCodesSeeded();
 
-  const isCash = args.paymentMethod === 'CASH';
+  const isCash = args.paymentMethod === 'manual';
 
   // Pre-check: blocked dates (outside the DB lock for speed)
-  const rawSpace = (await db.read()).incubatorSpaces?.find((s) => s.id === args.spaceId);
+  const rawSpace = (await db.read()).spaces?.find((s) => s.id === args.spaceId);
   if (rawSpace?.unavailableDates?.length) {
-    if (overlapsBlockedDates(rawSpace.unavailableDates, args.startsAt, endsAt, args.unit, args.quantity)) {
+    if (overlapsBlockedDates(rawSpace.unavailableDates, args.startsAt, endsAt, args.unit, quantity)) {
       return { ok: false, reason: 'DATE_UNAVAILABLE', blockedDates: rawSpace.unavailableDates };
     }
   }
@@ -242,9 +242,9 @@ export async function createSpaceBooking(
     }
 
     // Inside the lock: also re-check blocked dates (state may have changed).
-    const spaceRec = d.incubatorSpaces?.find((s) => s.id === space.id);
+    const spaceRec = d.spaces?.find((s) => s.id === space.id);
     if (spaceRec?.unavailableDates?.length) {
-      if (overlapsBlockedDates(spaceRec.unavailableDates, args.startsAt, endsAt, args.unit, args.quantity)) {
+      if (overlapsBlockedDates(spaceRec.unavailableDates, args.startsAt, endsAt, args.unit, quantity)) {
         return { ok: false, reason: 'DATE_UNAVAILABLE', blockedDates: spaceRec.unavailableDates };
       }
     }
@@ -290,7 +290,7 @@ export async function createSpaceBooking(
         status: 'PENDING_PAYMENT',
         clientReference: args.clientReference,
         transactionId: null,
-        paymentMethod: 'CASH',
+        paymentMethod: 'manual',
         createdAt: now,
         updatedAt: now,
       };
@@ -406,7 +406,7 @@ export async function createSpaceBooking(
       status: 'PENDING',
       clientReference: args.clientReference,
       transactionId: tx.id,
-      paymentMethod: 'ONLINE',
+      paymentMethod: 'wallet',
       createdAt: now,
       updatedAt: now,
     };
@@ -430,7 +430,7 @@ export interface ApplyToProgramArgs {
   programId: string;
   clientReference: string;
   promoCode?: string;
-  paymentMethod?: 'ONLINE' | 'CASH';
+  paymentMethod?: 'wallet' | 'manual';
 }
 
 /**
@@ -452,7 +452,7 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
 
   if (args.promoCode) await ensurePromoCodesSeeded();
 
-  const isCash = args.paymentMethod === 'CASH';
+  const isCash = args.paymentMethod === 'manual';
 
   return db.update<ApplyToProgramResult>((d) => {
     // Replay (same clientReference) → return the existing booking.
@@ -516,7 +516,7 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
         status: 'PENDING_PAYMENT',
         clientReference: args.clientReference,
         transactionId: null,
-        paymentMethod: 'CASH',
+        paymentMethod: 'manual',
         createdAt: now,
         updatedAt: now,
       };
@@ -597,7 +597,7 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
       status: 'PENDING',
       clientReference: args.clientReference,
       transactionId: tx?.id ?? null,
-      paymentMethod: 'ONLINE',
+      paymentMethod: 'wallet',
       createdAt: now,
       updatedAt: now,
     };
@@ -637,7 +637,7 @@ export interface RegisterForEventArgs {
   eventId: string;
   clientReference: string;
   promoCode?: string;
-  paymentMethod?: 'ONLINE' | 'CASH';
+  paymentMethod?: 'wallet' | 'manual';
 }
 
 export async function registerForEvent(
@@ -652,7 +652,7 @@ export async function registerForEvent(
 
   if (args.promoCode) await ensurePromoCodesSeeded();
 
-  const isCash = args.paymentMethod === 'CASH';
+  const isCash = args.paymentMethod === 'manual';
 
   return db.update<RegisterForEventResult>((d) => {
     const replay = d.bookings.find(
@@ -715,7 +715,7 @@ export async function registerForEvent(
         status: 'PENDING_PAYMENT',
         clientReference: args.clientReference,
         transactionId: null,
-        paymentMethod: 'CASH',
+        paymentMethod: 'manual',
         createdAt: now,
         updatedAt: now,
       };
@@ -795,7 +795,7 @@ export async function registerForEvent(
       status: 'PENDING',
       clientReference: args.clientReference,
       transactionId: tx?.id ?? null,
-      paymentMethod: 'ONLINE',
+      paymentMethod: 'wallet',
       createdAt: now,
       updatedAt: now,
     };

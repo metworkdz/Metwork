@@ -21,7 +21,7 @@ export default async function AdminIncubatorEventsPage({ params }: PageProps) {
   const incubator = await getOrCreateAdminIncubator(user.id);
 
   const data = await db.read();
-  const events = (data.incubatorEvents ?? [])
+  const events = (data.events ?? [])
     .filter((e) => e.incubatorId === incubator.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
@@ -31,7 +31,7 @@ export default async function AdminIncubatorEventsPage({ params }: PageProps) {
         title={t('admin.incubator.events.title')}
         subtitle={t('admin.incubator.events.subtitle')}
       />
-      <EventsManager initial={events} />
+      <EventsManager />
     </div>
   );
 }

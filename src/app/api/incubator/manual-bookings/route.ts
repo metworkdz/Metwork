@@ -52,12 +52,12 @@ export async function POST(req: NextRequest) {
     let city = '';
 
     if (input.itemKind === 'SPACE') {
-      const space = d.incubatorSpaces.find((s) => s.id === input.itemId && s.incubatorId === incubator.id);
+      const space = (d.spaces ?? []).find((s) => s.id === input.itemId && s.incubatorId === incubator.id);
       if (!space) return 'ITEM_NOT_FOUND' as const;
       itemName = space.name;
       city = space.city;
     } else {
-      const program = d.incubatorPrograms.find((p) => p.id === input.itemId && p.incubatorId === incubator.id);
+      const program = (d.programs ?? []).find((p) => p.id === input.itemId && p.incubatorId === incubator.id);
       if (!program) return 'ITEM_NOT_FOUND' as const;
       // Overbooking guard
       const taken = d.bookings.filter(

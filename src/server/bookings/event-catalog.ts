@@ -2,26 +2,9 @@
  * Event catalog. DB-first with demo fallback.
  * See `space-catalog.ts` for the same pattern.
  */
-import { db, type IncubatorEventRecord, type IncubatorRecord } from '@/server/db/store';
+import { db } from '@/server/db/store';
 import { demoPublicEvents } from '@/lib/demo-data';
 import type { Event as PlatformEvent } from '@/types/domain';
-
-function dbEventToEvent(e: IncubatorEventRecord, incubator: IncubatorRecord, attendeeCount: number): PlatformEvent {
-  return {
-    id: e.id,
-    incubatorId: e.incubatorId,
-    incubatorName: incubator.name,
-    title: e.title,
-    description: e.description,
-    city: e.city,
-    imageUrl: e.imageUrl,
-    price: e.price,
-    isOnline: e.isOnline,
-    capacity: e.capacity,
-    attendeeCount,
-    eventDate: e.eventDate,
-  };
-}
 
 function fromRecord(r: import('@/server/db/store').EventRecord): PlatformEvent {
   return {

@@ -27,10 +27,10 @@ export default async function AdminIncubatorBookingsPage({ params }: PageProps) 
   const data = await db.read();
 
   const ownedSpaceIds = new Set(
-    data.incubatorSpaces.filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
+    (data.spaces ?? []).filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
   );
   const ownedProgramIds = new Set(
-    data.incubatorPrograms.filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
+    (data.programs ?? []).filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
   );
 
   const bookings: BookingWithCustomer[] = data.bookings
@@ -51,8 +51,8 @@ export default async function AdminIncubatorBookingsPage({ params }: PageProps) 
     });
 
   const pending = bookings.filter((b) => b.status === 'PENDING').length;
-  const spaces = data.incubatorSpaces.filter((s) => s.incubatorId === incubator.id && s.status === 'ACTIVE');
-  const programs = data.incubatorPrograms.filter((p) => p.incubatorId === incubator.id && p.status !== 'CLOSED');
+  const spaces = (data.spaces ?? []).filter((s) => s.incubatorId === incubator.id && s.isActive);
+  const programs = (data.programs ?? []).filter((p) => p.incubatorId === incubator.id && p.isActive);
 
   return (
     <div className="space-y-6">

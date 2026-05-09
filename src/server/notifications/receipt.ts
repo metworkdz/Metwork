@@ -338,8 +338,8 @@ function paymentLabel(
   method: BookingRecord['paymentMethod'],
   t: Record<LangKey, string>,
 ): string {
-  if (method === 'ONLINE') return t.online;
-  if (method === 'CASH')   return t.cash;
+  if (method === 'wallet') return t.online;
+  if (method === 'manual') return t.cash;
   return '—';
 }
 

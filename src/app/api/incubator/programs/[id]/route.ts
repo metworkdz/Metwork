@@ -45,9 +45,10 @@ export async function PATCH(
   }
 
   const program = await db.update((d) => {
-    const p = d.incubatorPrograms.find((x) => x.id === id);
+    const p = (d.programs ?? []).find((x) => x.id === id);
     if (!p) return null;
-    if (p.managerId !== guard.user.id) return 'FORBIDDEN';
+    const incubator = d.incubators.find((i) => i.id === p.incubatorId);
+    if (!incubator || incubator.managerId !== guard.user.id) return 'FORBIDDEN';
     if (input.title !== undefined) p.title = input.title;
     if (input.description !== undefined) p.description = input.description;
     if (input.type !== undefined) p.type = input.type;
@@ -58,7 +59,7 @@ export async function PATCH(
     if (input.deadline !== undefined) p.deadline = input.deadline;
     if (input.startDate !== undefined) p.startDate = input.startDate;
     if (input.endDate !== undefined) p.endDate = input.endDate;
-    if (input.status !== undefined) p.status = input.status;
+    if (input.status !== undefined) p.isActive = input.status === 'PUBLISHED';
     p.updatedAt = new Date().toISOString();
     return p;
   });
@@ -77,10 +78,12 @@ export async function DELETE(
   const { id } = await params;
 
   const result = await db.update((d) => {
-    const idx = d.incubatorPrograms.findIndex((x) => x.id === id);
+    const programs = d.programs ?? [];
+    const idx = programs.findIndex((x) => x.id === id);
     if (idx === -1) return 'NOT_FOUND';
-    if (d.incubatorPrograms[idx]!.managerId !== guard.user.id) return 'FORBIDDEN';
-    d.incubatorPrograms.splice(idx, 1);
+    const incubator = d.incubators.find((i) => i.id === programs[idx]!.incubatorId);
+    if (!incubator || incubator.managerId !== guard.user.id) return 'FORBIDDEN';
+    programs.splice(idx, 1);
     return 'OK';
   });
 

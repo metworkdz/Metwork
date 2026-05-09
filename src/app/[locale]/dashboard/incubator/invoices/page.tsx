@@ -27,10 +27,10 @@ export default async function IncubatorInvoicesPage({ params }: PageProps) {
   let bookings: BookingWithCustomer[] = [];
   if (incubator) {
     const ownedSpaceIds = new Set(
-      data.incubatorSpaces.filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
+      (data.spaces ?? []).filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
     );
     const ownedProgramIds = new Set(
-      data.incubatorPrograms.filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
+      (data.programs ?? []).filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
     );
 
     bookings = data.bookings

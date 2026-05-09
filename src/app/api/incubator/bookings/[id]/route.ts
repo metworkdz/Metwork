@@ -71,10 +71,10 @@ export async function PATCH(
     if (!incubator) return 'NO_INCUBATOR';
 
     const ownedSpaceIds = new Set(
-      d.incubatorSpaces.filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
+      (d.spaces ?? []).filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
     );
     const ownedProgramIds = new Set(
-      d.incubatorPrograms.filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
+      (d.programs ?? []).filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
     );
 
     const booking = d.bookings.find((b) => b.id === id);

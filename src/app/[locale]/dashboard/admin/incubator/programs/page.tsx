@@ -20,11 +20,11 @@ export default async function AdminIncubatorProgramsPage({ params }: PageProps) 
   const incubator = await getOrCreateAdminIncubator(user.id);
   const data = await db.read();
 
-  const programs = data.incubatorPrograms
+  const programs = (data.programs ?? [])
     .filter((p) => p.incubatorId === incubator.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-  const published = programs.filter((p) => p.status === 'PUBLISHED').length;
+  const published = programs.filter((p) => p.isActive).length;
 
   return (
     <div className="space-y-6">
@@ -32,7 +32,7 @@ export default async function AdminIncubatorProgramsPage({ params }: PageProps) 
         title={t('admin.incubator.programs.title')}
         subtitle={t('admin.incubator.programs.subtitle', { count: published })}
       />
-      <ProgramsManager initial={programs} />
+      <ProgramsManager />
     </div>
   );
 }

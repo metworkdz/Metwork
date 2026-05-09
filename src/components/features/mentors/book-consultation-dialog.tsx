@@ -69,11 +69,18 @@ export function BookConsultationDialog({
   const [duration,    setDuration]    = useState<number>(60);
   const [formState,   setFormState]   = useState<FormState>('idle');
   const [errorMsg,    setErrorMsg]    = useState<string | null>(null);
+  const [scheduledAt, setScheduledAt] = useState('');
+  const [discountApplied, setDiscountApplied] = useState<number | null>(null);
+
+  function minScheduledAt(): string {
+    return new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  }
 
   function reset() {
     setName(''); setEmail(''); setPhone(''); setMessage('');
     setConsultDate(''); setConsultTime('10:00'); setDuration(60);
     setFormState('idle'); setErrorMsg(null);
+    setScheduledAt(''); setDiscountApplied(null);
   }
 
   function handleOpenChange(next: boolean) {
@@ -105,9 +112,9 @@ export function BookConsultationDialog({
           email,
           phone,
           message,
-          consultationDate: consultDate || null,
-          consultationTime: consultDate ? consultTime : null,
-          durationMinutes:  consultDate ? duration : null,
+          consultationDate: scheduledAt ? scheduledAt.slice(0, 10) : (consultDate || null),
+          consultationTime: scheduledAt ? scheduledAt.slice(11, 16) : (consultDate ? consultTime : null),
+          durationMinutes:  (scheduledAt || consultDate) ? duration : null,
         }),
       });
       if (res.status === 401) {

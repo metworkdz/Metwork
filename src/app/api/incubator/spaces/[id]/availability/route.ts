@@ -24,7 +24,7 @@ export async function GET(
 ) {
   const { id } = await params;
   const data = await db.read();
-  const space = data.incubatorSpaces?.find((s) => s.id === id);
+  const space = (data.spaces ?? []).find((s) => s.id === id);
   if (!space) return jsonError(404, 'NOT_FOUND', 'Space not found');
   return json({ unavailableDates: space.unavailableDates ?? [] });
 }
@@ -49,11 +49,14 @@ export async function PUT(
   }
 
   const result = await db.update((d) => {
-    const space = d.incubatorSpaces?.find((s) => s.id === id);
+    const space = (d.spaces ?? []).find((s) => s.id === id);
     if (!space) return null;
 
     // Incubator managers can only manage their own spaces
-    if (guard.user.role !== 'ADMIN' && space.managerId !== guard.user.id) return 'FORBIDDEN';
+    if (guard.user.role !== 'ADMIN') {
+      const incubator = d.incubators.find((i) => i.id === space.incubatorId);
+      if (!incubator || incubator.managerId !== guard.user.id) return 'FORBIDDEN';
+    }
 
     // Deduplicate and sort
     space.unavailableDates = [...new Set(input.unavailableDates)].sort();

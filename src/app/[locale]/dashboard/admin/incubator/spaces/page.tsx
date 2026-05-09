@@ -20,11 +20,11 @@ export default async function AdminIncubatorSpacesPage({ params }: PageProps) {
   const incubator = await getOrCreateAdminIncubator(user.id);
   const data = await db.read();
 
-  const spaces = data.incubatorSpaces
+  const spaces = (data.spaces ?? [])
     .filter((s) => s.incubatorId === incubator.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-  const active = spaces.filter((s) => s.status === 'ACTIVE').length;
+  const active = spaces.filter((s) => s.isActive).length;
 
   return (
     <div className="space-y-6">
@@ -32,7 +32,7 @@ export default async function AdminIncubatorSpacesPage({ params }: PageProps) {
         title={t('admin.incubator.spaces.title')}
         subtitle={t('admin.incubator.spaces.subtitle', { count: active })}
       />
-      <SpacesManager initial={spaces} />
+      <SpacesManager />
     </div>
   );
 }

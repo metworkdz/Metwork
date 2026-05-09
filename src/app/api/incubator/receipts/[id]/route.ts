@@ -32,10 +32,10 @@ export async function GET(
   // Verify ownership if caller is INCUBATOR (not ADMIN)
   if (guard.user.role === 'INCUBATOR' && incubator) {
     const ownedSpaceIds = new Set(
-      data.incubatorSpaces.filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
+      (data.spaces ?? []).filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
     );
     const ownedProgramIds = new Set(
-      data.incubatorPrograms.filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
+      (data.programs ?? []).filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
     );
     const isOwned =
       (booking.itemKind === 'SPACE' && ownedSpaceIds.has(booking.itemId)) ||
@@ -50,8 +50,8 @@ export async function GET(
 
   // Resolve incubator for legal header
   const resolvedIncubator = incubator ?? data.incubators.find((i) => {
-    const ownedSpaceIds = new Set(data.incubatorSpaces.filter((s) => s.incubatorId === i.id).map((s) => s.id));
-    const ownedProgramIds = new Set(data.incubatorPrograms.filter((p) => p.incubatorId === i.id).map((p) => p.id));
+    const ownedSpaceIds = new Set((data.spaces ?? []).filter((s) => s.incubatorId === i.id).map((s) => s.id));
+    const ownedProgramIds = new Set((data.programs ?? []).filter((p) => p.incubatorId === i.id).map((p) => p.id));
     return (booking.itemKind === 'SPACE' && ownedSpaceIds.has(booking.itemId)) ||
            (booking.itemKind === 'PROGRAM' && ownedProgramIds.has(booking.itemId));
   });

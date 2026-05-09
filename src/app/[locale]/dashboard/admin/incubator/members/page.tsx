@@ -21,7 +21,7 @@ export default async function AdminIncubatorMembersPage({ params }: PageProps) {
   const data = await db.read();
 
   const ownedProgramIds = new Set(
-    data.incubatorPrograms.filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
+    (data.programs ?? []).filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
   );
 
   const seen = new Set<string>();

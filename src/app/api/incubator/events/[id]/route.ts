@@ -51,7 +51,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   }
 
   const updated = await db.update((d) => {
-    const event = (d.incubatorEvents ?? []).find(
+    const event = (d.events ?? []).find(
       (e) => e.id === id && e.incubatorId === incubator.id,
     );
     if (!event) return null;
@@ -73,11 +73,12 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   const { id } = await params;
 
   const deleted = await db.update((d) => {
-    const idx = (d.incubatorEvents ?? []).findIndex(
+    const events = d.events ?? [];
+    const idx = events.findIndex(
       (e) => e.id === id && e.incubatorId === incubator.id,
     );
     if (idx === -1) return false;
-    d.incubatorEvents.splice(idx, 1);
+    events.splice(idx, 1);
     return true;
   });
 

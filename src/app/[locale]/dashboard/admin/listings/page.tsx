@@ -20,8 +20,8 @@ export default async function AdminListingsPage({ params }: PageProps) {
   // Surface unpublished incubator content as "pending" listings.
   const data = await db.read();
   const rows: PendingListingRow[] = [
-    ...(data.incubatorSpaces ?? [])
-      .filter((s) => s.status === 'INACTIVE')
+    ...(data.spaces ?? [])
+      .filter((s) => !s.isActive)
       .map((s) => ({
         id: s.id,
         kind: 'SPACE' as const,
@@ -31,8 +31,8 @@ export default async function AdminListingsPage({ params }: PageProps) {
         price: s.pricePerDay ?? s.pricePerHour ?? s.pricePerMonth ?? 0,
         submittedAt: s.createdAt,
       })),
-    ...(data.incubatorPrograms ?? [])
-      .filter((p) => p.status === 'DRAFT')
+    ...(data.programs ?? [])
+      .filter((p) => !p.isActive)
       .map((p) => ({
         id: p.id,
         kind: 'PROGRAM' as const,

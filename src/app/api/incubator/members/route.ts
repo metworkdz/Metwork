@@ -20,7 +20,7 @@ export async function GET() {
   if (!incubator) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile found');
 
   const ownedProgramIds = new Set(
-    data.incubatorPrograms.filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
+    (data.programs ?? []).filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
   );
 
   // Enrollments: active program bookings

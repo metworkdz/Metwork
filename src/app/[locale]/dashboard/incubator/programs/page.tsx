@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { ProgramsManager } from '@/components/features/incubator/programs-manager';
 import { requireRole } from '@/lib/auth-guards';
+import { db } from '@/server/db/store';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -18,12 +19,12 @@ export default async function IncubatorProgramsPage({ params }: PageProps) {
   const data = await db.read();
   const incubator = data.incubators.find((i) => i.managerId === user.id);
   const programs = incubator
-    ? data.incubatorPrograms
+    ? (data.programs ?? [])
         .filter((p) => p.incubatorId === incubator.id)
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     : [];
 
-  const published = programs.filter((p) => p.status === 'PUBLISHED').length;
+  const published = programs.filter((p) => p.isActive).length;
 
   return (
     <div className="space-y-6">

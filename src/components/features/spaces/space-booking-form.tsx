@@ -115,7 +115,7 @@ export function BookingSuccessPanel({
   newBalance: number;
 }) {
   const locale = useLocale() as Locale;
-  const isCash = booking.paymentMethod === 'CASH';
+  const isCash = booking.paymentMethod === 'manual';
   const fmtDt  = (iso: string) =>
     new Date(iso).toLocaleString('en-GB', {
       dateStyle: 'medium',

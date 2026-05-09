@@ -25,7 +25,7 @@ export interface BookingDto {
   clientReference: string;
   transactionId: string | null;
   /** null for legacy bookings and free items. */
-  paymentMethod: PaymentMethod | null;
+  paymentMethod: 'wallet' | 'manual' | null;
   createdAt: string;
 }
 

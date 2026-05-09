@@ -24,7 +24,7 @@ export default async function IncubatorSpacesPage({ params }: PageProps) {
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     : [];
 
-  const active = spaces.filter((s) => s.status === 'ACTIVE').length;
+  const active = spaces.filter((s) => s.isActive).length;
 
   return (
     <div className="space-y-6">

@@ -21,7 +21,7 @@ export default async function IncubatorMembersPage({ params }: PageProps) {
 
   const ownedProgramIds = new Set(
     incubator
-      ? data.incubatorPrograms.filter((p) => p.incubatorId === incubator.id).map((p) => p.id)
+      ? (data.programs ?? []).filter((p) => p.incubatorId === incubator.id).map((p) => p.id)
       : [],
   );
 

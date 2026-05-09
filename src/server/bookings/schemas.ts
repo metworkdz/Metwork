@@ -8,9 +8,13 @@ const promoCodeField = z.string().min(1).max(50).optional();
 
 /**
  * Payment method the client chooses at booking time.
- * ONLINE = debit wallet; CASH = reserve only (PENDING_PAYMENT status).
+ * wallet/ONLINE = debit wallet; manual/CASH = reserve only (PENDING_PAYMENT status).
+ * Accepts both legacy and new values.
  */
-const paymentMethodField = z.enum(['ONLINE', 'CASH']).default('ONLINE');
+const paymentMethodField = z
+  .enum(['wallet', 'manual', 'ONLINE', 'CASH'])
+  .transform((v) => (v === 'ONLINE' ? 'wallet' : v === 'CASH' ? 'manual' : v) as 'wallet' | 'manual')
+  .default('wallet');
 
 export const createSpaceBookingSchema = z.object({
   spaceId: z.string().min(1),

@@ -82,10 +82,10 @@ export async function PATCH(req: NextRequest) {
 
     // Also sync name into all spaces/programs (denormalized)
     if (input.incubatorName !== undefined) {
-      for (const s of d.incubatorSpaces) {
+      for (const s of (d.spaces ?? [])) {
         if (s.incubatorId === incubator.id) s.incubatorName = input.incubatorName;
       }
-      for (const p of d.incubatorPrograms) {
+      for (const p of (d.programs ?? [])) {
         if (p.incubatorId === incubator.id) p.incubatorName = input.incubatorName;
       }
     }

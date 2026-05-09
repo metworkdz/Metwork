@@ -273,7 +273,7 @@ export function EventRegisterSuccess({
   paid: boolean;
 }) {
   const locale = useLocale() as Locale;
-  const isCash = booking.paymentMethod === 'CASH';
+  const isCash = booking.paymentMethod === 'manual';
 
   return (
     <div className={cn(

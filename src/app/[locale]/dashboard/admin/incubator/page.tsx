@@ -28,12 +28,12 @@ export default async function AdminIncubatorOverviewPage({ params }: PageProps) 
   const walletBalance = wallet?.balance ?? 0;
 
   const ownedSpaceIds = new Set(
-    data.incubatorSpaces
-      .filter((s) => s.incubatorId === incubator.id && s.status === 'ACTIVE')
+    (data.spaces ?? [])
+      .filter((s) => s.incubatorId === incubator.id && s.isActive)
       .map((s) => s.id),
   );
   const ownedProgramIds = new Set(
-    data.incubatorPrograms.filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
+    (data.programs ?? []).filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
   );
 
   const allBookings = data.bookings.filter(
@@ -103,7 +103,7 @@ export default async function AdminIncubatorOverviewPage({ params }: PageProps) 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label={t('admin.incubator.overview.statPrograms')}
-          value={data.incubatorPrograms.filter((p) => p.incubatorId === incubator.id).length}
+          value={(data.programs ?? []).filter((p) => p.incubatorId === incubator.id).length}
           icon={Calendar}
         />
         <StatCard

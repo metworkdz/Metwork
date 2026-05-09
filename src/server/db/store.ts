@@ -221,18 +221,14 @@ export interface BookingRecord {
   clientReference: string;
   /** Wallet transaction that paid for this booking. Null for cash bookings. */
   transactionId: string | null;
-  /** How the client intends to pay. Null for legacy/free bookings. */
-  paymentMethod: PaymentMethod | null;
-  /**
-   * For manual / offline bookings only — the off-platform client's email.
-   * Used to send them a receipt directly. Null for platform bookings
-   * (those use the authenticated user's email instead).
-   */
-  clientEmail?: string | null;
+  /** Promo code applied to this booking. Null if no promo was used. */
+  promoCodeId?: string | null;
   /**
    * Optional free-text notes added by the incubator for manual bookings.
    */
   notes?: string | null;
+  /** Admin-supplied reason when a booking is declined/cancelled. */
+  declineReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -251,22 +247,38 @@ export interface ContactSubmissionRecord {
 
 /* ─────────────────────────── Incubators ─────────────────────────── */
 
+export type IncubatorStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+export type IncubatorSubscription = 'COMMISSION' | 'FLAT';
+export type IncubatorBillingCycle = 'SEMESTERLY' | 'YEARLY';
+export type IncubatorSubscriptionStatus = 'ACTIVE' | 'NONE' | 'EXPIRED';
+
 export interface IncubatorRecord {
   id: string;
   name: string;
-  description: string;
+  description?: string | null;
+  email?: string;
+  phone?: string;
   city: string;
   /** References UserRecord.id — the INCUBATOR-role user that manages this profile */
-  managerId: string | null;
-  status: 'ACTIVE' | 'SUSPENDED';
-  website: string | null;
-  logoUrl: string | null;
-  /** Billing model chosen by the incubator */
-  subscriptionTier: 'COMMISSION' | 'FLAT';
+  managerId?: string | null;
+  status: IncubatorStatus;
+  website?: string | null;
+  /** Billing model — legacy alias. Prefer subscriptionCode. */
+  subscriptionTier?: 'COMMISSION' | 'FLAT';
+  /** Billing model: 'COMMISSION' = platform takes a cut; 'FLAT' = periodic fee. */
+  subscriptionCode?: IncubatorSubscription;
+  billingCycle?: IncubatorBillingCycle | null;
+  subscriptionStatus?: IncubatorSubscriptionStatus;
+  subscriptionPeriodStart?: string | null;
+  subscriptionPeriodEnd?: string | null;
+  subscriptionLastPaidAmount?: number | null;
+  logoUrl?: string | null;
+  stampUrl?: string | null;
   /** Physical / postal address — printed on receipts. */
   address?: string | null;
   /** Commercial register number (RC in Algeria). */
   commercialRegNumber?: string | null;
+  registrationNumber?: string | null;
   /** Tax identification number (NIF in Algeria). */
   nif?: string | null;
   createdAt: string;
@@ -420,6 +432,8 @@ export interface SpaceRecord {
   openingTime: string;
   /** Closing time in "HH:MM" 24-hour format. Defaults to "18:00". */
   closingTime: string;
+  /** ISO date strings (YYYY-MM-DD) when this space is unavailable. */
+  unavailableDates?: string[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -461,59 +475,6 @@ export interface EventRecord {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-}
-
-/* ─────────────────────────── Incubators ─────────────────────────── */
-
-export type IncubatorStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
-export type IncubatorSubscription = 'COMMISSION' | 'FLAT';
-export type IncubatorBillingCycle = 'SEMESTERLY' | 'YEARLY';
-export type IncubatorSubscriptionStatus = 'ACTIVE' | 'NONE' | 'EXPIRED';
-
-export interface IncubatorRecord {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  city: string;
-  status: IncubatorStatus;
-  subscriptionCode: IncubatorSubscription;
-  /** Billing cycle for FLAT plan. Null for COMMISSION plan. */
-  billingCycle: IncubatorBillingCycle | null;
-  /** Lifecycle of the active subscription period. */
-  subscriptionStatus: IncubatorSubscriptionStatus;
-  subscriptionPeriodStart: string | null;
-  /** Next renewal date (when status is ACTIVE). */
-  subscriptionPeriodEnd: string | null;
-  subscriptionLastPaidAmount: number | null;
-  /** Optional branding / legal fields used on PDF receipts. */
-  logoUrl?: string | null;
-  stampUrl?: string | null;
-  address?: string | null;
-  registrationNumber?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-/* ─────────────────────────── Promo Codes ─────────────────────────── */
-
-export type PromoDiscountType = 'PERCENTAGE' | 'FIXED';
-
-export interface PromoCodeRecord {
-  id: string;
-  /** Unique code string (stored uppercase) */
-  code: string;
-  discountType: PromoDiscountType;
-  /** Percentage (0–100) for PERCENTAGE, integer DZD for FIXED */
-  discountValue: number;
-  /** null = unlimited uses */
-  maxUses: number | null;
-  useCount: number;
-  validFrom: string;
-  /** null = no expiry */
-  validUntil: string | null;
-  isActive: boolean;
-  createdAt: string;
 }
 
 /* ─────────────────────────── Mentors ─────────────────────────── */
@@ -653,6 +614,139 @@ export const defaultPlatformConfig: PlatformConfig = {
   commissionRate: 0.20,
 };
 
+/* ─────────────────────────── Notifications ─────────────────────────── */
+
+export type NotificationType =
+  | 'BOOKING_CONFIRMED'
+  | 'BOOKING_CANCELLED'
+  | 'BOOKING_PENDING_PAYMENT'
+  | 'PROGRAM_APPLIED'
+  | 'EVENT_REGISTERED'
+  | 'WALLET_CREDITED'
+  | 'WALLET_DEBITED'
+  | 'MEMBERSHIP_UPGRADED'
+  | 'CONSULTATION_APPROVED'
+  | 'CONSULTATION_REJECTED'
+  | 'GENERAL';
+
+export interface NotificationRecord {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  href: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+/* ─────────────────────────── Investor contacts ─────────────────────────── */
+
+export type InvestorContactStatus = 'PENDING' | 'CONNECTED' | 'DECLINED';
+
+export interface InvestorContactRecord {
+  id: string;
+  investorId: string;
+  investorName: string;
+  investorEmail: string;
+  startupId: string;
+  startupName: string;
+  founderName: string;
+  message: string;
+  status: InvestorContactStatus;
+  adminNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/* ─────────────────────────── Saved startups ─────────────────────────── */
+
+export interface SavedStartupRecord {
+  id: string;
+  userId: string;
+  startupId: string;
+  createdAt: string;
+}
+
+/* ─────────────────────────── Investments ─────────────────────────── */
+
+export type InvestmentStatus = 'PENDING' | 'ACTIVE' | 'CLOSED' | 'CANCELLED';
+
+export interface InvestmentRecord {
+  id: string;
+  investorId: string;
+  startupId: string;
+  startupName: string;
+  /** Investment amount in integer DZD. */
+  amount: number;
+  /** Equity percentage offered, e.g. 10.5 = 10.5 %. */
+  equityPercent: number;
+  status: InvestmentStatus;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/* ─────────────────────────── Withdrawal requests ─────────────────────────── */
+
+export type WithdrawalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface WithdrawalRequestRecord {
+  id: string;
+  userId: string;
+  /** Integer DZD. */
+  amount: number;
+  /** Free-text payment details (CCP / BaridiMob / bank account). */
+  accountDetails: string;
+  status: WithdrawalStatus;
+  /** Transaction ID for the escrow hold deducted from the wallet. */
+  holdTransactionId: string;
+  /** Admin note (reason for rejection, etc.). */
+  adminNote?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/* ─────────────────────────── Mentor consultations ─────────────────────────── */
+
+export type MentorConsultationStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'CANCELLED'
+  | 'COMPLETED';
+
+export type ConsultationChargeType = 'FREE_QUOTA' | 'PAID';
+
+export interface MentorConsultationRecord {
+  id: string;
+  userId: string;
+  mentorId: string;
+  mentorName: string;
+  status: MentorConsultationStatus;
+  message: string;
+  /** ISO datetime of the scheduled session. Null until admin confirms a time. */
+  scheduledAt: string | null;
+  durationMinutes: number | null;
+  chargeType: ConsultationChargeType;
+  /** 'YYYY-MM' — the month this consultation counted against the free quota. */
+  quotaMonth: string;
+  /** Fee actually paid by the user (0 for FREE_QUOTA sessions). */
+  feePaid: number;
+  adminNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/* ─────────────────────────── Type aliases for catalog records ─────────────────────────── */
+
+/** @deprecated Use SpaceRecord directly. Kept for backward compatibility. */
+export type IncubatorSpaceRecord = SpaceRecord;
+/** @deprecated Use ProgramRecord directly. Kept for backward compatibility. */
+export type IncubatorProgramRecord = ProgramRecord;
+/** @deprecated Use EventRecord directly. Kept for backward compatibility. */
+export type IncubatorEventRecord = EventRecord;
+
 interface DbShape {
   pendingUsers: PendingUserRecord[];
   users: UserRecord[];
@@ -686,12 +780,33 @@ interface DbShape {
   income: IncomeRecord[];
   /** CMS-managed landing page content. Null = use hard-coded defaults. */
   landingContent: LandingContent | null;
+  /** Admin-configurable platform-wide settings. */
+  platformSettings: PlatformSettingsRecord | null;
+  /** Admin-defined commission rules. */
+  commissionRules: CommissionRuleRecord[];
+  /** User membership records (one per active plan per user). */
+  userMemberships: UserMembershipRecord[];
+  /** Audit log entries for admin actions. */
+  auditLogs: AuditLogRecord[];
+  /** In-app notifications per user. */
+  notifications: NotificationRecord[];
+  /** Investor → startup contact requests. */
+  investorContacts: InvestorContactRecord[];
+  /** Startups bookmarked by investors. */
+  savedStartups: SavedStartupRecord[];
+  /** Investment deals recorded by investors. */
+  investments: InvestmentRecord[];
+  /** Wallet withdrawal requests submitted by users. */
+  withdrawalRequests: WithdrawalRequestRecord[];
+  /** Mentor consultation bookings (separate from mentor inquiry requests). */
+  mentorConsultations: MentorConsultationRecord[];
   /**
    * One-shot flags and platform-wide config.
    */
   meta: {
     mentorsSeeded?: boolean;
     promoCodesSeeded?: boolean;
+    demoMentorsRemoved?: boolean;
     platformConfig?: PlatformConfig;
   };
 }
@@ -721,6 +836,16 @@ const empty: DbShape = {
   expenses: [],
   income: [],
   landingContent: null,
+  platformSettings: null,
+  commissionRules: [],
+  userMemberships: [],
+  auditLogs: [],
+  notifications: [],
+  investorContacts: [],
+  savedStartups: [],
+  investments: [],
+  withdrawalRequests: [],
+  mentorConsultations: [],
   meta: {},
 };
 

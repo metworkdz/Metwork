@@ -46,7 +46,7 @@ interface IncubatorBookingRow {
   itemName: string;
   status: BookingStatus;
   totalAmount: number;
-  paymentMethod: 'ONLINE' | 'CASH' | null;
+  paymentMethod: 'wallet' | 'manual' | null;
   startsAt: string;
   endsAt: string;
   createdAt: string;
@@ -87,14 +87,14 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
     rows = relevant
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .map((b) => {
-        const customer = userMap.get(b.userId);
+        const customer = b.userId ? userMap.get(b.userId) : undefined;
         return {
           id:            b.id,
           itemKind:      b.itemKind as 'SPACE' | 'PROGRAM' | 'EVENT',
           itemName:      b.itemName,
           status:        b.status as BookingStatus,
           totalAmount:   b.totalAmount,
-          paymentMethod: (b.paymentMethod ?? null) as 'ONLINE' | 'CASH' | null,
+          paymentMethod: (b.paymentMethod ?? null) as 'wallet' | 'manual' | null,
           startsAt:      b.startsAt,
           endsAt:        b.endsAt,
           createdAt:     b.createdAt,
@@ -195,7 +195,7 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                           {end}
                         </TableCell>
                         <TableCell>
-                          {b.paymentMethod === 'CASH' ? (
+                          {b.paymentMethod === 'manual' ? (
                             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                               <Banknote className="size-3.5" /> Cash
                             </span>

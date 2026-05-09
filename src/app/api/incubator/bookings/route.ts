@@ -24,7 +24,7 @@ const manualBookingSchema = z.object({
   endsAt:          z.string().datetime(),
   unit:            z.enum(['HOUR', 'DAY', 'MONTH']),
   totalAmount:     z.number().int().min(0),
-  paymentMethod:   z.enum(['CASH', 'ONLINE', 'OTHER']).default('CASH'),
+  paymentMethod:   z.enum(['manual', 'wallet', 'OTHER']).default('manual'),
   notes:           z.string().max(500).optional().nullable(),
 }).refine((d) => new Date(d.endsAt) > new Date(d.startsAt), {
   message: 'endsAt must be after startsAt',
@@ -57,7 +57,7 @@ export async function GET() {
   const items = relevant
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map((b) => {
-      const user = userMap.get(b.userId);
+      const user = b.userId ? userMap.get(b.userId) : undefined;
       return {
         id:              b.id,
         itemKind:        b.itemKind,
@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
       status:          'CONFIRMED',
       clientReference: randomUUID(),   // generated for manual bookings
       transactionId:   null,
-      paymentMethod:   input.paymentMethod === 'ONLINE' ? 'ONLINE' : 'CASH',
+      paymentMethod:   input.paymentMethod === 'wallet' ? 'wallet' : 'manual',
       clientEmail:     input.clientEmail ?? null,
       notes:           input.notes ?? null,
       createdAt:       now,
