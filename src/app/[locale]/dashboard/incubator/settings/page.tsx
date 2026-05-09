@@ -1,7 +1,8 @@
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { SubscriptionManager } from '@/components/features/incubator/subscription-manager';
+import { db } from '@/server/db/store';
 
 interface PageProps {
   params: Promise<{ locale: string }>;

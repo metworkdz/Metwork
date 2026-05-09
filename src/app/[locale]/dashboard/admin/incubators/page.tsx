@@ -1,7 +1,8 @@
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { Building2 } from 'lucide-react';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
+import { db } from '@/server/db/store';
 import { Badge } from '@/components/ui/badge';
 import { AdminIncubatorsManager } from '@/components/features/admin/incubators-manager';
 import { db } from '@/server/db/store';

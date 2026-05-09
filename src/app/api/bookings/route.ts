@@ -18,6 +18,7 @@ import { fromZod, json, jsonError } from '@/server/http/json';
 import { db } from '@/server/db/store';
 import { findIncubatorById } from '@/server/incubator/service';
 import { sendBookingReceiptEmail } from '@/server/notifications/mock';
+import { validatePromoCode, consumePromoCode } from '@/server/promo-codes/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

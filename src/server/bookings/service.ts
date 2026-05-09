@@ -18,7 +18,7 @@ import {
 import { findSpaceById } from './space-catalog';
 import { findProgramById } from './program-catalog';
 import { findEventById } from './event-catalog';
-import { validatePromoCode, consumePromoCode, ensurePromoCodesSeeded } from '@/server/promo-codes/service';
+import { validatePromoCodeSync as validatePromoCode, consumePromoCodeSync as consumePromoCode, ensurePromoCodesSeeded } from '@/server/promo-codes/service';
 import type {
   ApplyToProgramResult,
   CreateSpaceBookingResult,

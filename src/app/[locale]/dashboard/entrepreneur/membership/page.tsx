@@ -10,6 +10,7 @@ import { MembershipPromoSection } from '@/components/features/membership/members
 import { cn } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 import { MembershipUpgradeButton } from '@/components/features/entrepreneur/membership-upgrade-button';
+import { getEffectiveMembershipCode } from '@/server/memberships/service';
 
 interface PageProps {
   params: Promise<{ locale: string }>;

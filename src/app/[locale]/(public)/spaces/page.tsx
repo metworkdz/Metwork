@@ -24,7 +24,7 @@ export default async function SpacesPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const spaces = await listSpaces();
+  const spaces = demoPublicSpaces;
 
   // Build the city facet from the space inventory, then re-order using
   // the canonical city list for predictable display.

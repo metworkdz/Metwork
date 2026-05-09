@@ -17,6 +17,7 @@ import { db } from '@/server/db/store';
 import { findMentorById } from '@/server/mentors/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { sendConsultationRequestReceivedEmail, sendAdminConsultationNotification } from '@/server/notifications/mock';
+import { validatePromoCode, promoAppliesToType } from '@/server/promo-codes/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
