@@ -19,6 +19,10 @@ import {
   passwordResetEmailHtml,
   contactNotificationHtml,
   bookingReceiptEmailHtml,
+  bookingConfirmedWithQrEmailHtml,
+  bookingDeclinedEmailHtml,
+  withdrawalRequestedEmailHtml,
+  withdrawalProcessedEmailHtml,
   consultationConfirmationEmailHtml,
   consultationRequestReceivedEmailHtml,
   consultationRejectedEmailHtml,
@@ -170,74 +174,7 @@ export function sendPasswordResetEmail(email: string, link: string): void {
     );
 }
 
-export function sendBookingReceiptEmail(
-  email: string,
-  opts: {
-    customerName: string;
-    bookingId: string;
-    itemName: string;
-    itemKind: string;
-    vendorName: string;
-    city: string;
-    startsAt: string;
-    endsAt: string;
-    totalAmount: number;
-    status: string;
-    createdAt: string;
-  },
-): void {
-  sendResendEmail({
-    to: email,
-    subject: `Booking confirmed — ${opts.itemName}`,
-    html: bookingReceiptEmailHtml(opts),
-  })
-    .then((sent) => {
-      if (!sent) {
-        // eslint-disable-next-line no-console
-        console.log(
-          `${banner} EMAIL (receipt) → ${email} :: Booking ${opts.bookingId.slice(0, 8).toUpperCase()} for "${opts.itemName}" confirmed, amount: ${opts.totalAmount} DZD`,
-        );
-      }
-    })
-    .catch((err: Error) =>
-      // eslint-disable-next-line no-console
-      console.error(`${banner} Resend receipt email failed →`, err.message),
-    );
-}
-
 /* ─────────────────────────── Booking lifecycle emails ─────────────────────── */
-
-export function sendBookingPendingEmail(
-  email: string,
-  opts: {
-    customerName: string;
-    bookingId: string;
-    itemName: string;
-    itemKind: string;
-    vendorName: string;
-    city: string;
-    startsAt: string;
-    endsAt: string;
-    totalAmount: number;
-    createdAt: string;
-  },
-): void {
-  sendResendEmail({
-    to: email,
-    subject: `Booking request received — ${opts.itemName}`,
-    html: bookingPendingEmailHtml(opts),
-  })
-    .then((sent) => {
-      if (!sent) {
-        // eslint-disable-next-line no-console
-        console.log(`${banner} EMAIL (booking-pending) → ${email} :: Booking ${opts.bookingId.slice(0, 8).toUpperCase()} pending for "${opts.itemName}"`);
-      }
-    })
-    .catch((err: Error) =>
-      // eslint-disable-next-line no-console
-      console.error(`${banner} Resend booking-pending email failed →`, err.message),
-    );
-}
 
 export function sendBookingConfirmedWithQrEmail(
   email: string,
@@ -297,131 +234,6 @@ export function sendBookingDeclinedEmail(
     .catch((err: Error) =>
       // eslint-disable-next-line no-console
       console.error(`${banner} Resend booking-declined email failed →`, err.message),
-    );
-}
-
-export function sendNewBookingAlert(
-  incubatorEmail: string,
-  incubatorPhone: string,
-  opts: {
-    incubatorName: string;
-    customerName: string;
-    bookingId: string;
-    itemName: string;
-    itemKind: string;
-    startsAt: string;
-    endsAt: string;
-    totalAmount: number;
-  },
-): void {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz';
-  const dashboardUrl = `${baseUrl}/en/dashboard/incubator/bookings`;
-
-  // Email to incubator
-  sendResendEmail({
-    to: incubatorEmail,
-    subject: `New booking — ${opts.itemName}`,
-    html: newBookingAlertHtml({ ...opts, dashboardUrl }),
-  })
-    .then((sent) => {
-      if (!sent) {
-        // eslint-disable-next-line no-console
-        console.log(`${banner} EMAIL (new-booking-alert) → ${incubatorEmail} :: New booking from ${opts.customerName} for "${opts.itemName}"`);
-      }
-    })
-    .catch((err: Error) =>
-      // eslint-disable-next-line no-console
-      console.error(`${banner} Resend new-booking-alert email failed →`, err.message),
-    );
-
-  // WhatsApp notification to incubator (best-effort)
-  const waMessage = `New booking on Metwork!\nCustomer: ${opts.customerName}\nService: ${opts.itemName}\nReview at: ${dashboardUrl}`;
-  if (process.env.SMS_PROVIDER === 'infobip') {
-    sendWhatsAppOTP(incubatorPhone, waMessage).catch((err: Error) =>
-      // eslint-disable-next-line no-console
-      console.error(`${banner} WhatsApp new-booking-alert failed →`, err.message),
-    );
-  } else {
-    // eslint-disable-next-line no-console
-    console.log(`${banner} WHATSAPP (new-booking-alert, mock) → ${incubatorPhone} :: ${waMessage}`);
-  }
-}
-
-export function sendConsultationApprovedEmail(
-  email: string,
-  opts: {
-    userName: string;
-    mentorName: string;
-    scheduledAt: string | null;
-    meetLink: string | null;
-    adminNote?: string;
-  },
-): void {
-  sendResendEmail({
-    to: email,
-    subject: `Consultation confirmed — ${opts.mentorName}`,
-    html: consultationApprovedEmailHtml(opts),
-  })
-    .then((sent) => {
-      if (!sent) {
-        // eslint-disable-next-line no-console
-        console.log(`${banner} EMAIL (consultation-approved) → ${email} :: Session with ${opts.mentorName}`);
-      }
-    })
-    .catch((err: Error) =>
-      // eslint-disable-next-line no-console
-      console.error(`${banner} Resend consultation-approved email failed →`, err.message),
-    );
-}
-
-export function sendConsultationApprovedMentorEmail(
-  mentorEmail: string,
-  opts: {
-    mentorName: string;
-    clientName: string;
-    clientEmail: string;
-    scheduledAt: string | null;
-    meetLink: string | null;
-    isOffline: boolean;
-    adminNote?: string;
-  },
-): void {
-  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/en/dashboard/admin/mentor-bookings`;
-  sendResendEmail({
-    to: mentorEmail,
-    subject: `New confirmed consultation — ${opts.clientName}`,
-    html: consultationApprovedMentorEmailHtml({ ...opts, dashboardUrl }),
-  })
-    .then((sent) => {
-      if (!sent) {
-        // eslint-disable-next-line no-console
-        console.log(`${banner} EMAIL (consultation-approved-mentor) → ${mentorEmail} :: Session with ${opts.clientName}`);
-      }
-    })
-    .catch((err: Error) =>
-      // eslint-disable-next-line no-console
-      console.error(`${banner} Resend consultation-approved-mentor email failed →`, err.message),
-    );
-}
-
-export function sendConsultationRejectedEmail(
-  email: string,
-  opts: { userName: string; mentorName: string; adminNote?: string },
-): void {
-  sendResendEmail({
-    to: email,
-    subject: `Consultation update — ${opts.mentorName}`,
-    html: consultationRejectedEmailHtml(opts),
-  })
-    .then((sent) => {
-      if (!sent) {
-        // eslint-disable-next-line no-console
-        console.log(`${banner} EMAIL (consultation-rejected) → ${email} :: Session with ${opts.mentorName} declined`);
-      }
-    })
-    .catch((err: Error) =>
-      // eslint-disable-next-line no-console
-      console.error(`${banner} Resend consultation-rejected email failed →`, err.message),
     );
 }
 
@@ -509,9 +321,9 @@ export function sendBookingReceiptEmail(input: BookingReceiptInput): void {
   const isFr = lang === 'fr';
 
   const paymentLabel =
-    booking.paymentMethod === 'ONLINE'
+    booking.paymentMethod === 'wallet'
       ? isFr ? 'En ligne (portefeuille)' : 'Online (wallet)'
-      : booking.paymentMethod === 'CASH'
+      : booking.paymentMethod === 'manual'
       ? isFr ? 'Espèces sur place' : 'Cash on-site'
       : '—';
 

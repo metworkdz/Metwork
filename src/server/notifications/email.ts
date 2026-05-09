@@ -154,62 +154,6 @@ export function passwordResetEmailHtml(link: string): string {
   `);
 }
 
-export function bookingReceiptEmailHtml(opts: {
-  customerName: string;
-  bookingId: string;
-  itemName: string;
-  itemKind: string;
-  vendorName: string;
-  city: string;
-  startsAt: string;
-  endsAt: string;
-  totalAmount: number;
-  status: string;
-  createdAt: string;
-}): string {
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  const formatAmount = (n: number) =>
-    n === 0 ? 'Free' : `${n.toLocaleString()} DZD`;
-
-  return layout(`
-    ${h1('Booking Confirmed 🎉')}
-    ${p(`Hi <strong>${opts.customerName}</strong>, your booking has been confirmed. Here are your details:`)}
-    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin:20px 0;">
-      <tr style="background:#f9fafb;">
-        <td style="padding:12px 16px;font-size:13px;color:#71717a;font-weight:600;width:40%;">Service</td>
-        <td style="padding:12px 16px;font-size:14px;color:#09090b;font-weight:500;">${opts.itemName}</td>
-      </tr>
-      <tr>
-        <td style="padding:12px 16px;font-size:13px;color:#71717a;font-weight:600;border-top:1px solid #e4e4e7;">Type</td>
-        <td style="padding:12px 16px;font-size:14px;color:#09090b;border-top:1px solid #e4e4e7;">${opts.itemKind.charAt(0) + opts.itemKind.slice(1).toLowerCase()}</td>
-      </tr>
-      <tr style="background:#f9fafb;">
-        <td style="padding:12px 16px;font-size:13px;color:#71717a;font-weight:600;border-top:1px solid #e4e4e7;">Provider</td>
-        <td style="padding:12px 16px;font-size:14px;color:#09090b;border-top:1px solid #e4e4e7;">${opts.vendorName}</td>
-      </tr>
-      <tr>
-        <td style="padding:12px 16px;font-size:13px;color:#71717a;font-weight:600;border-top:1px solid #e4e4e7;">Location</td>
-        <td style="padding:12px 16px;font-size:14px;color:#09090b;border-top:1px solid #e4e4e7;">${opts.city}</td>
-      </tr>
-      <tr style="background:#f9fafb;">
-        <td style="padding:12px 16px;font-size:13px;color:#71717a;font-weight:600;border-top:1px solid #e4e4e7;">Start date</td>
-        <td style="padding:12px 16px;font-size:14px;color:#09090b;border-top:1px solid #e4e4e7;">${formatDate(opts.startsAt)}</td>
-      </tr>
-      <tr>
-        <td style="padding:12px 16px;font-size:13px;color:#71717a;font-weight:600;border-top:1px solid #e4e4e7;">End date</td>
-        <td style="padding:12px 16px;font-size:14px;color:#09090b;border-top:1px solid #e4e4e7;">${formatDate(opts.endsAt)}</td>
-      </tr>
-      <tr style="background:#f4fdf7;">
-        <td style="padding:14px 16px;font-size:14px;color:#166534;font-weight:700;border-top:1px solid #e4e4e7;">Amount paid</td>
-        <td style="padding:14px 16px;font-size:16px;color:#166534;font-weight:700;border-top:1px solid #e4e4e7;">${formatAmount(opts.totalAmount)}</td>
-      </tr>
-    </table>
-    ${p(`<span style="color:#71717a;font-size:13px;">Booking reference: <code style="background:#f4f4f5;padding:2px 6px;border-radius:4px;font-family:monospace;">${opts.bookingId.slice(0, 8).toUpperCase()}</code> &nbsp;·&nbsp; Booked on ${formatDate(opts.createdAt)}</span>`)}
-    ${p('If you have any questions about your booking, please contact the provider directly or reply to this email.')}
-  `);
-}
-
 /** Sent to the user when their booking is created (awaiting incubator approval). */
 export function bookingPendingEmailHtml(opts: {
   customerName: string;
@@ -401,23 +345,6 @@ export function consultationApprovedEmailHtml(opts: {
     </div>` : ''}
     ${opts.adminNote ? `${p(`<strong>Note from admin:</strong> ${opts.adminNote}`)}` : ''}
     ${p('<span style="color:#71717a;font-size:13px;">Please be ready 5 minutes before the session starts. If you need to reschedule, contact us.</span>')}
-  `);
-}
-
-export function consultationRejectedEmailHtml(opts: {
-  userName: string;
-  mentorName: string;
-  adminNote?: string;
-}): string {
-  return layout(`
-    ${h1('Consultation request update')}
-    ${p(`Hi <strong>${opts.userName}</strong>, unfortunately your consultation request with <strong>${opts.mentorName}</strong> could not be accommodated at this time.`)}
-    ${opts.adminNote ? `
-    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:16px 20px;margin:20px 0;">
-      <p style="margin:0 0 4px;font-size:13px;color:#c2410c;font-weight:600;">Reason</p>
-      <p style="margin:0;font-size:14px;color:#7c2d12;">${opts.adminNote}</p>
-    </div>` : ''}
-    ${p('Feel free to submit another request for a different date or time.')}
   `);
 }
 
