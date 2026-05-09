@@ -1,6 +1,5 @@
 import crypto from 'node:crypto';
-import { db } from '@/server/db/store';
-import type { StartupListingRecord } from '@/server/db/store';
+import { db, type StartupListingRecord } from '@/server/db/store';
 import type { CreateStartupInput } from './schemas';
 
 export async function listStartups(

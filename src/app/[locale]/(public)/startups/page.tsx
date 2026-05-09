@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { Rocket } from 'lucide-react';
+import { ArrowRight, Rocket, TrendingUp } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/container';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { listStartups } from '@/server/startups/service';
 import { toStartupDto } from '@/server/startups/serialize';
 import { getServerSession } from '@/lib/session';
-import { ArrowRight, TrendingUp } from 'lucide-react';
 
 interface PageProps {
   params: Promise<{ locale: string }>;

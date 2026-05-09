@@ -8,10 +8,9 @@
  * When the DB has spaces for a given incubator, demo spaces from that
  * incubator are excluded so there's no double-listing.
  */
-import { db } from '@/server/db/store';
+import { db, type IncubatorSpaceRecord, type IncubatorRecord } from '@/server/db/store';
 import { demoPublicSpaces } from '@/lib/demo-data';
 import type { Space } from '@/types/domain';
-import type { IncubatorSpaceRecord, IncubatorRecord } from '@/server/db/store';
 
 function dbSpaceToSpace(s: IncubatorSpaceRecord, incubator: IncubatorRecord): Space {
   return {

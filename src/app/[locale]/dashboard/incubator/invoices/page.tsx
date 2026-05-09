@@ -2,8 +2,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { InvoicesManager } from '@/components/features/incubator/invoices-manager';
-import { db } from '@/server/db/store';
-import type { BookingRecord } from '@/server/db/store';
+import { db, type BookingRecord } from '@/server/db/store';
 
 interface PageProps {
   params: Promise<{ locale: string }>;

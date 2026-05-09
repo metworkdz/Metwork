@@ -5,7 +5,6 @@ import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { db } from '@/server/db/store';
 import { Badge } from '@/components/ui/badge';
 import { AdminIncubatorsManager } from '@/components/features/admin/incubators-manager';
-import { db } from '@/server/db/store';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

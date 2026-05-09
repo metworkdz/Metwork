@@ -3,8 +3,7 @@
  * Fire-and-forget: errors are caught and logged so they never crash the caller.
  */
 import { randomUUID } from 'node:crypto';
-import { db } from '@/server/db/store';
-import type { NotificationType } from '@/server/db/store';
+import { db, type NotificationType } from '@/server/db/store';
 
 export interface CreateNotificationInput {
   userId: string;

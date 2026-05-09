@@ -7,8 +7,7 @@
  * code and see the discounted price for the next tier.
  */
 import { useState } from 'react';
-import { PromoCodeInput } from '@/components/shared/promo-code-input';
-import type { PromoResult } from '@/components/shared/promo-code-input';
+import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { formatCurrency } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 

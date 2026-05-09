@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
-import { NextIntlClientProvider } from 'next-intl';
-import type { AbstractIntlMessages } from 'next-intl';
+import { NextIntlClientProvider, type AbstractIntlMessages } from 'next-intl';
 import { AuthProvider } from './auth-provider';
 import { ThemeProvider } from './theme-provider';
 import type { SessionUser } from '@/types/auth';

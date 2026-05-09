@@ -1,5 +1,5 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { ArrowRight, Briefcase, Building2, TrendingUp, Users } from 'lucide-react';
+import { ArrowRight, Briefcase, Building2, TrendingUp, Users, type LucideIcon } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 import { Link } from '@/i18n/routing';
@@ -10,7 +10,6 @@ import { LandingMentorsSection } from '@/components/features/mentors/landing-men
 import { getLandingContent } from '@/server/cms/service';
 import { cn } from '@/lib/utils';
 import type { LandingContent } from '@/types/cms';
-import type { LucideIcon } from 'lucide-react';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
