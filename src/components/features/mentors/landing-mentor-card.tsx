@@ -53,15 +53,20 @@ export function LandingMentorCard({
         />
         {mentor.linkedinUrl && (
           <a
-            href={mentor.linkedinUrl}
+            href={
+              mentor.linkedinUrl.startsWith('http')
+                ? mentor.linkedinUrl
+                : `https://${mentor.linkedinUrl}`
+            }
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
             aria-label={`${mentor.fullName} on LinkedIn`}
             className={cn(
               'absolute end-3 bottom-3 inline-flex items-center justify-center rounded-full bg-white/95 p-2 text-foreground shadow-md transition-all duration-300 ease-out',
-              'translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100',
               'hover:bg-white hover:scale-105',
+              // Always visible on touch/mobile; reveal on hover on pointer devices
+              'opacity-100 sm:translate-y-2 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100',
             )}
           >
             <Linkedin className="size-4" />

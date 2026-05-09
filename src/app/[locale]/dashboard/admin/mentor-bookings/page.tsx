@@ -1,4 +1,4 @@
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { Calendar } from 'lucide-react';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
@@ -13,6 +13,7 @@ interface PageProps {
 export default async function AdminMentorBookingsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('pages.dashboard');
   await requireRole(['ADMIN']);
 
   const data = await db.read();
@@ -29,8 +30,8 @@ export default async function AdminMentorBookingsPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        title="Consultation requests"
-        subtitle="Review and respond to mentor booking requests from founders."
+        title={t('admin.mentorBookings.title')}
+        subtitle={t('admin.mentorBookings.subtitle')}
         action={
           pendingCount > 0 ? (
             <Badge variant="warning" className="gap-1">

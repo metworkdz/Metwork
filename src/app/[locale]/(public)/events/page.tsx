@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { CalendarDays, Sparkles } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
 import { Container } from '@/components/ui/container';
 import { Badge } from '@/components/ui/badge';
 import { EventsExplorer } from '@/components/features/events/events-explorer';

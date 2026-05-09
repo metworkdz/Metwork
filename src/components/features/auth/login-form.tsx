@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
@@ -30,6 +31,8 @@ export function LoginForm() {
   const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const emailVerifiedParam = searchParams.get('email_verified');
 
   const {
     register,
@@ -63,6 +66,30 @@ export function LoginForm() {
 
   return (
     <div className="rounded-lg border border-border bg-background p-5 shadow-sm sm:p-8">
+      {emailVerifiedParam === '1' && (
+        <div className="mb-5 flex items-start gap-3 rounded-md border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-800 dark:bg-green-950/60 dark:text-green-300">
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
+          <div>
+            <p className="font-medium">Email verified!</p>
+            <p className="text-xs opacity-80 mt-0.5">Your email has been verified. You can now sign in.</p>
+          </div>
+        </div>
+      )}
+      {(emailVerifiedParam === 'expired' || emailVerifiedParam === 'invalid') && (
+        <div className="mb-5 flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
+          <div>
+            <p className="font-medium">
+              {emailVerifiedParam === 'expired' ? 'Verification link expired' : 'Invalid verification link'}
+            </p>
+            <p className="text-xs opacity-80 mt-0.5">
+              {emailVerifiedParam === 'expired'
+                ? 'This link has expired. Please sign in and request a new verification email.'
+                : 'This verification link is invalid or has already been used.'}
+            </p>
+          </div>
+        </div>
+      )}
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">{t('login.title')}</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">{t('login.subtitle')}</p>

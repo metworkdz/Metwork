@@ -1,5 +1,7 @@
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { ArrowRight, Briefcase, Building2, TrendingUp, Users } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
 import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/ui/container';
@@ -17,24 +19,109 @@ interface PageProps {
 export default async function LandingPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const content = await getLandingContent();
+
+  const [saved, t] = await Promise.all([
+    getLandingContent(),
+    getTranslations('landing'),
+  ]);
+
+  // Always use locale translations for all text so fr/ar visitors see the
+  // correct language. CMS saved values are only respected for the numeric
+  // stats figures (e.g. "500+") since those are admin-maintained numbers
+  // that don't require translation.
+  const content: LandingContent = {
+    hero: {
+      badge:        t('hero.badge'),
+      title:        t('hero.title'),
+      subtitle:     t('hero.subtitle'),
+      ctaPrimary:   t('hero.ctaPrimary'),
+      ctaSecondary: t('hero.ctaSecondary'),
+    },
+    stats: {
+      founders:   { value: saved?.stats.founders.value   ?? '500+', label: t('stats.founders') },
+      investors:  { value: saved?.stats.investors.value  ?? '120+', label: t('stats.investors') },
+      incubators: { value: saved?.stats.incubators.value ?? '40+',  label: t('stats.incubators') },
+      cities:     { value: saved?.stats.cities.value     ?? '15',   label: t('stats.cities') },
+    },
+    features: {
+      title:    t('features.title'),
+      subtitle: t('features.subtitle'),
+      items: [
+        { key: 'programs',    title: t('features.programs.title'),    description: t('features.programs.description') },
+        { key: 'spaces',      title: t('features.spaces.title'),      description: t('features.spaces.description') },
+        { key: 'fundraising', title: t('features.fundraising.title'), description: t('features.fundraising.description') },
+        { key: 'community',   title: t('features.community.title'),   description: t('features.community.description') },
+      ],
+    },
+    roles: {
+      title: t('roles.title'),
+      items: [
+        { key: 'entrepreneur', title: t('roles.entrepreneur.title'), description: t('roles.entrepreneur.description') },
+        { key: 'investor',     title: t('roles.investor.title'),     description: t('roles.investor.description') },
+        { key: 'incubator',    title: t('roles.incubator.title'),    description: t('roles.incubator.description') },
+      ],
+    },
+    cta: {
+      title:    t('cta.title'),
+      subtitle: t('cta.subtitle'),
+      button:   t('cta.button'),
+    },
+    updatedAt: saved?.updatedAt ?? new Date(0).toISOString(),
+  };
+
+  const about = {
+    label:       t('about.label'),
+    title:       t('about.title'),
+    body1:       t('about.body1'),
+    body2:       t('about.body2'),
+    cta:         t('about.cta'),
+    pillar1Title: t('about.pillar1Title'),
+    pillar1Desc:  t('about.pillar1Desc'),
+    pillar2Title: t('about.pillar2Title'),
+    pillar2Desc:  t('about.pillar2Desc'),
+    pillar3Title: t('about.pillar3Title'),
+    pillar3Desc:  t('about.pillar3Desc'),
+  };
+
+  const sections = {
+    whatWeOffer:     t('sections.whatWeOffer'),
+    whoWeServe:      t('sections.whoWeServe'),
+    joinMovement:    t('sections.joinMovement'),
+    socialProof:     t('socialProof'),
+    explorePrograms: t('cta.explorePrograms'),
+    getStarted:      t('hero.ctaPrimary'),
+  };
 
   return (
     <>
-      <Hero hero={content.hero} />
-      <About />
+      <Hero hero={content.hero} socialProof={sections.socialProof} />
+      <About about={about} />
       <Stats stats={content.stats} />
-      <Features features={content.features} />
-      <RoleSection roles={content.roles} />
+      <Features features={content.features} sectionLabel={sections.whatWeOffer} />
+      <RoleSection
+        roles={content.roles}
+        sectionLabel={sections.whoWeServe}
+        getStarted={sections.getStarted}
+      />
       <LandingMentorsSection />
-      <CTASection cta={content.cta} />
+      <CTASection
+        cta={content.cta}
+        sectionLabel={sections.joinMovement}
+        explorePrograms={sections.explorePrograms}
+      />
     </>
   );
 }
 
 /* ─────────────────────────── Hero ─────────────────────────── */
 
-function Hero({ hero }: { hero: LandingContent['hero'] }) {
+function Hero({
+  hero,
+  socialProof,
+}: {
+  hero: LandingContent['hero'];
+  socialProof: string;
+}) {
   return (
     <section className="relative overflow-hidden">
       <div
@@ -58,8 +145,8 @@ function Hero({ hero }: { hero: LandingContent['hero'] }) {
             {hero.badge}
           </div>
 
-          {/* Title — display font, uppercase */}
-          <h1 className="mt-6 max-w-5xl font-display text-4xl font-bold uppercase leading-[1.08] tracking-tight text-foreground sm:mt-8 sm:text-5xl md:text-7xl lg:text-[5.5rem]">
+          {/* Title */}
+          <h1 className="mt-6 max-w-4xl text-balance font-display text-4xl font-semibold tracking-tight text-foreground sm:mt-8 sm:text-5xl md:text-6xl lg:text-7xl">
             {hero.title}
           </h1>
 
@@ -91,9 +178,7 @@ function Hero({ hero }: { hero: LandingContent['hero'] }) {
           </div>
 
           {/* Social proof line */}
-          <p className="mt-8 text-xs text-muted-foreground/60">
-            Trusted by founders, investors, and incubators across Algeria.
-          </p>
+          <p className="mt-8 text-xs text-muted-foreground/60">{socialProof}</p>
         </div>
       </Container>
     </section>
@@ -102,25 +187,27 @@ function Hero({ hero }: { hero: LandingContent['hero'] }) {
 
 /* ─────────────────────────── About ─────────────────────────── */
 
-const pillars = [
-  {
-    num: '01',
-    title: 'Incubate',
-    desc: 'Hands-on programs, coworking space, and expert mentorship for early-stage Algerian startups.',
-  },
-  {
-    num: '02',
-    title: 'Connect',
-    desc: 'A curated network bridging founders with investors, mentors, and incubators across the country.',
-  },
-  {
-    num: '03',
-    title: 'Scale',
-    desc: 'Tools and partnerships to help Algerian startups grow beyond local markets and reach new frontiers.',
-  },
-] as const;
+type AboutLabels = {
+  label: string;
+  title: string;
+  body1: string;
+  body2: string;
+  cta: string;
+  pillar1Title: string;
+  pillar1Desc: string;
+  pillar2Title: string;
+  pillar2Desc: string;
+  pillar3Title: string;
+  pillar3Desc: string;
+};
 
-function About() {
+function About({ about }: { about: AboutLabels }) {
+  const pillars = [
+    { num: '01', title: about.pillar1Title, desc: about.pillar1Desc },
+    { num: '02', title: about.pillar2Title, desc: about.pillar2Desc },
+    { num: '03', title: about.pillar3Title, desc: about.pillar3Desc },
+  ];
+
   return (
     <section className="py-14 sm:py-24">
       <Container>
@@ -128,21 +215,13 @@ function About() {
 
           {/* Left — text block */}
           <div>
-            <p className="section-label">About Metwork</p>
-            <h2 className="mt-4 max-w-lg font-display text-3xl font-bold uppercase leading-[1.1] tracking-tight sm:text-4xl lg:text-5xl">
-              Algeria&apos;s startup incubator, based in Oran.
+            <p className="section-label">{about.label}</p>
+            <h2 className="mt-4 max-w-lg text-balance font-display text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
+              {about.title}
             </h2>
             <div className="mt-6 space-y-4 text-base leading-relaxed text-muted-foreground">
-              <p>
-                Metwork is a startup incubator headquartered in Oran, Algeria. We were built
-                with one goal in mind: unite the people and organisations driving Algeria&apos;s
-                next economic transformation under a single, powerful platform.
-              </p>
-              <p>
-                We believe Algeria&apos;s next wave of great companies will not be built in
-                isolation. They will be built through connection — the right mentors, the right
-                capital, and the right community, all in the same room.
-              </p>
+              <p>{about.body1}</p>
+              <p>{about.body2}</p>
             </div>
             <Button
               asChild
@@ -151,7 +230,7 @@ function About() {
               className="mt-8 rounded-full px-8 text-sm font-semibold"
             >
               <Link href="/contact">
-                Work with us
+                {about.cta}
                 <ArrowRight className="size-4 rtl:rotate-180" />
               </Link>
             </Button>
@@ -165,7 +244,7 @@ function About() {
                   {p.num}
                 </span>
                 <div>
-                  <p className="font-display text-sm font-bold uppercase tracking-widest text-foreground">
+                  <p className="font-display text-sm font-semibold tracking-tight text-foreground">
                     {p.title}
                   </p>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.desc}</p>
@@ -213,13 +292,19 @@ const featureIcons: Record<string, LucideIcon> = {
   community:   Users,
 };
 
-function Features({ features }: { features: LandingContent['features'] }) {
+function Features({
+  features,
+  sectionLabel,
+}: {
+  features: LandingContent['features'];
+  sectionLabel: string;
+}) {
   return (
     <section className="py-14 sm:py-24">
       <Container>
         <div className="mx-auto max-w-2xl text-center">
-          <p className="section-label">What we offer</p>
-          <h2 className="mt-4 font-display text-3xl font-bold uppercase tracking-tight sm:text-4xl lg:text-5xl">
+          <p className="section-label">{sectionLabel}</p>
+          <h2 className="mt-4 text-balance font-display text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
             {features.title}
           </h2>
           <p className="mt-4 text-balance text-base text-muted-foreground sm:text-lg">
@@ -239,7 +324,7 @@ function Features({ features }: { features: LandingContent['features'] }) {
                   <div className="flex size-12 items-center justify-center rounded-xl bg-primary-50 text-primary-600 transition-colors duration-300 group-hover:bg-primary-100">
                     <Icon className="size-5" />
                   </div>
-                  <h3 className="mt-5 font-display text-base font-bold uppercase tracking-wide text-foreground">
+                  <h3 className="mt-5 font-display text-base font-semibold tracking-tight text-foreground">
                     {f.title}
                   </h3>
                   <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
@@ -263,13 +348,21 @@ const roleAccents: Record<string, string> = {
   incubator:    'from-amber-500 to-orange-600',
 };
 
-function RoleSection({ roles }: { roles: LandingContent['roles'] }) {
+function RoleSection({
+  roles,
+  sectionLabel,
+  getStarted,
+}: {
+  roles: LandingContent['roles'];
+  sectionLabel: string;
+  getStarted: string;
+}) {
   return (
     <section className="border-t border-border/60 bg-muted/25 py-14 sm:py-24">
       <Container>
         <div className="mx-auto max-w-2xl text-center">
-          <p className="section-label">Who we serve</p>
-          <h2 className="mt-4 font-display text-3xl font-bold uppercase tracking-tight sm:text-4xl lg:text-5xl">
+          <p className="section-label">{sectionLabel}</p>
+          <h2 className="mt-4 text-balance font-display text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
             {roles.title}
           </h2>
         </div>
@@ -289,7 +382,7 @@ function RoleSection({ roles }: { roles: LandingContent['roles'] }) {
                 )}
               />
               <CardContent className="p-8 pt-9">
-                <h3 className="font-display text-xl font-bold uppercase tracking-wide text-foreground">
+                <h3 className="font-display text-xl font-semibold tracking-tight text-foreground">
                   {role.title}
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -300,7 +393,7 @@ function RoleSection({ roles }: { roles: LandingContent['roles'] }) {
                     href="/signup"
                     className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary transition-colors hover:text-primary-700"
                   >
-                    Get started
+                    {getStarted}
                     <ArrowRight className="size-3 rtl:rotate-180" />
                   </Link>
                 </div>
@@ -315,7 +408,15 @@ function RoleSection({ roles }: { roles: LandingContent['roles'] }) {
 
 /* ─────────────────────────── CTA ─────────────────────────── */
 
-function CTASection({ cta }: { cta: LandingContent['cta'] }) {
+function CTASection({
+  cta,
+  sectionLabel,
+  explorePrograms,
+}: {
+  cta: LandingContent['cta'];
+  sectionLabel: string;
+  explorePrograms: string;
+}) {
   return (
     <section className="py-14 sm:py-24">
       <Container size="lg">
@@ -332,9 +433,9 @@ function CTASection({ cta }: { cta: LandingContent['cta'] }) {
 
           <div className="relative">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary-400">
-              Join the movement
+              {sectionLabel}
             </p>
-            <h2 className="mx-auto mt-4 max-w-2xl font-display text-3xl font-bold uppercase leading-tight tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
+            <h2 className="mx-auto mt-4 max-w-2xl text-balance font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
               {cta.title}
             </h2>
             <p className="mx-auto mt-5 max-w-lg text-balance text-base text-white/60">
@@ -357,7 +458,7 @@ function CTASection({ cta }: { cta: LandingContent['cta'] }) {
                 variant="outline"
                 className="rounded-full border-white/20 bg-transparent px-10 text-sm font-semibold text-white hover:bg-white/10 hover:-translate-y-0.5 transition-all duration-200"
               >
-                <Link href="/programs">Explore programs</Link>
+                <Link href="/programs">{explorePrograms}</Link>
               </Button>
             </div>
           </div>

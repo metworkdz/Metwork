@@ -16,13 +16,22 @@ import { signupSchema } from '@/lib/validators';
 import { db } from '@/server/db/store';
 import { hashPassword } from '@/server/auth/password';
 import { issuePendingUser } from '@/server/auth/pending-users';
-import { maskPhone, normalizePhone } from '@/server/auth/serialize';
-import { sendOtpSms, sendOtpEmail } from '@/server/notifications/mock';
+import { maskPhone, maskEmail, normalizePhone } from '@/server/auth/serialize';
+import { sendOtpWhatsApp, sendOtpEmail } from '@/server/notifications/mock';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { checkRateLimit } from '@/lib/rate-limit';
 import type { Locale } from '@/i18n/config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    req.headers.get('x-real-ip') ??
+    'unknown'
+  );
+}
 
 function pickLocale(req: NextRequest): Locale {
   const header = req.headers.get('accept-language')?.toLowerCase() ?? '';
@@ -32,6 +41,12 @@ function pickLocale(req: NextRequest): Locale {
 }
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 5 signups per IP per hour
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`signup:ip:${ip}`, 5, 60 * 60_000)) {
+    return jsonError(429, 'RATE_LIMITED', 'Too many signup attempts. Please try again later.');
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -71,15 +86,15 @@ export async function POST(req: NextRequest) {
     role: input.role,
     city: input.city,
     locale,
+    incubatorName: input.role === 'INCUBATOR' ? input.incubatorName?.trim() : undefined,
   });
 
-  // Send OTP via SMS and also via email — SMS delivery to Algerian numbers
-  // can be filtered by carriers, so email ensures the code always arrives.
-  sendOtpSms(phone, otpCode);
+  // Primary: WhatsApp (Infobip). Secondary: email as reliable fallback.
+  sendOtpWhatsApp(phone, otpCode);
   sendOtpEmail(email, otpCode);
 
   return json(
-    { userId: id, requiresOtp: true, maskedPhone: maskPhone(phone) },
+    { userId: id, requiresOtp: true, maskedPhone: maskPhone(phone), maskedEmail: maskEmail(email) },
     { status: 201 },
   );
 }

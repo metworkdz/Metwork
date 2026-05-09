@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
+import { MessageCircle, Mail, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter, Link } from '@/i18n/routing';
 import { authService } from '@/services/auth.service';
@@ -13,6 +14,8 @@ import { cn } from '@/lib/utils';
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN = 60;
 
+type OtpChannel = 'whatsapp' | 'sms' | 'email';
+
 export function OtpForm() {
   const t = useTranslations('auth');
   const searchParams = useSearchParams();
@@ -21,17 +24,19 @@ export function OtpForm() {
 
   const userId = searchParams.get('userId') ?? '';
   const phone = searchParams.get('phone') ?? '';
+  const email = searchParams.get('email') ?? '';
 
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(RESEND_COOLDOWN);
+  const [lastChannel, setLastChannel] = useState<OtpChannel>('whatsapp');
   const [isPending, startTransition] = useTransition();
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
-    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
   }, [cooldown]);
 
   useEffect(() => {
@@ -99,25 +104,38 @@ export function OtpForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [digits]);
 
-  function onResend() {
-    if (cooldown > 0 || !userId) return;
+  function onResendChannel(channel: OtpChannel) {
+    if (!userId) return;
     startTransition(async () => {
       try {
-        await authService.resendOtp(userId);
+        await authService.resendOtp(userId, channel);
+        setLastChannel(channel);
         setCooldown(RESEND_COOLDOWN);
         setError(null);
-      } catch {
-        setError(t('errors.networkError'));
+      } catch (err) {
+        if (err instanceof ApiClientError && err.status === 429) {
+          setError(t('errors.tooManyAttempts'));
+        } else {
+          setError(t('errors.networkError'));
+        }
       }
     });
   }
+
+  const channels: { channel: OtpChannel; label: string; Icon: typeof MessageCircle }[] = [
+    { channel: 'whatsapp', label: t('verifyOtp.channelWhatsapp'), Icon: MessageCircle },
+    { channel: 'email',    label: t('verifyOtp.channelEmail'),    Icon: Mail           },
+    { channel: 'sms',      label: t('verifyOtp.channelSms'),      Icon: MessageSquare  },
+  ];
 
   return (
     <div className="rounded-lg border border-border bg-background p-5 shadow-sm sm:p-8">
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">{t('verifyOtp.title')}</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          {t('verifyOtp.subtitle', { phone })}
+          {email
+            ? t('verifyOtp.subtitleWithEmail', { phone, email })
+            : t('verifyOtp.subtitle', { phone })}
         </p>
       </div>
 
@@ -164,19 +182,39 @@ export function OtpForm() {
         </Button>
       </form>
 
-      <div className="mt-6 text-center text-sm">
+      {/* Resend / channel switcher */}
+      <div className="mt-6">
         {cooldown > 0 ? (
-          <span className="text-muted-foreground">
+          <p className="text-center text-sm text-muted-foreground">
             {t('verifyOtp.resendIn', { seconds: cooldown })}
-          </span>
+          </p>
         ) : (
-          <button
-            type="button"
-            onClick={onResend}
-            className="font-medium text-primary hover:underline"
-          >
-            {t('verifyOtp.resend')}
-          </button>
+          <div className="space-y-3">
+            <p className="text-center text-xs font-medium text-muted-foreground">
+              {t('verifyOtp.didntReceive')}
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {channels.map(({ channel, label, Icon }) => (
+                <button
+                  key={channel}
+                  type="button"
+                  onClick={() => onResendChannel(channel)}
+                  disabled={isPending}
+                  className={cn(
+                    'flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-xs font-medium transition-colors',
+                    'hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700',
+                    channel === lastChannel
+                      ? 'border-primary-200 bg-primary-50 text-primary-700'
+                      : 'border-border bg-background text-muted-foreground',
+                    isPending && 'cursor-not-allowed opacity-50',
+                  )}
+                >
+                  <Icon className="size-4" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 

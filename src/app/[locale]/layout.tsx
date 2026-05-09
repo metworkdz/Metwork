@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Cairo, Space_Grotesk } from 'next/font/google';
+import { Inter, Cairo, Plus_Jakarta_Sans } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { Providers } from '@/components/providers';
@@ -20,11 +20,11 @@ const cairo = Cairo({
   display: 'swap',
 });
 
-const spaceGrotesk = Space_Grotesk({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-display',
   display: 'swap',
-  weight: ['500', '600', '700'],
+  weight: ['500', '600', '700', '800'],
 });
 
 export function generateStaticParams() {
@@ -124,7 +124,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
-      <body className={cn(inter.variable, cairo.variable, spaceGrotesk.variable, 'min-h-screen bg-background font-sans')}>
+      <body className={cn(inter.variable, cairo.variable, plusJakartaSans.variable, 'min-h-screen bg-background font-sans')}>
         <Providers locale={locale} messages={messages} initialUser={sessionUser}>
           {children}
         </Providers>

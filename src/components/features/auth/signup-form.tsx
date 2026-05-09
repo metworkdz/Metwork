@@ -56,6 +56,7 @@ export function SignupForm() {
       confirmPassword: '',
       acceptTerms: false as unknown as true,
       acceptPrivacy: false as unknown as true,
+      incubatorName: '',
     },
   });
 
@@ -79,6 +80,7 @@ export function SignupForm() {
           const params = new URLSearchParams({
             userId: res.userId,
             phone: res.maskedPhone,
+            email: res.maskedEmail,
           });
           router.push(`/verify-otp?${params.toString()}`);
         } else {
@@ -173,6 +175,26 @@ export function SignupForm() {
           />
         </FormField>
 
+        {/* Incubator name — only shown when role is INCUBATOR */}
+        {selectedRole === 'INCUBATOR' && (
+          <FormField
+            label={t('signup.incubatorNameLabel')}
+            htmlFor="incubatorName"
+            error={
+              errors.incubatorName &&
+              t(`errors.${errors.incubatorName.message}` as 'errors.required')
+            }
+          >
+            <Input
+              id="incubatorName"
+              autoComplete="organization"
+              placeholder={t('signup.incubatorNamePlaceholder')}
+              error={!!errors.incubatorName}
+              {...register('incubatorName')}
+            />
+          </FormField>
+        )}
+
         <FormField
           label={t('signup.emailLabel')}
           htmlFor="email"
@@ -189,23 +211,45 @@ export function SignupForm() {
           />
         </FormField>
 
-        <FormField
-          label={t('signup.phoneLabel')}
-          htmlFor="phone"
-          error={errors.phone && t(`errors.${errors.phone.message}` as 'errors.required')}
-          required
-        >
-          <Input
-            id="phone"
-            type="tel"
-            autoComplete="tel"
-            inputMode="tel"
-            placeholder={t('signup.phonePlaceholder')}
-            error={!!errors.phone}
-            dir="ltr"
-            {...register('phone')}
-          />
-        </FormField>
+        <Controller
+          control={control}
+          name="phone"
+          render={({ field }) => (
+            <FormField
+              label={t('signup.phoneLabel')}
+              htmlFor="phone"
+              error={errors.phone && t(`errors.${errors.phone.message}` as 'errors.required')}
+              required
+            >
+              <div
+                dir="ltr"
+                className={`flex overflow-hidden rounded-md border bg-background ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1 ${errors.phone ? 'border-destructive' : 'border-input'}`}
+              >
+                <span className="flex shrink-0 items-center gap-1.5 border-r border-input bg-muted/50 px-3 text-sm text-muted-foreground select-none">
+                  🇩🇿 +213
+                </span>
+                <input
+                  id="phone"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  placeholder="5 50 00 00 00"
+                  value={field.value.replace(/^\+213/, '')}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^\d\s]/g, '');
+                    const digits = raw.replace(/\s/g, '');
+                    // Strip leading 0 if user pastes local format
+                    const normalized = digits.startsWith('0') ? digits.slice(1) : digits;
+                    field.onChange(`+213${normalized}`);
+                  }}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                  className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+            </FormField>
+          )}
+        />
 
         <Controller
           control={control}

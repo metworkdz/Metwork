@@ -24,6 +24,17 @@ export function DashboardSidebar({ role }: DashboardSidebarProps) {
       <nav className="px-3 py-6" aria-label="Dashboard">
         <ul className="space-y-1">
           {items.map((item) => {
+            // Section header: renders a label divider, not a clickable link
+            if (item.sectionHeader) {
+              return (
+                <li key={item.href} className="pt-4 first:pt-0">
+                  <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground/70">
+                    {t(item.labelKey)}
+                  </p>
+                </li>
+              );
+            }
+
             const Icon = item.icon;
             const active =
               pathname === item.href ||

@@ -40,9 +40,14 @@ interface MentorFormDialogProps {
   onSaved: (mentor: Mentor) => void;
 }
 
-interface FormState extends MentorInput {
+interface FormState {
+  fullName: string;
+  position: string;
+  imageUrl: string;
   bio: string;
   linkedinUrl: string;
+  email: string;
+  consultationFeeStr: string;
 }
 
 const empty: FormState = {
@@ -51,6 +56,8 @@ const empty: FormState = {
   imageUrl: '',
   bio: '',
   linkedinUrl: '',
+  email: '',
+  consultationFeeStr: '',
 };
 
 function fromMentor(m: Mentor): FormState {
@@ -60,6 +67,8 @@ function fromMentor(m: Mentor): FormState {
     imageUrl: m.imageUrl,
     bio: m.bio ?? '',
     linkedinUrl: m.linkedinUrl ?? '',
+    email: m.email ?? '',
+    consultationFeeStr: m.consultationFee ? String(m.consultationFee) : '',
   };
 }
 
@@ -114,12 +123,15 @@ export function MentorFormDialog({
 
     setSubmitting(true);
     try {
+      const fee = parseInt(values.consultationFeeStr, 10);
       const payload: MentorInput = {
         fullName: values.fullName.trim(),
         position: values.position.trim(),
         imageUrl: values.imageUrl.trim(),
         bio: values.bio.trim() || null,
         linkedinUrl: values.linkedinUrl.trim() || null,
+        email: values.email.trim() || null,
+        consultationFee: !isNaN(fee) && fee > 0 ? fee : 0,
       };
       const saved = isEdit
         ? await mentorsService.update(initial!.id, payload)
@@ -138,6 +150,7 @@ export function MentorFormDialog({
   }
 
   // Build a preview-shaped Mentor object from the current form values.
+  const fee = parseInt(values.consultationFeeStr, 10);
   const preview: Mentor = {
     id: initial?.id ?? 'preview',
     fullName: values.fullName || 'Mentor name',
@@ -145,6 +158,7 @@ export function MentorFormDialog({
     imageUrl: values.imageUrl || '',
     bio: values.bio.trim() || null,
     linkedinUrl: values.linkedinUrl.trim() || null,
+    consultationFee: !isNaN(fee) && fee > 0 ? fee : 0,
     createdAt: initial?.createdAt ?? new Date().toISOString(),
   };
 
@@ -235,6 +249,28 @@ export function MentorFormDialog({
                   maxLength={300}
                 />
               </div>
+            </Field>
+
+            <Field label="Contact email" hint="Used for consultation approval notifications. Not shown publicly.">
+              <Input
+                type="email"
+                value={values.email}
+                onChange={(e) => update('email', e.target.value)}
+                placeholder="mentor@example.com"
+                maxLength={200}
+              />
+            </Field>
+
+            <Field label="Consultation fee (DZD)" hint="Optional. Leave blank or 0 for free sessions. Admin keeps 30%, mentor receives 70%.">
+              <Input
+                type="number"
+                min={0}
+                max={1000000}
+                step={100}
+                value={values.consultationFeeStr}
+                onChange={(e) => update('consultationFeeStr', e.target.value)}
+                placeholder="e.g. 5000"
+              />
             </Field>
 
             {error && (

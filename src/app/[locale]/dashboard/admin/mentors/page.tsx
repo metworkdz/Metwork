@@ -1,4 +1,4 @@
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { Users } from 'lucide-react';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ interface PageProps {
 export default async function AdminMentorsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('pages.dashboard');
   await requireRole(['ADMIN']);
 
   // Server-render with the live roster — instant first paint, no flash.
@@ -22,8 +23,8 @@ export default async function AdminMentorsPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        title="Mentors"
-        subtitle="The roster shown in the landing-page carousel."
+        title={t('admin.mentors.title')}
+        subtitle={t('admin.mentors.subtitle')}
         action={
           <Badge variant="outline" className="gap-1">
             <Users className="size-3" />

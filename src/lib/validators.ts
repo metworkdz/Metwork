@@ -67,12 +67,24 @@ export const signupSchema = z
     acceptPrivacy: z.literal(true, {
       errorMap: () => ({ message: 'privacyRequired' }),
     }),
+    /** Optional — only shown when role === 'INCUBATOR'. */
+    incubatorName: z.string().max(100).optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ['confirmPassword'],
     message: 'passwordMismatch',
   });
 export type SignupInput = z.infer<typeof signupSchema>;
+
+/**
+ * Incubator name — optional extra field shown only when role === 'INCUBATOR'.
+ * Kept separate so it doesn't pollute the base schema refinement chain.
+ */
+export const incubatorNameSchema = z
+  .string()
+  .min(2, { message: 'required' })
+  .max(100)
+  .optional();
 
 /**
  * OTP verification schema.

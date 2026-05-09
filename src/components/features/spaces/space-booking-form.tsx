@@ -48,20 +48,40 @@ function availableUnits(space: Space): { unit: BookingUnit; price: number }[] {
   return out;
 }
 
-function todayLocalDateString(): string {
-  const d = new Date();
-  // input[type=date] expects YYYY-MM-DD in the user's local date.
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
 }
 
-function isoStartOfDay(dateStr: string): string {
-  // Parse the YYYY-MM-DD as midnight local, return ISO. The server's
-  // bookings ledger stores in UTC.
-  const d = new Date(`${dateStr}T09:00:00`);
-  return d.toISOString();
+function nowLocalDatetimeString(): string {
+  const d = new Date();
+  // Round up to next whole hour for a sensible default.
+  d.setMinutes(0, 0, 0);
+  d.setHours(d.getHours() + 1);
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hr = String(d.getHours()).padStart(2, '0');
+  return `${y}-${mo}-${day}T${hr}:00`;
+}
+
+function minDatetimeString(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hr = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${y}-${mo}-${day}T${hr}:${min}`;
+}
+
+function isoFromDatetime(datetimeStr: string): string {
+  return new Date(datetimeStr).toISOString();
 }
 
 export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
@@ -74,7 +94,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const firstUnit = units[0]?.unit ?? 'DAY';
   const [unit, setUnit] = useState<BookingUnit>(firstUnit);
   const [quantity, setQuantity] = useState(1);
-  const [date, setDate] = useState<string>(todayLocalDateString());
+  const [date, setDate] = useState<string>(nowLocalDatetimeString());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
 
@@ -126,8 +146,8 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         spaceId: space.id,
         unit,
         quantity,
-        startsAt: isoStartOfDay(date),
-        clientReference: crypto.randomUUID(),
+        startsAt: isoFromDatetime(date),
+        clientReference: generateUUID(),
       });
       setBalance(res.wallet.balance);
       // Refresh AuthProvider too — keeps any other consumer in sync.
@@ -168,13 +188,13 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label htmlFor={dateId}>Start date</Label>
+          <Label htmlFor={dateId}>Start date &amp; time</Label>
           <div className="relative mt-1.5">
             <CalendarDays className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id={dateId}
-              type="date"
-              min={todayLocalDateString()}
+              type="datetime-local"
+              min={minDatetimeString()}
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="ps-9"

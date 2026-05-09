@@ -9,6 +9,8 @@ import { MentorSlideshow } from '@/components/features/mentors/mentor-slideshow'
 import { listMentors } from '@/server/mentors/service';
 import { toMentorDto } from '@/server/mentors/serialize';
 
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: Promise<{ locale: string }>;
 }
@@ -16,7 +18,7 @@ interface PageProps {
 export const metadata: Metadata = {
   title: 'Mentors — Metwork',
   description:
-    'Meet the founders and operators who mentor the next generation of Algerian startups. Book a consultation today.',
+    'Meet our experienced trainers and industry experts who guide the next generation of Algerian startups. Book a consultation today.',
 };
 
 export default async function MentorsPage({ params }: PageProps) {
@@ -46,14 +48,14 @@ export default async function MentorsPage({ params }: PageProps) {
             </Badge>
 
             <h1 className="mt-5 max-w-3xl text-balance text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
-              Learn from founders
+              Learn from expert trainers
               <br className="hidden sm:block" />
-              <span className="text-primary"> who&apos;ve done it.</span>
+              <span className="text-primary"> who guide your journey.</span>
             </h1>
 
             <p className="mt-5 max-w-xl text-balance text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Our mentors are hand-picked operators, investors, and founders who
-              have built and scaled Algeria&apos;s most impactful startups. Get
+              Our mentors are experienced trainers and industry professionals with
+              deep expertise across business, tech, and entrepreneurship. Get
               direct access — book a one-on-one consultation.
             </p>
 

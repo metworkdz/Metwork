@@ -28,6 +28,8 @@
     "spaces": "الفضاءات",
     "mentors": "المرشدون",
     "investors": "المستثمرون",
+    "startups": "الشركات الناشئة",
+    "pricing": "الأسعار",
     "academy": "أكاديمية الشركات الناشئة",
     "login": "تسجيل الدخول",
     "signup": "ابدأ الآن",
@@ -102,8 +104,28 @@
     "cta": {
       "title": "هل أنت مستعد للانضمام إلى حركة الشركات الناشئة الجزائرية؟",
       "subtitle": "البداية مجانية. انضم إلى آلاف المؤسسين والمستثمرين والمبتكرين.",
-      "button": "أنشئ حسابك"
-    }
+      "button": "أنشئ حسابك",
+      "explorePrograms": "استكشف البرامج"
+    },
+    "about": {
+      "label": "حول Metwork",
+      "title": "الشبكة التي تتواصل فيها الشركات الناشئة الجزائرية وتنمو وتتوسع.",
+      "body1": "Metwork هي منصة الشركات الناشئة الموحّدة في الجزائر — بُنيت لتجمع المؤسسين والمستثمرين والحاضنات تحت سقف واحد. سواء كنت تطلق منتجك الأول أو تدير محفظة من البرامج، بنيناها من أجلك.",
+      "body2": "نؤمن بأن الشركات الجزائرية الكبرى القادمة لن تُبنى في عزلة. ستظهر من خلال التواصل الصحيح — المرشدون المناسبون، رأس المال المناسب، والمجتمع المناسب، كلهم في نفس الغرفة.",
+      "cta": "اعمل معنا",
+      "pillar1Title": "الاحتضان",
+      "pillar1Desc": "برامج عملية وفضاء عمل مشترك وإرشاد متخصص للشركات الناشئة الجزائرية في مراحلها الأولى.",
+      "pillar2Title": "التواصل",
+      "pillar2Desc": "شبكة منتقاة تربط المؤسسين بالمستثمرين والمرشدين والحاضنات عبر البلاد.",
+      "pillar3Title": "التوسع",
+      "pillar3Desc": "أدوات وشراكات لمساعدة الشركات الناشئة الجزائرية على النمو إلى ما وراء الأسواق المحلية."
+    },
+    "sections": {
+      "whatWeOffer": "ما نقدمه",
+      "whoWeServe": "من نخدم",
+      "joinMovement": "انضم إلى الحركة"
+    },
+    "socialProof": "موثوق به من قِبل المؤسسين والمستثمرين والحاضنات في جميع أنحاء الجزائر."
   },
   "auth": {
     "login": {
@@ -154,16 +176,23 @@
       "roleInvestor": "مستثمر",
       "roleInvestorDesc": "أبحث عن تمويل الشركات الناشئة الجزائرية",
       "roleIncubator": "حاضنة / فضاء عمل مشترك",
-      "roleIncubatorDesc": "أدير حاضنة، مسرّعة، أو فضاء عمل مشترك"
+      "roleIncubatorDesc": "أدير حاضنة، مسرّعة، أو فضاء عمل مشترك",
+      "incubatorNameLabel": "اسم الحاضنة",
+      "incubatorNamePlaceholder": "مثال: مركز ابتكار الجزائر"
     },
     "verifyOtp": {
       "title": "تحقّق من هاتفك",
       "subtitle": "أرسلنا رمزًا من 6 أرقام إلى {phone}",
+      "subtitleWithEmail": "أرسلنا رمزًا من 6 أرقام إلى {phone} وإلى {email}",
       "codeLabel": "رمز التحقّق",
       "submit": "تحقّق",
       "resend": "إعادة إرسال الرمز",
       "resendIn": "إعادة الإرسال خلال {seconds}ث",
-      "wrongNumber": "رقم خاطئ؟"
+      "wrongNumber": "رقم خاطئ؟",
+      "didntReceive": "لم تستلمه؟",
+      "channelWhatsapp": "إعادة الإرسال عبر WhatsApp",
+      "channelEmail": "إرسال عبر البريد الإلكتروني",
+      "channelSms": "إرسال عبر SMS"
     },
     "errors": {
       "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
@@ -184,32 +213,32 @@
   "membership": {
     "tiers": {
       "free": {
-        "name": "مجاني",
-        "description": "ابدأ، استكشف المنظومة"
+        "name": "مستكشف",
+        "description": "اكتشف المنظومة — بدون أي التزام"
       },
       "entrepreneur": {
-        "name": "رائد الأعمال",
-        "description": "احجز الفضاءات والبرامج بأسعار الأعضاء"
+        "name": "باني",
+        "description": "كل ما تحتاجه لإطلاق شركتك الناشئة وتنميتها"
       },
       "startup": {
-        "name": "شركة ناشئة",
-        "description": "كل ميزات رائد الأعمال مع الوصول إلى التمويل"
+        "name": "مؤسِّس",
+        "description": "اجمع التمويل، ابرز للعالم، وابنِ إمبراطوريتك"
       }
     },
     "features": {
-      "profile": "ملف عام",
-      "browse": "تصفّح كل القوائم",
-      "events": "حضور الفعاليات العامة",
-      "allFree": "كل ميزات الباقة المجانية",
-      "bookSpaces": "حجز فضاءات العمل والمكاتب",
-      "bookPrograms": "التقديم للبرامج",
-      "eventsDiscount": "أسعار خاصة للأعضاء",
-      "prioritySupport": "دعم بأولوية",
-      "allEntrepreneur": "كل ميزات رائد الأعمال",
-      "listStartup": "أدرج شركتك الناشئة",
-      "fundraisingAccess": "سوق التمويل",
-      "investorMeetings": "طلبات اجتماعات المستثمرين",
-      "featuredListing": "إدراج مميّز في السوق"
+      "profile": "احجز مساحات عمل مشتركة ومكاتب",
+      "browse": "احجز اجتماعات مع المرشدين",
+      "events": "قدّم على الفعاليات والبرامج",
+      "allFree": "كل ميزات باقة مستكشف",
+      "bookSpaces": "امتيازات وتخفيضات حصرية من الشركاء",
+      "bookPrograms": "استشارة مجانية مع مرشد كل شهر",
+      "eventsDiscount": "تخفيضات على حجوزات المساحات",
+      "prioritySupport": "وصول إلى الفعاليات الحصرية للأعضاء",
+      "allEntrepreneur": "كل ميزات باقة باني",
+      "listStartup": "أدرج شركتك الناشئة في السوق",
+      "fundraisingAccess": "اجمع تمويلاً واستقطب المستثمرين",
+      "investorMeetings": "احصل على طلبات اجتماع من المستثمرين",
+      "featuredListing": "تمييز شركتك الناشئة في الصفحة الرئيسية للسوق"
     },
     "billingMonthly": "شهري",
     "billingYearly": "سنوي",
@@ -251,9 +280,21 @@
     "users": "المستخدمون",
     "incubators": "الحاضنات",
     "memberships": "العضويات",
+    "promoCodes": "رموز الخصم",
     "commissions": "العمولات",
     "content": "المحتوى",
-    "consultations": "الاستشارات"
+    "consultations": "الاستشارات",
+    "mentorRevenue": "إيرادات المرشدين",
+    "perks": "الامتيازات",
+    "mentors": "المرشدون",
+    "contacts": "صندوق الرسائل",
+    "saved": "الشركات المحفوظة",
+    "investorContacts": "طلبات المستثمرين",
+    "members": "الأعضاء",
+    "auditLog": "سجل التدقيق",
+    "myIncubator": "حاضنتي",
+    "profile": "الملف الشخصي",
+    "withdrawals": "طلبات السحب"
   },
   "pages": {
     "programs": {
@@ -275,6 +316,304 @@
       "title": "اكتشف الشركات الناشئة الجزائرية",
       "subtitle": "شركات ناشئة مؤهلة تبحث عن تمويل. تواصل مباشرة مع المؤسسين.",
       "empty": "لا توجد شركات ناشئة تطابق معاييرك."
+    },
+    "startups": {
+      "title": "دليل الشركات الناشئة",
+      "subtitle": "تصفّح الشركات الناشئة الجزائرية عالية الإمكانية في كل القطاعات.",
+      "empty": "لا توجد شركات ناشئة مدرجة بعد. عُد قريبًا.",
+      "filterAll": "كل القطاعات",
+      "listYours": "أدرج شركتك الناشئة",
+      "cta": "هل أنت مهتم بالاستثمار؟",
+      "ctaSub": "أنشئ حساب مستثمر للتواصل مباشرة مع المؤسسين.",
+      "ctaButton": "انضم كمستثمر"
+    },
+    "pricing": {
+      "title": "أسعار بسيطة وشفافة",
+      "subtitle": "ابدأ مجانًا. قم بالترقية عندما تكون مستعدًا للنمو.",
+      "faq": "لديك أسئلة؟",
+      "faqLink": "تحدث معنا",
+      "incubatorTitle": "للحاضنات وفضاءات العمل المشترك",
+      "incubatorSubtitle": "نموذجان — اختر ما يناسب عملك.",
+      "mostPopular": "الأكثر شيوعًا"
+    },
+    "dashboard": {
+      "entrepreneur": {
+        "overview": {
+          "greeting": "مرحبًا بعودتك، {name} 👋",
+          "subtitle": "إليك ما يحدث في رحلتك الريادية.",
+          "bookSpace": "احجز مساحة",
+          "statActiveBookings": "الحجوزات النشطة",
+          "statPrograms": "البرامج",
+          "statWallet": "المحفظة",
+          "statWalletHint": "الرصيد المتاح",
+          "statStartupStatus": "حالة الشركة الناشئة",
+          "statStartupHintNone": "أنشئ ملفك الشخصي",
+          "statMembership": "العضوية",
+          "statMembershipHintFree": "قم بالترقية لفتح الميزات",
+          "statMembershipHintActive": "الباقة نشطة",
+          "statConsultations": "الاستشارات",
+          "statConsultationHintUpgrade": "قم بالترقية للحصول على جلسات مجانية",
+          "statConsultationHintRemaining": "الجلسات المجانية المتبقية"
+        },
+        "bookings": {
+          "title": "الحجوزات",
+          "subtitle": "الفضاءات والبرامج التي قمت بحجزها."
+        },
+        "wallet": {
+          "title": "المحفظة",
+          "subtitle": "أعد شحن محفظتك لحجز الفضاءات والبرامج والفعاليات بنقرة واحدة."
+        },
+        "settings": {
+          "title": "الإعدادات",
+          "subtitle": "أدِر تفضيلات حسابك."
+        },
+        "startup": {
+          "title": "ملف الشركة الناشئة",
+          "subtitle": "ما سيراه المستثمرون عند تصفح السوق."
+        },
+        "consultations": {
+          "title": "استشارات المرشدين",
+          "subtitle": "احجز جلسات 30 دقيقة مع مرشدينا الخبراء."
+        },
+        "marketplace": {
+          "title": "السوق",
+          "subtitle": "تصفح مزودي الخدمات والأدوات والعروض المتاحة لشركتك الناشئة."
+        },
+        "membership": {
+          "title": "العضوية",
+          "subtitle": "اختر الباقة التي تناسب مرحلتك الحالية."
+        },
+        "perks": {
+          "title": "امتيازات الأعضاء",
+          "subtitle": "مزايا حصرية مضمّنة في عضويتك."
+        }
+      },
+      "incubator": {
+        "overview": {
+          "greetingNoProfile": "مرحبًا، {name}",
+          "subtitleNoProfile": "مرحبًا بك في لوحة تحكم حاضنتك.",
+          "greeting": "مرحبًا، {name}",
+          "subtitle": "إدارة {incubatorName} — {city}.",
+          "manageSpaces": "إدارة الفضاءات",
+          "statActiveSpaces": "الفضاءات النشطة",
+          "statBookingsThisMonth": "الحجوزات هذا الشهر",
+          "statBookingsHint": "{count} قيد الانتظار",
+          "statRevenueMtd": "الإيرادات (منذ بداية الشهر، صافية)",
+          "statRevenueHint": "بعد عمولة المنصة",
+          "statMembersEnrolled": "الأعضاء المسجّلون",
+          "statMembersHint": "في برامجك",
+          "statPrograms": "البرامج",
+          "statWalletBalance": "رصيد المحفظة"
+        },
+        "spaces": {
+          "title": "الفضاءات",
+          "subtitle": "{count} نشط — فضاءات عمل مشترك، مكاتب خاصة، قاعات تدريب."
+        },
+        "programs": {
+          "title": "البرامج",
+          "subtitle": "{count} منشور — احتضان، تسريع، تدريب، وورش عمل."
+        },
+        "bookings": {
+          "title": "الحجوزات",
+          "subtitle": "{count} قيد الانتظار — أكّد أو ألغِ حجوزات فضاءاتك وبرامجك."
+        },
+        "members": {
+          "title": "الأعضاء",
+          "subtitle": "{count} مسجّل في برامجك."
+        },
+        "events": {
+          "title": "الفعاليات",
+          "subtitle": "ليالي العروض التقديمية، أيام العرض، والملتقيات."
+        },
+        "revenue": {
+          "title": "الإيرادات",
+          "subtitle": "إيرادات فضاءاتك وبرامجك بعد عمولة المنصة.",
+          "subtitleNoProfile": "لم يُعثر على ملف حاضنة."
+        },
+        "invoices": {
+          "title": "الفواتير والإيصالات",
+          "subtitle": "اعرض واطبع إيصالات جميع الحجوزات المدفوعة."
+        },
+        "wallet": {
+          "title": "المحفظة",
+          "subtitle": "تصل إيرادات الحجوزات هنا. أعد الشحن لتسوية رسوم المنصة."
+        },
+        "settings": {
+          "title": "الإعدادات",
+          "subtitle": "أدِر ملف حاضنتك وشعارها وتفضيلات الفوترة.",
+          "subtitleNoProfile": "أدِر ملف حاضنتك وتفضيلات المنصة."
+        },
+        "profile": {
+          "title": "ملف الحاضنة",
+          "subtitle": "أدِر ملف Metwork وشعاره وتفضيلات الفوترة."
+        }
+      },
+      "investor": {
+        "overview": {
+          "greeting": "أهلًا، {name}",
+          "subtitle": "اكتشف الشركات الناشئة الجزائرية التي تبحث عن رأس المال.",
+          "browseStartups": "تصفح الشركات الناشئة",
+          "statSavedStartups": "الشركات المحفوظة",
+          "statPendingContacts": "طلبات التواصل المعلّقة",
+          "statPendingContactsHint": "في انتظار ربط الإدارة",
+          "statCommitted": "المُلتزم به",
+          "statCommittedHint": "الصفقات المُغلقة",
+          "statActiveListings": "الإدراجات النشطة",
+          "statActiveListingsHint": "في السوق"
+        },
+        "startups": {
+          "title": "سوق الشركات الناشئة",
+          "subtitle": "اكتشف الشركات الناشئة الجزائرية المفتوحة للاستثمار."
+        },
+        "portfolio": {
+          "title": "متتبّع الاستثمارات",
+          "subtitle": "سجّل وتابع صفقاتك — من أول تواصل حتى الإغلاق."
+        },
+        "meetings": {
+          "title": "طلبات التواصل",
+          "subtitle": "المؤسسون الذين تواصلت معهم. سيربطك فريقنا بهم بعد المراجعة.",
+          "empty": "لا توجد طلبات تواصل بعد"
+        },
+        "saved": {
+          "title": "الشركات المحفوظة",
+          "subtitle": "الإدراجات التي حفظتها للرجوع إليها لاحقًا.",
+          "empty": "لا توجد شركات ناشئة محفوظة بعد"
+        },
+        "settings": {
+          "title": "الإعدادات",
+          "subtitle": "أدِر تفضيلات حسابك."
+        }
+      },
+      "admin": {
+        "overview": {
+          "greeting": "مدير Metwork",
+          "subtitle": "إحصائيات وضوابط المنصة.",
+          "statTotalUsers": "إجمالي المستخدمين",
+          "statTotalUsersHint": "+{count} هذا الشهر",
+          "statActiveIncubators": "الحاضنات النشطة",
+          "statBookingRevenue": "إيرادات الحجوزات (كل الأوقات)",
+          "statBookingRevenueHint": "{count} حجز",
+          "statWalletFloat": "رصيد المحافظ",
+          "statWalletFloatHint": "إجمالي الأموال المحتجزة في جميع المحافظ",
+          "statPendingMentorReqs": "طلبات المرشدين المعلّقة",
+          "statUnhandledContacts": "الرسائل غير المعالجة"
+        },
+        "users": {
+          "title": "المستخدمون",
+          "subtitle": "ابحث وعلّق وأعد تفعيل وغيّر أدوار أعضاء Metwork.",
+          "statActive": "نشطون",
+          "statPending": "في انتظار التحقق",
+          "statSuspended": "موقوفون / محظورون"
+        },
+        "incubators": {
+          "title": "الحاضنات",
+          "subtitle": "سجّل وأدِر ملفات الحاضنات ونماذج الفوترة والمديرين.",
+          "statRegistered": "مسجّلة",
+          "statActive": "نشطة",
+          "statSuspended": "موقوفة"
+        },
+        "memberships": {
+          "title": "العضويات",
+          "subtitle": "خصّص وأدِر خطط العضوية لمستخدمي Metwork.",
+          "statTotal": "إجمالي المستخدمين",
+          "statActive": "الباقات النشطة",
+          "statPaid": "الباقات المدفوعة"
+        },
+        "promoCodes": {
+          "title": "رموز الخصم",
+          "subtitle": "أنشئ وأدِر رموز الخصم للعضويات وحجوزات الفضاءات."
+        },
+        "commissions": {
+          "title": "العمولات",
+          "subtitle": "اضبط معدلات عمولة المنصة لكل نوع من أنواع المعاملات."
+        },
+        "listings": {
+          "title": "الإدراجات المعلّقة",
+          "subtitle": "الفضاءات والبرامج غير المنشورة — الفضاءات غير النشطة والبرامج المسوّدة."
+        },
+        "mentorBookings": {
+          "title": "طلبات الاستشارة",
+          "subtitle": "راجع وردّ على طلبات حجز المرشدين من المؤسسين."
+        },
+        "withdrawals": {
+          "title": "طلبات السحب",
+          "subtitle": "راجع وعالج طلبات سحب المحافظ من المستخدمين والحاضنات."
+        },
+        "cms": {
+          "title": "الصفحة الرئيسية",
+          "subtitle": "عدّل محتوى الصفحة العامة. التغييرات تنشر فورًا عند النشر."
+        },
+        "settings": {
+          "title": "إعدادات المنصة",
+          "subtitle": "الإعدادات العامة لمنصة Metwork."
+        },
+        "auditLog": {
+          "title": "سجل التدقيق",
+          "subtitle": "سجل بالإجراءات الإدارية الأخيرة. يعرض آخر 200 مدخل."
+        },
+        "contacts": {
+          "title": "صندوق الرسائل",
+          "subtitle": "الرسائل المُرسلة عبر نموذج التواصل العام.",
+          "statTotal": "إجمالي الرسائل",
+          "statUnhandled": "غير معالجة",
+          "statHandled": "معالجة"
+        },
+        "bookings": {
+          "title": "جميع الحجوزات",
+          "subtitle": "{total} حجز — {pending} قيد الموافقة."
+        },
+        "investorContacts": {
+          "title": "طلبات تواصل المستثمرين",
+          "subtitle": "{count} قيد الانتظار — راجع وربط المستثمرين بالمؤسسين."
+        },
+        "mentorRevenue": {
+          "title": "إيرادات المرشدين",
+          "subtitle": "المنصة تأخذ {platformRate}% · المرشدون يحصلون على {mentorRate}%. معدل العمولة قابل للضبط في صفحة العمولات."
+        },
+        "mentors": {
+          "title": "المرشدون",
+          "subtitle": "القائمة المعروضة في عرض الشرائح على الصفحة الرئيسية."
+        },
+        "incubator": {
+          "overview": {
+            "subtitle": "{city} · تُدار بواسطتك بصفتك مدير المنصة.",
+            "manageSpaces": "إدارة الفضاءات",
+            "statActiveSpaces": "الفضاءات النشطة",
+            "statBookingsThisMonth": "الحجوزات هذا الشهر",
+            "statBookingsHint": "{count} قيد الانتظار",
+            "statRevenueMtd": "الإيرادات (منذ بداية الشهر، صافية)",
+            "statRevenueHint": "بعد عمولة المنصة",
+            "statMembersEnrolled": "الأعضاء المسجّلون",
+            "statMembersHint": "في برامجك",
+            "statPrograms": "البرامج",
+            "statWalletBalance": "رصيد المحفظة"
+          },
+          "spaces": {
+            "title": "الفضاءات",
+            "subtitle": "{count} نشط — فضاءات عمل مشترك، مكاتب خاصة، قاعات تدريب."
+          },
+          "programs": {
+            "title": "البرامج",
+            "subtitle": "{count} منشور — احتضان، تسريع، تدريب، وورش عمل."
+          },
+          "bookings": {
+            "title": "الحجوزات",
+            "subtitle": "{count} قيد الانتظار — أكّد أو ألغِ حجوزات الفضاءات والبرامج."
+          },
+          "members": {
+            "title": "الأعضاء",
+            "subtitle": "{count} مسجّل في برامج Metwork."
+          },
+          "events": {
+            "title": "الفعاليات",
+            "subtitle": "ليالي العروض التقديمية، أيام العرض، والملتقيات."
+          },
+          "profile": {
+            "title": "ملف الحاضنة",
+            "subtitle": "أدِر ملف Metwork وشعاره وتفضيلات الفوترة."
+          }
+        }
+      }
     }
   }
 }

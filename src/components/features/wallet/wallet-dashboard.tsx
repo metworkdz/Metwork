@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table';
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { walletService } from '@/services/wallet.service';
+import { WithdrawalForm } from './withdrawal-form';
 import { ApiClientError } from '@/lib/api-client';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -104,6 +105,8 @@ export function WalletDashboard() {
           }}
         />
       </div>
+
+      <WithdrawalForm />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

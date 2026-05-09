@@ -25,6 +25,36 @@ import type {
 } from './types';
 import type { Space } from '@/types/domain';
 
+/** Returns the YYYY-MM-DD portion of an ISO datetime string or Date. */
+function toDateStr(iso: string): string {
+  return iso.slice(0, 10);
+}
+
+/** True if the booking window [startsAt, endsAt) overlaps any blocked date. */
+function overlapsBlockedDates(
+  blockedDates: string[],
+  startsAt: string,
+  endsAt: string,
+  unit: BookingUnit,
+  quantity: number,
+): boolean {
+  if (!blockedDates.length) return false;
+  const blocked = new Set(blockedDates);
+  const start = new Date(startsAt);
+  // Walk through each day in the range
+  for (let i = 0; i < quantity; i++) {
+    const day = new Date(start);
+    if (unit === 'HOUR') {
+      // Hour bookings fall on a single day
+      return blocked.has(toDateStr(startsAt));
+    }
+    day.setUTCDate(start.getUTCDate() + i);
+    if (blocked.has(day.toISOString().slice(0, 10))) return true;
+  }
+  void endsAt;
+  return false;
+}
+
 export interface CreateSpaceBookingArgs {
   userId: string;
   spaceId: string;
@@ -32,6 +62,8 @@ export interface CreateSpaceBookingArgs {
   quantity: number;
   startsAt: string;
   clientReference: string;
+  /** Percentage discount to apply (0–100). Combines membership + promo discounts. */
+  discountPercent?: number;
 }
 
 function unitPrice(space: Space, unit: BookingUnit): number | null {
@@ -92,8 +124,19 @@ export async function createSpaceBooking(
   if (price == null) {
     return { ok: false, reason: 'UNIT_NOT_AVAILABLE', available: availableUnits(space) };
   }
-  const total = price * args.quantity;
+  const baseTotal = price * args.quantity;
+  const discountFraction = Math.min(100, Math.max(0, args.discountPercent ?? 0)) / 100;
+  const discountAmount = Math.floor(baseTotal * discountFraction);
+  const total = Math.max(0, baseTotal - discountAmount);
   const endsAt = computeEndsAt(args.startsAt, args.unit, args.quantity);
+
+  // Pre-check: blocked dates (outside the DB lock for speed)
+  const rawSpace = (await db.read()).incubatorSpaces?.find((s) => s.id === args.spaceId);
+  if (rawSpace?.unavailableDates?.length) {
+    if (overlapsBlockedDates(rawSpace.unavailableDates, args.startsAt, endsAt, args.unit, args.quantity)) {
+      return { ok: false, reason: 'DATE_UNAVAILABLE', blockedDates: rawSpace.unavailableDates };
+    }
+  }
 
   return db.update<CreateSpaceBookingResult>((d) => {
     // Idempotency: same clientReference for the same user → return existing.
@@ -106,6 +149,29 @@ export async function createSpaceBooking(
       if (tx && w) {
         return { ok: true, replayed: true, booking: existing, transaction: tx, wallet: w };
       }
+    }
+
+    // Inside the lock: also re-check blocked dates (state may have changed).
+    const spaceRec = d.incubatorSpaces?.find((s) => s.id === space.id);
+    if (spaceRec?.unavailableDates?.length) {
+      if (overlapsBlockedDates(spaceRec.unavailableDates, args.startsAt, endsAt, args.unit, args.quantity)) {
+        return { ok: false, reason: 'DATE_UNAVAILABLE', blockedDates: spaceRec.unavailableDates };
+      }
+    }
+
+    // Concurrent-occupancy capacity check: count active bookings for this
+    // space whose time window overlaps with the requested [startsAt, endsAt).
+    const overlapping = d.bookings.filter(
+      (b) =>
+        b.itemKind === 'SPACE' &&
+        b.itemId === space.id &&
+        b.status !== 'CANCELLED' &&
+        b.status !== 'REFUNDED' &&
+        b.startsAt < endsAt &&
+        b.endsAt > args.startsAt,
+    ).length;
+    if (overlapping >= space.capacity) {
+      return { ok: false, reason: 'CAPACITY_EXCEEDED', capacity: space.capacity, taken: overlapping };
     }
 
     // Wallet — auto-create on first access.
@@ -148,6 +214,7 @@ export async function createSpaceBooking(
         bookingItemId: space.id,
         unit: args.unit,
         quantity: args.quantity,
+        discountPercent: args.discountPercent ?? 0,
       },
       createdAt: now,
       completedAt: now,
@@ -167,7 +234,7 @@ export async function createSpaceBooking(
       startsAt: args.startsAt,
       endsAt,
       totalAmount: total,
-      status: 'CONFIRMED',
+      status: 'PENDING',
       clientReference: args.clientReference,
       transactionId: tx.id,
       createdAt: now,
@@ -305,7 +372,7 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
       startsAt: program.startDate,
       endsAt: program.endDate,
       totalAmount: total,
-      status: 'CONFIRMED',
+      status: 'PENDING',
       clientReference: args.clientReference,
       transactionId: tx?.id ?? null,
       createdAt: now,
@@ -447,7 +514,7 @@ export async function registerForEvent(
       startsAt: event.eventDate,
       endsAt: event.eventDate,
       totalAmount: total,
-      status: 'CONFIRMED',
+      status: 'PENDING',
       clientReference: args.clientReference,
       transactionId: tx?.id ?? null,
       createdAt: now,

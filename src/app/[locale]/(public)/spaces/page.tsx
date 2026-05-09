@@ -4,8 +4,10 @@ import { Building2 } from 'lucide-react';
 import { Container } from '@/components/ui/container';
 import { Badge } from '@/components/ui/badge';
 import { SpacesExplorer } from '@/components/features/spaces/spaces-explorer';
-import { demoPublicSpaces } from '@/lib/demo-data';
+import { listSpaces } from '@/server/bookings/space-catalog';
 import { algerianCities } from '@/config/cities';
+
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -22,8 +24,7 @@ export default async function SpacesPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  // TODO: replace with `await spacesService.list()` when the listings API ships.
-  const spaces = demoPublicSpaces;
+  const spaces = await listSpaces();
 
   // Build the city facet from the inventory itself, then re-order using
   // the canonical city list for predictable display.
@@ -84,7 +85,7 @@ function Stats({
   spaces,
   cityCount,
 }: {
-  spaces: typeof demoPublicSpaces;
+  spaces: Awaited<ReturnType<typeof listSpaces>>;
   cityCount: number;
 }) {
   const hosts = new Set(spaces.map((s) => s.incubatorId)).size;

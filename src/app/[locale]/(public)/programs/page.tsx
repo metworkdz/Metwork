@@ -8,6 +8,8 @@ import { listPrograms } from '@/server/bookings/program-catalog';
 import { getProgramAttendance } from '@/server/bookings/service';
 import { algerianCities } from '@/config/cities';
 
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: Promise<{ locale: string }>;
 }

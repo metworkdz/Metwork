@@ -25,6 +25,8 @@ export interface SessionUser {
   phoneVerified: boolean;
   emailVerified: boolean;
   membershipCode: string | null;
+  /** ISO datetime — when the paid membership expires. Null = no expiry or free tier. */
+  membershipExpiresAt?: string | null;
   avatarUrl: string | null;
   locale: 'en' | 'fr' | 'ar';
 }

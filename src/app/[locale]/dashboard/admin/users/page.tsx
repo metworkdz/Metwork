@@ -1,10 +1,10 @@
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { Users, UserCheck, ShieldOff } from 'lucide-react';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { StatCard } from '@/components/shared/stat-card';
-import { AdminUsersTable } from '@/components/features/admin/admin-users-table';
+import { AdminUsersTable, type AdminUserView } from '@/components/features/admin/admin-users-table';
 import { requireRole } from '@/lib/auth-guards';
-import { demoAdminUsers } from '@/lib/demo-data';
+import { db } from '@/server/db/store';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -13,31 +13,35 @@ interface PageProps {
 export default async function AdminUsersPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('pages.dashboard');
   await requireRole(['ADMIN']);
 
-  const users = demoAdminUsers;
-  const active = users.filter((u) => u.status === 'ACTIVE').length;
-  const pending = users.filter((u) => u.status === 'PENDING_VERIFICATION').length;
+  const data = await db.read();
+
+  // Strip passwordHash before sending to the client component
+  const users: AdminUserView[] = data.users.map(({ passwordHash: _, ...u }) => {
+    void _;
+    return u;
+  });
+
+  const active    = users.filter((u) => u.status === 'ACTIVE').length;
+  const pending   = users.filter((u) => u.status === 'PENDING_VERIFICATION').length;
   const suspended = users.filter((u) => u.status === 'SUSPENDED' || u.status === 'BANNED').length;
 
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        title="Users"
-        subtitle="Search, suspend, reinstate, and audit Metwork members."
+        title={t('admin.users.title')}
+        subtitle={t('admin.users.subtitle')}
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Active" value={active} icon={UserCheck} />
-        <StatCard label="Pending verification" value={pending} icon={Users} />
-        <StatCard label="Suspended / banned" value={suspended} icon={ShieldOff} />
+        <StatCard label={t('admin.users.statActive')}    value={active}    icon={UserCheck} />
+        <StatCard label={t('admin.users.statPending')}   value={pending}   icon={Users} />
+        <StatCard label={t('admin.users.statSuspended')} value={suspended} icon={ShieldOff} />
       </div>
 
       <AdminUsersTable initial={users} />
-
-      <p className="text-xs text-muted-foreground">
-        Showing demo data — moderation actions are stubbed until the admin user-management API ships.
-      </p>
     </div>
   );
 }

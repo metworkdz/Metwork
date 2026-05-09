@@ -15,6 +15,8 @@ export function toMentorDto(m: MentorRecord): Mentor {
     imageUrl: m.imageUrl,
     bio: m.bio,
     linkedinUrl: m.linkedinUrl,
+    email: m.email ?? null,
+    consultationFee: m.consultationFee,
     createdAt: m.createdAt,
   };
 }

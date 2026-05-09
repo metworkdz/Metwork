@@ -24,20 +24,31 @@ interface BookConsultationDialogProps {
 
 type FormState = 'idle' | 'submitting' | 'success' | 'error';
 
+/** Returns the min allowed datetime-local string (24h from now). */
+function minScheduledAt(): string {
+  const d = new Date(Date.now() + 24 * 60 * 60 * 1000 + 60 * 1000);
+  // datetime-local format: YYYY-MM-DDTHH:MM
+  return d.toISOString().slice(0, 16);
+}
+
 export function BookConsultationDialog({
   mentor,
   open,
   onOpenChange,
 }: BookConsultationDialogProps) {
-  const [name,    setName]    = useState('');
-  const [email,   setEmail]   = useState('');
-  const [phone,   setPhone]   = useState('');
-  const [message, setMessage] = useState('');
-  const [formState, setFormState] = useState<FormState>('idle');
-  const [errorMsg,  setErrorMsg]  = useState<string | null>(null);
+  const [name,        setName]        = useState('');
+  const [email,       setEmail]       = useState('');
+  const [phone,       setPhone]       = useState('');
+  const [message,     setMessage]     = useState('');
+  const [scheduledAt, setScheduledAt] = useState('');
+  const [promoCode,   setPromoCode]   = useState('');
+  const [formState,   setFormState]   = useState<FormState>('idle');
+  const [errorMsg,    setErrorMsg]    = useState<string | null>(null);
+  const [discountApplied, setDiscountApplied] = useState<number | null>(null);
 
   function reset() {
-    setName(''); setEmail(''); setPhone(''); setMessage('');
+    setName(''); setEmail(''); setPhone(''); setMessage(''); setScheduledAt('');
+    setPromoCode(''); setDiscountApplied(null);
     setFormState('idle'); setErrorMsg(null);
   }
 
@@ -49,6 +60,15 @@ export function BookConsultationDialog({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!mentor) return;
+
+    // Client-side 24h guard (server also validates)
+    const scheduled = new Date(scheduledAt);
+    if (scheduled < new Date(Date.now() + 24 * 60 * 60 * 1000)) {
+      setErrorMsg('Please choose a date and time at least 24 hours from now.');
+      setFormState('error');
+      return;
+    }
+
     setFormState('submitting');
     setErrorMsg(null);
     try {
@@ -56,7 +76,14 @@ export function BookConsultationDialog({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ name, email, phone, message }),
+        body: JSON.stringify({
+          name,
+          email,
+          phone,
+          message,
+          scheduledAt: new Date(scheduledAt).toISOString(),
+          ...(promoCode.trim() ? { promoCode: promoCode.trim().toUpperCase() } : {}),
+        }),
       });
       if (res.status === 401) {
         setErrorMsg('Please log in to book a consultation.');
@@ -69,6 +96,8 @@ export function BookConsultationDialog({
         setFormState('error');
         return;
       }
+      const data = await res.json().catch(() => ({})) as { discountPercent?: number };
+      if (data.discountPercent) setDiscountApplied(data.discountPercent);
       setFormState('success');
     } catch {
       setErrorMsg('Network error. Please check your connection.');
@@ -90,8 +119,13 @@ export function BookConsultationDialog({
             <p className="mt-2 text-sm text-muted-foreground">
               Your consultation request with{' '}
               <span className="font-medium text-foreground">{mentor.fullName}</span> has
-              been submitted. Our team will review it and get back to you shortly.
+              been submitted. Our team will review it and confirm your preferred time shortly.
             </p>
+            {discountApplied ? (
+              <p className="mt-2 text-sm font-medium text-emerald-600">
+                🎉 {discountApplied}% discount applied via promo code.
+              </p>
+            ) : null}
             <Button className="mt-6" onClick={() => handleOpenChange(false)}>
               Done
             </Button>
@@ -155,6 +189,21 @@ export function BookConsultationDialog({
                 />
               </div>
               <div className="space-y-1.5">
+                <Label htmlFor="bc-scheduled">Preferred date &amp; time</Label>
+                <Input
+                  id="bc-scheduled"
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                  min={minScheduledAt()}
+                  required
+                  disabled={formState === 'submitting'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Must be at least 24 hours from now. Admin may adjust before confirming.
+                </p>
+              </div>
+              <div className="space-y-1.5">
                 <Label htmlFor="bc-message">What do you need help with?</Label>
                 <textarea
                   id="bc-message"
@@ -170,6 +219,19 @@ export function BookConsultationDialog({
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
                     'disabled:cursor-not-allowed disabled:opacity-50',
                   )}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="bc-promo">Promo code <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                <Input
+                  id="bc-promo"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. LAUNCH20"
+                  className="font-mono uppercase"
+                  maxLength={32}
+                  disabled={formState === 'submitting'}
                 />
               </div>
 

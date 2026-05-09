@@ -27,12 +27,12 @@ export async function LandingMentorsSection() {
               Our mentors
             </Badge>
             <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-              Founders and operators who&apos;ve been in your seat.
+              Experienced trainers here to accelerate your growth.
             </h2>
             <p className="mt-3 text-balance text-base text-muted-foreground">
-              The Metwork mentor network is hand-picked from the people building
-              Algeria&apos;s best startups today. They run office hours, sit on
-              panels, and back the cohorts.
+              The Metwork mentor network is hand-picked from Algeria&apos;s most
+              experienced trainers and industry experts. They bring deep domain
+              knowledge and practical guidance to every session.
             </p>
           </div>
         </div>

@@ -19,9 +19,18 @@ import { hashPassword, verifyPassword } from '@/server/auth/password';
 import { createSession, setSessionCookie } from '@/server/auth/session';
 import { toSessionUser } from '@/server/auth/serialize';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    req.headers.get('x-real-ip') ??
+    'unknown'
+  );
+}
 
 // Constant-ish fallback hash, computed once at module load, used to keep
 // the timing of the user-not-found branch close to the user-found branch.
@@ -32,6 +41,12 @@ function getDummyHash(): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 20 attempts per IP per 15 minutes
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`login:ip:${ip}`, 20, 15 * 60_000)) {
+    return jsonError(429, 'RATE_LIMITED', 'Too many login attempts. Please try again later.');
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -48,6 +63,11 @@ export async function POST(req: NextRequest) {
   }
 
   const email = input.email.trim().toLowerCase();
+
+  // Per-email rate limit: 10 attempts per email per hour (prevents targeted brute-force)
+  if (!checkRateLimit(`login:email:${email}`, 10, 60 * 60_000)) {
+    return jsonError(429, 'RATE_LIMITED', 'Too many login attempts for this account. Please try again later.');
+  }
   const data = await db.read();
   const user = data.users.find((u) => u.email === email);
 

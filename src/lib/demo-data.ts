@@ -673,96 +673,9 @@ export const demoPublicEvents: PlatformEvent[] = [
 ];
 
 /* ─────────────────────────── Mentors ─────────────────────────── */
-
-/**
- * Seed roster used the very first time the `mentors` collection is
- * created (or when the store predates this collection). Once seeded
- * the data is owned by the admin — deletions stick, no re-seeding.
- */
-export interface DemoMentor {
-  id: string;
-  fullName: string;
-  position: string;
-  imageUrl: string;
-  bio: string | null;
-  linkedinUrl: string | null;
-  createdAt: string;
-}
-
-export const demoMentors: DemoMentor[] = [
-  {
-    id: 'mn_amina',
-    fullName: 'Amina Hamdi',
-    position: 'Operating Partner — Maghreb Ventures',
-    imageUrl: 'https://images.unsplash.com/photo-1573497019418-b400bb3ab074?auto=format&fit=crop&w=600&q=80',
-    bio: 'Two-time founder, now backing seed-stage Algerian SaaS. Previously CRO at a regional payments startup that exited to a Pan-African acquirer.',
-    linkedinUrl: 'https://www.linkedin.com/in/example-amina-hamdi/',
-    createdAt: '2026-04-29T08:00:00.000Z',
-  },
-  {
-    id: 'mn_yacine',
-    fullName: 'Yacine Brahimi',
-    position: 'Founder & CEO — Tarjim',
-    imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
-    bio: 'Building real-time Darija translation for newsrooms. Mentors on growth, hiring engineering teams, and selling to enterprise.',
-    linkedinUrl: 'https://www.linkedin.com/in/example-yacine-brahimi/',
-    createdAt: '2026-04-29T08:01:00.000Z',
-  },
-  {
-    id: 'mn_nora',
-    fullName: 'Nora Kaci',
-    position: 'CMO — Salam Health',
-    imageUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=600&q=80',
-    bio: 'Healthcare marketer specialised in regulated patient acquisition. Led growth from 0 → 12k MAU.',
-    linkedinUrl: 'https://www.linkedin.com/in/example-nora-kaci/',
-    createdAt: '2026-04-29T08:02:00.000Z',
-  },
-  {
-    id: 'mn_karim',
-    fullName: 'Karim Belkacem',
-    position: 'CEO — GreenRoute DZ',
-    imageUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=600&q=80',
-    bio: 'Operator turned founder — last-mile electric delivery across coastal cities. Mentors on logistics, ops, and unit economics.',
-    linkedinUrl: 'https://www.linkedin.com/in/example-karim-belkacem/',
-    createdAt: '2026-04-29T08:03:00.000Z',
-  },
-  {
-    id: 'mn_sara',
-    fullName: 'Sara Bensalah',
-    position: 'Founder — Mektoub',
-    imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80',
-    bio: 'Marketplace operator for traditional Algerian artisans. Strong on community-led GTM and creator-economy plays.',
-    linkedinUrl: 'https://www.linkedin.com/in/example-sara-bensalah/',
-    createdAt: '2026-04-29T08:04:00.000Z',
-  },
-  {
-    id: 'mn_riad',
-    fullName: 'Riad Belaid',
-    position: 'General Partner — DZ Angels',
-    imageUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=600&q=80',
-    bio: 'Angel investor with 18 cheques across the Maghreb. Helps founders prep for fundraises and bridge to MENA capital.',
-    linkedinUrl: 'https://www.linkedin.com/in/example-riad-belaid/',
-    createdAt: '2026-04-29T08:05:00.000Z',
-  },
-  {
-    id: 'mn_imane',
-    fullName: 'Imane Tahar',
-    position: 'Head of Engineering — Casbah Labs',
-    imageUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=600&q=80',
-    bio: 'Scaled an engineering org from 3 to 40 in 18 months. Mentors technical founders on hiring, architecture, and ICs vs management.',
-    linkedinUrl: 'https://www.linkedin.com/in/example-imane-tahar/',
-    createdAt: '2026-04-29T08:06:00.000Z',
-  },
-  {
-    id: 'mn_walid',
-    fullName: 'Walid Khelifi',
-    position: 'Product Lead — Fintech, ex-Yassir',
-    imageUrl: 'https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&fit=crop&w=600&q=80',
-    bio: 'Ex-Yassir PM. Loves consumer fintech, payments rails, and 0→1 product discovery.',
-    linkedinUrl: 'https://www.linkedin.com/in/example-walid-khelifi/',
-    createdAt: '2026-04-29T08:07:00.000Z',
-  },
-];
+// Demo mentor records were purged from the database via a one-time migration
+// in src/server/db/store.ts (load → demoMentorsRemoved flag).
+// Do NOT re-add mentor entries here — use the admin panel to create real ones.
 
 export const demoIncubatorSpaces: Space[] = [
   {

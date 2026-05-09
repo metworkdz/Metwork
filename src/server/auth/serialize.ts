@@ -18,9 +18,22 @@ export function toSessionUser(u: UserRecord): SessionUser {
     phoneVerified: u.phoneVerified,
     emailVerified: u.emailVerified,
     membershipCode: u.membershipCode,
+    membershipExpiresAt: u.membershipExpiresAt ?? null,
     avatarUrl: u.avatarUrl,
     locale: u.locale,
   };
+}
+
+/**
+ * Show only the first character of the local part, mask the rest.
+ * e.g. user@example.com → u***@example.com
+ */
+export function maskEmail(email: string): string {
+  const at = email.indexOf('@');
+  if (at <= 0) return email;
+  const local = email.slice(0, at);
+  const domain = email.slice(at);
+  return `${local.slice(0, 1)}***${domain}`;
 }
 
 /**
@@ -37,12 +50,34 @@ export function maskPhone(phone: string): string {
 }
 
 /**
- * Normalize an Algerian phone for storage: strip spaces / dashes,
- * keeping a leading "+" if present.
+ * Normalize any Algerian phone number to E.164 format (+213XXXXXXXXX).
+ *
+ * Handles all common input formats:
+ *   +213 550 00 00 00  →  +213550000000
+ *   0550 00 00 00      →  +213550000000
+ *   550 00 00 00       →  +213550000000  (9-digit bare number)
+ *   213550000000       →  +213550000000
  */
 export function normalizePhone(phone: string): string {
   const trimmed = phone.trim();
-  const hasPlus = trimmed.startsWith('+');
   const digits = trimmed.replace(/\D/g, '');
-  return hasPlus ? `+${digits}` : digits;
+
+  // Already E.164: +213XXXXXXXXX
+  if (trimmed.startsWith('+')) {
+    return `+${digits}`;
+  }
+  // Local format: 0XXXXXXXXX (10 digits)
+  if (digits.startsWith('0') && digits.length === 10) {
+    return `+213${digits.slice(1)}`;
+  }
+  // Country code without +: 213XXXXXXXXX (12 digits)
+  if (digits.startsWith('213') && digits.length === 12) {
+    return `+${digits}`;
+  }
+  // Bare 9-digit local number (e.g. 550000000)
+  if (digits.length === 9 && /^[5-7]/.test(digits)) {
+    return `+213${digits}`;
+  }
+  // Fallback: add + and use as-is
+  return `+${digits}`;
 }

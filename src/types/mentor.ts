@@ -9,6 +9,10 @@ export interface Mentor {
   imageUrl: string;
   bio: string | null;
   linkedinUrl: string | null;
+  /** Contact email for consultation notifications. */
+  email?: string | null;
+  /** Per-session fee in DZD. 0 or absent = free. */
+  consultationFee?: number;
   createdAt: string;
 }
 
@@ -18,6 +22,8 @@ export interface MentorInput {
   imageUrl: string;
   bio?: string | null;
   linkedinUrl?: string | null;
+  email?: string | null;
+  consultationFee?: number;
 }
 
 export interface UploadedFile {

@@ -12,7 +12,12 @@ export default function LocaleError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    // Lazily import Sentry so a missing/unconfigured DSN never crashes the error page itself.
+    import('@sentry/nextjs')
+      .then((Sentry) => Sentry.captureException(error))
+      .catch(() => undefined);
+    // eslint-disable-next-line no-console
+    console.error('[app error]', error);
   }, [error]);
 
   return (

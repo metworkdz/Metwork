@@ -16,7 +16,14 @@ import { requireApiSession } from '@/server/auth/api-guards';
 import { confirmTopUp, getTopUp } from '@/server/wallet/service';
 import { getSlickPayTransferStatus } from '@/server/payments/slickpay-provider';
 import { ProviderNotConfiguredError } from '@/server/payments/errors';
+import { db } from '@/server/db/store';
 import { json, jsonError } from '@/server/http/json';
+
+/** Map each role to its wallet dashboard path. */
+function walletPathForRole(role: string): string {
+  if (role === 'INCUBATOR' || role === 'ADMIN') return '/dashboard/incubator/wallet';
+  return '/dashboard/entrepreneur/wallet';
+}
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,17 +43,22 @@ export async function GET(req: NextRequest) {
     return jsonError(403, 'FORBIDDEN', 'Top-up does not belong to this user');
   }
 
-  // Already settled — return cached result (prevents double-credit on re-poll).
+  const walletPath = walletPathForRole(guard.user.role);
+
+  // Already settled — return current wallet balance so the success page can
+  // display it even when navigating back to this URL (prevents blank balance).
   if (intent.status === 'COMPLETED') {
-    return json({ completed: 1, status: 'COMPLETED', topUpId });
+    const data = await db.read();
+    const wallet = data.wallets.find((w) => w.userId === intent.userId);
+    return json({ completed: 1, status: 'COMPLETED', topUpId, balance: wallet?.balance ?? null, walletPath });
   }
   if (intent.status === 'FAILED') {
-    return json({ completed: 0, status: 'FAILED', topUpId });
+    return json({ completed: 0, status: 'FAILED', topUpId, walletPath });
   }
 
   // PENDING — ask SlickPay for the live status.
   if (!intent.providerRef) {
-    return json({ completed: 0, status: 'PENDING', topUpId });
+    return json({ completed: 0, status: 'PENDING', topUpId, walletPath });
   }
 
   let slickPayStatus: { completed: 0 | 1 };
@@ -55,13 +67,13 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     if (err instanceof ProviderNotConfiguredError) {
       // Running with mock provider or missing key — treat as not yet confirmed.
-      return json({ completed: 0, status: 'PENDING', topUpId });
+      return json({ completed: 0, status: 'PENDING', topUpId, walletPath });
     }
     throw err;
   }
 
   if (slickPayStatus.completed !== 1) {
-    return json({ completed: 0, status: 'PENDING', topUpId });
+    return json({ completed: 0, status: 'PENDING', topUpId, walletPath });
   }
 
   // SlickPay confirms payment — settle the wallet. confirmTopUp is fully
@@ -81,5 +93,6 @@ export async function GET(req: NextRequest) {
     status: 'COMPLETED',
     topUpId,
     balance: settled.wallet?.balance ?? null,
+    walletPath,
   });
 }

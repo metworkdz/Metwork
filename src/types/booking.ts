@@ -23,6 +23,7 @@ export interface BookingDto {
   status: BookingDtoStatus;
   clientReference: string;
   transactionId: string | null;
+  declineReason?: string;
   createdAt: string;
 }
 

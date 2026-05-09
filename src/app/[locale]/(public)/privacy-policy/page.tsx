@@ -99,7 +99,7 @@ export default async function PrivacyPolicyPage({ params }: PageProps) {
               {/* ── 1. Introduction ── */}
               <Section id="introduction" title="1. Introduction">
                 <p>
-                  Metwork SAS (&ldquo;Metwork&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;,
+                  EURL METWORK (&ldquo;Metwork&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;,
                   &ldquo;our&rdquo;) operates the platform accessible at{' '}
                   <a href={siteConfig.url} className="text-primary hover:underline">
                     {siteConfig.url}
@@ -128,7 +128,8 @@ export default async function PrivacyPolicyPage({ params }: PageProps) {
                   The data controller responsible for your personal data is:
                 </p>
                 <address className="not-italic rounded-lg border border-border/60 bg-muted/30 p-4 space-y-1">
-                  <p className="font-semibold">Metwork SAS</p>
+                  <p className="font-semibold">EURL METWORK</p>
+                  <p className="text-muted-foreground text-xs">Commerce register: 31/00-1125194 B24</p>
                   <p>{siteConfig.contact.address}</p>
                   <p>
                     Email:{' '}

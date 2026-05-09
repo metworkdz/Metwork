@@ -14,7 +14,8 @@ export type CreateSpaceBookingResult =
     }
   | { ok: false; reason: 'SPACE_NOT_FOUND' }
   | { ok: false; reason: 'UNIT_NOT_AVAILABLE'; available: ('HOUR' | 'DAY' | 'MONTH')[] }
-  | { ok: false; reason: 'CAPACITY_EXCEEDED'; capacity: number }
+  | { ok: false; reason: 'DATE_UNAVAILABLE'; blockedDates: string[] }
+  | { ok: false; reason: 'CAPACITY_EXCEEDED'; capacity: number; taken: number }
   | { ok: false; reason: 'WALLET_FROZEN' }
   | { ok: false; reason: 'INSUFFICIENT_FUNDS'; balance: number; required: number };
 

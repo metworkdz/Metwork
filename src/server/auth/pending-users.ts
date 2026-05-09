@@ -30,6 +30,7 @@ export interface PendingUserInput {
   role: UserRole;
   city: string;
   locale: 'en' | 'fr' | 'ar';
+  incubatorName?: string;
 }
 
 export interface IssuePendingResult {
@@ -72,6 +73,7 @@ export async function issuePendingUser(input: PendingUserInput): Promise<IssuePe
       role: input.role,
       city: input.city,
       locale: input.locale,
+      incubatorName: input.incubatorName,
       otpHash: hashOtp(code),
       otpAttempts: 0,
       expiresAt,
@@ -133,14 +135,18 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
     if (!pending) return null;
 
     let role: UserRole = pending.role;
-    // The first INCUBATOR to complete signup becomes the platform ADMIN.
-    if (role === 'INCUBATOR' && !d.users.some((u) => u.role === 'INCUBATOR')) {
+    // Bootstrap: the first INCUBATOR signup on a fresh platform becomes the
+    // ADMIN. The guard is "no ADMIN exists yet" — not "no INCUBATOR exists yet"
+    // (the old check) which was always true once the bootstrap admin took the
+    // ADMIN role, causing every subsequent incubator to be wrongly promoted.
+    if (role === 'INCUBATOR' && !d.users.some((u) => u.role === 'ADMIN')) {
       role = 'ADMIN';
     }
 
     const now = new Date().toISOString();
+    const userId = randomUUID();
     const user: UserRecord = {
-      id: randomUUID(),
+      id: userId,
       email: pending.email,
       passwordHash: pending.passwordHash,
       fullName: pending.fullName,
@@ -157,6 +163,27 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
       updatedAt: now,
     };
     d.users.push(user);
+
+    // Auto-create an IncubatorRecord for INCUBATOR-role users.
+    if (role === 'INCUBATOR') {
+      const incubatorId = randomUUID();
+      const incubatorName =
+        pending.incubatorName?.trim() || pending.fullName.trim();
+      d.incubators.push({
+        id: incubatorId,
+        name: incubatorName,
+        description: '',
+        city: pending.city,
+        managerId: userId,
+        status: 'ACTIVE',
+        website: null,
+        logoUrl: null,
+        subscriptionTier: 'COMMISSION',
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
     return user;
   });
 }

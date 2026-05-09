@@ -22,6 +22,8 @@ interface StatusResponse {
   status: string;
   topUpId: string;
   balance?: number | null;
+  /** Role-specific wallet path returned by the API. */
+  walletPath?: string;
 }
 
 function formatDZD(amount: number) {
@@ -38,6 +40,7 @@ export default function PaymentSuccessPage() {
 
   const [phase, setPhase] = useState<Phase>('verifying');
   const [balance, setBalance] = useState<number | null>(null);
+  const [walletPath, setWalletPath] = useState('/dashboard/entrepreneur/wallet');
   const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
@@ -68,6 +71,9 @@ export default function PaymentSuccessPage() {
 
         const data = (await res.json()) as StatusResponse;
 
+        // Persist wallet path whenever the API returns it (all responses now do).
+        if (data.walletPath) setWalletPath(data.walletPath);
+
         if (data.completed === 1) {
           setBalance(data.balance ?? null);
           setPhase('success');
@@ -90,14 +96,14 @@ export default function PaymentSuccessPage() {
       <Card className="w-full max-w-md border-border/60 shadow-lg">
         <CardContent className="p-8 text-center">
           {phase === 'verifying' && <VerifyingState />}
-          {phase === 'success' && <SuccessState balance={balance} />}
+          {phase === 'success' && <SuccessState balance={balance} walletPath={walletPath} />}
           {phase === 'pending' && (
-            <PendingState onRetry={() => {
+            <PendingState walletPath={walletPath} onRetry={() => {
               setPhase('verifying');
               setRetryCount((c) => c + 1);
             }} />
           )}
-          {phase === 'error' && <ErrorState />}
+          {phase === 'error' && <ErrorState walletPath={walletPath} />}
         </CardContent>
       </Card>
     </div>
@@ -124,7 +130,7 @@ function VerifyingState() {
   );
 }
 
-function SuccessState({ balance }: { balance: number | null }) {
+function SuccessState({ balance, walletPath }: { balance: number | null; walletPath: string }) {
   return (
     <div className="space-y-5">
       <div className="flex justify-center">
@@ -152,7 +158,7 @@ function SuccessState({ balance }: { balance: number | null }) {
       </div>
       <div className="flex flex-col gap-2 pt-1">
         <Button asChild className="w-full">
-          <Link href="/dashboard/entrepreneur/wallet">
+          <Link href={walletPath}>
             <Wallet className="size-4" />
             Go to wallet
           </Link>
@@ -165,7 +171,7 @@ function SuccessState({ balance }: { balance: number | null }) {
   );
 }
 
-function PendingState({ onRetry }: { onRetry: () => void }) {
+function PendingState({ walletPath, onRetry }: { walletPath: string; onRetry: () => void }) {
   return (
     <div className="space-y-5">
       <div className="flex justify-center">
@@ -184,14 +190,14 @@ function PendingState({ onRetry }: { onRetry: () => void }) {
           Check again
         </Button>
         <Button asChild variant="outline" className="w-full">
-          <Link href="/dashboard/entrepreneur/wallet">Go to wallet</Link>
+          <Link href={walletPath}>Go to wallet</Link>
         </Button>
       </div>
     </div>
   );
 }
 
-function ErrorState() {
+function ErrorState({ walletPath }: { walletPath: string }) {
   return (
     <div className="space-y-5">
       <div className="flex justify-center">
@@ -207,7 +213,7 @@ function ErrorState() {
       </div>
       <div className="flex flex-col gap-2">
         <Button asChild className="w-full">
-          <Link href="/dashboard/entrepreneur/wallet">Go to wallet</Link>
+          <Link href={walletPath}>Go to wallet</Link>
         </Button>
         <Button asChild variant="ghost" size="sm" className="w-full text-muted-foreground">
           <Link href="/">Back to home</Link>

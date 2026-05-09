@@ -15,6 +15,8 @@ export const createMentorSchema = z.object({
   imageUrl: urlOrPath,
   bio: z.string().max(2000).optional().nullable(),
   linkedinUrl: z.string().url().max(300).optional().nullable(),
+  email: z.string().email().max(200).optional().nullable(),
+  consultationFee: z.number().int().min(0).max(1_000_000).optional(),
 });
 export type CreateMentorInput = z.infer<typeof createMentorSchema>;
 

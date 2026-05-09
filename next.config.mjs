@@ -1,4 +1,5 @@
 import createNextIntlPlugin from 'next-intl/plugin';
+import { withSentryConfig } from '@sentry/nextjs';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
@@ -27,6 +28,10 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: '**.metwork.dz',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
       },
     ],
     formats: ['image/avif', 'image/webp'],
@@ -76,4 +81,19 @@ const nextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+const sentryOptions = {
+  // Suppress the Sentry build banner in CI / local builds
+  silent: !process.env.CI,
+  // Upload source maps only when SENTRY_AUTH_TOKEN is set
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  // Disable source-map upload when DSN is absent (local dev without Sentry)
+  disableServerWebpackPlugin: !process.env.NEXT_PUBLIC_SENTRY_DSN,
+  disableClientWebpackPlugin: !process.env.NEXT_PUBLIC_SENTRY_DSN,
+  // Tree-shake Sentry debug code in production
+  hideSourceMaps: true,
+  widenClientFileUpload: true,
+};
+
+export default withSentryConfig(withNextIntl(nextConfig), sentryOptions);

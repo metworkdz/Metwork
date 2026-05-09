@@ -12,8 +12,11 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // TODO: ship to Sentry
-    console.error(error);
+    import('@sentry/nextjs')
+      .then((Sentry) => Sentry.captureException(error))
+      .catch(() => undefined);
+    // eslint-disable-next-line no-console
+    console.error('[global error]', error);
   }, [error]);
 
   return (

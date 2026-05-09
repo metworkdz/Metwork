@@ -1,8 +1,8 @@
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { EventsManager } from '@/components/features/incubator/events-manager';
 import { requireRole } from '@/lib/auth-guards';
-import { demoIncubatorEvents } from '@/lib/demo-data';
+import { db } from '@/server/db/store';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -11,15 +11,24 @@ interface PageProps {
 export default async function IncubatorEventsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  await requireRole(['INCUBATOR']);
+  const t = await getTranslations('pages.dashboard');
+  const user = await requireRole(['INCUBATOR']);
+
+  const data = await db.read();
+  const incubator = data.incubators.find((i) => i.managerId === user.id);
+  const events = incubator
+    ? (data.incubatorEvents ?? [])
+        .filter((e) => e.incubatorId === incubator.id)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    : [];
 
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        title="Events"
-        subtitle="Pitch nights, demo days, and meetups."
+        title={t('incubator.events.title')}
+        subtitle={t('incubator.events.subtitle')}
       />
-      <EventsManager initial={demoIncubatorEvents} />
+      <EventsManager initial={events} />
     </div>
   );
 }

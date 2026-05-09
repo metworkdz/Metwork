@@ -34,11 +34,42 @@ export async function createStartup(
       equityOffered: input.equityOffered,
       valuation: input.valuation ?? null,
       founderId,
-      status: 'ACTIVE',
+      status: 'DRAFT',
       createdAt: now,
       updatedAt: now,
     };
     store.startupListings.push(record);
     return record;
+  });
+}
+
+export type UpdateStartupInput = Partial<CreateStartupInput> & {
+  status?: StartupListingRecord['status'];
+};
+
+export type UpdateStartupResult =
+  | { ok: true; startup: StartupListingRecord }
+  | { ok: false; reason: 'NOT_FOUND' | 'FORBIDDEN' };
+
+export async function updateStartup(
+  id: string,
+  founderId: string,
+  patch: UpdateStartupInput,
+): Promise<UpdateStartupResult> {
+  return db.update<UpdateStartupResult>((store) => {
+    const listing = store.startupListings.find((l) => l.id === id);
+    if (!listing) return { ok: false, reason: 'NOT_FOUND' };
+    if (listing.founderId !== founderId) return { ok: false, reason: 'FORBIDDEN' };
+
+    if (patch.name           !== undefined) listing.name          = patch.name;
+    if (patch.description    !== undefined) listing.description   = patch.description;
+    if (patch.industry       !== undefined) listing.industry      = patch.industry;
+    if (patch.fundingGoal    !== undefined) listing.fundingGoal   = patch.fundingGoal;
+    if (patch.equityOffered  !== undefined) listing.equityOffered = patch.equityOffered;
+    if (patch.valuation      !== undefined) listing.valuation     = patch.valuation ?? null;
+    if (patch.status         !== undefined) listing.status        = patch.status;
+    listing.updatedAt = new Date().toISOString();
+
+    return { ok: true, startup: listing };
   });
 }

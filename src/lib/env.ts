@@ -24,14 +24,33 @@ const serverSchema = z.object({
   API_INTERNAL_URL: z.string().url(),
   DATABASE_URL: z.string().url().optional(),
   REDIS_URL: z.string().url().optional(),
+  SUPABASE_URL: z.string().url().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   S3_ENDPOINT: z.string().url().optional(),
   S3_BUCKET: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
-  SMS_PROVIDER: z.string().transform(v => v.toLowerCase()).pipe(z.enum(['mock', 'twilio', 'local'])).default('mock'),
-  TWILIO_ACCOUNT_SID: z.string().optional(),
-  TWILIO_AUTH_TOKEN: z.string().optional(),
-  TWILIO_PHONE_NUMBER: z.string().optional(),
+  // Accept any string value; unknown providers (e.g. 'twilio' set in Vercel)
+  // are silently normalised to 'mock' so the build never hard-crashes on an
+  // unrecognised value.
+  SMS_PROVIDER: z
+    .string()
+    .transform((v): 'mock' | 'infobip' => {
+      const lower = v.toLowerCase();
+      return lower === 'infobip' ? 'infobip' : 'mock';
+    })
+    .default('mock'),
+  // All Infobip vars are optional. Invalid / placeholder values (no protocol,
+  // wrong format, etc.) are coerced to undefined so a misconfigured Vercel
+  // variable never crashes the build — getConfig() returns null anyway when
+  // any of the three is absent.
+  INFOBIP_BASE_URL: z.preprocess((v) => {
+    if (typeof v !== 'string' || v.trim() === '') return undefined;
+    const t = v.trim();
+    try { new URL(t); return t; } catch { return undefined; }
+  }, z.string().url().optional()),
+  INFOBIP_API_KEY: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined), z.string().optional()),
+  INFOBIP_SENDER: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined), z.string().optional()),
   PAYMENT_PROVIDER: z.string().transform(v => v.toLowerCase()).pipe(z.enum(['mock', 'slickpay', 'cib', 'edahabia'])).default('mock'),
   PAYMENT_WEBHOOK_SECRET: z.string().optional(),
   // SlickPay (Algerian processor). All optional — required only when
@@ -45,6 +64,9 @@ const serverSchema = z.object({
   // Mock provider mode: `sync` (default, settles immediately) or `async`
   // (returns PENDING + redirectUrl, exercises the webhook path locally).
   MOCK_PAYMENT_MODE: z.enum(['sync', 'async']).default('sync'),
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
 });
 
 const clientEnv = {

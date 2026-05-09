@@ -11,6 +11,8 @@ import { findStartupById } from '@/server/startups/service';
 import { toStartupDto } from '@/server/startups/serialize';
 import { db } from '@/server/db/store';
 
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
 }

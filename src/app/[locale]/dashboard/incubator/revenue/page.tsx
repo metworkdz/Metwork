@@ -1,136 +1,107 @@
-import { setRequestLocale, getLocale } from 'next-intl/server';
-import { TrendingUp, ReceiptText, Wallet, Percent } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
-import { StatCard } from '@/components/shared/stat-card';
+import { RevenueDashboard } from '@/components/features/incubator/revenue-dashboard';
 import { requireRole } from '@/lib/auth-guards';
-import { formatCurrency } from '@/lib/format';
-import { demoRevenueBuckets } from '@/lib/demo-data';
+import { db } from '@/server/db/store';
 import { platformCommissions } from '@/config/memberships';
-import type { Locale } from '@/i18n/config';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
 }
 
-function monthLabel(ym: string, locale: Locale) {
-  const parts = ym.split('-');
-  const yearStr = parts[0];
-  const monthStr = parts[1];
-  const year = yearStr ? Number(yearStr) : NaN;
-  const month = monthStr ? Number(monthStr) : NaN;
-  if (!Number.isFinite(year) || !Number.isFinite(month)) return ym;
-  const d = new Date(Date.UTC(year, month - 1, 1));
-  return new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : locale === 'ar' ? 'ar-DZ' : 'en-GB', {
-    month: 'long',
-    year: 'numeric',
-  }).format(d);
+export const metadata = { title: 'Revenue' };
+
+function toYearMonth(iso: string): string {
+  return iso.slice(0, 7);
 }
 
 export default async function IncubatorRevenuePage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const lang = (await getLocale()) as Locale;
-  await requireRole(['INCUBATOR']);
+  const t = await getTranslations('pages.dashboard');
+  const user = await requireRole(['INCUBATOR']);
 
-  const buckets = demoRevenueBuckets;
-  const ytdGross = buckets.reduce((s, b) => s + b.gross, 0);
-  const ytdNet = buckets.reduce((s, b) => s + b.net, 0);
-  const ytdCommission = buckets.reduce((s, b) => s + b.commission, 0);
-  const ytdBookings = buckets.reduce((s, b) => s + b.bookings, 0);
-  const maxGross = Math.max(...buckets.map((b) => b.gross), 1);
+  const data = await db.read();
+  const incubator = data.incubators.find((i) => i.managerId === user.id);
+
+  if (!incubator) {
+    return (
+      <div className="space-y-6">
+        <DashboardPageHeader title={t('incubator.revenue.title')} subtitle={t('incubator.revenue.subtitleNoProfile')} />
+      </div>
+    );
+  }
+
+  const commissionRate =
+    incubator.subscriptionTier === 'COMMISSION' ? platformCommissions.incubatorBooking : 0;
+
+  const ownedSpaceIds = new Set(
+    data.incubatorSpaces.filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
+  );
+  const ownedProgramIds = new Set(
+    data.incubatorPrograms.filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
+  );
+
+  const relevant = data.bookings.filter(
+    (b) =>
+      b.status !== 'CANCELLED' &&
+      b.status !== 'REFUNDED' &&
+      (
+        (b.itemKind === 'SPACE' && ownedSpaceIds.has(b.itemId)) ||
+        (b.itemKind === 'PROGRAM' && ownedProgramIds.has(b.itemId))
+      ),
+  );
+
+  const bucketsMap = new Map<string, { gross: number; bookings: number }>();
+  for (const b of relevant) {
+    const ym = toYearMonth(b.createdAt);
+    const cur = bucketsMap.get(ym) ?? { gross: 0, bookings: 0 };
+    cur.gross += b.totalAmount;
+    cur.bookings += 1;
+    bucketsMap.set(ym, cur);
+  }
+
+  const buckets = Array.from(bucketsMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, { gross, bookings }]) => {
+      const commission = Math.round(gross * commissionRate);
+      return { month, gross, commission, net: gross - commission, bookings };
+    });
+
+  const totals = buckets.reduce(
+    (acc, b) => ({
+      gross: acc.gross + b.gross,
+      commission: acc.commission + b.commission,
+      net: acc.net + b.net,
+      bookings: acc.bookings + b.bookings,
+    }),
+    { gross: 0, commission: 0, net: 0, bookings: 0 },
+  );
+
+  const thisMonth = toYearMonth(new Date().toISOString());
+  const mtd = buckets.find((b) => b.month === thisMonth) ?? {
+    gross: 0, commission: 0, net: 0, bookings: 0,
+  };
+
+  const revenueData = {
+    incubator: {
+      id: incubator.id,
+      name: incubator.name,
+      subscriptionTier: incubator.subscriptionTier,
+      commissionRate,
+    },
+    totals,
+    mtd,
+    buckets,
+  };
 
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        title="Revenue"
-        subtitle="What you've earned, less the platform commission."
+        title={t('incubator.revenue.title')}
+        subtitle={t('incubator.revenue.subtitle')}
       />
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="YTD gross"
-          value={formatCurrency(ytdGross, lang)}
-          icon={TrendingUp}
-        />
-        <StatCard
-          label="YTD net"
-          value={formatCurrency(ytdNet, lang)}
-          hint="After platform commission"
-          icon={Wallet}
-        />
-        <StatCard
-          label="Platform commission"
-          value={formatCurrency(ytdCommission, lang)}
-          hint={`${Math.round(platformCommissions.incubatorBooking * 100)}% on bookings`}
-          icon={Percent}
-        />
-        <StatCard label="YTD bookings" value={ytdBookings} icon={ReceiptText} />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Monthly breakdown</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Month</TableHead>
-                  <TableHead>Volume</TableHead>
-                  <TableHead className="text-end">Gross</TableHead>
-                  <TableHead className="text-end">Commission</TableHead>
-                  <TableHead className="text-end">Net</TableHead>
-                  <TableHead className="text-end">Bookings</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {buckets.map((b) => (
-                  <TableRow key={b.month}>
-                    <TableCell className="font-medium whitespace-nowrap">
-                      {monthLabel(b.month, lang)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-2 w-32 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full bg-primary-500"
-                          style={{ width: `${Math.round((b.gross / maxGross) * 100)}%` }}
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-end tabular-nums">
-                      {formatCurrency(b.gross, lang)}
-                    </TableCell>
-                    <TableCell className="text-end tabular-nums text-muted-foreground">
-                      − {formatCurrency(b.commission, lang)}
-                    </TableCell>
-                    <TableCell className="text-end tabular-nums font-semibold">
-                      {formatCurrency(b.net, lang)}
-                    </TableCell>
-                    <TableCell className="text-end tabular-nums">
-                      <Badge variant="outline">{b.bookings}</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <p className="text-xs text-muted-foreground">
-        Showing demo data — real numbers will be sourced from the bookings ledger.
-      </p>
+      <RevenueDashboard data={revenueData} />
     </div>
   );
 }

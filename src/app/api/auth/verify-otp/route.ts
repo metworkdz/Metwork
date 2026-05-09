@@ -19,7 +19,7 @@ import { verifyPendingOtp, promotePendingUser } from '@/server/auth/pending-user
 import { issueEmailToken } from '@/server/auth/email-verification';
 import { createSession, setSessionCookie } from '@/server/auth/session';
 import { toSessionUser } from '@/server/auth/serialize';
-import { sendVerificationEmail } from '@/server/notifications/mock';
+import { sendVerificationEmail, sendWelcomeEmail } from '@/server/notifications/mock';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { clientEnvVars } from '@/lib/env';
 import type { Locale } from '@/i18n/config';
@@ -63,9 +63,23 @@ export async function POST(req: NextRequest) {
     const user = await promotePendingUser(input.userId);
     if (!user) return jsonError(500, 'INTERNAL_ERROR', 'Failed to create account');
 
-    // Now that we have a real user id, issue the email-verification link.
+    const base = clientEnvVars.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
+    const dashboardPath =
+      user.role === 'INVESTOR'  ? '/dashboard/investor'
+      : user.role === 'INCUBATOR' ? '/dashboard/incubator'
+      : '/dashboard/entrepreneur';
+
+    // Email-verification link (fire-and-forget)
     const emailToken = await issueEmailToken(user.id);
     sendVerificationEmail(user.email, buildVerifyEmailLink(emailToken, user.locale as Locale));
+
+    // Welcome email (fire-and-forget)
+    sendWelcomeEmail({
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role,
+      dashboardUrl: `${base}/${user.locale}${dashboardPath}`,
+    });
 
     const issued = await createSession(user.id);
     await setSessionCookie(issued);

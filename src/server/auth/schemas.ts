@@ -13,8 +13,11 @@ export type VerifyOtpRequest = z.infer<typeof verifyOtpRequestSchema>;
 
 export const resendOtpRequestSchema = z.object({
   userId: z.string().min(1),
+  /** Delivery channel for this resend attempt. Defaults to WhatsApp. */
+  channel: z.enum(['whatsapp', 'sms', 'email']).default('whatsapp'),
 });
 export type ResendOtpRequest = z.infer<typeof resendOtpRequestSchema>;
+export type OtpChannel = 'whatsapp' | 'sms' | 'email';
 
 export const forgotPasswordRequestSchema = z.object({
   email: emailSchema,

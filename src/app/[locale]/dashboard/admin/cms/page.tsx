@@ -1,10 +1,12 @@
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { LayoutTemplate } from 'lucide-react';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { Badge } from '@/components/ui/badge';
 import { CmsEditor } from '@/components/features/admin/cms-editor';
 import { getLandingContent } from '@/server/cms/service';
+import { defaultLandingContent } from '@/server/cms/defaults';
+import type { LandingContent } from '@/types/cms';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -13,20 +15,26 @@ interface PageProps {
 export default async function AdminCmsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('pages.dashboard');
   await requireRole(['ADMIN']);
 
-  const content = await getLandingContent();
-  const isDefault = content.updatedAt === new Date(0).toISOString();
+  const saved = await getLandingContent();
+  const isCustom = saved !== null;
+
+  const content: LandingContent = saved ?? {
+    ...defaultLandingContent,
+    updatedAt: new Date(0).toISOString(),
+  };
 
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        title="Landing page"
-        subtitle="Edit the public landing page content. Changes go live immediately on publish."
+        title={t('admin.cms.title')}
+        subtitle={t('admin.cms.subtitle')}
         action={
-          <Badge variant={isDefault ? 'outline' : 'success'} className="gap-1">
+          <Badge variant={isCustom ? 'success' : 'outline'} className="gap-1">
             <LayoutTemplate className="size-3" />
-            {isDefault ? 'Using defaults' : 'Custom content'}
+            {isCustom ? 'Custom content' : 'Using defaults'}
           </Badge>
         }
       />

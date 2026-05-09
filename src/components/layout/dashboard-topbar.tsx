@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Logo } from './logo';
 import { LocaleSwitcher } from './locale-switcher';
 import { UserMenu } from './user-menu';
+import { NotificationBell } from './notification-bell';
 import { Link, usePathname } from '@/i18n/routing';
 import { dashboardNavByRole } from '@/config/navigation';
 import { cn } from '@/lib/utils';
@@ -70,6 +71,7 @@ export function DashboardTopbar({ user }: DashboardTopbarProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        <NotificationBell />
         <LocaleSwitcher />
         <UserMenu user={user} />
       </div>

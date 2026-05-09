@@ -28,6 +28,8 @@
     "spaces": "Espaces",
     "mentors": "Mentors",
     "investors": "Investisseurs",
+    "startups": "Startups",
+    "pricing": "Tarifs",
     "academy": "Startup Academy",
     "login": "Se connecter",
     "signup": "Commencer",
@@ -102,8 +104,28 @@
     "cta": {
       "title": "Prêt à rejoindre le mouvement startup algérien ?",
       "subtitle": "Gratuit pour commencer. Rejoignez des milliers de fondateurs, investisseurs et innovateurs.",
-      "button": "Créer votre compte"
-    }
+      "button": "Créer votre compte",
+      "explorePrograms": "Explorer les programmes"
+    },
+    "about": {
+      "label": "À propos de Metwork",
+      "title": "Le réseau où les startups algériennes se connectent, grandissent et passent à l'échelle.",
+      "body1": "Metwork est la plateforme startup unifiée d'Algérie — conçue pour réunir fondateurs, investisseurs et incubateurs sous un même toit. Que vous lanciez votre premier produit ou que vous gériez un portefeuille de programmes, nous l'avons construit pour vous.",
+      "body2": "Nous croyons que les prochaines grandes entreprises algériennes ne se bâtiront pas dans l'isolement. Elles émergeront grâce aux bonnes connexions — les bons mentors, le bon capital, et la bonne communauté, tous dans la même salle.",
+      "cta": "Travailler avec nous",
+      "pillar1Title": "Incuber",
+      "pillar1Desc": "Programmes concrets, espace de coworking et mentorat expert pour les startups algériennes en phase initiale.",
+      "pillar2Title": "Connecter",
+      "pillar2Desc": "Un réseau curé reliant fondateurs, investisseurs, mentors et incubateurs à travers le pays.",
+      "pillar3Title": "Scaler",
+      "pillar3Desc": "Des outils et partenariats pour aider les startups algériennes à croître au-delà des marchés locaux."
+    },
+    "sections": {
+      "whatWeOffer": "Ce que nous offrons",
+      "whoWeServe": "À qui nous nous adressons",
+      "joinMovement": "Rejoindre le mouvement"
+    },
+    "socialProof": "La confiance des fondateurs, investisseurs et incubateurs à travers l'Algérie."
   },
   "auth": {
     "login": {
@@ -154,16 +176,23 @@
       "roleInvestor": "Investisseur",
       "roleInvestorDesc": "Je cherche à financer des startups algériennes",
       "roleIncubator": "Incubateur / espace de coworking",
-      "roleIncubatorDesc": "Je gère un incubateur, accélérateur ou coworking"
+      "roleIncubatorDesc": "Je gère un incubateur, accélérateur ou coworking",
+      "incubatorNameLabel": "Nom de l'incubateur",
+      "incubatorNamePlaceholder": "ex. Hub Innovation Alger"
     },
     "verifyOtp": {
       "title": "Vérifiez votre téléphone",
       "subtitle": "Nous avons envoyé un code à 6 chiffres au {phone}",
+      "subtitleWithEmail": "Nous avons envoyé un code à 6 chiffres au {phone} et à {email}",
       "codeLabel": "Code de vérification",
       "submit": "Vérifier",
       "resend": "Renvoyer le code",
       "resendIn": "Renvoyer dans {seconds}s",
-      "wrongNumber": "Mauvais numéro ?"
+      "wrongNumber": "Mauvais numéro ?",
+      "didntReceive": "Vous ne l'avez pas reçu ?",
+      "channelWhatsapp": "Renvoyer via WhatsApp",
+      "channelEmail": "Envoyer par e-mail",
+      "channelSms": "Envoyer par SMS"
     },
     "errors": {
       "invalidCredentials": "E-mail ou mot de passe invalide",
@@ -184,32 +213,32 @@
   "membership": {
     "tiers": {
       "free": {
-        "name": "Gratuit",
-        "description": "Démarrez, explorez l'écosystème"
+        "name": "Explorateur",
+        "description": "Découvrez l'écosystème — sans engagement"
       },
       "entrepreneur": {
-        "name": "Entrepreneur",
-        "description": "Réservez espaces et programmes au tarif membre"
+        "name": "Bâtisseur",
+        "description": "Tout ce qu'il faut pour lancer et développer votre startup"
       },
       "startup": {
-        "name": "Startup",
-        "description": "Tout d'Entrepreneur plus l'accès au financement"
+        "name": "Fondateur",
+        "description": "Levez des fonds, faites-vous remarquer, bâtissez votre empire"
       }
     },
     "features": {
-      "profile": "Profil public",
-      "browse": "Parcourir toutes les annonces",
-      "events": "Participer aux événements publics",
-      "allFree": "Tout du plan Gratuit",
-      "bookSpaces": "Réserver coworking & bureaux",
-      "bookPrograms": "Postuler aux programmes",
-      "eventsDiscount": "Tarifs membres aux événements",
-      "prioritySupport": "Support prioritaire",
-      "allEntrepreneur": "Tout du plan Entrepreneur",
-      "listStartup": "Listez votre startup",
-      "fundraisingAccess": "Marketplace de financement",
-      "investorMeetings": "Demandes de rendez-vous investisseurs",
-      "featuredListing": "Mise en avant dans la marketplace"
+      "profile": "Réservez des espaces de coworking et des bureaux",
+      "browse": "Réservez des séances avec des mentors",
+      "events": "Postulez à des événements et des programmes",
+      "allFree": "Tout de l'offre Explorateur",
+      "bookSpaces": "Avantages et réductions partenaires exclusifs",
+      "bookPrograms": "1 consultation mentor gratuite par mois",
+      "eventsDiscount": "Réductions sur les réservations d'espaces",
+      "prioritySupport": "Accès aux événements membres exclusifs",
+      "allEntrepreneur": "Tout de l'offre Bâtisseur",
+      "listStartup": "Listez votre startup dans la marketplace",
+      "fundraisingAccess": "Levez des fonds et attirez des investisseurs",
+      "investorMeetings": "Recevez des demandes de rendez-vous d'investisseurs",
+      "featuredListing": "Mise en avant de votre startup dans la marketplace"
     },
     "billingMonthly": "Mensuel",
     "billingYearly": "Annuel",
@@ -251,9 +280,21 @@
     "users": "Utilisateurs",
     "incubators": "Incubateurs",
     "memberships": "Abonnements",
+    "promoCodes": "Codes promo",
     "commissions": "Commissions",
     "content": "Contenu",
-    "consultations": "Consultations"
+    "consultations": "Consultations",
+    "mentorRevenue": "Revenus mentors",
+    "perks": "Avantages",
+    "mentors": "Mentors",
+    "contacts": "Boîte de réception",
+    "saved": "Startups sauvegardées",
+    "investorContacts": "Contacts investisseurs",
+    "members": "Membres",
+    "auditLog": "Journal d'audit",
+    "myIncubator": "Mon Incubateur",
+    "profile": "Profil",
+    "withdrawals": "Retraits"
   },
   "pages": {
     "programs": {
@@ -275,6 +316,304 @@
       "title": "Découvrez les startups algériennes",
       "subtitle": "Startups vérifiées à la recherche de capital. Connectez-vous directement avec les fondateurs.",
       "empty": "Aucune startup ne correspond à vos critères."
+    },
+    "startups": {
+      "title": "Annuaire des startups",
+      "subtitle": "Parcourez les startups algériennes à fort potentiel dans tous les secteurs.",
+      "empty": "Aucune startup répertoriée. Revenez bientôt.",
+      "filterAll": "Tous les secteurs",
+      "listYours": "Listez votre startup",
+      "cta": "Intéressé par l'investissement ?",
+      "ctaSub": "Créez un compte investisseur pour contacter directement les fondateurs.",
+      "ctaButton": "Rejoindre en tant qu'investisseur"
+    },
+    "pricing": {
+      "title": "Tarifs simples et transparents",
+      "subtitle": "Commencez gratuitement. Passez à l'offre supérieure quand vous êtes prêt à grandir.",
+      "faq": "Des questions ?",
+      "faqLink": "Parlez-nous",
+      "incubatorTitle": "Pour les incubateurs et espaces de coworking",
+      "incubatorSubtitle": "Deux modèles — choisissez celui qui convient à votre activité.",
+      "mostPopular": "Le plus populaire"
+    },
+    "dashboard": {
+      "entrepreneur": {
+        "overview": {
+          "greeting": "Bon retour, {name} 👋",
+          "subtitle": "Voici ce qui se passe dans votre parcours startup.",
+          "bookSpace": "Réserver un espace",
+          "statActiveBookings": "Réservations actives",
+          "statPrograms": "Programmes",
+          "statWallet": "Portefeuille",
+          "statWalletHint": "Solde disponible",
+          "statStartupStatus": "Statut startup",
+          "statStartupHintNone": "Créez votre profil",
+          "statMembership": "Abonnement",
+          "statMembershipHintFree": "Passez à une offre supérieure",
+          "statMembershipHintActive": "Plan actif",
+          "statConsultations": "Consultations",
+          "statConsultationHintUpgrade": "Passez à une offre pour des sessions gratuites",
+          "statConsultationHintRemaining": "Sessions gratuites restantes"
+        },
+        "bookings": {
+          "title": "Réservations",
+          "subtitle": "Espaces et programmes que vous avez réservés."
+        },
+        "wallet": {
+          "title": "Portefeuille",
+          "subtitle": "Rechargez pour réserver des espaces, programmes et événements en un clic."
+        },
+        "settings": {
+          "title": "Paramètres",
+          "subtitle": "Gérez vos préférences de compte."
+        },
+        "startup": {
+          "title": "Profil startup",
+          "subtitle": "Ce que verront les investisseurs qui parcourent la marketplace."
+        },
+        "consultations": {
+          "title": "Consultations mentors",
+          "subtitle": "Réservez des sessions de 30 min avec nos mentors experts."
+        },
+        "marketplace": {
+          "title": "Marketplace",
+          "subtitle": "Parcourez les prestataires, outils et offres disponibles pour votre startup."
+        },
+        "membership": {
+          "title": "Abonnement",
+          "subtitle": "Choisissez le plan qui correspond à l'étape actuelle de votre startup."
+        },
+        "perks": {
+          "title": "Avantages membres",
+          "subtitle": "Avantages exclusifs inclus dans votre abonnement."
+        }
+      },
+      "incubator": {
+        "overview": {
+          "greetingNoProfile": "Bonjour, {name}",
+          "subtitleNoProfile": "Bienvenue sur votre tableau de bord incubateur.",
+          "greeting": "Bonjour, {name}",
+          "subtitle": "Gestion de {incubatorName} — {city}.",
+          "manageSpaces": "Gérer les espaces",
+          "statActiveSpaces": "Espaces actifs",
+          "statBookingsThisMonth": "Réservations ce mois-ci",
+          "statBookingsHint": "{count} en attente",
+          "statRevenueMtd": "Revenus (MTD, nets)",
+          "statRevenueHint": "Après commission de la plateforme",
+          "statMembersEnrolled": "Membres inscrits",
+          "statMembersHint": "Dans vos programmes",
+          "statPrograms": "Programmes",
+          "statWalletBalance": "Solde du portefeuille"
+        },
+        "spaces": {
+          "title": "Espaces",
+          "subtitle": "{count} actifs — coworking, bureaux privés, salles de formation."
+        },
+        "programs": {
+          "title": "Programmes",
+          "subtitle": "{count} publiés — incubation, accélération, formation et ateliers."
+        },
+        "bookings": {
+          "title": "Réservations",
+          "subtitle": "{count} en attente — confirmez ou annulez les réservations de vos espaces et programmes."
+        },
+        "members": {
+          "title": "Membres",
+          "subtitle": "{count} inscrits dans vos programmes."
+        },
+        "events": {
+          "title": "Événements",
+          "subtitle": "Soirées pitch, demo days et meetups."
+        },
+        "revenue": {
+          "title": "Revenus",
+          "subtitle": "Revenus de vos espaces et programmes, après commission de la plateforme.",
+          "subtitleNoProfile": "Aucun profil incubateur trouvé."
+        },
+        "invoices": {
+          "title": "Factures & Reçus",
+          "subtitle": "Consultez et imprimez les reçus de toutes les réservations payées."
+        },
+        "wallet": {
+          "title": "Portefeuille",
+          "subtitle": "Les revenus de réservations arrivent ici. Rechargez pour régler les frais de plateforme."
+        },
+        "settings": {
+          "title": "Paramètres",
+          "subtitle": "Gérez le profil, le logo et les préférences de facturation de votre incubateur.",
+          "subtitleNoProfile": "Gérez le profil de votre incubateur et les préférences de la plateforme."
+        },
+        "profile": {
+          "title": "Profil incubateur",
+          "subtitle": "Gérez le profil Metwork, le logo et les préférences de facturation."
+        }
+      },
+      "investor": {
+        "overview": {
+          "greeting": "Bienvenue, {name}",
+          "subtitle": "Découvrez les startups algériennes à la recherche de capital.",
+          "browseStartups": "Parcourir les startups",
+          "statSavedStartups": "Startups sauvegardées",
+          "statPendingContacts": "Contacts en attente",
+          "statPendingContactsHint": "En attente de connexion admin",
+          "statCommitted": "Engagé",
+          "statCommittedHint": "Deals conclus",
+          "statActiveListings": "Annonces actives",
+          "statActiveListingsHint": "Sur la marketplace"
+        },
+        "startups": {
+          "title": "Marketplace startups",
+          "subtitle": "Découvrez les startups algériennes ouvertes à l'investissement."
+        },
+        "portfolio": {
+          "title": "Suivi des investissements",
+          "subtitle": "Suivez vos deals — du premier contact à la clôture."
+        },
+        "meetings": {
+          "title": "Demandes de contact",
+          "subtitle": "Fondateurs que vous avez contactés. Notre équipe les mettra en relation après révision.",
+          "empty": "Aucune demande de contact pour l'instant"
+        },
+        "saved": {
+          "title": "Startups sauvegardées",
+          "subtitle": "Annonces que vous avez mises en favoris.",
+          "empty": "Aucune startup sauvegardée pour l'instant"
+        },
+        "settings": {
+          "title": "Paramètres",
+          "subtitle": "Gérez vos préférences de compte."
+        }
+      },
+      "admin": {
+        "overview": {
+          "greeting": "Admin Metwork",
+          "subtitle": "Statistiques et contrôles globaux de la plateforme.",
+          "statTotalUsers": "Total utilisateurs",
+          "statTotalUsersHint": "+{count} ce mois-ci",
+          "statActiveIncubators": "Incubateurs actifs",
+          "statBookingRevenue": "Revenus réservations (tout temps)",
+          "statBookingRevenueHint": "{count} réservations",
+          "statWalletFloat": "Flottant portefeuilles",
+          "statWalletFloatHint": "Total détenu dans tous les portefeuilles",
+          "statPendingMentorReqs": "Demandes mentors en attente",
+          "statUnhandledContacts": "Contacts non traités"
+        },
+        "users": {
+          "title": "Utilisateurs",
+          "subtitle": "Recherchez, suspendez, réactivez et changez les rôles des membres Metwork.",
+          "statActive": "Actifs",
+          "statPending": "Vérification en attente",
+          "statSuspended": "Suspendus / bannis"
+        },
+        "incubators": {
+          "title": "Incubateurs",
+          "subtitle": "Enregistrez et gérez les profils incubateurs, modèles de facturation et managers.",
+          "statRegistered": "Enregistrés",
+          "statActive": "Actifs",
+          "statSuspended": "Suspendus"
+        },
+        "memberships": {
+          "title": "Abonnements",
+          "subtitle": "Attribuez et gérez les plans d'abonnement pour les utilisateurs Metwork.",
+          "statTotal": "Total utilisateurs",
+          "statActive": "Plans actifs",
+          "statPaid": "Plans payants"
+        },
+        "promoCodes": {
+          "title": "Codes promo",
+          "subtitle": "Créez et gérez les codes de réduction pour les abonnements et réservations d'espaces."
+        },
+        "commissions": {
+          "title": "Commissions",
+          "subtitle": "Configurez les taux de commission de la plateforme par type de transaction."
+        },
+        "listings": {
+          "title": "Annonces en attente",
+          "subtitle": "Espaces et programmes non encore publiés — espaces inactifs et programmes en brouillon."
+        },
+        "mentorBookings": {
+          "title": "Demandes de consultation",
+          "subtitle": "Examinez et répondez aux demandes de réservation mentor des fondateurs."
+        },
+        "withdrawals": {
+          "title": "Demandes de retrait",
+          "subtitle": "Examinez et traitez les demandes de retrait de portefeuille des utilisateurs et incubateurs."
+        },
+        "cms": {
+          "title": "Page d'accueil",
+          "subtitle": "Modifiez le contenu de la page publique. Les modifications sont publiées immédiatement."
+        },
+        "settings": {
+          "title": "Paramètres de la plateforme",
+          "subtitle": "Configuration globale de la plateforme Metwork."
+        },
+        "auditLog": {
+          "title": "Journal d'audit",
+          "subtitle": "Historique des actions admin récentes. Affichage des 200 dernières entrées."
+        },
+        "contacts": {
+          "title": "Boîte de réception",
+          "subtitle": "Messages soumis via le formulaire de contact public.",
+          "statTotal": "Total messages",
+          "statUnhandled": "Non traités",
+          "statHandled": "Traités"
+        },
+        "bookings": {
+          "title": "Toutes les réservations",
+          "subtitle": "{total} réservations — {pending} en attente d'approbation."
+        },
+        "investorContacts": {
+          "title": "Demandes de contact investisseurs",
+          "subtitle": "{count} en attente — examinez et connectez les investisseurs avec les fondateurs."
+        },
+        "mentorRevenue": {
+          "title": "Revenus mentors",
+          "subtitle": "La plateforme conserve {platformRate}% · Les mentors reçoivent {mentorRate}%. Taux configurable sur la page Commissions."
+        },
+        "mentors": {
+          "title": "Mentors",
+          "subtitle": "La liste affichée dans le carrousel de la page d'accueil."
+        },
+        "incubator": {
+          "overview": {
+            "subtitle": "{city} · Géré par vous en tant qu'admin de la plateforme.",
+            "manageSpaces": "Gérer les espaces",
+            "statActiveSpaces": "Espaces actifs",
+            "statBookingsThisMonth": "Réservations ce mois-ci",
+            "statBookingsHint": "{count} en attente",
+            "statRevenueMtd": "Revenus (MTD, nets)",
+            "statRevenueHint": "Après commission de la plateforme",
+            "statMembersEnrolled": "Membres inscrits",
+            "statMembersHint": "Dans vos programmes",
+            "statPrograms": "Programmes",
+            "statWalletBalance": "Solde du portefeuille"
+          },
+          "spaces": {
+            "title": "Espaces",
+            "subtitle": "{count} actifs — coworking, bureaux privés, salles de formation."
+          },
+          "programs": {
+            "title": "Programmes",
+            "subtitle": "{count} publiés — incubation, accélération, formation et ateliers."
+          },
+          "bookings": {
+            "title": "Réservations",
+            "subtitle": "{count} en attente — confirmez ou annulez les réservations de vos espaces et programmes."
+          },
+          "members": {
+            "title": "Membres",
+            "subtitle": "{count} inscrits dans les programmes Metwork."
+          },
+          "events": {
+            "title": "Événements",
+            "subtitle": "Soirées pitch, demo days et meetups."
+          },
+          "profile": {
+            "title": "Profil incubateur",
+            "subtitle": "Gérez le profil Metwork, le logo et les préférences de facturation."
+          }
+        }
+      }
     }
   }
 }

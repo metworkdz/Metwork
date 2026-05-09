@@ -1,17 +1,12 @@
 'use client';
 
-/**
- * Full-page mentor slideshow for /mentors.
- * - Large hero card per mentor with photo, name, position
- * - "Book consultation" button appears on card hover
- * - Prev / next arrows + dot indicators
- * - Auto-advances every 6 s, pauses while hovered
- */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Linkedin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { BookConsultationDialog } from './book-consultation-dialog';
+import { useAuth } from '@/components/providers/auth-provider';
+import { useRouter } from '@/i18n/routing';
 import type { Mentor } from '@/types/mentor';
 
 interface MentorSlideshowProps {
@@ -23,6 +18,16 @@ export function MentorSlideshow({ mentors }: MentorSlideshowProps) {
   const [hovered,  setHovered]  = useState(false);
   const [booking,  setBooking]  = useState<Mentor | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { user } = useAuth();
+  const router = useRouter();
+
+  function handleBook(mentor: Mentor) {
+    if (!user) {
+      router.push('/signup');
+      return;
+    }
+    setBooking(mentor);
+  }
 
   const total = mentors.length;
 
@@ -104,14 +109,18 @@ export function MentorSlideshow({ mentors }: MentorSlideshowProps) {
                 <Button
                   size="sm"
                   className="h-9 bg-white text-foreground hover:bg-white/90"
-                  onClick={() => setBooking(mentor)}
+                  onClick={() => handleBook(mentor)}
                 >
                   <Calendar className="size-4" />
                   Book consultation
                 </Button>
                 {mentor.linkedinUrl && (
                   <a
-                    href={mentor.linkedinUrl}
+                    href={
+                      mentor.linkedinUrl.startsWith('http')
+                        ? mentor.linkedinUrl
+                        : `https://${mentor.linkedinUrl}`
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`${mentor.fullName} on LinkedIn`}

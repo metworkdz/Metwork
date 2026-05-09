@@ -1,16 +1,15 @@
 import { db } from '@/server/db/store';
-import { defaultLandingContent } from './defaults';
 import type { LandingContent } from '@/types/cms';
 import type { LandingContentInput } from './schemas';
 
 /**
- * Returns the current landing content. Falls back to hard-coded defaults
- * if the admin has never saved anything.
+ * Returns admin-saved landing content, or null if the admin has never
+ * published anything. Callers (the landing page server component) should
+ * fall back to locale-specific translation strings when null is returned.
  */
-export async function getLandingContent(): Promise<LandingContent> {
+export async function getLandingContent(): Promise<LandingContent | null> {
   const data = await db.read();
-  if (data.landingContent) return data.landingContent;
-  return { ...defaultLandingContent, updatedAt: new Date(0).toISOString() };
+  return data.landingContent ?? null;
 }
 
 /**

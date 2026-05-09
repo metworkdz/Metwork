@@ -1,4 +1,4 @@
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { Clock } from 'lucide-react';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
@@ -13,13 +13,14 @@ export const metadata = { title: 'Marketplace' };
 export default async function EntrepreneurMarketplacePage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('pages.dashboard');
   await requireRole(['ENTREPRENEUR']);
 
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        title="Marketplace"
-        subtitle="Browse service providers, tools, and offers available to your startup."
+        title={t('entrepreneur.marketplace.title')}
+        subtitle={t('entrepreneur.marketplace.subtitle')}
       />
       <EmptyState
         icon={<Clock className="size-6 text-muted-foreground" />}

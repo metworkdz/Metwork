@@ -1,30 +1,35 @@
-import { setRequestLocale } from 'next-intl/server';
-import { Clock } from 'lucide-react';
+import { setRequestLocale, getLocale, getTranslations } from 'next-intl/server';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
-import { EmptyState } from '@/components/shared/empty-state';
+import { InvestmentTracker } from '@/components/features/investor/investment-tracker';
+import { db } from '@/server/db/store';
+import type { Locale } from '@/i18n/config';
+
+export const metadata = { title: 'Portfolio' };
 
 interface PageProps {
   params: Promise<{ locale: string }>;
 }
 
-export const metadata = { title: 'Portfolio' };
-
 export default async function InvestorPortfolioPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  await requireRole(['INVESTOR']);
+  const t = await getTranslations('pages.dashboard');
+  const lang = (await getLocale()) as Locale;
+  const user = await requireRole(['INVESTOR']);
+
+  const data = await db.read();
+  const investments = (data.investments ?? [])
+    .filter((inv) => inv.investorId === user.id)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        title="Portfolio"
-        subtitle="Track your investments and portfolio performance."
+        title={t('investor.portfolio.title')}
+        subtitle={t('investor.portfolio.subtitle')}
       />
-      <EmptyState
-        icon={<Clock className="size-6 text-muted-foreground" />}
-        message="This section is coming soon. We're working on it."
-      />
+      <InvestmentTracker initial={investments} locale={lang} />
     </div>
   );
 }

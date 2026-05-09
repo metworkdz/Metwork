@@ -1,11 +1,12 @@
 import { redirect } from 'next/navigation';
+import { getLocale } from 'next-intl/server';
 import { getServerSession } from '@/lib/session';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
 import { DashboardTopbar } from '@/components/layout/dashboard-topbar';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const user = await getServerSession();
-  if (!user) redirect('/login');
+  const [user, locale] = await Promise.all([getServerSession(), getLocale()]);
+  if (!user) redirect(`/${locale}/login`);
 
   return (
     <div className="flex min-h-screen bg-muted/20">

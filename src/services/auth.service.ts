@@ -12,6 +12,8 @@ interface SignupResponse {
   requiresOtp: boolean;
   /** Masked phone for display on OTP page (e.g. +213 *** ** 12 34) */
   maskedPhone: string;
+  /** Masked email for display on OTP page (e.g. u***@example.com) */
+  maskedEmail: string;
 }
 
 interface VerifyOtpResponse {
@@ -43,8 +45,8 @@ export const authService = {
     return { user: res.user, expiresAt: new Date(res.expiresAt) };
   },
 
-  async resendOtp(userId: string): Promise<void> {
-    await apiClient.post('/auth/resend-otp', { userId }, { skipAuth: true });
+  async resendOtp(userId: string, channel: 'whatsapp' | 'sms' | 'email' = 'whatsapp'): Promise<void> {
+    await apiClient.post('/auth/resend-otp', { userId, channel }, { skipAuth: true });
   },
 
   async forgotPassword(input: ForgotPasswordInput): Promise<void> {

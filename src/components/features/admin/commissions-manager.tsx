@@ -1,0 +1,148 @@
+'use client';
+
+/**
+ * Admin: commission rules editor.
+ * Each rule card shows the current rate with an inline edit field.
+ */
+import { useState } from 'react';
+import { Pencil, X, Check } from 'lucide-react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import type { CommissionRuleRecord } from '@/server/db/store';
+
+async function patchRule(id: string, body: { rate?: number; isActive?: boolean }) {
+  const res = await fetch(`/api/admin/commission-rules/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
+    throw new Error(d.error?.message ?? 'Update failed');
+  }
+  return (await res.json() as { rule: CommissionRuleRecord }).rule;
+}
+
+function RuleCard({ rule: initial }: { rule: CommissionRuleRecord }) {
+  const [rule,     setRule]     = useState(initial);
+  const [editing,  setEditing]  = useState(false);
+  const [draft,    setDraft]    = useState('');
+  const [busy,     setBusy]     = useState(false);
+  const [err,      setErr]      = useState<string | null>(null);
+
+  function startEdit() {
+    setDraft((rule.rate * 100).toFixed(1));
+    setEditing(true);
+    setErr(null);
+  }
+
+  async function saveRate() {
+    const num = parseFloat(draft);
+    if (isNaN(num) || num < 0 || num > 100) { setErr('Enter a value between 0 and 100'); return; }
+    setBusy(true);
+    try {
+      const updated = await patchRule(rule.id, { rate: num / 100 });
+      setRule(updated);
+      setEditing(false);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Update failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleActive() {
+    setBusy(true);
+    try {
+      const updated = await patchRule(rule.id, { isActive: !rule.isActive });
+      setRule(updated);
+    } catch { /* silent */ }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <Card className="border-border/60">
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-medium">{rule.name}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{rule.description}</p>
+          </div>
+          <Badge variant={rule.isActive ? 'success' : 'default'}>
+            {rule.isActive ? 'Active' : 'Inactive'}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Rate display / edit */}
+          {editing ? (
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={draft}
+                  onChange={(e) => { setDraft(e.target.value); setErr(null); }}
+                  className="w-24 pe-7"
+                  autoFocus
+                />
+                <span className="absolute end-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+              </div>
+              <Button size="sm" loading={busy} onClick={saveRate}>
+                <Check className="size-3" /> Save
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setErr(null); }}>
+                <X className="size-3" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-semibold tabular-nums">
+                {(rule.rate * 100).toFixed(1)}%
+              </span>
+              <Button variant="ghost" size="icon" className="size-7" onClick={startEdit} disabled={busy}>
+                <Pencil className="size-3" />
+              </Button>
+            </div>
+          )}
+
+          {/* Toggle active */}
+          <Button
+            variant="outline"
+            size="sm"
+            loading={busy && !editing}
+            onClick={toggleActive}
+            className="ms-auto"
+          >
+            {rule.isActive ? 'Disable' : 'Enable'}
+          </Button>
+        </div>
+        {err && <p className="mt-2 text-xs text-destructive">{err}</p>}
+        <p className="mt-2 text-xs text-muted-foreground">
+          Applies to: <code className="rounded bg-muted px-1">{rule.transactionType}</code>
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function CommissionsManager({ rules }: { rules: CommissionRuleRecord[] }) {
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Commission rates are applied automatically to matching transaction types. Changes take effect immediately on new transactions.
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {rules.map((rule) => (
+          <RuleCard key={rule.id} rule={rule} />
+        ))}
+      </div>
+    </div>
+  );
+}

@@ -12,6 +12,8 @@ export const createSpaceBookingSchema = z.object({
   startsAt: z.string().datetime(),
   /** Idempotency key — the same key always produces the same booking. */
   clientReference: z.string().min(8).max(128),
+  /** Optional promo code to apply a percentage discount. */
+  promoCode: z.string().optional(),
 });
 
 export type CreateSpaceBookingInput = z.infer<typeof createSpaceBookingSchema>;

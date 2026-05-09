@@ -1,89 +1,149 @@
 'use client';
 
 /**
- * Admin: searchable users table with role + status filters and a row
- * action menu (suspend / reinstate / make admin). Action handlers are
- * stubbed pending the admin user-management API.
+ * Admin: live users table backed by the real DB.
+ * Suspend / reinstate / ban / role-change / hard-delete all call
+ * PATCH or DELETE /api/admin/users/[id] and update local state on success.
  */
 import { useMemo, useState } from 'react';
 import { useLocale } from 'next-intl';
-import { MoreVertical, Search, ShieldCheck, ShieldOff, Trash2, UserCog } from 'lucide-react';
+import { MoreVertical, Search, ShieldCheck, ShieldOff, Trash2, UserCog, UserX } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead,
+  TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog, DialogContent, DialogDescription,
+  DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { formatDate } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
-import type { AdminUserRow } from '@/lib/demo-data';
+import type { UserRole, UserStatus } from '@/types/auth';
+
+export interface AdminUserView {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  city: string;
+  role: UserRole;
+  status: UserStatus;
+  phoneVerified: boolean;
+  emailVerified: boolean;
+  membershipCode: string | null;
+  locale: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const ALL = 'all';
 
-const roleVariant: Record<AdminUserRow['role'], React.ComponentProps<typeof Badge>['variant']> = {
+const roleVariant: Record<UserRole, React.ComponentProps<typeof Badge>['variant']> = {
   ENTREPRENEUR: 'primary',
-  INVESTOR: 'info',
-  INCUBATOR: 'warning',
-  ADMIN: 'danger',
+  INVESTOR:     'info',
+  INCUBATOR:    'warning',
+  ADMIN:        'danger',
 };
 
-const statusVariant: Record<AdminUserRow['status'], React.ComponentProps<typeof Badge>['variant']> = {
-  ACTIVE: 'success',
-  PENDING_VERIFICATION: 'warning',
-  SUSPENDED: 'danger',
-  BANNED: 'danger',
+const statusVariant: Record<UserStatus, React.ComponentProps<typeof Badge>['variant']> = {
+  ACTIVE:                'success',
+  PENDING_VERIFICATION:  'warning',
+  SUSPENDED:             'danger',
+  BANNED:                'danger',
 };
 
-const statusLabel: Record<AdminUserRow['status'], string> = {
-  ACTIVE: 'Active',
+const statusLabel: Record<UserStatus, string> = {
+  ACTIVE:               'Active',
   PENDING_VERIFICATION: 'Pending',
-  SUSPENDED: 'Suspended',
-  BANNED: 'Banned',
+  SUSPENDED:            'Suspended',
+  BANNED:               'Banned',
 };
 
-export function AdminUsersTable({ initial }: { initial: AdminUserRow[] }) {
+async function patchUser(id: string, body: { role?: UserRole; status?: UserStatus }) {
+  const res = await fetch(`/api/admin/users/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({})) as { error?: { message?: string } };
+    throw new Error(data.error?.message ?? 'Update failed');
+  }
+  return (await res.json() as { user: AdminUserView }).user;
+}
+
+async function deleteUser(id: string): Promise<void> {
+  const res = await fetch(`/api/admin/users/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({})) as { error?: { message?: string } };
+    throw new Error(data.error?.message ?? 'Delete failed');
+  }
+}
+
+export function AdminUsersTable({ initial }: { initial: AdminUserView[] }) {
   const locale = useLocale() as Locale;
-  const [users, setUsers] = useState(initial);
-  const [query, setQuery] = useState('');
-  const [role, setRole] = useState<AdminUserRow['role'] | typeof ALL>(ALL);
-  const [status, setStatus] = useState<AdminUserRow['status'] | typeof ALL>(ALL);
+  const [users,       setUsers]       = useState(initial);
+  const [query,       setQuery]       = useState('');
+  const [role,        setRole]        = useState<UserRole | typeof ALL>(ALL);
+  const [status,      setStatus]      = useState<UserStatus | typeof ALL>(ALL);
+  const [deletingUser, setDeletingUser] = useState<AdminUserView | null>(null);
+  const [deletebusy,  setDeleteBusy]  = useState(false);
+  const [deleteErr,   setDeleteErr]   = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return users.filter((u) => {
-      if (role !== ALL && u.role !== role) return false;
+      if (role   !== ALL && u.role   !== role)   return false;
       if (status !== ALL && u.status !== status) return false;
       if (!q) return true;
       return u.fullName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
     });
   }, [users, query, role, status]);
 
-  function setUserStatus(id: string, next: AdminUserRow['status']) {
-    setUsers((us) => us.map((u) => (u.id === id ? { ...u, status: next } : u)));
+  async function applyPatch(id: string, patch: { role?: UserRole; status?: UserStatus }) {
+    try {
+      const updated = await patchUser(id, patch);
+      setUsers((us) => us.map((u) => (u.id === id ? { ...u, ...updated } : u)));
+    } catch {
+      // silently ignore — in production you'd show a toast
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deletingUser) return;
+    setDeleteBusy(true);
+    setDeleteErr(null);
+    try {
+      await deleteUser(deletingUser.id);
+      setUsers((us) => us.filter((u) => u.id !== deletingUser.id));
+      setDeletingUser(null);
+    } catch (err) {
+      setDeleteErr(err instanceof Error ? err.message : 'Delete failed');
+    } finally {
+      setDeleteBusy(false);
+    }
   }
 
   return (
     <div className="space-y-4">
+      {/* Filters */}
       <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-[1fr_auto_auto]">
         <div className="relative sm:col-span-2 md:col-span-1">
           <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -96,7 +156,7 @@ export function AdminUsersTable({ initial }: { initial: AdminUserRow[] }) {
             aria-label="Search users"
           />
         </div>
-        <Select value={role} onValueChange={(v) => setRole(v as AdminUserRow['role'] | typeof ALL)}>
+        <Select value={role} onValueChange={(v) => setRole(v as UserRole | typeof ALL)}>
           <SelectTrigger className="w-full md:w-[160px]">
             <SelectValue placeholder="Role" />
           </SelectTrigger>
@@ -108,7 +168,7 @@ export function AdminUsersTable({ initial }: { initial: AdminUserRow[] }) {
             <SelectItem value="ADMIN">Admins</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={status} onValueChange={(v) => setStatus(v as AdminUserRow['status'] | typeof ALL)}>
+        <Select value={status} onValueChange={(v) => setStatus(v as UserStatus | typeof ALL)}>
           <SelectTrigger className="w-full md:w-[180px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -155,7 +215,9 @@ export function AdminUsersTable({ initial }: { initial: AdminUserRow[] }) {
                         <div className="text-xs text-muted-foreground">{u.email}</div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={roleVariant[u.role]}>{u.role.toLowerCase()}</Badge>
+                        <Badge variant={roleVariant[u.role]}>
+                          {u.role.charAt(0) + u.role.slice(1).toLowerCase()}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant={statusVariant[u.status]}>{statusLabel[u.status]}</Badge>
@@ -177,31 +239,57 @@ export function AdminUsersTable({ initial }: { initial: AdminUserRow[] }) {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onSelect={() => {}}>
+                            <DropdownMenuItem disabled>
                               <UserCog />
-                              View profile
+                              {u.email}
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {/* Role change */}
+                            {u.role !== 'ADMIN' && (
+                              <DropdownMenuItem onSelect={() => applyPatch(u.id, { role: 'ADMIN' })}>
+                                Promote to admin
+                              </DropdownMenuItem>
+                            )}
+                            {u.role === 'ADMIN' && (
+                              <DropdownMenuItem onSelect={() => applyPatch(u.id, { role: 'ENTREPRENEUR' })}>
+                                Demote to entrepreneur
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            {/* Status change */}
                             {u.status === 'ACTIVE' ? (
-                              <DropdownMenuItem
-                                onSelect={() => setUserStatus(u.id, 'SUSPENDED')}
-                              >
+                              <DropdownMenuItem onSelect={() => applyPatch(u.id, { status: 'SUSPENDED' })}>
                                 <ShieldOff />
                                 Suspend
                               </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem
-                                onSelect={() => setUserStatus(u.id, 'ACTIVE')}
-                              >
+                            ) : u.status === 'SUSPENDED' ? (
+                              <DropdownMenuItem onSelect={() => applyPatch(u.id, { status: 'ACTIVE' })}>
                                 <ShieldCheck />
                                 Reinstate
                               </DropdownMenuItem>
+                            ) : null}
+                            {u.status !== 'BANNED' && (
+                              <DropdownMenuItem
+                                onSelect={() => applyPatch(u.id, { status: 'BANNED' })}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 />
+                                Ban user
+                              </DropdownMenuItem>
                             )}
+                            {u.status === 'BANNED' && (
+                              <DropdownMenuItem onSelect={() => applyPatch(u.id, { status: 'ACTIVE' })}>
+                                <ShieldCheck />
+                                Unban
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onSelect={() => setUserStatus(u.id, 'BANNED')}
+                              onSelect={() => { setDeletingUser(u); setDeleteErr(null); }}
                               className="text-destructive focus:text-destructive"
                             >
-                              <Trash2 />
-                              Ban
+                              <UserX />
+                              Delete account
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -214,6 +302,41 @@ export function AdminUsersTable({ initial }: { initial: AdminUserRow[] }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Hard-delete confirmation dialog */}
+      <Dialog
+        open={deletingUser !== null}
+        onOpenChange={(o) => { if (!o) { setDeletingUser(null); setDeleteErr(null); } }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete account permanently?</DialogTitle>
+            <DialogDescription>
+              {deletingUser && (
+                <>
+                  This will permanently delete <span className="font-medium">{deletingUser.fullName}</span>{' '}
+                  (<span className="font-mono text-xs">{deletingUser.email}</span>) and all their data —
+                  bookings, wallet, sessions, and memberships.
+                  <br /><br />
+                  They will be able to create a new account with the same email or phone.
+                  <strong className="block mt-2 text-destructive">This cannot be undone.</strong>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {deleteErr && (
+            <p className="text-xs text-destructive">{deleteErr}</p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingUser(null)} disabled={deletebusy}>
+              Cancel
+            </Button>
+            <Button variant="destructive" loading={deletebusy} onClick={confirmDelete}>
+              Delete permanently
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

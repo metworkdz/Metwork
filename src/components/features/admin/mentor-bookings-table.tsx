@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, X, ChevronDown } from 'lucide-react';
+import { Check, X, ChevronDown, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +15,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import type { MentorBookingStatus } from '@/server/db/store';
 
@@ -25,6 +26,9 @@ export interface BookingRow {
   userEmail: string;
   userPhone: string;
   message: string;
+  scheduledAt?: string | null;
+  meetLink?: string | null;
+  isOffline?: boolean;
   status: MentorBookingStatus;
   adminNote: string | null;
   createdAt: string;
@@ -40,19 +44,45 @@ const STATUS_BADGE: Record<MentorBookingStatus, { variant: 'warning' | 'success'
 interface ReviewDialogProps {
   booking: BookingRow | null;
   onClose: () => void;
-  onSave: (id: string, status: 'APPROVED' | 'REJECTED', note: string) => Promise<void>;
+  onSave: (id: string, payload: {
+    status: 'APPROVED' | 'REJECTED';
+    adminNote?: string;
+    scheduledAt?: string;
+    meetLink?: string;
+    isOffline?: boolean;
+  }) => Promise<void>;
 }
 
 function ReviewDialog({ booking, onClose, onSave }: ReviewDialogProps) {
-  const [note,     setNote]     = useState('');
-  const [saving,   setSaving]   = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [note,        setNote]        = useState('');
+  const [scheduledAt, setScheduledAt] = useState('');
+  const [meetLink,    setMeetLink]    = useState('');
+  const [isOffline,   setIsOffline]   = useState(false);
+  const [saving,      setSaving]      = useState(false);
+  const [errorMsg,    setErrorMsg]    = useState<string | null>(null);
+
+  // Derived: approve is allowed when meetLink is filled OR offline is checked
+  const approveReady = meetLink.trim().length > 0 || isOffline;
 
   async function submit(status: 'APPROVED' | 'REJECTED') {
     if (!booking) return;
+
+    if (status === 'APPROVED' && !approveReady) {
+      setErrorMsg('Please enter a meeting link or mark the session as offline before approving.');
+      return;
+    }
+
     setSaving(true); setErrorMsg(null);
     try {
-      await onSave(booking.id, status, note);
+      await onSave(booking.id, {
+        status,
+        adminNote:   note || undefined,
+        scheduledAt: status === 'APPROVED' && scheduledAt
+          ? new Date(scheduledAt).toISOString()
+          : undefined,
+        meetLink:  status === 'APPROVED' && meetLink.trim() ? meetLink.trim() : undefined,
+        isOffline: status === 'APPROVED' ? isOffline : undefined,
+      });
       onClose();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Save failed');
@@ -75,32 +105,91 @@ function ReviewDialog({ booking, onClose, onSave }: ReviewDialogProps) {
 
         {booking && (
           <div className="space-y-4">
+            {/* Booking info */}
             <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm space-y-1">
               <p><span className="font-medium">Email:</span> {booking.userEmail}</p>
               <p><span className="font-medium">Phone:</span> {booking.userPhone}</p>
+              {booking.scheduledAt && (
+                <p>
+                  <span className="font-medium">Preferred time:</span>{' '}
+                  {new Date(booking.scheduledAt).toLocaleString()}
+                </p>
+              )}
               <p className="mt-2 text-muted-foreground">{booking.message}</p>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="admin-note">Note to requester (optional)</Label>
-              <textarea
-                id="admin-note"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                rows={3}
-                placeholder="Add a note explaining your decision or next steps…"
-                disabled={saving}
-                className={cn(
-                  'flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm',
-                  'placeholder:text-muted-foreground',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-                  'disabled:cursor-not-allowed disabled:opacity-50',
-                )}
-              />
+            {/* Meeting details — required for approval */}
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="rev-scheduled">
+                  Confirmed date &amp; time <span className="text-muted-foreground text-xs">(overrides user&apos;s preference)</span>
+                </Label>
+                <Input
+                  id="rev-scheduled"
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                  disabled={saving}
+                />
+              </div>
+
+              {/* Offline toggle */}
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border/60 bg-muted/20 px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={isOffline}
+                  onChange={(e) => {
+                    setIsOffline(e.target.checked);
+                    if (e.target.checked) setMeetLink('');
+                    setErrorMsg(null);
+                  }}
+                  disabled={saving}
+                  className="size-4 rounded"
+                />
+                <MapPin className="size-4 shrink-0 text-muted-foreground" />
+                <span className="text-sm font-medium">In-person meeting (offline)</span>
+              </label>
+
+              {/* Meet link — hidden when offline */}
+              {!isOffline && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="rev-meet">
+                    Meeting link <span className="text-destructive text-xs">* required for approval</span>
+                  </Label>
+                  <Input
+                    id="rev-meet"
+                    type="url"
+                    value={meetLink}
+                    onChange={(e) => { setMeetLink(e.target.value); setErrorMsg(null); }}
+                    placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                    disabled={saving}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="admin-note">Note to client <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                <textarea
+                  id="admin-note"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={2}
+                  placeholder="Add a note visible to the client in their confirmation email…"
+                  disabled={saving}
+                  className={cn(
+                    'flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm',
+                    'placeholder:text-muted-foreground',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+                    'disabled:cursor-not-allowed disabled:opacity-50',
+                  )}
+                />
+              </div>
             </div>
 
             {errorMsg && (
-              <p className="text-xs text-destructive">{errorMsg}</p>
+              <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                {errorMsg}
+              </p>
             )}
           </div>
         )}
@@ -118,6 +207,8 @@ function ReviewDialog({ booking, onClose, onSave }: ReviewDialogProps) {
           </Button>
           <Button
             loading={saving}
+            disabled={!approveReady}
+            title={!approveReady ? 'Enter a meeting link or mark as offline to approve' : undefined}
             onClick={() => submit('APPROVED')}
           >
             <Check className="size-4" /> Approve
@@ -133,9 +224,9 @@ interface MentorBookingsTableProps {
 }
 
 export function MentorBookingsTable({ initial }: MentorBookingsTableProps) {
-  const [rows,       setRows]       = useState<BookingRow[]>(initial);
-  const [reviewing,  setReviewing]  = useState<BookingRow | null>(null);
-  const [statusFilter, setFilter]   = useState<MentorBookingStatus | 'ALL'>('ALL');
+  const [rows,         setRows]      = useState<BookingRow[]>(initial);
+  const [reviewing,    setReviewing] = useState<BookingRow | null>(null);
+  const [statusFilter, setFilter]    = useState<MentorBookingStatus | 'ALL'>('ALL');
 
   const filters: Array<{ value: MentorBookingStatus | 'ALL'; label: string }> = [
     { value: 'ALL',      label: 'All' },
@@ -148,21 +239,23 @@ export function MentorBookingsTable({ initial }: MentorBookingsTableProps) {
     ? rows
     : rows.filter((r) => r.status === statusFilter);
 
-  async function handleSave(id: string, status: 'APPROVED' | 'REJECTED', note: string) {
+  async function handleSave(
+    id: string,
+    payload: { status: 'APPROVED' | 'REJECTED'; adminNote?: string; scheduledAt?: string; meetLink?: string; isOffline?: boolean },
+  ) {
     const res = await fetch(`/api/admin/mentor-bookings/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ status, adminNote: note || undefined }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({})) as { error?: { message?: string } };
       throw new Error(data.error?.message ?? 'Failed to update booking');
     }
+    const updated = (await res.json()) as BookingRow;
     setRows((prev) =>
-      prev.map((r) =>
-        r.id === id ? { ...r, status, adminNote: note || null, updatedAt: new Date().toISOString() } : r,
-      ),
+      prev.map((r) => r.id === id ? { ...r, ...updated } : r),
     );
   }
 
@@ -217,6 +310,25 @@ export function MentorBookingsTable({ initial }: MentorBookingsTableProps) {
                       <p className="text-xs text-muted-foreground">
                         {row.userEmail} · {row.userPhone}
                       </p>
+                      {row.scheduledAt && (
+                        <p className="text-xs text-muted-foreground">
+                          📅 {new Date(row.scheduledAt).toLocaleString()}
+                          {row.isOffline && <span className="ml-1 text-amber-600">· In-person</span>}
+                          {!row.isOffline && row.meetLink && (
+                            <>
+                              {' '}·{' '}
+                              <a
+                                href={row.meetLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary underline-offset-2 hover:underline"
+                              >
+                                Meet link
+                              </a>
+                            </>
+                          )}
+                        </p>
+                      )}
                       <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">
                         {row.message}
                       </p>
