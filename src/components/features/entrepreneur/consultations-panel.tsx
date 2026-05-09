@@ -8,10 +8,15 @@
  *   POST /api/mentors/:id/book  →  status: PENDING
  *   Admin reviews  →  APPROVED (confirmation email) | REJECTED
  *
- * DOES NOT auto-confirm or charge the wallet. All bookings require admin review.
+ * Dialog features:
+ *  - Mentor selector
+ *  - Duration selector (30 – 180 min) with per-option DZD price
+ *  - Price breakdown: base → promo discount → final
+ *  - Promo code with real-time validation (shared PromoCodeInput)
+ *  - Pending-review notice (not an automatic booking)
  */
 import { useState } from 'react';
-import { Clock, UserCheck } from 'lucide-react';
+import { Clock, UserCheck, Timer, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,9 +35,34 @@ import {
   TableHeader, TableRow,
 } from '@/components/ui/table';
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
+import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { formatDate } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import type { MentorBookingRecord, MentorRecord } from '@/server/db/store';
 import type { Locale } from '@/i18n/config';
+
+/* ─── Duration options (mirrors BookConsultationDialog) ─── */
+
+const DURATION_OPTIONS = [
+  { value: 30,  label: '30 min' },
+  { value: 60,  label: '1 hour' },
+  { value: 90,  label: '1 h 30' },
+  { value: 120, label: '2 hours' },
+  { value: 150, label: '2 h 30' },
+  { value: 180, label: '3 hours' },
+];
+
+/** Compute session price from hourly rate and duration. Returns 0 for free mentors. */
+function computePrice(feePerHour: number, durationMinutes: number): number {
+  if (!feePerHour || feePerHour <= 0) return 0;
+  return Math.round((durationMinutes / 60) * feePerHour);
+}
+
+function formatDZD(amount: number): string {
+  return `${amount.toLocaleString('fr-DZ')} DZD`;
+}
+
+/* ─── Props ─── */
 
 interface Props {
   /** Existing mentor booking requests for this user, newest first. */
@@ -56,6 +86,8 @@ function StatusBadge({ status }: { status: BookingStatus }) {
   return <Badge variant="warning">Pending review</Badge>;
 }
 
+/* ─── Component ─── */
+
 export function ConsultationsPanel({
   initial,
   mentors,
@@ -69,23 +101,44 @@ export function ConsultationsPanel({
   const [bookings, setBookings]     = useState(initial);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Dialog form state
+  /* Dialog form state */
   const [selectedMentorId, setSelectedMentorId] = useState('');
-  const [phone, setPhone]     = useState(userPhone);
-  const [message, setMessage] = useState('');
-  const [saving, setSaving]   = useState(false);
-  const [error, setError]     = useState<string | null>(null);
-  const [success, setSuccess] = useState<{ mentorName: string } | null>(null);
+  const [phone,    setPhone]    = useState(userPhone);
+  const [message,  setMessage]  = useState('');
+  const [duration, setDuration] = useState<number>(60);
+  const [promoResult, setPromoResult] = useState<PromoResult | null>(null);
 
+  const [saving, setSaving] = useState(false);
+  const [error,  setError]  = useState<string | null>(null);
+  const [success, setSuccess] = useState<{
+    mentorName: string;
+    finalPrice: number;
+    isFree: boolean;
+  } | null>(null);
+
+  /* Derived pricing */
   const selectedMentor = mentors.find((m) => m.id === selectedMentorId);
+  const feePerHour     = selectedMentor?.consultationFee ?? 0;
+  const basePrice      = computePrice(feePerHour, duration);
+  const discountAmt    = promoResult ? promoResult.discountAmount : 0;
+  const finalPrice     = promoResult ? promoResult.finalAmount : basePrice;
+  const isFree         = feePerHour === 0 || finalPrice === 0;
 
   function openDialog() {
     setSelectedMentorId(mentors[0]?.id ?? '');
     setPhone(userPhone);
     setMessage('');
+    setDuration(60);
+    setPromoResult(null);
     setError(null);
     setSuccess(null);
     setDialogOpen(true);
+  }
+
+  /** When duration changes, reset any applied promo (base price changed). */
+  function handleDurationChange(val: string) {
+    setDuration(Number(val));
+    setPromoResult(null); // reset so PromoCodeInput remounts fresh
   }
 
   async function submit() {
@@ -116,8 +169,8 @@ export function ConsultationsPanel({
           message:          message.trim(),
           consultationDate: null,
           consultationTime: null,
-          durationMinutes:  null,
-          promoCode:        null,
+          durationMinutes:  duration,
+          promoCode:        promoResult?.code ?? null,
         }),
       });
 
@@ -129,9 +182,13 @@ export function ConsultationsPanel({
       const data = await res.json() as { id: string };
       const mentor = mentors.find((m) => m.id === selectedMentorId);
 
-      setSuccess({ mentorName: mentor?.fullName ?? 'the mentor' });
+      setSuccess({
+        mentorName: mentor?.fullName ?? 'the mentor',
+        finalPrice,
+        isFree,
+      });
 
-      // Optimistic insert with PENDING status
+      /* Optimistic insert with PENDING status */
       const now = new Date().toISOString();
       setBookings((prev) => [
         {
@@ -146,9 +203,9 @@ export function ConsultationsPanel({
           adminNote:            null,
           consultationDate:     null,
           consultationTime:     null,
-          durationMinutes:      null,
-          appliedPromoCode:     null,
-          promoDiscountPercent: null,
+          durationMinutes:      duration,
+          appliedPromoCode:     promoResult?.code ?? null,
+          promoDiscountPercent: promoResult ? promoResult.discountValue : null,
           createdAt:            now,
           updatedAt:            now,
         },
@@ -182,7 +239,7 @@ export function ConsultationsPanel({
             )}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Requests are reviewed by our team. You'll receive an email once yours is approved.
+            Requests are reviewed by our team. You&apos;ll receive an email once yours is approved.
           </p>
         </div>
         <Button size="sm" onClick={openDialog} disabled={mentors.length === 0}>
@@ -250,7 +307,7 @@ export function ConsultationsPanel({
         open={dialogOpen}
         onOpenChange={(open) => { if (!open && !saving) setDialogOpen(false); }}
       >
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           {success ? (
             /* ── Pending-approval success state ── */
             <div className="flex flex-col items-center py-6 text-center">
@@ -264,6 +321,14 @@ export function ConsultationsPanel({
                 <span className="font-medium text-foreground">{success.mentorName}</span>{' '}
                 has been submitted. You will receive an email once the admin reviews it.
               </p>
+              {!success.isFree && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Estimated fee: <span className="font-medium">{formatDZD(success.finalPrice)}</span>
+                  {discountAmt > 0 && (
+                    <span className="ml-1 text-emerald-700">({formatDZD(discountAmt)} promo discount applied)</span>
+                  )}
+                </p>
+              )}
               <Button className="mt-6" onClick={() => setDialogOpen(false)}>
                 Done
               </Button>
@@ -282,7 +347,14 @@ export function ConsultationsPanel({
                 {/* Mentor selector */}
                 <div className="space-y-1.5">
                   <Label>Mentor</Label>
-                  <Select value={selectedMentorId} onValueChange={setSelectedMentorId}>
+                  <Select
+                    value={selectedMentorId}
+                    onValueChange={(v) => {
+                      setSelectedMentorId(v);
+                      // Reset promo when mentor changes (fee may differ)
+                      setPromoResult(null);
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a mentor" />
                     </SelectTrigger>
@@ -290,6 +362,11 @@ export function ConsultationsPanel({
                       {mentors.map((m) => (
                         <SelectItem key={m.id} value={m.id}>
                           {m.fullName} — {m.position}
+                          {(m.consultationFee ?? 0) > 0 && (
+                            <span className="ml-1 text-xs text-muted-foreground">
+                              · {formatDZD(m.consultationFee!)} /hr
+                            </span>
+                          )}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -299,11 +376,92 @@ export function ConsultationsPanel({
                   )}
                 </div>
 
+                {/* Duration selector */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="cp-dur" className="flex items-center gap-1">
+                    <Timer className="size-3.5" /> Duration
+                  </Label>
+                  <Select
+                    value={String(duration)}
+                    onValueChange={handleDurationChange}
+                    disabled={saving}
+                  >
+                    <SelectTrigger id="cp-dur">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DURATION_OPTIONS.map((opt) => {
+                        const price = computePrice(feePerHour, opt.value);
+                        return (
+                          <SelectItem key={opt.value} value={String(opt.value)}>
+                            <span className="flex items-center justify-between gap-6">
+                              <span>{opt.label}</span>
+                              {feePerHour > 0 && (
+                                <span className="text-xs text-muted-foreground tabular-nums">
+                                  {formatDZD(price)}
+                                </span>
+                              )}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Price breakdown — only shown when mentor has a fee */}
+                {feePerHour > 0 && (
+                  <div className="rounded-lg border border-border/60 bg-muted/10 px-3.5 py-3 space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                      <DollarSign className="size-3.5" /> Estimated fee
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {DURATION_OPTIONS.find((d) => d.value === duration)?.label} session
+                      </span>
+                      <span className="tabular-nums font-medium">{formatDZD(basePrice)}</span>
+                    </div>
+                    {promoResult && discountAmt > 0 && (
+                      <div className="flex justify-between text-sm text-emerald-700 dark:text-emerald-400">
+                        <span>Promo code discount</span>
+                        <span className="tabular-nums">− {formatDZD(discountAmt)}</span>
+                      </div>
+                    )}
+                    <div className={cn(
+                      'flex justify-between text-sm font-semibold border-t border-border/60 pt-1.5 mt-1.5',
+                    )}>
+                      <span>{finalPrice === 0 ? 'Free (promo applied)' : 'Total'}</span>
+                      <span className={cn('tabular-nums', finalPrice === 0 && 'text-emerald-700 dark:text-emerald-400')}>
+                        {finalPrice === 0 ? 'Free' : formatDZD(finalPrice)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground/70 mt-1">
+                      Admin confirms the exact amount after reviewing your request.
+                    </p>
+                  </div>
+                )}
+
+                {/* Promo code */}
+                {basePrice > 0 && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">
+                      Promo code <span className="font-normal">(optional)</span>
+                    </Label>
+                    {/* key forces remount when duration/mentor changes so state resets */}
+                    <PromoCodeInput
+                      key={`${selectedMentorId}-${duration}`}
+                      originalAmount={basePrice}
+                      onApplied={setPromoResult}
+                      disabled={saving}
+                    />
+                  </div>
+                )}
+
                 {/* Phone (pre-filled, editable) */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="consult-phone">Phone number</Label>
+                  <Label htmlFor="cp-phone">Phone number</Label>
                   <Input
-                    id="consult-phone"
+                    id="cp-phone"
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
@@ -315,9 +473,9 @@ export function ConsultationsPanel({
 
                 {/* Message */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="consult-msg">What do you need help with?</Label>
+                  <Label htmlFor="cp-msg">What do you need help with?</Label>
                   <textarea
-                    id="consult-msg"
+                    id="cp-msg"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     rows={4}
@@ -358,7 +516,9 @@ export function ConsultationsPanel({
                   Cancel
                 </Button>
                 <Button loading={saving} onClick={submit}>
-                  Send request
+                  {feePerHour > 0
+                    ? `Send request · ${finalPrice === 0 ? 'Free' : formatDZD(finalPrice)}`
+                    : 'Send request'}
                 </Button>
               </DialogFooter>
             </>
