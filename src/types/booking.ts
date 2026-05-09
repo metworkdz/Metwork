@@ -3,10 +3,11 @@
  * `GET /api/bookings/me`.
  */
 import type { Wallet, Transaction } from './wallet';
+import type { PaymentMethod } from './domain';
 
 export type BookingItemKind = 'SPACE' | 'PROGRAM' | 'EVENT';
 export type BookingUnit = 'HOUR' | 'DAY' | 'MONTH';
-export type BookingDtoStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'REFUNDED';
+export type BookingDtoStatus = 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'REFUNDED';
 
 export interface BookingDto {
   id: string;
@@ -23,7 +24,8 @@ export interface BookingDto {
   status: BookingDtoStatus;
   clientReference: string;
   transactionId: string | null;
-  declineReason?: string;
+  /** null for legacy bookings and free items. */
+  paymentMethod: PaymentMethod | null;
   createdAt: string;
 }
 

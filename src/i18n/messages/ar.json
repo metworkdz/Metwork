@@ -284,17 +284,11 @@
     "commissions": "العمولات",
     "content": "المحتوى",
     "consultations": "الاستشارات",
-    "mentorRevenue": "إيرادات المرشدين",
-    "perks": "الامتيازات",
-    "mentors": "المرشدون",
-    "contacts": "صندوق الرسائل",
-    "saved": "الشركات المحفوظة",
-    "investorContacts": "طلبات المستثمرين",
-    "members": "الأعضاء",
-    "auditLog": "سجل التدقيق",
-    "myIncubator": "حاضنتي",
-    "profile": "الملف الشخصي",
-    "withdrawals": "طلبات السحب"
+    "clients": "العملاء",
+    "services": "الخدمات",
+    "expenses": "المصاريف",
+    "income": "الإيرادات",
+    "analytics": "التحليلات"
   },
   "pages": {
     "programs": {

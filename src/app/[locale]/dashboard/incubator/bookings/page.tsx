@@ -1,83 +1,229 @@
-import { setRequestLocale, getTranslations } from 'next-intl/server';
+import { setRequestLocale, getLocale } from 'next-intl/server';
+import { Banknote, Calendar, Briefcase, Building2, CreditCard } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
-import { BookingsManager } from '@/components/features/incubator/bookings-manager';
+import { InlineEmptyState } from '@/components/shared/inline-empty-state';
+import { BookingStatusBadge } from '@/components/features/booking/booking-status-badge';
+import { StatCard } from '@/components/shared/stat-card';
+import { ManualBookingDialog } from '@/components/features/incubator/manual-booking-dialog';
 import { requireRole } from '@/lib/auth-guards';
+import { formatCurrency, formatDate } from '@/lib/format';
+import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { db } from '@/server/db/store';
-import type { BookingRecord } from '@/server/db/store';
+import type { BookingStatus } from '@/types/domain';
+import type { Locale } from '@/i18n/config';
+
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
 }
 
-export const metadata = { title: 'Bookings' };
+const kindIcon: Record<'SPACE' | 'PROGRAM' | 'EVENT', React.ReactNode> = {
+  SPACE:   <Building2 className="size-3.5" />,
+  PROGRAM: <Briefcase className="size-3.5" />,
+  EVENT:   <Calendar className="size-3.5" />,
+};
 
-type BookingWithCustomer = BookingRecord & {
+const kindLabel: Record<'SPACE' | 'PROGRAM' | 'EVENT', string> = {
+  SPACE:   'Space',
+  PROGRAM: 'Program',
+  EVENT:   'Event',
+};
+
+interface IncubatorBookingRow {
+  id: string;
+  itemKind: 'SPACE' | 'PROGRAM' | 'EVENT';
+  itemName: string;
+  status: BookingStatus;
+  totalAmount: number;
+  paymentMethod: 'ONLINE' | 'CASH' | null;
+  startsAt: string;
+  endsAt: string;
+  createdAt: string;
   customerName: string;
   customerEmail: string;
-  customerPhone: string;
-};
+}
 
 export default async function IncubatorBookingsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations('pages.dashboard');
+  const lang = (await getLocale()) as Locale;
   const user = await requireRole(['INCUBATOR']);
 
-  const data = await db.read();
-  const incubator = data.incubators.find((i) => i.managerId === user.id) ?? null;
+  const inc  = await findIncubatorByUserEmail(user.email);
+  let rows: IncubatorBookingRow[] = [];
 
-  let bookings: BookingWithCustomer[] = [];
-  const spaces = incubator
-    ? data.incubatorSpaces.filter((s) => s.incubatorId === incubator.id && s.status === 'ACTIVE')
-    : [];
-  const programs = incubator
-    ? data.incubatorPrograms.filter((p) => p.incubatorId === incubator.id && p.status !== 'CLOSED')
+  // Spaces belonging to this incubator (for manual booking dialog)
+  const mySpaces = inc
+    ? (await db.read()).spaces.filter((s) => s.incubatorId === inc.id && s.isActive)
     : [];
 
-  if (incubator) {
-    const ownedSpaceIds = new Set(spaces.map((s) => s.id));
-    // Also include inactive spaces so existing bookings still show
-    const allOwnedSpaceIds = new Set(
-      data.incubatorSpaces.filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
-    );
-    const ownedProgramIds = new Set(
-      data.incubatorPrograms.filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
-    );
-    // Also include manually-created bookings that belong to this incubator's items
-    void ownedSpaceIds; // used below via allOwnedSpaceIds
+  if (inc) {
+    const data = await db.read();
 
-    bookings = data.bookings
-      .filter(
-        (b) =>
-          (b.itemKind === 'SPACE' && allOwnedSpaceIds.has(b.itemId)) ||
-          (b.itemKind === 'PROGRAM' && ownedProgramIds.has(b.itemId)),
-      )
+    const spaceIds   = new Set((data.spaces   ?? []).filter((s) => s.incubatorId === inc.id).map((s) => s.id));
+    const programIds = new Set((data.programs ?? []).filter((p) => p.incubatorId === inc.id).map((p) => p.id));
+    const eventIds   = new Set((data.events   ?? []).filter((e) => e.incubatorId === inc.id).map((e) => e.id));
+
+    const relevant = data.bookings.filter((b) => {
+      if (b.itemKind === 'SPACE'   && spaceIds.has(b.itemId))   return true;
+      if (b.itemKind === 'PROGRAM' && programIds.has(b.itemId)) return true;
+      if (b.itemKind === 'EVENT'   && eventIds.has(b.itemId))   return true;
+      return false;
+    });
+
+    const userMap = new Map(data.users.map((u) => [u.id, { fullName: u.fullName, email: u.email }]));
+
+    rows = relevant
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .map((b) => {
-        const customer = b.userId ? data.users.find((u) => u.id === b.userId) : null;
+        const customer = userMap.get(b.userId);
         return {
-          ...b,
-          customerName: customer?.fullName ?? b.clientName ?? 'Unknown',
-          customerEmail: customer?.email ?? b.clientEmail ?? '',
-          customerPhone: customer?.phone ?? b.clientPhone ?? '',
+          id:            b.id,
+          itemKind:      b.itemKind as 'SPACE' | 'PROGRAM' | 'EVENT',
+          itemName:      b.itemName,
+          status:        b.status as BookingStatus,
+          totalAmount:   b.totalAmount,
+          paymentMethod: (b.paymentMethod ?? null) as 'ONLINE' | 'CASH' | null,
+          startsAt:      b.startsAt,
+          endsAt:        b.endsAt,
+          createdAt:     b.createdAt,
+          customerName:  customer?.fullName ?? 'Unknown',
+          customerEmail: customer?.email    ?? '',
         };
       });
   }
 
-  const pending = bookings.filter((b) => b.status === 'PENDING').length;
+  const upcoming        = rows.filter((r) => r.status === 'CONFIRMED' || r.status === 'PENDING').length;
+  const awaitingPayment = rows.filter((r) => r.status === 'PENDING_PAYMENT').length;
+  const thisMonth       = new Date().toISOString().slice(0, 7);
+  const grossThisMonth  = rows
+    .filter((r) => r.createdAt?.startsWith(thisMonth) && r.status !== 'CANCELLED' && r.status !== 'REFUNDED')
+    .reduce((s, r) => s + r.totalAmount, 0);
+
+  const fmtRange = (startsAt: string, endsAt: string) => {
+    const start = formatDate(startsAt, lang, { dateStyle: 'short', timeStyle: 'short' });
+    const end   = formatDate(endsAt,   lang, { dateStyle: 'short', timeStyle: 'short' });
+    return { start, end };
+  };
 
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        title={t('incubator.bookings.title')}
-        subtitle={t('incubator.bookings.subtitle', { count: pending })}
+        title="Bookings"
+        subtitle="Platform and manual bookings for your spaces, programs, and events."
+        action={
+          mySpaces.length > 0 ? (
+            <ManualBookingDialog
+              spaces={mySpaces.map((s) => ({
+                id: s.id,
+                name: s.name,
+                openingTime: s.openingTime ?? '09:00',
+                closingTime: s.closingTime ?? '18:00',
+              }))}
+            />
+          ) : undefined
+        }
       />
-      <BookingsManager
-        initial={bookings}
-        incubator={incubator}
-        spaces={spaces}
-        programs={programs}
-      />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Upcoming confirmed" value={upcoming} icon={Calendar} />
+        <StatCard
+          label="Awaiting payment"
+          value={awaitingPayment}
+          icon={Banknote}
+          hint="Cash reservations pending"
+        />
+        <StatCard
+          label="Gross this month"
+          value={formatCurrency(grossThisMonth, lang)}
+          icon={Building2}
+        />
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          {rows.length === 0 ? (
+            <InlineEmptyState
+              title="No bookings yet"
+              description="When customers book your spaces, programs, or events, they'll show up here."
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Item</TableHead>
+                    <TableHead>From</TableHead>
+                    <TableHead>To</TableHead>
+                    <TableHead>Payment</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-end">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((b) => {
+                    const { start, end } = fmtRange(b.startsAt, b.endsAt);
+                    return (
+                      <TableRow key={b.id}>
+                        <TableCell>
+                          <div className="font-medium">{b.customerName}</div>
+                          <div className="text-xs text-muted-foreground">{b.customerEmail}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{b.itemName}</div>
+                          <Badge variant="outline" className="mt-1 gap-1">
+                            {kindIcon[b.itemKind]}
+                            {kindLabel[b.itemKind]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                          {start}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                          {end}
+                        </TableCell>
+                        <TableCell>
+                          {b.paymentMethod === 'CASH' ? (
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                              <Banknote className="size-3.5" /> Cash
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                              <CreditCard className="size-3.5" /> Online
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <BookingStatusBadge status={b.status} />
+                        </TableCell>
+                        <TableCell className="text-end tabular-nums font-medium">
+                          {b.totalAmount === 0 ? (
+                            <span className="text-muted-foreground">Free</span>
+                          ) : (
+                            formatCurrency(b.totalAmount, lang)
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

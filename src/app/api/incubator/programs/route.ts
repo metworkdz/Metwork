@@ -1,94 +1,90 @@
 /**
- * GET  /api/incubator/programs  — list own programs
+ * GET  /api/incubator/programs  — list this incubator's programs
  * POST /api/incubator/programs  — create a new program
  */
 import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
-import { db } from '@/server/db/store';
+import { db, type ProgramRecord } from '@/server/db/store';
+import { findIncubatorByUserEmail } from '@/server/incubator/service';
+import { listProgramsByIncubator } from '@/server/bookings/program-catalog';
 import { fromZod, json, jsonError } from '@/server/http/json';
-import type { IncubatorProgramType } from '@/server/db/store';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const programBodySchema = z.object({
-  title: z.string().min(2).max(150),
-  description: z.string().max(2000).default(''),
-  type: z.enum(['INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP']),
-  city: z.string().min(1),
-  imageUrl: z.string().url().nullable().optional(),
-  price: z.number().int().nonnegative().default(0),
-  seatsTotal: z.number().int().positive().default(20),
-  deadline: z.string().min(1), // ISO date string
-  startDate: z.string().min(1),
-  endDate: z.string().min(1),
-  status: z.enum(['DRAFT', 'PUBLISHED', 'CLOSED']).default('DRAFT'),
+const createProgramSchema = z.object({
+  title:       z.string().min(2).max(120),
+  description: z.string().min(10).max(2000),
+  type:        z.enum(['INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP']),
+  city:        z.string().min(1).max(80),
+  imageUrl:    z.string().url().optional().nullable(),
+  price:       z.number().int().min(0),
+  seatsTotal:  z.number().int().min(1).max(10_000),
+  deadline:    z.string().datetime(),
+  startDate:   z.string().datetime(),
+  endDate:     z.string().datetime(),
+  acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).default(['ONLINE', 'CASH']),
 });
 
-async function findIncubator(userId: string) {
-  const data = await db.read();
-  return data.incubators.find((i) => i.managerId === userId) ?? null;
-}
-
 export async function GET() {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
+  const guard = await requireApiRole(['INCUBATOR']);
   if (!guard.ok) return guard.response;
 
-  const incubator = await findIncubator(guard.user.id);
-  if (!incubator) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile found');
+  const inc = await findIncubatorByUserEmail(guard.user.email);
+  if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile linked to this account');
 
-  const data = await db.read();
-  const programs = data.incubatorPrograms
-    .filter((p) => p.incubatorId === incubator.id)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-
-  return json({ programs, total: programs.length });
+  const programs = await listProgramsByIncubator(inc.id);
+  return json({ items: programs, total: programs.length });
 }
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
+  const guard = await requireApiRole(['INCUBATOR']);
   if (!guard.ok) return guard.response;
 
-  const incubator = await findIncubator(guard.user.id);
-  if (!incubator) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile found');
+  const inc = await findIncubatorByUserEmail(guard.user.email);
+  if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile linked to this account');
 
   let body: unknown;
-  try { body = await req.json(); } catch {
-    return jsonError(400, 'INVALID_JSON', 'Request body must be JSON');
-  }
+  try { body = await req.json(); }
+  catch { return jsonError(400, 'INVALID_JSON', 'Request body must be JSON'); }
 
   let input;
-  try { input = programBodySchema.parse(body); } catch (err) {
+  try { input = createProgramSchema.parse(body); }
+  catch (err) {
     if (err instanceof ZodError) return fromZod(err);
     throw err;
   }
 
+  const paymentMethods: ('ONLINE' | 'CASH')[] =
+    inc.subscriptionCode === 'COMMISSION' ? ['ONLINE'] : input.acceptedPaymentMethods;
+
   const now = new Date().toISOString();
-  const program = await db.update((d) => {
-    const record = {
-      id: randomUUID(),
-      incubatorId: incubator.id,
-      incubatorName: incubator.name,
-      managerId: guard.user.id,
-      title: input.title,
-      description: input.description,
-      type: input.type as IncubatorProgramType,
-      city: input.city,
-      imageUrl: input.imageUrl ?? null,
-      price: input.price,
-      seatsTotal: input.seatsTotal,
-      deadline: input.deadline,
-      startDate: input.startDate,
-      endDate: input.endDate,
-      status: input.status as 'DRAFT' | 'PUBLISHED' | 'CLOSED',
-      createdAt: now,
-      updatedAt: now,
+  const record = await db.update<ProgramRecord>((d) => {
+    if (!Array.isArray(d.programs)) d.programs = [];
+    const prog: ProgramRecord = {
+      id:                     randomUUID(),
+      incubatorId:            inc.id,
+      incubatorName:          inc.name,
+      title:                  input.title.trim(),
+      description:            input.description.trim(),
+      type:                   input.type,
+      city:                   input.city.trim(),
+      imageUrl:               input.imageUrl ?? null,
+      price:                  input.price,
+      seatsTotal:             input.seatsTotal,
+      deadline:               input.deadline,
+      startDate:              input.startDate,
+      endDate:                input.endDate,
+      acceptedPaymentMethods: paymentMethods,
+      isActive:               true,
+      createdAt:              now,
+      updatedAt:              now,
     };
-    d.incubatorPrograms.push(record);
-    return record;
+    d.programs.push(prog);
+    return prog;
   });
 
-  return json({ program }, { status: 201 });
+  return json(record, { status: 201 });
 }

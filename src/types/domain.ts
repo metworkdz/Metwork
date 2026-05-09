@@ -10,6 +10,9 @@ export interface Money {
   currency: 'DZD';
 }
 
+/** Accepted client payment methods on a booking. */
+export type PaymentMethod = 'ONLINE' | 'CASH';
+
 export type SpaceCategory = 'COWORKING' | 'PRIVATE_OFFICE' | 'TRAINING_ROOM' | 'DOMICILIATION';
 
 export interface Space {
@@ -28,6 +31,14 @@ export interface Space {
   amenities: string[];
   rating: number | null;
   reviewCount: number;
+  /** Accepted client payment methods. Defaults to ['ONLINE','CASH'] for demo spaces. */
+  acceptedPaymentMethods: PaymentMethod[];
+  /** Days of week this space is open. 0=Sun…6=Sat. Defaults to Mon–Fri. */
+  workingDays: number[];
+  /** Opening time "HH:MM" 24h. Defaults to "09:00". */
+  openingTime: string;
+  /** Closing time "HH:MM" 24h. Defaults to "18:00". */
+  closingTime: string;
 }
 
 export type ProgramType = 'INCUBATION' | 'ACCELERATION' | 'TRAINING' | 'BOOTCAMP' | 'WORKSHOP';
@@ -47,6 +58,7 @@ export interface Program {
   deadline: string;
   startDate: string;
   endDate: string;
+  acceptedPaymentMethods: PaymentMethod[];
 }
 
 export interface Event {
@@ -62,6 +74,7 @@ export interface Event {
   capacity: number;
   attendeeCount: number;
   eventDate: string;
+  acceptedPaymentMethods: PaymentMethod[];
 }
 
 export type StartupStage = 'IDEA' | 'PRE_SEED' | 'SEED' | 'SERIES_A' | 'GROWTH';
@@ -84,6 +97,7 @@ export interface Startup {
 
 export type BookingStatus =
   | 'PENDING'
+  | 'PENDING_PAYMENT'
   | 'CONFIRMED'
   | 'CANCELLED'
   | 'COMPLETED'

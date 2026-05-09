@@ -2,7 +2,6 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { ProgramsManager } from '@/components/features/incubator/programs-manager';
 import { requireRole } from '@/lib/auth-guards';
-import { db } from '@/server/db/store';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -32,7 +31,7 @@ export default async function IncubatorProgramsPage({ params }: PageProps) {
         title={t('incubator.programs.title')}
         subtitle={t('incubator.programs.subtitle', { count: published })}
       />
-      <ProgramsManager initial={programs} />
+      <ProgramsManager />
     </div>
   );
 }

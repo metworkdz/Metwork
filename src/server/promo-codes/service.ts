@@ -1,127 +1,116 @@
 /**
- * Promo-code service.
+ * Promo code service.
  *
- * Validates and consumes promo codes.  All state is stored in the shared
- * JSON store under `db.promoCodes[]`.
+ * Seeds example promo codes on first run (like the mentor seeding pattern).
+ * Provides helpers to validate and consume a code inside a db.update critical section.
  */
+import { randomUUID } from 'node:crypto';
 import { db, type PromoCodeRecord } from '@/server/db/store';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+/** Example promo codes seeded on first run */
+const seedCodes: Omit<PromoCodeRecord, 'id'>[] = [
+  {
+    code:          'WELCOME50',
+    discountType:  'PERCENTAGE',
+    discountValue: 50,
+    maxUses:       100,
+    useCount:      0,
+    validFrom:     '2025-01-01T00:00:00Z',
+    validUntil:    '2027-12-31T23:59:59Z',
+    isActive:      true,
+    createdAt:     '2025-01-01T00:00:00Z',
+  },
+  {
+    code:          'FREE100',
+    discountType:  'PERCENTAGE',
+    discountValue: 100,
+    maxUses:       10,
+    useCount:      0,
+    validFrom:     '2025-01-01T00:00:00Z',
+    validUntil:    '2027-12-31T23:59:59Z',
+    isActive:      true,
+    createdAt:     '2025-01-01T00:00:00Z',
+  },
+  {
+    code:          'SAVE5000',
+    discountType:  'FIXED',
+    discountValue: 5000,
+    maxUses:       null,
+    useCount:      0,
+    validFrom:     '2025-01-01T00:00:00Z',
+    validUntil:    null,
+    isActive:      true,
+    createdAt:     '2025-01-01T00:00:00Z',
+  },
+];
 
-export type PromoAppliesTo = 'ALL' | 'MEMBERSHIP' | 'SPACE' | 'CONSULTATION';
-
-export type PromoValidation =
-  | { valid: true; promoCode: PromoCodeRecord; discountPercent: number }
-  | { valid: false; reason: 'NOT_FOUND' | 'INACTIVE' | 'EXPIRED' | 'LIMIT_REACHED' };
-
-// ---------------------------------------------------------------------------
-// Read helpers
-// ---------------------------------------------------------------------------
-
-export async function listPromoCodes(): Promise<PromoCodeRecord[]> {
+export async function ensurePromoCodesSeeded(): Promise<void> {
   const data = await db.read();
-  return [...(data.promoCodes ?? [])].sort(
-    (a, b) => b.createdAt.localeCompare(a.createdAt),
-  );
-}
+  if (data.meta?.promoCodesSeeded) return;
 
-/**
- * Validate a promo code without consuming it.
- * Case-insensitive match on the code string.
- */
-export async function validatePromoCode(code: string): Promise<PromoValidation> {
-  const data = await db.read();
-  const promo = (data.promoCodes ?? []).find(
-    (p) => p.code.toUpperCase() === code.trim().toUpperCase(),
-  );
-
-  if (!promo) return { valid: false, reason: 'NOT_FOUND' };
-  if (!promo.isActive) return { valid: false, reason: 'INACTIVE' };
-  if (promo.expiresAt && new Date(promo.expiresAt) <= new Date()) {
-    return { valid: false, reason: 'EXPIRED' };
-  }
-  if (promo.usageLimit !== null && promo.usedCount >= promo.usageLimit) {
-    return { valid: false, reason: 'LIMIT_REACHED' };
-  }
-
-  return { valid: true, promoCode: promo, discountPercent: promo.discountPercent };
-}
-
-/**
- * Increment the usage counter for a code.  Should only be called after a
- * successful purchase — runs inside its own `db.update` critical section.
- */
-export async function consumePromoCode(code: string): Promise<void> {
   await db.update((d) => {
-    const promo = (d.promoCodes ?? []).find(
-      (p) => p.code.toUpperCase() === code.trim().toUpperCase(),
-    );
-    if (promo) {
-      promo.usedCount += 1;
-      promo.updatedAt = new Date().toISOString();
-    }
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Write helpers
-// ---------------------------------------------------------------------------
-
-export interface CreatePromoCodeInput {
-  code: string;
-  discountPercent: number;
-  appliesTo: PromoAppliesTo;
-  expiresAt: string | null;
-  usageLimit: number | null;
-}
-
-/** Returns true when a promo applies to a given purchase type. */
-export function promoAppliesToType(
-  promo: PromoCodeRecord,
-  type: 'SPACE' | 'MEMBERSHIP' | 'CONSULTATION',
-): boolean {
-  return promo.appliesTo === 'ALL' || promo.appliesTo === type;
-}
-
-export async function createPromoCode(
-  input: CreatePromoCodeInput,
-): Promise<PromoCodeRecord> {
-  return db.update((d) => {
+    if (d.meta?.promoCodesSeeded) return;
+    if (!d.meta) d.meta = {};
     if (!Array.isArray(d.promoCodes)) d.promoCodes = [];
-
-    const upper = input.code.trim().toUpperCase();
-    if (d.promoCodes.some((p) => p.code === upper)) {
-      throw new Error('PROMO_CODE_EXISTS');
+    if (d.promoCodes.length === 0) {
+      d.promoCodes.push(
+        ...seedCodes.map<PromoCodeRecord>((c) => ({ id: randomUUID(), ...c })),
+      );
     }
-
-    const now = new Date().toISOString();
-    const record: PromoCodeRecord = {
-      id: crypto.randomUUID(),
-      code: upper,
-      discountPercent: input.discountPercent,
-      appliesTo: input.appliesTo,
-      expiresAt: input.expiresAt,
-      usageLimit: input.usageLimit,
-      usedCount: 0,
-      isActive: true,
-      createdAt: now,
-      updatedAt: now,
-    };
-    d.promoCodes.push(record);
-    return record;
+    d.meta.promoCodesSeeded = true;
   });
 }
 
-export async function updatePromoCode(
-  id: string,
-  patch: Partial<Pick<PromoCodeRecord, 'isActive' | 'usageLimit' | 'expiresAt' | 'discountPercent'>>,
-): Promise<PromoCodeRecord | null> {
-  return db.update((d) => {
-    const promo = (d.promoCodes ?? []).find((p) => p.id === id);
-    if (!promo) return null;
-    Object.assign(promo, patch, { updatedAt: new Date().toISOString() });
-    return { ...promo };
-  });
+export interface PromoValidationResult {
+  valid:          boolean;
+  discountAmount: number;
+  finalAmount:    number;
+  promoCodeId:    string | null;
+  error?:         string;
+}
+
+/**
+ * Validates a promo code and computes the discount.
+ * Does NOT increment useCount — call `consumePromoCode` inside db.update for that.
+ */
+export function validatePromoCode(
+  codes: PromoCodeRecord[],
+  codeStr: string,
+  originalAmount: number,
+): PromoValidationResult {
+  const now   = new Date().toISOString();
+  const upper = codeStr.toUpperCase().trim();
+
+  const promo = codes.find((c) => c.code === upper && c.isActive);
+
+  if (!promo)
+    return { valid: false, discountAmount: 0, finalAmount: originalAmount, promoCodeId: null, error: 'Invalid promo code' };
+  if (promo.validUntil && promo.validUntil < now)
+    return { valid: false, discountAmount: 0, finalAmount: originalAmount, promoCodeId: null, error: 'Promo code has expired' };
+  if (promo.validFrom > now)
+    return { valid: false, discountAmount: 0, finalAmount: originalAmount, promoCodeId: null, error: 'Promo code is not yet active' };
+  if (promo.maxUses !== null && promo.useCount >= promo.maxUses)
+    return { valid: false, discountAmount: 0, finalAmount: originalAmount, promoCodeId: null, error: 'Promo code usage limit reached' };
+
+  let discountAmount: number;
+  if (promo.discountType === 'PERCENTAGE') {
+    discountAmount = Math.round(originalAmount * (promo.discountValue / 100));
+  } else {
+    discountAmount = Math.min(promo.discountValue, originalAmount);
+  }
+  const finalAmount = Math.max(0, originalAmount - discountAmount);
+
+  return { valid: true, discountAmount, finalAmount, promoCodeId: promo.id };
+}
+
+/**
+ * Increments the useCount on a promo code record in-place.
+ * Call this inside a `db.update` mutator after validating.
+ */
+export function consumePromoCode(
+  codes: PromoCodeRecord[],
+  promoCodeId: string,
+): void {
+  const promo = codes.find((c) => c.id === promoCodeId);
+  if (promo) promo.useCount += 1;
 }

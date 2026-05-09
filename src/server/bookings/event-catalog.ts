@@ -1,4 +1,9 @@
+/**
+ * Event catalog. DB-first with demo fallback.
+ * See `space-catalog.ts` for the same pattern.
+ */
 import { db } from '@/server/db/store';
+import { demoPublicEvents } from '@/lib/demo-data';
 import type { Event as PlatformEvent } from '@/types/domain';
 import type { IncubatorEventRecord, IncubatorRecord } from '@/server/db/store';
 
@@ -19,38 +24,50 @@ function dbEventToEvent(e: IncubatorEventRecord, incubator: IncubatorRecord, att
   };
 }
 
-export async function findEventById(id: string): Promise<PlatformEvent | null> {
-  const data = await db.read();
-  const dbEvent = (data.incubatorEvents ?? []).find((e) => e.id === id);
-  if (!dbEvent) return null;
-  const incubator = data.incubators.find((i) => i.id === dbEvent.incubatorId);
-  if (!incubator) return null;
-  const attendeeCount = data.bookings.filter(
-    (b) =>
-      b.itemKind === 'EVENT' &&
-      b.itemId === id &&
-      b.status !== 'CANCELLED' &&
-      b.status !== 'REFUNDED',
-  ).length;
-  return dbEventToEvent(dbEvent, incubator, attendeeCount);
+function fromRecord(r: import('@/server/db/store').EventRecord): PlatformEvent {
+  return {
+    id: r.id,
+    incubatorId: r.incubatorId,
+    incubatorName: r.incubatorName,
+    title: r.title,
+    description: r.description,
+    city: r.city,
+    imageUrl: r.imageUrl,
+    price: r.price,
+    isOnline: r.isOnline,
+    capacity: r.capacity,
+    attendeeCount: 0, // computed live by the service
+    eventDate: r.eventDate,
+    acceptedPaymentMethods: r.acceptedPaymentMethods,
+  };
 }
 
-export async function listEvents(filters?: { incubatorId?: string }): Promise<PlatformEvent[]> {
+function withDefaults(e: Omit<PlatformEvent, 'acceptedPaymentMethods'>): PlatformEvent {
+  return { ...e, acceptedPaymentMethods: ['ONLINE', 'CASH'] };
+}
+
+export async function findEventById(id: string): Promise<PlatformEvent | null> {
   const data = await db.read();
-  return (data.incubatorEvents ?? [])
-    .filter((e) => e.status === 'PUBLISHED')
-    .filter((e) => !filters?.incubatorId || e.incubatorId === filters.incubatorId)
-    .map((e) => {
-      const incubator = data.incubators.find((i) => i.id === e.incubatorId);
-      if (!incubator) return null;
-      const attendeeCount = data.bookings.filter(
-        (b) =>
-          b.itemKind === 'EVENT' &&
-          b.itemId === e.id &&
-          b.status !== 'CANCELLED' &&
-          b.status !== 'REFUNDED',
-      ).length;
-      return dbEventToEvent(e, incubator, attendeeCount);
-    })
-    .filter((e): e is PlatformEvent => e !== null);
+  const dbEv = (data.events ?? []).find((e) => e.id === id && e.isActive);
+  if (dbEv) return fromRecord(dbEv);
+  const demo = (demoPublicEvents as Omit<PlatformEvent, 'acceptedPaymentMethods'>[]).find((e) => e.id === id);
+  return demo ? withDefaults(demo) : null;
+}
+
+export async function listEvents(): Promise<PlatformEvent[]> {
+  const data = await db.read();
+  const dbEvs = (data.events ?? []).filter((e) => e.isActive).map(fromRecord);
+  const dbIncubatorIds = new Set(dbEvs.map((e) => e.incubatorId));
+  const demoEvs = (demoPublicEvents as Omit<PlatformEvent, 'acceptedPaymentMethods'>[])
+    .filter((e) => !dbIncubatorIds.has(e.incubatorId))
+    .map(withDefaults);
+  return [...dbEvs, ...demoEvs];
+}
+
+export async function listEventsByIncubator(incubatorId: string): Promise<PlatformEvent[]> {
+  const data = await db.read();
+  return (data.events ?? [])
+    .filter((e) => e.incubatorId === incubatorId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map(fromRecord);
 }

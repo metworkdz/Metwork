@@ -1,8 +1,7 @@
-import { setRequestLocale, getTranslations } from 'next-intl/server';
+import { setRequestLocale } from 'next-intl/server';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
-import { IncubatorProfileForm } from '@/components/features/incubator/incubator-profile-form';
-import { db } from '@/server/db/store';
+import { SubscriptionManager } from '@/components/features/incubator/subscription-manager';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -36,18 +35,10 @@ export default async function IncubatorSettingsPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        title={t('incubator.settings.title')}
-        subtitle={t('incubator.settings.subtitle')}
+        title="Settings"
+        subtitle="Manage your subscription plan and billing preferences."
       />
-      <IncubatorProfileForm
-        incubator={incubator}
-        user={{
-          id: user.id,
-          fullName: user.fullName,
-          email: user.email,
-          avatarUrl: user.avatarUrl,
-        }}
-      />
+      <SubscriptionManager />
     </div>
   );
 }

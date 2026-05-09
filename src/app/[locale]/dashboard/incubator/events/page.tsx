@@ -2,7 +2,6 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { EventsManager } from '@/components/features/incubator/events-manager';
 import { requireRole } from '@/lib/auth-guards';
-import { db } from '@/server/db/store';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -28,7 +27,7 @@ export default async function IncubatorEventsPage({ params }: PageProps) {
         title={t('incubator.events.title')}
         subtitle={t('incubator.events.subtitle')}
       />
-      <EventsManager initial={events} />
+      <EventsManager />
     </div>
   );
 }

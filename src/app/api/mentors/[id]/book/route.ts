@@ -1,8 +1,13 @@
 /**
  * POST /api/mentors/:id/book
- * Submit a consultation booking request. Requires authentication.
- * Client must provide a preferred scheduledAt (min 24 h from now).
- * Optional promoCode applies a percentage discount to the consultation fee.
+ * Submit a consultation booking request for a specific mentor.
+ * Requires authentication.
+ *
+ * Status flow:
+ *   PENDING → admin reviews → APPROVED (confirmation email sent) | REJECTED
+ *
+ * This route only creates the PENDING request and notifies the admin.
+ * Approval/rejection is handled by PATCH /api/admin/mentor-bookings/:id.
  */
 import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
@@ -11,7 +16,7 @@ import { requireApiSession } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { findMentorById } from '@/server/mentors/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
-import { validatePromoCode, consumePromoCode, promoAppliesToType } from '@/server/promo-codes/service';
+import { sendConsultationRequestReceivedEmail, sendAdminConsultationNotification } from '@/server/notifications/mock';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,12 +24,16 @@ export const dynamic = 'force-dynamic';
 const MIN_ADVANCE_HOURS = 24;
 
 const schema = z.object({
-  name:        z.string().min(2).max(120),
-  email:       z.string().email().max(200),
-  phone:       z.string().min(6).max(30),
-  message:     z.string().min(10).max(1000),
-  scheduledAt: z.string().datetime({ message: 'Invalid date-time format' }),
-  promoCode:   z.string().min(1).max(32).optional(),
+  name:    z.string().min(2).max(120),
+  email:   z.string().email().max(200),
+  phone:   z.string().min(6).max(30),
+  message: z.string().min(10).max(1000),
+  /** Requested date for the consultation (YYYY-MM-DD) */
+  consultationDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  /** Requested start time (HH:MM) */
+  consultationTime: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
+  /** Duration in minutes: 30 | 60 | 90 | 120 | 150 | 180 */
+  durationMinutes: z.number().int().min(30).max(180).optional().nullable(),
 });
 
 export async function POST(
@@ -81,38 +90,34 @@ export async function POST(
   const now = new Date().toISOString();
   const booking = await db.update((d) => {
     const record = {
-      id:              randomUUID(),
+      id:               randomUUID(),
       mentorId,
-      userId:          guard.user.id,
-      userName:        input.name,
-      userEmail:       input.email,
-      userPhone:       input.phone,
-      message:         input.message,
-      scheduledAt:     input.scheduledAt,
-      meetLink:        null,
-      isOffline:       false,
-      status:          'PENDING' as const,
-      adminNote:       null,
-      promoCode:       appliedPromoCode,
-      discountPercent,
-      approvalEmailSentAt: null,
-      createdAt:       now,
-      updatedAt:       now,
+      userId:           guard.user.id,
+      userName:         input.name,
+      userEmail:        input.email,
+      userPhone:        input.phone,
+      message:          input.message,
+      consultationDate: input.consultationDate ?? null,
+      consultationTime: input.consultationTime ?? null,
+      durationMinutes:  input.durationMinutes  ?? null,
+      status:           'PENDING' as const,
+      adminNote:        null,
+      createdAt:        now,
+      updatedAt:        now,
     };
     if (!Array.isArray(d.mentorBookings)) d.mentorBookings = [];
     d.mentorBookings.push(record);
     return record;
   });
 
-  // Consume promo code after booking is persisted
-  if (appliedPromoCode) {
-    await consumePromoCode(appliedPromoCode).catch(() => undefined);
-  }
+  // 1. Tell the client their request is received and pending review (NOT a confirmation)
+  const data = await db.read();
+  const user = data.users.find((u) => u.id === guard.user.id);
+  const lang = user?.locale === 'en' ? 'en' : 'fr';
+  sendConsultationRequestReceivedEmail({ booking, mentor, lang });
 
-  return json({
-    id:              booking.id,
-    status:          booking.status,
-    discountPercent: booking.discountPercent,
-    promoCode:       booking.promoCode,
-  }, { status: 201 });
+  // 2. Notify the admin that a new consultation request arrived
+  sendAdminConsultationNotification({ booking, mentor, lang });
+
+  return json({ id: booking.id, status: booking.status }, { status: 201 });
 }

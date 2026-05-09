@@ -1,4 +1,9 @@
+/**
+ * Program catalog. DB-first with demo fallback.
+ * See `space-catalog.ts` for the same pattern.
+ */
 import { db } from '@/server/db/store';
+import { demoPublicPrograms } from '@/lib/demo-data';
 import type { Program } from '@/types/domain';
 import type { IncubatorProgramRecord, IncubatorRecord } from '@/server/db/store';
 
@@ -21,46 +26,52 @@ function dbProgramToProgram(p: IncubatorProgramRecord, incubator: IncubatorRecor
   };
 }
 
-export async function findProgramById(id: string): Promise<Program | null> {
-  const data = await db.read();
-  const dbProg = (data.incubatorPrograms ?? []).find((p) => p.id === id);
-  if (dbProg) {
-    const incubator = data.incubators.find((i) => i.id === dbProg.incubatorId);
-    if (incubator) {
-      const prog = dbProgramToProgram(dbProg, incubator);
-      prog.seatsTaken = data.bookings.filter(
-        (b) =>
-          b.itemKind === 'PROGRAM' &&
-          b.itemId === id &&
-          b.status !== 'CANCELLED' &&
-          b.status !== 'REFUNDED',
-      ).length;
-      return prog;
-    }
-  }
-  return null;
+function fromRecord(r: import('@/server/db/store').ProgramRecord): Program {
+  return {
+    id: r.id,
+    incubatorId: r.incubatorId,
+    incubatorName: r.incubatorName,
+    title: r.title,
+    description: r.description,
+    type: r.type,
+    city: r.city,
+    imageUrl: r.imageUrl,
+    price: r.price,
+    seatsTotal: r.seatsTotal,
+    seatsTaken: 0, // computed live by the service
+    deadline: r.deadline,
+    startDate: r.startDate,
+    endDate: r.endDate,
+    acceptedPaymentMethods: r.acceptedPaymentMethods,
+  };
 }
 
-export async function listPrograms(filters?: { incubatorId?: string }): Promise<Program[]> {
+function withDefaults(p: Omit<Program, 'acceptedPaymentMethods'>): Program {
+  return { ...p, acceptedPaymentMethods: ['ONLINE', 'CASH'] };
+}
+
+export async function findProgramById(id: string): Promise<Program | null> {
   const data = await db.read();
+  const dbProg = (data.programs ?? []).find((p) => p.id === id && p.isActive);
+  if (dbProg) return fromRecord(dbProg);
+  const demo = (demoPublicPrograms as Omit<Program, 'acceptedPaymentMethods'>[]).find((p) => p.id === id);
+  return demo ? withDefaults(demo) : null;
+}
 
-  const dbPrograms = (data.incubatorPrograms ?? [])
-    .filter((p) => p.status === 'PUBLISHED')
-    .filter((p) => !filters?.incubatorId || p.incubatorId === filters.incubatorId)
-    .map((p) => {
-      const incubator = data.incubators.find((i) => i.id === p.incubatorId);
-      if (!incubator) return null;
-      const prog = dbProgramToProgram(p, incubator);
-      prog.seatsTaken = data.bookings.filter(
-        (b) =>
-          b.itemKind === 'PROGRAM' &&
-          b.itemId === p.id &&
-          b.status !== 'CANCELLED' &&
-          b.status !== 'REFUNDED',
-      ).length;
-      return prog;
-    })
-    .filter((p): p is Program => p !== null);
+export async function listPrograms(): Promise<Program[]> {
+  const data = await db.read();
+  const dbProgs = (data.programs ?? []).filter((p) => p.isActive).map(fromRecord);
+  const dbIncubatorIds = new Set(dbProgs.map((p) => p.incubatorId));
+  const demoProgs = (demoPublicPrograms as Omit<Program, 'acceptedPaymentMethods'>[])
+    .filter((p) => !dbIncubatorIds.has(p.incubatorId))
+    .map(withDefaults);
+  return [...dbProgs, ...demoProgs];
+}
 
-  return dbPrograms;
+export async function listProgramsByIncubator(incubatorId: string): Promise<Program[]> {
+  const data = await db.read();
+  return (data.programs ?? [])
+    .filter((p) => p.incubatorId === incubatorId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map(fromRecord);
 }

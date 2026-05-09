@@ -12,6 +12,9 @@ import { registerForEvent } from '@/server/bookings/service';
 import { toBookingDto } from '@/server/bookings/serialize';
 import { toTransactionDto, toWalletDto } from '@/server/wallet/serialize';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { db } from '@/server/db/store';
+import { findIncubatorById } from '@/server/incubator/service';
+import { sendBookingReceiptEmail } from '@/server/notifications/mock';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -44,6 +47,8 @@ export async function POST(
     userId: guard.user.id,
     eventId,
     clientReference: input.clientReference,
+    promoCode: input.promoCode,
+    paymentMethod: input.paymentMethod,
   });
 
   if (!result.ok) {
@@ -71,6 +76,21 @@ export async function POST(
           required: result.required,
         });
     }
+  }
+
+  if (!result.replayed) {
+    void (async () => {
+      try {
+        const data      = await db.read();
+        const user      = data.users.find((u) => u.id === guard.user.id);
+        if (!user) return;
+        const event     = (data.events ?? []).find((e) => e.id === eventId);
+        const incubator = event ? await findIncubatorById(event.incubatorId) : null;
+        if (!incubator) return;
+        const lang = user.locale === 'en' ? 'en' : 'fr';
+        sendBookingReceiptEmail({ booking: result.booking, clientName: user.fullName, clientEmail: user.email, incubator, lang });
+      } catch { /* receipt errors never break booking response */ }
+    })();
   }
 
   return json(

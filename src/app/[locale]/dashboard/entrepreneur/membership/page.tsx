@@ -6,7 +6,7 @@ import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { requireRole } from '@/lib/auth-guards';
 import { formatCurrency } from '@/lib/format';
 import { membershipTiers } from '@/config/memberships';
-import { getEffectiveMembershipCode } from '@/server/memberships/service';
+import { MembershipPromoSection } from '@/components/features/membership/membership-promo-section';
 import { cn } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 import { MembershipUpgradeButton } from '@/components/features/entrepreneur/membership-upgrade-button';
@@ -165,6 +165,27 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
           );
         })}
       </div>
+
+      {/* Promo code preview — shown when an upgrade is available */}
+      {(() => {
+        const tiers = membershipTiers as ReadonlyArray<{ code: string; priceMonthly: number }>;
+        const currentIdx = tiers.findIndex((t) => t.code === currentCode);
+        const nextTier = tiers[currentIdx + 1];
+        if (!nextTier || nextTier.priceMonthly === 0) return null;
+        const nextCopy = tierCopy[nextTier.code] ?? { name: nextTier.code, description: '' };
+        return (
+          <MembershipPromoSection
+            nextTierPrice={nextTier.priceMonthly}
+            nextTierName={nextCopy.name}
+            locale={lang}
+          />
+        );
+      })()}
+
+      <p className="text-xs text-muted-foreground">
+        Plan changes will be wired to the wallet (or a payment provider) once the
+        billing flow ships. Buttons are intentionally disabled.
+      </p>
     </div>
   );
 }

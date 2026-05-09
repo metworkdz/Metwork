@@ -20,7 +20,7 @@ export function toBookingDto(b: BookingRecord): BookingDto {
     status: b.status,
     clientReference: b.clientReference,
     transactionId: b.transactionId,
-    declineReason: b.declineReason,
+    paymentMethod: b.paymentMethod ?? null,
     createdAt: b.createdAt,
   };
 }

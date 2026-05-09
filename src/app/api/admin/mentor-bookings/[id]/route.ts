@@ -1,20 +1,20 @@
 /**
  * PATCH /api/admin/mentor-bookings/:id
- * Approve or reject a consultation request. Admin only.
+ * Approve or reject a consultation booking request. Admin only.
+ * Body: { status: 'APPROVED' | 'REJECTED', adminNote?: string }
  *
- * On approval:
- * - meetLink OR isOffline must be provided (validation enforced here and in UI).
- * - Emails sent to BOTH client and mentor (idempotent via approvalEmailSentAt).
+ * On APPROVED → sends confirmation PDF email to client.
+ * On REJECTED → sends rejection email with optional admin note.
+ * Only PENDING bookings can be reviewed (idempotency guard).
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
-import { db } from '@/server/db/store';
+import { db, type MentorBookingRecord } from '@/server/db/store';
+import { findMentorById } from '@/server/mentors/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
-import { createNotification } from '@/server/notifications/create-notification';
 import {
-  sendConsultationApprovedEmail,
-  sendConsultationApprovedMentorEmail,
+  sendConsultationConfirmationEmail,
   sendConsultationRejectedEmail,
 } from '@/server/notifications/mock';
 
@@ -50,16 +50,17 @@ export async function PATCH(
     throw err;
   }
 
-  // Enforce: approval requires meetLink OR isOffline
-  if (input.status === 'APPROVED' && !input.meetLink && !input.isOffline) {
-    return jsonError(
-      422,
-      'MEETING_REQUIRED',
-      'Approval requires either a meeting link or marking the session as offline.',
-    );
+  // Snapshot before update so we can find the mentor for emails
+  const snapshot = await db.read();
+  const existing = (snapshot.mentorBookings ?? []).find((b) => b.id === id);
+  if (!existing) return jsonError(404, 'NOT_FOUND', 'Booking not found');
+
+  // Idempotency: only PENDING bookings can be transitioned
+  if (existing.status !== 'PENDING') {
+    return jsonError(409, 'ALREADY_REVIEWED', 'This booking has already been reviewed');
   }
 
-  type Result = { ok: true; booking: Record<string, unknown> } | { ok: false };
+  type Result = { ok: true; booking: MentorBookingRecord } | { ok: false };
   const result = await db.update<Result>((d) => {
     if (!Array.isArray(d.mentorBookings)) return { ok: false };
     const booking = d.mentorBookings.find((b) => b.id === id);
@@ -75,74 +76,20 @@ export async function PATCH(
 
   if (!result.ok) return jsonError(404, 'NOT_FOUND', 'Booking not found');
 
-  const booking = result.booking;
-
-  // Fire-and-forget notifications (deduplicated by approvalEmailSentAt)
-  void (async () => {
-    try {
-      const data = await db.read();
-      const mentor = data.mentors.find((m) => m.id === booking.mentorId as string);
-      const alreadySent = !!(booking.approvalEmailSentAt as string | null | undefined);
-
-      if (input.status === 'APPROVED' && !alreadySent) {
-        // Mark as sent first to prevent duplicates on retry
-        await db.update((d) => {
-          const b = d.mentorBookings.find((x) => x.id === id);
-          if (b) b.approvalEmailSentAt = new Date().toISOString();
-        });
-
-        const isOffline = !!(booking.isOffline as boolean | undefined);
-
-        // Email to client
-        sendConsultationApprovedEmail(booking.userEmail as string, {
-          userName:    booking.userName as string,
-          mentorName:  mentor?.fullName ?? 'your mentor',
-          scheduledAt: (booking.scheduledAt as string | null) ?? null,
-          meetLink:    isOffline ? null : ((booking.meetLink as string | null) ?? null),
-          adminNote:   input.adminNote,
-        });
-
-        // Email to mentor (if they have an email address)
-        if (mentor?.email) {
-          sendConsultationApprovedMentorEmail(mentor.email, {
-            mentorName:  mentor.fullName,
-            clientName:  booking.userName as string,
-            clientEmail: booking.userEmail as string,
-            scheduledAt: (booking.scheduledAt as string | null) ?? null,
-            meetLink:    isOffline ? null : ((booking.meetLink as string | null) ?? null),
-            isOffline,
-            adminNote:   input.adminNote,
-          });
-        }
-      } else if (input.status === 'REJECTED' && !alreadySent) {
-        await db.update((d) => {
-          const b = d.mentorBookings.find((x) => x.id === id);
-          if (b) b.approvalEmailSentAt = new Date().toISOString();
-        });
-
-        sendConsultationRejectedEmail(booking.userEmail as string, {
-          userName:   booking.userName as string,
-          mentorName: mentor?.fullName ?? 'your mentor',
-          adminNote:  input.adminNote,
-        });
-      }
-
-      if (booking.userId) {
-        await createNotification({
-          userId: booking.userId as string,
-          type: input.status === 'APPROVED' ? 'MENTOR_BOOKING_APPROVED' : 'MENTOR_BOOKING_REJECTED',
-          title: input.status === 'APPROVED' ? 'Consultation approved' : 'Consultation declined',
-          body:
-            input.status === 'APPROVED'
-              ? `Your session with ${mentor?.fullName ?? 'your mentor'} is confirmed.`
-              : `Your session request was declined.${input.adminNote ? ` Note: ${input.adminNote}` : ''}`,
-          href: '/dashboard/entrepreneur/consultations',
-        });
-      }
-    } catch {
-      // non-critical
+  // Send outcome email — fire-and-forget, never blocks response
+  const mentor = await findMentorById(existing.mentorId);
+  if (mentor) {
+    if (input.status === 'APPROVED') {
+      sendConsultationConfirmationEmail({ booking: result.booking, mentor, lang: 'fr' });
+    } else {
+      sendConsultationRejectedEmail({
+        booking:   result.booking,
+        mentor,
+        adminNote: input.adminNote ?? null,
+        lang:      'fr',
+      });
     }
-  })();
+  }
 
   return json(result.booking);
 }

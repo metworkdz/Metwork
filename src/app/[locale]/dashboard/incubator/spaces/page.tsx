@@ -2,7 +2,6 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { SpacesManager } from '@/components/features/incubator/spaces-manager';
 import { requireRole } from '@/lib/auth-guards';
-import { db } from '@/server/db/store';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -32,7 +31,7 @@ export default async function IncubatorSpacesPage({ params }: PageProps) {
         title={t('incubator.spaces.title')}
         subtitle={t('incubator.spaces.subtitle', { count: active })}
       />
-      <SpacesManager initial={spaces} />
+      <SpacesManager />
     </div>
   );
 }

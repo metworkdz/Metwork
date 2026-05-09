@@ -284,17 +284,11 @@
     "commissions": "Commissions",
     "content": "Content",
     "consultations": "Consultations",
-    "mentorRevenue": "Mentor Revenue",
-    "perks": "Perks",
-    "mentors": "Mentors",
-    "contacts": "Contact inbox",
-    "saved": "Saved startups",
-    "investorContacts": "Investor contacts",
-    "members": "Members",
-    "auditLog": "Audit log",
-    "myIncubator": "My Incubator",
-    "profile": "Profile",
-    "withdrawals": "Withdrawals"
+    "clients": "Clients",
+    "services": "Services",
+    "expenses": "Expenses",
+    "income": "Income",
+    "analytics": "Analytics"
   },
   "pages": {
     "programs": {
