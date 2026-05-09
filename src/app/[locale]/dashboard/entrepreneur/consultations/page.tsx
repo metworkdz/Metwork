@@ -11,11 +11,6 @@ interface PageProps {
   params: Promise<{ locale: string }>;
 }
 
-function currentQuotaMonth(): string {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-}
-
 export default async function EntrepreneurConsultationsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -30,21 +25,12 @@ export default async function EntrepreneurConsultationsPage({ params }: PageProp
 
   const effectiveCode = getEffectiveMembershipCode(user);
   const freeQuota     = CONSULTATION_QUOTA[effectiveCode] ?? 0;
-  const quotaMonth    = currentQuotaMonth();
 
-  // Quick 30-min consultations are stored in mentorConsultations.
-  // (mentorBookings is the separate scheduled-consultation flow via BookConsultationDialog.)
-  const consultations = (data.mentorConsultations ?? [])
-    .filter((c) => c.userId === user.id)
+  // Booking requests go through the /book route → saved in mentorBookings (PENDING → APPROVED/REJECTED).
+  // Old auto-confirmed records from /consult are in mentorConsultations — not shown here any more.
+  const bookings = (data.mentorBookings ?? [])
+    .filter((b) => b.userId === user.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-
-  // Count free-quota sessions used this month (matches the consult route's logic)
-  const freeUsed = consultations.filter(
-    (c) =>
-      c.quotaMonth === quotaMonth &&
-      c.chargeType === 'FREE_QUOTA' &&
-      c.status !== 'CANCELLED',
-  ).length;
 
   return (
     <div className="space-y-6">
@@ -53,12 +39,14 @@ export default async function EntrepreneurConsultationsPage({ params }: PageProp
         subtitle={t('entrepreneur.consultations.subtitle')}
       />
       <ConsultationsPanel
-        initial={consultations}
+        initial={bookings}
         mentors={mentors}
         freeQuota={freeQuota}
-        freeUsed={freeUsed}
         membershipCode={effectiveCode === 'FREE' ? null : effectiveCode}
         locale={lang}
+        userName={user.fullName}
+        userEmail={user.email}
+        userPhone={user.phone ?? ''}
       />
     </div>
   );

@@ -487,12 +487,19 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
 /* ─────────────────── Mentor consultation confirmation ─────────────────── */
 
 /**
- * Generates a simple A4 confirmation PDF for a mentor consultation request.
- * Consultations are free / pending — no payment amount is shown.
+ * Generates an A4 confirmation PDF for an approved mentor consultation.
+ * Includes booking reference, mentor details, scheduled date/time, duration, and estimated fee.
  */
 export async function generateMentorConfirmationPdf(input: MentorConfirmationInput): Promise<Buffer> {
   const { booking, mentor, lang } = input;
   const t = T[lang];
+
+  // Compute estimated fee from mentor hourly rate × duration
+  const feePerHour   = mentor.consultationFee ?? 0;
+  const dur          = booking.durationMinutes ?? null;
+  const estimatedFee = feePerHour > 0 && dur
+    ? Math.round((dur / 60) * feePerHour)
+    : null;
 
   const doc = makeDoc();
 
@@ -533,6 +540,53 @@ export async function generateMentorConfirmationPdf(input: MentorConfirmationInp
   drawRow(doc, 'Position',    mentor.position);
   drawDivider(doc);
 
+  // ── Consultation details (schedule, duration, fee) ──
+  const hasDetails = booking.scheduledAt || booking.consultationDate || dur || estimatedFee !== null;
+  if (hasDetails) {
+    const detailsLabel = lang === 'fr' ? 'DÉTAILS DU RENDEZ-VOUS' : 'APPOINTMENT DETAILS';
+    drawSectionLabel(doc, detailsLabel);
+    doc.moveDown(0.2);
+
+    // Confirmed scheduled date (set by admin on approval) takes priority over requested date
+    if (booking.scheduledAt) {
+      const schedLabel = lang === 'fr' ? 'Date confirmée' : 'Confirmed date';
+      drawRow(doc, schedLabel, fmtDate(booking.scheduledAt, lang), { bold: true });
+    } else if (booking.consultationDate) {
+      const dateLabel = lang === 'fr' ? 'Date demandée' : 'Requested date';
+      const timeStr   = booking.consultationTime ? ` à ${booking.consultationTime}` : '';
+      drawRow(doc, dateLabel, `${booking.consultationDate}${timeStr}`);
+    }
+
+    if (dur) {
+      const durLabel = lang === 'fr' ? 'Durée' : 'Duration';
+      drawRow(doc, durLabel, `${dur} min`);
+    }
+
+    if (booking.meetLink) {
+      const linkLabel = lang === 'fr' ? 'Lien de réunion' : 'Meeting link';
+      drawRow(doc, linkLabel, booking.meetLink);
+    } else if (booking.isOffline) {
+      const modeLabel = lang === 'fr' ? 'Mode' : 'Mode';
+      drawRow(doc, modeLabel, lang === 'fr' ? 'Présentiel' : 'In-person');
+    }
+
+    if (estimatedFee !== null) {
+      const feeLabel = lang === 'fr' ? 'Frais estimés' : 'Estimated fee';
+      drawRow(doc, feeLabel,
+        estimatedFee === 0 ? t.free : fmt(estimatedFee),
+        { bold: true },
+      );
+    }
+
+    if (booking.appliedPromoCode) {
+      const promoLabel = lang === 'fr' ? 'Code promo appliqué' : 'Promo applied';
+      const discount   = booking.promoDiscountPercent ? ` (−${booking.promoDiscountPercent}%)` : '';
+      drawRow(doc, promoLabel, `${booking.appliedPromoCode}${discount}`);
+    }
+
+    drawDivider(doc);
+  }
+
   // ── Message ──
   drawSectionLabel(doc, t.consultMessage);
   doc.moveDown(0.2);
@@ -544,6 +598,19 @@ export async function generateMentorConfirmationPdf(input: MentorConfirmationInp
 
   drawDivider(doc);
 
+  // ── Admin note (if any) ──
+  if (booking.adminNote) {
+    const noteLabel = lang === 'fr' ? 'NOTE DE L\'ÉQUIPE' : 'TEAM NOTE';
+    drawSectionLabel(doc, noteLabel);
+    doc.moveDown(0.2);
+    doc
+      .fillColor('#3f3f46')
+      .font('Helvetica-Oblique')
+      .fontSize(10)
+      .text(booking.adminNote, MARGIN, doc.y, { width: CONTENT_W });
+    drawDivider(doc);
+  }
+
   // ── Note ──
   doc.moveDown(0.4);
   doc
@@ -551,6 +618,9 @@ export async function generateMentorConfirmationPdf(input: MentorConfirmationInp
     .font('Helvetica-Oblique')
     .fontSize(10)
     .text(t.consultNote, MARGIN, doc.y, { width: CONTENT_W });
+
+  // ── Confirmed stamp ──
+  drawStampWatermark(doc);
 
   // ── Footer ──
   drawFooter(doc, t, 'Metwork');

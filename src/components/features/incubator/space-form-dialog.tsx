@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { ImageUploadField } from '@/components/shared/image-upload-field';
 import type { SpaceCategory } from '@/types/domain';
 
 const CATEGORIES: { value: SpaceCategory; label: string }[] = [
@@ -55,6 +56,7 @@ export function SpaceFormDialog({ onCreated }: SpaceFormDialogProps) {
   const [capacity, setCapacity] = useState('10');
   const [amenities, setAmenities] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
+  const [imageUrl, setImageUrl] = useState('');
   // Working hours
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [openingTime, setOpeningTime] = useState('09:00');
@@ -75,6 +77,7 @@ export function SpaceFormDialog({ onCreated }: SpaceFormDialogProps) {
     setPricePerHour(''); setPricePerDay(''); setPricePerMonth('');
     setCapacity('10'); setAmenities('');
     setAcceptedMethods(['ONLINE', 'CASH']);
+    setImageUrl('');
     setWorkingDays([1, 2, 3, 4, 5]); setOpeningTime('09:00'); setClosingTime('18:00');
     setError(null);
   }
@@ -118,6 +121,7 @@ export function SpaceFormDialog({ onCreated }: SpaceFormDialogProps) {
           capacity:      Number(capacity),
           amenities:     amenities.split(',').map((s) => s.trim()).filter(Boolean),
           acceptedPaymentMethods: acceptedMethods,
+          imageUrl:      imageUrl || null,
           workingDays,
           openingTime,
           closingTime,
@@ -187,6 +191,14 @@ export function SpaceFormDialog({ onCreated }: SpaceFormDialogProps) {
                 onChange={(e) => setDescription(e.target.value)}
                 required
                 minLength={10}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <ImageUploadField
+                label="Cover image (optional)"
+                currentUrl={imageUrl || null}
+                onUpload={(url) => setImageUrl(url)}
+                onRemove={() => setImageUrl('')}
               />
             </div>
           </div>

@@ -383,16 +383,26 @@ export function sendConsultationConfirmationEmail(input: MentorConfirmationInput
 
   const filename = `consultation-${booking.id.slice(0, 8)}.pdf`;
 
+  // Compute estimated fee from mentor rate + duration (same formula as BookConsultationDialog)
+  const feePerHour = mentor.consultationFee ?? 0;
+  const dur        = booking.durationMinutes ?? null;
+  const estimatedFee = (feePerHour > 0 && dur)
+    ? Math.round((dur / 60) * feePerHour)
+    : (feePerHour > 0 ? feePerHour : 0);
+
   generateMentorConfirmationPdf(input)
     .then((pdfBuffer) =>
       sendResendEmail({
         to:      booking.userEmail,
         subject,
         html:    consultationConfirmationEmailHtml({
-          clientName: booking.userName,
-          mentorName: mentor.fullName,
-          reference:  booking.id,
+          clientName:      booking.userName,
+          mentorName:      mentor.fullName,
+          reference:       booking.id,
           lang,
+          scheduledAt:     booking.scheduledAt ?? null,
+          durationMinutes: booking.durationMinutes ?? null,
+          estimatedFee:    feePerHour > 0 ? estimatedFee : null,
         }),
         attachments: [{ filename, content: pdfBuffer }],
       }),

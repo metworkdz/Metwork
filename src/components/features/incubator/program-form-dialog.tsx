@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { ImageUploadField } from '@/components/shared/image-upload-field';
 import type { ProgramType } from '@/types/domain';
 
 const PROGRAM_TYPES: { value: ProgramType; label: string }[] = [
@@ -55,6 +56,7 @@ export function ProgramFormDialog({ onCreated }: ProgramFormDialogProps) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
+  const [imageUrl, setImageUrl] = useState('');
 
   function toggleMethod(m: 'ONLINE' | 'CASH') {
     setAcceptedMethods((prev) => {
@@ -70,6 +72,7 @@ export function ProgramFormDialog({ onCreated }: ProgramFormDialogProps) {
     setTitle(''); setDescription(''); setType('INCUBATION'); setCity('');
     setPrice('0'); setSeatsTotal('20'); setDeadline(''); setStartDate(''); setEndDate('');
     setAcceptedMethods(['ONLINE', 'CASH']);
+    setImageUrl('');
     setError(null);
   }
 
@@ -97,6 +100,7 @@ export function ProgramFormDialog({ onCreated }: ProgramFormDialogProps) {
           startDate: toIso(startDate),
           endDate: toIso(endDate),
           acceptedPaymentMethods: acceptedMethods,
+          imageUrl: imageUrl || null,
         }),
       });
       if (!res.ok) {
@@ -163,6 +167,14 @@ export function ProgramFormDialog({ onCreated }: ProgramFormDialogProps) {
                 onChange={(e) => setDescription(e.target.value)}
                 required
                 minLength={10}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <ImageUploadField
+                label="Cover image (optional)"
+                currentUrl={imageUrl || null}
+                onUpload={(url) => setImageUrl(url)}
+                onRemove={() => setImageUrl('')}
               />
             </div>
           </div>

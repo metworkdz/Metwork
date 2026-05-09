@@ -481,22 +481,62 @@ export function bookingReceiptEmailHtml(params: ReceiptEmailParams): string {
 }
 
 interface ConsultEmailParams {
-  clientName: string;
-  mentorName: string;
-  reference:  string;
-  lang:       'en' | 'fr';
+  clientName:      string;
+  mentorName:      string;
+  reference:       string;
+  lang:            'en' | 'fr';
+  /** ISO datetime set by admin when approving. */
+  scheduledAt?:    string | null;
+  /** Duration in minutes (from the booking request or admin). */
+  durationMinutes?: number | null;
+  /** Estimated fee in DZD after any promo discount. 0 = free. */
+  estimatedFee?:   number | null;
 }
 
 export function consultationConfirmationEmailHtml(params: ConsultEmailParams): string {
-  const { clientName, mentorName, reference, lang } = params;
+  const { clientName, mentorName, reference, lang, scheduledAt, durationMinutes, estimatedFee } = params;
   const isFr = lang === 'fr';
 
   const greeting = isFr ? `Bonjour ${clientName},` : `Hello ${clientName},`;
   const bodyText = isFr
-    ? `Votre demande de consultation avec <strong>${mentorName}</strong> a bien été enregistrée. Notre équipe vous contactera prochainement pour confirmer l'heure et la date du rendez-vous.`
-    : `Your consultation request with <strong>${mentorName}</strong> has been received. Our team will contact you shortly to confirm the time and date of the meeting.`;
+    ? `Votre demande de consultation avec <strong>${mentorName}</strong> a été <strong>approuvée</strong>. Vous trouverez les détails ci-dessous ainsi que votre PDF de confirmation en pièce jointe.`
+    : `Your consultation request with <strong>${mentorName}</strong> has been <strong>approved</strong>. Please find the details below and your confirmation PDF attached.`;
 
-  const title = isFr ? 'Demande de consultation confirmée' : 'Consultation request confirmed';
+  const title = isFr ? 'Consultation confirmée ✓' : 'Consultation confirmed ✓';
+
+  // Build optional detail rows
+  const schedRow = scheduledAt
+    ? `<tr>
+        <td style="padding:8px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:140px;">
+          ${isFr ? 'Date confirmée' : 'Confirmed date'}
+        </td>
+        <td style="padding:8px 12px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;font-weight:500;">
+          ${new Date(scheduledAt).toLocaleString(isFr ? 'fr-DZ' : 'en-GB', { dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC' })}
+        </td>
+      </tr>`
+    : '';
+
+  const durRow = durationMinutes
+    ? `<tr>
+        <td style="padding:8px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:140px;">
+          ${isFr ? 'Durée' : 'Duration'}
+        </td>
+        <td style="padding:8px 12px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;font-weight:500;">
+          ${durationMinutes} min
+        </td>
+      </tr>`
+    : '';
+
+  const feeRow = estimatedFee != null
+    ? `<tr>
+        <td style="padding:8px 12px;font-size:13px;color:#71717a;width:140px;">
+          ${isFr ? 'Frais estimés' : 'Estimated fee'}
+        </td>
+        <td style="padding:8px 12px;font-size:13px;color:#09090b;font-weight:500;">
+          ${estimatedFee === 0 ? (isFr ? 'Gratuit' : 'Free') : `${estimatedFee.toLocaleString('fr-DZ')} DZD`}
+        </td>
+      </tr>`
+    : '';
 
   return layout(`
     ${h1(title)}
@@ -510,17 +550,22 @@ export function consultationConfirmationEmailHtml(params: ConsultEmailParams): s
         </td>
         <td style="padding:8px 12px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;font-weight:500;">${mentorName}</td>
       </tr>
+      ${schedRow}
+      ${durRow}
+      ${feeRow}
       <tr>
-        <td style="padding:8px 12px;font-size:13px;color:#71717a;width:140px;">
+        <td style="padding:8px 12px;font-size:13px;color:#71717a;${!feeRow ? '' : ''}width:140px;border-top:1px solid #f4f4f5;">
           ${isFr ? 'Référence' : 'Reference'}
         </td>
-        <td style="padding:8px 12px;font-size:13px;color:#09090b;font-weight:500;">${reference.slice(0, 8).toUpperCase()}</td>
+        <td style="padding:8px 12px;font-size:13px;color:#09090b;font-weight:500;border-top:1px solid #f4f4f5;">
+          ${reference.slice(0, 8).toUpperCase()}
+        </td>
       </tr>
     </table>
     ${p(`<span style="color:#71717a;font-size:13px;">
       ${isFr
-        ? 'Veuillez trouver ci-joint votre confirmation de demande en PDF.'
-        : 'Please find your request confirmation PDF attached.'}
+        ? 'Votre PDF de confirmation est joint à cet email.'
+        : 'Your confirmation PDF is attached to this email.'}
     </span>`)}
   `);
 }
