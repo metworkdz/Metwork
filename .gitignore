@@ -57,3 +57,7 @@ docker-compose.override.yml
 
 # Admin-uploaded media (mentor avatars, etc.) — replace with S3 in prod
 /public/uploads/
+
+# Claude Code — worktrees and session files (never commit these)
+.claude/worktrees/
+SESSION_*.md
