@@ -71,7 +71,7 @@ export async function PATCH(
     if (input.meetLink)    booking.meetLink    = input.meetLink;
     if (input.isOffline !== undefined) booking.isOffline = input.isOffline;
     booking.updatedAt = new Date().toISOString();
-    return { ok: true, booking: booking as unknown as Record<string, unknown> };
+    return { ok: true, booking };
   });
 
   if (!result.ok) return jsonError(404, 'NOT_FOUND', 'Booking not found');

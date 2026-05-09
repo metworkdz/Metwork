@@ -46,23 +46,15 @@ export async function POST(req: NextRequest) {
   if (!promoCode) {
     return json({ valid: false, error: 'Invalid promo code' });
   }
-  if (promoCode.validUntil && promoCode.validUntil < now) {
+  if (promoCode.expiresAt && promoCode.expiresAt < now) {
     return json({ valid: false, error: 'Promo code has expired' });
   }
-  if (promoCode.validFrom > now) {
-    return json({ valid: false, error: 'Promo code is not yet active' });
-  }
-  if (promoCode.maxUses !== null && promoCode.useCount >= promoCode.maxUses) {
+  if (promoCode.usageLimit !== null && promoCode.usedCount >= promoCode.usageLimit) {
     return json({ valid: false, error: 'Promo code usage limit reached' });
   }
 
-  let discountAmount: number;
-  if (promoCode.discountType === 'PERCENTAGE') {
-    discountAmount = Math.round(input.originalAmount * (promoCode.discountValue / 100));
-  } else {
-    discountAmount = Math.min(promoCode.discountValue, input.originalAmount);
-  }
-
+  // All current promo codes use a percentage discount
+  const discountAmount = Math.round(input.originalAmount * (promoCode.discountPercent / 100));
   const finalAmount = Math.max(0, input.originalAmount - discountAmount);
 
   return json({
@@ -70,7 +62,7 @@ export async function POST(req: NextRequest) {
     code:           promoCode.code,
     discountAmount,
     finalAmount,
-    discountType:   promoCode.discountType,
-    discountValue:  promoCode.discountValue,
+    discountType:   'PERCENTAGE',
+    discountValue:  promoCode.discountPercent,
   });
 }

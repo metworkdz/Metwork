@@ -26,7 +26,7 @@ interface Props {
 export function IncubatorProfileForm({ incubator, user }: Props) {
   const [form, setForm] = useState({
     incubatorName: incubator.name,
-    description: incubator.description,
+    description: incubator.description ?? '',
     city: incubator.city,
     website: incubator.website ?? '',
     logoUrl: incubator.logoUrl ?? '',

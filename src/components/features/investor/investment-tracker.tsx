@@ -34,6 +34,10 @@ const STATUS_LABELS: Record<InvestmentStatus, string> = {
   DUE_DILIGENCE: 'Due diligence',
   CLOSED:        'Closed',
   PASSED:        'Passed',
+  // Legacy statuses kept for backward-compatibility
+  PENDING:       'Pending',
+  ACTIVE:        'Active',
+  CANCELLED:     'Cancelled',
 };
 
 const STATUS_VARIANT: Record<InvestmentStatus, 'default' | 'info' | 'warning' | 'success' | 'danger'> = {
@@ -42,6 +46,10 @@ const STATUS_VARIANT: Record<InvestmentStatus, 'default' | 'info' | 'warning' | 
   DUE_DILIGENCE: 'warning',
   CLOSED:        'success',
   PASSED:        'danger',
+  // Legacy statuses
+  PENDING:       'default',
+  ACTIVE:        'info',
+  CANCELLED:     'danger',
 };
 
 interface DealFormState {

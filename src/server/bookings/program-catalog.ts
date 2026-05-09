@@ -1,53 +1,46 @@
 /**
- * Program catalog. DB-first with demo fallback.
- * See `space-catalog.ts` for the same pattern.
+ * Program catalog — DB-only.
+ *
+ * Returns only real programs created by incubators or the admin.
+ * Demo/seed data is never shown.
  */
 import { db } from '@/server/db/store';
-import { demoPublicPrograms } from '@/lib/demo-data';
 import type { Program } from '@/types/domain';
 
 function fromRecord(r: import('@/server/db/store').ProgramRecord): Program {
   return {
-    id: r.id,
-    incubatorId: r.incubatorId,
-    incubatorName: r.incubatorName,
-    title: r.title,
-    description: r.description,
-    type: r.type,
-    city: r.city,
-    imageUrl: r.imageUrl,
-    price: r.price,
-    seatsTotal: r.seatsTotal,
-    seatsTaken: 0, // computed live by the service
-    deadline: r.deadline,
-    startDate: r.startDate,
-    endDate: r.endDate,
+    id:                     r.id,
+    incubatorId:            r.incubatorId,
+    incubatorName:          r.incubatorName,
+    title:                  r.title,
+    description:            r.description,
+    type:                   r.type,
+    city:                   r.city,
+    imageUrl:               r.imageUrl,
+    price:                  r.price,
+    seatsTotal:             r.seatsTotal,
+    seatsTaken:             0, // computed live by the caller
+    deadline:               r.deadline,
+    startDate:              r.startDate,
+    endDate:                r.endDate,
     acceptedPaymentMethods: r.acceptedPaymentMethods,
   };
 }
 
-function withDefaults(p: Omit<Program, 'acceptedPaymentMethods'>): Program {
-  return { ...p, acceptedPaymentMethods: ['ONLINE', 'CASH'] };
+/** List all active programs from the DB (no demo fallback). */
+export async function listPrograms(): Promise<Program[]> {
+  const data = await db.read();
+  return (data.programs ?? []).filter((p) => p.isActive).map(fromRecord);
 }
 
+/** Find a single active program by ID. */
 export async function findProgramById(id: string): Promise<Program | null> {
   const data = await db.read();
   const dbProg = (data.programs ?? []).find((p) => p.id === id && p.isActive);
-  if (dbProg) return fromRecord(dbProg);
-  const demo = (demoPublicPrograms as Omit<Program, 'acceptedPaymentMethods'>[]).find((p) => p.id === id);
-  return demo ? withDefaults(demo) : null;
+  return dbProg ? fromRecord(dbProg) : null;
 }
 
-export async function listPrograms(): Promise<Program[]> {
-  const data = await db.read();
-  const dbProgs = (data.programs ?? []).filter((p) => p.isActive).map(fromRecord);
-  const dbIncubatorIds = new Set(dbProgs.map((p) => p.incubatorId));
-  const demoProgs = (demoPublicPrograms as Omit<Program, 'acceptedPaymentMethods'>[])
-    .filter((p) => !dbIncubatorIds.has(p.incubatorId))
-    .map(withDefaults);
-  return [...dbProgs, ...demoProgs];
-}
-
+/** List all programs (active and inactive) owned by a specific incubator. */
 export async function listProgramsByIncubator(incubatorId: string): Promise<Program[]> {
   const data = await db.read();
   return (data.programs ?? [])

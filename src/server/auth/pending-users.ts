@@ -170,15 +170,24 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
       const incubatorName =
         pending.incubatorName?.trim() || pending.fullName.trim();
       d.incubators.push({
-        id: incubatorId,
-        name: incubatorName,
-        description: '',
-        city: pending.city,
-        managerId: userId,
-        status: 'ACTIVE',
-        website: null,
-        logoUrl: null,
-        subscriptionTier: 'COMMISSION',
+        id:               incubatorId,
+        name:             incubatorName,
+        description:      '',
+        city:             pending.city,
+        managerId:        userId,
+        /** email is required by findIncubatorByUserEmail for the fast lookup path */
+        email:            pending.email,
+        phone:            pending.phone,
+        status:           'ACTIVE',
+        website:          null,
+        logoUrl:          null,
+        subscriptionTier: 'COMMISSION',   // legacy field
+        subscriptionCode: 'COMMISSION',   // canonical field
+        billingCycle:     null,
+        subscriptionStatus:          'NONE',
+        subscriptionPeriodStart:     null,
+        subscriptionPeriodEnd:       null,
+        subscriptionLastPaidAmount:  null,
         createdAt: now,
         updatedAt: now,
       });

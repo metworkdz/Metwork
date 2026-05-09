@@ -32,17 +32,22 @@ export async function getOrCreateAdminIncubator(adminId: string): Promise<Incuba
 
     const now = new Date().toISOString();
     const record: IncubatorRecord = {
-      id: randomUUID(),
-      name: 'Metwork',
-      description:
-        "Algeria's unified startup platform — incubator, coworking space, and accelerator.",
-      city: 'Oran',
-      managerId: adminId,
-      status: 'ACTIVE',
-      website: null,
-      logoUrl: null,
+      id:          randomUUID(),
+      name:        'Metwork',
+      description: "Algeria's unified startup platform — incubator, coworking space, and accelerator.",
+      city:        'Oran',
+      managerId:   adminId,
+      status:      'ACTIVE',
+      website:     null,
+      logoUrl:     null,
       // Admin's incubator uses FLAT billing; commissions don't apply to the platform itself.
-      subscriptionTier: 'FLAT',
+      subscriptionTier:          'FLAT',       // legacy field
+      subscriptionCode:          'FLAT',       // canonical field
+      billingCycle:              null,
+      subscriptionStatus:        'ACTIVE',
+      subscriptionPeriodStart:   null,
+      subscriptionPeriodEnd:     null,
+      subscriptionLastPaidAmount: null,
       createdAt: now,
       updatedAt: now,
     };

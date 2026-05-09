@@ -32,10 +32,13 @@ export default async function EntrepreneurConsultationsPage({ params }: PageProp
   const freeQuota     = CONSULTATION_QUOTA[effectiveCode] ?? 0;
   const quotaMonth    = currentQuotaMonth();
 
+  // Quick 30-min consultations are stored in mentorConsultations.
+  // (mentorBookings is the separate scheduled-consultation flow via BookConsultationDialog.)
   const consultations = (data.mentorConsultations ?? [])
     .filter((c) => c.userId === user.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
+  // Count free-quota sessions used this month (matches the consult route's logic)
   const freeUsed = consultations.filter(
     (c) =>
       c.quotaMonth === quotaMonth &&

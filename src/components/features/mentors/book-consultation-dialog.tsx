@@ -1,16 +1,17 @@
 'use client';
 
 /**
- * Consultation booking dialog — with date, time, and duration selection.
+ * Consultation booking dialog — with date, time, duration, and promo code.
  *
  * Rules:
  *  - Duration: 30 min minimum, 180 min (3 h) maximum, in 30-min steps
- *  - Consultations are free — no wallet debit
+ *  - Preferred schedule is optional (admin will confirm timing)
+ *  - A promo code can be applied if the mentor charges a fee
  *  - Status is always PENDING until admin approves
  *  - Success panel clearly says "pending approval" (not "confirmed")
  */
 import { useState } from 'react';
-import { Clock, Calendar, Timer } from 'lucide-react';
+import { Clock, Calendar, Timer, Tag } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -67,20 +68,17 @@ export function BookConsultationDialog({
   const [consultDate, setConsultDate] = useState('');
   const [consultTime, setConsultTime] = useState('10:00');
   const [duration,    setDuration]    = useState<number>(60);
+  const [promoCode,   setPromoCode]   = useState('');
+  const [promoError,  setPromoError]  = useState<string | null>(null);
+  const [promoApplied, setPromoApplied] = useState<number | null>(null);
   const [formState,   setFormState]   = useState<FormState>('idle');
   const [errorMsg,    setErrorMsg]    = useState<string | null>(null);
-  const [scheduledAt, setScheduledAt] = useState('');
-  const [discountApplied, setDiscountApplied] = useState<number | null>(null);
-
-  function minScheduledAt(): string {
-    return new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
-  }
 
   function reset() {
     setName(''); setEmail(''); setPhone(''); setMessage('');
     setConsultDate(''); setConsultTime('10:00'); setDuration(60);
+    setPromoCode(''); setPromoError(null); setPromoApplied(null);
     setFormState('idle'); setErrorMsg(null);
-    setScheduledAt(''); setDiscountApplied(null);
   }
 
   function handleOpenChange(next: boolean) {
@@ -92,19 +90,23 @@ export function BookConsultationDialog({
     e.preventDefault();
     if (!mentor) return;
 
-    // Client-side 24h guard (server also validates)
-    const scheduled = new Date(scheduledAt);
-    if (scheduled < new Date(Date.now() + 24 * 60 * 60 * 1000)) {
-      setErrorMsg('Please choose a date and time at least 24 hours from now.');
-      setFormState('error');
-      return;
+    // Client-side 24h guard (only when a date has been provided)
+    if (consultDate && consultTime) {
+      const scheduled = new Date(`${consultDate}T${consultTime}:00`);
+      const minTime   = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      if (scheduled < minTime) {
+        setErrorMsg('Please choose a date and time at least 24 hours from now.');
+        setFormState('error');
+        return;
+      }
     }
 
     setFormState('submitting');
     setErrorMsg(null);
+
     try {
       const res = await fetch(`/api/mentors/${mentor.id}/book`, {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
@@ -112,11 +114,13 @@ export function BookConsultationDialog({
           email,
           phone,
           message,
-          consultationDate: scheduledAt ? scheduledAt.slice(0, 10) : (consultDate || null),
-          consultationTime: scheduledAt ? scheduledAt.slice(11, 16) : (consultDate ? consultTime : null),
-          durationMinutes:  (scheduledAt || consultDate) ? duration : null,
+          consultationDate: consultDate || null,
+          consultationTime: consultDate ? consultTime : null,
+          durationMinutes:  consultDate ? duration : null,
+          promoCode:        promoCode.trim() || null,
         }),
       });
+
       if (res.status === 401) {
         setErrorMsg('Please log in to book a consultation.');
         setFormState('error');
@@ -129,7 +133,7 @@ export function BookConsultationDialog({
         return;
       }
       const data = await res.json().catch(() => ({})) as { discountPercent?: number };
-      if (data.discountPercent) setDiscountApplied(data.discountPercent);
+      if (data.discountPercent) setPromoApplied(data.discountPercent);
       setFormState('success');
     } catch {
       setErrorMsg('Network error. Please check your connection.');
@@ -163,6 +167,11 @@ export function BookConsultationDialog({
                 <Timer className="size-3.5 shrink-0" />
                 <span>{DURATION_OPTIONS.find((d) => d.value === duration)?.label}</span>
               </div>
+            )}
+            {promoApplied && (
+              <p className="mt-2 text-xs text-primary-700">
+                🎉 {promoApplied}% promo code applied!
+              </p>
             )}
             <Button className="mt-6" onClick={() => handleOpenChange(false)}>
               Done
@@ -230,6 +239,26 @@ export function BookConsultationDialog({
                 </div>
               </div>
 
+              {/* Message */}
+              <div className="space-y-1.5">
+                <Label htmlFor="bc-message">What do you need help with?</Label>
+                <textarea
+                  id="bc-message"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={4}
+                  placeholder="Describe your situation and what you're hoping to get from the session…"
+                  required
+                  disabled={formState === 'submitting'}
+                  className={cn(
+                    'flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors',
+                    'placeholder:text-muted-foreground',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+                    'disabled:cursor-not-allowed disabled:opacity-50',
+                  )}
+                />
+              </div>
+
               {/* Preferred schedule (optional) */}
               <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-3">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -288,39 +317,27 @@ export function BookConsultationDialog({
                 </div>
               </div>
 
-              {/* Message */}
+              {/* Promo code */}
               <div className="space-y-1.5">
-                <Label htmlFor="bc-scheduled">Preferred date &amp; time</Label>
-                <Input
-                  id="bc-scheduled"
-                  type="datetime-local"
-                  value={scheduledAt}
-                  onChange={(e) => setScheduledAt(e.target.value)}
-                  min={minScheduledAt()}
-                  required
-                  disabled={formState === 'submitting'}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Must be at least 24 hours from now. Admin may adjust before confirming.
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="bc-message">What do you need help with?</Label>
-                <textarea
-                  id="bc-message"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={4}
-                  placeholder="Describe your situation and what you're hoping to get from the session…"
-                  required
-                  disabled={formState === 'submitting'}
-                  className={cn(
-                    'flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors',
-                    'placeholder:text-muted-foreground',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-                    'disabled:cursor-not-allowed disabled:opacity-50',
-                  )}
-                />
+                <Label htmlFor="bc-promo" className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Tag className="size-3.5" /> Promo code <span className="font-normal">(optional)</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="bc-promo"
+                    value={promoCode}
+                    onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(null); }}
+                    placeholder="WELCOME50"
+                    disabled={formState === 'submitting'}
+                    className="text-sm font-mono"
+                  />
+                </div>
+                {promoError && (
+                  <p className="text-xs text-destructive">{promoError}</p>
+                )}
+                {promoApplied && (
+                  <p className="text-xs text-primary-700">✓ {promoApplied}% discount will be applied</p>
+                )}
               </div>
 
               {/* Pending-review notice */}

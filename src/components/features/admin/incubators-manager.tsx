@@ -83,8 +83,8 @@ function IncubatorFormDialog({ open, editing, onClose, onSaved }: IncubatorFormD
     if (!open) return;
     setForm(
       editing
-        ? { name: editing.name, email: editing.email, phone: editing.phone,
-            city: editing.city, status: editing.status, subscriptionCode: editing.subscriptionCode }
+        ? { name: editing.name, email: editing.email ?? '', phone: editing.phone ?? '',
+            city: editing.city, status: editing.status, subscriptionCode: editing.subscriptionCode ?? 'COMMISSION' }
         : defaultValues,
     );
     setErrorMsg(null);
@@ -285,7 +285,7 @@ export function AdminIncubatorsManager({ initial }: AdminIncubatorsManagerProps)
                       {inc.city} · {inc.email} · {inc.phone}
                     </p>
                     <p className="text-xs text-muted-foreground/70">
-                      {SUB_LABEL[inc.subscriptionCode]} · Added {new Date(inc.createdAt).toLocaleDateString()}
+                      {inc.subscriptionCode ? SUB_LABEL[inc.subscriptionCode] : 'Commission'} · Added {new Date(inc.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <Button size="sm" variant="outline" className="shrink-0" onClick={() => openEdit(inc)}>

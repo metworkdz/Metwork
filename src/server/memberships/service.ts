@@ -80,6 +80,8 @@ export async function getUserConsultationQuota(userId: string): Promise<{
   const quota = CONSULTATION_QUOTA[effectiveCode] ?? 0;
   const month = currentQuotaMonth();
 
+  // Quick consultations are stored in mentorConsultations.
+  // Count FREE_QUOTA sessions used this month (matches the consult route's logic).
   const used = (data.mentorConsultations ?? []).filter(
     (c) =>
       c.userId === userId &&

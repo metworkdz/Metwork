@@ -498,6 +498,16 @@ export interface MentorBookingRecord {
   consultationTime?: string | null;
   /** Requested duration in minutes (30–180). */
   durationMinutes?: number | null;
+  /** ISO datetime confirmed by admin for the session. */
+  scheduledAt?: string | null;
+  /** Video/online meeting link set by admin on approval. */
+  meetLink?: string | null;
+  /** True when the session is held in-person (admin sets on approval). */
+  isOffline?: boolean;
+  /** Applied promo code. */
+  appliedPromoCode?: string | null;
+  /** Promo code discount percentage (0–100). */
+  promoDiscountPercent?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -670,19 +680,27 @@ export interface SavedStartupRecord {
 
 /* ─────────────────────────── Investments ─────────────────────────── */
 
-export type InvestmentStatus = 'PENDING' | 'ACTIVE' | 'CLOSED' | 'CANCELLED';
+export type InvestmentStatus =
+  | 'PROSPECTING'
+  | 'TERM_SHEET'
+  | 'DUE_DILIGENCE'
+  | 'CLOSED'
+  | 'PASSED'
+  | 'PENDING'
+  | 'ACTIVE'
+  | 'CANCELLED';
 
 export interface InvestmentRecord {
   id: string;
   investorId: string;
-  startupId: string;
+  startupId: string | null;
   startupName: string;
   /** Investment amount in integer DZD. */
   amount: number;
   /** Equity percentage offered, e.g. 10.5 = 10.5 %. */
-  equityPercent: number;
+  equity: number;
   status: InvestmentStatus;
-  notes: string | null;
+  notes: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -701,6 +719,8 @@ export interface WithdrawalRequestRecord {
   status: WithdrawalStatus;
   /** Transaction ID for the escrow hold deducted from the wallet. */
   holdTransactionId: string;
+  /** Transaction ID for the refund issued on rejection. */
+  refundTransactionId?: string | null;
   /** Admin note (reason for rejection, etc.). */
   adminNote?: string | null;
   createdAt: string;
@@ -710,6 +730,7 @@ export interface WithdrawalRequestRecord {
 /* ─────────────────────────── Mentor consultations ─────────────────────────── */
 
 export type MentorConsultationStatus =
+  | 'CONFIRMED'
   | 'PENDING'
   | 'APPROVED'
   | 'REJECTED'
@@ -726,14 +747,16 @@ export interface MentorConsultationRecord {
   status: MentorConsultationStatus;
   message: string;
   /** ISO datetime of the scheduled session. Null until admin confirms a time. */
-  scheduledAt: string | null;
-  durationMinutes: number | null;
+  scheduledAt?: string | null;
+  durationMinutes?: number | null;
   chargeType: ConsultationChargeType;
   /** 'YYYY-MM' — the month this consultation counted against the free quota. */
   quotaMonth: string;
-  /** Fee actually paid by the user (0 for FREE_QUOTA sessions). */
-  feePaid: number;
-  adminNote: string | null;
+  /** Fee actually charged (0 for FREE_QUOTA sessions). */
+  amountCharged: number;
+  /** Wallet transaction ID for paid sessions. */
+  transactionId: string | null;
+  adminNote?: string | null;
   createdAt: string;
   updatedAt: string;
 }

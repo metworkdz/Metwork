@@ -17,7 +17,7 @@ import { db } from '@/server/db/store';
 import { findMentorById } from '@/server/mentors/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { sendConsultationRequestReceivedEmail, sendAdminConsultationNotification } from '@/server/notifications/mock';
-import { validatePromoCode, promoAppliesToType } from '@/server/promo-codes/service';
+import { validatePromoCode, promoAppliesToType, consumePromoCode } from '@/server/promo-codes/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,6 +35,8 @@ const schema = z.object({
   consultationTime: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
   /** Duration in minutes: 30 | 60 | 90 | 120 | 150 | 180 */
   durationMinutes: z.number().int().min(30).max(180).optional().nullable(),
+  /** Optional promo code string */
+  promoCode: z.string().max(50).optional().nullable(),
 });
 
 export async function POST(
@@ -59,25 +61,27 @@ export async function POST(
     throw err;
   }
 
-  // Enforce 24-hour advance booking
-  const scheduled = new Date(input.scheduledAt);
-  const minTime = new Date(Date.now() + MIN_ADVANCE_HOURS * 60 * 60 * 1000);
-  if (scheduled < minTime) {
-    return jsonError(422, 'TOO_SOON', `Consultations must be booked at least ${MIN_ADVANCE_HOURS} hours in advance`);
+  // Enforce 24-hour advance booking only when a date is supplied
+  if (input.consultationDate && input.consultationTime) {
+    const scheduled = new Date(`${input.consultationDate}T${input.consultationTime}:00Z`);
+    const minTime = new Date(Date.now() + MIN_ADVANCE_HOURS * 60 * 60 * 1000);
+    if (scheduled < minTime) {
+      return jsonError(422, 'TOO_SOON', `Consultations must be booked at least ${MIN_ADVANCE_HOURS} hours in advance`);
+    }
   }
 
   // Validate promo code if provided
   let discountPercent = 0;
   let appliedPromoCode: string | null = null;
 
-  if (input.promoCode) {
-    const validation = await validatePromoCode(input.promoCode);
+  if (input.promoCode && input.promoCode.trim()) {
+    const validation = await validatePromoCode(input.promoCode.trim());
     if (!validation.valid) {
       const msgs: Record<string, string> = {
-        NOT_FOUND:    'Promo code not found',
-        INACTIVE:     'Promo code is no longer active',
-        EXPIRED:      'Promo code has expired',
-        LIMIT_REACHED:'Promo code has reached its usage limit',
+        NOT_FOUND:     'Promo code not found',
+        INACTIVE:      'Promo code is no longer active',
+        EXPIRED:       'Promo code has expired',
+        LIMIT_REACHED: 'Promo code has reached its usage limit',
       };
       return jsonError(422, 'INVALID_PROMO_CODE', msgs[validation.reason] ?? 'Invalid promo code');
     }
@@ -91,25 +95,32 @@ export async function POST(
   const now = new Date().toISOString();
   const booking = await db.update((d) => {
     const record = {
-      id:               randomUUID(),
+      id:                   randomUUID(),
       mentorId,
-      userId:           guard.user.id,
-      userName:         input.name,
-      userEmail:        input.email,
-      userPhone:        input.phone,
-      message:          input.message,
-      consultationDate: input.consultationDate ?? null,
-      consultationTime: input.consultationTime ?? null,
-      durationMinutes:  input.durationMinutes  ?? null,
-      status:           'PENDING' as const,
-      adminNote:        null,
-      createdAt:        now,
-      updatedAt:        now,
+      userId:               guard.user.id,
+      userName:             input.name,
+      userEmail:            input.email,
+      userPhone:            input.phone,
+      message:              input.message,
+      consultationDate:     input.consultationDate ?? null,
+      consultationTime:     input.consultationTime ?? null,
+      durationMinutes:      input.durationMinutes  ?? null,
+      status:               'PENDING' as const,
+      adminNote:            null,
+      appliedPromoCode:     appliedPromoCode ?? null,
+      promoDiscountPercent: discountPercent > 0 ? discountPercent : null,
+      createdAt:            now,
+      updatedAt:            now,
     };
     if (!Array.isArray(d.mentorBookings)) d.mentorBookings = [];
     d.mentorBookings.push(record);
     return record;
   });
+
+  // Consume promo code after successful booking creation
+  if (appliedPromoCode) {
+    await consumePromoCode(appliedPromoCode);
+  }
 
   // 1. Tell the client their request is received and pending review (NOT a confirmation)
   const data = await db.read();
@@ -120,5 +131,10 @@ export async function POST(
   // 2. Notify the admin that a new consultation request arrived
   sendAdminConsultationNotification({ booking, mentor, lang });
 
-  return json({ id: booking.id, status: booking.status }, { status: 201 });
+  return json({
+    id:             booking.id,
+    status:         booking.status,
+    discountPercent,
+    appliedPromoCode,
+  }, { status: 201 });
 }

@@ -57,12 +57,40 @@ export function computePeriodEnd(
 /* ─────────────────────────── Incubator lookup ─────────────────────────── */
 
 /**
- * Find the incubator record whose email matches the logged-in INCUBATOR user.
- * Returns null if no incubator record has been created for this user yet.
+ * Find the incubator record linked to the logged-in INCUBATOR user.
+ *
+ * Strategy:
+ *  1. Match by inc.email (new records created after the email field was added).
+ *  2. Fall back to matching by inc.managerId via the users table (records
+ *     created before email was stored on the incubator record — i.e. all
+ *     registrations prior to this fix).
+ *
+ * Returns null only when no incubator record exists for this user at all.
  */
 export async function findIncubatorByUserEmail(email: string): Promise<IncubatorRecord | null> {
   const data = await db.read();
-  return (data.incubators ?? []).find((inc) => inc.email === email) ?? null;
+  const incubators = data.incubators ?? [];
+
+  // 1. Try direct email match (fastest path for new records)
+  const byEmail = incubators.find((inc) => inc.email === email);
+  if (byEmail) return byEmail;
+
+  // 2. Resolve user → managerId lookup (covers legacy records without email)
+  const user = (data.users ?? []).find((u) => u.email === email);
+  if (!user) return null;
+
+  const byManager = incubators.find((inc) => inc.managerId === user.id);
+  // Back-fill the email field so future lookups hit the fast path
+  if (byManager && !byManager.email) {
+    // Fire-and-forget — non-blocking migration
+    void import('@/server/db/store').then(({ db: store }) =>
+      store.update((d) => {
+        const rec = (d.incubators ?? []).find((i) => i.id === byManager.id);
+        if (rec && !rec.email) rec.email = email;
+      }),
+    );
+  }
+  return byManager ?? null;
 }
 
 export async function findIncubatorById(id: string): Promise<IncubatorRecord | null> {

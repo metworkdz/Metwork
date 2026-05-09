@@ -32,8 +32,10 @@ export default async function IncubatorRevenuePage({ params }: PageProps) {
     );
   }
 
+  // Check either field for backward compatibility (legacy records use subscriptionTier)
+  const subCode = incubator.subscriptionCode ?? incubator.subscriptionTier ?? 'COMMISSION';
   const commissionRate =
-    incubator.subscriptionTier === 'COMMISSION' ? platformCommissions.incubatorBooking : 0;
+    subCode === 'COMMISSION' ? platformCommissions.incubatorBooking : 0;
 
   const ownedSpaceIds = new Set(
     (data.spaces ?? []).filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
