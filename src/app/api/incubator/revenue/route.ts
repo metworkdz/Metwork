@@ -24,8 +24,9 @@ export async function GET() {
   const incubator = data.incubators.find((i) => i.managerId === guard.user.id);
   if (!incubator) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile found');
 
+  const subCode = incubator.subscriptionCode ?? incubator.subscriptionTier ?? 'COMMISSION';
   const commissionRate =
-    incubator.subscriptionTier === 'COMMISSION' ? platformCommissions.incubatorBooking : 0;
+    subCode === 'COMMISSION' ? platformCommissions.incubatorBooking : 0;
 
   const ownedSpaceIds = new Set(
     (data.spaces ?? []).filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
@@ -81,7 +82,7 @@ export async function GET() {
     incubator: {
       id: incubator.id,
       name: incubator.name,
-      subscriptionTier: incubator.subscriptionTier,
+      subscriptionTier: (incubator.subscriptionCode ?? incubator.subscriptionTier ?? 'COMMISSION') as 'COMMISSION' | 'FLAT',
       commissionRate,
     },
     totals,

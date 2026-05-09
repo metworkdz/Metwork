@@ -89,7 +89,7 @@ export default async function IncubatorRevenuePage({ params }: PageProps) {
     incubator: {
       id: incubator.id,
       name: incubator.name,
-      subscriptionTier: incubator.subscriptionTier ?? 'COMMISSION',
+      subscriptionTier: (incubator.subscriptionCode ?? incubator.subscriptionTier ?? 'COMMISSION') as 'COMMISSION' | 'FLAT',
       commissionRate,
     },
     totals,

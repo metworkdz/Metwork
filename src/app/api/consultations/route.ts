@@ -6,14 +6,10 @@
 import { requireApiSession } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { json } from '@/server/http/json';
+import { CONSULTATION_QUOTA, getEffectiveMembershipCode } from '@/server/memberships/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const FREE_QUOTA: Record<string, number> = {
-  ENTREPRENEUR: 2,
-  STARTUP: 4,
-};
 
 function currentQuotaMonth(): string {
   const d = new Date();
@@ -25,8 +21,8 @@ export async function GET() {
   if (!guard.ok) return guard.response;
 
   const userId = guard.user.id;
-  const membershipCode = guard.user.membershipCode ?? '';
-  const freeQuota = FREE_QUOTA[membershipCode] ?? 0;
+  const effectiveCode = getEffectiveMembershipCode(guard.user);
+  const freeQuota = CONSULTATION_QUOTA[effectiveCode] ?? 0;
   const quotaMonth = currentQuotaMonth();
 
   const data = await db.read();

@@ -48,8 +48,9 @@ export default async function AdminIncubatorOverviewPage({ params }: PageProps) 
   );
 
   const grossMtd = bookingsThisMonth.reduce((s, b) => s + b.totalAmount, 0);
+  const subCode = incubator.subscriptionCode ?? incubator.subscriptionTier ?? 'COMMISSION';
   const commissionRate =
-    incubator.subscriptionTier === 'COMMISSION' ? platformCommissions.incubatorBooking : 0;
+    subCode === 'COMMISSION' ? platformCommissions.incubatorBooking : 0;
   const netMtd = Math.round(grossMtd * (1 - commissionRate));
 
   // Offline bookings have userId === null — exclude so the Set doesn't inflate.
