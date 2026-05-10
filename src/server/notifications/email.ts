@@ -838,3 +838,98 @@ export function adminIncubatorNotificationHtml(params: AdminIncubatorNotifParams
     ${p('<span style="color:#71717a;font-size:12px;">Accédez au tableau de bord admin pour gérer ce compte.</span>')}
   `);
 }
+
+/* ── Consultant (mentor) notification — session confirmed by admin ── */
+
+export interface MentorSessionConfirmedParams {
+  mentorName:      string;
+  clientName:      string;
+  clientEmail:     string;
+  clientPhone:     string;
+  scheduledAt:     string | null;
+  durationMinutes: number | null | undefined;
+  meetLink:        string | null | undefined;
+  isOffline:       boolean | undefined;
+  adminNote:       string | null | undefined;
+  reference:       string;
+}
+
+export function mentorSessionConfirmedEmailHtml(params: MentorSessionConfirmedParams): string {
+  const { mentorName, clientName, clientEmail, clientPhone, scheduledAt, durationMinutes, meetLink, isOffline, adminNote, reference } = params;
+
+  const fmtDt = (iso: string) =>
+    new Date(iso).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' });
+
+  const schedRow = scheduledAt
+    ? `<tr style="background:#f0fdf4;">
+        <td style="padding:10px 16px;font-size:13px;color:#166534;font-weight:700;width:160px;border-bottom:1px solid #e4e4e7;">Session date</td>
+        <td style="padding:10px 16px;font-size:14px;color:#15803d;font-weight:700;border-bottom:1px solid #e4e4e7;">${fmtDt(scheduledAt)}</td>
+      </tr>`
+    : '';
+
+  const durRow = durationMinutes
+    ? `<tr>
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Duration</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${durationMinutes} min</td>
+      </tr>`
+    : '';
+
+  const formatRow = meetLink
+    ? `<tr>
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Meeting link</td>
+        <td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #e4e4e7;">
+          <a href="${meetLink}" style="color:#166534;word-break:break-all;">${meetLink}</a>
+        </td>
+      </tr>`
+    : isOffline
+    ? `<tr>
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Format</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">In-person</td>
+      </tr>`
+    : '';
+
+  const joinBlock = meetLink
+    ? `<div style="margin:24px 0;text-align:center;">
+        ${button(meetLink, '📹 Join the session')}
+        <p style="margin:10px 0 0;font-size:11px;color:#71717a;word-break:break-all;">${meetLink}</p>
+      </div>`
+    : '';
+
+  const noteBlock = adminNote
+    ? `<div style="background:#fefce8;border:1px solid #fef08a;border-radius:8px;padding:14px 18px;margin:20px 0;">
+        <p style="margin:0;font-size:13px;color:#713f12;"><strong>Note:</strong> ${adminNote.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+      </div>`
+    : '';
+
+  return layout(`
+    ${h1('Consultation session confirmed ✅')}
+    ${p(`Hi <strong>${mentorName}</strong>, a consultation session with a client has been approved and is now confirmed.`)}
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin:20px 0;">
+      <tr style="background:#f9fafb;">
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;width:160px;border-bottom:1px solid #e4e4e7;">Client name</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${clientName}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Client email</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">
+          <a href="mailto:${clientEmail}" style="color:#166534;">${clientEmail}</a>
+        </td>
+      </tr>
+      <tr style="background:#f9fafb;">
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Client phone</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${clientPhone}</td>
+      </tr>
+      ${schedRow}
+      ${durRow}
+      ${formatRow}
+      <tr style="background:#f9fafb;">
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;">Reference</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;font-family:monospace;">${reference.slice(0, 8).toUpperCase()}</td>
+      </tr>
+    </table>
+    ${joinBlock}
+    ${noteBlock}
+    ${p('<span style="color:#71717a;font-size:13px;">Please be ready 5 minutes before the session starts. The client has received the same meeting details.</span>')}
+  `);
+}

@@ -29,6 +29,7 @@ import {
   adminConsultationNotificationHtml,
   adminOrderNotificationHtml,
   adminIncubatorNotificationHtml,
+  mentorSessionConfirmedEmailHtml,
   type AdminOrderNotifParams,
 } from './email';
 import {
@@ -596,6 +597,50 @@ export function sendAdminNewIncubatorNotification(params: {
     .catch((err: Error) =>
       // eslint-disable-next-line no-console
       console.error(`${banner} Admin incubator notification failed →`, err.message),
+    );
+}
+
+/**
+ * Notify the mentor (consultant) that their session has been confirmed by admin.
+ * Sent alongside the client's confirmation email.
+ * Skipped silently when the MentorRecord has no email address.
+ */
+export function sendMentorSessionConfirmedEmail(input: MentorConfirmationInput): void {
+  const { booking, mentor } = input;
+
+  if (!mentor.email) {
+    // eslint-disable-next-line no-console
+    console.log(`${banner} MENTOR CONFIRM skipped — no email on mentor record (id=${mentor.id})`);
+    return;
+  }
+
+  sendResendEmail({
+    to:      mentor.email,
+    subject: `Session confirmed — ${booking.userName} (${booking.id.slice(0, 8).toUpperCase()})`,
+    html:    mentorSessionConfirmedEmailHtml({
+      mentorName:      mentor.fullName,
+      clientName:      booking.userName,
+      clientEmail:     booking.userEmail,
+      clientPhone:     booking.userPhone,
+      scheduledAt:     booking.scheduledAt ?? null,
+      durationMinutes: booking.durationMinutes ?? null,
+      meetLink:        booking.meetLink ?? null,
+      isOffline:       booking.isOffline ?? false,
+      adminNote:       booking.adminNote ?? null,
+      reference:       booking.id,
+    }),
+  })
+    .then((sent) => {
+      if (!sent)
+        // eslint-disable-next-line no-console
+        console.log(`${banner} MENTOR CONFIRM (no Resend) → ${mentor.email} :: client=${booking.userName}`);
+      else
+        // eslint-disable-next-line no-console
+        console.log(`${banner} MENTOR CONFIRM sent → ${mentor.email} :: client=${booking.userName}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Mentor session-confirmed email failed →`, err.message),
     );
 }
 

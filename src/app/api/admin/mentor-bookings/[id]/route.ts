@@ -16,6 +16,7 @@ import { fromZod, json, jsonError } from '@/server/http/json';
 import {
   sendConsultationConfirmationEmail,
   sendConsultationRejectedEmail,
+  sendMentorSessionConfirmedEmail,
 } from '@/server/notifications/mock';
 
 export const runtime = 'nodejs';
@@ -80,7 +81,10 @@ export async function PATCH(
   const mentor = await findMentorById(existing.mentorId);
   if (mentor) {
     if (input.status === 'APPROVED') {
+      // Email + WhatsApp to client
       sendConsultationConfirmationEmail({ booking: result.booking, mentor, lang: 'fr' });
+      // Email to mentor/consultant
+      sendMentorSessionConfirmedEmail({ booking: result.booking, mentor, lang: 'fr' });
     } else {
       sendConsultationRejectedEmail({
         booking:   result.booking,
