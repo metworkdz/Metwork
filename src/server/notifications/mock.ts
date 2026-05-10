@@ -10,7 +10,7 @@
  * up and crash the request.
  */
 
-import { sendWhatsAppOTP, sendSMSOTP } from './sms';
+import { sendWhatsAppOTP, sendSMSOTP, sendWhatsAppMessage } from './sms';
 import {
   sendResendEmail,
   otpEmailHtml,
@@ -27,6 +27,9 @@ import {
   consultationRequestReceivedEmailHtml,
   consultationRejectedEmailHtml,
   adminConsultationNotificationHtml,
+  adminOrderNotificationHtml,
+  adminIncubatorNotificationHtml,
+  type AdminOrderNotifParams,
 } from './email';
 import {
   generateBookingReceiptPdf,
@@ -403,6 +406,8 @@ export function sendConsultationConfirmationEmail(input: MentorConfirmationInput
           scheduledAt:     booking.scheduledAt ?? null,
           durationMinutes: booking.durationMinutes ?? null,
           estimatedFee:    feePerHour > 0 ? estimatedFee : null,
+          meetLink:        booking.meetLink ?? null,
+          isOffline:       booking.isOffline ?? false,
         }),
         attachments: [{ filename, content: pdfBuffer }],
       }),
@@ -422,6 +427,37 @@ export function sendConsultationConfirmationEmail(input: MentorConfirmationInput
       // eslint-disable-next-line no-console
       console.error(`${banner} Consultation confirmation email failed →`, err.message),
     );
+
+  // WhatsApp notification — fire-and-forget, never blocks
+  if (booking.userPhone) {
+    const dur = booking.durationMinutes ? `${booking.durationMinutes} min` : '';
+    const slot = booking.scheduledAt
+      ? new Date(booking.scheduledAt).toLocaleString('fr-DZ', { dateStyle: 'short', timeStyle: 'short' })
+      : '';
+    const linkPart = booking.meetLink
+      ? `\nLien de réunion : ${booking.meetLink}`
+      : booking.isOffline
+      ? '\nFormat : En présentiel'
+      : '';
+
+    const waText =
+      `✅ Metwork — Consultation confirmée\n` +
+      `Consultant : ${mentor.fullName}` +
+      (slot ? `\nDate : ${slot}` : '') +
+      (dur  ? `\nDurée : ${dur}` : '') +
+      linkPart +
+      `\n\nVotre PDF de confirmation vous a été envoyé par email.`;
+
+    if (process.env.SMS_PROVIDER === 'infobip') {
+      sendWhatsAppMessage(booking.userPhone, waText).catch((err: Error) =>
+        // eslint-disable-next-line no-console
+        console.error(`${banner} WhatsApp consult confirm failed →`, err.message),
+      );
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(`${banner} WHATSAPP (consult-confirm) → ${booking.userPhone} :: ${waText.slice(0, 80)}…`);
+    }
+  }
 }
 
 /**
@@ -498,6 +534,68 @@ export function sendConsultationRejectedEmail(input: {
     .catch((err: Error) =>
       // eslint-disable-next-line no-console
       console.error(`${banner} Consultation rejected email failed →`, err.message),
+    );
+}
+
+/**
+ * Notify the admin of a new paid order (space booking, program application, event registration).
+ * Fire-and-forget — errors are logged, never surfaced.
+ */
+export function sendAdminOrderNotification(params: AdminOrderNotifParams): void {
+  const adminEmail = process.env.CONTACT_EMAIL ?? process.env.EMAIL_FROM ?? 'contact@metwork.dz';
+  const kindLabel  =
+    params.orderKind === 'SPACE'   ? 'Espace'
+    : params.orderKind === 'PROGRAM' ? 'Programme'
+    : 'Événement';
+
+  sendResendEmail({
+    to:      adminEmail,
+    subject: `[Metwork] Nouvelle commande ${kindLabel} — ${params.customerName} (${params.amount > 0 ? `${params.amount.toLocaleString()} DZD` : 'Gratuit'})`,
+    html:    adminOrderNotificationHtml(params),
+  })
+    .then((sent) => {
+      if (!sent)
+        // eslint-disable-next-line no-console
+        console.log(`${banner} ADMIN ORDER NOTIF (no Resend) → ${adminEmail} :: ${params.orderKind} ${params.reference.slice(0, 8).toUpperCase()}`);
+      else
+        // eslint-disable-next-line no-console
+        console.log(`${banner} ADMIN ORDER NOTIF sent → ${adminEmail} :: ${params.orderKind}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Admin order notification failed →`, err.message),
+    );
+}
+
+/**
+ * Notify the admin when a new INCUBATOR account is verified.
+ * Fire-and-forget — errors are logged, never surfaced.
+ */
+export function sendAdminNewIncubatorNotification(params: {
+  fullName:  string;
+  email:     string;
+  phone?:    string;
+  userId:    string;
+  createdAt: string;
+}): void {
+  const adminEmail = process.env.CONTACT_EMAIL ?? process.env.EMAIL_FROM ?? 'contact@metwork.dz';
+
+  sendResendEmail({
+    to:      adminEmail,
+    subject: `[Metwork] Nouvel incubateur inscrit — ${params.fullName}`,
+    html:    adminIncubatorNotificationHtml(params),
+  })
+    .then((sent) => {
+      if (!sent)
+        // eslint-disable-next-line no-console
+        console.log(`${banner} ADMIN INCUBATOR NOTIF (no Resend) → ${adminEmail} :: ${params.email}`);
+      else
+        // eslint-disable-next-line no-console
+        console.log(`${banner} ADMIN INCUBATOR NOTIF sent → ${adminEmail} :: ${params.email}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Admin incubator notification failed →`, err.message),
     );
 }
 

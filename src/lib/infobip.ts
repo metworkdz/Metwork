@@ -15,6 +15,35 @@
 
 const OTP_MSG = (code: string) => `Your Metwork verification code is: ${code}`;
 
+/**
+ * Send any custom text message via WhatsApp (Infobip).
+ * Used for transactional notifications (e.g. consultation approvals).
+ * Throws on API error so the caller can fall back gracefully.
+ */
+export async function sendWhatsAppMessage(phone: string, text: string): Promise<void> {
+  const cfg = getConfig();
+  if (!cfg) throw new Error('Infobip not configured: INFOBIP_BASE_URL, INFOBIP_API_KEY, INFOBIP_SENDER, INFOBIP_WHATSAPP_SENDER required');
+
+  const res = await fetch(`${cfg.baseUrl}/whatsapp/1/message/text`, {
+    method: 'POST',
+    headers: {
+      Authorization: `App ${cfg.apiKey}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      from: cfg.waSender,
+      to: phone,
+      content: { text },
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Infobip WhatsApp error ${res.status}: ${body}`);
+  }
+}
+
 interface InfobipConfig {
   baseUrl: string;
   apiKey: string;

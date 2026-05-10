@@ -19,7 +19,7 @@ import { verifyPendingOtp, promotePendingUser } from '@/server/auth/pending-user
 import { issueEmailToken } from '@/server/auth/email-verification';
 import { createSession, setSessionCookie } from '@/server/auth/session';
 import { toSessionUser } from '@/server/auth/serialize';
-import { sendVerificationEmail, sendWelcomeEmail } from '@/server/notifications/mock';
+import { sendVerificationEmail, sendWelcomeEmail, sendAdminNewIncubatorNotification } from '@/server/notifications/mock';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { clientEnvVars } from '@/lib/env';
 import type { Locale } from '@/i18n/config';
@@ -80,6 +80,17 @@ export async function POST(req: NextRequest) {
       role: user.role,
       dashboardUrl: `${base}/${user.locale}${dashboardPath}`,
     });
+
+    // Notify admin when a new incubator account is verified
+    if (user.role === 'INCUBATOR') {
+      sendAdminNewIncubatorNotification({
+        fullName:  user.fullName,
+        email:     user.email,
+        phone:     user.phone ?? undefined,
+        userId:    user.id,
+        createdAt: user.createdAt,
+      });
+    }
 
     const issued = await createSession(user.id);
     await setSessionCookie(issued);

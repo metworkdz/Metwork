@@ -491,10 +491,14 @@ interface ConsultEmailParams {
   durationMinutes?: number | null;
   /** Estimated fee in DZD after any promo discount. 0 = free. */
   estimatedFee?:   number | null;
+  /** Google Meet / Zoom / Teams link provided by admin on approval. */
+  meetLink?:       string | null;
+  /** True when the session will be in-person (no online link). */
+  isOffline?:      boolean;
 }
 
 export function consultationConfirmationEmailHtml(params: ConsultEmailParams): string {
-  const { clientName, mentorName, reference, lang, scheduledAt, durationMinutes, estimatedFee } = params;
+  const { clientName, mentorName, reference, lang, scheduledAt, durationMinutes, estimatedFee, meetLink, isOffline } = params;
   const isFr = lang === 'fr';
 
   const greeting = isFr ? `Bonjour ${clientName},` : `Hello ${clientName},`;
@@ -529,13 +533,40 @@ export function consultationConfirmationEmailHtml(params: ConsultEmailParams): s
 
   const feeRow = estimatedFee != null
     ? `<tr>
-        <td style="padding:8px 12px;font-size:13px;color:#71717a;width:140px;">
+        <td style="padding:8px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:140px;">
           ${isFr ? 'Frais estimés' : 'Estimated fee'}
         </td>
-        <td style="padding:8px 12px;font-size:13px;color:#09090b;font-weight:500;">
+        <td style="padding:8px 12px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;font-weight:500;">
           ${estimatedFee === 0 ? (isFr ? 'Gratuit' : 'Free') : `${estimatedFee.toLocaleString('fr-DZ')} DZD`}
         </td>
       </tr>`
+    : '';
+
+  const meetRow = meetLink
+    ? `<tr>
+        <td style="padding:8px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:140px;">
+          ${isFr ? 'Lien de réunion' : 'Meeting link'}
+        </td>
+        <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f4f4f5;font-weight:500;">
+          <a href="${meetLink}" style="color:#166534;word-break:break-all;">${meetLink}</a>
+        </td>
+      </tr>`
+    : isOffline
+    ? `<tr>
+        <td style="padding:8px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:140px;">
+          ${isFr ? 'Format' : 'Format'}
+        </td>
+        <td style="padding:8px 12px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;font-weight:500;">
+          ${isFr ? 'En présentiel' : 'In-person'}
+        </td>
+      </tr>`
+    : '';
+
+  const joinBlock = meetLink
+    ? `<div style="margin:24px 0;text-align:center;">
+        ${button(meetLink, isFr ? '📹 Rejoindre la réunion' : '📹 Join the meeting')}
+        <p style="margin:10px 0 0;font-size:11px;color:#71717a;word-break:break-all;">${meetLink}</p>
+      </div>`
     : '';
 
   return layout(`
@@ -553,8 +584,9 @@ export function consultationConfirmationEmailHtml(params: ConsultEmailParams): s
       ${schedRow}
       ${durRow}
       ${feeRow}
+      ${meetRow}
       <tr>
-        <td style="padding:8px 12px;font-size:13px;color:#71717a;${!feeRow ? '' : ''}width:140px;border-top:1px solid #f4f4f5;">
+        <td style="padding:8px 12px;font-size:13px;color:#71717a;width:140px;border-top:1px solid #f4f4f5;">
           ${isFr ? 'Référence' : 'Reference'}
         </td>
         <td style="padding:8px 12px;font-size:13px;color:#09090b;font-weight:500;border-top:1px solid #f4f4f5;">
@@ -562,6 +594,7 @@ export function consultationConfirmationEmailHtml(params: ConsultEmailParams): s
         </td>
       </tr>
     </table>
+    ${joinBlock}
     ${p(`<span style="color:#71717a;font-size:13px;">
       ${isFr
         ? 'Votre PDF de confirmation est joint à cet email.'
@@ -704,5 +737,104 @@ export function adminConsultationNotificationHtml(params: AdminConsultNotifParam
     <div style="background:#f4f4f5;border-radius:8px;padding:16px;margin:16px 0;">
       <p style="margin:0;font-size:13px;color:#3f3f46;line-height:1.7;">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
     </div>
+  `);
+}
+
+/* ── Admin: new paid order (space booking / program / event) ── */
+
+export interface AdminOrderNotifParams {
+  orderKind:    'SPACE' | 'PROGRAM' | 'EVENT';
+  customerName: string;
+  customerEmail: string;
+  itemName:     string;
+  vendorName:   string;
+  amount:       number;
+  reference:    string;
+  paymentMethod: string;
+}
+
+export function adminOrderNotificationHtml(params: AdminOrderNotifParams): string {
+  const { orderKind, customerName, customerEmail, itemName, vendorName, amount, reference, paymentMethod } = params;
+  const kindLabel = orderKind === 'SPACE' ? 'Réservation espace' : orderKind === 'PROGRAM' ? 'Candidature programme' : 'Inscription événement';
+  const fmtAmt = amount === 0 ? 'Gratuit' : `${amount.toLocaleString('fr-DZ')} DZD`;
+
+  return layout(`
+    ${h1(`[Admin] Nouvelle commande — ${kindLabel}`)}
+    ${p(`Un nouveau paiement a été enregistré sur la plateforme.`)}
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin:20px 0;">
+      <tr style="background:#f9fafb;">
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;width:160px;border-bottom:1px solid #e4e4e7;">Type</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${kindLabel}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Client</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${customerName} &lt;${customerEmail}&gt;</td>
+      </tr>
+      <tr style="background:#f9fafb;">
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Prestation</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${itemName}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Fournisseur</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${vendorName}</td>
+      </tr>
+      <tr style="background:#f9fafb;">
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Paiement</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${paymentMethod}</td>
+      </tr>
+      <tr style="background:#f4fdf7;">
+        <td style="padding:12px 16px;font-size:14px;color:#166534;font-weight:700;border-top:1px solid #e4e4e7;">Montant</td>
+        <td style="padding:12px 16px;font-size:16px;color:#166534;font-weight:700;border-top:1px solid #e4e4e7;">${fmtAmt}</td>
+      </tr>
+    </table>
+    ${p(`<span style="color:#71717a;font-size:12px;">Référence : <code style="background:#f4f4f5;padding:2px 6px;border-radius:4px;font-family:monospace;">${reference.slice(0, 8).toUpperCase()}</code></span>`)}
+  `);
+}
+
+/* ── Admin: new incubator account ── */
+
+export interface AdminIncubatorNotifParams {
+  fullName:  string;
+  email:     string;
+  phone?:    string;
+  userId:    string;
+  createdAt: string;
+}
+
+export function adminIncubatorNotificationHtml(params: AdminIncubatorNotifParams): string {
+  const { fullName, email, phone, userId, createdAt } = params;
+  const fmtDate = (iso: string) => {
+    try { return new Date(iso).toLocaleString('fr-DZ', { dateStyle: 'long', timeStyle: 'short' }); }
+    catch { return iso; }
+  };
+
+  return layout(`
+    ${h1('[Admin] Nouvel incubateur inscrit')}
+    ${p(`Un nouveau compte incubateur vient d'être créé et vérifié.`)}
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin:20px 0;">
+      <tr style="background:#f9fafb;">
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;width:140px;border-bottom:1px solid #e4e4e7;">Nom</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${fullName}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Email</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${email}</td>
+      </tr>
+      ${phone ? `<tr style="background:#f9fafb;">
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Téléphone</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${phone}</td>
+      </tr>` : ''}
+      <tr>
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Inscrit le</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${fmtDate(createdAt)}</td>
+      </tr>
+      <tr style="background:#f9fafb;">
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;">ID</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;font-family:monospace;">${userId}</td>
+      </tr>
+    </table>
+    ${p('<span style="color:#71717a;font-size:12px;">Accédez au tableau de bord admin pour gérer ce compte.</span>')}
   `);
 }

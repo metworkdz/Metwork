@@ -16,7 +16,7 @@ import { toTransactionDto, toWalletDto } from '@/server/wallet/serialize';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { db } from '@/server/db/store';
 import { findIncubatorById } from '@/server/incubator/service';
-import { sendBookingReceiptEmail } from '@/server/notifications/mock';
+import { sendBookingReceiptEmail, sendAdminOrderNotification } from '@/server/notifications/mock';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -91,6 +91,22 @@ export async function POST(
         if (!incubator) return;
         const lang = user.locale === 'en' ? 'en' : 'fr';
         sendBookingReceiptEmail({ booking: result.booking, clientName: user.fullName, clientEmail: user.email, incubator, lang });
+
+        // Notify admin of new program application
+        const paymentLabel =
+          result.booking.paymentMethod === 'wallet' ? 'En ligne (portefeuille)'
+          : result.booking.paymentMethod === 'manual' ? 'Espèces sur place'
+          : result.booking.paymentMethod ?? '—';
+        sendAdminOrderNotification({
+          orderKind:     'PROGRAM',
+          customerName:  user.fullName,
+          customerEmail: user.email,
+          itemName:      result.booking.itemName,
+          vendorName:    incubator.name,
+          amount:        result.booking.totalAmount,
+          reference:     result.booking.clientReference,
+          paymentMethod: paymentLabel,
+        });
       } catch { /* receipt errors never break booking response */ }
     })();
   }

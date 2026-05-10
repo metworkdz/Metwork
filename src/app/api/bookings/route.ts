@@ -17,7 +17,7 @@ import { toTransactionDto, toWalletDto } from '@/server/wallet/serialize';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { db } from '@/server/db/store';
 import { findIncubatorById } from '@/server/incubator/service';
-import { sendBookingReceiptEmail } from '@/server/notifications/mock';
+import { sendBookingReceiptEmail, sendAdminOrderNotification } from '@/server/notifications/mock';
 import { validatePromoCode, consumePromoCode } from '@/server/promo-codes/service';
 import { getSpaceDiscountForUser } from '@/server/memberships/service';
 
@@ -144,6 +144,22 @@ export async function POST(req: NextRequest) {
           clientEmail: user.email,
           incubator,
           lang,
+        });
+
+        // Notify admin of new booking
+        const paymentLabel =
+          result.booking.paymentMethod === 'wallet' ? 'En ligne (portefeuille)'
+          : result.booking.paymentMethod === 'manual' ? 'Espèces sur place'
+          : result.booking.paymentMethod ?? '—';
+        sendAdminOrderNotification({
+          orderKind:     'SPACE',
+          customerName:  user.fullName,
+          customerEmail: user.email,
+          itemName:      result.booking.itemName,
+          vendorName:    incubator.name,
+          amount:        result.booking.totalAmount,
+          reference:     result.booking.clientReference,
+          paymentMethod: paymentLabel,
         });
       } catch { /* receipt errors must never break the booking response */ }
     })();
