@@ -60,8 +60,9 @@ export default async function PricingPage({ params }: PageProps) {
       highlighted: false,
       features: [
         tm('features.allFree'),
-        tm('features.bookSpaces'),
         tm('features.bookPrograms'),
+        tm('features.networkPass3'),
+        tm('features.bookSpaces'),
         tm('features.eventsDiscount'),
         tm('features.prioritySupport'),
       ],
@@ -76,6 +77,9 @@ export default async function PricingPage({ params }: PageProps) {
       highlighted: true,
       features: [
         tm('features.allEntrepreneur'),
+        tm('features.freeConsultations3'),
+        tm('features.networkPass10'),
+        tm('features.spaceDiscount20'),
         tm('features.listStartup'),
         tm('features.fundraisingAccess'),
         tm('features.investorMeetings'),

@@ -238,7 +238,11 @@
       "listStartup": "List your startup in the marketplace",
       "fundraisingAccess": "Raise funds and attract investors",
       "investorMeetings": "Receive investor meeting requests",
-      "featuredListing": "Featured startup placement in the marketplace"
+      "featuredListing": "Featured startup placement in the marketplace",
+      "networkPass3": "3 Network Pass coworking credits per month",
+      "networkPass10": "10 Network Pass coworking credits per month",
+      "freeConsultations3": "3 free mentor consultations per month",
+      "spaceDiscount20": "20% off all space bookings"
     },
     "billingMonthly": "Monthly",
     "billingYearly": "Yearly",

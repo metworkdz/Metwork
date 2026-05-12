@@ -16,6 +16,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { CsvImportDialog } from './csv-import-dialog';
 import { formatCurrency } from '@/lib/format';
@@ -39,24 +46,89 @@ const CSV_FIELDS = [
   { header: 'Category',    field: 'category' },
 ];
 
+const EXPENSE_CATEGORIES = [
+  'Rent',
+  'Utilities',
+  'Internet & Phone',
+  'Equipment',
+  'Salaries',
+  'Marketing',
+  'Office Supplies',
+  'Maintenance',
+  'Insurance',
+  'Software & Tools',
+  'Events',
+  'Travel',
+  'Taxes & Fees',
+  'Other',
+] as const;
+
+const NO_CATEGORY = '__none__';
+const OTHER_CATEGORY = '__other__';
+
+/* ── Category selector — dropdown with predefined options ── */
+function CategoryField({
+  id,
+  value,
+  otherValue,
+  onChange,
+  onOtherChange,
+}: {
+  id: string;
+  value: string;
+  otherValue: string;
+  onChange: (v: string) => void;
+  onOtherChange: (v: string) => void;
+}) {
+  return (
+    <>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger id={id} className="mt-1">
+          <SelectValue placeholder="Select a category…" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NO_CATEGORY}>— No category</SelectItem>
+          {EXPENSE_CATEGORIES.map((c) => (
+            <SelectItem key={c} value={c}>{c}</SelectItem>
+          ))}
+          <SelectItem value={OTHER_CATEGORY}>Other…</SelectItem>
+        </SelectContent>
+      </Select>
+      {value === OTHER_CATEGORY && (
+        <Input
+          className="mt-1.5"
+          value={otherValue}
+          onChange={(e) => onOtherChange(e.target.value)}
+          placeholder="Enter category name"
+          maxLength={80}
+        />
+      )}
+    </>
+  );
+}
+
 /* ── Create dialog ── */
 function CreateExpenseDialog({ onCreated }: { onCreated: () => void }) {
-  const [open, setOpen]   = useState(false);
-  const [sub, setSub]     = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [date, setDate]   = useState(() => new Date().toISOString().slice(0, 10));
-  const [title, setTitle] = useState('');
-  const [desc, setDesc]   = useState('');
-  const [amount, setAmt]  = useState('');
-  const [cat, setCat]     = useState('');
+  const [open, setOpen]     = useState(false);
+  const [sub, setSub]       = useState(false);
+  const [error, setError]   = useState<string | null>(null);
+  const [date, setDate]     = useState(() => new Date().toISOString().slice(0, 10));
+  const [title, setTitle]   = useState('');
+  const [desc, setDesc]     = useState('');
+  const [amount, setAmt]    = useState('');
+  const [catSel, setCatSel] = useState(NO_CATEGORY);
+  const [catOther, setCatOther] = useState('');
 
   function reset() {
-    setTitle(''); setDesc(''); setAmt(''); setCat('');
+    setTitle(''); setDesc(''); setAmt(''); setCatSel(NO_CATEGORY); setCatOther('');
     setDate(new Date().toISOString().slice(0, 10)); setError(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setError(null); setSub(true);
+    const category = catSel === NO_CATEGORY ? null
+      : catSel === OTHER_CATEGORY ? (catOther.trim() || null)
+      : catSel;
     try {
       const res = await fetch('/api/incubator/expenses', {
         method: 'POST',
@@ -66,7 +138,7 @@ function CreateExpenseDialog({ onCreated }: { onCreated: () => void }) {
           title:       title.trim(),
           description: desc.trim() || null,
           amount:      Number(amount),
-          category:    cat.trim() || null,
+          category,
         }),
       });
       if (!res.ok) {
@@ -111,8 +183,13 @@ function CreateExpenseDialog({ onCreated }: { onCreated: () => void }) {
           </div>
           <div>
             <Label htmlFor="exp-cat">Category</Label>
-            <Input id="exp-cat" className="mt-1" value={cat}
-              onChange={(e) => setCat(e.target.value)} placeholder="e.g. Rent, Utilities…" />
+            <CategoryField
+              id="exp-cat"
+              value={catSel}
+              otherValue={catOther}
+              onChange={setCatSel}
+              onOtherChange={setCatOther}
+            />
           </div>
           <div>
             <Label htmlFor="exp-desc">Description</Label>
@@ -143,15 +220,16 @@ export function ExpensesManager() {
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Edit state
-  const [editOpen, setEditOpen]   = useState(false);
-  const [editing, setEditing]     = useState<ExpenseRow | null>(null);
-  const [editDate, setEditDate]   = useState('');
-  const [editTitle, setEditTitle] = useState('');
-  const [editDesc, setEditDesc]   = useState('');
-  const [editAmt, setEditAmt]     = useState('');
-  const [editCat, setEditCat]     = useState('');
-  const [editError, setEditError] = useState<string | null>(null);
-  const [saving, setSaving]       = useState(false);
+  const [editOpen, setEditOpen]       = useState(false);
+  const [editing, setEditing]         = useState<ExpenseRow | null>(null);
+  const [editDate, setEditDate]       = useState('');
+  const [editTitle, setEditTitle]     = useState('');
+  const [editDesc, setEditDesc]       = useState('');
+  const [editAmt, setEditAmt]         = useState('');
+  const [editCatSel, setEditCatSel]   = useState(NO_CATEGORY);
+  const [editCatOther, setEditCatOther] = useState('');
+  const [editError, setEditError]     = useState<string | null>(null);
+  const [saving, setSaving]           = useState(false);
 
   async function fetchExpenses() {
     setLoading(true); setFetchError(null);
@@ -173,7 +251,17 @@ export function ExpensesManager() {
     setEditTitle(row.title);
     setEditDesc(row.description ?? '');
     setEditAmt(String(row.amount));
-    setEditCat(row.category ?? '');
+    // Map existing category value to dropdown selection
+    if (!row.category) {
+      setEditCatSel(NO_CATEGORY);
+      setEditCatOther('');
+    } else if ((EXPENSE_CATEGORIES as readonly string[]).includes(row.category)) {
+      setEditCatSel(row.category);
+      setEditCatOther('');
+    } else {
+      setEditCatSel(OTHER_CATEGORY);
+      setEditCatOther(row.category);
+    }
     setEditError(null);
     setEditOpen(true);
   }
@@ -181,6 +269,9 @@ export function ExpensesManager() {
   async function handleSaveEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editing) return;
+    const category = editCatSel === NO_CATEGORY ? null
+      : editCatSel === OTHER_CATEGORY ? (editCatOther.trim() || null)
+      : editCatSel;
     setSaving(true); setEditError(null);
     try {
       const res = await fetch(`/api/incubator/expenses/${editing.id}`, {
@@ -191,7 +282,7 @@ export function ExpensesManager() {
           title:       editTitle.trim(),
           description: editDesc.trim() || null,
           amount:      Number(editAmt),
-          category:    editCat.trim() || null,
+          category,
         }),
       });
       if (!res.ok) {
@@ -205,7 +296,11 @@ export function ExpensesManager() {
 
   async function handleDelete(row: ExpenseRow) {
     if (!confirm(`Delete expense "${row.title}"?`)) return;
-    await fetch(`/api/incubator/expenses/${row.id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/incubator/expenses/${row.id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({})) as { message?: string };
+      alert(body.message ?? 'Failed to delete expense. Please try again.');
+    }
     void fetchExpenses();
   }
 
@@ -303,8 +398,13 @@ export function ExpensesManager() {
             </div>
             <div>
               <Label htmlFor="eexp-cat">Category</Label>
-              <Input id="eexp-cat" className="mt-1" value={editCat}
-                onChange={(e) => setEditCat(e.target.value)} />
+              <CategoryField
+                id="eexp-cat"
+                value={editCatSel}
+                otherValue={editCatOther}
+                onChange={setEditCatSel}
+                onOtherChange={setEditCatOther}
+              />
             </div>
             <div>
               <Label htmlFor="eexp-desc">Description</Label>

@@ -154,14 +154,5 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.content',          href: '/dashboard/admin/cms',               icon: LayoutTemplate },
     { labelKey: 'dashboard.auditLog',         href: '/dashboard/admin/audit-log',         icon: ShieldAlert    },
     { labelKey: 'dashboard.settings',      href: '/dashboard/admin/settings',        icon: Settings },
-    // ── My Incubator (Metwork as incubator) ─────────────────────────────────
-    { labelKey: 'dashboard.myIncubator',   href: '/dashboard/admin/incubator#header',   sectionHeader: true },
-    { labelKey: 'dashboard.overview',      href: '/dashboard/admin/incubator',          icon: LayoutDashboard },
-    { labelKey: 'dashboard.spaces',        href: '/dashboard/admin/incubator/spaces',   icon: Building2 },
-    { labelKey: 'dashboard.programs',      href: '/dashboard/admin/incubator/programs', icon: Briefcase },
-    { labelKey: 'dashboard.events',        href: '/dashboard/admin/incubator/events',   icon: CalendarIcon },
-    { labelKey: 'dashboard.bookings',      href: '/dashboard/admin/incubator/bookings', icon: Calendar },
-    { labelKey: 'dashboard.members',       href: '/dashboard/admin/incubator/members',  icon: Users },
-    { labelKey: 'dashboard.profile',       href: '/dashboard/admin/incubator/profile',  icon: Settings },
   ],
 };

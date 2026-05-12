@@ -247,8 +247,12 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const unitPrice  = useMemo(() => units.find((u) => u.unit === unit)?.price ?? 0, [unit, units]);
   const qty        = validRange ? quantity(startIso, endIso, unit) : 0;
   const total      = unitPrice * qty;
-  const finalTotal = promoResult?.finalAmount ?? total;
-  const insufficient = !isCash && isAuthed && balance != null && finalTotal > 0 && balance < finalTotal;
+  // FOUNDER tier (mapped from STARTUP membershipCode) gets 20% off space bookings
+  const membershipDiscountFraction = isAuthed && userTier === 'FOUNDER' && !useNetworkPass ? 0.2 : 0;
+  const membershipDiscountAmount   = membershipDiscountFraction > 0 ? total - Math.round(total * (1 - membershipDiscountFraction)) : 0;
+  const afterMembershipDiscount    = total - membershipDiscountAmount;
+  const finalTotal = promoResult?.finalAmount ?? afterMembershipDiscount;
+  const insufficient = !isCash && !useNetworkPass && isAuthed && balance != null && finalTotal > 0 && balance < finalTotal;
 
   const workingDaysLabel = (space.workingDays ?? [1,2,3,4,5]).map((d) => DOW_LABELS[d]).join(', ');
   const openingTime      = space.openingTime ?? '09:00';
@@ -573,6 +577,15 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
             </span>
             <span className="tabular-nums">{formatCurrency(total, locale)}</span>
           </div>
+          {membershipDiscountAmount > 0 && (
+            <div className="mt-1 flex items-center justify-between text-emerald-700 dark:text-emerald-400">
+              <span className="flex items-center gap-1.5">
+                <MembershipTierBadge tier={userTier} size="xs" showIcon={false} />
+                Founder discount (20% off)
+              </span>
+              <span className="tabular-nums">−{formatCurrency(membershipDiscountAmount, locale)}</span>
+            </div>
+          )}
           {promoResult && (
             <div className="mt-1 flex items-center justify-between text-emerald-700">
               <span>
@@ -583,9 +596,17 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
               <span className="tabular-nums">−{formatCurrency(promoResult.discountAmount, locale)}</span>
             </div>
           )}
+          {useNetworkPass && (
+            <div className="mt-1 flex items-center justify-between text-emerald-700 dark:text-emerald-400">
+              <span>Network Pass (1 credit)</span>
+              <span className="tabular-nums">Free</span>
+            </div>
+          )}
           <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2 text-base font-semibold">
             <span>Total</span>
-            <span className="tabular-nums">{formatCurrency(finalTotal, locale)}</span>
+            <span className="tabular-nums">
+              {useNetworkPass ? 'Free' : formatCurrency(finalTotal, locale)}
+            </span>
           </div>
         </div>
       )}
@@ -594,11 +615,11 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         <p className="text-xs text-destructive">End must be after start.</p>
       )}
 
-      {/* Promo code — shown for all authenticated users when range is valid */}
-      {isAuthed && validRange && total > 0 && (
+      {/* Promo code — shown for authenticated users when range is valid and not using network pass */}
+      {isAuthed && validRange && total > 0 && !useNetworkPass && (
         <PromoCodeInput
-          key={total}
-          originalAmount={total}
+          key={afterMembershipDiscount}
+          originalAmount={afterMembershipDiscount}
           onApplied={setPromoResult}
           disabled={submitting}
         />

@@ -51,6 +51,12 @@ interface ClientHit {
   companyName: string | null;
 }
 
+interface ServiceOption {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
+
 const CSV_FIELDS = [
   { header: 'Date',           field: 'date' },
   { header: 'Client',         field: 'clientName' },
@@ -71,29 +77,88 @@ function paymentIcon(m: IncomePaymentMethod) {
   return null;
 }
 
+/* ── Service selector — dropdown when services exist, free text fallback ── */
+function ServiceField({
+  id,
+  value,
+  otherValue,
+  services,
+  onChange,
+  onOtherChange,
+}: {
+  id: string;
+  value: string;
+  otherValue: string;
+  services: ServiceOption[];
+  onChange: (v: string) => void;
+  onOtherChange: (v: string) => void;
+}) {
+  if (services.length === 0) {
+    return (
+      <Input id={id} className="mt-1" value={value}
+        onChange={(e) => onChange(e.target.value)} required minLength={1} maxLength={120}
+        placeholder="e.g. Coworking, Private Office…" />
+    );
+  }
+  return (
+    <>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger id={id} className="mt-1">
+          <SelectValue placeholder="Select a service…" />
+        </SelectTrigger>
+        <SelectContent>
+          {services.map((s) => (
+            <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+          ))}
+          <SelectItem value="__other__">Other…</SelectItem>
+        </SelectContent>
+      </Select>
+      {value === '__other__' && (
+        <Input
+          className="mt-1.5"
+          value={otherValue}
+          onChange={(e) => onOtherChange(e.target.value)}
+          placeholder="Enter service name"
+          required
+          maxLength={120}
+        />
+      )}
+    </>
+  );
+}
+
 /* ── Create dialog ── */
-function CreateIncomeDialog({ onCreated }: { onCreated: () => void }) {
+function CreateIncomeDialog({
+  onCreated,
+  services,
+}: {
+  onCreated: () => void;
+  services: ServiceOption[];
+}) {
   const [open, setOpen]           = useState(false);
   const [sub, setSub]             = useState(false);
   const [error, setError]         = useState<string | null>(null);
   const [date, setDate]           = useState(() => new Date().toISOString().slice(0, 10));
   const [client, setClient]       = useState<ClientHit | null>(null);
   const [clientName, setClientName] = useState('');
-  const [serviceName, setSvc]     = useState('');
+  const [svcSelect, setSvcSelect] = useState('');
+  const [svcOther, setSvcOther]   = useState('');
   const [amount, setAmt]          = useState('');
   const [method, setMethod]       = useState<IncomePaymentMethod>('CASH');
   const [notes, setNotes]         = useState('');
 
   function reset() {
     setDate(new Date().toISOString().slice(0, 10));
-    setClient(null); setClientName(''); setSvc(''); setAmt('');
-    setMethod('CASH'); setNotes(''); setError(null);
+    setClient(null); setClientName(''); setSvcSelect(''); setSvcOther('');
+    setAmt(''); setMethod('CASH'); setNotes(''); setError(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setError(null);
     const name = client?.fullName ?? clientName.trim();
     if (!name) { setError('Client name is required.'); return; }
+    const serviceName = svcSelect === '__other__' ? svcOther.trim() : svcSelect.trim();
+    if (!serviceName) { setError('Service is required.'); return; }
     setSub(true);
     try {
       const res = await fetch('/api/incubator/income', {
@@ -103,7 +168,7 @@ function CreateIncomeDialog({ onCreated }: { onCreated: () => void }) {
           date,
           clientId:      client?.id ?? null,
           clientName:    name,
-          serviceName:   serviceName.trim(),
+          serviceName,
           amount:        Number(amount),
           paymentMethod: method,
           notes:         notes.trim() || null,
@@ -153,7 +218,6 @@ function CreateIncomeDialog({ onCreated }: { onCreated: () => void }) {
               onSelect={(c) => { setClient(c); setClientName(c?.fullName ?? ''); }}
               placeholder="Search or type client name…"
             />
-            {/* Free-text fallback when no suggestion is selected */}
             {!client && (
               <Input
                 className="mt-1.5"
@@ -167,9 +231,14 @@ function CreateIncomeDialog({ onCreated }: { onCreated: () => void }) {
 
           <div>
             <Label htmlFor="inc-svc">Service *</Label>
-            <Input id="inc-svc" className="mt-1" value={serviceName}
-              onChange={(e) => setSvc(e.target.value)} required minLength={1} maxLength={120}
-              placeholder="e.g. Coworking, Private Office…" />
+            <ServiceField
+              id="inc-svc"
+              value={svcSelect}
+              otherValue={svcOther}
+              services={services}
+              onChange={setSvcSelect}
+              onOtherChange={setSvcOther}
+            />
           </div>
 
           <div>
@@ -214,18 +283,20 @@ export function IncomeManager() {
   const [rows, setRows]             = useState<IncomeRow[]>([]);
   const [loading, setLoading]       = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [services, setServices]     = useState<ServiceOption[]>([]);
 
   // Edit state
-  const [editOpen, setEditOpen]   = useState(false);
-  const [editing, setEditing]     = useState<IncomeRow | null>(null);
-  const [editDate, setEditDate]   = useState('');
-  const [editClient, setEditClient] = useState('');
-  const [editSvc, setEditSvc]     = useState('');
-  const [editAmt, setEditAmt]     = useState('');
-  const [editMethod, setEditMethod] = useState<IncomePaymentMethod>('CASH');
-  const [editNotes, setEditNotes] = useState('');
-  const [editError, setEditError] = useState<string | null>(null);
-  const [saving, setSaving]       = useState(false);
+  const [editOpen, setEditOpen]       = useState(false);
+  const [editing, setEditing]         = useState<IncomeRow | null>(null);
+  const [editDate, setEditDate]       = useState('');
+  const [editClient, setEditClient]   = useState('');
+  const [editSvcSelect, setEditSvcSel] = useState('');
+  const [editSvcOther, setEditSvcOther] = useState('');
+  const [editAmt, setEditAmt]         = useState('');
+  const [editMethod, setEditMethod]   = useState<IncomePaymentMethod>('CASH');
+  const [editNotes, setEditNotes]     = useState('');
+  const [editError, setEditError]     = useState<string | null>(null);
+  const [saving, setSaving]           = useState(false);
 
   async function fetchIncome() {
     setLoading(true); setFetchError(null);
@@ -239,13 +310,36 @@ export function IncomeManager() {
     } finally { setLoading(false); }
   }
 
-  useEffect(() => { void fetchIncome(); }, []);
+  async function fetchServices() {
+    try {
+      const res = await fetch('/api/incubator/services', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json() as { items: ServiceOption[] };
+      setServices(data.items.filter((s) => s.isActive));
+    } catch { /* services dropdown degrades to text input */ }
+  }
+
+  useEffect(() => {
+    void fetchIncome();
+    void fetchServices();
+  }, []);
 
   function openEdit(row: IncomeRow) {
     setEditing(row);
     setEditDate(row.date);
     setEditClient(row.clientName);
-    setEditSvc(row.serviceName);
+    // If row's service matches a known service, pre-select it; otherwise use "other"
+    const knownSvc = services.find((s) => s.name === row.serviceName);
+    if (knownSvc) {
+      setEditSvcSel(row.serviceName);
+      setEditSvcOther('');
+    } else if (services.length > 0) {
+      setEditSvcSel('__other__');
+      setEditSvcOther(row.serviceName);
+    } else {
+      setEditSvcSel(row.serviceName);
+      setEditSvcOther('');
+    }
     setEditAmt(String(row.amount));
     setEditMethod(row.paymentMethod);
     setEditNotes(row.notes ?? '');
@@ -256,6 +350,8 @@ export function IncomeManager() {
   async function handleSaveEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editing) return;
+    const serviceName = editSvcSelect === '__other__' ? editSvcOther.trim() : editSvcSelect.trim();
+    if (!serviceName) { setEditError('Service is required.'); return; }
     setSaving(true); setEditError(null);
     try {
       const res = await fetch(`/api/incubator/income/${editing.id}`, {
@@ -264,7 +360,7 @@ export function IncomeManager() {
         body: JSON.stringify({
           date:          editDate,
           clientName:    editClient.trim(),
-          serviceName:   editSvc.trim(),
+          serviceName,
           amount:        Number(editAmt),
           paymentMethod: editMethod,
           notes:         editNotes.trim() || null,
@@ -281,7 +377,11 @@ export function IncomeManager() {
 
   async function handleDelete(row: IncomeRow) {
     if (!confirm(`Delete income record from ${row.date}?`)) return;
-    await fetch(`/api/incubator/income/${row.id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/incubator/income/${row.id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({})) as { message?: string };
+      alert(body.message ?? 'Failed to delete income record. Please try again.');
+    }
     void fetchIncome();
   }
 
@@ -338,7 +438,7 @@ export function IncomeManager() {
         description="Columns: Date (YYYY-MM-DD), Client, Service, Amount, PaymentMethod (CASH/ONLINE/OTHER)"
         onImported={() => void fetchIncome()}
       />
-      <CreateIncomeDialog onCreated={() => void fetchIncome()} />
+      <CreateIncomeDialog onCreated={() => void fetchIncome()} services={services} />
     </div>
   );
 
@@ -387,8 +487,14 @@ export function IncomeManager() {
             </div>
             <div>
               <Label htmlFor="einc-svc">Service *</Label>
-              <Input id="einc-svc" className="mt-1" value={editSvc}
-                onChange={(e) => setEditSvc(e.target.value)} required maxLength={120} />
+              <ServiceField
+                id="einc-svc"
+                value={editSvcSelect}
+                otherValue={editSvcOther}
+                services={services}
+                onChange={setEditSvcSel}
+                onOtherChange={setEditSvcOther}
+              />
             </div>
             <div>
               <Label htmlFor="einc-method">Payment method</Label>
