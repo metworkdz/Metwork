@@ -8,9 +8,9 @@ export const siteConfig = {
   description:
     "Algeria's unified startup ecosystem. Connecting entrepreneurs, investors, incubators, and coworking spaces in one platform.",
   url: process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz',
-  ogImage: '/assets/og-image.png',
+  ogImage: 'https://metwork.dz/assets/profilelogogreen.png',
   logo: '/assets/metworklogo.svg',
-  logoExternal: 'https://metwork.dz/assets/metworklogo.svg',
+  logoExternal: 'https://metwork.dz/assets/Metworkwhitelogo.png',
   favicon: '/assets/Metworkfavicon.svg',
   links: {
     twitter: 'https://twitter.com/metworkdz',

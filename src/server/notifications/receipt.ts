@@ -137,6 +137,24 @@ const T: Record<ReceiptLang, Record<LangKey, string>> = {
   },
 };
 
+/* ─────────────────── Image fetcher ─────────────────── */
+
+/**
+ * Fetch a remote image URL and return its raw bytes as a Buffer.
+ * Returns null on any network / decode error so callers can gracefully skip.
+ */
+async function fetchImageBuffer(url: string | null | undefined): Promise<Buffer | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    const ab = await res.arrayBuffer();
+    return Buffer.from(ab);
+  } catch {
+    return null;
+  }
+}
+
 /* ─────────────────── Layout constants (points, A4) ─────────────────── */
 
 const PAGE_W    = 595.28;
@@ -197,30 +215,61 @@ async function collectBuffer(doc: InstanceType<typeof PDFDocument>): Promise<Buf
   });
 }
 
-/* ─────────────────── Header (green bar + incubator name) ─────────────── */
+/* ─────────────────── Header (green bar + incubator logo/name) ────────── */
 
+/**
+ * Draws the green header band.
+ *
+ * Layout (left → right inside the 495-pt content area):
+ *   [logo 80×80 px]  [incubator name + city]
+ *
+ * If logoBuffer is null the name occupies the full width.
+ */
 function drawHeader(
   doc: InstanceType<typeof PDFDocument>,
   incubator: BookingReceiptInput['incubator'],
+  logoBuffer: Buffer | null,
 ): void {
+  const HEADER_H = 90;
+
   // Green header band
-  doc
-    .rect(0, 0, PAGE_W, 80)
-    .fill(GREEN);
+  doc.rect(0, 0, PAGE_W, HEADER_H).fill(GREEN);
+
+  const LOGO_SIZE  = 64; // rendered size in points
+  const LOGO_PAD   = 13; // vertical padding inside band
+  const TEXT_LEFT  = logoBuffer ? MARGIN + LOGO_SIZE + 16 : MARGIN;
+  const TEXT_WIDTH = logoBuffer ? CONTENT_W - LOGO_SIZE - 16 : CONTENT_W;
+
+  // Incubator logo (top-left, vertically centred in the band)
+  if (logoBuffer) {
+    try {
+      const logoY = LOGO_PAD;
+      doc.image(logoBuffer, MARGIN, logoY, {
+        width:  LOGO_SIZE,
+        height: LOGO_SIZE,
+        fit:    [LOGO_SIZE, LOGO_SIZE],
+        align:  'center',
+        valign: 'center',
+      });
+    } catch {
+      // Logo could not be embedded — fall through to text-only
+    }
+  }
 
   // Incubator name
   doc
     .fillColor(WHITE)
     .font('Helvetica-Bold')
-    .fontSize(20)
-    .text(incubator.name, MARGIN, 28, { width: CONTENT_W - 80 });
+    .fontSize(18)
+    .text(incubator.name, TEXT_LEFT, 22, { width: TEXT_WIDTH, lineBreak: false });
 
-  // Tagline / city
+  // City / tagline
   if (incubator.city) {
     doc
+      .fillColor(WHITE)
       .font('Helvetica')
       .fontSize(10)
-      .text(incubator.city, MARGIN, 52, { width: CONTENT_W });
+      .text(incubator.city, TEXT_LEFT, 46, { width: TEXT_WIDTH });
   }
 
   doc.moveDown(0);
@@ -359,21 +408,52 @@ function unitLabel(unit: BookingRecord['unit'], t: Record<LangKey, string>): str
   }
 }
 
-/* ─────────────────── Stamp watermark ─────────────────── */
+/* ─────────────────── Stamp ─────────────────── */
 
-function drawStampWatermark(doc: InstanceType<typeof PDFDocument>): void {
-  // Simple circular "CONFIRMED" stamp drawn with vectors
-  const cx = PAGE_W - MARGIN - 50;
-  const cy = PAGE_H - MARGIN - 80;
-  const r  = 44;
+/**
+ * Draws an official-looking stamp near the bottom-right of the page.
+ *
+ * Priority:
+ *   1. stampBuffer  — incubator's real stamp image (rendered at 90 × 90 pt)
+ *   2. Vector stamp — green circular "CONFIRMED" badge (fallback)
+ */
+function drawStamp(
+  doc: InstanceType<typeof PDFDocument>,
+  stampBuffer: Buffer | null,
+  label = 'CONFIRMED',
+): void {
+  const STAMP_SIZE = 90;
+  const cx = PAGE_W - MARGIN - STAMP_SIZE / 2;
+  const cy = PAGE_H - MARGIN - STAMP_SIZE / 2 - 20;
+
   doc.save();
-  doc.circle(cx, cy, r).strokeColor(GREEN).lineWidth(2).stroke();
-  doc.circle(cx, cy, r - 6).strokeColor(GREEN).lineWidth(0.5).stroke();
+
+  if (stampBuffer) {
+    try {
+      doc.image(stampBuffer, cx - STAMP_SIZE / 2, cy - STAMP_SIZE / 2, {
+        width:  STAMP_SIZE,
+        height: STAMP_SIZE,
+        fit:    [STAMP_SIZE, STAMP_SIZE],
+        align:  'center',
+        valign: 'center',
+      });
+      doc.restore();
+      return;
+    } catch {
+      // Fall through to vector stamp
+    }
+  }
+
+  // Vector fallback — double-ring circular stamp
+  const r = 44;
+  doc.circle(cx, cy, r).strokeColor(GREEN).lineWidth(2.5).stroke();
+  doc.circle(cx, cy, r - 7).strokeColor(GREEN).lineWidth(0.8).stroke();
   doc
     .fillColor(GREEN)
     .font('Helvetica-Bold')
     .fontSize(8)
-    .text('CONFIRMED', cx - 22, cy - 5, { width: 44, align: 'center' });
+    .text(label, cx - r + 6, cy - 5, { width: (r - 6) * 2, align: 'center' });
+
   doc.restore();
 }
 
@@ -417,10 +497,16 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
   const { booking, clientName, clientEmail, incubator, lang } = input;
   const t = T[lang];
 
+  // Pre-fetch images in parallel (non-blocking — failures return null)
+  const [logoBuffer, stampBuffer] = await Promise.all([
+    fetchImageBuffer(incubator.logoUrl),
+    fetchImageBuffer(incubator.stampUrl),
+  ]);
+
   const doc = makeDoc();
 
   // ── Header ──
-  drawHeader(doc, incubator);
+  drawHeader(doc, incubator, logoBuffer);
   drawIncubatorContact(doc, incubator, lang);
 
   // ── Receipt title ──
@@ -473,9 +559,9 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
 
   doc.y = totalY + 50;
 
-  // ── Stamp (vector) when confirmed ──
+  // ── Stamp when confirmed ──
   if (booking.status === 'CONFIRMED') {
-    drawStampWatermark(doc);
+    drawStamp(doc, stampBuffer);
   }
 
   // ── Footer ──
@@ -501,16 +587,34 @@ export async function generateMentorConfirmationPdf(input: MentorConfirmationInp
     ? Math.round((dur / 60) * feePerHour)
     : null;
 
+  // Pre-fetch the Metwork logo for the consultation header
+  const metworkLogoBuffer = await fetchImageBuffer('https://metwork.dz/assets/Metworkwhitelogo.png');
+
   const doc = makeDoc();
 
   // ── Header ──
-  doc.rect(0, 0, PAGE_W, 80).fill(GREEN);
-  doc
-    .fillColor(WHITE)
-    .font('Helvetica-Bold')
-    .fontSize(20)
-    .text('Metwork', MARGIN, 28);
-  doc.fillColor(WHITE).font('Helvetica').fontSize(10).text('Mentor Network', MARGIN, 52);
+  const HEADER_H = 90;
+  doc.rect(0, 0, PAGE_W, HEADER_H).fill(GREEN);
+
+  if (metworkLogoBuffer) {
+    try {
+      doc.image(metworkLogoBuffer, MARGIN, 13, {
+        width: 120, height: 64, fit: [120, 64], align: 'center', valign: 'center',
+      });
+    } catch { /* skip logo on error */ }
+    doc
+      .fillColor(WHITE)
+      .font('Helvetica')
+      .fontSize(10)
+      .text('Mentor Network', MARGIN + 136, 46);
+  } else {
+    doc
+      .fillColor(WHITE)
+      .font('Helvetica-Bold')
+      .fontSize(20)
+      .text('Metwork', MARGIN, 28);
+    doc.fillColor(WHITE).font('Helvetica').fontSize(10).text('Mentor Network', MARGIN, 52);
+  }
   doc.moveDown(0);
 
   // ── Title ──
@@ -620,7 +724,7 @@ export async function generateMentorConfirmationPdf(input: MentorConfirmationInp
     .text(t.consultNote, MARGIN, doc.y, { width: CONTENT_W });
 
   // ── Confirmed stamp ──
-  drawStampWatermark(doc);
+  drawStamp(doc, null);
 
   // ── Footer ──
   drawFooter(doc, t, 'Metwork');

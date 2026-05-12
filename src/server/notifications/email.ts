@@ -64,9 +64,9 @@ function layout(content: string): string {
         <tr>
           <td style="background:#166534;padding:24px 40px;">
             <a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}" style="text-decoration:none;">
-              <img src="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/assets/metworklogo.svg"
-                   alt="Metwork" width="140" height="40"
-                   style="display:block;height:40px;width:auto;"
+              <img src="https://metwork.dz/assets/Metworkwhitelogo.png"
+                   alt="Metwork" width="160" height="44"
+                   style="display:block;height:44px;width:auto;"
                    onerror="this.style.display='none';this.nextElementSibling.style.display='inline';" />
               <span style="display:none;color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.5px;">Metwork</span>
             </a>
