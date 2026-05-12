@@ -1,0 +1,87 @@
+/**
+ * Metwork membership tier color tokens.
+ *
+ * Gold    → Builder tier  (#D4AF37 family)
+ * Platinum → Founder tier (#E5E4E2 family)
+ *
+ * These CSS custom properties complement the Tailwind gold/platinum color
+ * scales defined in tailwind.config.ts. Use Tailwind classes (e.g.
+ * `border-gold-600`) wherever possible; fall back to these vars only when
+ * you need them in inline styles or vanilla CSS (e.g. box-shadow values).
+ *
+ * Dark-mode adjustments use the `.dark` class strategy (matches the project's
+ * `darkMode: ['class']` Tailwind setting — NOT `prefers-color-scheme`).
+ */
+
+:root {
+  /* ── Gold (Builder) ── */
+  --color-gold:          #D4AF37;
+  --color-gold-dark:     #AA8C2E;
+  --color-gold-light:    #E8D9B5;
+  --color-gold-muted:    rgba(212, 175, 55, 0.12);
+  --color-gold-glow:     rgba(212, 175, 55, 0.20);
+
+  /* ── Platinum (Founder) ── */
+  --color-platinum:      #E5E4E2;
+  --color-platinum-dark: #9D9B99;
+  --color-platinum-light:#F5F4F2;
+  --color-platinum-muted:rgba(229, 228, 226, 0.15);
+  --color-platinum-glow: rgba(229, 228, 226, 0.30);
+
+  /* ── Diamond (platinum alt, kept for future use) ── */
+  --color-diamond:       #F0F8FF;
+}
+
+/* Dark-mode overrides — slightly warmer/deeper so they read on dark surfaces */
+.dark {
+  --color-gold:          #C9A961;
+  --color-gold-dark:     #9A7D2A;
+  --color-gold-light:    #7A6222;
+  --color-gold-muted:    rgba(201, 169, 97, 0.15);
+  --color-gold-glow:     rgba(201, 169, 97, 0.22);
+
+  --color-platinum:      #A8A6A4;
+  --color-platinum-dark: #6E6C6A;
+  --color-platinum-light:#4A4845;
+  --color-platinum-muted:rgba(168, 166, 164, 0.15);
+  --color-platinum-glow: rgba(168, 166, 164, 0.25);
+}
+
+/* ── Shimmer animation (Founder tier only) ─────────────────────────────── */
+
+@keyframes shimmer-platinum {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.82; }
+}
+
+.founder-shimmer {
+  animation: shimmer-platinum 3s ease-in-out infinite;
+}
+
+/* Respect prefers-reduced-motion — kept in sync with globals.css */
+@media (prefers-reduced-motion: reduce) {
+  .founder-shimmer {
+    animation: none;
+  }
+}
+
+/* ── Avatar ring helpers (used by UserProfileHeader) ─────────────────── */
+
+.avatar-ring-gold {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
+  box-shadow: 0 0 12px var(--color-gold-glow);
+}
+
+.avatar-ring-platinum {
+  outline: 3px solid var(--color-platinum);
+  outline-offset: 2px;
+  box-shadow: 0 0 14px var(--color-platinum-glow);
+  animation: shimmer-platinum 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-ring-platinum {
+    animation: none;
+  }
+}

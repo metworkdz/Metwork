@@ -288,7 +288,10 @@
     "services": "Services",
     "expenses": "Dépenses",
     "income": "Revenus",
-    "analytics": "Analytique"
+    "analytics": "Analytique",
+    "partnerNetwork": "Réseau Partenaires",
+    "partnerPromoCodes": "Codes Promo Partenaires",
+    "networkPass": "Pass Réseau"
   },
   "pages": {
     "programs": {
@@ -380,6 +383,10 @@
         "perks": {
           "title": "Avantages membres",
           "subtitle": "Avantages exclusifs inclus dans votre abonnement."
+        },
+        "networkPass": {
+          "title": "Mon Pass Réseau",
+          "subtitle": "Utilisez votre pass pour vous enregistrer dans les espaces coworking partenaires."
         }
       },
       "incubator": {
@@ -606,6 +613,14 @@
             "title": "Profil incubateur",
             "subtitle": "Gérez le profil Metwork, le logo et les préférences de facturation."
           }
+        },
+        "partners": {
+          "title": "Réseau Partenaires",
+          "subtitle": "Inscrivez et gérez les espaces dans le Programme Partenaire Metwork."
+        },
+        "partnerPromoCodes": {
+          "title": "Codes Promo Partenaires",
+          "subtitle": "Générez et gérez les codes de réduction d'adhésion émis par les espaces partenaires."
         }
       }
     }

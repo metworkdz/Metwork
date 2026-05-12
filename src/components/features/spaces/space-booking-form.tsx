@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   Clock,
   CreditCard,
+  Ticket,
   Wallet as WalletIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,8 @@ import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { unitLabel } from './space-meta';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
+import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
+import { resolveTier } from '@/lib/tier-utils';
 import type { Locale } from '@/i18n/config';
 import type { PaymentMethod, Space } from '@/types/domain';
 import type { BookingDto, BookingUnit } from '@/types/booking';
@@ -214,8 +217,18 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
 
   const acceptedMethods = space.acceptedPaymentMethods ?? ['ONLINE'];
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(acceptedMethods[0] ?? 'ONLINE');
-  const isCash         = paymentMethod === 'CASH';
+  const [useNetworkPass, setUseNetworkPass] = useState(false);
+  const isCash         = paymentMethod === 'CASH' && !useNetworkPass;
   const showMethodPicker = acceptedMethods.includes('ONLINE') && acceptedMethods.includes('CASH');
+
+  // Network Pass eligibility
+  const userTier = user ? resolveTier(user) : 'EXPLORER';
+  const canUsePass = isAuthed && user !== null && userTier !== 'EXPLORER' && (space.isPartnerInNetwork ?? false);
+  const passCredits = user?.networkCredits ?? 0;
+  const passCreditsMax = user?.networkCreditsMax ?? 0;
+  const passResetDate = user?.networkCreditsResetDate
+    ? new Date(user.networkCreditsResetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : null;
 
   const [balance, setBalance] = useState<number | null>(null);
   useEffect(() => {
@@ -299,7 +312,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         endsAt:   endIso,
         clientReference: crypto.randomUUID(),
         promoCode: promoResult?.code,
-        paymentMethod,
+        paymentMethod: useNetworkPass ? ('NETWORK_PASS' as PaymentMethod) : paymentMethod,
       });
       setBalance(res.wallet.balance);
       void refresh();
@@ -487,6 +500,64 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
           {isCash && (
             <p className="mt-1.5 text-xs text-muted-foreground">
               Your spot is reserved; payment is settled directly with the host.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Network Pass option (Builder / Founder only, partner spaces) ── */}
+      {canUsePass && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setUseNetworkPass((v) => !v)}
+            className={cn(
+              'flex w-full items-start gap-3 rounded-lg border px-3 py-3 text-sm transition-colors',
+              useNetworkPass
+                ? userTier === 'FOUNDER'
+                  ? 'border-platinum-300/80 bg-platinum-50 dark:border-platinum-600/50 dark:bg-platinum-900/20'
+                  : 'border-gold-600/60 bg-gold-50 dark:border-gold-700/50 dark:bg-gold-900/20'
+                : 'border-border text-muted-foreground hover:border-primary/40',
+            )}
+          >
+            <Ticket
+              className={cn(
+                'mt-0.5 size-4 shrink-0',
+                useNetworkPass
+                  ? userTier === 'FOUNDER' ? 'text-platinum-600 dark:text-platinum-400' : 'text-gold-600 dark:text-gold-400'
+                  : 'text-muted-foreground',
+              )}
+            />
+            <div className="flex-1 text-left">
+              <div className="flex items-center gap-2">
+                <span className={cn('font-semibold', useNetworkPass ? 'text-foreground' : '')}>
+                  Book with Network Pass
+                </span>
+                <MembershipTierBadge tier={userTier} size="xs" showIcon={false} />
+              </div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                {passCredits > 0 ? (
+                  <>
+                    Uses 1 credit &mdash; {passCredits} of {passCreditsMax} left
+                    {passResetDate && ` · Resets ${passResetDate}`}
+                  </>
+                ) : (
+                  <span className="text-destructive">No credits remaining this month</span>
+                )}
+              </div>
+            </div>
+            {useNetworkPass && (
+              <CheckCircle2
+                className={cn(
+                  'mt-0.5 size-4 shrink-0',
+                  userTier === 'FOUNDER' ? 'text-platinum-600' : 'text-gold-600',
+                )}
+              />
+            )}
+          </button>
+          {useNetworkPass && passCredits === 0 && (
+            <p className="mt-1.5 text-xs text-destructive">
+              You have no credits left this month. Credits reset on the 1st.
             </p>
           )}
         </div>

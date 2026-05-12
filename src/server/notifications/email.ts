@@ -933,3 +933,355 @@ export function mentorSessionConfirmedEmailHtml(params: MentorSessionConfirmedPa
     ${p('<span style="color:#71717a;font-size:13px;">Please be ready 5 minutes before the session starts. The client has received the same meeting details.</span>')}
   `);
 }
+
+/* ─────────────────────────── Network Pass / Credits ──────────────────── */
+
+export interface CreditLowWarningEmailParams {
+  fullName: string;
+  email: string;
+  creditsRemaining: number;
+  tier: 'BUILDER' | 'FOUNDER';
+  resetDate: Date;
+  upgradeUrl: string;
+}
+
+export function creditLowWarningEmailHtml(params: CreditLowWarningEmailParams): string {
+  const { fullName, creditsRemaining, tier, resetDate, upgradeUrl } = params;
+  const fmtDate = (d: Date) => {
+    try { return d.toLocaleDateString('en-DZ', { dateStyle: 'long' }); }
+    catch { return d.toISOString().slice(0, 10); }
+  };
+  const tierLabel = tier === 'FOUNDER' ? 'Founder' : 'Builder';
+  const upgradeNote = tier === 'BUILDER'
+    ? `<p style="margin:16px 0;font-size:15px;color:#374151;">Upgrade to <strong>Founder</strong> to get <strong>10 credits</strong> every month.</p>`
+    : '';
+
+  return layout(`
+    ${h1('Your network credits are running low')}
+    ${p(`Hi <strong>${fullName}</strong>, you only have <strong>${creditsRemaining} network pass credit${creditsRemaining !== 1 ? 's' : ''}</strong> left this month as a ${tierLabel} member.`)}
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="border:1px solid #fde68a;border-radius:8px;overflow:hidden;margin:20px 0;background:#fffbeb;">
+      <tr>
+        <td style="padding:16px 20px;font-size:14px;color:#92400e;">
+          ⚡ Your credits reset on <strong>${fmtDate(resetDate)}</strong>. Use them before they expire!
+        </td>
+      </tr>
+    </table>
+    ${upgradeNote}
+    ${upgradeNote ? `<p style="margin:0 0 16px;"><a href="${upgradeUrl}" style="display:inline-block;padding:12px 24px;background:#16a34a;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">Upgrade to Founder</a></p>` : ''}
+    ${p('<span style="color:#71717a;font-size:13px;">Network Pass credits expire at the end of the month and do not carry over.</span>')}
+  `);
+}
+
+export interface CreditExpiryReminderEmailParams {
+  fullName: string;
+  email: string;
+  creditsRemaining: number;
+  tier: 'BUILDER' | 'FOUNDER';
+  spacesUrl: string;
+}
+
+export function creditExpiryReminderEmailHtml(params: CreditExpiryReminderEmailParams): string {
+  const { fullName, creditsRemaining, tier, spacesUrl } = params;
+  const tierLabel = tier === 'FOUNDER' ? 'Founder' : 'Builder';
+
+  return layout(`
+    ${h1('Last day to use your network credits!')}
+    ${p(`Hi <strong>${fullName}</strong>, today is the <strong>last day of the month</strong> and you still have <strong>${creditsRemaining} credit${creditsRemaining !== 1 ? 's' : ''}</strong> remaining as a ${tierLabel} member.`)}
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="border:1px solid #fca5a5;border-radius:8px;overflow:hidden;margin:20px 0;background:#fef2f2;">
+      <tr>
+        <td style="padding:16px 20px;font-size:14px;color:#991b1b;">
+          🕐 Unused credits expire at midnight UTC tonight and <strong>cannot be carried over</strong>.
+        </td>
+      </tr>
+    </table>
+    ${p('Book a coworking space or office at a partner location today to make the most of your membership.')}
+    <p style="margin:0 0 16px;"><a href="${spacesUrl}" style="display:inline-block;padding:12px 24px;background:#16a34a;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">Find a Partner Space</a></p>
+    ${p('<span style="color:#71717a;font-size:13px;">Your credits will reset tomorrow with a fresh allowance for the new month.</span>')}
+  `);
+}
+
+export interface MonthlyCreditsResetEmailParams {
+  fullName: string;
+  email: string;
+  newCredits: number;
+  tier: 'BUILDER' | 'FOUNDER';
+  spacesUrl: string;
+}
+
+export function monthlyCreditsResetEmailHtml(params: MonthlyCreditsResetEmailParams): string {
+  const { fullName, newCredits, tier, spacesUrl } = params;
+  const tierLabel = tier === 'FOUNDER' ? 'Founder' : 'Builder';
+
+  return layout(`
+    ${h1('Your network credits have been refreshed!')}
+    ${p(`Hi <strong>${fullName}</strong>, your monthly network pass credits have been reset. You now have <strong>${newCredits} credit${newCredits !== 1 ? 's' : ''}</strong> available as a ${tierLabel} member.`)}
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="border:1px solid #bbf7d0;border-radius:8px;overflow:hidden;margin:20px 0;background:#f0fdf4;">
+      <tr>
+        <td style="padding:16px 20px;font-size:14px;color:#166534;">
+          ✅ <strong>${newCredits}</strong> network pass credit${newCredits !== 1 ? 's' : ''} — valid until the last day of this month.
+        </td>
+      </tr>
+    </table>
+    ${p('Use your credits to book coworking spaces and offices at any Metwork partner location.')}
+    <p style="margin:0 0 16px;"><a href="${spacesUrl}" style="display:inline-block;padding:12px 24px;background:#16a34a;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">Browse Partner Spaces</a></p>
+  `);
+}
+
+/* ─────────────── Network Pass Check-in (booking confirmation) ────────── */
+
+export interface NetworkPassCheckInEmailParams {
+  customerName: string;
+  bookingId: string;
+  spaceName: string;
+  city: string;
+  bookingDate: string;     // ISO datetime
+  startsAt: string;        // ISO datetime
+  endsAt: string;          // ISO datetime
+  /** Plaintext code, e.g. "MNP-2026-00145" — shown to user only here. */
+  code: string;
+  /** "data:image/png;base64,…" — base64-encoded QR PNG. */
+  qrCodeDataUrl: string;
+  /** ISO datetime — 23:59:59 UTC on the booking day. */
+  expiresAt: string;
+}
+
+/**
+ * Sent to the user when a Network Pass booking is confirmed. Contains the
+ * QR code + plaintext check-in code (shown only ONCE — never retrievable
+ * from the DB).
+ */
+export function networkPassCheckInEmailHtml(opts: NetworkPassCheckInEmailParams): string {
+  const fmtDate = (iso: string) => {
+    try { return new Date(iso).toLocaleDateString('en-US', { dateStyle: 'long' }); }
+    catch { return iso.slice(0, 10); }
+  };
+  const fmtTime = (iso: string) => {
+    try { return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }); }
+    catch { return iso; }
+  };
+  const fmtExpiry = (iso: string) => {
+    try { return new Date(iso).toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' }); }
+    catch { return iso; }
+  };
+
+  return layout(`
+    ${h1('Your Network Pass is ready')}
+    ${p(`Hi <strong>${opts.customerName}</strong>, your coworking session is booked. Show this QR or read out the code at reception.`)}
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="border:2px solid #16a34a;border-radius:12px;overflow:hidden;margin:20px 0;background:#f0fdf4;">
+      <tr>
+        <td style="padding:24px;text-align:center;">
+          <div style="font-size:13px;color:#166534;font-weight:600;letter-spacing:0.5px;margin-bottom:12px;">🎫 NETWORK PASS CHECK-IN</div>
+          <img src="${opts.qrCodeDataUrl}" width="220" height="220" alt="Network Pass QR Code" style="border-radius:8px;border:1px solid #bbf7d0;background:#ffffff;" />
+          <div style="margin-top:16px;font-size:13px;color:#166534;">Your Check-in Code</div>
+          <div style="margin-top:4px;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:24px;color:#09090b;font-weight:700;letter-spacing:1px;">${opts.code}</div>
+        </td>
+      </tr>
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin:20px 0;">
+      <tr style="background:#f9fafb;">
+        <td style="padding:12px 16px;font-size:13px;color:#71717a;font-weight:600;width:40%;">Space</td>
+        <td style="padding:12px 16px;font-size:14px;color:#09090b;font-weight:500;">${opts.spaceName}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;font-size:13px;color:#71717a;font-weight:600;border-top:1px solid #e4e4e7;">City</td>
+        <td style="padding:12px 16px;font-size:14px;color:#09090b;border-top:1px solid #e4e4e7;">${opts.city}</td>
+      </tr>
+      <tr style="background:#f9fafb;">
+        <td style="padding:12px 16px;font-size:13px;color:#71717a;font-weight:600;border-top:1px solid #e4e4e7;">Date</td>
+        <td style="padding:12px 16px;font-size:14px;color:#09090b;border-top:1px solid #e4e4e7;">${fmtDate(opts.bookingDate)}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;font-size:13px;color:#71717a;font-weight:600;border-top:1px solid #e4e4e7;">Time</td>
+        <td style="padding:12px 16px;font-size:14px;color:#09090b;border-top:1px solid #e4e4e7;">${fmtTime(opts.startsAt)} – ${fmtTime(opts.endsAt)}</td>
+      </tr>
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="border:1px solid #fde68a;border-radius:8px;overflow:hidden;margin:20px 0;background:#fffbeb;">
+      <tr>
+        <td style="padding:16px 20px;font-size:14px;color:#92400e;">
+          ⏰ <strong>Expires:</strong> ${fmtExpiry(opts.expiresAt)} — single use only.
+        </td>
+      </tr>
+    </table>
+    ${p('<span style="color:#71717a;font-size:13px;">Lost the code? Visit your bookings page in the Metwork dashboard to view it again.</span>')}
+  `);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Partner promo code invite email
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface PartnerPromoCodeEmailParams {
+  /** Recipient's name or email address (used in the greeting). */
+  recipientName: string;
+  /** Name of the partner space issuing the code. */
+  partnerName: string;
+  /** The plaintext promo code — e.g. "PPT-ORAN-2026-X7K3M2". */
+  promoCode: string;
+  /** 'BUILDER' or 'FOUNDER' — shown to the user. */
+  membershipTier: 'BUILDER' | 'FOUNDER';
+  /** Discount percentage (integer 1–99). */
+  discountPercentage: number;
+  /** Expiry date in ISO YYYY-MM-DD format. */
+  validUntil: string;
+  /** Redemption URL — links to the membership checkout page. */
+  redeemUrl: string;
+}
+
+export function partnerPromoCodeEmailHtml(params: PartnerPromoCodeEmailParams): string {
+  const {
+    recipientName,
+    partnerName,
+    promoCode,
+    membershipTier,
+    discountPercentage,
+    validUntil,
+    redeemUrl,
+  } = params;
+
+  const tierLabel = membershipTier === 'FOUNDER' ? 'Founder' : 'Builder';
+  const expiryFormatted = new Date(validUntil).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+
+  return layout(`
+    ${h1(`You have a ${discountPercentage}% membership discount! 🎉`)}
+    ${p(`Hi <strong>${recipientName}</strong>, <strong>${partnerName}</strong> has invited you to join Metwork&apos;s <strong>${tierLabel}</strong> membership tier at a ${discountPercentage}% discount.`)}
+    ${p('Use the exclusive code below when you upgrade your membership:')}
+    <div style="text-align:center;margin:32px 0;">
+      <span style="display:inline-block;padding:16px 36px;background:#f0fdf4;border:2px dashed #166534;border-radius:12px;font-size:28px;font-weight:700;letter-spacing:6px;color:#166534;font-family:monospace;">${promoCode}</span>
+    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin:0 0 24px;">
+      <tr style="background:#f9fafb;">
+        <td colspan="2" style="padding:12px 16px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#71717a;border-bottom:1px solid #e4e4e7;">
+          Discount details
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:140px;">Membership tier</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;font-weight:600;">${tierLabel}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;">Discount</td>
+        <td style="padding:10px 16px;font-size:13px;color:#166534;border-bottom:1px solid #f4f4f5;font-weight:600;">${discountPercentage}% off</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 16px;font-size:13px;color:#71717a;">Valid until</td>
+        <td style="padding:10px 16px;font-size:13px;color:#09090b;font-weight:600;">${expiryFormatted}</td>
+      </tr>
+    </table>
+    ${button(redeemUrl, 'Redeem your discount')}
+    ${p('<span style="color:#71717a;font-size:13px;">This code is single-use and cannot be transferred. Once redeemed your discounted membership will be activated immediately for one year.</span>')}
+    ${p(`<span style="color:#71717a;font-size:13px;">If you did not expect this email or have questions, please contact your space administrator at <strong>${partnerName}</strong>.</span>`)}
+  `);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Membership welcome email (tier-specific)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface MembershipWelcomeEmailParams {
+  /** Recipient's full name. */
+  fullName: string;
+  /** 'BUILDER' or 'FOUNDER'. */
+  membershipTier: 'BUILDER' | 'FOUNDER';
+  /** Monthly credits allocated (3 for Builder, 10 for Founder). */
+  monthlyCredits: number;
+  /** ISO expiry date. */
+  expiresAt: string;
+  /** URL to the membership dashboard. */
+  dashboardUrl: string;
+}
+
+/**
+ * Tier-themed welcome email sent when a user activates a Builder or Founder
+ * membership (direct purchase or via a partner promo code).
+ *
+ * Subject line should be set by the caller:
+ *   Builder → "🏆 Welcome to Metwork Builder membership!"
+ *   Founder → "👑 Welcome to Metwork Founder membership!"
+ */
+export function membershipWelcomeEmailHtml(params: MembershipWelcomeEmailParams): string {
+  const { fullName, membershipTier, monthlyCredits, expiresAt, dashboardUrl } = params;
+
+  const isFounder = membershipTier === 'FOUNDER';
+  const tierLabel = isFounder ? 'Founder' : 'Builder';
+  const tierIcon  = isFounder ? '👑' : '🏆';
+
+  // Tier-specific accent colors (inline — email clients don't support CSS vars)
+  const accentColor    = isFounder ? '#9D9B99' : '#D4AF37';
+  const accentBg       = isFounder ? '#F5F4F2' : '#FAF6F0';
+  const accentBorder   = isFounder ? '#E5E4E2' : '#E8D9B5';
+  const accentText     = isFounder ? '#4A4845' : '#6B5218';
+
+  const expiryFormatted = new Date(expiresAt).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC',
+  });
+
+  const benefits = isFounder
+    ? [
+        `${monthlyCredits} coworking sessions / month`,
+        'Access to all 30+ partner spaces',
+        'Featured startup listing',
+        'Priority mentor sessions (3 / month)',
+        'Investor meeting requests',
+        'Dedicated support',
+      ]
+    : [
+        `${monthlyCredits} coworking sessions / month`,
+        'Access to all partner spaces',
+        'Book spaces & programs',
+        'Priority mentor session (1 / month)',
+        'Events at discounted rate',
+      ];
+
+  const benefitRows = benefits
+    .map(
+      (b) =>
+        `<tr><td style="padding:6px 0;font-size:14px;color:#3f3f46;line-height:1.5;">
+          <span style="color:${accentColor};margin-right:8px;">✓</span>${b}
+        </td></tr>`,
+    )
+    .join('');
+
+  return layout(`
+    ${h1(`${tierIcon} Welcome to Metwork ${tierLabel}!`)}
+    ${p(`Hi <strong>${fullName}</strong> — your <strong>${tierLabel}</strong> membership is now active. Here's everything you have access to:`)}
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="border:1.5px solid ${accentBorder};border-radius:12px;overflow:hidden;margin:20px 0;background:${accentBg};">
+      <tr>
+        <td style="padding:16px 20px;border-bottom:1px solid ${accentBorder};">
+          <span style="font-size:20px;font-weight:700;color:${accentColor};">${tierIcon} ${tierLabel} Member</span>
+          <p style="margin:4px 0 0;font-size:13px;color:${accentText};">Valid until ${expiryFormatted}</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:16px 20px;">
+          <p style="margin:0 0 10px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:${accentText};">
+            Your benefits
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            ${benefitRows}
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:12px 20px;background:${accentBorder}30;border-top:1px solid ${accentBorder};">
+          <p style="margin:0;font-size:13px;color:${accentText};">
+            <strong>${monthlyCredits} network credits</strong> reset on the 1st of each month.
+          </p>
+        </td>
+      </tr>
+    </table>
+    ${button(dashboardUrl, 'Go to your dashboard')}
+    ${p('<span style="color:#71717a;font-size:13px;">Credits are non-transferable and do not roll over. Questions? Reply to this email.</span>')}
+  `);
+}

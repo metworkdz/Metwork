@@ -39,6 +39,10 @@ export interface Space {
   openingTime: string;
   /** Closing time "HH:MM" 24h. Defaults to "18:00". */
   closingTime: string;
+  /** PartnerMembershipRecord.id when this space is enrolled. */
+  partnerMembershipId?: string | null;
+  /** True when the space accepts Network Pass bookings. */
+  isPartnerInNetwork?: boolean;
 }
 
 export type ProgramType = 'INCUBATION' | 'ACCELERATION' | 'TRAINING' | 'BOOTCAMP' | 'WORKSHOP';

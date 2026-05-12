@@ -25,6 +25,8 @@ import {
   Gift,
   MessageSquare,
   ShieldAlert,
+  Network,
+  IdCard,
 } from 'lucide-react';
 import type { UserRole } from '@/types/auth';
 
@@ -105,6 +107,7 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.perks',          href: '/dashboard/entrepreneur/perks',          icon: Gift            },
     { labelKey: 'dashboard.wallet',         href: '/dashboard/entrepreneur/wallet',         icon: Wallet          },
     { labelKey: 'dashboard.membership',     href: '/dashboard/entrepreneur/membership',     icon: CreditCard      },
+    { labelKey: 'dashboard.networkPass',    href: '/dashboard/entrepreneur/network-pass',   icon: IdCard          },
     { labelKey: 'dashboard.settings',       href: '/dashboard/entrepreneur/settings',       icon: Settings        },
   ],
   INVESTOR: [
@@ -136,8 +139,10 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.overview',      href: '/dashboard/admin',                 icon: LayoutDashboard },
     { labelKey: 'dashboard.users',         href: '/dashboard/admin/users',           icon: Users },
     { labelKey: 'dashboard.incubators',    href: '/dashboard/admin/incubators',      icon: Building2 },
-    { labelKey: 'dashboard.memberships',   href: '/dashboard/admin/memberships',     icon: CreditCard },
-    { labelKey: 'dashboard.promoCodes',    href: '/dashboard/admin/promo-codes',     icon: Tag        },
+    { labelKey: 'dashboard.memberships',      href: '/dashboard/admin/memberships',          icon: CreditCard },
+    { labelKey: 'dashboard.promoCodes',       href: '/dashboard/admin/promo-codes',          icon: Tag        },
+    { labelKey: 'dashboard.partnerNetwork',   href: '/dashboard/admin/partners',             icon: Network    },
+    { labelKey: 'dashboard.partnerPromoCodes',href: '/dashboard/admin/partner-promo-codes',  icon: Tag        },
     { labelKey: 'dashboard.commissions',   href: '/dashboard/admin/commissions',     icon: TrendingUp },
     { labelKey: 'dashboard.bookings',      href: '/dashboard/admin/bookings',        icon: CalendarIcon },
     { labelKey: 'dashboard.mentors',       href: '/dashboard/admin/mentors',         icon: Star },

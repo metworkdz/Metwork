@@ -29,6 +29,20 @@ export interface SessionUser {
   membershipExpiresAt?: string | null;
   avatarUrl: string | null;
   locale: 'en' | 'fr' | 'ar';
+
+  // ── Network Pass / tier fields (populated from UserRecord; optional for
+  //    backward compat with tokens issued before these fields were added) ──
+
+  /** Resolved tier: 'EXPLORER' | 'BUILDER' | 'FOUNDER'. Defaults to 'EXPLORER'. */
+  membershipTier?: 'EXPLORER' | 'BUILDER' | 'FOUNDER';
+  /** ISO datetime when the current membership started. */
+  membershipStartDate?: string | null;
+  /** Network pass credits remaining this billing cycle. */
+  networkCredits?: number;
+  /** Monthly allowance for this tier. */
+  networkCreditsMax?: number;
+  /** ISO datetime — next reset date (1st of next month UTC). */
+  networkCreditsResetDate?: string | null;
 }
 
 export interface Session {

@@ -19,6 +19,14 @@ import type { LandingContent } from '@/types/cms';
 // Types
 // ---------------------------------------------------------------------------
 
+/**
+ * Network Pass tier — drives monthly network credit allowance.
+ * Mirrors the `membershipCode` taxonomy but kept as an independent field
+ * so that pre-existing users (whose `membershipCode` may be null or set to
+ * a legacy plan code) still get a deterministic tier on read.
+ */
+export type MembershipTier = 'EXPLORER' | 'BUILDER' | 'FOUNDER';
+
 export interface UserRecord {
   id: string;
   email: string;
@@ -37,6 +45,41 @@ export interface UserRecord {
   locale: 'en' | 'fr' | 'ar';
   createdAt: string;
   updatedAt: string;
+
+  // ─── Network Pass / Partner Membership extensions ───────────────────────
+  // All fields below are optional for backward compatibility: existing users
+  // simply lack the keys and behave as untiered EXPLORER with zero credits.
+
+  /** Resolved tier for the Network Pass system. Defaults to 'EXPLORER'. */
+  membershipTier?: MembershipTier;
+  /** ISO datetime — when the active membership started. */
+  membershipStartDate?: string | null;
+  /** ISO datetime — when the paid membership renews / re-charges. */
+  membershipRenewalDate?: string | null;
+
+  /** Network pass credits remaining this billing cycle. */
+  networkCredits?: number;
+  /** Monthly allowance — 3 for Builder, 10 for Founder, 0 for Explorer. */
+  networkCreditsMax?: number;
+  /** ISO datetime — next 1st-of-month UTC when credits reset to networkCreditsMax. */
+  networkCreditsResetDate?: string | null;
+
+  /** PartnerMembershipRecord.id of the partner who referred this user. */
+  affiliatedPartnerId?: string | null;
+  /** % discount the user received via the partner referral (e.g. 50). */
+  membershipDiscountReceived?: number | null;
+
+  /** Denormalised counter — number of pass redemptions in the current month. */
+  networkPassesUsedThisMonth?: number;
+  /** Unique SpaceRecord.ids visited via Network Pass. Used for fraud signals. */
+  networkSpacesVisited?: string[];
+  /** ISO datetime of the most recent successful network visit. */
+  lastNetworkVisit?: string | null;
+  /**
+   * ISO datetime — when the last low-credit warning email was sent.
+   * Used to prevent re-sending the warning multiple times in the same month.
+   */
+  lastLowCreditWarningDate?: string | null;
 }
 
 export interface SessionRecord {
@@ -182,6 +225,17 @@ export interface TopUpIntentRecord {
 export type BookingStatus = 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'REFUNDED';
 export type BookingItemKind = 'SPACE' | 'PROGRAM' | 'EVENT';
 export type BookingUnit = 'HOUR' | 'DAY' | 'MONTH';
+/**
+ * How a booking was paid for. Legacy values 'wallet' / 'manual' are kept
+ * for backward compatibility; uppercase values are introduced alongside the
+ * Network Pass and Partner Program features.
+ */
+export type BookingPaymentMethod =
+  | 'wallet'
+  | 'manual'
+  | 'NETWORK_PASS'
+  | 'PROGRAM'
+  | 'PARTNER_DISCOUNT';
 
 /**
  * Booking ledger entry. The wallet transaction that paid for it is
@@ -196,8 +250,17 @@ export interface BookingRecord {
   userId: string | null;
   /** 'online' = booked via the platform wallet; 'offline' = manually added by incubator. */
   source?: 'online' | 'offline';
-  /** 'wallet' = paid via platform wallet; 'manual' = cash / cheque / external. */
-  paymentMethod?: 'wallet' | 'manual';
+  /**
+   * How the booking was paid for.
+   * - 'wallet' — Metwork wallet balance.
+   * - 'manual' — cash / cheque / external (offline incubator entry).
+   * - 'NETWORK_PASS' — redeemed via a monthly network credit.
+   * - 'PROGRAM' — covered by program enrolment fee (no separate charge).
+   * - 'PARTNER_DISCOUNT' — partner-referred booking with applied discount.
+   */
+  paymentMethod?: BookingPaymentMethod;
+  /** When paymentMethod === 'NETWORK_PASS', the NetworkVisitRecord.id created. */
+  networkVisitId?: string | null;
   /** For offline bookings: client's full name (not necessarily a platform user). */
   clientName?: string | null;
   clientPhone?: string | null;
@@ -329,7 +392,13 @@ export type AuditAction =
   | 'PROMO_CODE_CREATED'
   | 'PROMO_CODE_UPDATED'
   | 'PLATFORM_SETTINGS_UPDATED'
-  | 'COMMISSION_RULE_UPDATED';
+  | 'COMMISSION_RULE_UPDATED'
+  | 'CREDIT_CONFIG_UPDATED'
+  | 'PARTNER_ENROLLED'
+  | 'PARTNER_UNENROLLED'
+  | 'PARTNER_SETTINGS_UPDATED'
+  | 'PARTNER_PROMO_CODE_GENERATED'
+  | 'PARTNER_PROMO_CODE_BULK_GENERATED';
 
 export interface AuditLogRecord {
   id: string;
@@ -437,6 +506,20 @@ export interface SpaceRecord {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+
+  // ─── Partner Program extensions ────────────────────────────────────────
+  /**
+   * PartnerMembershipRecord.id when this space is enrolled in the Partner
+   * Program. Null/undefined = not enrolled. Settings (discount %, network
+   * payout rate, acceptance flags) live on PartnerMembershipRecord.
+   */
+  partnerMembershipId?: string | null;
+  /**
+   * Convenience flag — true when an active partner enrolment exists for
+   * this space AND `acceptNetworkPasses` is on for that enrolment. Kept
+   * denormalised so the public spaces filter can avoid a join.
+   */
+  isPartnerInNetwork?: boolean;
 }
 
 export interface ProgramRecord {
@@ -475,6 +558,242 @@ export interface EventRecord {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+/* ─────────────── Network Passes & Partner Program ─────────────── */
+
+/**
+ * Tracks a single coworking visit redeemed against a network pass credit.
+ * Created when the entrepreneur is checked in at a partner space.
+ * Drives the monthly payout batch run for partner spaces.
+ */
+export type NetworkVisitCheckInMethod = 'QR' | 'MANUAL' | 'AUTO';
+export type NetworkVisitPayoutStatus = 'PENDING' | 'PAID' | 'FAILED';
+
+export interface NetworkVisitRecord {
+  id: string;
+  /** UserRecord.id of the entrepreneur using the pass. Indexed. */
+  userId: string;
+  /** SpaceRecord.id of the host partner space. Indexed. */
+  spaceId: string;
+  /** BookingRecord.id of the booking this visit settles. Indexed. */
+  bookingId: string;
+
+  // Check-in metadata — nullable until the visitor actually arrives.
+  checkedInAt: string | null;
+  /** UserRecord.id of the staff member who confirmed check-in. */
+  checkedInBy: string | null;
+  checkedInMethod: NetworkVisitCheckInMethod | null;
+
+  // Payout tracking — partner space earns a flat fee per visit.
+  payoutStatus: NetworkVisitPayoutStatus;
+  /** Integer DZD. Defaults to 300; admin-configurable per partner. */
+  payoutAmount: number;
+  /** Identifier of the bulk payout batch this visit was included in. */
+  payoutBatchId: string | null;
+  paidOutDate: string | null;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Partner Program enrolment for a single Space. The Space's owning
+ * Incubator opts in/out via this record. Settings are scoped to the
+ * enrolment so each Space can be tuned independently.
+ *
+ * Uniqueness rule (enforced in the API layer):
+ *   - At most ONE PartnerMembershipRecord per spaceId.
+ */
+export interface PartnerMembershipRecord {
+  id: string;
+  /** SpaceRecord.id this enrolment belongs to. Unique. Indexed. */
+  spaceId: string;
+  /** False = enrolment paused; bookings via partner channels are rejected. */
+  isActive: boolean;
+
+  // Discounted membership offering.
+  /** Whether this partner can issue 50%-off Builder/Founder promo codes. */
+  offerDiscountedMemberships: boolean;
+  /** 1–99. Default 50. Validated in API layer. */
+  discountPercentage: number;
+  /** Hard cap on issued+redeemed codes. Null = unlimited. */
+  maxDiscountedMembers: number | null;
+  /** Counter of codes redeemed under this partner. Maintained on use. */
+  discountedMembersCount: number;
+
+  // Network pass acceptance.
+  /** Whether the partner space accepts bookings paid via NETWORK_PASS. */
+  acceptNetworkPasses: boolean;
+  /** Integer DZD paid to partner per accepted network visit. Default 300. */
+  networkPayoutRate: number;
+  /** Soft daily ceiling for network visitors. Null = no limit. */
+  maxNetworkUsersPerDay: number | null;
+
+  createdAt: string;
+  updatedAt: string;
+  /** UserRecord.id of the admin who last edited this enrolment. */
+  lastUpdatedBy: string | null;
+}
+
+export type PartnerPromoCodeTier = 'BUILDER' | 'FOUNDER';
+
+/**
+ * One-time promo code that grants a discounted membership purchase.
+ * The plaintext `code` is generated client-side (admin tool); the stored
+ * value should be hashed in the API layer before persistence.
+ */
+export interface PartnerPromoCodeRecord {
+  id: string;
+  /**
+   * The user-facing redemption code, e.g. "PARTNER-ORAN-2026-AB12X".
+   * NOTE: API layer hashes this before storage (see DATABASE_CHANGES.md
+   * "Security" section). On read, the hash is compared, never displayed.
+   */
+  code: string;
+  /** PartnerMembershipRecord.id that issued this code. Indexed. */
+  partnerId: string;
+  /** PartnerPromoCodeBatchRecord.id when the code was bulk-generated. */
+  batchId: string | null;
+
+  // Code configuration.
+  /** 1–99. Inherited from partner at creation but immutable afterwards. */
+  discountPercentage: number;
+  membershipTier: PartnerPromoCodeTier;
+  validFrom: string;
+  /** Typically validFrom + 30 days. Indexed for expiry sweeps. */
+  validUntil: string;
+
+  // Redemption state.
+  isUsed: boolean;
+  /** UserRecord.id of the redeemer. Null until used. */
+  usedBy: string | null;
+  usedAt: string | null;
+  /** UserMembershipRecord.id created by the redemption. Null until used. */
+  usedForMembership: string | null;
+
+  createdAt: string;
+  /** Email address the code was generated for (audit trail). */
+  createdFor: string;
+}
+
+/**
+ * Bulk-generation record — one PartnerPromoCodeBatchRecord references the
+ * many PartnerPromoCodeRecord rows it created. Supports counts of 1–10,000.
+ */
+export interface PartnerPromoCodeBatchRecord {
+  id: string;
+  /** PartnerMembershipRecord.id this batch belongs to. Indexed. */
+  partnerId: string;
+  /** Number of codes generated in this batch. Validated 1..10000 in API. */
+  count: number;
+  membershipTier: PartnerPromoCodeTier;
+  discountPercentage: number;
+  validUntil: string;
+  createdAt: string;
+  /** UserRecord.id of the admin who triggered the bulk generation. */
+  createdBy: string;
+}
+
+/**
+ * Affiliation between a user and a partner. Set once at promo-code
+ * redemption time and immutable thereafter (`createdAt` is the referral
+ * moment). Enforces the "user can't be affiliated twice" rule in the API
+ * layer via composite uniqueness on (userId, partnerId).
+ */
+export interface UserPartnerAffiliationRecord {
+  id: string;
+  /** UserRecord.id. Indexed. */
+  userId: string;
+  /** PartnerMembershipRecord.id. Indexed. */
+  partnerId: string;
+  referredAt: string;
+  /** PartnerPromoCodeRecord.code (plaintext at redemption time). */
+  promoCodeUsed: string;
+}
+
+/* ─────────────────── Network Pass Check-in Codes ─────────────────── */
+
+/**
+ * Single-use check-in code issued at booking confirmation time for
+ * Network Pass bookings. The plaintext code (format "MNP-{year}-{N5}")
+ * is NEVER stored — only the SHA-256 hash is persisted, so a DB leak
+ * cannot be used to fabricate valid check-ins.
+ *
+ * Lookup at reception is by `bookingId` (from the QR or manually typed
+ * code prefix); the staff-submitted code is then SHA-256-hashed and
+ * compared to `codeHash`. Constant-time compare in the API layer.
+ *
+ * One row per booking. Lifecycle:
+ *   issued → (scanned) → consumed → (or) expired
+ *
+ * NOTE: storing this in a separate collection — rather than as new
+ * fields on BookingRecord — keeps the booking model unchanged (per the
+ * "no new Booking fields" constraint).
+ */
+export interface NetworkCheckInCodeRecord {
+  id: string;
+  /** BookingRecord.id — one code per booking, enforced in the API layer. Indexed. */
+  bookingId: string;
+  /** SpaceRecord.id where the booking will be redeemed. Indexed. */
+  spaceId: string;
+  /** UserRecord.id of the entrepreneur. Indexed. */
+  userId: string;
+
+  /** SHA-256 of the plaintext code. Plaintext is shown to user once via email. */
+  codeHash: string;
+  /** ISO datetime — typically 23:59:59 UTC on the booking day. */
+  expiresAt: string;
+  /** Sequential code number used to compose the display string. */
+  sequenceNumber: number;
+
+  /** Whether the code has already been redeemed. */
+  consumed: boolean;
+  /** ISO datetime — when the code was successfully redeemed. */
+  consumedAt: string | null;
+  /** NetworkVisitRecord.id created on redemption. */
+  visitId: string | null;
+
+  createdAt: string;
+}
+
+/**
+ * Audit log entry for EVERY check-in attempt — successful or failed.
+ * Separate from the admin AuditLogRecord because the volume is different
+ * (per-attempt, not per-admin-action) and the schema diverges.
+ *
+ * Retention: kept indefinitely for fraud investigation.
+ */
+export type NetworkCheckInResult =
+  | 'SUCCESS'
+  | 'BOOKING_NOT_FOUND'
+  | 'WRONG_SPACE'
+  | 'WRONG_DATE'
+  | 'WRONG_PAYMENT_METHOD'
+  | 'BOOKING_NOT_CONFIRMED'
+  | 'INVALID_CODE'
+  | 'ALREADY_CHECKED_IN'
+  | 'EXPIRED'
+  | 'FRAUD_SUSPECTED'
+  | 'ERROR';
+
+export interface NetworkCheckInAuditRecord {
+  id: string;
+  /** ISO datetime when the attempt was made. Indexed. */
+  attemptedAt: string;
+  /** SpaceRecord.id where the scan happened (the SCANNER, not the booking). Indexed. */
+  spaceId: string;
+  /** BookingRecord.id when known. Null when QR/code couldn't be parsed. */
+  bookingId: string | null;
+  /** UserRecord.id of the entrepreneur. Null when unknown. */
+  userId: string | null;
+  /** 'QR' or 'MANUAL'. */
+  method: 'QR' | 'MANUAL';
+  result: NetworkCheckInResult;
+  /** UserRecord.id of the staff member who performed the scan. Null = anonymous. */
+  staffUserId: string | null;
+  /** Free-form details (e.g. "duplicate within 5 min", IP, etc.). */
+  details: Record<string, unknown>;
 }
 
 /* ─────────────────────────── Mentors ─────────────────────────── */
@@ -615,6 +934,16 @@ export interface PlatformConfig {
   yearlyDiscountPercent: number;
   /** Commission rate (0–1) taken on bookings for COMMISSION-plan incubators. Default 0.20. */
   commissionRate: number;
+
+  // ─── Network Pass credit allowances (admin-configurable) ─────────────
+  /** Monthly pass credits for Builder-tier users. Default 3. */
+  builderMonthlyCredits?: number;
+  /** Monthly pass credits for Founder-tier users. Default 10. */
+  founderMonthlyCredits?: number;
+  /** ISO datetime — last time a credit-config change was saved. */
+  creditConfigUpdatedAt?: string;
+  /** UserRecord.id of the admin who last changed the credit config. */
+  creditConfigUpdatedBy?: string;
 }
 
 export const defaultPlatformConfig: PlatformConfig = {
@@ -622,6 +951,8 @@ export const defaultPlatformConfig: PlatformConfig = {
   semesterlyMonths: 6,
   yearlyDiscountPercent: 30,
   commissionRate: 0.20,
+  builderMonthlyCredits: 3,
+  founderMonthlyCredits: 10,
 };
 
 /* ─────────────────────────── Notifications ─────────────────────────── */
@@ -637,6 +968,9 @@ export type NotificationType =
   | 'MEMBERSHIP_UPGRADED'
   | 'CONSULTATION_APPROVED'
   | 'CONSULTATION_REJECTED'
+  | 'NETWORK_CREDIT_LOW'
+  | 'NETWORK_CREDITS_RESET'
+  | 'PARTNER_PROMO_RECEIVED'
   | 'GENERAL';
 
 export interface NotificationRecord {
@@ -823,6 +1157,23 @@ interface DbShape {
   withdrawalRequests: WithdrawalRequestRecord[];
   /** Mentor consultation bookings (separate from mentor inquiry requests). */
   mentorConsultations: MentorConsultationRecord[];
+
+  // ─── Network Pass & Partner Program ──────────────────────────────────
+  /** Per-visit ledger backing the monthly partner payout batch run. */
+  networkVisits: NetworkVisitRecord[];
+  /** Partner Program enrolments — one per enrolled SpaceRecord. */
+  partnerMemberships: PartnerMembershipRecord[];
+  /** Single-use discount codes issued by partners. */
+  partnerPromoCodes: PartnerPromoCodeRecord[];
+  /** Bulk-generation manifests for partnerPromoCodes. */
+  partnerPromoCodeBatches: PartnerPromoCodeBatchRecord[];
+  /** User ↔ partner referral records. */
+  userPartnerAffiliations: UserPartnerAffiliationRecord[];
+  /** Per-booking single-use check-in codes (hash-only, never plaintext). */
+  networkCheckInCodes: NetworkCheckInCodeRecord[];
+  /** Per-attempt audit trail for every check-in scan or manual entry. */
+  networkCheckInAuditLogs: NetworkCheckInAuditRecord[];
+
   /**
    * One-shot flags and platform-wide config.
    */
@@ -869,6 +1220,13 @@ const empty: DbShape = {
   investments: [],
   withdrawalRequests: [],
   mentorConsultations: [],
+  networkVisits: [],
+  partnerMemberships: [],
+  partnerPromoCodes: [],
+  partnerPromoCodeBatches: [],
+  userPartnerAffiliations: [],
+  networkCheckInCodes: [],
+  networkCheckInAuditLogs: [],
   meta: {},
 };
 

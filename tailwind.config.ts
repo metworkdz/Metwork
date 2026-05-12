@@ -69,6 +69,30 @@ const config: Config = {
         success: 'hsl(142, 70%, 38%)',
         warning: 'hsl(38, 92%, 50%)',
         info: 'hsl(217, 91%, 60%)',
+
+        /* ── Membership tier palettes ── */
+        gold: {
+          50:  '#FAF6F0',
+          100: '#F5EDD9',
+          200: '#EFE0B5',
+          300: '#E8D9B5',
+          400: '#DEC87A',
+          600: '#D4AF37',
+          700: '#AA8C2E',
+          800: '#7A6222',
+          900: '#6B5218',
+        },
+        platinum: {
+          50:  '#FAFAF9',
+          100: '#F5F4F2',
+          200: '#EEEDEB',
+          300: '#E5E4E2',
+          400: '#C8C7C5',
+          600: '#9D9B99',
+          700: '#7A7876',
+          800: '#5A5856',
+          900: '#4A4845',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -99,14 +123,65 @@ const config: Config = {
           from: { opacity: '0', transform: 'translateY(8px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
+        shimmer: {
+          '0%, 100%': { opacity: '1' },
+          '50%':       { opacity: '0.82' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fade-in': 'fade-in 0.4s ease-out',
+        shimmer: 'shimmer 3s ease-in-out infinite',
       },
     },
   },
+  /**
+   * Safelist — guarantees gold/platinum tier classes survive production purge.
+   *
+   * These classes are composed dynamically (array.join, object maps) inside
+   * membership-tier-badge.tsx, tier-utils.ts, and partner-stats-card.tsx.
+   * The JIT scanner can miss them when they appear inside .join() calls or
+   * multi-value string literals, so we pin them explicitly.
+   */
+  safelist: [
+    // Gold (Builder tier) — base + dark variants
+    'border-gold-600',
+    'border-gold-600/40',
+    'border-gold-600/50',
+    'border-gold-600/60',
+    'bg-gold-50',
+    'bg-gold-900/20',
+    'text-gold-400',
+    'text-gold-600',
+    'text-gold-700',
+    'from-gold-400',
+    'from-gold-600',
+    'to-gold-400',
+    'hover:bg-gold-50',
+    'dark:border-gold-600/40',
+    'dark:border-gold-600/60',
+    'dark:bg-gold-900/20',
+    'dark:text-gold-400',
+    'dark:hover:bg-gold-900/20',
+    // Platinum (Founder tier) — base + dark variants
+    'border-platinum-300',
+    'border-platinum-300/80',
+    'border-platinum-600/60',
+    'bg-platinum-50',
+    'bg-platinum-900/20',
+    'text-platinum-400',
+    'text-platinum-600',
+    'text-platinum-700',
+    'from-platinum-300',
+    'from-platinum-600',
+    'to-platinum-300',
+    'hover:bg-platinum-50',
+    'dark:border-platinum-600/60',
+    'dark:bg-platinum-900/20',
+    'dark:text-platinum-400',
+    'dark:hover:bg-platinum-900/20',
+  ],
   plugins: [animate],
 };
 

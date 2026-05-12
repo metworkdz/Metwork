@@ -21,6 +21,12 @@ export function toSessionUser(u: UserRecord): SessionUser {
     membershipExpiresAt: u.membershipExpiresAt ?? null,
     avatarUrl: u.avatarUrl,
     locale: u.locale,
+    // Network Pass / tier fields — optional; omitted when not yet set on record
+    ...(u.membershipTier        !== undefined && { membershipTier: u.membershipTier }),
+    ...(u.membershipStartDate   !== undefined && { membershipStartDate: u.membershipStartDate }),
+    ...(u.networkCredits        !== undefined && { networkCredits: u.networkCredits }),
+    ...(u.networkCreditsMax     !== undefined && { networkCreditsMax: u.networkCreditsMax }),
+    ...(u.networkCreditsResetDate !== undefined && { networkCreditsResetDate: u.networkCreditsResetDate }),
   };
 }
 

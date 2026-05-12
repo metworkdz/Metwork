@@ -24,10 +24,25 @@ export interface BookingDto {
   status: BookingDtoStatus;
   clientReference: string;
   transactionId: string | null;
-  /** null for legacy bookings and free items. */
-  paymentMethod: 'wallet' | 'manual' | null;
+  /**
+   * How the booking was paid. Lower-case 'wallet' / 'manual' are the legacy
+   * values; upper-case values are introduced with Network Passes and the
+   * Partner Program. Null for legacy bookings and free items.
+   */
+  paymentMethod: BookingPaymentMethodDto | null;
   createdAt: string;
 }
+
+/**
+ * Mirrors `BookingPaymentMethod` in `@/server/db/store` but kept in this
+ * client-facing module so the DTO has no server-only imports.
+ */
+export type BookingPaymentMethodDto =
+  | 'wallet'
+  | 'manual'
+  | 'NETWORK_PASS'
+  | 'PROGRAM'
+  | 'PARTNER_DISCOUNT';
 
 export interface CreateSpaceBookingResponse {
   booking: BookingDto;
