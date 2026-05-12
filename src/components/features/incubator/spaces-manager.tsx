@@ -57,13 +57,17 @@ export function SpacesManager() {
       .catch(() => { /* ignore subscription fetch errors */ });
   }, []);
 
-  // FIX: BUG-2 — delete handler
   async function handleDelete(id: string) {
     if (!confirm('Delete this space? This cannot be undone.')) return;
     setDeletingId(id);
     try {
       const res = await fetch(`/api/incubator/spaces/${id}`, { method: 'DELETE' });
-      if (res.ok) setRows((prev) => prev.filter((s) => s.id !== id));
+      if (res.ok) {
+        setRows((prev) => prev.filter((s) => s.id !== id));
+      } else {
+        const body = await res.json().catch(() => ({})) as { message?: string };
+        alert(body.message ?? 'Failed to delete space. Please try again.');
+      }
     } finally {
       setDeletingId(null);
     }

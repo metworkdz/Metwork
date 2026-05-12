@@ -49,11 +49,15 @@ export function EventsManager() {
       .catch(() => { /* ignore subscription fetch errors */ });
   }, []);
 
-  // FIX: BUG-2 — delete handler
   async function handleDelete(id: string) {
     if (!confirm('Delete this event? This cannot be undone.')) return;
     const res = await fetch(`/api/incubator/events/${id}`, { method: 'DELETE' });
-    if (res.ok) setRows((prev) => prev.filter((e) => e.id !== id));
+    if (res.ok) {
+      setRows((prev) => prev.filter((e) => e.id !== id));
+    } else {
+      const body = await res.json().catch(() => ({})) as { message?: string };
+      alert(body.message ?? 'Failed to delete event. Please try again.');
+    }
   }
 
   const columns: ListingColumn<PlatformEvent>[] = [

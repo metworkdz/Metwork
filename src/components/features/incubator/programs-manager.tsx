@@ -57,11 +57,15 @@ export function ProgramsManager() {
       .catch(() => { /* ignore subscription fetch errors */ });
   }, []);
 
-  // FIX: BUG-2 — delete handler
   async function handleDelete(id: string) {
     if (!confirm('Delete this program? This cannot be undone.')) return;
     const res = await fetch(`/api/incubator/programs/${id}`, { method: 'DELETE' });
-    if (res.ok) setRows((prev) => prev.filter((p) => p.id !== id));
+    if (res.ok) {
+      setRows((prev) => prev.filter((p) => p.id !== id));
+    } else {
+      const body = await res.json().catch(() => ({})) as { message?: string };
+      alert(body.message ?? 'Failed to delete program. Please try again.');
+    }
   }
 
   const columns: ListingColumn<Program>[] = [

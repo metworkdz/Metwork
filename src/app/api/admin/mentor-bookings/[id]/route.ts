@@ -80,17 +80,22 @@ export async function PATCH(
   // Send outcome email — fire-and-forget, never blocks response
   const mentor = await findMentorById(existing.mentorId);
   if (mentor) {
+    // Resolve the client's preferred language (email templates support 'en' | 'fr' only)
+    const data = await db.read();
+    const client = data.users.find((u) => u.id === existing.userId);
+    const lang: 'en' | 'fr' = client?.locale === 'en' ? 'en' : 'fr';
+
     if (input.status === 'APPROVED') {
       // Email + WhatsApp to client
-      sendConsultationConfirmationEmail({ booking: result.booking, mentor, lang: 'fr' });
+      sendConsultationConfirmationEmail({ booking: result.booking, mentor, lang });
       // Email to mentor/consultant
-      sendMentorSessionConfirmedEmail({ booking: result.booking, mentor, lang: 'fr' });
+      sendMentorSessionConfirmedEmail({ booking: result.booking, mentor, lang });
     } else {
       sendConsultationRejectedEmail({
         booking:   result.booking,
         mentor,
         adminNote: input.adminNote ?? null,
-        lang:      'fr',
+        lang,
       });
     }
   }

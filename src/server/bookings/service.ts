@@ -66,6 +66,8 @@ export interface CreateSpaceBookingArgs {
   promoCode?: string;
   /** Default 'wallet'. manual = reserve only, no wallet debit, status PENDING_PAYMENT. */
   paymentMethod?: 'wallet' | 'manual';
+  /** Fractional membership discount to apply before the promo code (0–1). e.g. 0.20 = 20 % off. */
+  membershipDiscount?: number;
 }
 
 function unitPrice(space: Space, unit: BookingUnit): number | null {
@@ -187,7 +189,12 @@ export async function createSpaceBooking(
 
   const quantity  = computeQuantity(args.startsAt, args.endsAt, args.unit);
   const { endsAt } = args;
-  const baseTotal = price * quantity;
+  const rawBaseTotal = price * quantity;
+  // Apply membership discount (e.g. STARTUP tier 20 % off) before promo codes
+  const membershipFraction = Math.min(1, Math.max(0, args.membershipDiscount ?? 0));
+  const baseTotal = membershipFraction > 0
+    ? Math.round(rawBaseTotal * (1 - membershipFraction))
+    : rawBaseTotal;
 
   // Ensure promo codes are seeded before entering the critical section.
   if (args.promoCode) await ensurePromoCodesSeeded();

@@ -46,8 +46,7 @@ export async function POST(req: NextRequest) {
   // ── Membership discount (STARTUP tier gets 20% off spaces) ───────────────
   const membershipDiscount = await getSpaceDiscountForUser(guard.user.id);
 
-  // ── Promo code discount (stacks additively, capped at 100%) ──────────────
-  let promoDiscount = 0;
+  // ── Promo code early validation (before the DB write) ───────────────────
   if (input.promoCode) {
     const promoResult = await validatePromoCode(input.promoCode);
     if (!promoResult.valid) {
@@ -62,10 +61,7 @@ export async function POST(req: NextRequest) {
     if (promoResult.promoCode.appliesTo !== 'ALL' && promoResult.promoCode.appliesTo !== 'SPACE') {
       return jsonError(422, 'INVALID_PROMO_CODE', 'This promo code does not apply to space bookings');
     }
-    promoDiscount = promoResult.discountPercent;
   }
-
-  const totalDiscountPercent = Math.min(100, membershipDiscount * 100 + promoDiscount);
 
   const result = await createSpaceBooking({
     userId: guard.user.id,
@@ -76,6 +72,7 @@ export async function POST(req: NextRequest) {
     clientReference: input.clientReference,
     promoCode: input.promoCode,
     paymentMethod: input.paymentMethod,
+    membershipDiscount,
   });
 
   // Consume promo code if booking succeeded

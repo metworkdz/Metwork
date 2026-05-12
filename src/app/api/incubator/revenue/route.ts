@@ -2,7 +2,7 @@
  * GET /api/incubator/revenue
  *
  * Returns revenue summary and monthly breakdown for all bookings on the
- * incubator's spaces and programs.
+ * incubator's spaces, programs, and events.
  */
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
@@ -34,14 +34,18 @@ export async function GET() {
   const ownedProgramIds = new Set(
     (data.programs ?? []).filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
   );
+  const ownedEventIds = new Set(
+    (data.events ?? []).filter((e) => e.incubatorId === incubator.id).map((e) => e.id),
+  );
 
   const relevant = data.bookings.filter(
     (b) =>
       b.status !== 'CANCELLED' &&
       b.status !== 'REFUNDED' &&
       (
-        (b.itemKind === 'SPACE' && ownedSpaceIds.has(b.itemId)) ||
-        (b.itemKind === 'PROGRAM' && ownedProgramIds.has(b.itemId))
+        (b.itemKind === 'SPACE'   && ownedSpaceIds.has(b.itemId))   ||
+        (b.itemKind === 'PROGRAM' && ownedProgramIds.has(b.itemId)) ||
+        (b.itemKind === 'EVENT'   && ownedEventIds.has(b.itemId))
       ),
   );
 

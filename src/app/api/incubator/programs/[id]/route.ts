@@ -11,6 +11,9 @@ import { fromZod, json, jsonError } from '@/server/http/json';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+const isoDate = z.string().regex(datePattern, 'Must be YYYY-MM-DD');
+
 const patchSchema = z.object({
   title: z.string().min(2).max(150).optional(),
   description: z.string().max(2000).optional(),
@@ -19,11 +22,18 @@ const patchSchema = z.object({
   imageUrl: z.string().url().nullable().optional(),
   price: z.number().int().nonnegative().optional(),
   seatsTotal: z.number().int().positive().optional(),
-  deadline: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  deadline:  isoDate.optional(),
+  startDate: isoDate.optional(),
+  endDate:   isoDate.optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'CLOSED']).optional(),
-});
+}).refine(
+  (d) => {
+    if (d.startDate && d.endDate && d.startDate >= d.endDate) return false;
+    if (d.deadline && d.startDate && d.deadline > d.startDate) return false;
+    return true;
+  },
+  { message: 'deadline must be ≤ startDate, and startDate must be < endDate' },
+);
 
 export async function PATCH(
   req: NextRequest,

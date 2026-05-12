@@ -19,7 +19,7 @@ const patchSchema = z.object({
   price: z.number().int().nonnegative().optional(),
   isOnline: z.boolean().optional(),
   capacity: z.number().int().positive().optional(),
-  eventDate: z.string().min(1).optional(),
+  eventDate: z.string().datetime({ offset: true }).optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'CANCELLED']).optional(),
 });
 
