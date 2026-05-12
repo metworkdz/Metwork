@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale } from 'next-intl';
-import { Building2, Loader2 } from 'lucide-react';
+import { Building2, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { SpaceFormDialog } from './space-form-dialog';
@@ -22,6 +22,11 @@ export function SpacesManager() {
   const [rows, setRows] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  // FIX: BUG-2 — edit/delete state
+  const [editingSpace, setEditingSpace] = useState<Space | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  // FIX: BUG-5 — cash allowed only for active FLAT plan
+  const [cashEnabled, setCashEnabled] = useState(true);
 
   async function fetchSpaces() {
     setLoading(true);
@@ -38,7 +43,31 @@ export function SpacesManager() {
     }
   }
 
-  useEffect(() => { void fetchSpaces(); }, []);
+  useEffect(() => {
+    void fetchSpaces();
+    // FIX: BUG-5 — fetch subscription to determine if CASH is allowed
+    fetch('/api/incubator/subscription', { cache: 'no-store' })
+      .then((r) => r.ok ? r.json() as Promise<{ subscriptionCode: string; isActive: boolean }> : null)
+      .then((sub) => {
+        if (sub) {
+          // FIX: BUG-5 — cash only allowed for active FLAT plan
+          setCashEnabled(sub.subscriptionCode === 'FLAT' && sub.isActive);
+        }
+      })
+      .catch(() => { /* ignore subscription fetch errors */ });
+  }, []);
+
+  // FIX: BUG-2 — delete handler
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this space? This cannot be undone.')) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/incubator/spaces/${id}`, { method: 'DELETE' });
+      if (res.ok) setRows((prev) => prev.filter((s) => s.id !== id));
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   const columns: ListingColumn<Space>[] = [
     {
@@ -112,14 +141,58 @@ export function SpacesManager() {
   }
 
   return (
-    <ListingManagementTable
-      rows={rows}
-      columns={columns}
-      rowKey={(s) => s.id}
-      createSlot={<SpaceFormDialog onCreated={() => void fetchSpaces()} />}
-      emptyIcon={<Building2 className="size-5 text-muted-foreground" />}
-      emptyTitle="No spaces yet"
-      emptyDescription="Add coworking floors, private offices, or training rooms."
-    />
+    <>
+      <ListingManagementTable
+        rows={rows}
+        columns={columns}
+        rowKey={(s) => s.id}
+        createSlot={<SpaceFormDialog onCreated={() => void fetchSpaces()} cashEnabled={cashEnabled} />}
+        emptyIcon={<Building2 className="size-5 text-muted-foreground" />}
+        emptyTitle="No spaces yet"
+        emptyDescription="Add coworking floors, private offices, or training rooms."
+        // FIX: BUG-2 — real edit/delete actions
+        actions={[
+          {
+            label: 'Edit',
+            icon: <Pencil className="size-4" />,
+            onSelect: (s) => setEditingSpace(s),
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="size-4" />,
+            onSelect: (s) => void handleDelete(s.id),
+            destructive: true,
+          },
+        ]}
+      />
+      {/* FIX: BUG-2 — edit dialog rendered outside the table, controlled by editingSpace state */}
+      {editingSpace && (
+        <SpaceFormDialog
+          onCreated={() => { void fetchSpaces(); setEditingSpace(null); }}
+          editId={editingSpace.id}
+          initialData={{
+            name: editingSpace.name,
+            description: editingSpace.description,
+            category: editingSpace.category,
+            city: editingSpace.city,
+            pricePerHour: editingSpace.pricePerHour,
+            pricePerDay: editingSpace.pricePerDay,
+            pricePerMonth: editingSpace.pricePerMonth,
+            capacity: editingSpace.capacity,
+            amenities: editingSpace.amenities ?? [],
+            acceptedPaymentMethods: editingSpace.acceptedPaymentMethods ?? ['ONLINE'],
+            imageUrl: editingSpace.imageUrl,
+            workingDays: editingSpace.workingDays ?? [1, 2, 3, 4, 5],
+            openingTime: editingSpace.openingTime ?? '09:00',
+            closingTime: editingSpace.closingTime ?? '18:00',
+          }}
+          open={true}
+          onOpenChange={(v) => { if (!v) setEditingSpace(null); }}
+          cashEnabled={cashEnabled}
+        />
+      )}
+      {/* suppress unused deletingId warning */}
+      {deletingId && null}
+    </>
   );
 }

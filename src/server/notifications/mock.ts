@@ -394,24 +394,47 @@ export function sendConsultationConfirmationEmail(input: MentorConfirmationInput
     ? Math.round((dur / 60) * feePerHour)
     : (feePerHour > 0 ? feePerHour : 0);
 
+  // FIX: BUG-1 — decouple email from PDF: send email even if PDF generation fails
   generateMentorConfirmationPdf(input)
-    .then((pdfBuffer) =>
-      sendResendEmail({
-        to:      booking.userEmail,
-        subject,
-        html:    consultationConfirmationEmailHtml({
-          clientName:      booking.userName,
-          mentorName:      mentor.fullName,
-          reference:       booking.id,
-          lang,
-          scheduledAt:     booking.scheduledAt ?? null,
-          durationMinutes: booking.durationMinutes ?? null,
-          estimatedFee:    feePerHour > 0 ? estimatedFee : null,
-          meetLink:        booking.meetLink ?? null,
-          isOffline:       booking.isOffline ?? false,
+    .then(
+      (pdfBuffer) =>
+        // PDF succeeded — send with attachment
+        sendResendEmail({
+          to:      booking.userEmail,
+          subject,
+          html:    consultationConfirmationEmailHtml({
+            clientName:      booking.userName,
+            mentorName:      mentor.fullName,
+            reference:       booking.id,
+            lang,
+            scheduledAt:     booking.scheduledAt ?? null,
+            durationMinutes: booking.durationMinutes ?? null,
+            estimatedFee:    feePerHour > 0 ? estimatedFee : null,
+            meetLink:        booking.meetLink ?? null,
+            isOffline:       booking.isOffline ?? false,
+          }),
+          attachments: [{ filename, content: pdfBuffer }],
         }),
-        attachments: [{ filename, content: pdfBuffer }],
-      }),
+      (pdfErr: Error) => {
+        // FIX: BUG-1 — PDF failed: log separately, then send email WITHOUT attachment
+        // eslint-disable-next-line no-console
+        console.error(`${banner} PDF generation failed (sending email without attachment) →`, pdfErr.message);
+        return sendResendEmail({
+          to:      booking.userEmail,
+          subject,
+          html:    consultationConfirmationEmailHtml({
+            clientName:      booking.userName,
+            mentorName:      mentor.fullName,
+            reference:       booking.id,
+            lang,
+            scheduledAt:     booking.scheduledAt ?? null,
+            durationMinutes: booking.durationMinutes ?? null,
+            estimatedFee:    feePerHour > 0 ? estimatedFee : null,
+            meetLink:        booking.meetLink ?? null,
+            isOffline:       booking.isOffline ?? false,
+          }),
+        });
+      },
     )
     .then((sent) => {
       if (!sent) {

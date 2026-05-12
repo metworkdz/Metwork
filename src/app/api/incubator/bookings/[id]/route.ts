@@ -76,13 +76,18 @@ export async function PATCH(
     const ownedProgramIds = new Set(
       (d.programs ?? []).filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
     );
+    // FIX: BUG-3 — events were missing from ownership check
+    const ownedEventIds = new Set(
+      (d.events ?? []).filter((e) => e.incubatorId === incubator.id).map((e) => e.id),
+    );
 
     const booking = d.bookings.find((b) => b.id === id);
     if (!booking) return 'NOT_FOUND';
 
     const isOwned =
-      (booking.itemKind === 'SPACE' && ownedSpaceIds.has(booking.itemId)) ||
-      (booking.itemKind === 'PROGRAM' && ownedProgramIds.has(booking.itemId));
+      (booking.itemKind === 'SPACE'   && ownedSpaceIds.has(booking.itemId))   ||
+      (booking.itemKind === 'PROGRAM' && ownedProgramIds.has(booking.itemId)) ||
+      (booking.itemKind === 'EVENT'   && ownedEventIds.has(booking.itemId));   // FIX: BUG-3
 
     if (!isOwned) return 'FORBIDDEN';
     if (booking.status === 'CANCELLED' || booking.status === 'REFUNDED') return 'ALREADY_FINAL';

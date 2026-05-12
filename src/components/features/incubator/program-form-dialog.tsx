@@ -1,10 +1,11 @@
 'use client';
 
 /**
- * Dialog for creating a new program listing.
- * POSTs to POST /api/incubator/programs.
+ * Dialog for creating or editing a program listing.
+ * POST /api/incubator/programs  (create)
+ * PATCH /api/incubator/programs/[id]  (edit)
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { ImageUploadField } from '@/components/shared/image-upload-field';
+import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 import type { ProgramType } from '@/types/domain';
 
 const PROGRAM_TYPES: { value: ProgramType; label: string }[] = [
@@ -37,12 +39,24 @@ const PROGRAM_TYPES: { value: ProgramType; label: string }[] = [
   { value: 'WORKSHOP',     label: 'Workshop' },
 ];
 
+// FIX: BUG-2 — added edit mode props; FIX: BUG-5 — added cashEnabled prop
 interface ProgramFormDialogProps {
   onCreated: () => void;
+  editId?: string;
+  initialData?: {
+    title?: string; description?: string; type?: ProgramType; city?: string;
+    price?: number; seatsTotal?: number; deadline?: string; startDate?: string;
+    endDate?: string; acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
+  };
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
+  cashEnabled?: boolean;
 }
 
-export function ProgramFormDialog({ onCreated }: ProgramFormDialogProps) {
-  const [open, setOpen] = useState(false);
+export function ProgramFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange, cashEnabled = true }: ProgramFormDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = openProp ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +71,25 @@ export function ProgramFormDialog({ onCreated }: ProgramFormDialogProps) {
   const [endDate, setEndDate] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
   const [imageUrl, setImageUrl] = useState('');
+
+  // FIX: BUG-2 — pre-fill form when in edit mode
+  useEffect(() => {
+    if (editId && initialData) {
+      setTitle(initialData.title ?? '');
+      setDescription(initialData.description ?? '');
+      setType(initialData.type ?? 'INCUBATION');
+      setCity(initialData.city ?? '');
+      setPrice(initialData.price != null ? String(initialData.price) : '0');
+      setSeatsTotal(initialData.seatsTotal != null ? String(initialData.seatsTotal) : '20');
+      // FIX: BUG-2 — convert ISO date strings back to YYYY-MM-DD for date inputs
+      setDeadline(initialData.deadline ? initialData.deadline.substring(0, 10) : '');
+      setStartDate(initialData.startDate ? initialData.startDate.substring(0, 10) : '');
+      setEndDate(initialData.endDate ? initialData.endDate.substring(0, 10) : '');
+      setAcceptedMethods(initialData.acceptedPaymentMethods ?? ['ONLINE', 'CASH']);
+      setImageUrl(initialData.imageUrl ?? '');
+      setError(null);
+    }
+  }, [editId, initialData]);
 
   function toggleMethod(m: 'ONLINE' | 'CASH') {
     setAcceptedMethods((prev) => {
@@ -86,8 +119,11 @@ export function ProgramFormDialog({ onCreated }: ProgramFormDialogProps) {
     setError(null);
     setSubmitting(true);
     try {
-      const res = await fetch('/api/incubator/programs', {
-        method: 'POST',
+      // FIX: BUG-2 — use PATCH for edit mode, POST for create
+      const url = editId ? `/api/incubator/programs/${editId}` : '/api/incubator/programs';
+      const method = editId ? 'PATCH' : 'POST';
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
@@ -105,7 +141,7 @@ export function ProgramFormDialog({ onCreated }: ProgramFormDialogProps) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { message?: string };
-        setError(data.message ?? 'Failed to create program.');
+        setError(data.message ?? (editId ? 'Failed to update program.' : 'Failed to create program.'));
         return;
       }
       onCreated();
@@ -120,18 +156,23 @@ export function ProgramFormDialog({ onCreated }: ProgramFormDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5">
-          <PlusCircle className="size-4" />
-          Add program
-        </Button>
-      </DialogTrigger>
+      {/* FIX: BUG-2 — only render trigger in create mode */}
+      {!editId && (
+        <DialogTrigger asChild>
+          <Button size="sm" className="gap-1.5">
+            <PlusCircle className="size-4" />
+            Add program
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>New program</DialogTitle>
+          <DialogTitle>{editId ? 'Edit program' : 'New program'}</DialogTitle>
           <DialogDescription>
-            Create an incubation, acceleration, or training program listing.
+            {editId
+              ? 'Update the details for this program listing.'
+              : 'Create an incubation, acceleration, or training program listing.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -156,7 +197,10 @@ export function ProgramFormDialog({ onCreated }: ProgramFormDialogProps) {
             </div>
             <div>
               <Label htmlFor="p-city">City</Label>
-              <Input id="p-city" className="mt-1" value={city} onChange={(e) => setCity(e.target.value)} required />
+              {/* FIX: BUG-4 — searchable wilaya dropdown */}
+              <div className="mt-1">
+                <AlgerianCitySelect id="p-city" value={city} onChange={setCity} required />
+              </div>
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="p-desc">Description</Label>
@@ -205,21 +249,25 @@ export function ProgramFormDialog({ onCreated }: ProgramFormDialogProps) {
           <div>
             <p className="text-sm font-medium">Accepted payment methods</p>
             <div className="mt-1.5 flex gap-3">
-              {(['ONLINE', 'CASH'] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => toggleMethod(m)}
-                  className={cn(
-                    'flex-1 rounded-lg border px-3 py-2.5 text-sm transition-colors',
-                    acceptedMethods.includes(m)
-                      ? 'border-primary bg-primary/5 font-medium text-primary'
-                      : 'border-border text-muted-foreground hover:border-primary/40',
-                  )}
-                >
-                  {m === 'ONLINE' ? 'Online (wallet)' : 'Cash on-site'}
-                </button>
-              ))}
+              {(['ONLINE', 'CASH'] as const).map((m) => {
+                // FIX: BUG-5 — hide CASH button when cash is not allowed for this subscription
+                if (m === 'CASH' && !cashEnabled) return null;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => toggleMethod(m)}
+                    className={cn(
+                      'flex-1 rounded-lg border px-3 py-2.5 text-sm transition-colors',
+                      acceptedMethods.includes(m)
+                        ? 'border-primary bg-primary/5 font-medium text-primary'
+                        : 'border-border text-muted-foreground hover:border-primary/40',
+                    )}
+                  >
+                    {m === 'ONLINE' ? 'Online (wallet)' : 'Cash on-site'}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -231,7 +279,7 @@ export function ProgramFormDialog({ onCreated }: ProgramFormDialogProps) {
 
           <DialogFooter>
             <Button type="submit" loading={submitting}>
-              {submitting ? 'Creating…' : 'Create program'}
+              {submitting ? (editId ? 'Saving…' : 'Creating…') : (editId ? 'Save changes' : 'Create program')}
             </Button>
           </DialogFooter>
         </form>

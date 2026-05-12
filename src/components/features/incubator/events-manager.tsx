@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale } from 'next-intl';
-import { Calendar, Loader2 } from 'lucide-react';
+import { Calendar, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { EventFormDialog } from './event-form-dialog';
@@ -15,6 +15,10 @@ export function EventsManager() {
   const [rows, setRows] = useState<PlatformEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  // FIX: BUG-2 — edit state
+  const [editingEvent, setEditingEvent] = useState<PlatformEvent | null>(null);
+  // FIX: BUG-5 — cash allowed only for active FLAT plan
+  const [cashEnabled, setCashEnabled] = useState(true);
 
   async function fetchEvents() {
     setLoading(true);
@@ -31,7 +35,26 @@ export function EventsManager() {
     }
   }
 
-  useEffect(() => { void fetchEvents(); }, []);
+  useEffect(() => {
+    void fetchEvents();
+    // FIX: BUG-5 — fetch subscription to determine if CASH is allowed
+    fetch('/api/incubator/subscription', { cache: 'no-store' })
+      .then((r) => r.ok ? r.json() as Promise<{ subscriptionCode: string; isActive: boolean }> : null)
+      .then((sub) => {
+        if (sub) {
+          // FIX: BUG-5 — cash only allowed for active FLAT plan
+          setCashEnabled(sub.subscriptionCode === 'FLAT' && sub.isActive);
+        }
+      })
+      .catch(() => { /* ignore subscription fetch errors */ });
+  }, []);
+
+  // FIX: BUG-2 — delete handler
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this event? This cannot be undone.')) return;
+    const res = await fetch(`/api/incubator/events/${id}`, { method: 'DELETE' });
+    if (res.ok) setRows((prev) => prev.filter((e) => e.id !== id));
+  }
 
   const columns: ListingColumn<PlatformEvent>[] = [
     {
@@ -119,14 +142,51 @@ export function EventsManager() {
   }
 
   return (
-    <ListingManagementTable
-      rows={rows}
-      columns={columns}
-      rowKey={(e) => e.id}
-      createSlot={<EventFormDialog onCreated={() => void fetchEvents()} />}
-      emptyIcon={<Calendar className="size-5 text-muted-foreground" />}
-      emptyTitle="No events yet"
-      emptyDescription="Schedule pitch nights, demo days, and meetups."
-    />
+    <>
+      <ListingManagementTable
+        rows={rows}
+        columns={columns}
+        rowKey={(e) => e.id}
+        createSlot={<EventFormDialog onCreated={() => void fetchEvents()} cashEnabled={cashEnabled} />}
+        emptyIcon={<Calendar className="size-5 text-muted-foreground" />}
+        emptyTitle="No events yet"
+        emptyDescription="Schedule pitch nights, demo days, and meetups."
+        // FIX: BUG-2 — real edit/delete actions
+        actions={[
+          {
+            label: 'Edit',
+            icon: <Pencil className="size-4" />,
+            onSelect: (e) => setEditingEvent(e),
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="size-4" />,
+            onSelect: (e) => void handleDelete(e.id),
+            destructive: true,
+          },
+        ]}
+      />
+      {/* FIX: BUG-2 — edit dialog rendered outside the table, controlled by editingEvent state */}
+      {editingEvent && (
+        <EventFormDialog
+          onCreated={() => { void fetchEvents(); setEditingEvent(null); }}
+          editId={editingEvent.id}
+          initialData={{
+            title: editingEvent.title,
+            description: editingEvent.description,
+            city: editingEvent.city,
+            price: editingEvent.price,
+            capacity: editingEvent.capacity,
+            isOnline: editingEvent.isOnline,
+            eventDate: editingEvent.eventDate,
+            acceptedPaymentMethods: editingEvent.acceptedPaymentMethods ?? ['ONLINE'],
+            imageUrl: editingEvent.imageUrl,
+          }}
+          open={true}
+          onOpenChange={(v) => { if (!v) setEditingEvent(null); }}
+          cashEnabled={cashEnabled}
+        />
+      )}
+    </>
   );
 }

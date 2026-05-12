@@ -1,10 +1,11 @@
 'use client';
 
 /**
- * Dialog for creating a new space listing.
- * POSTs to POST /api/incubator/spaces.
+ * Dialog for creating or editing a space listing.
+ * POST /api/incubator/spaces  (create)
+ * PATCH /api/incubator/spaces/[id]  (edit)
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { ImageUploadField } from '@/components/shared/image-upload-field';
+import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 import type { SpaceCategory } from '@/types/domain';
 
 const CATEGORIES: { value: SpaceCategory; label: string }[] = [
@@ -36,12 +38,26 @@ const CATEGORIES: { value: SpaceCategory; label: string }[] = [
   { value: 'DOMICILIATION',  label: 'Domiciliation' },
 ];
 
+// FIX: BUG-2 — added edit mode props; FIX: BUG-5 — added cashEnabled prop
 interface SpaceFormDialogProps {
   onCreated: () => void;
+  editId?: string;
+  initialData?: {
+    name?: string; description?: string; category?: SpaceCategory;
+    city?: string; pricePerHour?: number | null; pricePerDay?: number | null;
+    pricePerMonth?: number | null; capacity?: number; amenities?: string[];
+    acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
+    workingDays?: number[]; openingTime?: string; closingTime?: string;
+  };
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
+  cashEnabled?: boolean;
 }
 
-export function SpaceFormDialog({ onCreated }: SpaceFormDialogProps) {
-  const [open, setOpen] = useState(false);
+export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange, cashEnabled = true }: SpaceFormDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = openProp ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,6 +77,27 @@ export function SpaceFormDialog({ onCreated }: SpaceFormDialogProps) {
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [openingTime, setOpeningTime] = useState('09:00');
   const [closingTime, setClosingTime] = useState('18:00');
+
+  // FIX: BUG-2 — pre-fill form when in edit mode
+  useEffect(() => {
+    if (editId && initialData) {
+      setName(initialData.name ?? '');
+      setDescription(initialData.description ?? '');
+      setCategory(initialData.category ?? 'COWORKING');
+      setCity(initialData.city ?? '');
+      setPricePerHour(initialData.pricePerHour != null ? String(initialData.pricePerHour) : '');
+      setPricePerDay(initialData.pricePerDay != null ? String(initialData.pricePerDay) : '');
+      setPricePerMonth(initialData.pricePerMonth != null ? String(initialData.pricePerMonth) : '');
+      setCapacity(initialData.capacity != null ? String(initialData.capacity) : '10');
+      setAmenities((initialData.amenities ?? []).join(', '));
+      setAcceptedMethods(initialData.acceptedPaymentMethods ?? ['ONLINE', 'CASH']);
+      setImageUrl(initialData.imageUrl ?? '');
+      setWorkingDays(initialData.workingDays ?? [1, 2, 3, 4, 5]);
+      setOpeningTime(initialData.openingTime ?? '09:00');
+      setClosingTime(initialData.closingTime ?? '18:00');
+      setError(null);
+    }
+  }, [editId, initialData]);
 
   function toggleMethod(m: 'ONLINE' | 'CASH') {
     setAcceptedMethods((prev) => {
@@ -107,8 +144,11 @@ export function SpaceFormDialog({ onCreated }: SpaceFormDialogProps) {
 
     setSubmitting(true);
     try {
-      const res = await fetch('/api/incubator/spaces', {
-        method: 'POST',
+      // FIX: BUG-2 — use PATCH for edit mode, POST for create
+      const url = editId ? `/api/incubator/spaces/${editId}` : '/api/incubator/spaces';
+      const method = editId ? 'PATCH' : 'POST';
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
@@ -129,7 +169,7 @@ export function SpaceFormDialog({ onCreated }: SpaceFormDialogProps) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { message?: string };
-        setError(data.message ?? 'Failed to create space.');
+        setError(data.message ?? (editId ? 'Failed to update space.' : 'Failed to create space.'));
         return;
       }
       onCreated();
@@ -144,18 +184,23 @@ export function SpaceFormDialog({ onCreated }: SpaceFormDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5">
-          <PlusCircle className="size-4" />
-          Add space
-        </Button>
-      </DialogTrigger>
+      {/* FIX: BUG-2 — only render trigger in create mode; edit mode is controlled externally */}
+      {!editId && (
+        <DialogTrigger asChild>
+          <Button size="sm" className="gap-1.5">
+            <PlusCircle className="size-4" />
+            Add space
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>New space</DialogTitle>
+          <DialogTitle>{editId ? 'Edit space' : 'New space'}</DialogTitle>
           <DialogDescription>
-            Fill in the details for your new coworking or office listing.
+            {editId
+              ? 'Update the details for this space listing.'
+              : 'Fill in the details for your new coworking or office listing.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -180,7 +225,10 @@ export function SpaceFormDialog({ onCreated }: SpaceFormDialogProps) {
             </div>
             <div>
               <Label htmlFor="s-city">City</Label>
-              <Input id="s-city" className="mt-1" value={city} onChange={(e) => setCity(e.target.value)} required />
+              {/* FIX: BUG-4 — searchable wilaya dropdown */}
+              <div className="mt-1">
+                <AlgerianCitySelect id="s-city" value={city} onChange={setCity} required />
+              </div>
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="s-desc">Description</Label>
@@ -296,21 +344,25 @@ export function SpaceFormDialog({ onCreated }: SpaceFormDialogProps) {
           <div>
             <p className="text-sm font-medium">Accepted payment methods</p>
             <div className="mt-1.5 flex gap-3">
-              {(['ONLINE', 'CASH'] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => toggleMethod(m)}
-                  className={cn(
-                    'flex-1 rounded-lg border px-3 py-2.5 text-sm transition-colors',
-                    acceptedMethods.includes(m)
-                      ? 'border-primary bg-primary/5 font-medium text-primary'
-                      : 'border-border text-muted-foreground hover:border-primary/40',
-                  )}
-                >
-                  {m === 'ONLINE' ? 'Online (wallet)' : 'Cash on-site'}
-                </button>
-              ))}
+              {(['ONLINE', 'CASH'] as const).map((m) => {
+                // FIX: BUG-5 — hide CASH button when cash is not allowed for this subscription
+                if (m === 'CASH' && !cashEnabled) return null;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => toggleMethod(m)}
+                    className={cn(
+                      'flex-1 rounded-lg border px-3 py-2.5 text-sm transition-colors',
+                      acceptedMethods.includes(m)
+                        ? 'border-primary bg-primary/5 font-medium text-primary'
+                        : 'border-border text-muted-foreground hover:border-primary/40',
+                    )}
+                  >
+                    {m === 'ONLINE' ? 'Online (wallet)' : 'Cash on-site'}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -322,7 +374,7 @@ export function SpaceFormDialog({ onCreated }: SpaceFormDialogProps) {
 
           <DialogFooter>
             <Button type="submit" loading={submitting}>
-              {submitting ? 'Creating…' : 'Create space'}
+              {submitting ? (editId ? 'Saving…' : 'Creating…') : (editId ? 'Save changes' : 'Create space')}
             </Button>
           </DialogFooter>
         </form>

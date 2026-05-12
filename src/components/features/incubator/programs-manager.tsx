@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale } from 'next-intl';
-import { Briefcase, Loader2 } from 'lucide-react';
+import { Briefcase, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { ProgramFormDialog } from './program-form-dialog';
@@ -23,6 +23,10 @@ export function ProgramsManager() {
   const [rows, setRows] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  // FIX: BUG-2 — edit state
+  const [editingProgram, setEditingProgram] = useState<Program | null>(null);
+  // FIX: BUG-5 — cash allowed only for active FLAT plan
+  const [cashEnabled, setCashEnabled] = useState(true);
 
   async function fetchPrograms() {
     setLoading(true);
@@ -39,7 +43,26 @@ export function ProgramsManager() {
     }
   }
 
-  useEffect(() => { void fetchPrograms(); }, []);
+  useEffect(() => {
+    void fetchPrograms();
+    // FIX: BUG-5 — fetch subscription to determine if CASH is allowed
+    fetch('/api/incubator/subscription', { cache: 'no-store' })
+      .then((r) => r.ok ? r.json() as Promise<{ subscriptionCode: string; isActive: boolean }> : null)
+      .then((sub) => {
+        if (sub) {
+          // FIX: BUG-5 — cash only allowed for active FLAT plan
+          setCashEnabled(sub.subscriptionCode === 'FLAT' && sub.isActive);
+        }
+      })
+      .catch(() => { /* ignore subscription fetch errors */ });
+  }, []);
+
+  // FIX: BUG-2 — delete handler
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this program? This cannot be undone.')) return;
+    const res = await fetch(`/api/incubator/programs/${id}`, { method: 'DELETE' });
+    if (res.ok) setRows((prev) => prev.filter((p) => p.id !== id));
+  }
 
   const columns: ListingColumn<Program>[] = [
     {
@@ -129,14 +152,53 @@ export function ProgramsManager() {
   }
 
   return (
-    <ListingManagementTable
-      rows={rows}
-      columns={columns}
-      rowKey={(p) => p.id}
-      createSlot={<ProgramFormDialog onCreated={() => void fetchPrograms()} />}
-      emptyIcon={<Briefcase className="size-5 text-muted-foreground" />}
-      emptyTitle="No programs yet"
-      emptyDescription="Create incubation, acceleration, or training programs."
-    />
+    <>
+      <ListingManagementTable
+        rows={rows}
+        columns={columns}
+        rowKey={(p) => p.id}
+        createSlot={<ProgramFormDialog onCreated={() => void fetchPrograms()} cashEnabled={cashEnabled} />}
+        emptyIcon={<Briefcase className="size-5 text-muted-foreground" />}
+        emptyTitle="No programs yet"
+        emptyDescription="Create incubation, acceleration, or training programs."
+        // FIX: BUG-2 — real edit/delete actions
+        actions={[
+          {
+            label: 'Edit',
+            icon: <Pencil className="size-4" />,
+            onSelect: (p) => setEditingProgram(p),
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="size-4" />,
+            onSelect: (p) => void handleDelete(p.id),
+            destructive: true,
+          },
+        ]}
+      />
+      {/* FIX: BUG-2 — edit dialog rendered outside the table, controlled by editingProgram state */}
+      {editingProgram && (
+        <ProgramFormDialog
+          onCreated={() => { void fetchPrograms(); setEditingProgram(null); }}
+          editId={editingProgram.id}
+          initialData={{
+            title: editingProgram.title,
+            description: editingProgram.description,
+            type: editingProgram.type,
+            city: editingProgram.city,
+            price: editingProgram.price,
+            seatsTotal: editingProgram.seatsTotal,
+            deadline: editingProgram.deadline,
+            startDate: editingProgram.startDate,
+            endDate: editingProgram.endDate,
+            acceptedPaymentMethods: editingProgram.acceptedPaymentMethods ?? ['ONLINE'],
+            imageUrl: editingProgram.imageUrl,
+          }}
+          open={true}
+          onOpenChange={(v) => { if (!v) setEditingProgram(null); }}
+          cashEnabled={cashEnabled}
+        />
+      )}
+    </>
   );
 }

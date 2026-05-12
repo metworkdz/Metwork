@@ -1,10 +1,11 @@
 'use client';
 
 /**
- * Dialog for creating a new event listing.
- * POSTs to POST /api/incubator/events.
+ * Dialog for creating or editing an event listing.
+ * POST /api/incubator/events  (create)
+ * PATCH /api/incubator/events/[id]  (edit)
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,13 +21,26 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { ImageUploadField } from '@/components/shared/image-upload-field';
+import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 
+// FIX: BUG-2 — added edit mode props; FIX: BUG-5 — added cashEnabled prop
 interface EventFormDialogProps {
   onCreated: () => void;
+  editId?: string;
+  initialData?: {
+    title?: string; description?: string; city?: string; price?: number;
+    capacity?: number; isOnline?: boolean; eventDate?: string;
+    acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
+  };
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
+  cashEnabled?: boolean;
 }
 
-export function EventFormDialog({ onCreated }: EventFormDialogProps) {
-  const [open, setOpen] = useState(false);
+export function EventFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange, cashEnabled = true }: EventFormDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = openProp ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +53,23 @@ export function EventFormDialog({ onCreated }: EventFormDialogProps) {
   const [eventDate, setEventDate] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
   const [imageUrl, setImageUrl] = useState('');
+
+  // FIX: BUG-2 — pre-fill form when in edit mode
+  useEffect(() => {
+    if (editId && initialData) {
+      setTitle(initialData.title ?? '');
+      setDescription(initialData.description ?? '');
+      setCity(initialData.city ?? '');
+      setPrice(initialData.price != null ? String(initialData.price) : '0');
+      setCapacity(initialData.capacity != null ? String(initialData.capacity) : '50');
+      setIsOnline(initialData.isOnline ?? false);
+      // FIX: BUG-2 — convert ISO date string back to YYYY-MM-DD for date input
+      setEventDate(initialData.eventDate ? initialData.eventDate.substring(0, 10) : '');
+      setAcceptedMethods(initialData.acceptedPaymentMethods ?? ['ONLINE', 'CASH']);
+      setImageUrl(initialData.imageUrl ?? '');
+      setError(null);
+    }
+  }, [editId, initialData]);
 
   function toggleMethod(m: 'ONLINE' | 'CASH') {
     setAcceptedMethods((prev) => {
@@ -63,8 +94,11 @@ export function EventFormDialog({ onCreated }: EventFormDialogProps) {
     setError(null);
     setSubmitting(true);
     try {
-      const res = await fetch('/api/incubator/events', {
-        method: 'POST',
+      // FIX: BUG-2 — use PATCH for edit mode, POST for create
+      const url = editId ? `/api/incubator/events/${editId}` : '/api/incubator/events';
+      const method = editId ? 'PATCH' : 'POST';
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
@@ -80,7 +114,7 @@ export function EventFormDialog({ onCreated }: EventFormDialogProps) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { message?: string };
-        setError(data.message ?? 'Failed to create event.');
+        setError(data.message ?? (editId ? 'Failed to update event.' : 'Failed to create event.'));
         return;
       }
       onCreated();
@@ -95,18 +129,23 @@ export function EventFormDialog({ onCreated }: EventFormDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5">
-          <PlusCircle className="size-4" />
-          Add event
-        </Button>
-      </DialogTrigger>
+      {/* FIX: BUG-2 — only render trigger in create mode */}
+      {!editId && (
+        <DialogTrigger asChild>
+          <Button size="sm" className="gap-1.5">
+            <PlusCircle className="size-4" />
+            Add event
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>New event</DialogTitle>
+          <DialogTitle>{editId ? 'Edit event' : 'New event'}</DialogTitle>
           <DialogDescription>
-            Create a networking event, demo day, or workshop.
+            {editId
+              ? 'Update the details for this event listing.'
+              : 'Create a networking event, demo day, or workshop.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -118,7 +157,10 @@ export function EventFormDialog({ onCreated }: EventFormDialogProps) {
             </div>
             <div>
               <Label htmlFor="ev-city">City</Label>
-              <Input id="ev-city" className="mt-1" value={city} onChange={(e) => setCity(e.target.value)} required />
+              {/* FIX: BUG-4 — searchable wilaya dropdown */}
+              <div className="mt-1">
+                <AlgerianCitySelect id="ev-city" value={city} onChange={setCity} required />
+              </div>
             </div>
             <div>
               <Label htmlFor="ev-date">Event date</Label>
@@ -170,21 +212,25 @@ export function EventFormDialog({ onCreated }: EventFormDialogProps) {
           <div>
             <p className="text-sm font-medium">Accepted payment methods</p>
             <div className="mt-1.5 flex gap-3">
-              {(['ONLINE', 'CASH'] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => toggleMethod(m)}
-                  className={cn(
-                    'flex-1 rounded-lg border px-3 py-2.5 text-sm transition-colors',
-                    acceptedMethods.includes(m)
-                      ? 'border-primary bg-primary/5 font-medium text-primary'
-                      : 'border-border text-muted-foreground hover:border-primary/40',
-                  )}
-                >
-                  {m === 'ONLINE' ? 'Online (wallet)' : 'Cash at door'}
-                </button>
-              ))}
+              {(['ONLINE', 'CASH'] as const).map((m) => {
+                // FIX: BUG-5 — hide CASH button when cash is not allowed for this subscription
+                if (m === 'CASH' && !cashEnabled) return null;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => toggleMethod(m)}
+                    className={cn(
+                      'flex-1 rounded-lg border px-3 py-2.5 text-sm transition-colors',
+                      acceptedMethods.includes(m)
+                        ? 'border-primary bg-primary/5 font-medium text-primary'
+                        : 'border-border text-muted-foreground hover:border-primary/40',
+                    )}
+                  >
+                    {m === 'ONLINE' ? 'Online (wallet)' : 'Cash at door'}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -196,7 +242,7 @@ export function EventFormDialog({ onCreated }: EventFormDialogProps) {
 
           <DialogFooter>
             <Button type="submit" loading={submitting}>
-              {submitting ? 'Creating…' : 'Create event'}
+              {submitting ? (editId ? 'Saving…' : 'Creating…') : (editId ? 'Save changes' : 'Create event')}
             </Button>
           </DialogFooter>
         </form>
