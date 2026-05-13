@@ -213,7 +213,6 @@ export async function reissuePendingOtp(
     const pending = d.pendingUsers.find((p) => p.id === pendingId);
     if (!pending) return null;
     pending.otpHash = hashOtp(code);
-    pending.otpAttempts = 0;
     pending.expiresAt = expiresAt;
     return { code, phone: pending.phone, email: pending.email };
   });

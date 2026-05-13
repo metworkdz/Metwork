@@ -12,6 +12,7 @@ import { requireApiRole } from '@/server/auth/api-guards';
 import { db, type TransactionRecord } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { sendWithdrawalProcessedEmail } from '@/server/notifications/mock';
+import { appendAuditLog } from '@/server/audit/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -99,6 +100,16 @@ export async function PATCH(
   if (result === 'ALREADY_RESOLVED') {
     return jsonError(409, 'ALREADY_RESOLVED', 'Withdrawal request is already resolved');
   }
+
+  // Audit log
+  void appendAuditLog({
+    adminId:    guard.user.id,
+    adminEmail: guard.user.email,
+    action:     input.status === 'APPROVED' ? 'WITHDRAWAL_APPROVED' : 'WITHDRAWAL_REJECTED',
+    targetType: 'withdrawal',
+    targetId:   result.id,
+    details:    { amount: result.amount, userId: result.userId, adminNote: input.adminNote ?? null },
+  });
 
   // Fire-and-forget notification to the user
   void (async () => {

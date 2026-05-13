@@ -11,8 +11,10 @@
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { db } from '@/server/db/store';
-import { fromZod, json } from '@/server/http/json';
+import { fromZod, json, jsonError } from '@/server/http/json';
 import { ensurePromoCodesSeeded } from '@/server/promo-codes/service';
+import { requireApiSession } from '@/server/auth/api-guards';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,7 +24,23 @@ const schema = z.object({
   originalAmount: z.number().int().min(0),
 });
 
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    req.headers.get('x-real-ip') ??
+    'unknown'
+  );
+}
+
 export async function POST(req: NextRequest) {
+  const guard = await requireApiSession();
+  if (!guard.ok) return guard.response;
+
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`promo-validate:${ip}`, 20, 5 * 60_000)) {
+    return jsonError(429, 'RATE_LIMITED', 'Too many promo code validation attempts. Please try again later.');
+  }
+
   let body: unknown;
   try { body = await req.json(); }
   catch { return json({ valid: false, error: 'Invalid request body' }); }

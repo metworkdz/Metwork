@@ -27,18 +27,22 @@ export const runtime = 'nodejs';
 
 function isCronAuthorised(req: Request): boolean {
   const cronSecret = process.env.CRON_SECRET;
+  // Allow unauthenticated access only in test environments.
   if (!cronSecret) {
-    // If CRON_SECRET is unset in development, allow the request.
-    // Block in production — the check below ensures CRON_SECRET must be
-    // present in any environment where NODE_ENV === 'production'.
-    if (process.env.NODE_ENV === 'production') {
-      console.error('[cron] CRON_SECRET is not set in production — all cron requests rejected');
-      return false;
-    }
-    return true;
+    if (process.env.NODE_ENV === 'test') return true;
+    // All other environments (development, staging, production) require the
+    // secret to be configured — returning false causes a 401 response.
+    return false;
   }
   const authHeader = req.headers.get('authorization');
   return authHeader === `Bearer ${cronSecret}`;
+}
+
+function missingCronSecret(): Response {
+  return NextResponse.json(
+    { error: 'CRON_SECRET not configured' },
+    { status: 501 },
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -46,6 +50,9 @@ function isCronAuthorised(req: Request): boolean {
 // ---------------------------------------------------------------------------
 
 export async function POST(req: Request): Promise<Response> {
+  if (!process.env.CRON_SECRET && process.env.NODE_ENV !== 'test') {
+    return missingCronSecret();
+  }
   if (!isCronAuthorised(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -80,6 +87,9 @@ export async function POST(req: Request): Promise<Response> {
 // ---------------------------------------------------------------------------
 
 export async function GET(req: Request): Promise<Response> {
+  if (!process.env.CRON_SECRET && process.env.NODE_ENV !== 'test') {
+    return missingCronSecret();
+  }
   if (!isCronAuthorised(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

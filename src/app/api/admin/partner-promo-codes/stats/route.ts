@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     const stats = await getPromoCodeStats(partnerId);
     return json(stats);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Stats fetch failed';
-    return jsonError(500, 'STATS_ERROR', msg);
+    console.error('[partner-route]', err);
+    return jsonError(500, 'STATS_ERROR', 'An unexpected error occurred');
   }
 }

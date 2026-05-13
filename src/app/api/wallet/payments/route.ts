@@ -22,6 +22,12 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  const internalToken = req.headers.get('x-internal-token');
+  const expected = process.env.INTERNAL_API_SECRET;
+  if (!expected || internalToken !== expected) {
+    return jsonError(403, 'FORBIDDEN', 'This endpoint is internal only');
+  }
+
   const guard = await requireApiSession();
   if (!guard.ok) return guard.response;
 

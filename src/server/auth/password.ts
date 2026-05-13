@@ -11,7 +11,22 @@ const scrypt = promisify(scryptCb) as (
   password: string,
   salt: string,
   keylen: number,
+  options?: { N?: number; r?: number; p?: number },
 ) => Promise<Buffer>;
+
+/**
+ * scrypt work-factor parameters.
+ *
+ * NOTE (MED-08): Node's built-in scrypt defaults to N=16384 (2^14), which is
+ * below the OWASP-recommended minimum of N=65536 (2^16). Increasing N here
+ * would silently break verification for all existing password hashes because
+ * the raw output format does not embed the parameters (unlike bcrypt).
+ * A proper migration requires:
+ *   1. Adding a version prefix ("v2:") to new hashes.
+ *   2. Branching in verifyPassword on the prefix to pick the right N.
+ *   3. A background re-hash job on next successful login.
+ * This is tracked as a follow-up task. Until then N stays at the default.
+ */
 
 const KEY_LENGTH = 64;
 

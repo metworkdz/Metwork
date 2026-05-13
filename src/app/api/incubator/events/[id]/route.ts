@@ -55,7 +55,16 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       (e) => e.id === id && e.incubatorId === incubator.id,
     );
     if (!event) return null;
-    Object.assign(event, input, { updatedAt: new Date().toISOString() });
+    if (input.title !== undefined) event.title = input.title;
+    if (input.description !== undefined) event.description = input.description;
+    if (input.city !== undefined) event.city = input.city;
+    if (input.imageUrl !== undefined) event.imageUrl = input.imageUrl ?? null;
+    if (input.price !== undefined) event.price = input.price;
+    if (input.isOnline !== undefined) event.isOnline = input.isOnline;
+    if (input.capacity !== undefined) event.capacity = input.capacity;
+    if (input.eventDate !== undefined) event.eventDate = input.eventDate;
+    if (input.status !== undefined) event.isActive = input.status === 'PUBLISHED';
+    event.updatedAt = new Date().toISOString();
     return { ...event };
   });
 

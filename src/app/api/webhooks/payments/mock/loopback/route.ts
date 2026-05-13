@@ -21,8 +21,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  if (process.env.NODE_ENV === 'production') {
-    return jsonError(404, 'NOT_FOUND', 'Not found');
+  if (process.env.NODE_ENV === 'production' || process.env.PAYMENT_PROVIDER !== 'mock') {
+    return NextResponse.json({ error: 'Not available' }, { status: 404 });
   }
 
   const url = new URL(req.url);
@@ -39,5 +39,10 @@ export async function GET(req: NextRequest) {
   await confirmTopUp({ topUpId, providerRef, status });
 
   const fallback = `${clientEnvVars.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/en/dashboard/entrepreneur`;
-  return NextResponse.redirect(next ?? fallback);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz';
+  function isSameOrigin(url: string): boolean {
+    try { return new URL(url).origin === new URL(appUrl).origin; } catch { return false; }
+  }
+  const destination = next && isSameOrigin(next) ? next : fallback;
+  return NextResponse.redirect(destination);
 }

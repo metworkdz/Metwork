@@ -5,7 +5,7 @@
  * - Only the SHA-256 hash is stored server-side; the plaintext ID lives
  *   solely in the HttpOnly cookie. A DB leak therefore does not let an
  *   attacker hijack live sessions.
- * - Cookies are HttpOnly + SameSite=Lax; Secure flag in production.
+ * - Cookies are HttpOnly + SameSite=Strict; Secure flag in production.
  */
 import { cookies } from 'next/headers';
 import { createHash, randomBytes } from 'node:crypto';
@@ -59,7 +59,7 @@ export async function setSessionCookie(issued: IssuedSession): Promise<void> {
   store.set(serverEnvVars.AUTH_COOKIE_NAME, issued.id, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     path: '/',
     maxAge,
   });
@@ -70,7 +70,7 @@ export async function clearSessionCookie(): Promise<void> {
   store.set(serverEnvVars.AUTH_COOKIE_NAME, '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     path: '/',
     maxAge: 0,
   });

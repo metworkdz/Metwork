@@ -9,6 +9,7 @@ import { z, ZodError } from 'zod';
 import { db } from '@/server/db/store';
 import { sendContactNotification } from '@/server/notifications/mock';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,20 @@ const schema = z.object({
   message: z.string().min(10).max(2000),
 });
 
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    req.headers.get('x-real-ip') ??
+    'unknown'
+  );
+}
+
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`contact:${ip}`, 5, 60 * 60_000)) {
+    return jsonError(429, 'RATE_LIMITED', 'Too many contact submissions. Please try again later.');
+  }
+
   let body: unknown;
   try {
     body = await req.json();

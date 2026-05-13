@@ -40,7 +40,8 @@ export async function POST(req: NextRequest) {
   }
 
   const file = form.get('file');
-  const folder = typeof form.get('folder') === 'string' ? (form.get('folder') as string) : 'uploads';
+  const rawFolder = typeof form.get('folder') === 'string' ? (form.get('folder') as string) : 'uploads';
+  const folder = /^[a-z0-9_\-]+$/i.test(rawFolder) && !rawFolder.includes('..') ? rawFolder : 'uploads';
 
   if (!(file instanceof File)) return jsonError(400, 'FILE_REQUIRED', 'No file under field "file"');
   if (file.size === 0) return jsonError(400, 'EMPTY_FILE', 'File is empty');

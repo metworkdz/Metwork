@@ -18,7 +18,7 @@ import { fromZod, json, jsonError } from '@/server/http/json';
 import { db } from '@/server/db/store';
 import { findIncubatorById } from '@/server/incubator/service';
 import { sendBookingReceiptEmail, sendAdminOrderNotification } from '@/server/notifications/mock';
-import { validatePromoCode, consumePromoCode } from '@/server/promo-codes/service';
+import { validatePromoCode } from '@/server/promo-codes/service';
 import { getSpaceDiscountForUser } from '@/server/memberships/service';
 
 export const runtime = 'nodejs';
@@ -74,11 +74,6 @@ export async function POST(req: NextRequest) {
     paymentMethod: input.paymentMethod,
     membershipDiscount,
   });
-
-  // Consume promo code if booking succeeded
-  if (result.ok && input.promoCode) {
-    await consumePromoCode(input.promoCode);
-  }
 
   if (!result.ok) {
     switch (result.reason) {

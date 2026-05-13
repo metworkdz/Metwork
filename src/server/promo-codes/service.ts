@@ -48,6 +48,8 @@ const seedCodes = [
 ];
 
 export async function ensurePromoCodesSeeded(): Promise<void> {
+  if (process.env.NODE_ENV === 'production') return;
+
   const data = await db.read();
   if (data.meta?.promoCodesSeeded) return;
 
@@ -83,6 +85,7 @@ export function validatePromoCodeSync(
   codes: PromoCodeRecord[],
   codeStr: string,
   originalAmount: number,
+  itemKind?: 'SPACE' | 'PROGRAM' | 'EVENT',
 ): PromoValidationResult {
   const now   = new Date().toISOString();
   const upper = codeStr.toUpperCase().trim();
@@ -98,6 +101,8 @@ export function validatePromoCodeSync(
     return { valid: false, discountAmount: 0, finalAmount: originalAmount, promoCodeId: null, error: 'Promo code is not yet active' };
   if (promo.maxUses !== null && promo.maxUses !== undefined && promo.useCount >= promo.maxUses)
     return { valid: false, discountAmount: 0, finalAmount: originalAmount, promoCodeId: null, error: 'Promo code usage limit reached' };
+  if (promo.appliesTo && promo.appliesTo !== 'ALL' && itemKind && promo.appliesTo !== itemKind)
+    return { valid: false, discountAmount: 0, finalAmount: originalAmount, promoCodeId: null, error: 'Promo code not valid for this item type' };
 
   const pct = promo.discountPercent ?? (promo.discountType === 'PERCENTAGE' ? promo.discountValue : 0);
   const discountAmount = Math.round(originalAmount * (pct / 100));

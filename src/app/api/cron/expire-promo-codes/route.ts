@@ -17,14 +17,17 @@ export const dynamic = 'force-dynamic';
 
 function verifyCronSecret(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
+  // Allow unauthenticated access only in test environments.
   if (!secret) {
-    // Allow when secret is not configured (dev / staging without the env var)
-    return process.env.NODE_ENV !== 'production';
+    return process.env.NODE_ENV === 'test';
   }
   return req.headers.get('authorization') === `Bearer ${secret}`;
 }
 
 export async function POST(req: NextRequest) {
+  if (!process.env.CRON_SECRET && process.env.NODE_ENV !== 'test') {
+    return jsonError(501, 'NOT_CONFIGURED', 'CRON_SECRET not configured');
+  }
   if (!verifyCronSecret(req)) {
     return jsonError(401, 'UNAUTHORIZED', 'Missing or invalid CRON_SECRET');
   }
@@ -41,6 +44,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  if (!process.env.CRON_SECRET && process.env.NODE_ENV !== 'test') {
+    return jsonError(501, 'NOT_CONFIGURED', 'CRON_SECRET not configured');
+  }
   if (!verifyCronSecret(req)) {
     return jsonError(401, 'UNAUTHORIZED', 'Missing or invalid CRON_SECRET');
   }

@@ -12,14 +12,17 @@ export const runtime = 'nodejs';
 
 function isCronAuthorised(req: Request): boolean {
   const cronSecret = process.env.CRON_SECRET;
+  // Allow unauthenticated access only in test environments.
   if (!cronSecret) {
-    if (process.env.NODE_ENV === 'production') return false;
-    return true;
+    return process.env.NODE_ENV === 'test';
   }
   return req.headers.get('authorization') === `Bearer ${cronSecret}`;
 }
 
 export async function POST(req: Request): Promise<Response> {
+  if (!process.env.CRON_SECRET && process.env.NODE_ENV !== 'test') {
+    return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 501 });
+  }
   if (!isCronAuthorised(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

@@ -7,6 +7,7 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiSession } from '@/server/auth/api-guards';
 import { hashPassword, verifyPassword } from '@/server/auth/password';
+import { deleteAllSessionsForUser } from '@/server/auth/session';
 import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -87,6 +88,13 @@ export async function PATCH(req: NextRequest) {
     if (result.reason === 'NOT_FOUND') return jsonError(404, 'NOT_FOUND', 'User not found');
     return jsonError(422, 'WRONG_PASSWORD', 'Current password is incorrect');
   }
+
+  // If the password was changed, invalidate all sessions so the old
+  // credentials cannot maintain access (FIX 3: HIGH-06).
+  if (newPasswordHash) {
+    await deleteAllSessionsForUser(guard.user.id);
+  }
+
   const updated = result.user;
   return json({ user: updated });
 }

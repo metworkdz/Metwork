@@ -6,7 +6,7 @@
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiSession } from '@/server/auth/api-guards';
+import { requireApiRole } from '@/server/auth/api-guards';
 import { listPromoCodes, createPromoCode } from '@/server/promo-codes/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -26,18 +26,16 @@ const createSchema = z.object({
 });
 
 export async function GET() {
-  const guard = await requireApiSession();
+  const guard = await requireApiRole(['ADMIN']);
   if (!guard.ok) return guard.response;
-  if (guard.user.role !== 'ADMIN') return jsonError(403, 'FORBIDDEN', 'Admin access required');
 
   const codes = await listPromoCodes();
   return json({ items: codes, total: codes.length });
 }
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApiSession();
+  const guard = await requireApiRole(['ADMIN']);
   if (!guard.ok) return guard.response;
-  if (guard.user.role !== 'ADMIN') return jsonError(403, 'FORBIDDEN', 'Admin access required');
 
   let body: unknown;
   try {

@@ -43,16 +43,17 @@ export async function POST(req: NextRequest) {
       discountPercentage: result.discountPercentage,
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Could not apply promo code';
+    console.error('[partner-route]', err);
+    const msg = err instanceof Error ? err.message : '';
     if (msg.includes('not found') || msg.includes('expired') || msg.includes('already used')) {
-      return jsonError(422, 'PROMO_INVALID', msg);
+      return jsonError(422, 'PROMO_INVALID', 'Promo code is invalid, expired, or already used');
     }
     if (msg.includes('already affiliated')) {
-      return jsonError(409, 'ALREADY_AFFILIATED', msg);
+      return jsonError(409, 'ALREADY_AFFILIATED', 'You are already affiliated with a partner');
     }
     if (msg.includes('maximum discounted members')) {
-      return jsonError(422, 'PARTNER_CAP_REACHED', msg);
+      return jsonError(422, 'PARTNER_CAP_REACHED', 'This partner has reached their maximum number of discounted members');
     }
-    return jsonError(500, 'APPLY_FAILED', msg);
+    return jsonError(500, 'APPLY_FAILED', 'An unexpected error occurred');
   }
 }

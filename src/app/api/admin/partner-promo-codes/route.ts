@@ -100,8 +100,9 @@ export async function POST(req: NextRequest) {
     const { code: _hash, ...safeRecord } = record;
     return json({ record: safeRecord, plaintext }, { status: 201 });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Code generation failed';
-    if (msg.includes('not found')) return jsonError(404, 'PARTNER_NOT_FOUND', msg);
-    return jsonError(400, 'GENERATE_FAILED', msg);
+    console.error('[partner-route]', err);
+    const msg = err instanceof Error ? err.message : '';
+    if (msg.includes('not found')) return jsonError(404, 'PARTNER_NOT_FOUND', 'Partner not found');
+    return jsonError(400, 'GENERATE_FAILED', 'An unexpected error occurred');
   }
 }

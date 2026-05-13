@@ -6,7 +6,7 @@
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiSession } from '@/server/auth/api-guards';
+import { requireApiRole } from '@/server/auth/api-guards';
 import { updatePromoCode } from '@/server/promo-codes/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -24,9 +24,8 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const guard = await requireApiSession();
+  const guard = await requireApiRole(['ADMIN']);
   if (!guard.ok) return guard.response;
-  if (guard.user.role !== 'ADMIN') return jsonError(403, 'FORBIDDEN', 'Admin access required');
 
   const { id } = await params;
 

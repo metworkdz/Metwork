@@ -17,6 +17,9 @@ const providers: Record<string, PaymentProvider> = {
 
 export function getActiveProvider(): PaymentProvider {
   const code = serverEnvVars.PAYMENT_PROVIDER;
+  if (process.env.NODE_ENV === 'production' && (providers[code] === undefined || providers[code] === mockProvider)) {
+    throw new Error(`[FATAL] PAYMENT_PROVIDER="${code}" is not a real provider. Set PAYMENT_PROVIDER to a valid value in production.`);
+  }
   return providers[code] ?? mockProvider;
 }
 

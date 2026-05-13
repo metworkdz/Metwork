@@ -52,8 +52,9 @@ export async function POST(req: NextRequest) {
     );
     return json({ partner }, { status: 201 });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Enrolment failed';
-    if (msg.includes('not found')) return jsonError(404, 'SPACE_NOT_FOUND', msg);
-    return jsonError(400, 'ENROLL_FAILED', msg);
+    console.error('[partner-route]', err);
+    const msg = err instanceof Error ? err.message : '';
+    if (msg.includes('not found')) return jsonError(404, 'SPACE_NOT_FOUND', 'Space not found');
+    return jsonError(400, 'ENROLL_FAILED', 'An unexpected error occurred');
   }
 }

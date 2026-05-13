@@ -13,8 +13,16 @@ const positiveIntDzd = (min: number, max: number) =>
 
 export const initTopUpSchema = z.object({
   amount: positiveIntDzd(MIN_TOPUP, MAX_TOPUP),
-  /** Optional override for the post-checkout redirect. */
-  returnUrl: z.string().url().optional(),
+  /** Optional override for the post-checkout redirect. Must be same-origin. */
+  returnUrl: z.string().url().refine(
+    (url) => {
+      try {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz';
+        return new URL(url).origin === new URL(appUrl).origin;
+      } catch { return false; }
+    },
+    { message: 'returnUrl must be on the same origin as the application' }
+  ).optional(),
 });
 export type InitTopUpRequest = z.infer<typeof initTopUpSchema>;
 

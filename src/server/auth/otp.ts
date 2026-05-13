@@ -6,7 +6,7 @@
  * brute-force codes offline. Each verification increments an attempt
  * counter; the record is locked after MAX_ATTEMPTS regardless of outcome.
  */
-import { createHmac, randomBytes, randomInt } from 'node:crypto';
+import { createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { db } from '@/server/db/store';
 import { serverEnvVars } from '@/lib/env';
 
@@ -63,7 +63,9 @@ export async function verifyOtp(userId: string, code: string): Promise<OtpVerify
       return { ok: false, reason: 'TOO_MANY_ATTEMPTS' };
     }
     otp.attempts += 1;
-    if (otp.codeHash !== expected) {
+    const a = Buffer.from(otp.codeHash, 'hex');
+    const b = Buffer.from(expected, 'hex');
+    if (a.length !== b.length || !timingSafeEqual(a, b)) {
       return { ok: false, reason: 'INVALID' };
     }
     otp.consumed = true;

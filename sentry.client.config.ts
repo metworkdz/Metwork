@@ -10,8 +10,8 @@ if (dsn) {
     // Capture 100 % of transactions in dev; tune down in prod via env
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
-    // Replay 1 % of sessions, 100 % of sessions with errors
-    replaysSessionSampleRate: 0.01,
+    // Disable continuous session replay (privacy); capture 100 % of error sessions
+    replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 1.0,
 
     integrations: [

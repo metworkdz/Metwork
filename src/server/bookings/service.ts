@@ -241,7 +241,7 @@ export async function createSpaceBooking(
     let total = baseTotal;
     let promoCodeId: string | null = null;
     if (!isCash && args.promoCode && args.promoCode.trim()) {
-      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal);
+      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal, 'SPACE');
       if (promo.valid) {
         total       = promo.finalAmount;
         promoCodeId = promo.promoCodeId;
@@ -536,7 +536,7 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
     let total = baseTotal;
     let promoCodeId: string | null = null;
     if (args.promoCode && args.promoCode.trim() && baseTotal > 0) {
-      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal);
+      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal, 'PROGRAM');
       if (promo.valid) {
         total       = promo.finalAmount;
         promoCodeId = promo.promoCodeId;
@@ -735,7 +735,7 @@ export async function registerForEvent(
     let total = baseTotal;
     let promoCodeId: string | null = null;
     if (args.promoCode && args.promoCode.trim() && baseTotal > 0) {
-      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal);
+      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal, 'EVENT');
       if (promo.valid) {
         total       = promo.finalAmount;
         promoCodeId = promo.promoCodeId;

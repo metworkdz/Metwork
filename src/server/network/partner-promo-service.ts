@@ -471,7 +471,7 @@ export async function applyPromoCode(
       userId,
       partnerId: codeRecord.partnerId,
       referredAt: now,
-      promoCodeUsed: normalized,
+      promoCodeUsed: hashPromoCode(normalized),
     };
     d.userPartnerAffiliations.push(affiliation);
 
