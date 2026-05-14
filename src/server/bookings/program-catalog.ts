@@ -24,6 +24,7 @@ function fromRecord(r: import('@/server/db/store').ProgramRecord): Program {
     startDate:              r.startDate,
     endDate:                r.endDate,
     acceptedPaymentMethods: r.acceptedPaymentMethods,
+    slug:                   r.slug ?? null,
   };
 }
 

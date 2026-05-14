@@ -4,6 +4,7 @@
  * Revenue dashboard — real data from /api/incubator/revenue.
  * Shows YTD/MTD stats and monthly breakdown table.
  */
+import { useTranslations } from 'next-intl';
 import { TrendingUp, Wallet, Percent, ReceiptText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,6 +50,7 @@ interface Props {
 }
 
 export function RevenueDashboard({ data }: Props) {
+  const t = useTranslations('incubator.revenueDashboard');
   const { totals, mtd, buckets, incubator } = data;
   const maxGross = Math.max(...buckets.map((b) => b.gross), 1);
   const commissionPct = Math.round(incubator.commissionRate * 100);
@@ -57,43 +59,43 @@ export function RevenueDashboard({ data }: Props) {
     <div className="space-y-6">
       {/* MTD stats */}
       <div>
-        <h3 className="mb-3 text-sm font-medium text-muted-foreground">This month</h3>
+        <h3 className="mb-3 text-sm font-medium text-muted-foreground">{t('thisMonth')}</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Gross (MTD)" value={fmt(mtd.gross)} icon={TrendingUp} />
-          <StatCard label="Net (MTD)" value={fmt(mtd.net)} hint="After commission" icon={Wallet} />
+          <StatCard label={t('grossMtd')} value={fmt(mtd.gross)} icon={TrendingUp} />
+          <StatCard label={t('netMtd')} value={fmt(mtd.net)} hint={t('hintAfterCommission')} icon={Wallet} />
           <StatCard
-            label="Commission"
+            label={t('commission')}
             value={fmt(mtd.commission)}
             hint={incubator.subscriptionTier === 'COMMISSION'
-              ? `${commissionPct}% of gross`
-              : 'Flat plan — 0%'}
+              ? t('hintCommissionPct', { pct: commissionPct })
+              : t('hintFlatPlan')}
             icon={Percent}
           />
-          <StatCard label="Bookings (MTD)" value={mtd.bookings} icon={ReceiptText} />
+          <StatCard label={t('bookingsMtd')} value={mtd.bookings} icon={ReceiptText} />
         </div>
       </div>
 
       {/* YTD stats */}
       <div>
-        <h3 className="mb-3 text-sm font-medium text-muted-foreground">Year to date</h3>
+        <h3 className="mb-3 text-sm font-medium text-muted-foreground">{t('yearToDate')}</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Gross (YTD)" value={fmt(totals.gross)} icon={TrendingUp} />
-          <StatCard label="Net (YTD)" value={fmt(totals.net)} hint="After commission" icon={Wallet} />
-          <StatCard label="Platform commission" value={fmt(totals.commission)} icon={Percent} />
-          <StatCard label="Total bookings" value={totals.bookings} icon={ReceiptText} />
+          <StatCard label={t('grossYtd')} value={fmt(totals.gross)} icon={TrendingUp} />
+          <StatCard label={t('netYtd')} value={fmt(totals.net)} hint={t('hintAfterCommission')} icon={Wallet} />
+          <StatCard label={t('platformCommission')} value={fmt(totals.commission)} icon={Percent} />
+          <StatCard label={t('totalBookings')} value={totals.bookings} icon={ReceiptText} />
         </div>
       </div>
 
       {/* Breakdown table */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Monthly breakdown</CardTitle>
+          <CardTitle className="text-base">{t('monthlyBreakdown')}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {buckets.length === 0 ? (
             <InlineEmptyState
-              title="No revenue yet"
-              description="Revenue will appear here once customers start booking your spaces and programs."
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
               icon={<TrendingUp className="size-5 text-muted-foreground" />}
             />
           ) : (
@@ -101,12 +103,12 @@ export function RevenueDashboard({ data }: Props) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Month</TableHead>
-                    <TableHead>Volume</TableHead>
-                    <TableHead className="text-end">Gross</TableHead>
-                    <TableHead className="text-end">Commission</TableHead>
-                    <TableHead className="text-end">Net</TableHead>
-                    <TableHead className="text-end">Bookings</TableHead>
+                    <TableHead>{t('colMonth')}</TableHead>
+                    <TableHead>{t('colVolume')}</TableHead>
+                    <TableHead className="text-end">{t('colGross')}</TableHead>
+                    <TableHead className="text-end">{t('colCommission')}</TableHead>
+                    <TableHead className="text-end">{t('colNet')}</TableHead>
+                    <TableHead className="text-end">{t('colBookings')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -141,10 +143,10 @@ export function RevenueDashboard({ data }: Props) {
       </Card>
 
       <p className="text-xs text-muted-foreground">
-        Plan: <strong>{incubator.subscriptionTier}</strong>{' '}
+        {t('planLabel')}: <strong>{incubator.subscriptionTier}</strong>{' '}
         {incubator.subscriptionTier === 'COMMISSION'
-          ? `— Metwork takes ${commissionPct}% of each booking`
-          : '— flat rate, you keep 100% of bookings'}
+          ? t('planCommissionDetail', { pct: commissionPct })
+          : t('planFlatDetail')}
       </p>
     </div>
   );

@@ -63,6 +63,8 @@ export interface Program {
   startDate: string;
   endDate: string;
   acceptedPaymentMethods: PaymentMethod[];
+  /** URL slug for the public detail page. May be absent on legacy records. */
+  slug?: string | null;
 }
 
 export interface Event {
@@ -79,6 +81,48 @@ export interface Event {
   attendeeCount: number;
   eventDate: string;
   acceptedPaymentMethods: PaymentMethod[];
+  /** URL slug for the public detail page. May be absent on legacy records. */
+  slug?: string | null;
+}
+
+/* ─────────────────────────── Registration system ─────────────────────────── */
+
+export type RegistrationFieldType =
+  | 'SHORT_TEXT'
+  | 'LONG_TEXT'
+  | 'DROPDOWN'
+  | 'MULTIPLE_CHOICE'
+  | 'CHECKBOX'
+  | 'PHONE'
+  | 'EMAIL';
+
+export interface RegistrationFormField {
+  id: string;
+  entityType: 'PROGRAM' | 'EVENT';
+  entityId: string;
+  label: string;
+  type: RegistrationFieldType;
+  options: string[] | null;
+  required: boolean;
+  order: number;
+}
+
+export type RegistrationStatus = 'CONFIRMED' | 'WAITLISTED' | 'CANCELLED';
+
+export interface Registration {
+  id: string;
+  entityType: 'PROGRAM' | 'EVENT';
+  entityId: string;
+  incubatorId: string;
+  userId: string | null;
+  fullName: string;
+  email: string;
+  phone: string;
+  answers: Array<{ fieldId: string; value: string | string[] }>;
+  status: RegistrationStatus;
+  clientId: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type StartupStage = 'IDEA' | 'PRE_SEED' | 'SEED' | 'SERIES_A' | 'GROWTH';

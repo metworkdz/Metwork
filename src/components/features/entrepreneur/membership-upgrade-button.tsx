@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { CheckCircle2, Tag } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/format';
@@ -29,6 +30,7 @@ export function MembershipUpgradeButton({
   highlighted,
   locale,
 }: Props) {
+  const t = useTranslations('entrepreneur.membershipUpgrade');
   const router = useRouter();
   const [step, setStep] = useState<DialogStep>('idle');
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
@@ -69,11 +71,11 @@ export function MembershipUpgradeButton({
           checking: false,
           valid: false,
           discount: 0,
-          message: data.message ?? (data.valid ? 'This code does not apply to memberships' : 'Invalid promo code'),
+          message: data.message ?? (data.valid ? t('promoNotApplicable') : t('promoInvalid')),
         });
       }
     } catch {
-      setPromoStatus({ checking: false, valid: false, discount: 0, message: 'Could not validate code' });
+      setPromoStatus({ checking: false, valid: false, discount: 0, message: t('promoValidateError') });
     }
   }
 
@@ -98,9 +100,9 @@ export function MembershipUpgradeButton({
         const data = await res.json();
         if (!res.ok) {
           if (res.status === 422 && data.code === 'INSUFFICIENT_FUNDS') {
-            setErrorMsg(`Insufficient wallet balance. Required: ${formatCurrency(data.details?.required ?? finalPrice, locale)}.`);
+            setErrorMsg(t('errorInsufficientFunds', { amount: formatCurrency(data.details?.required ?? finalPrice, locale) }));
           } else {
-            setErrorMsg(data.message ?? 'Purchase failed. Please try again.');
+            setErrorMsg(data.message ?? t('errorPurchaseFailed'));
           }
           setStep('error');
           return;
@@ -112,7 +114,7 @@ export function MembershipUpgradeButton({
           setStep('idle');
         }, 2500);
       } catch {
-        setErrorMsg('Network error. Please try again.');
+        setErrorMsg(t('errorNetwork'));
         setStep('error');
       }
     });
@@ -125,7 +127,7 @@ export function MembershipUpgradeButton({
         className="w-full"
         onClick={() => setStep('confirm')}
       >
-        Upgrade to {planName}
+        {t('upgradeTo', { planName })}
       </Button>
     );
   }
@@ -134,7 +136,7 @@ export function MembershipUpgradeButton({
     return (
       <div className="flex w-full items-center justify-center gap-2 rounded-md bg-green-50 p-3 text-sm font-medium text-green-700">
         <CheckCircle2 className="size-4" />
-        Upgraded to {planName}!
+        {t('upgradedTo', { planName })}
       </div>
     );
   }
@@ -142,7 +144,7 @@ export function MembershipUpgradeButton({
   // Confirm / Error dialog (inline — no modal portal needed)
   return (
     <div className="w-full space-y-3 rounded-lg border border-border bg-background p-4 shadow-sm">
-      <p className="text-sm font-semibold">Upgrade to {planName}</p>
+      <p className="text-sm font-semibold">{t('upgradeTo', { planName })}</p>
 
       {/* Billing period toggle */}
       <div className="flex overflow-hidden rounded-md border border-input text-xs font-medium">
@@ -159,8 +161,8 @@ export function MembershipUpgradeButton({
             )}
           >
             {period === 'monthly'
-              ? `Monthly — ${formatCurrency(priceMonthly, locale)}`
-              : `Yearly — ${formatCurrency(priceYearly, locale)} (save 30%)`}
+              ? t('billingMonthly', { price: formatCurrency(priceMonthly, locale) })
+              : t('billingYearly', { price: formatCurrency(priceYearly, locale) })}
           </button>
         ))}
       </div>
@@ -170,7 +172,7 @@ export function MembershipUpgradeButton({
         <div className="relative flex-1">
           <Tag className="absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Promo code"
+            placeholder={t('promoPlaceholder')}
             value={promoCode}
             onChange={(e) => {
               setPromoCode(e.target.value.toUpperCase());
@@ -182,7 +184,7 @@ export function MembershipUpgradeButton({
         </div>
         {promoStatus.valid === true ? (
           <Button type="button" variant="outline" size="sm" onClick={clearPromo} className="shrink-0 text-xs">
-            Remove
+            {t('promoRemove')}
           </Button>
         ) : (
           <Button
@@ -193,7 +195,7 @@ export function MembershipUpgradeButton({
             disabled={!promoCode.trim() || promoStatus.checking}
             className="shrink-0 text-xs"
           >
-            {promoStatus.checking ? '…' : 'Apply'}
+            {promoStatus.checking ? '…' : t('promoApply')}
           </Button>
         )}
       </div>
@@ -207,18 +209,18 @@ export function MembershipUpgradeButton({
       {/* Price summary */}
       <div className="rounded-md bg-muted/50 p-3 text-sm">
         <div className="flex justify-between">
-          <span className="text-muted-foreground">Subtotal</span>
+          <span className="text-muted-foreground">{t('subtotal')}</span>
           <span>{formatCurrency(basePrice, locale)}</span>
         </div>
         {discountAmount > 0 && (
           <div className="flex justify-between text-green-600">
-            <span>Discount ({promoStatus.discount}%)</span>
+            <span>{t('discount', { percent: promoStatus.discount })}</span>
             <span>−{formatCurrency(discountAmount, locale)}</span>
           </div>
         )}
         <div className="mt-2 flex justify-between border-t border-border pt-2 font-semibold">
-          <span>Total</span>
-          <span>{finalPrice === 0 ? 'Free' : formatCurrency(finalPrice, locale)}</span>
+          <span>{t('total')}</span>
+          <span>{finalPrice === 0 ? t('free') : formatCurrency(finalPrice, locale)}</span>
         </div>
       </div>
 
@@ -237,7 +239,7 @@ export function MembershipUpgradeButton({
           onClick={() => { setStep('idle'); clearPromo(); }}
           disabled={isPending}
         >
-          Cancel
+          {t('cancel')}
         </Button>
         <Button
           size="sm"
@@ -245,12 +247,12 @@ export function MembershipUpgradeButton({
           onClick={handlePurchase}
           loading={isPending}
         >
-          {isPending ? 'Processing…' : `Pay ${finalPrice === 0 ? 'nothing' : formatCurrency(finalPrice, locale)}`}
+          {isPending ? t('processing') : t('pay', { amount: finalPrice === 0 ? t('nothing') : formatCurrency(finalPrice, locale) })}
         </Button>
       </div>
 
       <p className="text-center text-[10px] text-muted-foreground">
-        Charged to your Metwork wallet
+        {t('chargedToWallet')}
       </p>
     </div>
   );

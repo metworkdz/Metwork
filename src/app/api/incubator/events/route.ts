@@ -10,6 +10,7 @@ import { db, type EventRecord } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { listEventsByIncubator } from '@/server/bookings/event-catalog';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { slugify, uniqueSlug } from '@/lib/slugify';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,7 @@ const createEventSchema = z.object({
   capacity:    z.number().int().min(1).max(100_000),
   eventDate:   z.string().datetime(),
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).default(['ONLINE', 'CASH']),
+  slug:        z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
 });
 
 export async function GET() {
@@ -61,6 +63,12 @@ export async function POST(req: NextRequest) {
   const now = new Date().toISOString();
   const record = await db.update<EventRecord>((d) => {
     if (!Array.isArray(d.events)) d.events = [];
+    const existingSlugs = d.events
+      .filter((e) => e.incubatorId === inc.id && e.slug)
+      .map((e) => e.slug as string);
+    const baseSlug = input.slug ? input.slug : slugify(input.title.trim());
+    const slug = uniqueSlug(baseSlug, existingSlugs);
+
     const ev: EventRecord = {
       id:                     randomUUID(),
       incubatorId:            inc.id,
@@ -75,6 +83,7 @@ export async function POST(req: NextRequest) {
       eventDate:              input.eventDate,
       acceptedPaymentMethods: paymentMethods,
       isActive:               true,
+      slug,
       createdAt:              now,
       updatedAt:              now,
     };

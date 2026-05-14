@@ -6,7 +6,7 @@
  * dashboards (the role just changes the page title).
  */
 import { useCallback, useEffect, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { ArrowDownRight, ArrowUpRight, RefreshCw, Wallet as WalletIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,7 @@ import type { Locale } from '@/i18n/config';
 const PRESETS = [1000, 2000, 5000];
 
 export function WalletDashboard() {
+  const t = useTranslations('wallet.dashboard');
   const locale = useLocale() as Locale;
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [transactions, setTransactions] = useState<Transaction[] | null>(null);
@@ -55,7 +56,7 @@ export function WalletDashboard() {
       setTransactions(t.items);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load wallet');
+      setError(err instanceof Error ? err.message : t('loadError'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -83,7 +84,7 @@ export function WalletDashboard() {
     return (
       <Card>
         <CardContent className="p-6 text-sm text-destructive">
-          {error ?? 'Wallet unavailable'}
+          {error ?? t('walletUnavailable')}
         </CardContent>
       </Card>
     );
@@ -110,7 +111,7 @@ export function WalletDashboard() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Recent activity</CardTitle>
+          <CardTitle className="text-base">{t('recentActivity')}</CardTitle>
           <Button
             type="button"
             variant="ghost"
@@ -127,8 +128,8 @@ export function WalletDashboard() {
             <TransactionsTable transactions={transactions} locale={locale} />
           ) : (
             <InlineEmptyState
-              title="No activity yet"
-              description="Your top-ups and payments will appear here."
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
             />
           )}
         </CardContent>
@@ -150,19 +151,20 @@ function BalanceCard({
   onRefresh: () => void;
   refreshing: boolean;
 }) {
+  const t = useTranslations('wallet.dashboard');
   return (
     <Card className="lg:col-span-2 overflow-hidden border-primary-100 bg-gradient-to-br from-primary-50 via-background to-background">
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-primary-700">
-              Available balance
+              {t('availableBalance')}
             </p>
             <p className="mt-3 text-4xl font-semibold tracking-tight">
               {formatCurrency(wallet.balance, locale)}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Wallet ID: <span className="font-mono">{wallet.id.slice(0, 8)}…</span>
+              {t('walletId')}: <span className="font-mono">{wallet.id.slice(0, 8)}…</span>
             </p>
           </div>
           <div className="flex size-11 items-center justify-center rounded-md bg-primary-100 text-primary-700">
@@ -171,7 +173,7 @@ function BalanceCard({
         </div>
         {wallet.status === 'FROZEN' && (
           <Badge variant="warning" className="mt-4">
-            Frozen — contact support
+            {t('frozen')}
           </Badge>
         )}
         <div className="mt-5">
@@ -183,7 +185,7 @@ function BalanceCard({
             disabled={refreshing}
           >
             <RefreshCw className={cn('size-4', refreshing && 'animate-spin')} />
-            Refresh
+            {t('refresh')}
           </Button>
         </div>
       </CardContent>
@@ -198,6 +200,7 @@ function TopUpCard({
 }: {
   onTopUpComplete: (wallet: Wallet | null) => void;
 }) {
+  const t = useTranslations('wallet.dashboard');
   const locale = useLocale() as Locale;
   const [amount, setAmount] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
@@ -213,7 +216,7 @@ function TopUpCard({
     setFeedback(null);
     const parsed = Number(amount);
     if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 100) {
-      setFeedback({ kind: 'error', text: 'Enter a whole number of DZD ≥ 100.' });
+      setFeedback({ kind: 'error', text: t('topUpMinError') });
       return;
     }
     setSubmitting(true);
@@ -221,22 +224,22 @@ function TopUpCard({
       const res = await walletService.createPayment({ amount: parsed });
       if (res.status === 'COMPLETED') {
         // Synchronous settlement (mock provider in sync mode).
-        setFeedback({ kind: 'success', text: 'Top-up successful!' });
+        setFeedback({ kind: 'success', text: t('topUpSuccess') });
         setAmount('');
         onTopUpComplete(null);
       } else if (res.paymentUrl) {
         // Redirect to SlickPay hosted checkout.
         window.location.href = res.paymentUrl;
       } else {
-        setFeedback({ kind: 'success', text: 'Top-up created. Awaiting confirmation.' });
+        setFeedback({ kind: 'success', text: t('topUpPending') });
         onTopUpComplete(null);
       }
     } catch (err) {
-      let text = 'Top-up failed.';
+      let text = t('topUpFailed');
       if (err instanceof ApiClientError) {
-        if (err.code === 'AMOUNT_OUT_OF_RANGE') text = 'Amount out of range.';
-        else if (err.code === 'WALLET_FROZEN') text = 'Your wallet is frozen.';
-        else if (err.code === 'PROVIDER_FAILED') text = 'Payment provider unavailable. Try again later.';
+        if (err.code === 'AMOUNT_OUT_OF_RANGE') text = t('topUpAmountOutOfRange');
+        else if (err.code === 'WALLET_FROZEN') text = t('walletFrozenError');
+        else if (err.code === 'PROVIDER_FAILED') text = t('providerFailed');
         else text = err.message || text;
       }
       setFeedback({ kind: 'error', text });
@@ -248,7 +251,7 @@ function TopUpCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Top up your wallet</CardTitle>
+        <CardTitle className="text-base">{t('topUpTitle')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
@@ -271,7 +274,7 @@ function TopUpCard({
           </div>
           <div>
             <label htmlFor="topup-amount" className="text-xs font-medium text-muted-foreground">
-              Amount (DZD)
+              {t('amountLabel')}
             </label>
             <Input
               id="topup-amount"
@@ -299,7 +302,7 @@ function TopUpCard({
             </div>
           )}
           <Button type="submit" className="w-full" loading={submitting}>
-            Top up
+            {t('topUpButton')}
           </Button>
         </form>
       </CardContent>
@@ -321,17 +324,6 @@ function statusVariant(status: TransactionStatus) {
   }
 }
 
-function typeLabel(type: TransactionType) {
-  switch (type) {
-    case 'TOP_UP': return 'Top-up';
-    case 'PAYMENT': return 'Payment';
-    case 'REFUND': return 'Refund';
-    case 'ADJUSTMENT': return 'Adjustment';
-    case 'PAYOUT': return 'Payout';
-    case 'COMMISSION': return 'Commission';
-  }
-}
-
 function TransactionsTable({
   transactions,
   locale,
@@ -339,17 +331,30 @@ function TransactionsTable({
   transactions: Transaction[];
   locale: Locale;
 }) {
+  const t = useTranslations('wallet.dashboard');
+
+  function typeLabel(type: TransactionType) {
+    switch (type) {
+      case 'TOP_UP': return t('typeTopUp');
+      case 'PAYMENT': return t('typePayment');
+      case 'REFUND': return t('typeRefund');
+      case 'ADJUSTMENT': return t('typeAdjustment');
+      case 'PAYOUT': return t('typePayout');
+      case 'COMMISSION': return t('typeCommission');
+    }
+  }
+
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Type</TableHead>
-            <TableHead className="hidden sm:table-cell">Description</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-end">Amount</TableHead>
-            <TableHead className="hidden sm:table-cell text-end">Balance</TableHead>
-            <TableHead>Date</TableHead>
+            <TableHead>{t('colType')}</TableHead>
+            <TableHead className="hidden sm:table-cell">{t('colDescription')}</TableHead>
+            <TableHead>{t('colStatus')}</TableHead>
+            <TableHead className="text-end">{t('colAmount')}</TableHead>
+            <TableHead className="hidden sm:table-cell text-end">{t('colBalance')}</TableHead>
+            <TableHead>{t('colDate')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

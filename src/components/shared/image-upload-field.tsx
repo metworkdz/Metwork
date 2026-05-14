@@ -11,6 +11,7 @@
  *   />
  */
 import { useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ImageIcon, Loader2, X } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ export function ImageUploadField({
   hint = 'JPG, PNG, WebP or GIF — max 5 MB',
   maxBytes = DEFAULT_MAX,
 }: ImageUploadFieldProps) {
+  const t = useTranslations('common');
   const inputRef   = useRef<HTMLInputElement>(null);
   const [preview,   setPreview]   = useState<string | null>(currentUrl ?? null);
   const [uploading, setUploading] = useState(false);
@@ -110,7 +112,7 @@ export function ImageUploadField({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={preview}
-            alt="Preview"
+            alt={t('preview')}
             className="h-36 w-full object-cover"
           />
           {/* Overlay buttons */}

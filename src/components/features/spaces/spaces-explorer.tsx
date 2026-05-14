@@ -9,7 +9,7 @@
  * users adjust after the initial hero search, not primary discovery filters.
  */
 import { useMemo, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   ArrowUpDown,
   Briefcase,
@@ -76,6 +76,7 @@ export function SpacesExplorer({
   onCategoryChange,
   onCityChange,
 }: SpacesExplorerProps) {
+  const t = useTranslations('spaces.explorer');
   const locale = useLocale() as Locale;
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('recommended');
@@ -128,10 +129,10 @@ export function SpacesExplorer({
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-            Available workspaces
+            {t('title')}
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            {spaces.length} spaces across {cities.length} {cities.length === 1 ? 'city' : 'cities'}
+            {spaces.length} {spaces.length === 1 ? t('space') : t('spaces')} {t('of')} {cities.length} {cities.length === 1 ? t('city') : t('cities')}
           </p>
         </div>
         {hasActiveFilters && (
@@ -141,7 +142,7 @@ export function SpacesExplorer({
             className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 transition-colors hover:text-primary"
           >
             <RotateCcw className="size-3" />
-            Reset all filters
+            {t('resetFilters')}
           </button>
         )}
       </div>
@@ -156,7 +157,7 @@ export function SpacesExplorer({
         <CategoryPill
           icon={CATEGORY_ICONS.all}
           active={category === ALL}
-          label="All"
+          label={t('categoryAll')}
           count={counts.ALL}
           onClick={() => onCategoryChange(ALL)}
         />
@@ -179,7 +180,7 @@ export function SpacesExplorer({
           <Search className="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
           <Input
             type="search"
-            placeholder="Search spaces, amenities, hosts…"
+            placeholder={t('searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="ps-10 pe-9"
@@ -200,10 +201,10 @@ export function SpacesExplorer({
         {/* City filter */}
         <Select value={city} onValueChange={onCityChange}>
           <SelectTrigger className="w-full sm:w-[160px]" aria-label="Filter by city">
-            <SelectValue placeholder="All cities" />
+            <SelectValue placeholder={t('allCities')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>All cities</SelectItem>
+            <SelectItem value={ALL}>{t('allCities')}</SelectItem>
             {cities.map((c) => (
               <SelectItem key={c.code} value={c.name}>
                 {c.name}
@@ -219,10 +220,10 @@ export function SpacesExplorer({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="recommended">Recommended</SelectItem>
-            <SelectItem value="priceAsc">Price: low → high</SelectItem>
-            <SelectItem value="priceDesc">Price: high → low</SelectItem>
-            <SelectItem value="rating">Top rated</SelectItem>
+            <SelectItem value="recommended">{t('sortRecommended')}</SelectItem>
+            <SelectItem value="priceAsc">{t('sortPriceLow')}</SelectItem>
+            <SelectItem value="priceDesc">{t('sortPriceHigh')}</SelectItem>
+            <SelectItem value="rating">{t('sortRated')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -230,10 +231,10 @@ export function SpacesExplorer({
       {/* ── Results count ── */}
       <p className="text-sm text-slate-500">
         <span className="font-semibold text-slate-800">{filtered.length}</span>
-        {' '}of {spaces.length} space{spaces.length !== 1 ? 's' : ''}
+        {' '}{t('of')}{' '}{spaces.length}{' '}{spaces.length !== 1 ? t('spaces') : t('space')}
         {city !== ALL && (
           <>
-            {' '}in{' '}
+            {' '}{t('in')}{' '}
             <span className="font-medium text-slate-800">{city}</span>
           </>
         )}
@@ -316,18 +317,17 @@ function EmptyState({
   hasFilters: boolean;
   onReset: () => void;
 }) {
+  const t = useTranslations('spaces.explorer');
   return (
     <div className="flex flex-col items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-8 py-20 text-center">
       <div className="flex size-16 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
         <MapPinOff className="size-7 text-slate-400" />
       </div>
       <h3 className="mt-5 text-lg font-semibold text-slate-800">
-        {hasFilters ? 'No spaces match your search' : 'No spaces available yet'}
+        {hasFilters ? t('emptyTitle') : t('emptyTitleFresh')}
       </h3>
       <p className="mt-2 max-w-xs text-sm text-slate-500">
-        {hasFilters
-          ? 'Try adjusting your filters, choosing a different city, or clearing the search term.'
-          : 'Spaces are coming soon. Check back later or contact us for enquiries.'}
+        {hasFilters ? t('emptyDescription') : t('emptyDescriptionFresh')}
       </p>
       {hasFilters && (
         <Button
@@ -336,7 +336,7 @@ function EmptyState({
           className="mt-6 gap-2 rounded-xl"
         >
           <RotateCcw className="size-3.5" />
-          Show all spaces
+          {t('showAll')}
         </Button>
       )}
     </div>

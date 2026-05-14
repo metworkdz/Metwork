@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight, Calendar, Linkedin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -14,6 +15,7 @@ interface MentorSlideshowProps {
 }
 
 export function MentorSlideshow({ mentors }: MentorSlideshowProps) {
+  const t = useTranslations('mentors.slideshow');
   const [current,  setCurrent]  = useState(0);
   const [hovered,  setHovered]  = useState(false);
   const [booking,  setBooking]  = useState<Mentor | null>(null);
@@ -58,7 +60,7 @@ export function MentorSlideshow({ mentors }: MentorSlideshowProps) {
   if (total === 0) {
     return (
       <p className="py-20 text-center text-sm text-muted-foreground">
-        No mentors listed yet. Check back soon.
+        {t('noMentors')}
       </p>
     );
   }
@@ -112,7 +114,7 @@ export function MentorSlideshow({ mentors }: MentorSlideshowProps) {
                   onClick={() => handleBook(mentor)}
                 >
                   <Calendar className="size-4" />
-                  Book consultation
+                  {t('bookConsultation')}
                 </Button>
                 {mentor.linkedinUrl && (
                   <a
@@ -123,7 +125,7 @@ export function MentorSlideshow({ mentors }: MentorSlideshowProps) {
                     }
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={`${mentor.fullName} on LinkedIn`}
+                    aria-label={t('linkedinAriaLabel', { name: mentor.fullName })}
                     className="flex size-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition-colors hover:bg-white/30"
                   >
                     <Linkedin className="size-4" />
@@ -149,7 +151,7 @@ export function MentorSlideshow({ mentors }: MentorSlideshowProps) {
             <button
               type="button"
               onClick={prev}
-              aria-label="Previous mentor"
+              aria-label={t('prevMentor')}
               className={cn(
                 'absolute start-2 top-1/2 -translate-y-1/2 sm:start-0 sm:-translate-x-4',
                 'flex size-10 items-center justify-center rounded-full bg-background/90 shadow-lg backdrop-blur-sm sm:size-11',
@@ -161,7 +163,7 @@ export function MentorSlideshow({ mentors }: MentorSlideshowProps) {
             <button
               type="button"
               onClick={next}
-              aria-label="Next mentor"
+              aria-label={t('nextMentor')}
               className={cn(
                 'absolute end-2 top-1/2 -translate-y-1/2 sm:end-0 sm:translate-x-4',
                 'flex size-10 items-center justify-center rounded-full bg-background/90 shadow-lg backdrop-blur-sm sm:size-11',
@@ -177,7 +179,7 @@ export function MentorSlideshow({ mentors }: MentorSlideshowProps) {
         {total > 1 && (
           <div
             role="tablist"
-            aria-label="Mentor slides"
+            aria-label={t('mentorSlides')}
             className="mt-6 flex items-center justify-center gap-2"
           >
             {mentors.map((m, i) => (
@@ -185,7 +187,7 @@ export function MentorSlideshow({ mentors }: MentorSlideshowProps) {
                 key={m.id}
                 role="tab"
                 aria-selected={i === current}
-                aria-label={`Go to ${m.fullName}`}
+                aria-label={t('goToMentor', { name: m.fullName })}
                 onClick={() => goTo(i)}
                 className={cn(
                   'rounded-full transition-all duration-300',

@@ -5,6 +5,7 @@
  * Returns a selected client or clears when the user wipes the input.
  */
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Loader2, UserCircle, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -30,10 +31,12 @@ interface ClientSelectorProps {
 export function ClientSelector({
   onSelect,
   value,
-  placeholder = 'Search by name, email, phone…',
+  placeholder,
   disabled,
   id,
 }: ClientSelectorProps) {
+  const t = useTranslations('incubator.clientSelector');
+  const resolvedPlaceholder = placeholder ?? t('searchPlaceholder');
   const [query, setQuery] = useState(value?.fullName ?? '');
   const [hits, setHits] = useState<ClientHit[]>([]);
   const [loading, setLoading] = useState(false);
@@ -102,7 +105,7 @@ export function ClientSelector({
           id={id}
           value={query}
           onChange={(e) => handleChange(e.target.value)}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           disabled={disabled}
           autoComplete="off"
           className="pr-8"
@@ -116,7 +119,7 @@ export function ClientSelector({
             onClick={clear}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             tabIndex={-1}
-            aria-label="Clear"
+            aria-label={t('clearAriaLabel')}
           >
             <X className="size-4" />
           </button>
@@ -151,7 +154,7 @@ export function ClientSelector({
 
       {open && hits.length === 0 && !loading && query.trim().length >= 1 && (
         <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover px-3 py-2 text-sm text-muted-foreground shadow-md">
-          No clients found — they will be created automatically.
+          {t('noClientsFound')}
         </div>
       )}
     </div>

@@ -5,6 +5,7 @@
  * Shows all messages from the contact form with a "Mark as handled" toggle.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { CheckCheck, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,6 +27,7 @@ async function patchSubmission(id: string, handled: boolean) {
 type Filter = 'all' | 'unhandled' | 'handled';
 
 export function ContactInbox({ initial }: { initial: ContactSubmissionRecord[] }) {
+  const t = useTranslations('admin.contacts');
   const [items,  setItems]  = useState(initial);
   const [filter, setFilter] = useState<Filter>('unhandled');
   const [busy,   setBusy]   = useState<Record<string, boolean>>({});
@@ -48,9 +50,9 @@ export function ContactInbox({ initial }: { initial: ContactSubmissionRecord[] }
   const unhandledCount = items.filter((i) => !i.handled).length;
 
   const FILTERS: Array<{ value: Filter; label: string }> = [
-    { value: 'unhandled', label: 'Unhandled' },
-    { value: 'handled',   label: 'Handled' },
-    { value: 'all',       label: 'All' },
+    { value: 'unhandled', label: t('filterUnhandled') },
+    { value: 'handled',   label: t('filterHandled') },
+    { value: 'all',       label: t('filterAll') },
   ];
 
   return (
@@ -79,11 +81,11 @@ export function ContactInbox({ initial }: { initial: ContactSubmissionRecord[] }
       {visible.length === 0 ? (
         <Card>
           <InlineEmptyState
-            title={filter === 'unhandled' ? 'Inbox zero' : 'No submissions'}
+            title={filter === 'unhandled' ? t('emptyInboxTitle') : t('emptyTitle')}
             description={
               filter === 'unhandled'
-                ? 'All contact submissions have been handled.'
-                : 'No contact submissions yet.'
+                ? t('emptyInboxDescription')
+                : t('emptyDescription')
             }
             icon={<Mail className="size-5 text-muted-foreground" />}
           />
@@ -111,7 +113,7 @@ export function ContactInbox({ initial }: { initial: ContactSubmissionRecord[] }
                         </a>
                         {item.handled && (
                           <Badge variant="success" className="gap-1">
-                            <CheckCheck className="size-3" /> Handled
+                            <CheckCheck className="size-3" /> {t('handledBadge')}
                           </Badge>
                         )}
                       </div>
@@ -127,7 +129,7 @@ export function ContactInbox({ initial }: { initial: ContactSubmissionRecord[] }
                       loading={busy[item.id]}
                       onClick={() => toggle(item.id, !item.handled)}
                     >
-                      {item.handled ? 'Mark unhandled' : 'Mark handled'}
+                      {item.handled ? t('markUnhandled') : t('markHandled')}
                     </Button>
                   </div>
                 </CardContent>

@@ -5,7 +5,7 @@
  * form and switches to a success panel after a successful booking.
  */
 import { useEffect, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Check, MapPin, Star, Users } from 'lucide-react';
 import {
   Sheet,
@@ -32,6 +32,7 @@ interface SpaceDetailSheetProps {
 }
 
 export function SpaceDetailSheet({ space, open, onOpenChange }: SpaceDetailSheetProps) {
+  const t = useTranslations('spaces.detail');
   const locale = useLocale() as Locale;
   const [success, setSuccess] = useState<{ booking: BookingDto; newBalance: number } | null>(null);
 
@@ -84,7 +85,7 @@ export function SpaceDetailSheet({ space, open, onOpenChange }: SpaceDetailSheet
               {space.amenities.length > 0 && (
                 <div className="mt-6">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    What&apos;s included
+                    {t('whatIncluded')}
                   </p>
                   <ul className="mt-3 grid grid-cols-2 gap-y-2 text-sm">
                     {space.amenities.map((a) => (
@@ -99,12 +100,12 @@ export function SpaceDetailSheet({ space, open, onOpenChange }: SpaceDetailSheet
 
               <div className="mt-6">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Pricing
+                  {t('pricingTitle')}
                 </p>
                 <div className="mt-3 grid grid-cols-3 gap-2">
-                  <PriceTile label="Hour" value={space.pricePerHour} locale={locale} />
-                  <PriceTile label="Day" value={space.pricePerDay} locale={locale} />
-                  <PriceTile label="Month" value={space.pricePerMonth} locale={locale} />
+                  <PriceTile label={t('hourLabel')} value={space.pricePerHour} locale={locale} />
+                  <PriceTile label={t('dayLabel')} value={space.pricePerDay} locale={locale} />
+                  <PriceTile label={t('monthLabel')} value={space.pricePerMonth} locale={locale} />
                 </div>
               </div>
 
@@ -118,7 +119,7 @@ export function SpaceDetailSheet({ space, open, onOpenChange }: SpaceDetailSheet
                   />
                   <SheetClose asChild>
                     <Button variant="outline" className="w-full">
-                      Close
+                      {t('close')}
                     </Button>
                   </SheetClose>
                 </div>

@@ -10,6 +10,7 @@
  *     and we re-sync on success
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { MoreVertical, Pencil, Plus, Trash2, UserPlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ import { LandingMentorCard } from '@/components/features/mentors/landing-mentor-
 import type { Mentor } from '@/types/mentor';
 
 export function MentorsManager({ initial }: { initial: Mentor[] }) {
+  const t = useTranslations('admin.mentorsManager');
   const [mentors, setMentors] = useState<Mentor[]>(initial);
   const [editing, setEditing] = useState<Mentor | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -72,9 +74,9 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
       setDeleting(null);
     } catch (err) {
       if (err instanceof ApiClientError) {
-        setDeleteError(err.message || 'Delete failed');
+        setDeleteError(err.message || t('deleteFailed'));
       } else {
-        setDeleteError(err instanceof Error ? err.message : 'Delete failed');
+        setDeleteError(err instanceof Error ? err.message : t('deleteFailed'));
       }
     } finally {
       setDeleteSubmitting(false);
@@ -85,24 +87,24 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-4 rounded-md border border-border/60 bg-muted/30 px-4 py-3">
         <p className="text-sm text-muted-foreground">
-          {mentors.length} mentor{mentors.length === 1 ? '' : 's'} in the roster
+          {t('rosterCount', { count: mentors.length })}
         </p>
         <Button size="sm" onClick={openCreate}>
           <Plus />
-          Add mentor
+          {t('addMentor')}
         </Button>
       </div>
 
       {mentors.length === 0 ? (
         <Card>
           <InlineEmptyState
-            title="No mentors yet"
-            description="Add the first mentor to populate the landing-page carousel."
+            title={t('emptyTitle')}
+            description={t('emptyDescription')}
             icon={<UserPlus className="size-5 text-muted-foreground" />}
             action={
               <Button size="sm" onClick={openCreate}>
                 <Plus />
-                Add mentor
+                {t('addMentor')}
               </Button>
             }
           />
@@ -119,7 +121,7 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
                       variant="secondary"
                       size="icon"
                       className="size-8 bg-background/80 backdrop-blur-sm hover:bg-background"
-                      aria-label={`Actions for ${m.fullName}`}
+                      aria-label={t('actionsFor', { name: m.fullName })}
                     >
                       <MoreVertical className="size-4" />
                     </Button>
@@ -127,14 +129,14 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onSelect={() => openEdit(m)}>
                       <Pencil />
-                      Edit
+                      {t('edit')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onSelect={() => setDeleting(m)}
                       className="text-destructive focus:text-destructive"
                     >
                       <Trash2 />
-                      Delete
+                      {t('delete')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -165,12 +167,11 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Delete mentor?</DialogTitle>
+            <DialogTitle>{t('deleteDialogTitle')}</DialogTitle>
             <DialogDescription>
               {deleting ? (
                 <>
-                  This will remove <span className="font-medium text-foreground">{deleting.fullName}</span> from
-                  the landing-page carousel. This action can&apos;t be undone.
+                  {t('deleteDialogDescription', { name: deleting.fullName })}
                 </>
               ) : null}
             </DialogDescription>
@@ -182,10 +183,10 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleting(null)}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button variant="destructive" loading={deleteSubmitting} onClick={confirmDelete}>
-              Delete
+              {t('delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -5,7 +5,7 @@
  * city, sort. Results group by month for a calendar feel.
  */
 import { useMemo, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Search } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -44,6 +44,7 @@ function monthKey(iso: string): string {
 }
 
 export function EventsExplorer({ events, cities, attendance }: EventsExplorerProps) {
+  const t = useTranslations('events.explorer');
   const locale = useLocale() as Locale;
   const [query, setQuery] = useState('');
   const [city, setCity] = useState<string>(ALL);
@@ -109,13 +110,13 @@ export function EventsExplorer({ events, cities, attendance }: EventsExplorerPro
     <div className="space-y-6">
       {/* Top filter bar */}
       <div className="flex flex-wrap gap-2">
-        <ModePill active={mode === 'all'} label="All events" count={counts.all} onClick={() => setMode('all')} />
-        <ModePill active={mode === 'in_person'} label="In person" count={counts.all - counts.online} onClick={() => setMode('in_person')} />
-        <ModePill active={mode === 'online'} label="Online" count={counts.online} onClick={() => setMode('online')} />
+        <ModePill active={mode === 'all'} label={t('all')} count={counts.all} onClick={() => setMode('all')} />
+        <ModePill active={mode === 'in_person'} label={t('inPerson')} count={counts.all - counts.online} onClick={() => setMode('in_person')} />
+        <ModePill active={mode === 'online'} label={t('online')} count={counts.online} onClick={() => setMode('online')} />
         <span aria-hidden className="mx-1 hidden h-7 w-px bg-border sm:block" />
         <ModePill
           active={price === 'free'}
-          label="Free only"
+          label={t('freeOnly')}
           count={counts.free}
           onClick={() => setPrice(price === 'free' ? 'all' : 'free')}
         />
@@ -126,7 +127,7 @@ export function EventsExplorer({ events, cities, attendance }: EventsExplorerPro
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search events, hosts, topics…"
+            placeholder={t('searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="ps-9"
@@ -135,10 +136,10 @@ export function EventsExplorer({ events, cities, attendance }: EventsExplorerPro
         </div>
         <Select value={city} onValueChange={setCity}>
           <SelectTrigger className="w-full md:w-[170px]">
-            <SelectValue placeholder="City" />
+            <SelectValue placeholder={t('city')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>All cities</SelectItem>
+            <SelectItem value={ALL}>{t('allCities')}</SelectItem>
             {cities.map((c) => (
               <SelectItem key={c.code} value={c.name}>
                 {c.name}
@@ -151,22 +152,22 @@ export function EventsExplorer({ events, cities, attendance }: EventsExplorerPro
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="soonest">Soonest first</SelectItem>
-            <SelectItem value="priceAsc">Price: low → high</SelectItem>
-            <SelectItem value="recommended">Recommended</SelectItem>
+            <SelectItem value="soonest">{t('sortSoonest')}</SelectItem>
+            <SelectItem value="priceAsc">{t('sortPriceLow')}</SelectItem>
+            <SelectItem value="recommended">{t('sortRecommended')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {filtered.length} of {events.length} event{events.length === 1 ? '' : 's'}
+        {filtered.length} {t('of')} {events.length} {events.length === 1 ? t('event') : t('events')}
       </p>
 
       {filtered.length === 0 ? (
         <Card>
           <InlineEmptyState
-            title="No events match"
-            description="Try widening the filters or clearing the search."
+            title={t('emptyTitle')}
+            description={t('emptyDescription')}
           />
         </Card>
       ) : (

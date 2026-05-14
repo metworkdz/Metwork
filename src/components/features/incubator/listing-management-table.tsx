@@ -6,6 +6,7 @@
  * (header bar, table, empty state, actions) is reused across all three
  * incubator listing pages.
  */
+import { useTranslations } from 'next-intl';
 import { MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -64,15 +65,17 @@ export function ListingManagementTable<T>({
   emptyIcon,
   actions,
 }: ListingManagementTableProps<T>) {
+  const t = useTranslations('incubator.listingTable');
+
   const finalActions = actions ?? [
-    { label: 'Edit', icon: <Pencil className="size-4" />, onSelect: () => {} },
-    { label: 'Delete', icon: <Trash2 className="size-4" />, onSelect: () => {}, destructive: true },
+    { label: t('actionEdit'), icon: <Pencil className="size-4" />, onSelect: () => {} },
+    { label: t('actionDelete'), icon: <Trash2 className="size-4" />, onSelect: () => {}, destructive: true },
   ];
 
   const headerCreate = createSlot ?? (onCreate ? (
     <Button size="sm" onClick={onCreate}>
       <Plus />
-      New listing
+      {t('newListing')}
     </Button>
   ) : null);
 
@@ -80,7 +83,7 @@ export function ListingManagementTable<T>({
     <Card>
       <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3">
         <p className="text-sm text-muted-foreground">
-          {rows.length} listing{rows.length === 1 ? '' : 's'}
+          {t('listingsCount', { count: rows.length })}
         </p>
         {headerCreate}
       </div>
@@ -94,7 +97,7 @@ export function ListingManagementTable<T>({
               onCreate && (
                 <Button size="sm" onClick={onCreate}>
                   <Plus />
-                  Create
+                  {t('create')}
                 </Button>
               )
             )}
@@ -112,7 +115,7 @@ export function ListingManagementTable<T>({
                       {c.label}
                     </TableHead>
                   ))}
-                  <TableHead className="w-12" aria-label="Actions" />
+                  <TableHead className="w-12" aria-label={t('actionsAriaLabel')} />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -134,7 +137,7 @@ export function ListingManagementTable<T>({
                     <TableCell className="text-end">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label="Actions">
+                          <Button variant="ghost" size="icon" aria-label={t('actionsAriaLabel')}>
                             <MoreVertical className="size-4" />
                           </Button>
                         </DropdownMenuTrigger>

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { MapPin, Users, Calendar, Clock, Briefcase, ArrowLeft } from 'lucide-react';
 import { Container } from '@/components/ui/container';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,8 @@ export default async function ProgramDetailPage({ params }: PageProps) {
   const { locale, id } = await params;
   setRequestLocale(locale);
 
+  const t = await getTranslations('programs.detail');
+
   const program = await findProgramById(id);
   if (!program) notFound();
 
@@ -48,7 +50,7 @@ export default async function ProgramDetailPage({ params }: PageProps) {
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" />
-        All programs
+        {t('backLink')}
       </Link>
 
       <div className="grid gap-8 lg:grid-cols-5">
@@ -78,10 +80,11 @@ export default async function ProgramDetailPage({ params }: PageProps) {
                 <MapPin className="size-3" />{program.city}
               </Badge>
               {isFull ? (
-                <Badge variant="danger">Full</Badge>
+                <Badge variant="danger">{t('statusFull')}</Badge>
               ) : (
                 <Badge variant="outline" className="gap-1">
-                  <Users className="size-3" />{seatsLeft} seat{seatsLeft !== 1 ? 's' : ''} left
+                  <Users className="size-3" />
+                  {seatsLeft === 1 ? t('seatsRemainingOne') : t('seatsRemainingMany', { count: seatsLeft })}
                 </Badge>
               )}
             </div>
@@ -98,7 +101,7 @@ export default async function ProgramDetailPage({ params }: PageProps) {
           <div className="grid gap-3 sm:grid-cols-3 rounded-xl border border-border bg-muted/30 p-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                <Clock className="inline size-3 mr-1" />Deadline
+                <Clock className="inline size-3 mr-1" />{t('deadlineLabel')}
               </p>
               <p className={`text-sm font-medium ${deadlinePassed ? 'text-destructive' : ''}`}>
                 {formatDate(program.deadline, locale as Locale)}
@@ -106,13 +109,13 @@ export default async function ProgramDetailPage({ params }: PageProps) {
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                <Calendar className="inline size-3 mr-1" />Starts
+                <Calendar className="inline size-3 mr-1" />{t('startsLabel')}
               </p>
               <p className="text-sm font-medium">{formatDate(program.startDate, locale as Locale)}</p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                <Calendar className="inline size-3 mr-1" />Ends
+                <Calendar className="inline size-3 mr-1" />{t('endsLabel')}
               </p>
               <p className="text-sm font-medium">{formatDate(program.endDate, locale as Locale)}</p>
             </div>
@@ -124,10 +127,10 @@ export default async function ProgramDetailPage({ params }: PageProps) {
           <div className="sticky top-20 space-y-4 rounded-2xl border border-border bg-card p-6">
             <div className="text-center">
               <p className="text-3xl font-bold tabular-nums">
-                {program.price === 0 ? 'Free' : formatCurrency(program.price, locale as Locale)}
+                {program.price === 0 ? t('free') : formatCurrency(program.price, locale as Locale)}
               </p>
               {program.price > 0 && (
-                <p className="text-xs text-muted-foreground mt-0.5">enrollment fee</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('enrollmentFee')}</p>
               )}
             </div>
 
@@ -136,7 +139,13 @@ export default async function ProgramDetailPage({ params }: PageProps) {
             </div>
 
             <p className="text-xs text-muted-foreground text-center">
-              {isFull ? 'This program is full.' : deadlinePassed ? 'Application deadline has passed.' : `${seatsLeft} seat${seatsLeft !== 1 ? 's' : ''} remaining`}
+              {isFull
+                ? t('fullText')
+                : deadlinePassed
+                ? t('deadlinePassed')
+                : seatsLeft === 1
+                ? t('seatsRemainingOne')
+                : t('seatsRemainingMany', { count: seatsLeft })}
             </p>
           </div>
         </div>

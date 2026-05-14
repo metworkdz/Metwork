@@ -14,7 +14,7 @@
  * The price preview is derived client-side the same way.
  */
 import { useEffect, useId, useMemo, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   Banknote,
   CalendarDays,
@@ -118,6 +118,7 @@ export function BookingSuccessPanel({
   newBalance: number;
 }) {
   const locale = useLocale() as Locale;
+  const t = useTranslations('spaces.booking');
   const isCash = booking.paymentMethod === 'manual';
   const fmtDt  = (iso: string) =>
     new Date(iso).toLocaleString('en-GB', {
@@ -139,54 +140,52 @@ export function BookingSuccessPanel({
         }
         <div className="min-w-0 flex-1">
           <p className={cn('text-base font-semibold', isCash ? 'text-amber-900 dark:text-amber-100' : 'text-emerald-900 dark:text-emerald-100')}>
-            {isCash ? 'Spot reserved — pay on-site' : 'Booking confirmed'}
+            {isCash ? t('successTitleCash') : t('bookingConfirmed')}
           </p>
           <p className={cn('mt-1 text-sm', isCash ? 'text-amber-800 dark:text-amber-200' : 'text-emerald-800 dark:text-emerald-200')}>
-            {isCash
-              ? 'Your reservation is confirmed. Please settle the payment directly with the host.'
-              : "We've charged your wallet and reserved your spot."}
+            {isCash ? t('successMessageCash') : t('successMessageOnline')}
           </p>
           <dl className={cn('mt-3 grid grid-cols-2 gap-2 text-xs', isCash ? 'text-amber-900 dark:text-amber-100' : 'text-emerald-900 dark:text-emerald-100')}>
             <div>
-              <dt className={isCash ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}>Reference</dt>
+              <dt className={isCash ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}>{t('reference')}</dt>
               <dd className="font-mono">{booking.id.slice(0, 8)}…</dd>
             </div>
             <div>
               <dt className={isCash ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}>
-                {isCash ? 'Due on-site' : 'Total paid'}
+                {isCash ? t('dueOnSite') : t('totalPaid')}
               </dt>
               <dd className="font-medium tabular-nums">
                 {formatCurrency(booking.totalAmount, locale)}
               </dd>
             </div>
             <div>
-              <dt className={isCash ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}>From</dt>
+              <dt className={isCash ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}>{t('from')}</dt>
               <dd className="font-medium">{fmtDt(booking.startsAt)}</dd>
             </div>
             <div>
-              <dt className={isCash ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}>To</dt>
+              <dt className={isCash ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}>{t('to')}</dt>
               <dd className="font-medium">{fmtDt(booking.endsAt)}</dd>
             </div>
             {!isCash && (
               <div>
-                <dt className="text-emerald-700 dark:text-emerald-400">New balance</dt>
+                <dt className="text-emerald-700 dark:text-emerald-400">{t('newBalance')}</dt>
                 <dd className="font-medium tabular-nums">
                   {formatCurrency(newBalance, locale)}
                 </dd>
               </div>
             )}
             <div>
-              <dt className={isCash ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}>Status</dt>
-              <dd className="font-medium">{isCash ? 'Awaiting payment' : 'Confirmed'}</dd>
+              <dt className={isCash ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}>{t('status')}</dt>
+              <dd className="font-medium">{isCash ? t('awaitingPayment') : t('confirmed')}</dd>
             </div>
           </dl>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button asChild size="sm">
-              <Link href="/dashboard/entrepreneur/bookings">View my bookings</Link>
+              <Link href="/dashboard/entrepreneur/bookings">{t('viewBookings')}</Link>
             </Button>
             {!isCash && (
               <Button asChild size="sm" variant="outline">
-                <Link href="/dashboard/entrepreneur/wallet">View wallet</Link>
+                <Link href="/dashboard/entrepreneur/wallet">{t('viewWallet')}</Link>
               </Button>
             )}
           </div>
@@ -199,6 +198,7 @@ export function BookingSuccessPanel({
 /* ── Main form ── */
 export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const locale   = useLocale() as Locale;
+  const t        = useTranslations('spaces.booking');
   const router   = useRouter();
   const { user, refresh } = useAuth();
   const isAuthed = user !== null;
@@ -291,7 +291,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   if (units.length === 0) {
     return (
       <div className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-        Pricing for this space is by request — please contact the host directly.
+        {t('noPricing')}
       </div>
     );
   }
@@ -327,38 +327,37 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
           case 'OUTSIDE_WORKING_HOURS':
             setError({
               code: err.code,
-              message: `Booking must be within working hours: ${
-                (err.details as { openingTime?: string })?.openingTime ?? openingTime
-              } – ${
-                (err.details as { closingTime?: string })?.closingTime ?? closingTime
-              }.`,
+              message: t('errorOutsideHours', {
+                open: (err.details as { openingTime?: string })?.openingTime ?? openingTime,
+                close: (err.details as { closingTime?: string })?.closingTime ?? closingTime,
+              }),
             });
             break;
           case 'NOT_A_WORKING_DAY':
-            setError({ code: err.code, message: `This space is only open on: ${workingDaysLabel}.` });
+            setError({ code: err.code, message: t('errorNotWorkingDay', { days: workingDaysLabel }) });
             break;
           case 'OVERLAP_CONFLICT':
-            setError({ code: err.code, message: 'This time slot is already booked. Please choose a different time.' });
+            setError({ code: err.code, message: t('errorOverlap') });
             break;
           case 'INSUFFICIENT_FUNDS': {
             const detailBalance = typeof (err.details as { balance?: number })?.balance === 'number'
               ? (err.details as { balance: number }).balance
               : null;
             if (detailBalance != null) setBalance(detailBalance);
-            setError({ code: err.code, message: 'Not enough wallet balance — top up to continue.' });
+            setError({ code: err.code, message: t('errorInsufficientFunds') });
             break;
           }
           case 'WALLET_FROZEN':
-            setError({ code: err.code, message: 'Your wallet is frozen — contact support.' });
+            setError({ code: err.code, message: t('errorWalletFrozen') });
             break;
           case 'UNIT_NOT_AVAILABLE':
-            setError({ code: err.code, message: 'That billing unit is no longer available.' });
+            setError({ code: err.code, message: t('errorUnitNotAvailable') });
             break;
           default:
-            setError({ code: err.code, message: err.message || 'Booking failed.' });
+            setError({ code: err.code, message: err.message || t('errorGeneric') });
         }
       } else {
-        setError({ code: 'UNKNOWN', message: 'Booking failed. Try again.' });
+        setError({ code: 'UNKNOWN', message: t('errorGeneric') });
       }
     } finally {
       setSubmitting(false);
@@ -388,7 +387,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
       {/* Start */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label htmlFor={startDateId}>Start date</Label>
+          <Label htmlFor={startDateId}>{t('startDate')}</Label>
           <div className="relative mt-1.5">
             <CalendarDays className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -406,7 +405,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
           </div>
         </div>
         <div>
-          <Label htmlFor={startTimeId}>Start time</Label>
+          <Label htmlFor={startTimeId}>{t('startTime')}</Label>
           <div className="relative mt-1.5">
             <Clock className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -426,7 +425,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
       {/* End */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label htmlFor={endDateId}>End date</Label>
+          <Label htmlFor={endDateId}>{t('endDate')}</Label>
           <div className="relative mt-1.5">
             <CalendarDays className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -441,7 +440,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
           </div>
         </div>
         <div>
-          <Label htmlFor={endTimeId}>End time</Label>
+          <Label htmlFor={endTimeId}>{t('endTime')}</Label>
           <div className="relative mt-1.5">
             <Clock className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -461,7 +460,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
       {/* Unit (pricing model) */}
       {units.length > 1 && (
         <div>
-          <Label htmlFor="booking-unit">Pricing unit</Label>
+          <Label htmlFor="booking-unit">{t('pricingUnit')}</Label>
           <Select value={unit} onValueChange={(v) => setUnit(v as BookingUnit)}>
             <SelectTrigger id="booking-unit" className="mt-1.5">
               <SelectValue />
@@ -469,7 +468,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
             <SelectContent>
               {units.map((u) => (
                 <SelectItem key={u.unit} value={u.unit}>
-                  {unitLabel[u.unit]} — {formatCurrency(u.price, locale)}/{u.unit === 'HOUR' ? 'hr' : u.unit === 'DAY' ? 'day' : 'mo'}
+                  {unitLabel[u.unit]} — {formatCurrency(u.price, locale)}/{u.unit === 'HOUR' ? t('hourShort') : u.unit === 'DAY' ? t('dayShort') : t('monthShort')}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -480,7 +479,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
       {/* Payment method picker */}
       {showMethodPicker && (
         <div>
-          <span className="text-sm font-medium">Payment method</span>
+          <span className="text-sm font-medium">{t('paymentMethod')}</span>
           <div className="mt-1.5 grid grid-cols-2 gap-2">
             {(['ONLINE', 'CASH'] as PaymentMethod[]).map((m) => (
               <button
@@ -497,13 +496,13 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
                 {m === 'ONLINE'
                   ? <CreditCard className="size-4 shrink-0" />
                   : <Banknote className="size-4 shrink-0" />}
-                {m === 'ONLINE' ? 'Online (wallet)' : 'Cash on-site'}
+                {m === 'ONLINE' ? t('paymentOnline') : t('paymentCash')}
               </button>
             ))}
           </div>
           {isCash && (
             <p className="mt-1.5 text-xs text-muted-foreground">
-              Your spot is reserved; payment is settled directly with the host.
+              {t('cashHint')}
             </p>
           )}
         </div>
@@ -535,18 +534,18 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
             <div className="flex-1 text-left">
               <div className="flex items-center gap-2">
                 <span className={cn('font-semibold', useNetworkPass ? 'text-foreground' : '')}>
-                  Book with Network Pass
+                  {t('networkPass')}
                 </span>
                 <MembershipTierBadge tier={userTier} size="xs" showIcon={false} />
               </div>
               <div className="mt-0.5 text-xs text-muted-foreground">
                 {passCredits > 0 ? (
                   <>
-                    Uses 1 credit &mdash; {passCredits} of {passCreditsMax} left
-                    {passResetDate && ` · Resets ${passResetDate}`}
+                    {t('passCreditsInfo', { count: passCredits, max: passCreditsMax })}
+                    {passResetDate && ` · ${t('passResetsDate', { date: passResetDate })}`}
                   </>
                 ) : (
-                  <span className="text-destructive">No credits remaining this month</span>
+                  <span className="text-destructive">{t('networkPassNoCredits')}</span>
                 )}
               </div>
             </div>
@@ -561,7 +560,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
           </button>
           {useNetworkPass && passCredits === 0 && (
             <p className="mt-1.5 text-xs text-destructive">
-              You have no credits left this month. Credits reset on the 1st.
+              {t('networkPassWarning')}
             </p>
           )}
         </div>
@@ -573,7 +572,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
           <div className="flex items-center justify-between text-muted-foreground">
             <span>
               {formatCurrency(unitPrice, locale)} × {qty}{' '}
-              {unit === 'HOUR' ? (qty === 1 ? 'hr' : 'hrs') : unit === 'DAY' ? (qty === 1 ? 'day' : 'days') : (qty === 1 ? 'mo' : 'mos')}
+              {unit === 'HOUR' ? (qty === 1 ? t('hourShort') : t('hours')) : unit === 'DAY' ? (qty === 1 ? t('dayShort') : t('days')) : (qty === 1 ? t('monthShort') : t('months'))}
             </span>
             <span className="tabular-nums">{formatCurrency(total, locale)}</span>
           </div>
@@ -581,7 +580,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
             <div className="mt-1 flex items-center justify-between text-emerald-700 dark:text-emerald-400">
               <span className="flex items-center gap-1.5">
                 <MembershipTierBadge tier={userTier} size="xs" showIcon={false} />
-                Founder discount (20% off)
+                {t('founderDiscount')}
               </span>
               <span className="tabular-nums">−{formatCurrency(membershipDiscountAmount, locale)}</span>
             </div>
@@ -589,7 +588,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
           {promoResult && (
             <div className="mt-1 flex items-center justify-between text-emerald-700">
               <span>
-                Promo ({promoResult.discountType === 'PERCENTAGE'
+                {t('promoLabel')} ({promoResult.discountType === 'PERCENTAGE'
                   ? `${promoResult.discountValue}% off`
                   : `−${promoResult.discountAmount.toLocaleString()} DZD`})
               </span>
@@ -598,21 +597,21 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
           )}
           {useNetworkPass && (
             <div className="mt-1 flex items-center justify-between text-emerald-700 dark:text-emerald-400">
-              <span>Network Pass (1 credit)</span>
-              <span className="tabular-nums">Free</span>
+              <span>{t('networkPassTotal')}</span>
+              <span className="tabular-nums">{t('totalFree')}</span>
             </div>
           )}
           <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2 text-base font-semibold">
-            <span>Total</span>
+            <span>{t('total')}</span>
             <span className="tabular-nums">
-              {useNetworkPass ? 'Free' : formatCurrency(finalTotal, locale)}
+              {useNetworkPass ? t('totalFree') : formatCurrency(finalTotal, locale)}
             </span>
           </div>
         </div>
       )}
 
       {!validRange && startDate && endDate && (
-        <p className="text-xs text-destructive">End must be after start.</p>
+        <p className="text-xs text-destructive">{t('endAfterStart')}</p>
       )}
 
       {/* Promo code — shown for authenticated users when range is valid and not using network pass */}
@@ -635,7 +634,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         )}>
           <span className="inline-flex items-center gap-1.5">
             <WalletIcon className="size-3.5" />
-            Wallet balance
+            {t('walletBalance')}
           </span>
           <span className="font-medium tabular-nums">{formatCurrency(balance, locale)}</span>
         </div>
@@ -649,17 +648,17 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
 
       {!isAuthed ? (
         <Button asChild className="w-full" size="lg">
-          <Link href={`/login?next=${encodeURIComponent('/spaces')}`}>Sign in to book</Link>
+          <Link href={`/login?next=${encodeURIComponent('/spaces')}`}>{t('signIn')}</Link>
         </Button>
       ) : insufficient ? (
         <div className="space-y-2">
           <Button asChild className="w-full" size="lg" variant="outline">
             <Link href="/dashboard/entrepreneur/wallet">
-              Top up to {formatCurrency(finalTotal, locale)}
+              {t('topUp', { amount: formatCurrency(finalTotal, locale) })}
             </Link>
           </Button>
           <Badge variant="warning" className="w-full justify-center py-1">
-            Pay from wallet — top up first
+            {t('topUpWarning')}
           </Badge>
         </div>
       ) : (
@@ -671,12 +670,12 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
           disabled={!validRange}
         >
           {submitting
-            ? 'Booking…'
+            ? t('submitting')
             : isCash
-            ? `Reserve spot — pay ${formatCurrency(finalTotal, locale)} on-site`
+            ? t('submitCash')
             : finalTotal === 0
-            ? 'Confirm booking — Free'
-            : `Confirm booking — ${formatCurrency(finalTotal, locale)}`}
+            ? t('submitFree')
+            : t('submitOnline', { amount: formatCurrency(finalTotal, locale) })}
         </Button>
       )}
     </form>

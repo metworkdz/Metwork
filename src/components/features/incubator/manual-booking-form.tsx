@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,7 @@ const EMPTY = {
 };
 
 export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
+  const t = useTranslations('incubator.manualBookingForm');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
@@ -54,10 +56,10 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.itemId) { setError('Please select an item.'); return; }
-    if (!form.clientName.trim()) { setError('Client name is required.'); return; }
-    if (!form.clientPhone.trim()) { setError('Client phone is required.'); return; }
-    if (!form.startsAt) { setError('Start date is required.'); return; }
+    if (!form.itemId) { setError(t('errorSelectItem')); return; }
+    if (!form.clientName.trim()) { setError(t('errorClientName')); return; }
+    if (!form.clientPhone.trim()) { setError(t('errorClientPhone')); return; }
+    if (!form.startsAt) { setError(t('errorStartDate')); return; }
 
     setSaving(true);
     setError(null);
@@ -81,12 +83,12 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
         }),
       });
       const data = await res.json() as { booking?: BookingWithCustomer; error?: string; message?: string };
-      if (!res.ok) throw new Error(data.message ?? data.error ?? 'Failed to create booking');
+      if (!res.ok) throw new Error(data.message ?? data.error ?? t('errorCreate'));
       onCreated(data.booking!);
       setOpen(false);
       setForm(EMPTY);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create booking');
+      setError(err instanceof Error ? err.message : t('errorCreate'));
     } finally {
       setSaving(false);
     }
@@ -96,35 +98,35 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
     <>
       <Button size="sm" onClick={() => setOpen(true)}>
         <UserPlus className="size-4" />
-        Add manual booking
+        {t('addBooking')}
       </Button>
 
       <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setForm(EMPTY); setError(null); } }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>New manual booking</DialogTitle>
+            <DialogTitle>{t('title')}</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={submit} className="space-y-4">
             {/* Item type + item */}
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>Type</Label>
+                <Label>{t('labelType')}</Label>
                 <Select value={form.itemKind} onValueChange={(v) => { field('itemKind', v as 'SPACE' | 'PROGRAM'); field('itemId', ''); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SPACE">Space</SelectItem>
-                    <SelectItem value="PROGRAM">Program</SelectItem>
+                    <SelectItem value="SPACE">{t('typeSpace')}</SelectItem>
+                    <SelectItem value="PROGRAM">{t('typeProgram')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>{form.itemKind === 'SPACE' ? 'Space' : 'Program'} *</Label>
+                <Label>{form.itemKind === 'SPACE' ? t('typeSpace') : t('typeProgram')} *</Label>
                 <Select value={form.itemId} onValueChange={(v) => field('itemId', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
                   <SelectContent>
                     {items.length === 0 && (
-                      <SelectItem value="__none__" disabled>No items</SelectItem>
+                      <SelectItem value="__none__" disabled>{t('noItems')}</SelectItem>
                     )}
                     {form.itemKind === 'SPACE'
                       ? spaces.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)
@@ -138,55 +140,55 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
             {/* Client info */}
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="mb-name">Client name *</Label>
-                <Input id="mb-name" value={form.clientName} onChange={(e) => field('clientName', e.target.value)} placeholder="Full name" />
+                <Label htmlFor="mb-name">{t('labelClientName')}</Label>
+                <Input id="mb-name" value={form.clientName} onChange={(e) => field('clientName', e.target.value)} placeholder={t('clientNamePlaceholder')} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="mb-phone">Client phone *</Label>
-                <Input id="mb-phone" value={form.clientPhone} onChange={(e) => field('clientPhone', e.target.value)} placeholder="+213…" />
+                <Label htmlFor="mb-phone">{t('labelClientPhone')}</Label>
+                <Input id="mb-phone" value={form.clientPhone} onChange={(e) => field('clientPhone', e.target.value)} placeholder={t('clientPhonePlaceholder')} />
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="mb-email">Client email</Label>
-                <Input id="mb-email" type="email" value={form.clientEmail} onChange={(e) => field('clientEmail', e.target.value)} placeholder="optional" />
+                <Label htmlFor="mb-email">{t('labelClientEmail')}</Label>
+                <Input id="mb-email" type="email" value={form.clientEmail} onChange={(e) => field('clientEmail', e.target.value)} placeholder={t('optional')} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="mb-id">ID / Passport number</Label>
-                <Input id="mb-id" value={form.clientIdNumber} onChange={(e) => field('clientIdNumber', e.target.value)} placeholder="optional" />
+                <Label htmlFor="mb-id">{t('labelIdPassport')}</Label>
+                <Input id="mb-id" value={form.clientIdNumber} onChange={(e) => field('clientIdNumber', e.target.value)} placeholder={t('optional')} />
               </div>
             </div>
 
             {/* Dates + unit + quantity */}
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="mb-start">Start date *</Label>
+                <Label htmlFor="mb-start">{t('labelStartDate')}</Label>
                 <Input id="mb-start" type="date" value={form.startsAt} onChange={(e) => field('startsAt', e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="mb-end">End date</Label>
+                <Label htmlFor="mb-end">{t('labelEndDate')}</Label>
                 <Input id="mb-end" type="date" value={form.endsAt} onChange={(e) => field('endsAt', e.target.value)} />
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="space-y-1.5">
-                <Label>Unit</Label>
+                <Label>{t('labelUnit')}</Label>
                 <Select value={form.unit} onValueChange={(v) => field('unit', v as 'HOUR' | 'DAY' | 'MONTH')}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="HOUR">Hour</SelectItem>
-                    <SelectItem value="DAY">Day</SelectItem>
-                    <SelectItem value="MONTH">Month</SelectItem>
+                    <SelectItem value="HOUR">{t('unitHour')}</SelectItem>
+                    <SelectItem value="DAY">{t('unitDay')}</SelectItem>
+                    <SelectItem value="MONTH">{t('unitMonth')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="mb-qty">Quantity</Label>
+                <Label htmlFor="mb-qty">{t('labelQuantity')}</Label>
                 <Input id="mb-qty" type="number" min={1} value={form.quantity}
                   onChange={(e) => field('quantity', Math.max(1, parseInt(e.target.value, 10) || 1))} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="mb-amount">Amount (DZD)</Label>
+                <Label htmlFor="mb-amount">{t('labelAmount')}</Label>
                 <Input id="mb-amount" type="number" min={0} value={form.totalAmount}
                   onChange={(e) => field('totalAmount', Math.max(0, parseInt(e.target.value, 10) || 0))} />
               </div>
@@ -197,8 +199,8 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
             )}
 
             <div className="flex justify-end gap-2 pt-1">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button type="submit" loading={saving}>Create booking</Button>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t('cancel')}</Button>
+              <Button type="submit" loading={saving}>{t('createBooking')}</Button>
             </div>
           </form>
         </DialogContent>

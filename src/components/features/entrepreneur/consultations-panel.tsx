@@ -16,6 +16,7 @@
  *  - Pending-review notice (not an automatic booking)
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Clock, UserCheck, Timer, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -81,9 +82,11 @@ interface Props {
 type BookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 function StatusBadge({ status }: { status: BookingStatus }) {
-  if (status === 'APPROVED') return <Badge variant="success">Approved</Badge>;
-  if (status === 'REJECTED') return <Badge variant="danger">Rejected</Badge>;
-  return <Badge variant="warning">Pending review</Badge>;
+  const tMB = useTranslations('admin.mentorBookings');
+  const tAB = useTranslations('admin.bookings');
+  if (status === 'APPROVED') return <Badge variant="success">{tMB('filterApproved')}</Badge>;
+  if (status === 'REJECTED') return <Badge variant="danger">{tMB('filterRejected')}</Badge>;
+  return <Badge variant="warning">{tAB('pendingReview')}</Badge>;
 }
 
 /* ─── Component ─── */
@@ -98,6 +101,9 @@ export function ConsultationsPanel({
   userEmail,
   userPhone,
 }: Props) {
+  const tCommon = useTranslations('common');
+  const tAdminBookings = useTranslations('admin.bookings');
+  const t = useTranslations('pages.dashboard.entrepreneur.consultations');
   const [bookings, setBookings]     = useState(initial);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -143,15 +149,15 @@ export function ConsultationsPanel({
 
   async function submit() {
     if (!selectedMentorId) {
-      setError('Please select a mentor.');
+      setError(t('errorSelectMentor'));
       return;
     }
     if (phone.trim().length < 6) {
-      setError('Please enter a valid phone number.');
+      setError(t('errorInvalidPhone'));
       return;
     }
     if (message.trim().length < 10) {
-      setError('Please describe what you need help with (at least 10 characters).');
+      setError(t('errorMessageTooShort'));
       return;
     }
 
@@ -176,7 +182,7 @@ export function ConsultationsPanel({
 
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
-        throw new Error(d.error?.message ?? 'Booking request failed. Please try again.');
+        throw new Error(d.error?.message ?? t('errorBookingFailed'));
       }
 
       const data = await res.json() as { id: string };
@@ -212,7 +218,7 @@ export function ConsultationsPanel({
         ...prev,
       ]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Booking request failed.');
+      setError(err instanceof Error ? err.message : t('errorGeneric'));
     } finally {
       setSaving(false);
     }
@@ -226,41 +232,40 @@ export function ConsultationsPanel({
           <p className="text-sm font-medium">
             {freeQuota > 0 ? (
               <>
-                Your plan includes{' '}
-                <span className="text-primary-700">
-                  {freeQuota} free consultation{freeQuota !== 1 ? 's' : ''}
-                </span>{' '}
-                per month
+                {t('bannerFreeQuota', {
+                  count: freeQuota,
+                  plural: freeQuota !== 1 ? 's' : '',
+                })}
               </>
             ) : membershipCode ? (
-              <>Consultations are available on request</>
+              <>{t('bannerAvailableOnRequest')}</>
             ) : (
-              <>Upgrade your membership to unlock free monthly consultations</>
+              <>{t('bannerUpgradeCta')}</>
             )}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Requests are reviewed by our team. You&apos;ll receive an email once yours is approved.
+            {t('bannerReviewNotice')}
           </p>
         </div>
         <Button size="sm" onClick={openDialog} disabled={mentors.length === 0}>
-          Book a session
+          {t('bookSession')}
         </Button>
       </div>
 
       {/* Booking history */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Consultation requests</CardTitle>
+          <CardTitle className="text-base">{t('sectionTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {bookings.length === 0 ? (
             <InlineEmptyState
-              title="No consultation requests yet"
-              description="Submit a request to connect with one of our mentors."
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
               icon={<UserCheck className="size-5 text-muted-foreground" />}
               action={
                 <Button size="sm" onClick={openDialog} disabled={mentors.length === 0}>
-                  Book your first session
+                  {t('bookFirstSession')}
                 </Button>
               }
             />
@@ -269,10 +274,10 @@ export function ConsultationsPanel({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Mentor</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Submitted</TableHead>
+                    <TableHead>{t('colMentor')}</TableHead>
+                    <TableHead>{tCommon('status')}</TableHead>
+                    <TableHead>{t('colDuration')}</TableHead>
+                    <TableHead>{t('colSubmitted')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -314,39 +319,38 @@ export function ConsultationsPanel({
               <div className="flex size-14 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-950">
                 <Clock className="size-7 text-amber-500 dark:text-amber-400" />
               </div>
-              <h2 className="mt-4 text-lg font-semibold">Request submitted!</h2>
-              <Badge variant="warning" className="mt-2">Pending review</Badge>
+              <h2 className="mt-4 text-lg font-semibold">{t('successHeading')}</h2>
+              <Badge variant="warning" className="mt-2">{tAdminBookings('pendingReview')}</Badge>
               <p className="mt-3 text-sm text-muted-foreground max-w-xs">
-                Your consultation request with{' '}
-                <span className="font-medium text-foreground">{success.mentorName}</span>{' '}
-                has been submitted. You will receive an email once the admin reviews it.
+                {t('successBody', { mentorName: success.mentorName })}
               </p>
               {!success.isFree && (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Estimated fee: <span className="font-medium">{formatDZD(success.finalPrice)}</span>
+                  {t('estimatedFeeLabel', { fee: formatDZD(success.finalPrice) })}
                   {discountAmt > 0 && (
-                    <span className="ml-1 text-emerald-700">({formatDZD(discountAmt)} promo discount applied)</span>
+                    <span className="ml-1 text-emerald-700">
+                      {t('promoDiscountApplied', { discount: formatDZD(discountAmt) })}
+                    </span>
                   )}
                 </p>
               )}
               <Button className="mt-6" onClick={() => setDialogOpen(false)}>
-                Done
+                {t('done')}
               </Button>
             </div>
           ) : (
             <>
               <DialogHeader>
-                <DialogTitle>Book a consultation</DialogTitle>
+                <DialogTitle>{t('dialogTitle')}</DialogTitle>
                 <DialogDescription>
-                  Your request will be reviewed before being confirmed — this is not an automatic
-                  booking.
+                  {t('dialogDescription')}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4">
                 {/* Mentor selector */}
                 <div className="space-y-1.5">
-                  <Label>Mentor</Label>
+                  <Label>{t('labelMentor')}</Label>
                   <Select
                     value={selectedMentorId}
                     onValueChange={(v) => {
@@ -356,7 +360,7 @@ export function ConsultationsPanel({
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a mentor" />
+                      <SelectValue placeholder={t('placeholderSelectMentor')} />
                     </SelectTrigger>
                     <SelectContent>
                       {mentors.map((m) => (
@@ -379,7 +383,7 @@ export function ConsultationsPanel({
                 {/* Duration selector */}
                 <div className="space-y-1.5">
                   <Label htmlFor="cp-dur" className="flex items-center gap-1">
-                    <Timer className="size-3.5" /> Duration
+                    <Timer className="size-3.5" /> {t('labelDuration')}
                   </Label>
                   <Select
                     value={String(duration)}
@@ -413,30 +417,30 @@ export function ConsultationsPanel({
                 {feePerHour > 0 && (
                   <div className="rounded-lg border border-border/60 bg-muted/10 px-3.5 py-3 space-y-1.5">
                     <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                      <DollarSign className="size-3.5" /> Estimated fee
+                      <DollarSign className="size-3.5" /> {t('estimatedFeeHeading')}
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
-                        {DURATION_OPTIONS.find((d) => d.value === duration)?.label} session
+                        {t('sessionLabel', { duration: DURATION_OPTIONS.find((d) => d.value === duration)?.label ?? '' })}
                       </span>
                       <span className="tabular-nums font-medium">{formatDZD(basePrice)}</span>
                     </div>
                     {promoResult && discountAmt > 0 && (
                       <div className="flex justify-between text-sm text-emerald-700 dark:text-emerald-400">
-                        <span>Promo code discount</span>
+                        <span>{t('promoCodeDiscount')}</span>
                         <span className="tabular-nums">− {formatDZD(discountAmt)}</span>
                       </div>
                     )}
                     <div className={cn(
                       'flex justify-between text-sm font-semibold border-t border-border/60 pt-1.5 mt-1.5',
                     )}>
-                      <span>{finalPrice === 0 ? 'Free (promo applied)' : 'Total'}</span>
+                      <span>{finalPrice === 0 ? t('freePromoApplied') : tCommon('total')}</span>
                       <span className={cn('tabular-nums', finalPrice === 0 && 'text-emerald-700 dark:text-emerald-400')}>
-                        {finalPrice === 0 ? 'Free' : formatDZD(finalPrice)}
+                        {finalPrice === 0 ? tCommon('free') : formatDZD(finalPrice)}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground/70 mt-1">
-                      Admin confirms the exact amount after reviewing your request.
+                      {t('feeConfirmNote')}
                     </p>
                   </div>
                 )}
@@ -445,7 +449,7 @@ export function ConsultationsPanel({
                 {basePrice > 0 && (
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">
-                      Promo code <span className="font-normal">(optional)</span>
+                      {t('labelPromoCode')} <span className="font-normal">{t('optionalHint')}</span>
                     </Label>
                     {/* key forces remount when duration/mentor changes so state resets */}
                     <PromoCodeInput
@@ -459,7 +463,7 @@ export function ConsultationsPanel({
 
                 {/* Phone (pre-filled, editable) */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="cp-phone">Phone number</Label>
+                  <Label htmlFor="cp-phone">{t('labelPhone')}</Label>
                   <Input
                     id="cp-phone"
                     type="tel"
@@ -473,28 +477,25 @@ export function ConsultationsPanel({
 
                 {/* Message */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="cp-msg">What do you need help with?</Label>
+                  <Label htmlFor="cp-msg">{t('labelMessage')}</Label>
                   <textarea
                     id="cp-msg"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     rows={4}
-                    placeholder="Describe your situation and what you're hoping to get from the session…"
+                    placeholder={t('messagePlaceholder')}
                     disabled={saving}
                     className="flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Minimum 10 characters ({message.length} / 1000)
+                    {t('messageMinHint', { count: message.length })}
                   </p>
                 </div>
 
                 {/* Pending-review notice */}
                 <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
                   <Clock className="size-3.5 mt-0.5 shrink-0" />
-                  <span>
-                    Requests are reviewed by our team. You will receive a confirmation email once
-                    approved — this is <strong>not</strong> an automatic booking.
-                  </span>
+                  <span>{t('reviewNotice')}</span>
                 </div>
 
                 {error && (
@@ -513,12 +514,14 @@ export function ConsultationsPanel({
                   onClick={() => setDialogOpen(false)}
                   disabled={saving}
                 >
-                  Cancel
+                  {tCommon('cancel')}
                 </Button>
                 <Button loading={saving} onClick={submit}>
                   {feePerHour > 0
-                    ? `Send request · ${finalPrice === 0 ? 'Free' : formatDZD(finalPrice)}`
-                    : 'Send request'}
+                    ? (finalPrice === 0
+                        ? t('sendRequestFree')
+                        : t('sendRequestWithPrice', { price: formatDZD(finalPrice) }))
+                    : t('sendRequest')}
                 </Button>
               </DialogFooter>
             </>

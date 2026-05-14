@@ -20,6 +20,7 @@ import {
   Search,
   Users2,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { SpaceCategory } from '@/types/domain';
@@ -27,18 +28,14 @@ import type { SpaceCategory } from '@/types/domain';
 const ALL = 'all' as const;
 export type HeroCategoryFilter = SpaceCategory | typeof ALL;
 
-const CATEGORIES: ReadonlyArray<{
-  value: HeroCategoryFilter;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  sublabel: string;
-}> = [
-  { value: ALL,              label: 'All spaces',     sublabel: 'Browse all',        icon: LayoutGrid    },
-  { value: 'COWORKING',      label: 'Coworking',      sublabel: 'Shared floors',     icon: Users2        },
-  { value: 'PRIVATE_OFFICE', label: 'Private Office', sublabel: 'Dedicated space',   icon: Briefcase     },
-  { value: 'TRAINING_ROOM',  label: 'Training Room',  sublabel: 'Workshops & classes', icon: GraduationCap },
-  { value: 'DOMICILIATION',  label: 'Domiciliation',  sublabel: 'Business address',  icon: Building2     },
-];
+const CATEGORY_ICONS: Record<HeroCategoryFilter, React.ComponentType<{ className?: string }>> = {
+  all:              LayoutGrid,
+  COWORKING:        Users2,
+  PRIVATE_OFFICE:   Briefcase,
+  TRAINING_ROOM:    GraduationCap,
+  DOMICILIATION:    Building2,
+};
+const CATEGORY_VALUES: HeroCategoryFilter[] = ['all', 'COWORKING', 'PRIVATE_OFFICE', 'TRAINING_ROOM', 'DOMICILIATION'];
 
 interface SpacesHeroProps {
   cities: { code: string; name: string }[];
@@ -59,6 +56,25 @@ export function SpacesHero({
   onCityChange,
   onSearch,
 }: SpacesHeroProps) {
+  const t = useTranslations('spaces.hero');
+  const te = useTranslations('spaces.explorer');
+
+  type CatKey = 'all' | 'COWORKING' | 'PRIVATE_OFFICE' | 'TRAINING_ROOM' | 'DOMICILIATION';
+  const catLabel: Record<CatKey, string> = {
+    all:            t('catAllLabel'),
+    COWORKING:      t('catCoworkingLabel'),
+    PRIVATE_OFFICE: t('catOfficeLabel'),
+    TRAINING_ROOM:  t('catTrainingLabel'),
+    DOMICILIATION:  t('catDomiLabel'),
+  };
+  const catSub: Record<CatKey, string> = {
+    all:            t('catAllSub'),
+    COWORKING:      t('catCoworkingSub'),
+    PRIVATE_OFFICE: t('catOfficeSub'),
+    TRAINING_ROOM:  t('catTrainingSub'),
+    DOMICILIATION:  t('catDomiSub'),
+  };
+
   return (
     <section
       aria-label="Search workspaces"
@@ -111,18 +127,17 @@ export function SpacesHero({
 
           {/* — Eyebrow — */}
           <p className="text-center text-[11px] font-semibold uppercase tracking-[0.15em] text-primary">
-            Spaces marketplace
+            {t('eyebrow')}
           </p>
 
           {/* — Headline — */}
           <h1 className="mt-2 text-center text-balance text-4xl font-bold tracking-tight text-slate-900 sm:text-[2.75rem] sm:leading-[1.15]">
-            Discover a smarter<br className="hidden sm:block" /> way to work
+            {t('headline')}
           </h1>
 
           {/* — Sub-headline — */}
           <p className="mx-auto mt-4 max-w-md text-center text-balance text-sm text-slate-500 sm:text-[0.9375rem]">
-            From freelancers to Fortune 500 companies — explore real estate
-            solutions built for the way you work today, and tomorrow.
+            {t('subheadline')}
           </p>
 
           {/* — Category cards — */}
@@ -131,8 +146,9 @@ export function SpacesHero({
             aria-label="Space category"
             className="mt-8 flex gap-2.5 overflow-x-auto pb-1 sm:grid sm:grid-cols-5 sm:overflow-visible"
           >
-            {CATEGORIES.map(({ value, label, sublabel, icon: Icon }) => {
+            {CATEGORY_VALUES.map((value) => {
               const active = category === value;
+              const Icon = CATEGORY_ICONS[value];
               return (
                 <button
                   key={value}
@@ -165,9 +181,9 @@ export function SpacesHero({
                         active ? 'text-primary' : 'text-slate-700 group-hover:text-slate-900',
                       )}
                     >
-                      {label}
+                      {catLabel[value as CatKey]}
                     </p>
-                    <p className="mt-0.5 text-[10px] text-slate-400 leading-tight">{sublabel}</p>
+                    <p className="mt-0.5 text-[10px] text-slate-400 leading-tight">{catSub[value as CatKey]}</p>
                   </div>
                 </button>
               );
@@ -190,7 +206,7 @@ export function SpacesHero({
                   'focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20',
                 )}
               >
-                <option value={ALL}>All cities</option>
+                <option value={ALL}>{te('allCities')}</option>
                 {cities.map((c) => (
                   <option key={c.code} value={c.name}>
                     {c.name}
@@ -207,7 +223,7 @@ export function SpacesHero({
               className="h-12 gap-2 rounded-xl px-7 text-sm font-semibold shadow-md shadow-primary/20 transition-shadow hover:shadow-lg hover:shadow-primary/25"
             >
               <Search className="size-4" />
-              Search
+              {t('searchButton')}
             </Button>
           </div>
         </div>
@@ -215,14 +231,16 @@ export function SpacesHero({
         {/* — Trust strip below card — */}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-400">
           <span>
-            <strong className="font-semibold text-slate-600">{totalSpaces}+</strong> verified spaces
+            <strong className="font-semibold text-slate-600">{totalSpaces}+</strong>{' '}
+            {t('verifiedSpacesSuffix')}
           </span>
           <span className="hidden sm:inline">·</span>
           <span>
-            <strong className="font-semibold text-slate-600">{cities.length}</strong> cities
+            <strong className="font-semibold text-slate-600">{cities.length}</strong>{' '}
+            {t('citiesSuffix')}
           </span>
           <span className="hidden sm:inline">·</span>
-          <span>Book by the hour, day, or month</span>
+          <span>{t('bookingModes')}</span>
         </div>
       </div>
     </section>

@@ -11,6 +11,7 @@
  * Pass `onManage` to wire the "Manage Settings" button.
  */
 
+import { useTranslations } from 'next-intl';
 import { Building2, TrendingUp, Users, Tag, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -67,6 +68,7 @@ function MetricRow({
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AdminPartnerStatsCard({ data, onManage, className }: Props) {
+  const t = useTranslations('admin.partnerStatsCard');
   const {
     spaceName,
     incubatorName,
@@ -114,7 +116,7 @@ export function AdminPartnerStatsCard({ data, onManage, className }: Props) {
                 : 'bg-muted text-muted-foreground',
             )}
           >
-            {isActive ? 'Active' : 'Inactive'}
+            {isActive ? t('statusActive') : t('statusInactive')}
           </span>
         </div>
 
@@ -125,36 +127,36 @@ export function AdminPartnerStatsCard({ data, onManage, className }: Props) {
         <div className="divide-y divide-border/60">
           <MetricRow
             icon={<Users className="h-3.5 w-3.5" />}
-            label="Network visits"
-            value={`${visitsThisMonth} this month`}
+            label={t('networkVisits')}
+            value={t('visitsThisMonth', { count: visitsThisMonth })}
           />
           <MetricRow
             icon={<TrendingUp className="h-3.5 w-3.5" />}
-            label="Network revenue"
+            label={t('networkRevenue')}
             value={fmtDzd(totalPayoutEarned)}
           />
           {occupancyAvgPct != null && (
             <MetricRow
               icon={<TrendingUp className="h-3.5 w-3.5" />}
-              label="Occupancy trend"
-              value={`${occupancyAvgPct}% avg`}
+              label={t('occupancyTrend')}
+              value={t('occupancyAvg', { pct: occupancyAvgPct })}
             />
           )}
           {peakHours && (
             <MetricRow
               icon={<TrendingUp className="h-3.5 w-3.5" />}
-              label="Peak hours"
+              label={t('peakHours')}
               value={peakHours}
             />
           )}
           <MetricRow
             icon={<Tag className="h-3.5 w-3.5" />}
-            label="Promo codes redeemed"
+            label={t('promoCodesRedeemed')}
             value={promoCodesRedeemed}
           />
           <MetricRow
             icon={<Users className="h-3.5 w-3.5" />}
-            label="Unique referrals"
+            label={t('uniqueReferrals')}
             value={uniqueReferrals}
           />
         </div>
@@ -171,7 +173,7 @@ export function AdminPartnerStatsCard({ data, onManage, className }: Props) {
             onClick={onManage}
           >
             <Settings2 className="h-4 w-4" />
-            Manage settings
+            {t('manageSettings')}
           </Button>
         )}
       </CardContent>

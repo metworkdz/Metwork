@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { ArrowLeft, Target, Percent, BarChart3, User } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/container';
@@ -40,7 +40,11 @@ export default async function StartupDetailPage({ params }: PageProps) {
   const { locale, id } = await params;
   setRequestLocale(locale);
 
-  const record = await findStartupById(id);
+  const [record, t] = await Promise.all([
+    findStartupById(id),
+    getTranslations('pages.investorStartup'),
+  ]);
+
   if (!record || record.status !== 'ACTIVE') notFound();
 
   const startup = toStartupDto(record);
@@ -52,16 +56,16 @@ export default async function StartupDetailPage({ params }: PageProps) {
   const metrics = [
     {
       icon: Target,
-      label: 'Funding goal',
+      label: t('metricFundingGoal'),
       value: formatDZD(startup.fundingGoal),
     },
     {
       icon: Percent,
-      label: 'Equity offered',
+      label: t('metricEquityOffered'),
       value: `${startup.equityOffered}%`,
     },
     ...(startup.valuation
-      ? [{ icon: BarChart3, label: 'Pre-money valuation', value: formatDZD(startup.valuation) }]
+      ? [{ icon: BarChart3, label: t('metricPreMoneyValuation'), value: formatDZD(startup.valuation) }]
       : []),
   ];
 
@@ -73,7 +77,7 @@ export default async function StartupDetailPage({ params }: PageProps) {
         className="mb-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="size-4 rtl:rotate-180" />
-        Back to marketplace
+        {t('backToMarketplace')}
       </Link>
 
       {/* Header */}
@@ -107,7 +111,7 @@ export default async function StartupDetailPage({ params }: PageProps) {
             <User className="size-5" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Founder</p>
+            <p className="text-xs text-muted-foreground">{t('founderLabel')}</p>
             <p className="text-sm font-medium text-foreground">{founder.fullName}</p>
           </div>
         </div>
@@ -116,10 +120,10 @@ export default async function StartupDetailPage({ params }: PageProps) {
       {/* CTA */}
       <div className="mt-10 flex flex-col gap-3 sm:flex-row">
         <Button size="lg" asChild>
-          <Link href="/signup">Connect with founder</Link>
+          <Link href="/signup">{t('ctaConnect')}</Link>
         </Button>
         <Button size="lg" variant="outline" asChild>
-          <Link href="/investors">Browse more startups</Link>
+          <Link href="/investors">{t('ctaBrowse')}</Link>
         </Button>
       </div>
     </Container>

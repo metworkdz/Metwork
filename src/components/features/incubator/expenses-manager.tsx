@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ArrowDownCircle, Loader2, Pencil, PlusCircle, Trash2 } from 'lucide-react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -109,6 +109,7 @@ function CategoryField({
 
 /* ── Create dialog ── */
 function CreateExpenseDialog({ onCreated }: { onCreated: () => void }) {
+  const t = useTranslations('incubator.expenses');
   const [open, setOpen]     = useState(false);
   const [sub, setSub]       = useState(false);
   const [error, setError]   = useState<string | null>(null);
@@ -155,34 +156,34 @@ function CreateExpenseDialog({ onCreated }: { onCreated: () => void }) {
       <DialogTrigger asChild>
         <Button size="sm" className="gap-1.5">
           <PlusCircle className="size-4" />
-          Add expense
+          {t('addExpense')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New expense</DialogTitle>
-          <DialogDescription>Record a manual expense.</DialogDescription>
+          <DialogTitle>{t('createTitle')}</DialogTitle>
+          <DialogDescription>{t('createDescription')}</DialogDescription>
         </DialogHeader>
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3 py-2">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="exp-date">Date *</Label>
+              <Label htmlFor="exp-date">{t('labelDate')}</Label>
               <Input id="exp-date" type="date" className="mt-1" value={date}
                 onChange={(e) => setDate(e.target.value)} required />
             </div>
             <div>
-              <Label htmlFor="exp-amount">Amount (DZD) *</Label>
+              <Label htmlFor="exp-amount">{t('labelAmount')}</Label>
               <Input id="exp-amount" type="number" min="1" className="mt-1" value={amount}
                 onChange={(e) => setAmt(e.target.value)} required placeholder="0" />
             </div>
           </div>
           <div>
-            <Label htmlFor="exp-title">Title *</Label>
+            <Label htmlFor="exp-title">{t('labelTitle')}</Label>
             <Input id="exp-title" className="mt-1" value={title}
               onChange={(e) => setTitle(e.target.value)} required minLength={1} maxLength={200} />
           </div>
           <div>
-            <Label htmlFor="exp-cat">Category</Label>
+            <Label htmlFor="exp-cat">{t('labelCategory')}</Label>
             <CategoryField
               id="exp-cat"
               value={catSel}
@@ -192,7 +193,7 @@ function CreateExpenseDialog({ onCreated }: { onCreated: () => void }) {
             />
           </div>
           <div>
-            <Label htmlFor="exp-desc">Description</Label>
+            <Label htmlFor="exp-desc">{t('labelDescription')}</Label>
             <textarea
               id="exp-desc"
               className="mt-1 min-h-[70px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -205,7 +206,7 @@ function CreateExpenseDialog({ onCreated }: { onCreated: () => void }) {
             </div>
           )}
           <DialogFooter>
-            <Button type="submit" loading={sub}>Add expense</Button>
+            <Button type="submit" loading={sub}>{t('addExpense')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -215,6 +216,7 @@ function CreateExpenseDialog({ onCreated }: { onCreated: () => void }) {
 
 export function ExpensesManager() {
   const locale                      = useLocale() as Locale;
+  const t                           = useTranslations('incubator.expenses');
   const [rows, setRows]             = useState<ExpenseRow[]>([]);
   const [loading, setLoading]       = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -307,12 +309,12 @@ export function ExpensesManager() {
   const columns: ListingColumn<ExpenseRow>[] = [
     {
       key: 'date',
-      label: 'Date',
+      label: t('colDate'),
       render: (r) => <span className="text-sm">{r.date}</span>,
     },
     {
       key: 'title',
-      label: 'Expense',
+      label: t('colExpense'),
       render: (r) => (
         <div>
           <div className="font-medium">{r.title}</div>
@@ -324,14 +326,14 @@ export function ExpensesManager() {
     },
     {
       key: 'category',
-      label: 'Category',
+      label: t('colCategory'),
       render: (r) => r.category
         ? <Badge variant="outline">{r.category}</Badge>
         : <span className="text-muted-foreground">—</span>,
     },
     {
       key: 'amount',
-      label: 'Amount',
+      label: t('colAmount'),
       align: 'end',
       render: (r) => (
         <span className="font-medium text-destructive">
@@ -375,29 +377,29 @@ export function ExpensesManager() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit expense</DialogTitle>
-            <DialogDescription>Update the expense details.</DialogDescription>
+            <DialogTitle>{t('editTitle')}</DialogTitle>
+            <DialogDescription>{t('editDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={(e) => void handleSaveEdit(e)} className="space-y-3 py-2">
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label htmlFor="eexp-date">Date *</Label>
+                <Label htmlFor="eexp-date">{t('labelDate')}</Label>
                 <Input id="eexp-date" type="date" className="mt-1" value={editDate}
                   onChange={(e) => setEditDate(e.target.value)} required />
               </div>
               <div>
-                <Label htmlFor="eexp-amt">Amount (DZD) *</Label>
+                <Label htmlFor="eexp-amt">{t('labelAmount')}</Label>
                 <Input id="eexp-amt" type="number" min="1" className="mt-1" value={editAmt}
                   onChange={(e) => setEditAmt(e.target.value)} required />
               </div>
             </div>
             <div>
-              <Label htmlFor="eexp-title">Title *</Label>
+              <Label htmlFor="eexp-title">{t('labelTitle')}</Label>
               <Input id="eexp-title" className="mt-1" value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)} required />
             </div>
             <div>
-              <Label htmlFor="eexp-cat">Category</Label>
+              <Label htmlFor="eexp-cat">{t('labelCategory')}</Label>
               <CategoryField
                 id="eexp-cat"
                 value={editCatSel}
@@ -407,7 +409,7 @@ export function ExpensesManager() {
               />
             </div>
             <div>
-              <Label htmlFor="eexp-desc">Description</Label>
+              <Label htmlFor="eexp-desc">{t('labelDescription')}</Label>
               <textarea
                 id="eexp-desc"
                 className="mt-1 min-h-[70px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -420,7 +422,7 @@ export function ExpensesManager() {
               </div>
             )}
             <DialogFooter>
-              <Button type="submit" loading={saving}>Save changes</Button>
+              <Button type="submit" loading={saving}>{t('saveChanges')}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -432,11 +434,11 @@ export function ExpensesManager() {
         rowKey={(r) => r.id}
         createSlot={headerSlot}
         emptyIcon={<ArrowDownCircle className="size-5 text-muted-foreground" />}
-        emptyTitle="No expenses yet"
-        emptyDescription="Add expenses manually or import from CSV."
+        emptyTitle={t('emptyTitle')}
+        emptyDescription={t('emptyDescription')}
         actions={[
-          { label: 'Edit', icon: <Pencil className="size-4" />, onSelect: openEdit },
-          { label: 'Delete', icon: <Trash2 className="size-4" />, onSelect: (row) => void handleDelete(row), destructive: true },
+          { label: t('actionEdit'), icon: <Pencil className="size-4" />, onSelect: openEdit },
+          { label: t('actionDelete'), icon: <Trash2 className="size-4" />, onSelect: (row) => void handleDelete(row), destructive: true },
         ]}
       />
     </>

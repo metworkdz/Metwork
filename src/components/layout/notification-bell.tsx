@@ -6,6 +6,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, Check, ExternalLink } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from '@/i18n/routing';
@@ -23,6 +24,7 @@ interface Notification {
 const POLL_INTERVAL = 30_000; // 30 seconds
 
 export function NotificationBell() {
+  const t = useTranslations('common');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -88,11 +90,11 @@ export function NotificationBell() {
   function relativeTime(iso: string): string {
     const diff = Date.now() - new Date(iso).getTime();
     const minutes = Math.floor(diff / 60_000);
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 1) return t('justNow');
+    if (minutes < 60) return t('minutesAgo', { n: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
+    if (hours < 24) return t('hoursAgo', { n: hours });
+    return t('daysAgo', { n: Math.floor(hours / 24) });
   }
 
   return (
@@ -100,7 +102,7 @@ export function NotificationBell() {
       <Button
         variant="ghost"
         size="icon"
-        aria-label="Notifications"
+        aria-label={t('notifications')}
         onClick={() => setOpen((o) => !o)}
         className="relative"
       >
@@ -116,7 +118,7 @@ export function NotificationBell() {
         <div className="absolute end-0 top-full z-50 mt-2 w-80 rounded-lg border border-border bg-background shadow-lg">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <span className="text-sm font-semibold">Notifications</span>
+            <span className="text-sm font-semibold">{t('notifications')}</span>
             {unreadCount > 0 && (
               <Button
                 variant="ghost"
@@ -125,7 +127,7 @@ export function NotificationBell() {
                 disabled={loading}
                 onClick={() => void markAllRead()}
               >
-                <Check className="size-3" /> Mark all read
+                <Check className="size-3" /> {t('markAllRead')}
               </Button>
             )}
           </div>
@@ -135,7 +137,7 @@ export function NotificationBell() {
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
                 <Bell className="size-8 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">No notifications yet</p>
+                <p className="text-sm text-muted-foreground">{t('noNotifications')}</p>
               </div>
             ) : (
               notifications.map((n) => (
@@ -173,7 +175,7 @@ export function NotificationBell() {
                             setOpen(false);
                           }}
                         >
-                          View <ExternalLink className="size-3" />
+                          {t('view')} <ExternalLink className="size-3" />
                         </Link>
                       )}
                       {!n.read && (
@@ -181,7 +183,7 @@ export function NotificationBell() {
                           className="text-xs text-muted-foreground hover:text-foreground"
                           onClick={() => void markOneRead(n.id)}
                         >
-                          Dismiss
+                          {t('dismiss')}
                         </button>
                       )}
                     </div>

@@ -6,6 +6,7 @@
  * PATCH /api/incubator/clients/:id — edit
  */
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ interface ClientFormDialogProps {
 }
 
 export function ClientFormDialog({ client, trigger, onSaved }: ClientFormDialogProps) {
+  const t = useTranslations('incubator.clientForm');
   const isEdit = Boolean(client);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -90,14 +92,14 @@ export function ClientFormDialog({ client, trigger, onSaved }: ClientFormDialogP
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { message?: string };
-        setError(d.message ?? 'Failed to save client.');
+        setError(d.message ?? t('errorSave'));
         return;
       }
       onSaved();
       setOpen(false);
       if (!isEdit) reset();
     } catch {
-      setError('Network error — try again.');
+      setError(t('errorNetwork'));
     } finally {
       setSubmitting(false);
     }
@@ -109,22 +111,22 @@ export function ClientFormDialog({ client, trigger, onSaved }: ClientFormDialogP
         {trigger ?? (
           <Button size="sm" className="gap-1.5">
             <PlusCircle className="size-4" />
-            Add client
+            {t('addClient')}
           </Button>
         )}
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit client' : 'New client'}</DialogTitle>
+          <DialogTitle>{isEdit ? t('titleEdit') : t('titleNew')}</DialogTitle>
           <DialogDescription>
-            {isEdit ? 'Update the client\'s profile.' : 'Add a new client to your CRM.'}
+            {isEdit ? t('descriptionEdit') : t('descriptionNew')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3 py-2">
           <div>
-            <Label htmlFor="c-name">Full name *</Label>
+            <Label htmlFor="c-name">{t('labelFullName')}</Label>
             <Input
               id="c-name"
               className="mt-1"
@@ -138,61 +140,61 @@ export function ClientFormDialog({ client, trigger, onSaved }: ClientFormDialogP
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="c-email">Email</Label>
+              <Label htmlFor="c-email">{t('labelEmail')}</Label>
               <Input
                 id="c-email"
                 type="email"
                 className="mt-1"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="optional"
+                placeholder={t('optional')}
               />
             </div>
             <div>
-              <Label htmlFor="c-phone">Phone</Label>
+              <Label htmlFor="c-phone">{t('labelPhone')}</Label>
               <Input
                 id="c-phone"
                 type="tel"
                 className="mt-1"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="optional"
+                placeholder={t('optional')}
               />
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="c-id">ID card number</Label>
+              <Label htmlFor="c-id">{t('labelIdCard')}</Label>
               <Input
                 id="c-id"
                 className="mt-1"
                 value={idCard}
                 onChange={(e) => setIdCard(e.target.value)}
-                placeholder="optional"
+                placeholder={t('optional')}
               />
             </div>
             <div>
-              <Label htmlFor="c-company">Company</Label>
+              <Label htmlFor="c-company">{t('labelCompany')}</Label>
               <Input
                 id="c-company"
                 className="mt-1"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                placeholder="optional"
+                placeholder={t('optional')}
               />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="c-notes">Notes</Label>
+            <Label htmlFor="c-notes">{t('labelNotes')}</Label>
             <textarea
               id="c-notes"
               className="mt-1 min-h-[70px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               maxLength={500}
-              placeholder="Optional notes…"
+              placeholder={t('notesPlaceholder')}
             />
           </div>
 
@@ -204,7 +206,7 @@ export function ClientFormDialog({ client, trigger, onSaved }: ClientFormDialogP
 
           <DialogFooter>
             <Button type="submit" loading={submitting}>
-              {isEdit ? 'Save changes' : 'Create client'}
+              {isEdit ? t('saveChanges') : t('createClient')}
             </Button>
           </DialogFooter>
         </form>

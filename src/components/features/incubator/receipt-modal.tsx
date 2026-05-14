@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Printer, X, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -81,6 +82,7 @@ interface Props {
 }
 
 export function ReceiptModal({ bookingId, onClose }: Props) {
+  const tr = useTranslations('incubator.receiptModal');
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,11 +92,11 @@ export function ReceiptModal({ bookingId, onClose }: Props) {
     setLoading(true);
     fetch(`/api/incubator/receipts/${bookingId}`, { credentials: 'include' })
       .then(async (res) => {
-        if (!res.ok) throw new Error('Failed to load receipt');
+        if (!res.ok) throw new Error(tr('errorLoad'));
         const data = await res.json() as { receipt: ReceiptData };
         setReceipt(data.receipt);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Error'))
+      .catch((err) => setError(err instanceof Error ? err.message : tr('errorLoad')))
       .finally(() => setLoading(false));
   }, [bookingId]);
 
@@ -107,7 +109,7 @@ export function ReceiptModal({ bookingId, onClose }: Props) {
           <DialogTitle>{t.title}</DialogTitle>
         </DialogHeader>
 
-        {loading && <p className="py-8 text-center text-sm text-muted-foreground">Loading…</p>}
+        {loading && <p className="py-8 text-center text-sm text-muted-foreground">{tr('loading')}</p>}
         {error && <p className="py-8 text-center text-sm text-destructive">{error}</p>}
 
         {receipt && (
@@ -146,7 +148,7 @@ export function ReceiptModal({ bookingId, onClose }: Props) {
                   {t.issued}: {new Date(receipt.issuedAt).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB', { dateStyle: 'long' })}
                 </p>
                 {receipt.source === 'offline' && (
-                  <p className="mt-1 text-xs font-medium text-amber-600">Offline booking</p>
+                  <p className="mt-1 text-xs font-medium text-amber-600">{tr('offlineBooking')}</p>
                 )}
               </div>
             </div>
@@ -197,7 +199,7 @@ export function ReceiptModal({ bookingId, onClose }: Props) {
                     <p className="text-xs capitalize text-muted-foreground">{t.status}: {receipt.payment.status.toLowerCase()}</p>
                   </div>
                   <p className="text-xl font-bold tabular-nums">
-                    {receipt.payment.amount === 0 ? 'Free' : `${receipt.payment.amount.toLocaleString()} ${receipt.payment.currency}`}
+                    {receipt.payment.amount === 0 ? tr('free') : `${receipt.payment.amount.toLocaleString()} ${receipt.payment.currency}`}
                   </p>
                 </div>
               </div>
@@ -215,17 +217,17 @@ export function ReceiptModal({ bookingId, onClose }: Props) {
               variant="ghost"
               size="sm"
               onClick={() => setLang((l) => l === 'en' ? 'fr' : 'en')}
-              title="Toggle language"
+              title={tr('toggleLanguage')}
             >
               <Languages className="size-4" />
               {lang === 'en' ? 'FR' : 'EN'}
             </Button>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={onClose}>
-                <X className="size-4" /> Close
+                <X className="size-4" /> {tr('close')}
               </Button>
               <Button size="sm" onClick={() => window.print()}>
-                <Printer className="size-4" /> Print / Save PDF
+                <Printer className="size-4" /> {tr('printSavePdf')}
               </Button>
             </div>
           </div>

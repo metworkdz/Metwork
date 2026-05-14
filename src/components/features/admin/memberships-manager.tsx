@@ -4,6 +4,7 @@
  * Admin: view and assign membership plans to users.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { CreditCard, Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -49,6 +50,7 @@ interface AssignDialogProps {
 }
 
 function AssignDialog({ user, onClose, onSaved }: AssignDialogProps) {
+  const t = useTranslations('admin.memberships');
   // Pre-fill with the user's current plan, defaulting to ENTREPRENEUR
   const [plan,    setPlan]   = useState<string>(user?.membershipCode ?? 'ENTREPRENEUR');
   const [saving,  setSaving] = useState(false);
@@ -105,18 +107,18 @@ function AssignDialog({ user, onClose, onSaved }: AssignDialogProps) {
     <Dialog open={user !== null} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Assign membership</DialogTitle>
+          <DialogTitle>{t('dialogTitle')}</DialogTitle>
           <DialogDescription>{user?.fullName} — {user?.email}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label>Plan</Label>
+            <Label>{t('plan')}</Label>
             <Select value={plan} onValueChange={setPlan}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {membershipTiers.map((t) => (
-                  <SelectItem key={t.code} value={t.code}>
-                    {t.code} {t.priceMonthly > 0 ? `— ${t.priceMonthly.toLocaleString()} DZD/mo` : '— Free'}
+                {membershipTiers.map((tier) => (
+                  <SelectItem key={tier.code} value={tier.code}>
+                    {tier.code} {tier.priceMonthly > 0 ? t('planMonthly', { name: tier.code, amount: tier.priceMonthly.toLocaleString() }) : t('freePlan')}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -127,11 +129,11 @@ function AssignDialog({ user, onClose, onSaved }: AssignDialogProps) {
         <DialogFooter className="flex-col gap-2 sm:flex-row">
           {user?.membershipId && (
             <Button variant="outline" loading={saving} onClick={revoke} className="sm:me-auto">
-              Revoke plan
+              {t('revoke')}
             </Button>
           )}
-          <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button loading={saving} onClick={submit}>Assign plan</Button>
+          <Button variant="outline" onClick={onClose} disabled={saving}>{t('cancel')}</Button>
+          <Button loading={saving} onClick={submit}>{t('assign')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -141,6 +143,7 @@ function AssignDialog({ user, onClose, onSaved }: AssignDialogProps) {
 /* ─────────────────────────── Main component ─────────────────────────── */
 
 export function MembershipsManager({ initial }: { initial: MembershipRow[] }) {
+  const t = useTranslations('admin.memberships');
   const [rows,    setRows]    = useState<MembershipRow[]>(initial);
   const [query,   setQuery]   = useState('');
   const [editing, setEditing] = useState<MembershipRow | null>(null);
@@ -161,7 +164,7 @@ export function MembershipsManager({ initial }: { initial: MembershipRow[] }) {
         <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="search"
-          placeholder="Search by name or email…"
+          placeholder={t('searchPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="ps-9"
@@ -172,8 +175,8 @@ export function MembershipsManager({ initial }: { initial: MembershipRow[] }) {
         <CardContent className="p-0">
           {filtered.length === 0 ? (
             <InlineEmptyState
-              title="No users found"
-              description="Try adjusting your search."
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
               icon={<CreditCard className="size-5 text-muted-foreground" />}
             />
           ) : (
@@ -181,10 +184,10 @@ export function MembershipsManager({ initial }: { initial: MembershipRow[] }) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Current plan</TableHead>
-                    <TableHead className="hidden md:table-cell">Expires</TableHead>
+                    <TableHead>{t('colUser')}</TableHead>
+                    <TableHead>{t('colRole')}</TableHead>
+                    <TableHead>{t('colPlan')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('colExpires')}</TableHead>
                     <TableHead className="w-28" />
                   </TableRow>
                 </TableHeader>
@@ -204,13 +207,13 @@ export function MembershipsManager({ initial }: { initial: MembershipRow[] }) {
                             {row.membershipCode}
                           </Badge>
                         ) : (
-                          <span className="text-sm text-muted-foreground">None</span>
+                          <span className="text-sm text-muted-foreground">{t('noPlan')}</span>
                         )}
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                         {row.expiresAt
                           ? new Date(row.expiresAt).toLocaleDateString()
-                          : row.membershipCode ? 'No expiry' : '—'}
+                          : row.membershipCode ? t('noExpiry') : '—'}
                       </TableCell>
                       <TableCell className="text-end">
                         <Button
@@ -218,7 +221,7 @@ export function MembershipsManager({ initial }: { initial: MembershipRow[] }) {
                           size="sm"
                           onClick={() => setEditing(row)}
                         >
-                          {row.membershipCode ? 'Change plan' : 'Assign plan'}
+                          {row.membershipCode ? t('changePlan') : t('assignPlan')}
                         </Button>
                       </TableCell>
                     </TableRow>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Globe, Check } from 'lucide-react';
 import {
   DropdownMenu,
@@ -15,6 +15,7 @@ import { locales, localeMetadata, type Locale } from '@/i18n/config';
 import { cn } from '@/lib/utils';
 
 export function LocaleSwitcher() {
+  const t = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -35,7 +36,7 @@ export function LocaleSwitcher() {
           variant="ghost"
           size="sm"
           disabled={isPending}
-          aria-label="Change language"
+          aria-label={t('changeLanguage')}
           className="gap-1.5"
         >
           <Globe className="size-4" />

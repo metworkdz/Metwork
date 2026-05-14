@@ -26,6 +26,7 @@ const patchSchema = z.object({
   startDate: isoDate.optional(),
   endDate:   isoDate.optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'CLOSED']).optional(),
+  slug: z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
 }).refine(
   (d) => {
     if (d.startDate && d.endDate && d.startDate >= d.endDate) return false;
@@ -70,6 +71,7 @@ export async function PATCH(
     if (input.startDate !== undefined) p.startDate = input.startDate;
     if (input.endDate !== undefined) p.endDate = input.endDate;
     if (input.status !== undefined) p.isActive = input.status === 'PUBLISHED';
+    if (input.slug !== undefined) p.slug = input.slug ?? undefined;
     p.updatedAt = new Date().toISOString();
     return p;
   });

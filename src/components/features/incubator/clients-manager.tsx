@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Loader2, Pencil, Trash2, UsersRound } from 'lucide-react';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { ClientFormDialog } from './client-form-dialog';
@@ -29,6 +30,7 @@ interface ClientRow {
 }
 
 export function ClientsManager() {
+  const t = useTranslations('incubator.clients');
   const [rows, setRows]             = useState<ClientRow[]>([]);
   const [loading, setLoading]       = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -115,7 +117,7 @@ export function ClientsManager() {
   const columns: ListingColumn<ClientRow>[] = [
     {
       key: 'name',
-      label: 'Client',
+      label: t('colClient'),
       render: (r) => (
         <div>
           <div className="font-medium">{r.fullName}</div>
@@ -127,7 +129,7 @@ export function ClientsManager() {
     },
     {
       key: 'contact',
-      label: 'Contact',
+      label: t('colContact'),
       render: (r) => (
         <div className="text-sm">
           {r.email && <div>{r.email}</div>}
@@ -138,14 +140,14 @@ export function ClientsManager() {
     },
     {
       key: 'idCard',
-      label: 'ID card',
+      label: t('colIdCard'),
       render: (r) => (
         <span className="text-sm text-muted-foreground">{r.idCardNumber ?? '—'}</span>
       ),
     },
     {
       key: 'added',
-      label: 'Added',
+      label: t('colAdded'),
       align: 'end',
       render: (r) => (
         <span className="text-xs text-muted-foreground">
@@ -178,41 +180,41 @@ export function ClientsManager() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit client</DialogTitle>
-            <DialogDescription>Update the client&apos;s profile.</DialogDescription>
+            <DialogTitle>{t('editTitle')}</DialogTitle>
+            <DialogDescription>{t('editDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={(e) => void handleSaveEdit(e)} className="space-y-3 py-2">
             <div>
-              <Label htmlFor="ec-name">Full name *</Label>
+              <Label htmlFor="ec-name">{t('labelFullName')}</Label>
               <Input id="ec-name" className="mt-1" value={fullName}
                 onChange={(e) => setFullName(e.target.value)} required minLength={2} maxLength={120} />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label htmlFor="ec-email">Email</Label>
+                <Label htmlFor="ec-email">{t('labelEmail')}</Label>
                 <Input id="ec-email" type="email" className="mt-1" value={email}
                   onChange={(e) => setEmail(e.target.value)} placeholder="optional" />
               </div>
               <div>
-                <Label htmlFor="ec-phone">Phone</Label>
+                <Label htmlFor="ec-phone">{t('labelPhone')}</Label>
                 <Input id="ec-phone" type="tel" className="mt-1" value={phone}
                   onChange={(e) => setPhone(e.target.value)} placeholder="optional" />
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label htmlFor="ec-id">ID card number</Label>
+                <Label htmlFor="ec-id">{t('labelIdCard')}</Label>
                 <Input id="ec-id" className="mt-1" value={idCard}
                   onChange={(e) => setIdCard(e.target.value)} placeholder="optional" />
               </div>
               <div>
-                <Label htmlFor="ec-company">Company</Label>
+                <Label htmlFor="ec-company">{t('labelCompany')}</Label>
                 <Input id="ec-company" className="mt-1" value={company}
                   onChange={(e) => setCompany(e.target.value)} placeholder="optional" />
               </div>
             </div>
             <div>
-              <Label htmlFor="ec-notes">Notes</Label>
+              <Label htmlFor="ec-notes">{t('labelNotes')}</Label>
               <textarea
                 id="ec-notes"
                 className="mt-1 min-h-[70px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -227,7 +229,7 @@ export function ClientsManager() {
               </div>
             )}
             <DialogFooter>
-              <Button type="submit" loading={submitting}>Save changes</Button>
+              <Button type="submit" loading={submitting}>{t('saveChanges')}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -239,16 +241,16 @@ export function ClientsManager() {
         rowKey={(r) => r.id}
         createSlot={<ClientFormDialog onSaved={() => void fetchClients()} />}
         emptyIcon={<UsersRound className="size-5 text-muted-foreground" />}
-        emptyTitle="No clients yet"
-        emptyDescription="Add clients manually or import from CSV."
+        emptyTitle={t('emptyTitle')}
+        emptyDescription={t('emptyDescription')}
         actions={[
           {
-            label: 'Edit',
+            label: t('actionEdit'),
             icon: <Pencil className="size-4" />,
             onSelect: openEdit,
           },
           {
-            label: 'Delete',
+            label: t('actionDelete'),
             icon: <Trash2 className="size-4" />,
             onSelect: (row) => void handleDelete(row),
             destructive: true,

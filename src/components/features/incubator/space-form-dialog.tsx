@@ -6,6 +6,7 @@
  * PATCH /api/incubator/spaces/[id]  (edit)
  */
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,12 +32,7 @@ import { ImageUploadField } from '@/components/shared/image-upload-field';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 import type { SpaceCategory } from '@/types/domain';
 
-const CATEGORIES: { value: SpaceCategory; label: string }[] = [
-  { value: 'COWORKING',      label: 'Coworking' },
-  { value: 'PRIVATE_OFFICE', label: 'Private office' },
-  { value: 'TRAINING_ROOM',  label: 'Training room' },
-  { value: 'DOMICILIATION',  label: 'Domiciliation' },
-];
+const CATEGORY_KEYS: SpaceCategory[] = ['COWORKING', 'PRIVATE_OFFICE', 'TRAINING_ROOM', 'DOMICILIATION'];
 
 // FIX: BUG-2 — added edit mode props; FIX: BUG-5 — added cashEnabled prop
 interface SpaceFormDialogProps {
@@ -55,6 +51,7 @@ interface SpaceFormDialogProps {
 }
 
 export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange, cashEnabled = true }: SpaceFormDialogProps) {
+  const t = useTranslations('incubator.spaceForm');
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -138,7 +135,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
     const monthVal = pricePerMonth ? Number(pricePerMonth) : null;
 
     if (hourVal == null && dayVal == null && monthVal == null) {
-      setError('Set at least one pricing option (hourly, daily, or monthly).');
+      setError(t('errorPricing'));
       return;
     }
 
@@ -169,14 +166,14 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { message?: string };
-        setError(data.message ?? (editId ? 'Failed to update space.' : 'Failed to create space.'));
+        setError(data.message ?? (editId ? t('errorUpdate') : t('errorCreate')));
         return;
       }
       onCreated();
       setOpen(false);
       reset();
     } catch {
-      setError('Network error — try again.');
+      setError(t('errorNetwork'));
     } finally {
       setSubmitting(false);
     }
@@ -189,49 +186,48 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
         <DialogTrigger asChild>
           <Button size="sm" className="gap-1.5">
             <PlusCircle className="size-4" />
-            Add space
+            {t('addSpace')}
           </Button>
         </DialogTrigger>
       )}
 
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{editId ? 'Edit space' : 'New space'}</DialogTitle>
+          <DialogTitle>{editId ? t('titleEdit') : t('titleNew')}</DialogTitle>
           <DialogDescription>
-            {editId
-              ? 'Update the details for this space listing.'
-              : 'Fill in the details for your new coworking or office listing.'}
+            {editId ? t('descriptionEdit') : t('descriptionNew')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4 py-2">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Label htmlFor="s-name">Name</Label>
+              <Label htmlFor="s-name">{t('labelName')}</Label>
               <Input id="s-name" className="mt-1" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} />
             </div>
             <div>
-              <Label htmlFor="s-category">Category</Label>
+              <Label htmlFor="s-category">{t('labelCategory')}</Label>
               <Select value={category} onValueChange={(v) => setCategory(v as SpaceCategory)}>
                 <SelectTrigger id="s-category" className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                  ))}
+                  {CATEGORY_KEYS.map((key) => {
+                    const labelKey = `category${key.split('_').map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join('')}` as 'categoryCoworking' | 'categoryPrivateOffice' | 'categoryTrainingRoom' | 'categoryDomiciliation';
+                    return <SelectItem key={key} value={key}>{t(labelKey)}</SelectItem>;
+                  })}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="s-city">City</Label>
+              <Label htmlFor="s-city">{t('labelCity')}</Label>
               {/* FIX: BUG-4 — searchable wilaya dropdown */}
               <div className="mt-1">
                 <AlgerianCitySelect id="s-city" value={city} onChange={setCity} required />
               </div>
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="s-desc">Description</Label>
+              <Label htmlFor="s-desc">{t('labelDescription')}</Label>
               <textarea
                 id="s-desc"
                 className="mt-1 min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -243,7 +239,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
             </div>
             <div className="sm:col-span-2">
               <ImageUploadField
-                label="Cover image (optional)"
+                label={t('labelCoverImage')}
                 currentUrl={imageUrl || null}
                 onUpload={(url) => setImageUrl(url)}
                 onRemove={() => setImageUrl('')}
@@ -252,18 +248,18 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
           </div>
 
           <div>
-            <p className="text-sm font-medium">Pricing (DZD — fill at least one)</p>
+            <p className="text-sm font-medium">{t('pricingLabel')}</p>
             <div className="mt-1.5 grid gap-2 sm:grid-cols-3">
               <div>
-                <Label htmlFor="s-hour" className="text-xs text-muted-foreground">Per hour</Label>
+                <Label htmlFor="s-hour" className="text-xs text-muted-foreground">{t('perHour')}</Label>
                 <Input id="s-hour" type="number" min="0" className="mt-1" value={pricePerHour} onChange={(e) => setPricePerHour(e.target.value)} placeholder="0" />
               </div>
               <div>
-                <Label htmlFor="s-day" className="text-xs text-muted-foreground">Per day</Label>
+                <Label htmlFor="s-day" className="text-xs text-muted-foreground">{t('perDay')}</Label>
                 <Input id="s-day" type="number" min="0" className="mt-1" value={pricePerDay} onChange={(e) => setPricePerDay(e.target.value)} placeholder="0" />
               </div>
               <div>
-                <Label htmlFor="s-month" className="text-xs text-muted-foreground">Per month</Label>
+                <Label htmlFor="s-month" className="text-xs text-muted-foreground">{t('perMonth')}</Label>
                 <Input id="s-month" type="number" min="0" className="mt-1" value={pricePerMonth} onChange={(e) => setPricePerMonth(e.target.value)} placeholder="0" />
               </div>
             </div>
@@ -271,31 +267,31 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="s-cap">Capacity (seats)</Label>
+              <Label htmlFor="s-cap">{t('labelCapacity')}</Label>
               <Input id="s-cap" type="number" min="1" className="mt-1" value={capacity} onChange={(e) => setCapacity(e.target.value)} required />
             </div>
             <div>
-              <Label htmlFor="s-am">Amenities (comma-separated)</Label>
-              <Input id="s-am" className="mt-1" value={amenities} onChange={(e) => setAmenities(e.target.value)} placeholder="WiFi, Coffee, …" />
+              <Label htmlFor="s-am">{t('labelAmenities')}</Label>
+              <Input id="s-am" className="mt-1" value={amenities} onChange={(e) => setAmenities(e.target.value)} placeholder={t('amenitiesPlaceholder')} />
             </div>
           </div>
 
           {/* Working hours */}
           <div>
-            <p className="text-sm font-medium">Working hours</p>
+            <p className="text-sm font-medium">{t('workingHoursLabel')}</p>
             <div className="mt-2 space-y-3">
               {/* Days */}
               <div>
-                <p className="text-xs text-muted-foreground mb-1.5">Open days</p>
+                <p className="text-xs text-muted-foreground mb-1.5">{t('openDaysLabel')}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { d: 1, label: 'Mon' },
-                    { d: 2, label: 'Tue' },
-                    { d: 3, label: 'Wed' },
-                    { d: 4, label: 'Thu' },
-                    { d: 5, label: 'Fri' },
-                    { d: 6, label: 'Sat' },
-                    { d: 0, label: 'Sun' },
+                    { d: 1, label: t('dayMon') },
+                    { d: 2, label: t('dayTue') },
+                    { d: 3, label: t('dayWed') },
+                    { d: 4, label: t('dayThu') },
+                    { d: 5, label: t('dayFri') },
+                    { d: 6, label: t('daySat') },
+                    { d: 0, label: t('daySun') },
                   ].map(({ d, label }) => (
                     <button
                       key={d}
@@ -316,7 +312,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
               {/* Times */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="s-open">Opening time</Label>
+                  <Label htmlFor="s-open">{t('labelOpeningTime')}</Label>
                   <Input
                     id="s-open"
                     type="time"
@@ -327,7 +323,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
                   />
                 </div>
                 <div>
-                  <Label htmlFor="s-close">Closing time</Label>
+                  <Label htmlFor="s-close">{t('labelClosingTime')}</Label>
                   <Input
                     id="s-close"
                     type="time"
@@ -342,7 +338,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
           </div>
 
           <div>
-            <p className="text-sm font-medium">Accepted payment methods</p>
+            <p className="text-sm font-medium">{t('labelPaymentMethods')}</p>
             <div className="mt-1.5 flex gap-3">
               {(['ONLINE', 'CASH'] as const).map((m) => {
                 // FIX: BUG-5 — hide CASH button when cash is not allowed for this subscription
@@ -359,7 +355,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
                         : 'border-border text-muted-foreground hover:border-primary/40',
                     )}
                   >
-                    {m === 'ONLINE' ? 'Online (wallet)' : 'Cash on-site'}
+                    {m === 'ONLINE' ? t('methodOnline') : t('methodCash')}
                   </button>
                 );
               })}
@@ -374,7 +370,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
 
           <DialogFooter>
             <Button type="submit" loading={submitting}>
-              {submitting ? (editId ? 'Saving…' : 'Creating…') : (editId ? 'Save changes' : 'Create space')}
+              {submitting ? (editId ? t('saving') : t('creating')) : (editId ? t('saveChanges') : t('createSpace'))}
             </Button>
           </DialogFooter>
         </form>

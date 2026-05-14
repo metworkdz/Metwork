@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Building2, Briefcase, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -34,6 +35,7 @@ const KIND_ICON: Record<string, React.ReactNode> = {
 interface Props { initial: BookingRow[] }
 
 export function AdminBookingsTable({ initial }: Props) {
+  const t = useTranslations('admin.bookings');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [kindFilter, setKindFilter] = useState<string>('ALL');
@@ -62,41 +64,41 @@ export function AdminBookingsTable({ initial }: Props) {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Pending review" value={pending} icon={Calendar} />
-        <StatCard label="Confirmed" value={confirmed} />
-        <StatCard label="Gross revenue" value={`${gross.toLocaleString()} DZD`} />
+        <StatCard label={t('pendingReview')} value={pending} icon={Calendar} />
+        <StatCard label={t('confirmedStat')} value={confirmed} />
+        <StatCard label={t('grossRevenue')} value={`${gross.toLocaleString()} DZD`} />
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <Input
-          placeholder="Search customer, item, vendor…"
+          placeholder={t('searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-xs"
         />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-36">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t('statusFilter')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All statuses</SelectItem>
-            <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-            <SelectItem value="CANCELLED">Cancelled</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
-            <SelectItem value="REFUNDED">Refunded</SelectItem>
+            <SelectItem value="ALL">{t('allStatuses')}</SelectItem>
+            <SelectItem value="PENDING">{t('pending')}</SelectItem>
+            <SelectItem value="CONFIRMED">{t('confirmed')}</SelectItem>
+            <SelectItem value="CANCELLED">{t('cancelled')}</SelectItem>
+            <SelectItem value="COMPLETED">{t('completed')}</SelectItem>
+            <SelectItem value="REFUNDED">{t('refunded')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={kindFilter} onValueChange={setKindFilter}>
           <SelectTrigger className="w-36">
-            <SelectValue placeholder="Type" />
+            <SelectValue placeholder={t('typeFilter')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All types</SelectItem>
-            <SelectItem value="SPACE">Space</SelectItem>
-            <SelectItem value="PROGRAM">Program</SelectItem>
-            <SelectItem value="EVENT">Event</SelectItem>
+            <SelectItem value="ALL">{t('allTypes')}</SelectItem>
+            <SelectItem value="SPACE">{t('space')}</SelectItem>
+            <SelectItem value="PROGRAM">{t('program')}</SelectItem>
+            <SelectItem value="EVENT">{t('event')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -105,8 +107,8 @@ export function AdminBookingsTable({ initial }: Props) {
         <CardContent className="p-0">
           {filtered.length === 0 ? (
             <InlineEmptyState
-              title="No bookings"
-              description="No bookings match your filters."
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
               icon={<Calendar className="size-5 text-muted-foreground" />}
             />
           ) : (
@@ -114,12 +116,12 @@ export function AdminBookingsTable({ initial }: Props) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-end">Amount</TableHead>
+                    <TableHead>{t('colCustomer')}</TableHead>
+                    <TableHead>{t('colItem')}</TableHead>
+                    <TableHead>{t('colVendor')}</TableHead>
+                    <TableHead>{t('colDate')}</TableHead>
+                    <TableHead>{t('colStatus')}</TableHead>
+                    <TableHead className="text-end">{t('colAmount')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -151,7 +153,7 @@ export function AdminBookingsTable({ initial }: Props) {
                       </TableCell>
                       <TableCell className="text-end tabular-nums font-medium text-sm">
                         {b.totalAmount === 0
-                          ? <span className="text-muted-foreground">Free</span>
+                          ? <span className="text-muted-foreground">{t('free')}</span>
                           : `${b.totalAmount.toLocaleString()} DZD`}
                       </TableCell>
                     </TableRow>

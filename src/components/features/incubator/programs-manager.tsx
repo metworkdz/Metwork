@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useLocale } from 'next-intl';
-import { Briefcase, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/routing';
+import { Briefcase, ClipboardList, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { ProgramFormDialog } from './program-form-dialog';
@@ -20,6 +21,8 @@ const typeLabel: Record<ProgramType, string> = {
 
 export function ProgramsManager() {
   const locale = useLocale() as Locale;
+  const t      = useTranslations('incubator.programs');
+  const router = useRouter();
   const [rows, setRows] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -71,7 +74,7 @@ export function ProgramsManager() {
   const columns: ListingColumn<Program>[] = [
     {
       key: 'title',
-      label: 'Program',
+      label: t('colProgram'),
       render: (p) => (
         <div>
           <div className="font-medium">{p.title}</div>
@@ -81,12 +84,12 @@ export function ProgramsManager() {
     },
     {
       key: 'type',
-      label: 'Type',
+      label: t('colType'),
       render: (p) => <Badge variant="info">{typeLabel[p.type]}</Badge>,
     },
     {
       key: 'dates',
-      label: 'Schedule',
+      label: t('colSchedule'),
       render: (p) => (
         <div className="text-sm">
           <div>{formatDate(p.startDate, locale)}</div>
@@ -98,7 +101,7 @@ export function ProgramsManager() {
     },
     {
       key: 'seats',
-      label: 'Seats',
+      label: t('colSeats'),
       render: (p) => {
         const ratio = p.seatsTotal === 0 ? 0 : p.seatsTaken / p.seatsTotal;
         return (
@@ -118,7 +121,7 @@ export function ProgramsManager() {
     },
     {
       key: 'price',
-      label: 'Price',
+      label: t('colPrice'),
       align: 'end',
       render: (p) =>
         p.price === 0 ? (
@@ -129,7 +132,7 @@ export function ProgramsManager() {
     },
     {
       key: 'payment',
-      label: 'Payment',
+      label: t('colPayment'),
       render: (p) => (
         <span className="text-xs text-muted-foreground">
           {(p.acceptedPaymentMethods ?? ['ONLINE']).join(' · ')}
@@ -163,17 +166,22 @@ export function ProgramsManager() {
         rowKey={(p) => p.id}
         createSlot={<ProgramFormDialog onCreated={() => void fetchPrograms()} cashEnabled={cashEnabled} />}
         emptyIcon={<Briefcase className="size-5 text-muted-foreground" />}
-        emptyTitle="No programs yet"
-        emptyDescription="Create incubation, acceleration, or training programs."
+        emptyTitle={t('emptyTitle')}
+        emptyDescription={t('emptyDescription')}
         // FIX: BUG-2 — real edit/delete actions
         actions={[
           {
-            label: 'Edit',
+            label: t('actionRegistrations'),
+            icon: <ClipboardList className="size-4" />,
+            onSelect: (p) => router.push(`/dashboard/incubator/programs/${p.id}` as Parameters<typeof router.push>[0]),
+          },
+          {
+            label: t('actionEdit'),
             icon: <Pencil className="size-4" />,
             onSelect: (p) => setEditingProgram(p),
           },
           {
-            label: 'Delete',
+            label: t('actionDelete'),
             icon: <Trash2 className="size-4" />,
             onSelect: (p) => void handleDelete(p.id),
             destructive: true,

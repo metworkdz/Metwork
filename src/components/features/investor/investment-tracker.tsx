@@ -5,6 +5,7 @@
  * add, edit, and delete entries.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Plus, Pencil, Trash2, TrendingUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,18 +28,6 @@ import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { formatCurrency } from '@/lib/format';
 import type { InvestmentRecord, InvestmentStatus } from '@/server/db/store';
 import type { Locale } from '@/i18n/config';
-
-const STATUS_LABELS: Record<InvestmentStatus, string> = {
-  PROSPECTING:   'Prospecting',
-  TERM_SHEET:    'Term sheet',
-  DUE_DILIGENCE: 'Due diligence',
-  CLOSED:        'Closed',
-  PASSED:        'Passed',
-  // Legacy statuses kept for backward-compatibility
-  PENDING:       'Pending',
-  ACTIVE:        'Active',
-  CANCELLED:     'Cancelled',
-};
 
 const STATUS_VARIANT: Record<InvestmentStatus, 'default' | 'info' | 'warning' | 'success' | 'danger'> = {
   PROSPECTING:   'default',
@@ -74,6 +63,19 @@ interface Props {
 }
 
 export function InvestmentTracker({ initial, locale }: Props) {
+  const t = useTranslations('investor.portfolio');
+
+  const STATUS_LABELS: Record<InvestmentStatus, string> = {
+    PROSPECTING:   t('statusProspecting'),
+    TERM_SHEET:    t('statusTermSheet'),
+    DUE_DILIGENCE: t('statusDueDiligence'),
+    CLOSED:        t('statusClosed'),
+    PASSED:        t('statusPassed'),
+    PENDING:       t('statusPending'),
+    ACTIVE:        t('statusActive'),
+    CANCELLED:     t('statusCancelled'),
+  };
+
   const [deals,    setDeals]    = useState<InvestmentRecord[]>(initial);
   const [editing,  setEditing]  = useState<InvestmentRecord | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -110,9 +112,9 @@ export function InvestmentTracker({ initial, locale }: Props) {
   async function save() {
     const amount = parseInt(form.amount, 10);
     const equity = parseFloat(form.equity);
-    if (!form.startupName.trim()) { setError('Startup name is required.'); return; }
-    if (isNaN(amount) || amount < 0) { setError('Enter a valid amount (0 or more).'); return; }
-    if (isNaN(equity) || equity < 0 || equity > 100) { setError('Equity must be 0–100%.'); return; }
+    if (!form.startupName.trim()) { setError(t('errorNameRequired')); return; }
+    if (isNaN(amount) || amount < 0) { setError(t('errorAmountInvalid')); return; }
+    if (isNaN(equity) || equity < 0 || equity > 100) { setError(t('errorEquityInvalid')); return; }
 
     setSaving(true); setError(null);
     try {
@@ -148,7 +150,7 @@ export function InvestmentTracker({ initial, locale }: Props) {
 
       setFormOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('errorSaveFailed'));
     } finally {
       setSaving(false);
     }
@@ -182,10 +184,10 @@ export function InvestmentTracker({ initial, locale }: Props) {
     <div className="space-y-6">
       {/* Summary bar */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <SummaryCard label="Total deals" value={String(deals.length)}     accent="muted" />
-        <SummaryCard label="Active"       value={String(activeDeals)}      accent="primary" />
+        <SummaryCard label={t('summaryTotalDeals')} value={String(deals.length)}     accent="muted" />
+        <SummaryCard label={t('summaryActive')}      value={String(activeDeals)}      accent="primary" />
         <SummaryCard
-          label="Committed (closed)"
+          label={t('summaryCommitted')}
           value={formatCurrency(totalCommitted, locale)}
           accent="muted"
         />
@@ -194,10 +196,10 @@ export function InvestmentTracker({ initial, locale }: Props) {
       {/* Actions */}
       <div className="flex items-center justify-between rounded-md border border-border/60 bg-muted/30 px-4 py-3">
         <p className="text-sm text-muted-foreground">
-          {deals.length} deal{deals.length !== 1 ? 's' : ''} tracked
+          {deals.length !== 1 ? t('dealsTrackedPlural', { count: deals.length }) : t('dealsTracked', { count: deals.length })}
         </p>
         <Button size="sm" onClick={openCreate}>
-          <Plus className="size-4" /> Add deal
+          <Plus className="size-4" /> {t('addDeal')}
         </Button>
       </div>
 
@@ -206,21 +208,21 @@ export function InvestmentTracker({ initial, locale }: Props) {
         <CardContent className="p-0">
           {deals.length === 0 ? (
             <InlineEmptyState
-              title="No deals tracked yet"
-              description="Log your first investment or prospect."
+              title={t('noDeals')}
+              description={t('noDealsHint')}
               icon={<TrendingUp className="size-5 text-muted-foreground" />}
-              action={<Button size="sm" onClick={openCreate}><Plus className="size-4" /> Add deal</Button>}
+              action={<Button size="sm" onClick={openCreate}><Plus className="size-4" /> {t('addDeal')}</Button>}
             />
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Startup</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-end">Amount</TableHead>
-                    <TableHead className="text-end">Equity</TableHead>
-                    <TableHead className="hidden md:table-cell">Notes</TableHead>
+                    <TableHead>{t('colStartup')}</TableHead>
+                    <TableHead>{t('colStatus')}</TableHead>
+                    <TableHead className="text-end">{t('colAmount')}</TableHead>
+                    <TableHead className="text-end">{t('colEquity')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('colNotes')}</TableHead>
                     <TableHead className="w-20" />
                   </TableRow>
                 </TableHeader>
@@ -246,7 +248,7 @@ export function InvestmentTracker({ initial, locale }: Props) {
                             variant="ghost"
                             size="icon"
                             onClick={() => openEdit(d)}
-                            aria-label="Edit"
+                            aria-label={t('ariaEdit')}
                           >
                             <Pencil className="size-3.5" />
                           </Button>
@@ -255,7 +257,7 @@ export function InvestmentTracker({ initial, locale }: Props) {
                             size="icon"
                             className="text-destructive hover:text-destructive"
                             onClick={() => setDeleting(d)}
-                            aria-label="Delete"
+                            aria-label={t('ariaDelete')}
                           >
                             <Trash2 className="size-3.5" />
                           </Button>
@@ -274,25 +276,25 @@ export function InvestmentTracker({ initial, locale }: Props) {
       <Dialog open={formOpen} onOpenChange={(o) => { if (!o) setFormOpen(false); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editing ? 'Edit deal' : 'Add deal'}</DialogTitle>
+            <DialogTitle>{editing ? t('dialogEditTitle') : t('dialogAddTitle')}</DialogTitle>
             <DialogDescription>
-              {editing ? 'Update this tracked investment.' : 'Log a new deal or prospect.'}
+              {editing ? t('dialogEditDesc') : t('dialogAddDesc')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="deal-name">Startup name *</Label>
+              <Label htmlFor="deal-name">{t('fieldStartupName')}</Label>
               <Input
                 id="deal-name"
                 value={form.startupName}
                 onChange={(e) => setField('startupName', e.target.value)}
-                placeholder="e.g. Acme Algeria"
+                placeholder={t('fieldStartupNamePlaceholder')}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="deal-amount">Amount committed (DZD)</Label>
+                <Label htmlFor="deal-amount">{t('fieldAmount')}</Label>
                 <Input
                   id="deal-amount"
                   type="number"
@@ -305,7 +307,7 @@ export function InvestmentTracker({ initial, locale }: Props) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="deal-equity">Equity (%)</Label>
+                <Label htmlFor="deal-equity">{t('fieldEquity')}</Label>
                 <Input
                   id="deal-equity"
                   type="number"
@@ -320,7 +322,7 @@ export function InvestmentTracker({ initial, locale }: Props) {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Status</Label>
+              <Label>{t('fieldStatus')}</Label>
               <Select
                 value={form.status}
                 onValueChange={(v) => setField('status', v as InvestmentStatus)}
@@ -334,13 +336,13 @@ export function InvestmentTracker({ initial, locale }: Props) {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="deal-notes">Notes</Label>
+              <Label htmlFor="deal-notes">{t('fieldNotes')}</Label>
               <textarea
                 id="deal-notes"
                 value={form.notes}
                 onChange={(e) => setField('notes', e.target.value)}
                 rows={3}
-                placeholder="Meeting notes, terms, due diligence checklist…"
+                placeholder={t('fieldNotesPlaceholder')}
                 className="flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
@@ -348,9 +350,9 @@ export function InvestmentTracker({ initial, locale }: Props) {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setFormOpen(false)} disabled={saving}>Cancel</Button>
+            <Button variant="outline" onClick={() => setFormOpen(false)} disabled={saving}>{t('cancel')}</Button>
             <Button loading={saving} onClick={save}>
-              {editing ? 'Save changes' : 'Add deal'}
+              {editing ? t('saveChanges') : t('addDeal')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -360,14 +362,14 @@ export function InvestmentTracker({ initial, locale }: Props) {
       <Dialog open={deleting !== null} onOpenChange={(o) => { if (!o) setDeleting(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Remove deal?</DialogTitle>
+            <DialogTitle>{t('deleteDialogTitle')}</DialogTitle>
             <DialogDescription>
-              {deleting && <>Remove <span className="font-medium">{deleting.startupName}</span> from your tracker?</>}
+              {deleting && t('deleteDialogDesc', { name: deleting.startupName })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleting(null)} disabled={delBusy}>Keep</Button>
-            <Button variant="destructive" loading={delBusy} onClick={confirmDelete}>Remove</Button>
+            <Button variant="outline" onClick={() => setDeleting(null)} disabled={delBusy}>{t('keep')}</Button>
+            <Button variant="destructive" loading={delBusy} onClick={confirmDelete}>{t('remove')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Copy, Download, KeyRound, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -65,6 +66,7 @@ interface GenerateDialogProps {
 }
 
 function GenerateDialog({ open, onClose, onGenerated }: GenerateDialogProps) {
+  const t = useTranslations('admin.promoCodeManager');
   const [partners, setPartners] = useState<PartnerOption[]>([]);
   const [partnerId, setPartnerId] = useState('');
   const [tier, setTier] = useState<'BUILDER' | 'FOUNDER'>('BUILDER');
@@ -93,8 +95,8 @@ function GenerateDialog({ open, onClose, onGenerated }: GenerateDialogProps) {
   }, [open]);
 
   async function handleGenerate() {
-    if (!partnerId) { setError('Please select a partner'); return; }
-    if (!isBulk && !email) { setError('Email is required'); return; }
+    if (!partnerId) { setError(t('selectPartnerError')); return; }
+    if (!isBulk && !email) { setError(t('emailRequiredError')); return; }
     setSaving(true);
     setError('');
 
@@ -106,11 +108,11 @@ function GenerateDialog({ open, onClose, onGenerated }: GenerateDialogProps) {
           body: JSON.stringify({ partnerId, membershipTier: tier, count: bulkCount }),
         });
         const json = await res.json();
-        if (!res.ok) { setError(json.error?.message ?? 'Bulk generation failed'); return; }
+        if (!res.ok) { setError(json.error?.message ?? t('bulkFailedError')); return; }
         setBulkCodes(json.codes);
         onGenerated();
       } catch {
-        setError('Network error — please retry');
+        setError(t('networkError'));
       } finally {
         setSaving(false);
       }
@@ -122,11 +124,11 @@ function GenerateDialog({ open, onClose, onGenerated }: GenerateDialogProps) {
           body: JSON.stringify({ partnerId, membershipTier: tier, createdFor: email, sendEmail }),
         });
         const json = await res.json();
-        if (!res.ok) { setError(json.error?.message ?? 'Generation failed'); return; }
+        if (!res.ok) { setError(json.error?.message ?? t('generationFailedError')); return; }
         setGenerated({ plaintext: json.plaintext });
         onGenerated();
       } catch {
-        setError('Network error — please retry');
+        setError(t('networkError'));
       } finally {
         setSaving(false);
       }
@@ -153,16 +155,16 @@ function GenerateDialog({ open, onClose, onGenerated }: GenerateDialogProps) {
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Generate promo code{isBulk ? 's' : ''}</DialogTitle>
+          <DialogTitle>{t('generateDialogTitle', { plural: isBulk ? 's' : '' })}</DialogTitle>
           <DialogDescription>
-            Create partner membership discount codes.
+            {t('generateDialogDescription')}
           </DialogDescription>
         </DialogHeader>
 
         {generated ? (
           <div className="space-y-4 py-2">
             <p className="text-sm text-zinc-600">
-              Code generated! Copy it now — it cannot be retrieved from the database later.
+              {t('codeGeneratedNote')}
             </p>
             <div className="flex items-center gap-2 rounded-lg border bg-zinc-50 px-4 py-3 font-mono text-lg font-bold tracking-widest text-zinc-900">
               {generated.plaintext}
@@ -170,26 +172,26 @@ function GenerateDialog({ open, onClose, onGenerated }: GenerateDialogProps) {
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
-            <Button className="w-full" onClick={onClose}>Done</Button>
+            <Button className="w-full" onClick={onClose}>{t('done')}</Button>
           </div>
         ) : bulkCodes ? (
           <div className="space-y-4 py-2">
             <p className="text-sm text-zinc-600">
-              {bulkCodes.length} codes generated. Download the CSV now — codes cannot be retrieved later.
+              {t('bulkGeneratedNote', { count: bulkCodes.length })}
             </p>
             <Button className="w-full" onClick={downloadBulkCsv}>
               <Download className="mr-2 h-4 w-4" />
-              Download CSV ({bulkCodes.length} codes)
+              {t('downloadCsv', { count: bulkCodes.length })}
             </Button>
-            <Button variant="outline" className="w-full" onClick={onClose}>Done</Button>
+            <Button variant="outline" className="w-full" onClick={onClose}>{t('done')}</Button>
           </div>
         ) : (
           <>
             <div className="space-y-4 py-2">
               <div className="space-y-1.5">
-                <Label>Partner space</Label>
+                <Label>{t('partnerSpaceLabel')}</Label>
                 <Select value={partnerId} onValueChange={setPartnerId}>
-                  <SelectTrigger><SelectValue placeholder="Select partner…" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('partnerSelectPlaceholder')} /></SelectTrigger>
                   <SelectContent>
                     {partners.map((p) => (
                       <SelectItem key={p.partnerId} value={p.partnerId}>{p.spaceName}</SelectItem>
@@ -199,7 +201,7 @@ function GenerateDialog({ open, onClose, onGenerated }: GenerateDialogProps) {
               </div>
 
               <div className="space-y-1.5">
-                <Label>Membership tier</Label>
+                <Label>{t('membershipTierLabel')}</Label>
                 <Select value={tier} onValueChange={(v) => setTier(v as 'BUILDER' | 'FOUNDER')}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -210,13 +212,13 @@ function GenerateDialog({ open, onClose, onGenerated }: GenerateDialogProps) {
               </div>
 
               <div className="flex items-center justify-between rounded-lg border p-3">
-                <div className="text-sm font-medium">Bulk generate</div>
+                <div className="text-sm font-medium">{t('bulkGenerateLabel')}</div>
                 <input type="checkbox" checked={isBulk} onChange={(e) => setIsBulk(e.target.checked)} className="h-4 w-4 accent-green-700" />
               </div>
 
               {isBulk ? (
                 <div className="space-y-1.5">
-                  <Label htmlFor="gc-count">Number of codes</Label>
+                  <Label htmlFor="gc-count">{t('numberOfCodesLabel')}</Label>
                   <Input
                     id="gc-count"
                     type="number"
@@ -229,7 +231,7 @@ function GenerateDialog({ open, onClose, onGenerated }: GenerateDialogProps) {
               ) : (
                 <>
                   <div className="space-y-1.5">
-                    <Label htmlFor="gc-email">Recipient email</Label>
+                    <Label htmlFor="gc-email">{t('recipientEmailLabel')}</Label>
                     <Input
                       id="gc-email"
                       type="email"
@@ -240,8 +242,8 @@ function GenerateDialog({ open, onClose, onGenerated }: GenerateDialogProps) {
                   </div>
                   <div className="flex items-center justify-between rounded-lg border p-3">
                     <div>
-                      <div className="text-sm font-medium">Send by email</div>
-                      <div className="text-xs text-zinc-500">Email the code to the recipient</div>
+                      <div className="text-sm font-medium">{t('sendByEmailLabel')}</div>
+                      <div className="text-xs text-zinc-500">{t('sendByEmailDescription')}</div>
                     </div>
                     <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} className="h-4 w-4 accent-green-700" />
                   </div>
@@ -251,9 +253,9 @@ function GenerateDialog({ open, onClose, onGenerated }: GenerateDialogProps) {
               {error && <p className="text-sm text-red-600">{error}</p>}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
+              <Button variant="outline" onClick={onClose} disabled={saving}>{t('cancel')}</Button>
               <Button onClick={handleGenerate} disabled={saving}>
-                {saving ? 'Generating…' : isBulk ? `Generate ${bulkCount} codes` : 'Generate code'}
+                {saving ? t('generating') : isBulk ? t('generateBulk', { count: bulkCount }) : t('generateSingle')}
               </Button>
             </DialogFooter>
           </>
@@ -266,6 +268,7 @@ function GenerateDialog({ open, onClose, onGenerated }: GenerateDialogProps) {
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export function PromoCodeManager() {
+  const t = useTranslations('admin.promoCodeManager');
   const [items, setItems] = useState<PromoCodeItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -294,28 +297,28 @@ export function PromoCodeManager() {
   const today = new Date().toISOString().slice(0, 10);
 
   function codeStatus(item: PromoCodeItem): { label: string; variant: 'outline' | 'default' } {
-    if (item.isUsed) return { label: 'Used', variant: 'default' };
-    if (item.validUntil < today) return { label: 'Expired', variant: 'default' };
-    return { label: 'Active', variant: 'outline' };
+    if (item.isUsed) return { label: t('statusUsed'), variant: 'default' };
+    if (item.validUntil < today) return { label: t('statusExpired'), variant: 'default' };
+    return { label: t('statusActive'), variant: 'outline' };
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Partner promo codes ({total})</h2>
+        <h2 className="text-lg font-semibold">{t('title', { count: total })}</h2>
         <Button size="sm" onClick={() => setShowGenerate(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Generate code
+          {t('generateButton')}
         </Button>
       </div>
 
       {loading ? (
-        <div className="py-8 text-center text-sm text-zinc-500">Loading…</div>
+        <div className="py-8 text-center text-sm text-zinc-500">{t('loading')}</div>
       ) : items.length === 0 ? (
         <InlineEmptyState
           icon={<KeyRound className="h-8 w-8" />}
-          title="No promo codes yet"
-          description="Generate a code to get started."
+          title={t('emptyTitle')}
+          description={t('emptyDescription')}
         />
       ) : (
         <Card>
@@ -323,12 +326,12 @@ export function PromoCodeManager() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-zinc-50 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  <th className="px-4 py-3">Created for</th>
-                  <th className="px-4 py-3">Tier</th>
-                  <th className="px-4 py-3">Discount</th>
-                  <th className="px-4 py-3">Valid until</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Used at</th>
+                  <th className="px-4 py-3">{t('colCreatedFor')}</th>
+                  <th className="px-4 py-3">{t('colTier')}</th>
+                  <th className="px-4 py-3">{t('colDiscount')}</th>
+                  <th className="px-4 py-3">{t('colValidUntil')}</th>
+                  <th className="px-4 py-3">{t('colStatus')}</th>
+                  <th className="px-4 py-3">{t('colUsedAt')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -341,12 +344,12 @@ export function PromoCodeManager() {
                         <Badge variant="outline">{item.membershipTier}</Badge>
                       </td>
                       <td className="px-4 py-3 text-green-700 font-medium">
-                        {item.discountPercentage}% off
+                        {t('discountOff', { pct: item.discountPercentage })}
                       </td>
                       <td className="px-4 py-3 tabular-nums">{item.validUntil}</td>
                       <td className="px-4 py-3">
                         <Badge variant={variant}
-                          className={label === 'Active' ? 'border-green-200 bg-green-50 text-green-700' : ''}
+                          className={label === t('statusActive') ? 'border-green-200 bg-green-50 text-green-700' : ''}
                         >
                           {label}
                         </Badge>
@@ -364,14 +367,14 @@ export function PromoCodeManager() {
             {total > 50 && (
               <div className="flex items-center justify-between border-t px-4 py-3">
                 <span className="text-sm text-zinc-500">
-                  Showing {(page - 1) * 50 + 1}–{Math.min(page * 50, total)} of {total}
+                  {t('showing', { from: (page - 1) * 50 + 1, to: Math.min(page * 50, total), total })}
                 </span>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-                    Previous
+                    {t('previous')}
                   </Button>
                   <Button variant="outline" size="sm" disabled={page * 50 >= total} onClick={() => setPage((p) => p + 1)}>
-                    Next
+                    {t('next')}
                   </Button>
                 </div>
               </div>

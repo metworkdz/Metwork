@@ -16,6 +16,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +56,7 @@ type Status =
 const DEBOUNCE_MS = 600;
 
 export function PromoCodeInput({ onApplied, disabled = false }: Props) {
+  const t = useTranslations('network.promoCodeInput');
   const [code, setCode] = useState('');
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -79,10 +81,10 @@ export function PromoCodeInput({ onApplied, disabled = false }: Props) {
       if (json.valid && json.discountPercentage && json.membershipTier) {
         setStatus({ kind: 'valid', pct: json.discountPercentage, tier: json.membershipTier });
       } else {
-        setStatus({ kind: 'invalid', error: json.error ?? 'Invalid code' });
+        setStatus({ kind: 'invalid', error: json.error ?? t('invalidCode') });
       }
     } catch {
-      setStatus({ kind: 'invalid', error: 'Could not validate — check your connection' });
+      setStatus({ kind: 'invalid', error: t('validateConnectionError') });
     }
   }, []);
 
@@ -117,11 +119,11 @@ export function PromoCodeInput({ onApplied, disabled = false }: Props) {
       } else {
         setStatus({
           kind: 'invalid',
-          error: json.error?.message ?? 'Could not apply code',
+          error: json.error?.message ?? t('applyError'),
         });
       }
     } catch {
-      setStatus({ kind: 'invalid', error: 'Network error — please retry' });
+      setStatus({ kind: 'invalid', error: t('networkError') });
     }
   }, [status, code, onApplied]);
 
@@ -129,7 +131,7 @@ export function PromoCodeInput({ onApplied, disabled = false }: Props) {
 
   return (
     <div className="space-y-3">
-      <Label htmlFor="promo-code-input">Partner promo code</Label>
+      <Label htmlFor="promo-code-input">{t('label')}</Label>
 
       <div className="flex gap-2">
         <div className="relative flex-1">
@@ -167,9 +169,9 @@ export function PromoCodeInput({ onApplied, disabled = false }: Props) {
           {status.kind === 'applying' ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : isApplied ? (
-            'Applied ✓'
+            t('appliedCheckmark')
           ) : (
-            'Apply'
+            t('applyButton')
           )}
         </Button>
       </div>
@@ -179,7 +181,7 @@ export function PromoCodeInput({ onApplied, disabled = false }: Props) {
         <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
           <span>
-            <strong>{status.pct}% off</strong> — {status.tier === 'FOUNDER' ? 'Founder' : 'Builder'} membership
+            <strong>{status.pct}% {t('off')}</strong> — {status.tier === 'FOUNDER' ? t('founderMembership') : t('builderMembership')}
           </span>
         </div>
       )}
@@ -193,7 +195,10 @@ export function PromoCodeInput({ onApplied, disabled = false }: Props) {
         <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
           <span>
-            Your <strong>{status.tier === 'FOUNDER' ? 'Founder' : 'Builder'}</strong> membership is now active at a <strong>{status.pct}% discount</strong>!
+            {t('membershipActive', {
+              tier: status.tier === 'FOUNDER' ? t('founderMembership') : t('builderMembership'),
+              pct: status.pct,
+            })}
           </span>
         </div>
       )}

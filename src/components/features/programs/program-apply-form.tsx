@@ -11,7 +11,7 @@
  *   5. Otherwise → "Apply — N DZD" / "Apply for free"
  */
 import { useEffect, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Banknote, CheckCircle2, CreditCard, Wallet as WalletIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +35,7 @@ interface ProgramApplyFormProps {
 }
 
 export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFormProps) {
+  const t = useTranslations('programs.apply');
   const locale = useLocale() as Locale;
   const router = useRouter();
   const { user, refresh } = useAuth();
@@ -77,11 +78,11 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
           <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
           <div>
             <p className="text-sm font-semibold text-emerald-900">
-              You&apos;ve applied
+              {t('alreadyAppliedTitle')}
             </p>
             <p className="mt-1 text-xs text-emerald-800">
-              We&apos;ll notify you when the cohort confirms. Track your application
-              under <Link href="/dashboard/entrepreneur/bookings" className="font-medium underline">My bookings</Link>.
+              {t('alreadyAppliedDescription')}{' '}
+              <Link href="/dashboard/entrepreneur/bookings" className="font-medium underline">{t('myBookings')}</Link>.
             </p>
           </div>
         </div>
@@ -92,7 +93,7 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
   if (closed) {
     return (
       <div className="rounded-md border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-        Applications for this program are closed.
+        {t('closed')}
       </div>
     );
   }
@@ -100,7 +101,7 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
   if (full) {
     return (
       <div className="rounded-md border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-        This program is full. Subscribe to the next cohort below.
+        {t('full')}
       </div>
     );
   }
@@ -151,7 +152,7 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
       {/* Payment method picker — only for paid programs with both options */}
       {showMethodPicker && (
         <div>
-          <span className="text-sm font-medium">Payment method</span>
+          <span className="text-sm font-medium">{t('paymentMethod')}</span>
           <div className="mt-1.5 grid grid-cols-2 gap-2">
             {(['ONLINE', 'CASH'] as PaymentMethod[]).map((m) => (
               <button
@@ -170,13 +171,13 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
                 ) : (
                   <Banknote className="size-4 shrink-0" />
                 )}
-                {m === 'ONLINE' ? 'Online (wallet)' : 'Cash on-site'}
+                {m === 'ONLINE' ? t('paymentOnline') : t('paymentCash')}
               </button>
             ))}
           </div>
           {isCash && (
             <p className="mt-1.5 text-xs text-muted-foreground">
-              Your application is reserved; settle the fee directly with the program organiser.
+              {t('cashHint')}
             </p>
           )}
         </div>
@@ -184,15 +185,15 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
 
       <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
         <div className="flex items-center justify-between text-muted-foreground">
-          <span>Application fee</span>
+          <span>{t('applicationFee')}</span>
           <span className="tabular-nums">
-            {isFree ? <span className="font-medium text-emerald-700">Free</span> : formatCurrency(program.price, locale)}
+            {isFree ? <span className="font-medium text-emerald-700">{t('free')}</span> : formatCurrency(program.price, locale)}
           </span>
         </div>
         {!isFree && promoResult && (
           <div className="mt-1 flex items-center justify-between text-emerald-700">
             <span>
-              Promo ({promoResult.discountType === 'PERCENTAGE'
+              {t('promo')} ({promoResult.discountType === 'PERCENTAGE'
                 ? `${promoResult.discountValue}% off`
                 : `−${promoResult.discountAmount.toLocaleString()} DZD`})
             </span>
@@ -227,7 +228,7 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
         >
           <span className="inline-flex items-center gap-1.5">
             <WalletIcon className="size-3.5" />
-            Wallet balance
+            {t('walletBalance')}
           </span>
           <span className="font-medium tabular-nums">{formatCurrency(balance, locale)}</span>
         </div>
@@ -241,28 +242,28 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
 
       {!isAuthed ? (
         <Button asChild className="w-full" size="lg">
-          <Link href={`/login?next=${encodeURIComponent('/programs')}`}>Sign in to apply</Link>
+          <Link href={`/login?next=${encodeURIComponent('/programs')}`}>{t('signIn')}</Link>
         </Button>
       ) : insufficient ? (
         <div className="space-y-2">
           <Button asChild className="w-full" size="lg" variant="outline">
             <Link href="/dashboard/entrepreneur/wallet">
-              Top up to {formatCurrency(finalTotal, locale)}
+              {t('topUp', { amount: formatCurrency(finalTotal, locale) })}
             </Link>
           </Button>
           <Badge variant="warning" className="w-full justify-center py-1">
-            Pay from wallet — top up first
+            {t('topUpWarning')}
           </Badge>
         </div>
       ) : (
         <Button type="submit" size="lg" className="w-full" loading={submitting}>
           {submitting
-            ? 'Submitting…'
+            ? t('submitting')
             : isFree || finalTotal === 0
-            ? 'Apply for free'
+            ? t('submitFree')
             : isCash
-            ? `Apply — pay ${formatCurrency(finalTotal, locale)} on-site`
-            : `Apply — ${formatCurrency(finalTotal, locale)}`}
+            ? t('submitCash', { amount: formatCurrency(finalTotal, locale) })
+            : t('submitOnline', { amount: formatCurrency(finalTotal, locale) })}
         </Button>
       )}
     </form>
@@ -278,6 +279,7 @@ export function ProgramApplySuccess({
   newBalance: number;
   paid: boolean;
 }) {
+  const t = useTranslations('programs.apply');
   const locale = useLocale() as Locale;
   const isCash = booking.paymentMethod === 'manual';
 
@@ -293,44 +295,42 @@ export function ProgramApplySuccess({
         }
         <div className="min-w-0 flex-1">
           <p className={cn('text-base font-semibold', isCash ? 'text-amber-900' : 'text-emerald-900')}>
-            Application submitted
+            {t('successTitle')}
           </p>
           <p className={cn('mt-1 text-sm', isCash ? 'text-amber-800' : 'text-emerald-800')}>
-            {isCash
-              ? 'Your spot is reserved. Settle the fee directly with the program organiser.'
-              : "The cohort team will be in touch — you'll see updates in your bookings."}
+            {isCash ? t('successMessageCash') : t('successMessageOnline')}
           </p>
           <dl className={cn('mt-3 grid grid-cols-2 gap-2 text-xs', isCash ? 'text-amber-900' : 'text-emerald-900')}>
             <div>
-              <dt className={isCash ? 'text-amber-700' : 'text-emerald-700'}>Reference</dt>
+              <dt className={isCash ? 'text-amber-700' : 'text-emerald-700'}>{t('reference')}</dt>
               <dd className="font-mono">{booking.id.slice(0, 8)}…</dd>
             </div>
             <div>
               <dt className={isCash ? 'text-amber-700' : 'text-emerald-700'}>
-                {isCash ? 'Due on-site' : paid ? 'Paid' : 'Application fee'}
+                {isCash ? t('dueOnSite') : paid ? t('paid') : t('applicationFeeLabel')}
               </dt>
               <dd className="font-medium tabular-nums">
-                {paid || isCash ? formatCurrency(booking.totalAmount, locale) : 'Free'}
+                {paid || isCash ? formatCurrency(booking.totalAmount, locale) : t('free')}
               </dd>
             </div>
             {paid && !isCash && (
               <div>
-                <dt className="text-emerald-700">New balance</dt>
+                <dt className="text-emerald-700">{t('newBalance')}</dt>
                 <dd className="font-medium tabular-nums">{formatCurrency(newBalance, locale)}</dd>
               </div>
             )}
             <div>
-              <dt className={isCash ? 'text-amber-700' : 'text-emerald-700'}>Status</dt>
-              <dd className="font-medium">{isCash ? 'Awaiting payment' : 'Confirmed'}</dd>
+              <dt className={isCash ? 'text-amber-700' : 'text-emerald-700'}>{t('status')}</dt>
+              <dd className="font-medium">{isCash ? t('awaitingPayment') : t('confirmed')}</dd>
             </div>
           </dl>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button asChild size="sm">
-              <Link href="/dashboard/entrepreneur/bookings">View my bookings</Link>
+              <Link href="/dashboard/entrepreneur/bookings">{t('viewBookings')}</Link>
             </Button>
             {paid && !isCash && (
               <Button asChild size="sm" variant="outline">
-                <Link href="/dashboard/entrepreneur/wallet">View wallet</Link>
+                <Link href="/dashboard/entrepreneur/wallet">{t('viewWallet')}</Link>
               </Button>
             )}
           </div>

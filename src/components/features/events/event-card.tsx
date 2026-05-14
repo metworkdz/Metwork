@@ -2,6 +2,7 @@
  * Event card. Calendar-style date block on the start, content on the end.
  */
 import { ArrowRight, MapPin, Users, Wifi } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { EventDateBlock } from './event-date-block';
@@ -18,6 +19,7 @@ interface EventCardProps {
 }
 
 export function EventCard({ event, taken, locale, onSelect }: EventCardProps) {
+  const t = useTranslations('events.card');
   const occupied = taken ?? event.attendeeCount;
   const remaining = Math.max(0, event.capacity - occupied);
   const fillPct = Math.min(100, Math.round((occupied / event.capacity) * 100));
@@ -57,10 +59,10 @@ export function EventCard({ event, taken, locale, onSelect }: EventCardProps) {
           {event.isOnline ? (
             <Badge variant="info" className="gap-1">
               <Wifi className="size-3" />
-              Online
+              {t('online')}
             </Badge>
           ) : (
-            <Badge variant="outline">In person</Badge>
+            <Badge variant="outline">{t('inPerson')}</Badge>
           )}
         </div>
 
@@ -78,11 +80,11 @@ export function EventCard({ event, taken, locale, onSelect }: EventCardProps) {
           </span>
           <span aria-hidden>·</span>
           {full ? (
-            <span className="font-medium text-destructive">Full</span>
+            <span className="font-medium text-destructive">{t('full')}</span>
           ) : passed ? (
-            <span className="font-medium">Past event</span>
+            <span className="font-medium">{t('past')}</span>
           ) : (
-            <span className="font-medium text-foreground">{remaining} seats left</span>
+            <span className="font-medium text-foreground">{t('seatsLeft', { count: remaining })}</span>
           )}
         </div>
         <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-muted">
@@ -98,7 +100,7 @@ export function EventCard({ event, taken, locale, onSelect }: EventCardProps) {
         <div className="mt-4 flex items-end justify-between">
           <p className="text-base font-semibold tabular-nums">
             {event.price === 0 ? (
-              <span className="text-emerald-700">Free</span>
+              <span className="text-emerald-700">{t('free')}</span>
             ) : (
               formatCurrency(event.price, locale)
             )}
@@ -109,7 +111,7 @@ export function EventCard({ event, taken, locale, onSelect }: EventCardProps) {
               closed ? 'text-muted-foreground' : 'text-primary-700 group-hover:underline',
             )}
           >
-            {closed ? 'View details' : 'Register'}
+            {closed ? t('viewDetails') : t('register')}
             <ArrowRight className="size-4 rtl:rotate-180" />
           </span>
         </div>

@@ -7,6 +7,7 @@
  *  • Add to investment tracker
  */
 import { useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { Bookmark, BookmarkCheck, CheckCircle2, MessageSquare, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,8 @@ interface Props {
 type InvestmentStatus = 'PROSPECTING' | 'TERM_SHEET' | 'DUE_DILIGENCE' | 'CLOSED' | 'PASSED';
 
 export function StartupDetailActions({ startupId, startupName, isSaved: initialSaved }: Props) {
+  const t = useTranslations('investor.actions');
+
   const [saved,          setSaved]          = useState(initialSaved);
   const [contactOpen,    setContactOpen]    = useState(false);
   const [addDealOpen,    setAddDealOpen]    = useState(false);
@@ -57,7 +60,7 @@ export function StartupDetailActions({ startupId, startupName, isSaved: initialS
 
   async function submitContact() {
     if (message.trim().length < 10) {
-      setContactError('Please write at least 10 characters.');
+      setContactError(t('contactErrorMinLength'));
       return;
     }
     setContactBusy(true); setContactError(null);
@@ -70,11 +73,11 @@ export function StartupDetailActions({ startupId, startupName, isSaved: initialS
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
-        throw new Error(d.error?.message ?? 'Request failed');
+        throw new Error(d.error?.message ?? t('contactErrorFailed'));
       }
       setContactSent(true);
     } catch (err) {
-      setContactError(err instanceof Error ? err.message : 'Request failed');
+      setContactError(err instanceof Error ? err.message : t('contactErrorFailed'));
     } finally {
       setContactBusy(false);
     }
@@ -98,11 +101,11 @@ export function StartupDetailActions({ startupId, startupName, isSaved: initialS
           notes:   '',
         }),
       });
-      if (!res.ok) throw new Error('Failed to add deal');
+      if (!res.ok) throw new Error(t('errorAddFailed'));
       setDealAdded(true);
       setTimeout(() => { setAddDealOpen(false); setDealAdded(false); }, 1500);
     } catch (err) {
-      setDealError(err instanceof Error ? err.message : 'Failed');
+      setDealError(err instanceof Error ? err.message : t('errorFailed'));
     } finally {
       setDealBusy(false);
     }
@@ -117,8 +120,8 @@ export function StartupDetailActions({ startupId, startupName, isSaved: initialS
           className="gap-2"
         >
           {saved
-            ? <><BookmarkCheck className="size-4 text-primary-600" /> Saved</>
-            : <><Bookmark className="size-4" /> Save</>}
+            ? <><BookmarkCheck className="size-4 text-primary-600" /> {t('saved')}</>
+            : <><Bookmark className="size-4" /> {t('save')}</>}
         </Button>
 
         <Button
@@ -127,7 +130,7 @@ export function StartupDetailActions({ startupId, startupName, isSaved: initialS
           className="gap-2"
         >
           <MessageSquare className="size-4" />
-          Contact founder
+          {t('contactFounder')}
         </Button>
 
         <Button
@@ -135,7 +138,7 @@ export function StartupDetailActions({ startupId, startupName, isSaved: initialS
           className="gap-2"
         >
           <TrendingUp className="size-4" />
-          Add to tracker
+          {t('addToTracker')}
         </Button>
       </div>
 
@@ -147,41 +150,40 @@ export function StartupDetailActions({ startupId, startupName, isSaved: initialS
               <div className="flex size-14 items-center justify-center rounded-full bg-emerald-50">
                 <CheckCircle2 className="size-7 text-emerald-600" />
               </div>
-              <h2 className="mt-4 text-lg font-semibold">Request sent!</h2>
+              <h2 className="mt-4 text-lg font-semibold">{t('requestSentTitle')}</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Our team will review your request and connect you with the founder of{' '}
-                <span className="font-medium text-foreground">{startupName}</span> shortly.
+                {t('requestSentDesc', { name: startupName })}
               </p>
-              <Button className="mt-6" onClick={() => setContactOpen(false)}>Done</Button>
+              <Button className="mt-6" onClick={() => setContactOpen(false)}>{t('done')}</Button>
             </div>
           ) : (
             <>
               <DialogHeader>
-                <DialogTitle>Contact founder</DialogTitle>
+                <DialogTitle>{t('contactDialogTitle')}</DialogTitle>
                 <DialogDescription>
-                  Your request will be reviewed by our team who will manually connect you with the founder of <strong>{startupName}</strong>.
+                  {t('contactDialogDesc', { name: startupName })}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-3">
-                <Label htmlFor="contact-msg">Your message *</Label>
+                <Label htmlFor="contact-msg">{t('fieldMessage')}</Label>
                 <textarea
                   id="contact-msg"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={5}
-                  placeholder="Introduce yourself and explain your investment interest…"
+                  placeholder={t('fieldMessagePlaceholder')}
                   className="flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
-                <p className="text-xs text-muted-foreground">{message.length}/1000 characters</p>
+                <p className="text-xs text-muted-foreground">{t('charCount', { count: message.length })}</p>
                 {contactError && (
                   <p className="text-xs text-destructive">{contactError}</p>
                 )}
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setContactOpen(false)} disabled={contactBusy}>Cancel</Button>
-                <Button loading={contactBusy} onClick={submitContact}>Send request</Button>
+                <Button variant="outline" onClick={() => setContactOpen(false)} disabled={contactBusy}>{t('cancel')}</Button>
+                <Button loading={contactBusy} onClick={submitContact}>{t('sendRequest')}</Button>
               </DialogFooter>
             </>
           )}
@@ -196,18 +198,18 @@ export function StartupDetailActions({ startupId, startupName, isSaved: initialS
               <div className="flex size-14 items-center justify-center rounded-full bg-emerald-50">
                 <CheckCircle2 className="size-7 text-emerald-600" />
               </div>
-              <p className="mt-4 font-semibold">Added to your tracker!</p>
+              <p className="mt-4 font-semibold">{t('addedToTracker')}</p>
             </div>
           ) : (
             <>
               <DialogHeader>
-                <DialogTitle>Add to investment tracker</DialogTitle>
-                <DialogDescription>Log this deal for <strong>{startupName}</strong>.</DialogDescription>
+                <DialogTitle>{t('trackerDialogTitle')}</DialogTitle>
+                <DialogDescription>{t('trackerDialogDesc', { name: startupName })}</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="td-amount">Amount (DZD)</Label>
+                    <Label htmlFor="td-amount">{t('fieldAmountDZD')}</Label>
                     <Input
                       id="td-amount"
                       type="number"
@@ -218,7 +220,7 @@ export function StartupDetailActions({ startupId, startupName, isSaved: initialS
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="td-equity">Equity (%)</Label>
+                    <Label htmlFor="td-equity">{t('fieldEquity')}</Label>
                     <Input
                       id="td-equity"
                       type="number"
@@ -232,23 +234,23 @@ export function StartupDetailActions({ startupId, startupName, isSaved: initialS
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Stage</Label>
+                  <Label>{t('fieldStage')}</Label>
                   <Select value={dealStatus} onValueChange={(v) => setDealStatus(v as InvestmentStatus)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PROSPECTING">Prospecting</SelectItem>
-                      <SelectItem value="TERM_SHEET">Term sheet</SelectItem>
-                      <SelectItem value="DUE_DILIGENCE">Due diligence</SelectItem>
-                      <SelectItem value="CLOSED">Closed</SelectItem>
-                      <SelectItem value="PASSED">Passed</SelectItem>
+                      <SelectItem value="PROSPECTING">{t('stageProspecting')}</SelectItem>
+                      <SelectItem value="TERM_SHEET">{t('stageTermSheet')}</SelectItem>
+                      <SelectItem value="DUE_DILIGENCE">{t('stageDueDiligence')}</SelectItem>
+                      <SelectItem value="CLOSED">{t('stageClosed')}</SelectItem>
+                      <SelectItem value="PASSED">{t('stagePassed')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 {dealError && <p className="text-xs text-destructive">{dealError}</p>}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setAddDealOpen(false)} disabled={dealBusy}>Cancel</Button>
-                <Button loading={dealBusy} onClick={submitDeal}>Add to tracker</Button>
+                <Button variant="outline" onClick={() => setAddDealOpen(false)} disabled={dealBusy}>{t('cancel')}</Button>
+                <Button loading={dealBusy} onClick={submitDeal}>{t('addToTracker')}</Button>
               </DialogFooter>
             </>
           )}

@@ -5,6 +5,7 @@
  * Handles both basic-info updates and password changes in separate sections.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,7 @@ interface Props {
 }
 
 export function ProfileForm({ initial }: Props) {
+  const t = useTranslations('entrepreneur.profileForm');
   const { refresh } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initial.avatarUrl ?? null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -65,9 +67,9 @@ export function ProfileForm({ initial }: Props) {
         const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
         throw new Error(d.error?.message ?? 'Failed to save');
       }
-      setInfoMsg({ ok: true, text: 'Profile updated successfully.' });
+      setInfoMsg({ ok: true, text: t('profileUpdated') });
     } catch (err) {
-      setInfoMsg({ ok: false, text: err instanceof Error ? err.message : 'Save failed' });
+      setInfoMsg({ ok: false, text: err instanceof Error ? err.message : t('saveFailed') });
     } finally {
       setInfoSaving(false);
     }
@@ -77,11 +79,11 @@ export function ProfileForm({ initial }: Props) {
   async function savePassword(e: React.FormEvent) {
     e.preventDefault();
     if (pwd.next !== pwd.confirm) {
-      setPwdMsg({ ok: false, text: 'New passwords do not match.' });
+      setPwdMsg({ ok: false, text: t('passwordMismatch') });
       return;
     }
     if (pwd.next.length < 8) {
-      setPwdMsg({ ok: false, text: 'Password must be at least 8 characters.' });
+      setPwdMsg({ ok: false, text: t('passwordTooShort') });
       return;
     }
     setPwdSaving(true); setPwdMsg(null);
@@ -99,10 +101,10 @@ export function ProfileForm({ initial }: Props) {
         const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
         throw new Error(d.error?.message ?? 'Failed to change password');
       }
-      setPwdMsg({ ok: true, text: 'Password changed successfully.' });
+      setPwdMsg({ ok: true, text: t('passwordChanged') });
       setPwd({ current: '', next: '', confirm: '' });
     } catch (err) {
-      setPwdMsg({ ok: false, text: err instanceof Error ? err.message : 'Change failed' });
+      setPwdMsg({ ok: false, text: err instanceof Error ? err.message : t('changeFailed') });
     } finally {
       setPwdSaving(false);
     }
@@ -113,7 +115,7 @@ export function ProfileForm({ initial }: Props) {
       {/* ── Avatar ── */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Profile picture</CardTitle>
+          <CardTitle className="text-base">{t('profilePictureTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center gap-5">
           <AvatarUpload
@@ -124,8 +126,8 @@ export function ProfileForm({ initial }: Props) {
             size="size-20"
           />
           <div>
-            <p className="text-sm font-medium">Click your avatar to upload a new photo</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">JPG, PNG, WebP or GIF — max 5 MB</p>
+            <p className="text-sm font-medium">{t('avatarClickHint')}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t('avatarFormatHint')}</p>
             {avatarError && <p className="mt-1 text-xs text-destructive">{avatarError}</p>}
           </div>
         </CardContent>
@@ -135,11 +137,11 @@ export function ProfileForm({ initial }: Props) {
       <form onSubmit={saveInfo}>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Personal information</CardTitle>
+            <CardTitle className="text-base">{t('personalInfoTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Label htmlFor="email">Email address</Label>
+              <Label htmlFor="email">{t('emailLabel')}</Label>
               <Input
                 id="email"
                 value={initial.email}
@@ -147,17 +149,17 @@ export function ProfileForm({ initial }: Props) {
                 className="mt-1.5 bg-muted/50 text-muted-foreground"
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                Email cannot be changed. Contact support if needed.
+                {t('emailCannotChange')}
               </p>
             </div>
 
             <div>
-              <Label htmlFor="fullName">Full name</Label>
+              <Label htmlFor="fullName">{t('fullNameLabel')}</Label>
               <Input
                 id="fullName"
                 value={info.fullName}
                 onChange={(e) => setInfo((v) => ({ ...v, fullName: e.target.value }))}
-                placeholder="Your full name"
+                placeholder={t('fullNamePlaceholder')}
                 required
                 minLength={2}
                 className="mt-1.5"
@@ -165,13 +167,13 @@ export function ProfileForm({ initial }: Props) {
             </div>
 
             <div>
-              <Label htmlFor="city">City</Label>
+              <Label htmlFor="city">{t('cityLabel')}</Label>
               <Select
                 value={info.city}
                 onValueChange={(v) => setInfo((prev) => ({ ...prev, city: v }))}
               >
                 <SelectTrigger id="city" className="mt-1.5">
-                  <SelectValue placeholder="Select city" />
+                  <SelectValue placeholder={t('cityPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {algerianCities.map((c) => (
@@ -184,7 +186,7 @@ export function ProfileForm({ initial }: Props) {
             </div>
 
             <div>
-              <Label htmlFor="locale">Language</Label>
+              <Label htmlFor="locale">{t('languageLabel')}</Label>
               <Select
                 value={info.locale}
                 onValueChange={(v) => setInfo((prev) => ({ ...prev, locale: v as 'en' | 'fr' | 'ar' }))}
@@ -207,7 +209,7 @@ export function ProfileForm({ initial }: Props) {
             )}
 
             <div className="sm:col-span-2 flex justify-end">
-              <Button type="submit" loading={infoSaving}>Save changes</Button>
+              <Button type="submit" loading={infoSaving}>{t('saveChanges')}</Button>
             </div>
           </CardContent>
         </Card>
@@ -217,41 +219,41 @@ export function ProfileForm({ initial }: Props) {
       <form onSubmit={savePassword}>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Change password</CardTitle>
+            <CardTitle className="text-base">{t('changePasswordTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Label htmlFor="current-pwd">Current password</Label>
+              <Label htmlFor="current-pwd">{t('currentPasswordLabel')}</Label>
               <Input
                 id="current-pwd"
                 type="password"
                 value={pwd.current}
                 onChange={(e) => setPwd((v) => ({ ...v, current: e.target.value }))}
-                placeholder="Your current password"
+                placeholder={t('currentPasswordPlaceholder')}
                 autoComplete="current-password"
                 className="mt-1.5"
               />
             </div>
             <div>
-              <Label htmlFor="new-pwd">New password</Label>
+              <Label htmlFor="new-pwd">{t('newPasswordLabel')}</Label>
               <Input
                 id="new-pwd"
                 type="password"
                 value={pwd.next}
                 onChange={(e) => setPwd((v) => ({ ...v, next: e.target.value }))}
-                placeholder="At least 8 characters"
+                placeholder={t('newPasswordPlaceholder')}
                 autoComplete="new-password"
                 className="mt-1.5"
               />
             </div>
             <div>
-              <Label htmlFor="confirm-pwd">Confirm new password</Label>
+              <Label htmlFor="confirm-pwd">{t('confirmPasswordLabel')}</Label>
               <Input
                 id="confirm-pwd"
                 type="password"
                 value={pwd.confirm}
                 onChange={(e) => setPwd((v) => ({ ...v, confirm: e.target.value }))}
-                placeholder="Repeat new password"
+                placeholder={t('confirmPasswordPlaceholder')}
                 autoComplete="new-password"
                 className="mt-1.5"
               />
@@ -265,7 +267,7 @@ export function ProfileForm({ initial }: Props) {
 
             <div className="sm:col-span-2 flex justify-end">
               <Button type="submit" loading={pwdSaving} variant="outline">
-                Change password
+                {t('changePasswordButton')}
               </Button>
             </div>
           </CardContent>
@@ -276,13 +278,13 @@ export function ProfileForm({ initial }: Props) {
       <Card>
         <CardContent className="flex items-center justify-between p-5">
           <div>
-            <p className="text-sm font-medium">Membership plan</p>
+            <p className="text-sm font-medium">{t('membershipPlanTitle')}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Your current subscription tier.
+              {t('membershipPlanSubtitle')}
             </p>
           </div>
           <Badge variant="primary">
-            {initial.locale === 'fr' ? 'Voir les plans' : 'View plans'}
+            {t('viewPlans')}
           </Badge>
         </CardContent>
       </Card>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { CalendarDays, Clock, MapPin, Users, Wifi } from 'lucide-react';
 import { Sheet, SheetClose, SheetContent } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,7 @@ interface EventDetailSheetProps {
 }
 
 export function EventDetailSheet({ event, open, onOpenChange }: EventDetailSheetProps) {
+  const t = useTranslations('events.detail');
   const locale = useLocale() as Locale;
   const [status, setStatus] = useState<ItemAttendanceStatus | null>(null);
   const [success, setSuccess] = useState<{ booking: BookingDto; newBalance: number; paid: boolean } | null>(null);
@@ -67,12 +68,12 @@ export function EventDetailSheet({ event, open, onOpenChange }: EventDetailSheet
                 {event.isOnline ? (
                   <Badge variant="info" className="gap-1">
                     <Wifi className="size-3" />
-                    Online
+                    {t('online')}
                   </Badge>
                 ) : (
-                  <Badge variant="outline">In person</Badge>
+                  <Badge variant="outline">{t('inPerson')}</Badge>
                 )}
-                {status?.eventPassed && <Badge variant="default">Past event</Badge>}
+                {status?.eventPassed && <Badge variant="default">{t('past')}</Badge>}
               </div>
 
               <h2 className="mt-3 text-2xl font-semibold tracking-tight">{event.title}</h2>
@@ -83,7 +84,7 @@ export function EventDetailSheet({ event, open, onOpenChange }: EventDetailSheet
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <Users className="size-3.5" />
-                  {(status?.taken ?? event.attendeeCount)}/{event.capacity} registered
+                  {t('registered', { count: (status?.taken ?? event.attendeeCount) })}/{event.capacity}
                 </span>
               </div>
 
@@ -94,29 +95,29 @@ export function EventDetailSheet({ event, open, onOpenChange }: EventDetailSheet
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <DetailTile
                   icon={<CalendarDays className="size-4" />}
-                  label="Date"
+                  label={t('date')}
                   value={formatDate(event.eventDate, locale, { dateStyle: 'full' })}
                 />
                 <DetailTile
                   icon={<Clock className="size-4" />}
-                  label="Starts"
+                  label={t('starts')}
                   value={formatDate(event.eventDate, locale, { timeStyle: 'short' })}
                   hint={formatRelativeTime(event.eventDate, locale)}
                 />
                 <DetailTile
                   icon={<Users className="size-4" />}
-                  label="Capacity"
-                  value={`${event.capacity} attendees`}
+                  label={t('capacity')}
+                  value={t('attendees', { count: event.capacity })}
                   hint={
                     status
-                      ? `${Math.max(0, status.capacity - status.taken)} left`
-                      : `${Math.max(0, event.capacity - event.attendeeCount)} left`
+                      ? t('seatsLeft', { count: Math.max(0, status.capacity - status.taken) })
+                      : t('seatsLeft', { count: Math.max(0, event.capacity - event.attendeeCount) })
                   }
                 />
                 <DetailTile
                   icon={<Badge variant="primary" className="text-[10px]">FEE</Badge>}
-                  label="Ticket"
-                  value={event.price === 0 ? 'Free' : formatCurrency(event.price, locale)}
+                  label={t('ticket')}
+                  value={event.price === 0 ? t('free') : formatCurrency(event.price, locale)}
                 />
               </div>
 

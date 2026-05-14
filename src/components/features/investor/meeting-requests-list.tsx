@@ -5,7 +5,7 @@
  * accept/decline/reschedule actions are stubbed pending the meetings API.
  */
 import { useMemo, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { CalendarClock, Check, MessageSquareText, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,21 +31,22 @@ const statusVariant: Record<MeetingStatus, React.ComponentProps<typeof Badge>['v
   COMPLETED: 'default',
 };
 
-const statusLabel: Record<MeetingStatus, string> = {
-  PENDING: 'Pending',
-  ACCEPTED: 'Accepted',
-  DECLINED: 'Declined',
-  COMPLETED: 'Completed',
-};
-
 export function MeetingRequestsList({
   initial,
 }: {
   initial: DemoMeetingRequest[];
 }) {
   const locale = useLocale() as Locale;
+  const t = useTranslations('investor.meetings');
   const [requests, setRequests] = useState(initial);
   const [filter, setFilter] = useState<MeetingStatus | typeof ALL>(ALL);
+
+  const statusLabel: Record<MeetingStatus, string> = {
+    PENDING:   t('statusPending'),
+    ACCEPTED:  t('statusAccepted'),
+    DECLINED:  t('statusDeclined'),
+    COMPLETED: t('statusCompleted'),
+  };
 
   const filtered = useMemo(
     () => (filter === ALL ? requests : requests.filter((r) => r.status === filter)),
@@ -59,17 +60,17 @@ export function MeetingRequestsList({
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <span className="text-sm text-muted-foreground">Filter:</span>
+        <span className="text-sm text-muted-foreground">{t('filter')}</span>
         <Select value={filter} onValueChange={(v) => setFilter(v as MeetingStatus | typeof ALL)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>All</SelectItem>
-            <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="ACCEPTED">Accepted</SelectItem>
-            <SelectItem value="DECLINED">Declined</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
+            <SelectItem value={ALL}>{t('filterAll')}</SelectItem>
+            <SelectItem value="PENDING">{t('filterPending')}</SelectItem>
+            <SelectItem value="ACCEPTED">{t('filterAccepted')}</SelectItem>
+            <SelectItem value="DECLINED">{t('filterDeclined')}</SelectItem>
+            <SelectItem value="COMPLETED">{t('filterCompleted')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -77,8 +78,8 @@ export function MeetingRequestsList({
       {filtered.length === 0 ? (
         <Card>
           <InlineEmptyState
-            title="No meeting requests"
-            description="When you request a meeting from the marketplace, it will appear here."
+            title={t('noRequests')}
+            description={t('noRequestsHint')}
             icon={<CalendarClock className="size-5 text-muted-foreground" />}
           />
         </Card>
@@ -93,11 +94,11 @@ export function MeetingRequestsList({
                     <Badge variant={statusVariant[r.status]}>{statusLabel[r.status]}</Badge>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Founder: {r.founderName} · Requested {formatRelativeTime(r.requestedAt, locale)}
+                    {t('founder')}: {r.founderName} · {t('requested')} {formatRelativeTime(r.requestedAt, locale)}
                   </p>
                   <div className="mt-3 inline-flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-1.5 text-xs text-foreground">
                     <CalendarClock className="size-3.5 text-muted-foreground" />
-                    Preferred: {formatDate(r.preferredAt, locale, { dateStyle: 'medium', timeStyle: 'short' })}
+                    {t('preferred')}: {formatDate(r.preferredAt, locale, { dateStyle: 'medium', timeStyle: 'short' })}
                   </div>
                   <p className="mt-3 inline-flex items-start gap-2 text-sm text-muted-foreground">
                     <MessageSquareText className="mt-0.5 size-3.5 shrink-0" />
@@ -112,7 +113,7 @@ export function MeetingRequestsList({
                       onClick={() => setStatus(r.id, 'ACCEPTED')}
                     >
                       <Check />
-                      Accept
+                      {t('accept')}
                     </Button>
                     <Button
                       size="sm"
@@ -121,7 +122,7 @@ export function MeetingRequestsList({
                       onClick={() => setStatus(r.id, 'DECLINED')}
                     >
                       <X />
-                      Decline
+                      {t('decline')}
                     </Button>
                   </div>
                 )}

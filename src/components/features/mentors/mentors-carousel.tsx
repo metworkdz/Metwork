@@ -15,6 +15,7 @@
  *     all the user needs visually.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LandingMentorCard } from './landing-mentor-card';
@@ -26,6 +27,7 @@ interface MentorsCarouselProps {
 }
 
 export function MentorsCarousel({ mentors }: MentorsCarouselProps) {
+  const t = useTranslations('mentors.carousel');
   const trackRef = useRef<HTMLUListElement | null>(null);
   const [edges, setEdges] = useState<{ atStart: boolean; atEnd: boolean }>({
     atStart: true,
@@ -100,7 +102,7 @@ export function MentorsCarousel({ mentors }: MentorsCarouselProps) {
       {/* Prev / next */}
       <div className="mt-6 flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          {mentors.length} mentor{mentors.length === 1 ? '' : 's'} · drag, swipe, or use the arrows
+          {t('mentorCount', { count: mentors.length })}
         </p>
         <div className="flex items-center gap-2">
           <Button
@@ -109,7 +111,7 @@ export function MentorsCarousel({ mentors }: MentorsCarouselProps) {
             size="icon"
             onClick={() => scrollByAmount(-1)}
             disabled={edges.atStart}
-            aria-label="Previous mentors"
+            aria-label={t('prevMentors')}
           >
             <ChevronLeft className="size-4 rtl:rotate-180" />
           </Button>
@@ -119,7 +121,7 @@ export function MentorsCarousel({ mentors }: MentorsCarouselProps) {
             size="icon"
             onClick={() => scrollByAmount(1)}
             disabled={edges.atEnd}
-            aria-label="Next mentors"
+            aria-label={t('nextMentors')}
           >
             <ChevronRight className="size-4 rtl:rotate-180" />
           </Button>

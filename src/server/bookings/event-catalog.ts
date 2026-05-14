@@ -22,6 +22,7 @@ function fromRecord(r: import('@/server/db/store').EventRecord): PlatformEvent {
     attendeeCount:          0, // computed live by the caller
     eventDate:              r.eventDate,
     acceptedPaymentMethods: r.acceptedPaymentMethods,
+    slug:                   r.slug ?? null,
   };
 }
 

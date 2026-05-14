@@ -15,6 +15,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Download, RefreshCw, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
@@ -81,6 +82,7 @@ export function MembershipPassCard({
   onDownloadPdf,
   className,
 }: Props) {
+  const t = useTranslations('membership.passCard');
   const tier = resolveTier(user);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -143,15 +145,15 @@ export function MembershipPassCard({
           <div>
             <MembershipTierBadge tier={tier} size="lg" />
             {memberSince && (
-              <p className="mt-1.5 text-xs text-muted-foreground">Since {memberSince}</p>
+              <p className="mt-1.5 text-xs text-muted-foreground">{t('memberSince', { date: memberSince })}</p>
             )}
           </div>
           <div className="text-right">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Network Pass
+              {t('networkPass')}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Valid until {expiresFormatted}
+              {t('validUntil', { date: expiresFormatted })}
             </p>
           </div>
         </div>
@@ -161,10 +163,10 @@ export function MembershipPassCard({
           <div className="mt-5">
             <div className="mb-1.5 flex items-center justify-between text-xs">
               <span className="font-medium">
-                {creditsRemaining} / {creditsMax} credits
+                {t('credits', { remaining: creditsRemaining, max: creditsMax })}
               </span>
               {resetDate && (
-                <span className="text-muted-foreground">Resets {resetDate}</span>
+                <span className="text-muted-foreground">{t('resetsOn', { date: resetDate })}</span>
               )}
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -178,7 +180,7 @@ export function MembershipPassCard({
               />
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              {creditsRemaining} session{creditsRemaining !== 1 ? 's' : ''} remaining this month
+              {t('sessionsRemaining', { count: creditsRemaining })}
             </p>
           </div>
         )}
@@ -200,12 +202,12 @@ export function MembershipPassCard({
               {qrCodeDataUrl ? (
                 <img
                   src={qrCodeDataUrl}
-                  alt="Network Pass QR code"
+                  alt={t('qrAlt')}
                   className="h-full w-full rounded-lg object-contain"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-center text-xs text-muted-foreground">
-                  QR code<br />not available
+                  {t('qrNotAvailable')}
                 </div>
               )}
             </div>
@@ -226,7 +228,7 @@ export function MembershipPassCard({
                   className="gap-1.5 text-xs"
                 >
                   <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
-                  {refreshing ? 'Refreshing…' : 'Refresh QR'}
+                  {refreshing ? t('refreshing') : t('refreshQr')}
                 </Button>
               )}
               {onDownloadPdf && (
@@ -237,7 +239,7 @@ export function MembershipPassCard({
                   className="gap-1.5 text-xs"
                 >
                   <Download className="h-3.5 w-3.5" />
-                  Download PDF
+                  {t('downloadPdf')}
                 </Button>
               )}
             </div>
@@ -245,9 +247,9 @@ export function MembershipPassCard({
 
           {/* Right: recent visits */}
           <div>
-            <p className="mb-3 text-sm font-semibold">Usage this month</p>
+            <p className="mb-3 text-sm font-semibold">{t('usageThisMonth')}</p>
             {recentVisits.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No visits yet this month.</p>
+              <p className="text-xs text-muted-foreground">{t('noVisits')}</p>
             ) : (
               <ul className="space-y-2">
                 {recentVisits.slice(0, 5).map((v, i) => (
@@ -263,8 +265,8 @@ export function MembershipPassCard({
             )}
             {recentVisits.length > 0 && (
               <p className="mt-3 text-xs text-muted-foreground">
-                {recentVisits.length} session{recentVisits.length !== 1 ? 's' : ''} used
-                {creditsMax > 0 && `, ${creditsRemaining} remaining`}
+                {t('sessionsUsed', { count: recentVisits.length })}
+                {creditsMax > 0 && `, ${t('remaining', { count: creditsRemaining })}`}
               </p>
             )}
           </div>

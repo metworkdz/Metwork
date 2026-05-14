@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { BarChart2, Users, TrendingUp, Tag } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -61,13 +62,14 @@ function StatCard({
 // ─── Mini bar chart ──────────────────────────────────────────────────────────
 
 function MiniBar({ daily }: { daily: Array<{ date: string; count: number }> }) {
+  const t = useTranslations('admin.partnerStats');
   const max = Math.max(...daily.map((d) => d.count), 1);
   const last14 = daily.slice(-14);
 
   return (
     <Card>
       <CardContent className="p-5">
-        <div className="mb-3 text-sm font-semibold">Daily check-ins (last 14 days)</div>
+        <div className="mb-3 text-sm font-semibold">{t('dailyCheckIns')}</div>
         <div className="flex h-20 items-end gap-1">
           {last14.map((d) => (
             <div key={d.date} className="group relative flex flex-1 flex-col items-center">
@@ -93,6 +95,7 @@ function MiniBar({ daily }: { daily: Array<{ date: string; count: number }> }) {
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export function PartnerStats({ partnerId }: Props) {
+  const t = useTranslations('admin.partnerStats');
   const [stats, setStats] = useState<PartnerStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -102,11 +105,11 @@ export function PartnerStats({ partnerId }: Props) {
     fetch(`/api/admin/partners/${encodeURIComponent(partnerId)}?includeStats=true`)
       .then((r) => r.json())
       .then((d) => setStats(d.stats ?? null))
-      .catch(() => setError('Failed to load stats'))
+      .catch(() => setError(t('loadFailed')))
       .finally(() => setLoading(false));
-  }, [partnerId]);
+  }, [partnerId, t]);
 
-  if (loading) return <div className="py-8 text-center text-sm text-zinc-500">Loading stats…</div>;
+  if (loading) return <div className="py-8 text-center text-sm text-zinc-500">{t('loading')}</div>;
   if (error)   return <div className="py-4 text-sm text-red-600">{error}</div>;
   if (!stats)  return null;
 
@@ -118,27 +121,27 @@ export function PartnerStats({ partnerId }: Props) {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={<Users className="h-5 w-5" />}
-          label="Total check-ins"
+          label={t('totalCheckIns')}
           value={fmt(stats.totalVisits)}
-          sub={`${fmt(stats.visitsThisMonth)} this month`}
+          sub={t('visitsThisMonth', { count: fmt(stats.visitsThisMonth) })}
         />
         <StatCard
           icon={<TrendingUp className="h-5 w-5" />}
-          label="Total payout earned"
+          label={t('totalPayoutEarned')}
           value={dzd(stats.totalPayoutEarned)}
-          sub={`${dzd(stats.pendingPayout)} pending`}
+          sub={t('pendingPayout', { amount: dzd(stats.pendingPayout) })}
         />
         <StatCard
           icon={<Tag className="h-5 w-5" />}
-          label="Promo codes issued"
+          label={t('promoCodesIssued')}
           value={fmt(stats.promoCodesIssued)}
-          sub={`${fmt(stats.promoCodesRedeemed)} redeemed`}
+          sub={t('promoCodesRedeemed', { count: fmt(stats.promoCodesRedeemed) })}
         />
         <StatCard
           icon={<BarChart2 className="h-5 w-5" />}
-          label="Unique referrals"
+          label={t('uniqueReferrals')}
           value={fmt(stats.uniqueReferrals)}
-          sub="Users joined via this partner"
+          sub={t('uniqueReferralsSub')}
         />
       </div>
 

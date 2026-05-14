@@ -8,6 +8,7 @@
  *   Existing listing    → PATCH /api/startups/:id
  */
 import { useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +49,7 @@ export interface StartupProfileFormState {
 }
 
 export function StartupProfileForm({ initial }: { initial: StartupProfileFormState }) {
+  const t = useTranslations('startup.profileForm');
   const [values, setValues] = useState<StartupProfileFormState>(initial);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -66,11 +68,11 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
     const valuation     = values.valuation ? parseInt(values.valuation, 10) : null;
 
     if (isNaN(fundingGoal) || fundingGoal < 100_000) {
-      setFeedback({ ok: false, text: 'Funding goal must be at least 100,000 DZD.' });
+      setFeedback({ ok: false, text: t('errorFundingGoal') });
       return;
     }
     if (isNaN(equityOffered) || equityOffered < 0.1 || equityOffered > 100) {
-      setFeedback({ ok: false, text: 'Equity offered must be between 0.1% and 100%.' });
+      setFeedback({ ok: false, text: t('errorEquityOffered') });
       return;
     }
 
@@ -108,9 +110,9 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
         if (!res.ok) {
           const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
           if (d.error?.message?.includes('membership')) {
-            setFeedback({ ok: false, text: 'An active membership is required to list your startup. Upgrade your plan.' });
+            setFeedback({ ok: false, text: t('errorMembershipRequired') });
           } else {
-            setFeedback({ ok: false, text: d.error?.message ?? 'Save failed. Please try again.' });
+            setFeedback({ ok: false, text: d.error?.message ?? t('errorSaveFailed') });
           }
           return;
         }
@@ -120,9 +122,9 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
         if (newId && !values.id) {
           setValues((v) => ({ ...v, id: newId }));
         }
-        setFeedback({ ok: true, text: 'Startup profile saved successfully.' });
+        setFeedback({ ok: true, text: t('savedSuccessfully') });
       } catch {
-        setFeedback({ ok: false, text: 'Network error. Please check your connection.' });
+        setFeedback({ ok: false, text: t('errorNetwork') });
       }
     });
   }
@@ -131,20 +133,20 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
     <form onSubmit={onSubmit} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Basic info</CardTitle>
+          <CardTitle className="text-base">{t('basicInfoTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
-          <Field label="Startup name" htmlFor="su-name" required>
+          <Field label={t('startupNameLabel')} htmlFor="su-name" required>
             <Input
               id="su-name"
               value={values.name}
               onChange={(e) => update('name', e.target.value)}
-              placeholder="Acme Inc"
+              placeholder={t('startupNamePlaceholder')}
               required
             />
           </Field>
 
-          <Field label="Industry" htmlFor="su-industry">
+          <Field label={t('industryLabel')} htmlFor="su-industry">
             <Select
               value={values.industry}
               onValueChange={(v) => update('industry', v)}
@@ -160,7 +162,7 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
             </Select>
           </Field>
 
-          <Field label="Funding goal (DZD)" htmlFor="su-funding">
+          <Field label={t('fundingGoalLabel')} htmlFor="su-funding">
             <Input
               id="su-funding"
               type="number"
@@ -169,11 +171,11 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
               inputMode="numeric"
               value={values.fundingGoal}
               onChange={(e) => update('fundingGoal', e.target.value)}
-              placeholder="10,000,000"
+              placeholder={t('fundingGoalPlaceholder')}
             />
           </Field>
 
-          <Field label="Equity offered (%)" htmlFor="su-equity">
+          <Field label={t('equityOfferedLabel')} htmlFor="su-equity">
             <Input
               id="su-equity"
               type="number"
@@ -183,11 +185,11 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
               inputMode="decimal"
               value={values.equityOffered}
               onChange={(e) => update('equityOffered', e.target.value)}
-              placeholder="15"
+              placeholder={t('equityOfferedPlaceholder')}
             />
           </Field>
 
-          <Field label="Pre-money valuation (DZD, optional)" htmlFor="su-val">
+          <Field label={t('valuationLabel')} htmlFor="su-val">
             <Input
               id="su-val"
               type="number"
@@ -196,7 +198,7 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
               inputMode="numeric"
               value={values.valuation}
               onChange={(e) => update('valuation', e.target.value)}
-              placeholder="Leave blank if unknown"
+              placeholder={t('valuationPlaceholder')}
             />
           </Field>
         </CardContent>
@@ -204,15 +206,15 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Pitch</CardTitle>
+          <CardTitle className="text-base">{t('pitchTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <Field label="Description" htmlFor="su-desc" required>
+          <Field label={t('descriptionLabel')} htmlFor="su-desc" required>
             <textarea
               id="su-desc"
               value={values.description}
               onChange={(e) => update('description', e.target.value)}
-              placeholder="Tell investors who you are, your traction, and what you're raising for."
+              placeholder={t('descriptionPlaceholder')}
               rows={6}
               className="flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               required
@@ -224,14 +226,13 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Marketplace visibility</CardTitle>
+          <CardTitle className="text-base">{t('visibilityTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium">Show in investor marketplace</p>
+            <p className="text-sm font-medium">{t('showInMarketplace')}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Investors browsing the marketplace will see your profile and can request a meeting.
-              Requires an active STARTUP membership.
+              {t('marketplaceDescription')}
             </p>
           </div>
           <Select
@@ -242,9 +243,9 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="DRAFT">Draft</SelectItem>
-              <SelectItem value="ACTIVE">Active</SelectItem>
-              <SelectItem value="CLOSED">Closed</SelectItem>
+              <SelectItem value="DRAFT">{t('statusDraft')}</SelectItem>
+              <SelectItem value="ACTIVE">{t('statusActive')}</SelectItem>
+              <SelectItem value="CLOSED">{t('statusClosed')}</SelectItem>
             </SelectContent>
           </Select>
         </CardContent>
@@ -258,11 +259,11 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
         )}
         {values.id && (
           <Badge variant="outline" className="text-xs">
-            ID: {values.id.slice(0, 8)}…
+            {t('idPrefix')}: {values.id.slice(0, 8)}…
           </Badge>
         )}
         <Button type="submit" loading={pending}>
-          {values.id ? 'Save changes' : 'Create listing'}
+          {values.id ? t('saveChanges') : t('createListing')}
         </Button>
       </div>
     </form>

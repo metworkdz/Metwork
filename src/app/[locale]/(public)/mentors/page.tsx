@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { ArrowRight, Star } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/container';
@@ -25,7 +25,10 @@ export default async function MentorsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const mentors = (await listMentors()).map(toMentorDto);
+  const [mentors, t] = await Promise.all([
+    listMentors().then((list) => list.map(toMentorDto)),
+    getTranslations('pages.mentors'),
+  ]);
 
   return (
     <>
@@ -44,30 +47,28 @@ export default async function MentorsPage({ params }: PageProps) {
           <div className="flex flex-col items-center pb-12 pt-12 text-center sm:pb-20 sm:pt-24">
             <Badge variant="primary" className="gap-1.5">
               <Star className="size-3" />
-              Our mentor network
+              {t('heroBadge')}
             </Badge>
 
             <h1 className="mt-5 max-w-3xl text-balance text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
-              Learn from expert trainers
+              {t('heroTitle')}
               <br className="hidden sm:block" />
-              <span className="text-primary"> who guide your journey.</span>
+              <span className="text-primary"> {t('heroTitleHighlight')}</span>
             </h1>
 
             <p className="mt-5 max-w-xl text-balance text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Our mentors are experienced trainers and industry professionals with
-              deep expertise across business, tech, and entrepreneurship. Get
-              direct access — book a one-on-one consultation.
+              {t('heroSubtitle')}
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Button asChild size="lg" className="group">
                 <a href="#mentors">
-                  Meet the mentors
+                  {t('heroCta')}
                   <ArrowRight className="ms-1 size-4 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
                 </a>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href="/signup">Join as a founder</Link>
+                <Link href="/signup">{t('heroCtaSecondary')}</Link>
               </Button>
             </div>
           </div>
@@ -90,15 +91,15 @@ export default async function MentorsPage({ params }: PageProps) {
                 <dd className="text-3xl font-semibold tracking-tight text-foreground">
                   {mentors.length}+
                 </dd>
-                <dt className="mt-1 text-sm text-muted-foreground">Expert mentors</dt>
+                <dt className="mt-1 text-sm text-muted-foreground">{t('statsExperts')}</dt>
               </div>
               <div>
                 <dd className="text-3xl font-semibold tracking-tight text-foreground">1:1</dd>
-                <dt className="mt-1 text-sm text-muted-foreground">Sessions available</dt>
+                <dt className="mt-1 text-sm text-muted-foreground">{t('statsSessions')}</dt>
               </div>
               <div>
                 <dd className="text-3xl font-semibold tracking-tight text-foreground">48h</dd>
-                <dt className="mt-1 text-sm text-muted-foreground">Response time</dt>
+                <dt className="mt-1 text-sm text-muted-foreground">{t('statsResponse')}</dt>
               </div>
             </dl>
           </Container>
@@ -121,15 +122,13 @@ export default async function MentorsPage({ params }: PageProps) {
 
             <div className="relative">
               <Badge className="border-white/20 bg-white/10 text-white">
-                Work with the best
+                {t('ctaBadge')}
               </Badge>
               <h2 className="mx-auto mt-4 max-w-2xl text-balance text-2xl font-semibold tracking-tight text-white sm:text-3xl md:text-4xl">
-                Get guidance from Algeria&apos;s top startup operators.
+                {t('ctaTitle')}
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-balance text-primary-100">
-                Whether you&apos;re pre-revenue or scaling to your first million —
-                our mentors have navigated the same challenges. One session can
-                change your trajectory.
+                {t('ctaBody')}
               </p>
 
               <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
@@ -139,7 +138,7 @@ export default async function MentorsPage({ params }: PageProps) {
                   className="bg-white text-primary-700 hover:bg-primary-50"
                 >
                   <Link href="/signup">
-                    Join and book a session
+                    {t('ctaPrimary')}
                     <ArrowRight className="ms-1 size-4 rtl:rotate-180" />
                   </Link>
                 </Button>
@@ -149,7 +148,7 @@ export default async function MentorsPage({ params }: PageProps) {
                   variant="outline"
                   className="border-white/30 bg-transparent text-white hover:bg-white/10"
                 >
-                  <Link href="/contact">Get in touch</Link>
+                  <Link href="/contact">{t('ctaSecondary')}</Link>
                 </Button>
               </div>
             </div>

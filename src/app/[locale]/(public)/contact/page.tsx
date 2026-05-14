@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Mail, Phone, MapPin, Send, CheckCircle2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Container } from '@/components/ui/container';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,15 +14,17 @@ import { cn } from '@/lib/utils';
 /* ─────────────────────────── Page ─────────────────────────── */
 
 export default function ContactPage() {
+  const t = useTranslations('pages.contact');
+
   return (
     <>
       {/* Header */}
       <section className="border-b border-border/60 bg-muted/20 py-14 sm:py-20">
         <Container size="sm">
           <div className="text-center">
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Contact us</h1>
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t('title')}</h1>
             <p className="mt-3 text-base text-muted-foreground">
-              Have a question or want to work with us? Send us a message and we'll get back to you.
+              {t('subtitle')}
             </p>
           </div>
         </Container>
@@ -35,19 +38,19 @@ export default function ContactPage() {
             <div className="space-y-4 lg:col-span-2">
               <InfoItem
                 icon={Phone}
-                label="Phone"
+                label={t('phone')}
                 value={siteConfig.contact.phone}
                 href={`tel:${siteConfig.contact.phone}`}
               />
               <InfoItem
                 icon={Mail}
-                label="Email"
+                label={t('email')}
                 value={siteConfig.contact.email}
                 href={`mailto:${siteConfig.contact.email}`}
               />
               <InfoItem
                 icon={MapPin}
-                label="Address"
+                label={t('address')}
                 value={siteConfig.contact.address}
               />
             </div>
@@ -111,6 +114,7 @@ interface FieldError {
 }
 
 function ContactForm() {
+  const t = useTranslations('pages.contact');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
@@ -139,14 +143,14 @@ function ContactForm() {
       }
 
       if (!res.ok) {
-        setServerError('Something went wrong. Please try again.');
+        setServerError(t('serverError'));
         setState('error');
         return;
       }
 
       setState('success');
     } catch {
-      setServerError('Network error. Please check your connection.');
+      setServerError(t('networkError'));
       setState('error');
     }
   }
@@ -158,9 +162,9 @@ function ContactForm() {
           <div className="flex size-14 items-center justify-center rounded-full bg-emerald-50">
             <CheckCircle2 className="size-7 text-emerald-600" />
           </div>
-          <h2 className="mt-4 text-lg font-semibold">Message sent!</h2>
+          <h2 className="mt-4 text-lg font-semibold">{t('successTitle')}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Thanks for reaching out. We'll get back to you shortly.
+            {t('successDesc')}
           </p>
           <Button
             variant="outline"
@@ -173,7 +177,7 @@ function ContactForm() {
               setState('idle');
             }}
           >
-            Send another message
+            {t('sendAnother')}
           </Button>
         </CardContent>
       </Card>
@@ -186,48 +190,48 @@ function ContactForm() {
         <form onSubmit={onSubmit} noValidate className="space-y-5">
           {/* Name */}
           <div className="space-y-1.5">
-            <Label htmlFor="contact-name">Name</Label>
+            <Label htmlFor="contact-name">{t('fieldName')}</Label>
             <Input
               id="contact-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
+              placeholder={t('fieldNamePlaceholder')}
               autoComplete="name"
               disabled={state === 'submitting'}
               error={!!fieldErrors.name}
             />
             {fieldErrors.name && (
-              <p className="text-xs text-destructive">Name must be at least 2 characters.</p>
+              <p className="text-xs text-destructive">{t('errorName')}</p>
             )}
           </div>
 
           {/* Email */}
           <div className="space-y-1.5">
-            <Label htmlFor="contact-email">Email</Label>
+            <Label htmlFor="contact-email">{t('fieldEmail')}</Label>
             <Input
               id="contact-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t('fieldEmailPlaceholder')}
               autoComplete="email"
               disabled={state === 'submitting'}
               error={!!fieldErrors.email}
             />
             {fieldErrors.email && (
-              <p className="text-xs text-destructive">Please enter a valid email address.</p>
+              <p className="text-xs text-destructive">{t('errorEmail')}</p>
             )}
           </div>
 
           {/* Message */}
           <div className="space-y-1.5">
-            <Label htmlFor="contact-message">Message</Label>
+            <Label htmlFor="contact-message">{t('fieldMessage')}</Label>
             <textarea
               id="contact-message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={5}
-              placeholder="How can we help you?"
+              placeholder={t('fieldMessagePlaceholder')}
               disabled={state === 'submitting'}
               className={cn(
                 'flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors',
@@ -238,7 +242,7 @@ function ContactForm() {
               )}
             />
             {fieldErrors.message && (
-              <p className="text-xs text-destructive">Message must be at least 10 characters.</p>
+              <p className="text-xs text-destructive">{t('errorMessage')}</p>
             )}
           </div>
 
@@ -251,7 +255,7 @@ function ContactForm() {
 
           <Button type="submit" className="w-full" loading={state === 'submitting'}>
             <Send className="size-4" />
-            Send message
+            {state === 'submitting' ? t('submitting') : t('sendMessage')}
           </Button>
         </form>
       </CardContent>

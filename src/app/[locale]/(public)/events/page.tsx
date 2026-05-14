@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function EventsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('pages.events');
 
   const events = await listEvents();
 
@@ -47,12 +48,36 @@ export default async function EventsPage({ params }: PageProps) {
     ? Math.max(0, Math.ceil((Date.parse(next.eventDate) - now) / 86_400_000))
     : null;
 
+  const upcomingBadge = upcoming.length === 1 ? t('upcomingOne') : t('upcomingMany', { count: upcoming.length });
+  const nextEventBadge = daysToNext != null
+    ? daysToNext === 0
+      ? t('nextEventToday')
+      : daysToNext === 1
+      ? t('nextEventInOne')
+      : t('nextEventInMany', { count: daysToNext })
+    : null;
+
+  const hosts = new Set(events.map((e) => e.incubatorId)).size;
+  const free = events.filter((e) => e.price === 0).length;
+  const statsItems = [
+    { label: t('statsEvents'), value: events.length },
+    { label: t('statsHosts'),  value: hosts },
+    { label: t('statsCities'), value: cities.length },
+    { label: t('statsFree'),   value: free },
+  ];
+
   return (
     <>
-      <EventsHero upcomingCount={upcoming.length} daysToNext={daysToNext} />
+      <EventsHero
+        eyebrow={t('heroEyebrow')}
+        headline={t('heroHeadline')}
+        subheadline={t('heroSubheadline')}
+        upcomingBadge={upcomingBadge}
+        nextEventBadge={nextEventBadge}
+      />
       <section className="border-y border-border/60 bg-muted/20 py-6">
         <Container>
-          <Stats events={events} cityCount={cities.length} />
+          <Stats items={statsItems} />
         </Container>
       </section>
       <section className="py-10 sm:py-14">
@@ -65,11 +90,17 @@ export default async function EventsPage({ params }: PageProps) {
 }
 
 function EventsHero({
-  upcomingCount,
-  daysToNext,
+  eyebrow,
+  headline,
+  subheadline,
+  upcomingBadge,
+  nextEventBadge,
 }: {
-  upcomingCount: number;
-  daysToNext: number | null;
+  eyebrow: string;
+  headline: string;
+  subheadline: string;
+  upcomingBadge: string;
+  nextEventBadge: string | null;
 }) {
   return (
     <section className="relative overflow-hidden border-b border-border/60 bg-foreground text-background">
@@ -84,23 +115,22 @@ function EventsHero({
             className="gap-1 border-primary-300 bg-primary-50/10 text-primary-100"
           >
             <CalendarDays className="size-3" />
-            Events marketplace
+            {eyebrow}
           </Badge>
           <h1 className="mt-5 max-w-3xl text-balance text-4xl font-semibold tracking-tight sm:text-6xl">
-            Pitch nights, demo days, and meetups across Algeria.
+            {headline}
           </h1>
           <p className="mt-5 max-w-2xl text-balance text-base text-background/70 sm:text-lg">
-            Real rooms, real founders, real investors. Reserve your seat in
-            seconds — your wallet handles the rest.
+            {subheadline}
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3 text-sm">
             <Badge variant="outline" className="gap-1.5 border-background/30 bg-background/10 text-background">
               <Sparkles className="size-3" />
-              {upcomingCount} upcoming event{upcomingCount === 1 ? '' : 's'}
+              {upcomingBadge}
             </Badge>
-            {daysToNext != null && (
+            {nextEventBadge != null && (
               <Badge variant="warning" className="gap-1">
-                Next event {daysToNext === 0 ? 'today' : `in ${daysToNext} day${daysToNext === 1 ? '' : 's'}`}
+                {nextEventBadge}
               </Badge>
             )}
           </div>
@@ -110,21 +140,7 @@ function EventsHero({
   );
 }
 
-function Stats({
-  events,
-  cityCount,
-}: {
-  events: Awaited<ReturnType<typeof listEvents>>;
-  cityCount: number;
-}) {
-  const hosts = new Set(events.map((e) => e.incubatorId)).size;
-  const free = events.filter((e) => e.price === 0).length;
-  const items = [
-    { label: 'Events', value: events.length },
-    { label: 'Hosts', value: hosts },
-    { label: 'Cities', value: cityCount },
-    { label: 'Free entry', value: free },
-  ];
+function Stats({ items }: { items: { label: string; value: number }[] }) {
   return (
     <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       {items.map((s) => (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ const DEFAULT: FormState = {
 };
 
 export function CreatePromoCodeForm() {
+  const t = useTranslations('admin.promoCodes');
   const router = useRouter();
   const [form, setForm] = useState<FormState>(DEFAULT);
   const [error, setError] = useState<string | null>(null);
@@ -47,9 +49,9 @@ export function CreatePromoCodeForm() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const discountNum = parseInt(form.discountPercent, 10);
-    if (!form.code.trim()) { setError('Code is required'); return; }
+    if (!form.code.trim()) { setError(t('codeRequired')); return; }
     if (isNaN(discountNum) || discountNum < 1 || discountNum > 100) {
-      setError('Discount must be between 1 and 100');
+      setError(t('discountRange'));
       return;
     }
 
@@ -71,32 +73,32 @@ export function CreatePromoCodeForm() {
         });
         const data = await res.json();
         if (!res.ok) {
-          if (res.status === 409) setError('A code with that name already exists');
-          else setError(data.message ?? 'Failed to create promo code');
+          if (res.status === 409) setError(t('codeExists'));
+          else setError(data.message ?? t('failed'));
           return;
         }
-        setSuccess(`Code "${data.code}" created successfully`);
+        setSuccess(t('success', { code: data.code }));
         setForm(DEFAULT);
         router.refresh();
       } catch {
-        setError('Network error. Please try again.');
+        setError(t('networkError'));
       }
     });
   }
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <FormField label="Code" htmlFor="pc-code" required>
+      <FormField label={t('colCode')} htmlFor="pc-code" required>
         <Input
           id="pc-code"
-          placeholder="LAUNCH20"
+          placeholder={t('codePlaceholder')}
           value={form.code}
           onChange={(e) => set('code', e.target.value.toUpperCase())}
           className="font-mono uppercase"
         />
       </FormField>
 
-      <FormField label="Discount (%)" htmlFor="pc-discount" required>
+      <FormField label={t('colDiscount')} htmlFor="pc-discount" required>
         <Input
           id="pc-discount"
           type="number"
@@ -108,7 +110,7 @@ export function CreatePromoCodeForm() {
         />
       </FormField>
 
-      <FormField label="Applies to" htmlFor="pc-applies">
+      <FormField label={t('colAppliesTo')} htmlFor="pc-applies">
         <Select
           value={form.appliesTo}
           onValueChange={(v) => set('appliesTo', v as AppliesTo)}
@@ -117,15 +119,15 @@ export function CreatePromoCodeForm() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All purchases</SelectItem>
-            <SelectItem value="MEMBERSHIP">Memberships only</SelectItem>
-            <SelectItem value="SPACE">Space bookings only</SelectItem>
-            <SelectItem value="CONSULTATION">Consultations only</SelectItem>
+            <SelectItem value="ALL">{t('allPurchases')}</SelectItem>
+            <SelectItem value="MEMBERSHIP">{t('membershipsOnly')}</SelectItem>
+            <SelectItem value="SPACE">{t('spaceBookingsOnly')}</SelectItem>
+            <SelectItem value="CONSULTATION">{t('consultationsOnly')}</SelectItem>
           </SelectContent>
         </Select>
       </FormField>
 
-      <FormField label="Expires at" htmlFor="pc-expires" hint="Leave blank for no expiry">
+      <FormField label={t('colExpiry')} htmlFor="pc-expires" hint={t('noExpiry')}>
         <Input
           id="pc-expires"
           type="datetime-local"
@@ -134,7 +136,7 @@ export function CreatePromoCodeForm() {
         />
       </FormField>
 
-      <FormField label="Usage limit" htmlFor="pc-limit" hint="Leave blank for unlimited">
+      <FormField label={t('colUsageLimit')} htmlFor="pc-limit" hint={t('noLimit')}>
         <Input
           id="pc-limit"
           type="number"
@@ -147,7 +149,7 @@ export function CreatePromoCodeForm() {
 
       <div className="flex items-end">
         <Button type="submit" loading={isPending} className="w-full">
-          Create code
+          {t('create')}
         </Button>
       </div>
 

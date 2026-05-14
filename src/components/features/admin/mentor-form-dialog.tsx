@@ -14,6 +14,7 @@
  *     admins can paste an external image URL.
  */
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ImagePlus, Linkedin, Loader2, Upload } from 'lucide-react';
 import {
   Dialog,
@@ -78,6 +79,7 @@ export function MentorFormDialog({
   initial,
   onSaved,
 }: MentorFormDialogProps) {
+  const t = useTranslations('admin.mentorFormDialog');
   const [values, setValues] = useState<FormState>(empty);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -104,7 +106,7 @@ export function MentorFormDialog({
       const res = await mentorsService.uploadImage(file);
       update('imageUrl', res.url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : t('uploadFailed'));
     } finally {
       setUploading(false);
       // Reset the input so re-selecting the same file fires onChange.
@@ -117,9 +119,9 @@ export function MentorFormDialog({
     setError(null);
 
     // Lightweight client-side check; the server is the source of truth.
-    if (values.fullName.trim().length < 2) return setError('Full name is too short.');
-    if (values.position.trim().length < 2) return setError('Position is too short.');
-    if (!values.imageUrl) return setError('An image URL is required.');
+    if (values.fullName.trim().length < 2) return setError(t('errorFullNameShort'));
+    if (values.position.trim().length < 2) return setError(t('errorPositionShort'));
+    if (!values.imageUrl) return setError(t('errorImageRequired'));
 
     setSubmitting(true);
     try {
@@ -140,9 +142,9 @@ export function MentorFormDialog({
       onOpenChange(false);
     } catch (err) {
       if (err instanceof ApiClientError) {
-        setError(err.message || 'Save failed.');
+        setError(err.message || t('saveFailed'));
       } else {
-        setError(err instanceof Error ? err.message : 'Save failed.');
+        setError(err instanceof Error ? err.message : t('saveFailed'));
       }
     } finally {
       setSubmitting(false);
@@ -153,8 +155,8 @@ export function MentorFormDialog({
   const fee = parseInt(values.consultationFeeStr, 10);
   const preview: Mentor = {
     id: initial?.id ?? 'preview',
-    fullName: values.fullName || 'Mentor name',
-    position: values.position || 'Position · Company',
+    fullName: values.fullName || t('previewMentorName'),
+    position: values.position || t('previewMentorPosition'),
     imageUrl: values.imageUrl || '',
     bio: values.bio.trim() || null,
     linkedinUrl: values.linkedinUrl.trim() || null,
@@ -166,42 +168,41 @@ export function MentorFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit mentor' : 'Add a new mentor'}</DialogTitle>
+          <DialogTitle>{isEdit ? t('editTitle') : t('addTitle')}</DialogTitle>
           <DialogDescription>
-            Fields marked with an asterisk are required. The right-hand preview is
-            exactly how this mentor will appear on the landing page.
+            {t('dialogDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="grid gap-6 md:grid-cols-[1fr_240px]" noValidate>
           {/* Form column */}
           <div className="space-y-4">
-            <Field label="Full name" required>
+            <Field label={t('fieldFullName')} required>
               <Input
                 value={values.fullName}
                 onChange={(e) => update('fullName', e.target.value)}
-                placeholder="e.g. Amina Hamdi"
+                placeholder={t('fullNamePlaceholder')}
                 maxLength={120}
                 required
               />
             </Field>
 
-            <Field label="Position" required>
+            <Field label={t('fieldPosition')} required>
               <Input
                 value={values.position}
                 onChange={(e) => update('position', e.target.value)}
-                placeholder="e.g. Operating Partner — Maghreb Ventures"
+                placeholder={t('positionPlaceholder')}
                 maxLength={160}
                 required
               />
             </Field>
 
-            <Field label="Image URL" required hint="Paste an HTTPS URL or upload a file below.">
+            <Field label={t('fieldImageUrl')} required hint={t('imageUrlHint')}>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Input
                   value={values.imageUrl}
                   onChange={(e) => update('imageUrl', e.target.value)}
-                  placeholder="https://… or /uploads/mentors/…"
+                  placeholder={t('imageUrlPlaceholder')}
                   required
                 />
                 <label
@@ -215,7 +216,7 @@ export function MentorFormDialog({
                   ) : (
                     <Upload className="size-4" />
                   )}
-                  Upload
+                  {t('upload')}
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
@@ -226,42 +227,42 @@ export function MentorFormDialog({
               </div>
             </Field>
 
-            <Field label="Bio" hint="Optional. Up to 2,000 characters.">
+            <Field label={t('fieldBio')} hint={t('bioHint')}>
               <textarea
                 value={values.bio}
                 onChange={(e) => update('bio', e.target.value)}
                 rows={3}
                 maxLength={2000}
-                placeholder="One paragraph on what they're good at."
+                placeholder={t('bioPlaceholder')}
                 className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </Field>
 
-            <Field label="LinkedIn URL" hint="Optional. Shown as an icon link on the card.">
+            <Field label={t('fieldLinkedin')} hint={t('linkedinHint')}>
               <div className="relative">
                 <Linkedin className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="url"
                   value={values.linkedinUrl}
                   onChange={(e) => update('linkedinUrl', e.target.value)}
-                  placeholder="https://www.linkedin.com/in/…"
+                  placeholder={t('linkedinPlaceholder')}
                   className="ps-9"
                   maxLength={300}
                 />
               </div>
             </Field>
 
-            <Field label="Contact email" hint="Used for consultation approval notifications. Not shown publicly.">
+            <Field label={t('fieldEmail')} hint={t('emailHint')}>
               <Input
                 type="email"
                 value={values.email}
                 onChange={(e) => update('email', e.target.value)}
-                placeholder="mentor@example.com"
+                placeholder={t('emailPlaceholder')}
                 maxLength={200}
               />
             </Field>
 
-            <Field label="Consultation fee (DZD)" hint="Optional. Leave blank or 0 for free sessions. Admin keeps 30%, mentor receives 70%.">
+            <Field label={t('fieldConsultationFee')} hint={t('consultationFeeHint')}>
               <Input
                 type="number"
                 min={0}
@@ -269,7 +270,7 @@ export function MentorFormDialog({
                 step={100}
                 value={values.consultationFeeStr}
                 onChange={(e) => update('consultationFeeStr', e.target.value)}
-                placeholder="e.g. 5000"
+                placeholder={t('consultationFeePlaceholder')}
               />
             </Field>
 
@@ -283,24 +284,24 @@ export function MentorFormDialog({
           {/* Preview column */}
           <div className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Live preview
+              {t('livePreview')}
             </p>
             {preview.imageUrl ? (
               <LandingMentorCard mentor={preview} hoverable={false} />
             ) : (
               <div className="flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/40 text-center text-xs text-muted-foreground">
                 <ImagePlus className="size-6" />
-                <p className="mt-2 px-3">Add an image URL or upload a file to see the preview.</p>
+                <p className="mt-2 px-3">{t('previewImageHint')}</p>
               </div>
             )}
           </div>
 
           <DialogFooter className="md:col-span-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button type="submit" loading={submitting}>
-              {isEdit ? 'Save changes' : 'Add mentor'}
+              {isEdit ? t('saveChanges') : t('addMentor')}
             </Button>
           </DialogFooter>
         </form>

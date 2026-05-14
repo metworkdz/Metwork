@@ -11,6 +11,7 @@
  */
 import { useState } from 'react';
 import { Tag, CheckCircle2, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -32,6 +33,7 @@ interface PromoCodeInputProps {
 }
 
 export function PromoCodeInput({ originalAmount, onApplied, disabled }: PromoCodeInputProps) {
+  const t = useTranslations('common');
   const [code,     setCode]     = useState('');
   const [loading,  setLoading]  = useState(false);
   const [applied,  setApplied]  = useState<PromoResult | null>(null);
@@ -60,7 +62,7 @@ export function PromoCodeInput({ originalAmount, onApplied, disabled }: PromoCod
       };
 
       if (!data.valid) {
-        setErrorMsg(data.error ?? 'Invalid promo code');
+        setErrorMsg(data.error ?? t('promoCodeInvalid'));
         setApplied(null);
         onApplied(null);
         return;
@@ -76,7 +78,7 @@ export function PromoCodeInput({ originalAmount, onApplied, disabled }: PromoCod
       setApplied(result);
       onApplied(result);
     } catch {
-      setErrorMsg('Could not validate promo code');
+      setErrorMsg(t('promoCodeError'));
     } finally {
       setLoading(false);
     }
@@ -123,7 +125,7 @@ export function PromoCodeInput({ originalAmount, onApplied, disabled }: PromoCod
             value={code}
             onChange={(e) => { setCode(e.target.value); setErrorMsg(null); }}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void applyCode(); } }}
-            placeholder="Promo code"
+            placeholder={t('promoCodePlaceholder')}
             className="ps-8 uppercase"
             disabled={disabled || loading}
           />
@@ -137,7 +139,7 @@ export function PromoCodeInput({ originalAmount, onApplied, disabled }: PromoCod
           disabled={!code.trim() || disabled || loading}
           loading={loading}
         >
-          Apply
+          {t('apply')}
         </Button>
       </div>
       {errorMsg && (

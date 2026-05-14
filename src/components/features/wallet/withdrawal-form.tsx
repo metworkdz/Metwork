@@ -6,6 +6,7 @@
  * Admin reviews and approves or rejects the request.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ArrowUpRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ function formatDate(iso: string) {
 }
 
 export function WithdrawalForm() {
+  const t = useTranslations('wallet.withdrawalForm');
   const [requests, setRequests]     = useState<WithdrawalRequest[] | null>(null);
   const [loadErr, setLoadErr]       = useState<string | null>(null);
   const [loaded, setLoaded]         = useState(false);
@@ -63,12 +65,12 @@ export function WithdrawalForm() {
     setLoadErr(null);
     try {
       const res = await fetch('/api/withdrawals', { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to load withdrawal history');
+      if (!res.ok) throw new Error(t('loadHistoryError'));
       const data = await res.json() as { items: WithdrawalRequest[] };
       setRequests(data.items);
       setLoaded(true);
     } catch (err) {
-      setLoadErr(err instanceof Error ? err.message : 'Load failed');
+      setLoadErr(err instanceof Error ? err.message : t('loadFailed'));
     }
   }
 
@@ -77,11 +79,11 @@ export function WithdrawalForm() {
     setFeedback(null);
     const parsed = Number(amount);
     if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 500) {
-      setFeedback({ kind: 'error', text: 'Enter a whole amount of at least 500 DZD.' });
+      setFeedback({ kind: 'error', text: t('errorMinAmount') });
       return;
     }
     if (accountDetails.trim().length < 5) {
-      setFeedback({ kind: 'error', text: 'Please enter your payment account details.' });
+      setFeedback({ kind: 'error', text: t('errorAccountDetails') });
       return;
     }
     setSubmitting(true);
@@ -95,15 +97,15 @@ export function WithdrawalForm() {
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { error?: { message?: string; code?: string } };
         if (d.error?.code === 'INSUFFICIENT_FUNDS') {
-          throw new Error('Insufficient wallet balance.');
+          throw new Error(t('errorInsufficientFunds'));
         }
         if (d.error?.code === 'WALLET_FROZEN') {
-          throw new Error('Your wallet is frozen. Contact support.');
+          throw new Error(t('errorWalletFrozen'));
         }
-        throw new Error(d.error?.message ?? 'Request failed');
+        throw new Error(d.error?.message ?? t('errorRequestFailed'));
       }
       const data = await res.json() as { withdrawalRequest: WithdrawalRequest };
-      setFeedback({ kind: 'success', text: `Withdrawal request of ${formatAmount(parsed)} submitted. Pending admin review.` });
+      setFeedback({ kind: 'success', text: t('successMessage', { amount: formatAmount(parsed) }) });
       setAmount('');
       setAccountDetails('');
       setShowForm(false);
@@ -111,7 +113,7 @@ export function WithdrawalForm() {
         setRequests([data.withdrawalRequest, ...requests]);
       }
     } catch (err) {
-      setFeedback({ kind: 'error', text: err instanceof Error ? err.message : 'Request failed' });
+      setFeedback({ kind: 'error', text: err instanceof Error ? err.message : t('errorRequestFailed') });
     } finally {
       setSubmitting(false);
     }
@@ -120,11 +122,11 @@ export function WithdrawalForm() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Withdraw Funds</CardTitle>
+        <CardTitle className="text-base">{t('title')}</CardTitle>
         <div className="flex items-center gap-2">
           {!loaded && (
             <Button type="button" variant="ghost" size="sm" onClick={loadRequests}>
-              View history
+              {t('viewHistory')}
             </Button>
           )}
           <Button
@@ -134,7 +136,7 @@ export function WithdrawalForm() {
             onClick={() => { setShowForm((v) => !v); setFeedback(null); }}
           >
             <ArrowUpRight className="size-4" />
-            {showForm ? 'Cancel' : 'Request withdrawal'}
+            {showForm ? t('cancel') : t('requestWithdrawal')}
           </Button>
         </div>
       </CardHeader>
@@ -157,7 +159,7 @@ export function WithdrawalForm() {
           <form onSubmit={onSubmit} className="space-y-4" noValidate>
             <div>
               <label htmlFor="wd-amount" className="text-xs font-medium text-muted-foreground">
-                Amount (DZD) — minimum 500
+                {t('amountLabel')}
               </label>
               <Input
                 id="wd-amount"
@@ -173,7 +175,7 @@ export function WithdrawalForm() {
             </div>
             <div>
               <label htmlFor="wd-account" className="text-xs font-medium text-muted-foreground">
-                Payment account details
+                {t('accountDetailsLabel')}
               </label>
               <Textarea
                 id="wd-account"
@@ -184,11 +186,11 @@ export function WithdrawalForm() {
                 className="mt-1 text-sm"
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                The amount will be deducted from your wallet immediately and held until admin processes the transfer.
+                {t('deductionNote')}
               </p>
             </div>
             <Button type="submit" className="w-full" loading={submitting}>
-              Submit withdrawal request
+              {t('submitButton')}
             </Button>
           </form>
         )}
@@ -201,18 +203,18 @@ export function WithdrawalForm() {
           <>
             {(requests?.length ?? 0) === 0 ? (
               <InlineEmptyState
-                title="No withdrawal requests"
-                description="Your past withdrawal requests will appear here."
+                title={t('emptyTitle')}
+                description={t('emptyDescription')}
               />
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Note</TableHead>
+                      <TableHead>{t('colAmount')}</TableHead>
+                      <TableHead>{t('colStatus')}</TableHead>
+                      <TableHead>{t('colDate')}</TableHead>
+                      <TableHead>{t('colNote')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

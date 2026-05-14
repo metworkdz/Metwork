@@ -4,6 +4,7 @@
  * Admin panel: list all withdrawal requests and approve/reject them.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { CheckCircle, XCircle, RefreshCw, Banknote } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -56,6 +57,7 @@ function formatDate(iso: string) {
 }
 
 export function WithdrawalsManager() {
+  const t = useTranslations('admin.withdrawals');
   const [rows, setRows]           = useState<WithdrawalRow[]>([]);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -139,22 +141,22 @@ export function WithdrawalsManager() {
       {/* Summary tiles */}
       <div className="grid gap-4 sm:grid-cols-3">
         <Card><CardContent className="p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Pending review</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('pendingReview')}</p>
           <p className="mt-2 text-2xl font-semibold text-amber-600">{pending}</p>
         </CardContent></Card>
         <Card><CardContent className="p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total approved</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('totalApproved')}</p>
           <p className="mt-2 text-2xl font-semibold">{formatAmount(approved)}</p>
         </CardContent></Card>
         <Card><CardContent className="p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total requests</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('totalRequests')}</p>
           <p className="mt-2 text-2xl font-semibold">{rows.length}</p>
         </CardContent></Card>
       </div>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">All Withdrawal Requests</CardTitle>
+          <CardTitle className="text-base">{t('tableTitle')}</CardTitle>
           <Button type="button" variant="ghost" size="sm" onClick={() => load()} disabled={refreshing}>
             <RefreshCw className={cn('size-4', refreshing && 'animate-spin')} />
             <span className="sr-only">Refresh</span>
@@ -163,8 +165,8 @@ export function WithdrawalsManager() {
         <CardContent className="p-0">
           {rows.length === 0 ? (
             <InlineEmptyState
-              title="No withdrawal requests"
-              description="Requests from users and incubators will appear here."
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
               icon={<Banknote className="size-5 text-muted-foreground" />}
             />
           ) : (
@@ -172,12 +174,12 @@ export function WithdrawalsManager() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Account details</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
+                    <TableHead>{t('colUser')}</TableHead>
+                    <TableHead>{t('colRole')}</TableHead>
+                    <TableHead>{t('colAmount')}</TableHead>
+                    <TableHead>{t('colAccountDetails')}</TableHead>
+                    <TableHead>{t('colStatus')}</TableHead>
+                    <TableHead>{t('colDate')}</TableHead>
                     <TableHead className="w-28" />
                   </TableRow>
                 </TableHeader>
@@ -210,7 +212,7 @@ export function WithdrawalsManager() {
                               variant="ghost"
                               size="icon"
                               className="size-8 text-emerald-600 hover:text-emerald-700"
-                              title="Approve"
+                              title={t('approve')}
                               onClick={() => openAction(r, 'APPROVED')}
                             >
                               <CheckCircle className="size-4" />
@@ -219,7 +221,7 @@ export function WithdrawalsManager() {
                               variant="ghost"
                               size="icon"
                               className="size-8 text-destructive hover:text-destructive"
-                              title="Reject"
+                              title={t('reject')}
                               onClick={() => openAction(r, 'REJECTED')}
                             >
                               <XCircle className="size-4" />
@@ -246,26 +248,26 @@ export function WithdrawalsManager() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>
-              {acting?.kind === 'APPROVED' ? 'Approve withdrawal?' : 'Reject withdrawal?'}
+              {acting?.kind === 'APPROVED' ? t('approveTitle') : t('rejectTitle')}
             </DialogTitle>
             <DialogDescription>
               {acting && (
                 <>
                   {acting.kind === 'APPROVED'
-                    ? `Mark ${formatAmount(acting.row.amount)} withdrawal as approved. Confirm you have transferred the funds externally to the account details provided.`
-                    : `Reject this withdrawal. The ${formatAmount(acting.row.amount)} will be refunded back to the user's wallet.`}
+                    ? t('approveDescription', { amount: formatAmount(acting.row.amount) })
+                    : t('rejectDescription', { amount: formatAmount(acting.row.amount) })}
                 </>
               )}
             </DialogDescription>
           </DialogHeader>
           <div>
             <label className="text-xs font-medium text-muted-foreground">
-              Admin note (optional)
+              {t('adminNoteLabel')}
             </label>
             <Textarea
               className="mt-1 text-sm"
               rows={3}
-              placeholder="Add a note for the user…"
+              placeholder={t('adminNotePlaceholder')}
               value={adminNote}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAdminNote(e.target.value)}
             />
@@ -273,14 +275,14 @@ export function WithdrawalsManager() {
           {actionError && <p className="text-xs text-destructive">{actionError}</p>}
           <DialogFooter>
             <Button variant="outline" onClick={() => setActing(null)} disabled={busy}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               variant={acting?.kind === 'APPROVED' ? 'default' : 'destructive'}
               loading={busy}
               onClick={submitAction}
             >
-              {acting?.kind === 'APPROVED' ? 'Approve' : 'Reject'}
+              {acting?.kind === 'APPROVED' ? t('approve') : t('reject')}
             </Button>
           </DialogFooter>
         </DialogContent>

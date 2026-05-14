@@ -5,6 +5,7 @@
  * App name, maintenance mode, feature toggles.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Save } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,7 @@ function ToggleRow({ label, description, checked, onChange, disabled }: ToggleRo
 }
 
 export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRecord }) {
+  const t = useTranslations('admin.platformSettings');
   const [form,    setForm]    = useState(initial);
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
@@ -76,13 +78,13 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
-        throw new Error(d.error?.message ?? 'Save failed');
+        throw new Error(d.error?.message ?? t('saveFailed'));
       }
       const data = await res.json() as { settings: PlatformSettingsRecord };
       setForm(data.settings);
       setSaved(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -93,20 +95,20 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
       {/* General */}
       <Card>
         <CardHeader>
-          <p className="font-medium">General</p>
+          <p className="font-medium">{t('sectionGeneral')}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="app-name">Platform name</Label>
+            <Label htmlFor="app-name">{t('platformNameLabel')}</Label>
             <Input
               id="app-name"
               value={form.appName}
               onChange={(e) => set('appName', e.target.value)}
               maxLength={60}
-              placeholder="Metwork"
+              placeholder={t('platformNamePlaceholder')}
             />
             <p className="text-xs text-muted-foreground">
-              Shown in emails, page titles, and the browser tab.
+              {t('platformNameHint')}
             </p>
           </div>
         </CardContent>
@@ -115,24 +117,24 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
       {/* Feature flags */}
       <Card>
         <CardHeader>
-          <p className="font-medium">Feature flags</p>
+          <p className="font-medium">{t('sectionFeatureFlags')}</p>
         </CardHeader>
         <CardContent className="space-y-3">
           <ToggleRow
-            label="Maintenance mode"
-            description="Redirect all visitors to a maintenance page. Admins can still log in."
+            label={t('maintenanceModeLabel')}
+            description={t('maintenanceModeDescription')}
             checked={form.maintenanceMode}
             onChange={(v) => set('maintenanceMode', v)}
           />
           <ToggleRow
-            label="New signups"
-            description="Allow new users to register. Disable to pause user growth."
+            label={t('newSignupsLabel')}
+            description={t('newSignupsDescription')}
             checked={form.signupsEnabled}
             onChange={(v) => set('signupsEnabled', v)}
           />
           <ToggleRow
-            label="Payments"
-            description="Allow wallet top-ups and booking payments. Disable during maintenance."
+            label={t('paymentsLabel')}
+            description={t('paymentsDescription')}
             checked={form.paymentsEnabled}
             onChange={(v) => set('paymentsEnabled', v)}
           />
@@ -142,15 +144,15 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
       {/* Save button */}
       <div className="flex items-center gap-3">
         <Button loading={saving} onClick={save}>
-          <Save className="size-4" /> Save settings
+          <Save className="size-4" /> {t('saveSettings')}
         </Button>
-        {saved  && <p className="text-sm text-emerald-600">Settings saved.</p>}
+        {saved  && <p className="text-sm text-emerald-600">{t('settingsSaved')}</p>}
         {error  && <p className="text-sm text-destructive">{error}</p>}
       </div>
 
       {form.updatedAt && (
         <p className="text-xs text-muted-foreground">
-          Last updated: {new Date(form.updatedAt).toLocaleString()}
+          {t('lastUpdated', { date: new Date(form.updatedAt).toLocaleString() })}
         </p>
       )}
     </div>

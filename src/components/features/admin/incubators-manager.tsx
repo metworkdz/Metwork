@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Plus, Pencil, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,17 +34,6 @@ const STATUS_VARIANT: Record<IncubatorStatus, 'success' | 'warning' | 'danger'> 
   SUSPENDED: 'danger',
 };
 
-const STATUS_LABEL: Record<IncubatorStatus, string> = {
-  ACTIVE:    'Active',
-  INACTIVE:  'Inactive',
-  SUSPENDED: 'Suspended',
-};
-
-const SUB_LABEL: Record<IncubatorSubscription, string> = {
-  COMMISSION: 'Commission (20%)',
-  FLAT:       'Flat (6,000 DZD/mo)',
-};
-
 /* ─────────────────────────── Form dialog ─────────────────────────── */
 
 interface FormValues {
@@ -72,6 +62,7 @@ interface IncubatorFormDialogProps {
 }
 
 function IncubatorFormDialog({ open, editing, onClose, onSaved }: IncubatorFormDialogProps) {
+  const t = useTranslations('admin.incubatorsManager');
   const [form,     setForm]     = useState<FormValues>(defaultValues);
   const [saving,   setSaving]   = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -115,13 +106,13 @@ function IncubatorFormDialog({ open, editing, onClose, onSaved }: IncubatorFormD
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { error?: { message?: string } };
-        throw new Error(data.error?.message ?? 'Save failed');
+        throw new Error(data.error?.message ?? t('saveFailed'));
       }
       const record = await res.json() as IncubatorRecord;
       onSaved(record);
       onClose();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Save failed');
+      setErrorMsg(err instanceof Error ? err.message : t('saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -131,64 +122,64 @@ function IncubatorFormDialog({ open, editing, onClose, onSaved }: IncubatorFormD
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{editing ? 'Edit incubator' : 'Add incubator'}</DialogTitle>
+          <DialogTitle>{editing ? t('editTitle') : t('addTitle')}</DialogTitle>
           <DialogDescription>
-            {editing ? `Update details for ${editing.name}` : 'Register a new incubator on the platform.'}
+            {editing ? t('editDescription', { name: editing.name }) : t('addDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={submit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1.5">
-              <Label htmlFor="inc-name">Name</Label>
+              <Label htmlFor="inc-name">{t('fieldName')}</Label>
               <Input id="inc-name" value={form.name} onChange={(e) => set('name', e.target.value)}
-                placeholder="Oran Startup Hub" required disabled={saving} />
+                placeholder={t('namePlaceholder')} required disabled={saving} />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="inc-email">Email</Label>
+              <Label htmlFor="inc-email">{t('fieldEmail')}</Label>
               <Input id="inc-email" type="email" value={form.email}
                 onChange={(e) => set('email', e.target.value)}
-                placeholder="admin@incubator.dz" required disabled={saving} />
+                placeholder={t('emailPlaceholder')} required disabled={saving} />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="inc-phone">Phone</Label>
+              <Label htmlFor="inc-phone">{t('fieldPhone')}</Label>
               <Input id="inc-phone" type="tel" value={form.phone}
                 onChange={(e) => set('phone', e.target.value)}
-                placeholder="+213 555 00 00 00" required disabled={saving} dir="ltr" />
+                placeholder={t('phonePlaceholder')} required disabled={saving} dir="ltr" />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="inc-city">City</Label>
+              <Label htmlFor="inc-city">{t('fieldCity')}</Label>
               <Input id="inc-city" value={form.city} onChange={(e) => set('city', e.target.value)}
-                placeholder="Oran" required disabled={saving} />
+                placeholder={t('cityPlaceholder')} required disabled={saving} />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="inc-status">Status</Label>
+              <Label htmlFor="inc-status">{t('fieldStatus')}</Label>
               <Select value={form.status} onValueChange={(v) => set('status', v as IncubatorStatus)}>
                 <SelectTrigger id="inc-status" disabled={saving}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="INACTIVE">Inactive</SelectItem>
-                  <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                  <SelectItem value="ACTIVE">{t('statusActive')}</SelectItem>
+                  <SelectItem value="INACTIVE">{t('statusInactive')}</SelectItem>
+                  <SelectItem value="SUSPENDED">{t('statusSuspended')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="col-span-2 space-y-1.5">
-              <Label htmlFor="inc-sub">Subscription model</Label>
+              <Label htmlFor="inc-sub">{t('fieldSubscription')}</Label>
               <Select value={form.subscriptionCode}
                 onValueChange={(v) => set('subscriptionCode', v as IncubatorSubscription)}>
                 <SelectTrigger id="inc-sub" disabled={saving}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="COMMISSION">Commission-based (20% per booking)</SelectItem>
-                  <SelectItem value="FLAT">Flat subscription (6,000 DZD / month)</SelectItem>
+                  <SelectItem value="COMMISSION">{t('subCommission')}</SelectItem>
+                  <SelectItem value="FLAT">{t('subFlat')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -202,10 +193,10 @@ function IncubatorFormDialog({ open, editing, onClose, onSaved }: IncubatorFormD
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button type="submit" loading={saving}>
-              {editing ? 'Save changes' : 'Add incubator'}
+              {editing ? t('saveChanges') : t('addIncubator')}
             </Button>
           </DialogFooter>
         </form>
@@ -221,6 +212,7 @@ interface AdminIncubatorsManagerProps {
 }
 
 export function AdminIncubatorsManager({ initial }: AdminIncubatorsManagerProps) {
+  const t = useTranslations('admin.incubatorsManager');
   const [incubators, setIncubators] = useState<IncubatorRecord[]>(initial);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing,    setEditing]    = useState<IncubatorRecord | null>(null);
@@ -240,15 +232,26 @@ export function AdminIncubatorsManager({ initial }: AdminIncubatorsManagerProps)
     });
   }
 
+  const STATUS_LABEL: Record<IncubatorStatus, string> = {
+    ACTIVE:    t('statusActive'),
+    INACTIVE:  t('statusInactive'),
+    SUSPENDED: t('statusSuspended'),
+  };
+
+  const SUB_LABEL: Record<IncubatorSubscription, string> = {
+    COMMISSION: t('subCommissionShort'),
+    FLAT:       t('subFlatShort'),
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {incubators.length} incubator{incubators.length !== 1 ? 's' : ''} registered
+          {t('registeredCount', { count: incubators.length })}
         </p>
         <Button size="sm" onClick={openAdd}>
           <Plus className="size-4" />
-          Add incubator
+          {t('addIncubator')}
         </Button>
       </div>
 
@@ -256,12 +259,12 @@ export function AdminIncubatorsManager({ initial }: AdminIncubatorsManagerProps)
         <Card>
           <CardContent className="p-0">
             <InlineEmptyState
-              title="No incubators yet"
-              description="Add the first incubator to get started."
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
               action={
                 <Button size="sm" onClick={openAdd}>
                   <Plus className="size-4" />
-                  Add incubator
+                  {t('addIncubator')}
                 </Button>
               }
             />
@@ -285,12 +288,12 @@ export function AdminIncubatorsManager({ initial }: AdminIncubatorsManagerProps)
                       {inc.city} · {inc.email} · {inc.phone}
                     </p>
                     <p className="text-xs text-muted-foreground/70">
-                      {inc.subscriptionCode ? SUB_LABEL[inc.subscriptionCode] : 'Commission'} · Added {new Date(inc.createdAt).toLocaleDateString()}
+                      {inc.subscriptionCode ? SUB_LABEL[inc.subscriptionCode] : t('subCommissionShort')} · {t('addedDate', { date: new Date(inc.createdAt).toLocaleDateString() })}
                     </p>
                   </div>
                   <Button size="sm" variant="outline" className="shrink-0" onClick={() => openEdit(inc)}>
                     <Pencil className="size-3" />
-                    Edit
+                    {t('edit')}
                   </Button>
                 </div>
               </CardContent>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Building2, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
@@ -19,6 +19,7 @@ const categoryLabel: Record<SpaceCategory, string> = {
 
 export function SpacesManager() {
   const locale = useLocale() as Locale;
+  const t      = useTranslations('incubator.spaces');
   const [rows, setRows] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -76,7 +77,7 @@ export function SpacesManager() {
   const columns: ListingColumn<Space>[] = [
     {
       key: 'name',
-      label: 'Space',
+      label: t('colSpace'),
       render: (s) => (
         <div>
           <div className="font-medium">{s.name}</div>
@@ -86,17 +87,17 @@ export function SpacesManager() {
     },
     {
       key: 'category',
-      label: 'Category',
+      label: t('colCategory'),
       render: (s) => <Badge variant="outline">{categoryLabel[s.category]}</Badge>,
     },
     {
       key: 'capacity',
-      label: 'Capacity',
+      label: t('colCapacity'),
       render: (s) => `${s.capacity} seats`,
     },
     {
       key: 'pricing',
-      label: 'Pricing',
+      label: t('colPricing'),
       align: 'end',
       render: (s) => (
         <div className="text-end text-sm">
@@ -118,7 +119,7 @@ export function SpacesManager() {
     },
     {
       key: 'payment',
-      label: 'Payment',
+      label: t('colPayment'),
       render: (s) => (
         <span className="text-xs text-muted-foreground">
           {(s.acceptedPaymentMethods ?? ['ONLINE']).join(' · ')}
@@ -152,17 +153,17 @@ export function SpacesManager() {
         rowKey={(s) => s.id}
         createSlot={<SpaceFormDialog onCreated={() => void fetchSpaces()} cashEnabled={cashEnabled} />}
         emptyIcon={<Building2 className="size-5 text-muted-foreground" />}
-        emptyTitle="No spaces yet"
-        emptyDescription="Add coworking floors, private offices, or training rooms."
+        emptyTitle={t('emptyTitle')}
+        emptyDescription={t('emptyDescription')}
         // FIX: BUG-2 — real edit/delete actions
         actions={[
           {
-            label: 'Edit',
+            label: t('actionEdit'),
             icon: <Pencil className="size-4" />,
             onSelect: (s) => setEditingSpace(s),
           },
           {
-            label: 'Delete',
+            label: t('actionDelete'),
             icon: <Trash2 className="size-4" />,
             onSelect: (s) => void handleDelete(s.id),
             destructive: true,

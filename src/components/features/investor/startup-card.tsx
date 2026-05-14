@@ -1,7 +1,10 @@
+'use client';
+
 /**
  * Marketplace card displaying a startup to potential investors.
  * Pure presentation — investors take action via the parent's callbacks.
  */
+import { useTranslations } from 'next-intl';
 import { Building2, MapPin, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,14 +13,6 @@ import { formatCurrency } from '@/lib/format';
 import type { Startup } from '@/types/domain';
 import type { Locale } from '@/i18n/config';
 
-const stageLabels: Record<Startup['stage'], string> = {
-  IDEA: 'Idea',
-  PRE_SEED: 'Pre-seed',
-  SEED: 'Seed',
-  SERIES_A: 'Series A',
-  GROWTH: 'Growth',
-};
-
 interface StartupCardProps {
   startup: Startup;
   locale: Locale;
@@ -25,6 +20,16 @@ interface StartupCardProps {
 }
 
 export function StartupCard({ startup, locale, onRequestMeeting }: StartupCardProps) {
+  const t = useTranslations('investor.startups');
+
+  const stageLabels: Record<Startup['stage'], string> = {
+    IDEA:     t('stageIdea'),
+    PRE_SEED: t('stagePreSeed'),
+    SEED:     t('stageSeed'),
+    SERIES_A: t('stageSeriesA'),
+    GROWTH:   t('stageGrowth'),
+  };
+
   return (
     <Card className="flex flex-col transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md">
       <CardContent className="flex-1 p-6">
@@ -34,7 +39,7 @@ export function StartupCard({ startup, locale, onRequestMeeting }: StartupCardPr
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-base font-semibold">{startup.name}</h3>
-            <p className="text-xs text-muted-foreground">by {startup.founderName}</p>
+            <p className="text-xs text-muted-foreground">{t('by')} {startup.founderName}</p>
           </div>
           <Badge variant="primary">{stageLabels[startup.stage]}</Badge>
         </div>
@@ -48,20 +53,20 @@ export function StartupCard({ startup, locale, onRequestMeeting }: StartupCardPr
 
         <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
           <div>
-            <dt className="text-xs text-muted-foreground">Sector</dt>
+            <dt className="text-xs text-muted-foreground">{t('sector')}</dt>
             <dd className="mt-0.5 font-medium">{startup.sector}</dd>
           </div>
           <div>
             <dt className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <MapPin className="size-3" />
-              City
+              {t('city')}
             </dt>
             <dd className="mt-0.5 font-medium">{startup.city}</dd>
           </div>
           <div>
             <dt className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <TrendingUp className="size-3" />
-              Asking
+              {t('asking')}
             </dt>
             <dd className="mt-0.5 font-medium tabular-nums">
               {formatCurrency(startup.fundingAsk, locale)}
@@ -69,7 +74,7 @@ export function StartupCard({ startup, locale, onRequestMeeting }: StartupCardPr
           </div>
           {startup.valuation != null && (
             <div>
-              <dt className="text-xs text-muted-foreground">Valuation</dt>
+              <dt className="text-xs text-muted-foreground">{t('valuation')}</dt>
               <dd className="mt-0.5 font-medium tabular-nums">
                 {formatCurrency(startup.valuation, locale)}
               </dd>
@@ -84,7 +89,7 @@ export function StartupCard({ startup, locale, onRequestMeeting }: StartupCardPr
           className="w-full"
           onClick={() => onRequestMeeting?.(startup.id)}
         >
-          Request meeting
+          {t('requestMeeting')}
         </Button>
       </CardFooter>
     </Card>

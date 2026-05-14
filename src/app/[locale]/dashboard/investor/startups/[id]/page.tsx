@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { ArrowLeft, BarChart3, Percent, Target, User } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,7 +26,11 @@ function formatDZD(amount: number) {
 export default async function InvestorStartupDetailPage({ params }: PageProps) {
   const { locale, id } = await params;
   setRequestLocale(locale);
-  const user = await requireRole(['INVESTOR']);
+
+  const [user, t] = await Promise.all([
+    requireRole(['INVESTOR']),
+    getTranslations('pages.dashboard.investor.startupDetail'),
+  ]);
 
   const record = await findStartupById(id);
   if (!record || record.status !== 'ACTIVE') notFound();
@@ -40,10 +44,10 @@ export default async function InvestorStartupDetailPage({ params }: PageProps) {
   );
 
   const metrics = [
-    { icon: Target,   label: 'Funding goal',          value: formatDZD(startup.fundingGoal)   },
-    { icon: Percent,  label: 'Equity offered',         value: `${startup.equityOffered}%`       },
+    { icon: Target,   label: t('metricFundingGoal'),        value: formatDZD(startup.fundingGoal)   },
+    { icon: Percent,  label: t('metricEquityOffered'),       value: `${startup.equityOffered}%`       },
     ...(startup.valuation
-      ? [{ icon: BarChart3, label: 'Pre-money valuation', value: formatDZD(startup.valuation) }]
+      ? [{ icon: BarChart3, label: t('metricPreMoneyValuation'), value: formatDZD(startup.valuation) }]
       : []),
   ];
 
@@ -58,7 +62,7 @@ export default async function InvestorStartupDetailPage({ params }: PageProps) {
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="size-4 rtl:rotate-180" />
-            Back to marketplace
+            {t('backToMarketplace')}
           </Link>
         }
       />
@@ -69,7 +73,7 @@ export default async function InvestorStartupDetailPage({ params }: PageProps) {
       {/* Description */}
       <Card>
         <CardContent className="p-6">
-          <h2 className="text-sm font-semibold text-muted-foreground mb-2">About</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-2">{t('aboutHeading')}</h2>
           <p className="text-sm leading-relaxed whitespace-pre-line">{startup.description}</p>
         </CardContent>
       </Card>
@@ -96,7 +100,7 @@ export default async function InvestorStartupDetailPage({ params }: PageProps) {
             <User className="size-5" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Founder</p>
+            <p className="text-xs text-muted-foreground">{t('founderLabel')}</p>
             <p className="text-sm font-medium">{founder.fullName}</p>
             <p className="text-xs text-muted-foreground">{founder.city}</p>
           </div>

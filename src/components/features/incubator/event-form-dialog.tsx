@@ -6,6 +6,7 @@
  * PATCH /api/incubator/events/[id]  (edit)
  */
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,7 @@ interface EventFormDialogProps {
 }
 
 export function EventFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange, cashEnabled = true }: EventFormDialogProps) {
+  const t = useTranslations('incubator.eventForm');
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -114,14 +116,14 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { message?: string };
-        setError(data.message ?? (editId ? 'Failed to update event.' : 'Failed to create event.'));
+        setError(data.message ?? (editId ? t('errorUpdate') : t('errorCreate')));
         return;
       }
       onCreated();
       setOpen(false);
       reset();
     } catch {
-      setError('Network error — try again.');
+      setError(t('errorNetwork'));
     } finally {
       setSubmitting(false);
     }
@@ -134,40 +136,38 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
         <DialogTrigger asChild>
           <Button size="sm" className="gap-1.5">
             <PlusCircle className="size-4" />
-            Add event
+            {t('addEvent')}
           </Button>
         </DialogTrigger>
       )}
 
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{editId ? 'Edit event' : 'New event'}</DialogTitle>
+          <DialogTitle>{editId ? t('titleEdit') : t('titleNew')}</DialogTitle>
           <DialogDescription>
-            {editId
-              ? 'Update the details for this event listing.'
-              : 'Create a networking event, demo day, or workshop.'}
+            {editId ? t('descriptionEdit') : t('descriptionNew')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4 py-2">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Label htmlFor="ev-title">Title</Label>
+              <Label htmlFor="ev-title">{t('labelTitle')}</Label>
               <Input id="ev-title" className="mt-1" value={title} onChange={(e) => setTitle(e.target.value)} required minLength={2} />
             </div>
             <div>
-              <Label htmlFor="ev-city">City</Label>
+              <Label htmlFor="ev-city">{t('labelCity')}</Label>
               {/* FIX: BUG-4 — searchable wilaya dropdown */}
               <div className="mt-1">
                 <AlgerianCitySelect id="ev-city" value={city} onChange={setCity} required />
               </div>
             </div>
             <div>
-              <Label htmlFor="ev-date">Event date</Label>
+              <Label htmlFor="ev-date">{t('labelEventDate')}</Label>
               <Input id="ev-date" type="date" className="mt-1" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="ev-desc">Description</Label>
+              <Label htmlFor="ev-desc">{t('labelDescription')}</Label>
               <textarea
                 id="ev-desc"
                 className="mt-1 min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -179,7 +179,7 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
             </div>
             <div className="sm:col-span-2">
               <ImageUploadField
-                label="Event banner (optional)"
+                label={t('labelBanner')}
                 currentUrl={imageUrl || null}
                 onUpload={(url) => setImageUrl(url)}
                 onRemove={() => setImageUrl('')}
@@ -189,11 +189,11 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="ev-price">Ticket price (DZD, 0 = free)</Label>
+              <Label htmlFor="ev-price">{t('labelTicketPrice')}</Label>
               <Input id="ev-price" type="number" min="0" className="mt-1" value={price} onChange={(e) => setPrice(e.target.value)} />
             </div>
             <div>
-              <Label htmlFor="ev-cap">Capacity</Label>
+              <Label htmlFor="ev-cap">{t('labelCapacity')}</Label>
               <Input id="ev-cap" type="number" min="1" className="mt-1" value={capacity} onChange={(e) => setCapacity(e.target.value)} required />
             </div>
           </div>
@@ -206,11 +206,11 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
               checked={isOnline}
               onChange={(e) => setIsOnline(e.target.checked)}
             />
-            <Label htmlFor="ev-online" className="cursor-pointer text-sm">Online event (virtual)</Label>
+            <Label htmlFor="ev-online" className="cursor-pointer text-sm">{t('labelOnlineEvent')}</Label>
           </div>
 
           <div>
-            <p className="text-sm font-medium">Accepted payment methods</p>
+            <p className="text-sm font-medium">{t('labelPaymentMethods')}</p>
             <div className="mt-1.5 flex gap-3">
               {(['ONLINE', 'CASH'] as const).map((m) => {
                 // FIX: BUG-5 — hide CASH button when cash is not allowed for this subscription
@@ -227,7 +227,7 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
                         : 'border-border text-muted-foreground hover:border-primary/40',
                     )}
                   >
-                    {m === 'ONLINE' ? 'Online (wallet)' : 'Cash at door'}
+                    {m === 'ONLINE' ? t('methodOnline') : t('methodCash')}
                   </button>
                 );
               })}
@@ -242,7 +242,7 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
 
           <DialogFooter>
             <Button type="submit" loading={submitting}>
-              {submitting ? (editId ? 'Saving…' : 'Creating…') : (editId ? 'Save changes' : 'Create event')}
+              {submitting ? (editId ? t('saving') : t('creating')) : (editId ? t('saveChanges') : t('createEvent'))}
             </Button>
           </DialogFooter>
         </form>

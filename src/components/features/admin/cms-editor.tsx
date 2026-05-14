@@ -8,6 +8,7 @@
  * The form mirrors the landing page layout so what-you-type = what-you-see.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ExternalLink, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,23 +21,24 @@ import type { LandingContent, FeatureItem, RoleItem } from '@/types/cms';
 
 type TabKey = 'hero' | 'stats' | 'features' | 'roles' | 'cta';
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'hero',     label: 'Hero' },
-  { key: 'stats',    label: 'Stats' },
-  { key: 'features', label: 'Features' },
-  { key: 'roles',    label: 'Roles' },
-  { key: 'cta',      label: 'CTA' },
-];
-
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
 /* ─────────────────────────── Main component ─────────────────────────── */
 
 export function CmsEditor({ initial }: { initial: LandingContent }) {
+  const t = useTranslations('admin.cmsEditor');
   const [content, setContent] = useState<LandingContent>(initial);
   const [activeTab, setActiveTab] = useState<TabKey>('hero');
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const TABS: { key: TabKey; label: string }[] = [
+    { key: 'hero',     label: t('tabHero') },
+    { key: 'stats',    label: t('tabStats') },
+    { key: 'features', label: t('tabFeatures') },
+    { key: 'roles',    label: t('tabRoles') },
+    { key: 'cta',      label: t('tabCta') },
+  ];
 
   /* Generic section updater */
   function setSection<K extends keyof LandingContent>(
@@ -60,7 +62,7 @@ export function CmsEditor({ initial }: { initial: LandingContent }) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { error?: { message?: string } };
-        setSaveError(data.error?.message ?? 'Save failed. Please try again.');
+        setSaveError(data.error?.message ?? t('saveFailedError'));
         setSaveState('error');
         return;
       }
@@ -70,15 +72,15 @@ export function CmsEditor({ initial }: { initial: LandingContent }) {
       // Reset to idle after 3 s
       setTimeout(() => setSaveState('idle'), 3000);
     } catch {
-      setSaveError('Network error. Please check your connection.');
+      setSaveError(t('networkError'));
       setSaveState('error');
     }
   }
 
   const updatedLabel =
     content.updatedAt && content.updatedAt !== new Date(0).toISOString()
-      ? `Last saved ${new Date(content.updatedAt).toLocaleString()}`
-      : 'Using defaults — not yet saved';
+      ? t('lastSaved', { date: new Date(content.updatedAt).toLocaleString() })
+      : t('usingDefaults');
 
   return (
     <div className="space-y-5">
@@ -89,7 +91,7 @@ export function CmsEditor({ initial }: { initial: LandingContent }) {
           <Button variant="outline" size="sm" asChild>
             <a href="/" target="_blank" rel="noreferrer">
               <ExternalLink className="size-3.5" />
-              Preview
+              {t('preview')}
             </a>
           </Button>
           <Button
@@ -101,7 +103,7 @@ export function CmsEditor({ initial }: { initial: LandingContent }) {
             )}
           >
             <Save className="size-3.5" />
-            {saveState === 'saved' ? 'Published!' : 'Publish changes'}
+            {saveState === 'saved' ? t('published') : t('publishChanges')}
           </Button>
         </div>
       </div>
@@ -235,21 +237,23 @@ function HeroPanel({
   hero: LandingContent['hero'];
   onChange: (v: LandingContent['hero']) => void;
 }) {
+  const t = useTranslations('admin.cmsEditor');
+
   function set<K extends keyof typeof hero>(key: K, value: string) {
     onChange({ ...hero, [key]: value });
   }
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Badge & headline">
-        <Field label="Badge text"         value={hero.badge}    onChange={(v) => set('badge', v)}    maxLength={80} />
-        <Field label="Title"              value={hero.title}    onChange={(v) => set('title', v)}    maxLength={120} />
-        <Field label="Subtitle"           value={hero.subtitle} onChange={(v) => set('subtitle', v)} maxLength={400} multiline />
+      <SectionCard title={t('heroBadgeHeadline')}>
+        <Field label={t('heroBadgeText')}  value={hero.badge}    onChange={(v) => set('badge', v)}    maxLength={80} />
+        <Field label={t('heroTitle')}      value={hero.title}    onChange={(v) => set('title', v)}    maxLength={120} />
+        <Field label={t('heroSubtitle')}   value={hero.subtitle} onChange={(v) => set('subtitle', v)} maxLength={400} multiline />
       </SectionCard>
-      <SectionCard title="Call-to-action buttons">
+      <SectionCard title={t('heroCtaButtons')}>
         <FieldGroup>
-          <Field label="Primary CTA"   value={hero.ctaPrimary}   onChange={(v) => set('ctaPrimary', v)}   maxLength={60} />
-          <Field label="Secondary CTA" value={hero.ctaSecondary} onChange={(v) => set('ctaSecondary', v)} maxLength={60} />
+          <Field label={t('heroPrimaryCta')}   value={hero.ctaPrimary}   onChange={(v) => set('ctaPrimary', v)}   maxLength={60} />
+          <Field label={t('heroSecondaryCta')} value={hero.ctaSecondary} onChange={(v) => set('ctaSecondary', v)} maxLength={60} />
         </FieldGroup>
       </SectionCard>
     </div>
@@ -265,6 +269,7 @@ function StatsPanel({
   stats: LandingContent['stats'];
   onChange: (v: LandingContent['stats']) => void;
 }) {
+  const t = useTranslations('admin.cmsEditor');
   type StatKey = keyof LandingContent['stats'];
 
   function setItem(key: StatKey, field: 'value' | 'label', v: string) {
@@ -279,13 +284,13 @@ function StatsPanel({
         <SectionCard key={key} title={key.charAt(0).toUpperCase() + key.slice(1)}>
           <FieldGroup>
             <Field
-              label="Value (e.g. 500+)"
+              label={t('statsValue')}
               value={stats[key].value}
               onChange={(v) => setItem(key, 'value', v)}
               maxLength={20}
             />
             <Field
-              label="Label (e.g. Founders)"
+              label={t('statsLabel')}
               value={stats[key].label}
               onChange={(v) => setItem(key, 'label', v)}
               maxLength={60}
@@ -306,6 +311,8 @@ function FeaturesPanel({
   features: LandingContent['features'];
   onChange: (v: LandingContent['features']) => void;
 }) {
+  const t = useTranslations('admin.cmsEditor');
+
   function setItem(idx: number, patch: Partial<FeatureItem>) {
     const items = features.items.map((item, i) =>
       i === idx ? { ...item, ...patch } : item,
@@ -315,21 +322,21 @@ function FeaturesPanel({
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Section header">
-        <Field label="Section title"    value={features.title}    onChange={(v) => onChange({ ...features, title: v })}    maxLength={120} />
-        <Field label="Section subtitle" value={features.subtitle} onChange={(v) => onChange({ ...features, subtitle: v })} maxLength={200} multiline />
+      <SectionCard title={t('sectionHeader')}>
+        <Field label={t('sectionTitle')}    value={features.title}    onChange={(v) => onChange({ ...features, title: v })}    maxLength={120} />
+        <Field label={t('sectionSubtitle')} value={features.subtitle} onChange={(v) => onChange({ ...features, subtitle: v })} maxLength={200} multiline />
       </SectionCard>
 
       {features.items.map((item, idx) => (
-        <SectionCard key={item.key} title={`Feature — ${item.key}`}>
+        <SectionCard key={item.key} title={`${t('featurePrefix')} — ${item.key}`}>
           <Field
-            label="Title"
+            label={t('itemTitle')}
             value={item.title}
             onChange={(v) => setItem(idx, { title: v })}
             maxLength={100}
           />
           <Field
-            label="Description"
+            label={t('itemDescription')}
             value={item.description}
             onChange={(v) => setItem(idx, { description: v })}
             maxLength={300}
@@ -350,6 +357,8 @@ function RolesPanel({
   roles: LandingContent['roles'];
   onChange: (v: LandingContent['roles']) => void;
 }) {
+  const t = useTranslations('admin.cmsEditor');
+
   function setItem(idx: number, patch: Partial<RoleItem>) {
     const items = roles.items.map((item, i) =>
       i === idx ? { ...item, ...patch } : item,
@@ -359,9 +368,9 @@ function RolesPanel({
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Section header">
+      <SectionCard title={t('sectionHeader')}>
         <Field
-          label="Section title"
+          label={t('sectionTitle')}
           value={roles.title}
           onChange={(v) => onChange({ ...roles, title: v })}
           maxLength={120}
@@ -369,15 +378,15 @@ function RolesPanel({
       </SectionCard>
 
       {roles.items.map((item, idx) => (
-        <SectionCard key={item.key} title={`Role — ${item.key}`}>
+        <SectionCard key={item.key} title={`${t('rolePrefix')} — ${item.key}`}>
           <Field
-            label="Title"
+            label={t('itemTitle')}
             value={item.title}
             onChange={(v) => setItem(idx, { title: v })}
             maxLength={100}
           />
           <Field
-            label="Description"
+            label={t('itemDescription')}
             value={item.description}
             onChange={(v) => setItem(idx, { description: v })}
             maxLength={300}
@@ -398,15 +407,17 @@ function CtaPanel({
   cta: LandingContent['cta'];
   onChange: (v: LandingContent['cta']) => void;
 }) {
+  const t = useTranslations('admin.cmsEditor');
+
   function set<K extends keyof typeof cta>(key: K, value: string) {
     onChange({ ...cta, [key]: value });
   }
 
   return (
-    <SectionCard title="Bottom CTA banner">
-      <Field label="Title"       value={cta.title}    onChange={(v) => set('title', v)}    maxLength={160} />
-      <Field label="Subtitle"    value={cta.subtitle} onChange={(v) => set('subtitle', v)} maxLength={300} multiline />
-      <Field label="Button text" value={cta.button}   onChange={(v) => set('button', v)}   maxLength={60} />
+    <SectionCard title={t('ctaBanner')}>
+      <Field label={t('ctaTitle')}      value={cta.title}    onChange={(v) => set('title', v)}    maxLength={160} />
+      <Field label={t('ctaSubtitle')}   value={cta.subtitle} onChange={(v) => set('subtitle', v)} maxLength={300} multiline />
+      <Field label={t('ctaButtonText')} value={cta.button}   onChange={(v) => set('button', v)}   maxLength={60} />
     </SectionCard>
   );
 }

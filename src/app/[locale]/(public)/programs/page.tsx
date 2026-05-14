@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ProgramsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('pages.programs');
 
   const programs = await listPrograms();
 
@@ -57,12 +58,34 @@ export default async function ProgramsPage({ params }: PageProps) {
     ? Math.ceil((Date.parse(closingNext.deadline) - now) / 86_400_000)
     : null;
 
+  const cohortsBadge = openNow === 1 ? t('cohortsAcceptingOne') : t('cohortsAcceptingMany', { count: openNow });
+  const deadlineBadge = closingDays != null && closingDays <= 14
+    ? closingDays === 1
+      ? t('deadlineClosingOne')
+      : t('deadlineClosingMany', { count: closingDays })
+    : null;
+
+  const hosts = new Set(programs.map((p) => p.incubatorId)).size;
+  const free = programs.filter((p) => p.price === 0).length;
+  const statsItems = [
+    { label: t('statsPrograms'), value: programs.length },
+    { label: t('statsHosts'),    value: hosts },
+    { label: t('statsCities'),   value: cities.length },
+    { label: t('statsFree'),     value: free },
+  ];
+
   return (
     <>
-      <ProgramsHero openNow={openNow} closingDays={closingDays} />
+      <ProgramsHero
+        eyebrow={t('heroEyebrow')}
+        headline={t('heroHeadline')}
+        subheadline={t('heroSubheadline')}
+        cohortsBadge={cohortsBadge}
+        deadlineBadge={deadlineBadge}
+      />
       <section className="border-y border-border/60 bg-muted/20 py-6">
         <Container>
-          <Stats programs={programs} cityCount={cities.length} />
+          <Stats items={statsItems} />
         </Container>
       </section>
       <section className="py-10 sm:py-14">
@@ -79,11 +102,17 @@ export default async function ProgramsPage({ params }: PageProps) {
 }
 
 function ProgramsHero({
-  openNow,
-  closingDays,
+  eyebrow,
+  headline,
+  subheadline,
+  cohortsBadge,
+  deadlineBadge,
 }: {
-  openNow: number;
-  closingDays: number | null;
+  eyebrow: string;
+  headline: string;
+  subheadline: string;
+  cohortsBadge: string;
+  deadlineBadge: string | null;
 }) {
   return (
     <section className="relative overflow-hidden border-b border-border/60 bg-foreground text-background">
@@ -98,23 +127,22 @@ function ProgramsHero({
             className="gap-1 border-primary-300 bg-primary-50/10 text-primary-100"
           >
             <Flame className="size-3" />
-            Programs marketplace
+            {eyebrow}
           </Badge>
           <h1 className="mt-5 max-w-3xl text-balance text-4xl font-semibold tracking-tight sm:text-6xl">
-            Build the next great Algerian startup.
+            {headline}
           </h1>
           <p className="mt-5 max-w-2xl text-balance text-base text-background/70 sm:text-lg">
-            Acceleration, incubation, and bootcamps from Algeria&apos;s most
-            ambitious operators. Apply once — pay from your wallet — and you&apos;re in the room.
+            {subheadline}
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3 text-sm">
             <Badge variant="outline" className="gap-1.5 border-background/30 bg-background/10 text-background">
               <Sparkles className="size-3" />
-              {openNow} cohort{openNow === 1 ? '' : 's'} accepting now
+              {cohortsBadge}
             </Badge>
-            {closingDays != null && closingDays <= 14 && (
+            {deadlineBadge != null && (
               <Badge variant="warning" className="gap-1">
-                Next deadline closes in {closingDays} day{closingDays === 1 ? '' : 's'}
+                {deadlineBadge}
               </Badge>
             )}
           </div>
@@ -124,21 +152,7 @@ function ProgramsHero({
   );
 }
 
-function Stats({
-  programs,
-  cityCount,
-}: {
-  programs: Awaited<ReturnType<typeof listPrograms>>;
-  cityCount: number;
-}) {
-  const hosts = new Set(programs.map((p) => p.incubatorId)).size;
-  const free = programs.filter((p) => p.price === 0).length;
-  const items = [
-    { label: 'Programs', value: programs.length },
-    { label: 'Hosts', value: hosts },
-    { label: 'Cities', value: cityCount },
-    { label: 'Free to apply', value: free },
-  ];
+function Stats({ items }: { items: { label: string; value: number }[] }) {
   return (
     <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       {items.map((s) => (

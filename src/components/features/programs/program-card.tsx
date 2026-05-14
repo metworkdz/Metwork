@@ -1,7 +1,10 @@
+'use client';
+
 /**
  * Program card. FI.co-style: prominent type label, cohort dates strip,
  * deadline countdown chip, and a strong "Apply" affordance.
  */
+import { useTranslations } from 'next-intl';
 import { ArrowRight, CalendarRange, MapPin, Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,21 +30,20 @@ function daysUntil(iso: string): number {
   return Math.ceil(ms / (24 * 3600 * 1000));
 }
 
-function deadlineChip(deadline: string) {
-  const days = daysUntil(deadline);
-  if (days < 0) return { label: 'Closed', variant: 'default' as const };
-  if (days === 0) return { label: 'Closes today', variant: 'danger' as const };
-  if (days <= 3) return { label: `Closes in ${days}d`, variant: 'danger' as const };
-  if (days <= 7) return { label: `Closes in ${days}d`, variant: 'warning' as const };
-  return { label: `Closes in ${days}d`, variant: 'outline' as const };
-}
-
 export function ProgramCard({ program, taken, locale, onSelect, featured }: ProgramCardProps) {
+  const t = useTranslations('programs.card');
   const occupied = taken ?? program.seatsTaken;
   const remaining = Math.max(0, program.seatsTotal - occupied);
   const fillPct = Math.min(100, Math.round((occupied / program.seatsTotal) * 100));
-  const dl = deadlineChip(program.deadline);
-  const closed = daysUntil(program.deadline) < 0 || remaining === 0;
+  const days = daysUntil(program.deadline);
+  const dl = ((): { label: string; variant: 'default' | 'danger' | 'warning' | 'outline' } => {
+    if (days < 0) return { label: t('closed'), variant: 'default' };
+    if (days === 0) return { label: t('closesToday'), variant: 'danger' };
+    if (days <= 3) return { label: t('closesIn', { count: days }), variant: 'danger' };
+    if (days <= 7) return { label: t('closesIn', { count: days }), variant: 'warning' };
+    return { label: t('closesIn', { count: days }), variant: 'outline' };
+  })();
+  const closed = days < 0 || remaining === 0;
 
   return (
     <Card
@@ -111,12 +113,12 @@ export function ProgramCard({ program, taken, locale, onSelect, featured }: Prog
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <Users className="size-3" />
-              {occupied}/{program.seatsTotal} enrolled
+              {t('enrolled', { count: occupied })}
             </span>
             {remaining > 0 ? (
-              <span className="font-medium text-foreground">{remaining} seats left</span>
+              <span className="font-medium text-foreground">{t('seatsLeft', { count: remaining })}</span>
             ) : (
-              <span className="font-medium text-destructive">Full</span>
+              <span className="font-medium text-destructive">{t('full')}</span>
             )}
           </div>
           <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -132,10 +134,10 @@ export function ProgramCard({ program, taken, locale, onSelect, featured }: Prog
 
         <div className="mt-5 flex items-end justify-between pt-1">
           <div>
-            <p className="text-xs text-muted-foreground">Application fee</p>
+            <p className="text-xs text-muted-foreground">{t('applicationFee')}</p>
             <p className="text-lg font-semibold tabular-nums">
               {program.price === 0 ? (
-                <span className="text-emerald-700">Free</span>
+                <span className="text-emerald-700">{t('free')}</span>
               ) : (
                 formatCurrency(program.price, locale)
               )}
@@ -147,7 +149,7 @@ export function ProgramCard({ program, taken, locale, onSelect, featured }: Prog
               closed ? 'text-muted-foreground' : 'text-primary-700 group-hover:underline',
             )}
           >
-            {closed ? 'View details' : 'Apply now'}
+            {closed ? t('viewDetails') : t('applyNow')}
             <ArrowRight className="size-4 rtl:rotate-180" />
           </span>
         </div>

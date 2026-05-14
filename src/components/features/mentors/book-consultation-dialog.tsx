@@ -13,6 +13,7 @@
  * Success panel clearly says "pending approval" (not "confirmed").
  */
 import { useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Clock, Calendar, Timer, Tag, Check, AlertCircle, DollarSign } from 'lucide-react';
 import {
   Dialog,
@@ -74,6 +75,7 @@ export function BookConsultationDialog({
   open,
   onOpenChange,
 }: BookConsultationDialogProps) {
+  const t = useTranslations('mentors.bookConsultation');
   const [name,        setName]        = useState('');
   const [email,       setEmail]       = useState('');
   const [phone,       setPhone]       = useState('');
@@ -120,7 +122,7 @@ export function BookConsultationDialog({
     const code = promoCode.trim();
     if (!code) return;
     if (basePrice === 0) {
-      setPromoError('No fee to discount — consultation is already free.');
+      setPromoError(t('promoAlreadyFree'));
       setPromoState('invalid');
       return;
     }
@@ -145,7 +147,7 @@ export function BookConsultationDialog({
 
       if (!data.valid) {
         setPromoState('invalid');
-        setPromoError(data.error ?? 'Invalid promo code');
+        setPromoError(data.error ?? t('promoInvalid'));
         setPromoDiscount(0);
         setPromoFixed(0);
       } else {
@@ -161,7 +163,7 @@ export function BookConsultationDialog({
       }
     } catch {
       setPromoState('invalid');
-      setPromoError('Could not validate code. Check your connection.');
+      setPromoError(t('promoValidateError'));
     }
   }, [promoCode, basePrice]);
 
@@ -174,7 +176,7 @@ export function BookConsultationDialog({
       const scheduled = new Date(`${consultDate}T${consultTime}:00`);
       const minTime   = new Date(Date.now() + 24 * 60 * 60 * 1000);
       if (scheduled < minTime) {
-        setErrorMsg('Please choose a date and time at least 24 hours from now.');
+        setErrorMsg(t('errorDateTooSoon'));
         setFormState('error');
         return;
       }
@@ -204,19 +206,19 @@ export function BookConsultationDialog({
       });
 
       if (res.status === 401) {
-        setErrorMsg('Please log in to book a consultation.');
+        setErrorMsg(t('errorLoginRequired'));
         setFormState('error');
         return;
       }
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { error?: { message?: string } };
-        setErrorMsg(data.error?.message ?? 'Something went wrong. Please try again.');
+        setErrorMsg(data.error?.message ?? t('errorGeneric'));
         setFormState('error');
         return;
       }
       setFormState('success');
     } catch {
-      setErrorMsg('Network error. Please check your connection.');
+      setErrorMsg(t('errorNetwork'));
       setFormState('error');
     }
   }
@@ -232,12 +234,10 @@ export function BookConsultationDialog({
             <div className="flex size-14 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-950">
               <Clock className="size-7 text-amber-600 dark:text-amber-400" />
             </div>
-            <h2 className="mt-4 text-lg font-semibold">Request submitted!</h2>
-            <Badge variant="warning" className="mt-2">Pending review</Badge>
+            <h2 className="mt-4 text-lg font-semibold">{t('successTitle')}</h2>
+            <Badge variant="warning" className="mt-2">{t('pendingReview')}</Badge>
             <p className="mt-3 text-sm text-muted-foreground max-w-xs">
-              Your consultation request with{' '}
-              <span className="font-medium text-foreground">{mentor.fullName}</span>{' '}
-              has been submitted. You will receive an email once it has been reviewed.
+              {t('successMessage', { mentorName: mentor.fullName })}
             </p>
             {consultDate && (
               <div className="mt-4 flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-4 py-2.5 text-sm text-muted-foreground">
@@ -250,16 +250,16 @@ export function BookConsultationDialog({
             )}
             {promoState === 'valid' && discountAmt > 0 && (
               <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-400">
-                🎉 Promo code applied — {formatDZD(discountAmt)} discount!
+                {t('promoApplied', { amount: formatDZD(discountAmt) })}
               </p>
             )}
             {feePerHour > 0 && (
               <p className="mt-2 text-xs text-muted-foreground">
-                {isFree ? 'Free session (promo applied)' : `Estimated fee: ${formatDZD(finalPrice)}`}
+                {isFree ? t('freeSession') : t('estimatedFee', { fee: formatDZD(finalPrice) })}
               </p>
             )}
             <Button className="mt-6" onClick={() => handleOpenChange(false)}>
-              Done
+              {t('done')}
             </Button>
           </div>
         ) : (
@@ -275,9 +275,9 @@ export function BookConsultationDialog({
                   />
                 )}
                 <div>
-                  <DialogTitle>Book a consultation</DialogTitle>
+                  <DialogTitle>{t('dialogTitle')}</DialogTitle>
                   <DialogDescription>
-                    with {mentor.fullName} · {mentor.position}
+                    {t('dialogWith', { name: mentor.fullName, position: mentor.position })}
                   </DialogDescription>
                 </div>
               </div>
@@ -286,19 +286,19 @@ export function BookConsultationDialog({
             <form onSubmit={onSubmit} className="space-y-4">
               {/* Personal info */}
               <div className="space-y-1.5">
-                <Label htmlFor="bc-name">Full name</Label>
+                <Label htmlFor="bc-name">{t('fullNameLabel')}</Label>
                 <Input
                   id="bc-name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Your full name"
+                  placeholder={t('fullNamePlaceholder')}
                   required
                   disabled={formState === 'submitting'}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="bc-email">Email</Label>
+                  <Label htmlFor="bc-email">{t('emailLabel')}</Label>
                   <Input
                     id="bc-email"
                     type="email"
@@ -310,7 +310,7 @@ export function BookConsultationDialog({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="bc-phone">Phone</Label>
+                  <Label htmlFor="bc-phone">{t('phoneLabel')}</Label>
                   <Input
                     id="bc-phone"
                     type="tel"
@@ -326,13 +326,13 @@ export function BookConsultationDialog({
 
               {/* Message */}
               <div className="space-y-1.5">
-                <Label htmlFor="bc-message">What do you need help with?</Label>
+                <Label htmlFor="bc-message">{t('messageLabel')}</Label>
                 <textarea
                   id="bc-message"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={3}
-                  placeholder="Describe your situation and what you're hoping to get from the session…"
+                  placeholder={t('messagePlaceholder')}
                   required
                   disabled={formState === 'submitting'}
                   className={cn(
@@ -347,13 +347,13 @@ export function BookConsultationDialog({
               {/* Preferred schedule + duration (optional) */}
               <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-3">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Preferred schedule{' '}
-                  <span className="normal-case font-normal text-muted-foreground/70">(optional)</span>
+                  {t('preferredSchedule')}{' '}
+                  <span className="normal-case font-normal text-muted-foreground/70">{t('optional')}</span>
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="bc-date" className="flex items-center gap-1 text-xs">
-                      <Calendar className="size-3.5" /> Date
+                      <Calendar className="size-3.5" /> {t('dateLabel')}
                     </Label>
                     <Input
                       id="bc-date"
@@ -367,7 +367,7 @@ export function BookConsultationDialog({
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="bc-time" className="flex items-center gap-1 text-xs">
-                      <Clock className="size-3.5" /> Start time
+                      <Clock className="size-3.5" /> {t('startTimeLabel')}
                     </Label>
                     <Input
                       id="bc-time"
@@ -383,7 +383,7 @@ export function BookConsultationDialog({
                 {/* Duration — drives dynamic pricing */}
                 <div className="space-y-1.5">
                   <Label htmlFor="bc-dur" className="flex items-center gap-1 text-xs">
-                    <Timer className="size-3.5" /> Duration
+                    <Timer className="size-3.5" /> {t('durationLabel')}
                   </Label>
                   <Select
                     value={String(duration)}
@@ -426,7 +426,7 @@ export function BookConsultationDialog({
               {feePerHour > 0 && (
                 <div className="rounded-lg border border-border/60 bg-muted/10 px-3.5 py-3 space-y-1.5">
                   <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                    <DollarSign className="size-3.5" /> Estimated fee
+                    <DollarSign className="size-3.5" /> {t('estimatedFeeLabel')}
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">
@@ -436,20 +436,20 @@ export function BookConsultationDialog({
                   </div>
                   {promoState === 'valid' && discountAmt > 0 && (
                     <div className="flex justify-between text-sm text-emerald-700 dark:text-emerald-400">
-                      <span>Promo code discount</span>
+                      <span>{t('promoCodeDiscount')}</span>
                       <span className="tabular-nums">− {formatDZD(discountAmt)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm font-semibold border-t border-border/60 pt-1.5 mt-1.5">
                     <span>
-                      {finalPrice === 0 ? 'Free (promo applied)' : 'Total'}
+                      {finalPrice === 0 ? t('freePromoApplied') : t('total')}
                     </span>
                     <span className={cn('tabular-nums', finalPrice === 0 && 'text-emerald-700 dark:text-emerald-400')}>
-                      {finalPrice === 0 ? 'Free' : formatDZD(finalPrice)}
+                      {finalPrice === 0 ? t('free') : formatDZD(finalPrice)}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground/70 mt-1">
-                    Admin confirms the exact amount after reviewing your request.
+                    {t('adminConfirmsNote')}
                   </p>
                 </div>
               )}
@@ -457,8 +457,8 @@ export function BookConsultationDialog({
               {/* Promo code — with real-time validation button */}
               <div className="space-y-1.5">
                 <Label htmlFor="bc-promo" className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Tag className="size-3.5" /> Promo code{' '}
-                  <span className="font-normal">(optional)</span>
+                  <Tag className="size-3.5" /> {t('promoCodeLabel')}{' '}
+                  <span className="font-normal">{t('optional')}</span>
                 </Label>
                 <div className="flex gap-2">
                   <Input
@@ -507,14 +507,14 @@ export function BookConsultationDialog({
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                         </svg>
-                        Checking
+                        {t('promoChecking')}
                       </span>
                     ) : promoState === 'valid' ? (
                       <span className="flex items-center gap-1 text-xs text-emerald-700">
-                        <Check className="size-3" /> Applied
+                        <Check className="size-3" /> {t('promoAppliedLabel')}
                       </span>
                     ) : (
-                      <span className="text-xs">Apply</span>
+                      <span className="text-xs">{t('promoApplyButton')}</span>
                     )}
                   </Button>
                 </div>
@@ -528,8 +528,8 @@ export function BookConsultationDialog({
                   <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400">
                     <Check className="size-3 shrink-0" />
                     {promoDiscount > 0
-                      ? `${promoDiscount}% discount applied`
-                      : `${formatDZD(promoFixed)} discount applied`}
+                      ? t('promoDiscountPercent', { percent: promoDiscount })
+                      : t('promoDiscountAmount', { amount: formatDZD(promoFixed) })}
                   </div>
                 )}
               </div>
@@ -538,8 +538,7 @@ export function BookConsultationDialog({
               <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
                 <Clock className="size-3.5 mt-0.5 shrink-0" />
                 <span>
-                  Requests are reviewed by our team. You will receive a confirmation email once
-                  approved — this is <strong>not</strong> an automatic booking.
+                  {t('reviewNotice')}
                 </span>
               </div>
 
@@ -559,13 +558,13 @@ export function BookConsultationDialog({
                   onClick={() => handleOpenChange(false)}
                   disabled={formState === 'submitting'}
                 >
-                  Cancel
+                  {t('cancel')}
                 </Button>
                 <Button type="submit" loading={formState === 'submitting'}>
                   <Calendar className="size-4" />
                   {feePerHour > 0
-                    ? `Send request · ${finalPrice === 0 ? 'Free' : formatDZD(finalPrice)}`
-                    : 'Send request'}
+                    ? `${t('sendRequest')} · ${finalPrice === 0 ? t('free') : formatDZD(finalPrice)}`
+                    : t('sendRequest')}
                 </Button>
               </DialogFooter>
             </form>

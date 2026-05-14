@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { MapPin, Users, Clock, Building2, ArrowLeft } from 'lucide-react';
 import { Container } from '@/components/ui/container';
 import { Badge } from '@/components/ui/badge';
@@ -32,14 +32,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function SpaceDetailPage({ params }: PageProps) {
   const { locale, id } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('spaces.detail');
 
   const space = await findSpaceById(id);
   if (!space) notFound();
 
   const prices: { label: string; value: number }[] = [];
-  if (space.pricePerHour != null) prices.push({ label: '/hour', value: space.pricePerHour });
-  if (space.pricePerDay != null) prices.push({ label: '/day', value: space.pricePerDay });
-  if (space.pricePerMonth != null) prices.push({ label: '/month', value: space.pricePerMonth });
+  if (space.pricePerHour != null) prices.push({ label: t('hourLabel'), value: space.pricePerHour });
+  if (space.pricePerDay != null) prices.push({ label: t('dayLabel'), value: space.pricePerDay });
+  if (space.pricePerMonth != null) prices.push({ label: t('monthLabel'), value: space.pricePerMonth });
 
   return (
     <Container className="py-10 sm:py-14">
@@ -49,7 +50,7 @@ export default async function SpaceDetailPage({ params }: PageProps) {
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" />
-        All spaces
+        {t('backLink')}
       </Link>
 
       <div className="grid gap-8 lg:grid-cols-5">
@@ -79,7 +80,7 @@ export default async function SpaceDetailPage({ params }: PageProps) {
                 <MapPin className="size-3" />{space.city}
               </Badge>
               <Badge variant="outline" className="gap-1">
-                <Users className="size-3" />{space.capacity} seats
+                <Users className="size-3" />{t('seats', { count: space.capacity })}
               </Badge>
             </div>
             <h1 className="text-3xl font-semibold tracking-tight">{space.name}</h1>
@@ -94,7 +95,7 @@ export default async function SpaceDetailPage({ params }: PageProps) {
           {/* Amenities */}
           {space.amenities.length > 0 && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Amenities</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{t('amenities')}</p>
               <div className="flex flex-wrap gap-2">
                 {space.amenities.map((a) => (
                   <Badge key={a} variant="outline" className="text-xs">{a}</Badge>
@@ -113,7 +114,7 @@ export default async function SpaceDetailPage({ params }: PageProps) {
                 {prices.map((p) => (
                   <div key={p.label} className="flex items-baseline justify-between">
                     <span className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Clock className="size-3.5" />{p.label.replace('/', '')}
+                      <Clock className="size-3.5" />{p.label}
                     </span>
                     <span className="text-lg font-semibold tabular-nums">
                       {formatCurrency(p.value, locale as Locale)}
@@ -123,7 +124,7 @@ export default async function SpaceDetailPage({ params }: PageProps) {
               </div>
             )}
             {prices.length === 0 && (
-              <p className="text-sm text-muted-foreground">Contact for pricing</p>
+              <p className="text-sm text-muted-foreground">{t('contactForPricing')}</p>
             )}
 
             <div className="border-t border-border pt-4">
@@ -131,7 +132,7 @@ export default async function SpaceDetailPage({ params }: PageProps) {
             </div>
 
             <p className="text-xs text-muted-foreground text-center">
-              Secure payment via Metwork wallet
+              {t('paymentNote')}
             </p>
           </div>
         </div>

@@ -6,7 +6,7 @@
  * PATCH or DELETE /api/admin/users/[id] and update local state on success.
  */
 import { useMemo, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { MoreVertical, Search, ShieldCheck, ShieldOff, Trash2, UserCog, UserX } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -98,6 +98,7 @@ async function deleteUser(id: string): Promise<void> {
 }
 
 export function AdminUsersTable({ initial }: { initial: AdminUserView[] }) {
+  const t = useTranslations('admin.users');
   const locale = useLocale() as Locale;
   const [users,       setUsers]       = useState(initial);
   const [query,       setQuery]       = useState('');
@@ -149,7 +150,7 @@ export function AdminUsersTable({ initial }: { initial: AdminUserView[] }) {
           <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search by name or email…"
+            placeholder={t('searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="ps-9"
@@ -158,53 +159,53 @@ export function AdminUsersTable({ initial }: { initial: AdminUserView[] }) {
         </div>
         <Select value={role} onValueChange={(v) => setRole(v as UserRole | typeof ALL)}>
           <SelectTrigger className="w-full md:w-[160px]">
-            <SelectValue placeholder="Role" />
+            <SelectValue placeholder={t('roleFilter')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>All roles</SelectItem>
-            <SelectItem value="ENTREPRENEUR">Entrepreneurs</SelectItem>
-            <SelectItem value="INVESTOR">Investors</SelectItem>
-            <SelectItem value="INCUBATOR">Incubators</SelectItem>
-            <SelectItem value="ADMIN">Admins</SelectItem>
+            <SelectItem value={ALL}>{t('allRoles')}</SelectItem>
+            <SelectItem value="ENTREPRENEUR">{t('entrepreneurs')}</SelectItem>
+            <SelectItem value="INVESTOR">{t('investors')}</SelectItem>
+            <SelectItem value="INCUBATOR">{t('incubators')}</SelectItem>
+            <SelectItem value="ADMIN">{t('admins')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={status} onValueChange={(v) => setStatus(v as UserStatus | typeof ALL)}>
           <SelectTrigger className="w-full md:w-[180px]">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t('statusFilter')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>All statuses</SelectItem>
-            <SelectItem value="ACTIVE">Active</SelectItem>
-            <SelectItem value="PENDING_VERIFICATION">Pending verification</SelectItem>
-            <SelectItem value="SUSPENDED">Suspended</SelectItem>
-            <SelectItem value="BANNED">Banned</SelectItem>
+            <SelectItem value={ALL}>{t('allStatuses')}</SelectItem>
+            <SelectItem value="ACTIVE">{t('active')}</SelectItem>
+            <SelectItem value="PENDING_VERIFICATION">{t('pending')}</SelectItem>
+            <SelectItem value="SUSPENDED">{t('suspended')}</SelectItem>
+            <SelectItem value="BANNED">{t('banned')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {filtered.length} of {users.length} users
+        {filtered.length} {t('of')} {users.length} {t('users')}
       </p>
 
       <Card>
         <CardContent className="p-0">
           {filtered.length === 0 ? (
             <InlineEmptyState
-              title="No users match"
-              description="Try clearing the search or changing the role / status filters."
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
             />
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden md:table-cell">City</TableHead>
-                    <TableHead className="hidden md:table-cell">Plan</TableHead>
-                    <TableHead className="hidden lg:table-cell">Joined</TableHead>
-                    <TableHead className="w-12" aria-label="Actions" />
+                    <TableHead>{t('colUser')}</TableHead>
+                    <TableHead>{t('colRole')}</TableHead>
+                    <TableHead>{t('colStatus')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('colCity')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('colPlan')}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t('colJoined')}</TableHead>
+                    <TableHead className="w-12" aria-label={t('colActions')} />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -247,12 +248,12 @@ export function AdminUsersTable({ initial }: { initial: AdminUserView[] }) {
                             {/* Role change */}
                             {u.role !== 'ADMIN' && (
                               <DropdownMenuItem onSelect={() => applyPatch(u.id, { role: 'ADMIN' })}>
-                                Promote to admin
+                                {t('promoteToAdmin')}
                               </DropdownMenuItem>
                             )}
                             {u.role === 'ADMIN' && (
                               <DropdownMenuItem onSelect={() => applyPatch(u.id, { role: 'ENTREPRENEUR' })}>
-                                Demote to entrepreneur
+                                {t('demoteToEntrepreneur')}
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
@@ -260,12 +261,12 @@ export function AdminUsersTable({ initial }: { initial: AdminUserView[] }) {
                             {u.status === 'ACTIVE' ? (
                               <DropdownMenuItem onSelect={() => applyPatch(u.id, { status: 'SUSPENDED' })}>
                                 <ShieldOff />
-                                Suspend
+                                {t('suspend')}
                               </DropdownMenuItem>
                             ) : u.status === 'SUSPENDED' ? (
                               <DropdownMenuItem onSelect={() => applyPatch(u.id, { status: 'ACTIVE' })}>
                                 <ShieldCheck />
-                                Reinstate
+                                {t('reinstate')}
                               </DropdownMenuItem>
                             ) : null}
                             {u.status !== 'BANNED' && (
@@ -274,13 +275,13 @@ export function AdminUsersTable({ initial }: { initial: AdminUserView[] }) {
                                 className="text-destructive focus:text-destructive"
                               >
                                 <Trash2 />
-                                Ban user
+                                {t('ban')}
                               </DropdownMenuItem>
                             )}
                             {u.status === 'BANNED' && (
                               <DropdownMenuItem onSelect={() => applyPatch(u.id, { status: 'ACTIVE' })}>
                                 <ShieldCheck />
-                                Unban
+                                {t('unban')}
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
@@ -289,7 +290,7 @@ export function AdminUsersTable({ initial }: { initial: AdminUserView[] }) {
                               className="text-destructive focus:text-destructive"
                             >
                               <UserX />
-                              Delete account
+                              {t('deleteAccount')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -310,16 +311,15 @@ export function AdminUsersTable({ initial }: { initial: AdminUserView[] }) {
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Delete account permanently?</DialogTitle>
+            <DialogTitle>{t('deleteDialogTitle')}</DialogTitle>
             <DialogDescription>
               {deletingUser && (
                 <>
-                  This will permanently delete <span className="font-medium">{deletingUser.fullName}</span>{' '}
-                  (<span className="font-mono text-xs">{deletingUser.email}</span>) and all their data —
-                  bookings, wallet, sessions, and memberships.
+                  {t('deleteDialogDescription', { name: deletingUser.fullName })}
+                  {' '}(<span className="font-mono text-xs">{deletingUser.email}</span>)
                   <br /><br />
-                  They will be able to create a new account with the same email or phone.
-                  <strong className="block mt-2 text-destructive">This cannot be undone.</strong>
+                  {t('deleteDialogNote')}
+                  <strong className="block mt-2 text-destructive">{t('deleteDialogWarning')}</strong>
                 </>
               )}
             </DialogDescription>
@@ -329,10 +329,10 @@ export function AdminUsersTable({ initial }: { initial: AdminUserView[] }) {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeletingUser(null)} disabled={deletebusy}>
-              Cancel
+              {t('deleteCancel')}
             </Button>
             <Button variant="destructive" loading={deletebusy} onClick={confirmDelete}>
-              Delete permanently
+              {t('deleteConfirm')}
             </Button>
           </DialogFooter>
         </DialogContent>

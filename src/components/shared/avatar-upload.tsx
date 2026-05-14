@@ -5,6 +5,7 @@
  * Calls POST /api/auth/avatar and notifies the parent via onUpload(url).
  */
 import { useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Camera, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -24,6 +25,7 @@ export function AvatarUpload({
   onError,
   size = 'size-20',
 }: AvatarUploadProps) {
+  const t = useTranslations('common');
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -69,14 +71,14 @@ export function AvatarUpload({
   return (
     <div className="relative inline-block">
       <Avatar className={size}>
-        {displayUrl && <AvatarImage src={displayUrl} alt="Profile picture" />}
+        {displayUrl && <AvatarImage src={displayUrl} alt={t('profilePicture')} />}
         <AvatarFallback>{initials || '?'}</AvatarFallback>
       </Avatar>
 
       {/* Overlay button */}
       <button
         type="button"
-        title="Change profile picture"
+        title={t('changeProfilePicture')}
         disabled={uploading}
         onClick={() => inputRef.current?.click()}
         className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity hover:opacity-100 focus-visible:opacity-100 disabled:cursor-not-allowed"

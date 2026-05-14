@@ -10,6 +10,7 @@
  *  - Price row with animated "View →" CTA
  *  - Hover: shadow lift + very subtle scale; no jarring transitions
  */
+import { useTranslations } from 'next-intl';
 import { ArrowRight, MapPin, Star } from 'lucide-react';
 import { SpaceImage } from './space-image';
 import { categoryLabel } from './space-meta';
@@ -24,14 +25,17 @@ interface SpaceCardProps {
   onSelect: (space: Space) => void;
 }
 
-function startingPrice(space: Space): { amount: number; suffix: string } | null {
-  if (space.pricePerHour  != null) return { amount: space.pricePerHour,  suffix: '/hr'  };
-  if (space.pricePerDay   != null) return { amount: space.pricePerDay,   suffix: '/day' };
-  if (space.pricePerMonth != null) return { amount: space.pricePerMonth, suffix: '/mo'  };
+type PriceSuffixKey = 'perHour' | 'perDay' | 'perMonth';
+
+function startingPrice(space: Space): { amount: number; suffixKey: PriceSuffixKey } | null {
+  if (space.pricePerHour  != null) return { amount: space.pricePerHour,  suffixKey: 'perHour'  };
+  if (space.pricePerDay   != null) return { amount: space.pricePerDay,   suffixKey: 'perDay'   };
+  if (space.pricePerMonth != null) return { amount: space.pricePerMonth, suffixKey: 'perMonth' };
   return null;
 }
 
 export function SpaceCard({ space, locale, onSelect }: SpaceCardProps) {
+  const t = useTranslations('spaces.card');
   const price = startingPrice(space);
 
   return (
@@ -110,14 +114,14 @@ export function SpaceCard({ space, locale, onSelect }: SpaceCardProps) {
         <div className="mt-4 flex items-end justify-between border-t border-slate-100 pt-4">
           {price ? (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">From</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('from')}</p>
               <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-900">
                 {formatCurrency(price.amount, locale)}
-                <span className="ms-1 text-xs font-normal text-slate-400">{price.suffix}</span>
+                <span className="ms-1 text-xs font-normal text-slate-400">{t(price.suffixKey)}</span>
               </p>
             </div>
           ) : (
-            <p className="text-sm text-slate-400">Contact for pricing</p>
+            <p className="text-sm text-slate-400">{t('contactForPricing')}</p>
           )}
 
           <span
@@ -127,7 +131,7 @@ export function SpaceCard({ space, locale, onSelect }: SpaceCardProps) {
               'transition-all duration-150 group-hover:gap-2',
             )}
           >
-            View details
+            {t('viewDetails')}
             <ArrowRight className="size-3.5" />
           </span>
         </div>

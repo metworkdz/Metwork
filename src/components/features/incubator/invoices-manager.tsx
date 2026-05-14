@@ -4,6 +4,7 @@
  * Invoices manager — list of all paid bookings with a "Print receipt" action.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ReceiptText, Search, Printer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export function InvoicesManager({ initial }: Props) {
+  const t = useTranslations('incubator.invoicesManager');
   const [q, setQ] = useState('');
   const [receiptId, setReceiptId] = useState<string | null>(null);
 
@@ -45,10 +47,10 @@ export function InvoicesManager({ initial }: Props) {
     <>
       <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-4 py-3">
         <div>
-          <p className="text-sm font-medium">Total invoiced</p>
+          <p className="text-sm font-medium">{t('totalInvoiced')}</p>
           <p className="text-2xl font-bold tabular-nums">{totalRevenue.toLocaleString()} DZD</p>
         </div>
-        <p className="text-sm text-muted-foreground">{initial.length} receipts</p>
+        <p className="text-sm text-muted-foreground">{t('receiptsCount', { count: initial.length })}</p>
       </div>
 
       <Card>
@@ -57,7 +59,7 @@ export function InvoicesManager({ initial }: Props) {
             <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="ps-9"
-              placeholder="Search customer or item…"
+              placeholder={t('searchPlaceholder')}
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
@@ -66,8 +68,8 @@ export function InvoicesManager({ initial }: Props) {
         <CardContent className="p-0">
           {filtered.length === 0 ? (
             <InlineEmptyState
-              title={q ? 'No matches' : 'No invoices yet'}
-              description={q ? 'Try a different search.' : 'Receipts appear here once bookings are confirmed.'}
+              title={q ? t('noMatches') : t('emptyTitle')}
+              description={q ? t('tryDifferentSearch') : t('emptyDescription')}
               icon={<ReceiptText className="size-5 text-muted-foreground" />}
             />
           ) : (
@@ -75,11 +77,11 @@ export function InvoicesManager({ initial }: Props) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Kind</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-end">Amount</TableHead>
+                    <TableHead>{t('colCustomer')}</TableHead>
+                    <TableHead>{t('colItem')}</TableHead>
+                    <TableHead>{t('colKind')}</TableHead>
+                    <TableHead>{t('colDate')}</TableHead>
+                    <TableHead className="text-end">{t('colAmount')}</TableHead>
                     <TableHead className="w-16" />
                   </TableRow>
                 </TableHeader>
@@ -101,7 +103,7 @@ export function InvoicesManager({ initial }: Props) {
                       </TableCell>
                       <TableCell className="text-end tabular-nums font-medium">
                         {b.totalAmount === 0 ? (
-                          <span className="text-muted-foreground">Free</span>
+                          <span className="text-muted-foreground">{t('free')}</span>
                         ) : (
                           `${b.totalAmount.toLocaleString()} DZD`
                         )}
@@ -110,7 +112,7 @@ export function InvoicesManager({ initial }: Props) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          title="Print receipt"
+                          title={t('printReceipt')}
                           onClick={() => setReceiptId(b.id)}
                         >
                           <Printer className="size-4" />

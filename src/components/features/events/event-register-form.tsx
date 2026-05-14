@@ -6,7 +6,7 @@
  * "Register" copy and event-specific error codes.
  */
 import { useEffect, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Banknote, CheckCircle2, CreditCard, Wallet as WalletIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +29,7 @@ interface EventRegisterFormProps {
 }
 
 export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFormProps) {
+  const t = useTranslations('events.register');
   const locale = useLocale() as Locale;
   const router = useRouter();
   const { user, refresh } = useAuth();
@@ -69,11 +70,11 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
         <div className="flex items-start gap-3">
           <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
           <div>
-            <p className="text-sm font-semibold text-emerald-900">You&apos;re registered</p>
+            <p className="text-sm font-semibold text-emerald-900">{t('alreadyRegisteredTitle')}</p>
             <p className="mt-1 text-xs text-emerald-800">
-              Your ticket is in{' '}
+              {t('alreadyRegisteredDescription')}{' '}
               <Link href="/dashboard/entrepreneur/bookings" className="font-medium underline">
-                My bookings
+                {t('myBookings')}
               </Link>
               .
             </p>
@@ -86,7 +87,7 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
   if (passed) {
     return (
       <div className="rounded-md border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-        This event has already happened.
+        {t('pastEvent')}
       </div>
     );
   }
@@ -94,7 +95,7 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
   if (full) {
     return (
       <div className="rounded-md border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-        This event is sold out.
+        {t('soldOut')}
       </div>
     );
   }
@@ -145,7 +146,7 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
       {/* Payment method picker — only for paid events with both options */}
       {showMethodPicker && (
         <div>
-          <span className="text-sm font-medium">Payment method</span>
+          <span className="text-sm font-medium">{t('paymentMethod')}</span>
           <div className="mt-1.5 grid grid-cols-2 gap-2">
             {(['ONLINE', 'CASH'] as PaymentMethod[]).map((m) => (
               <button
@@ -164,13 +165,13 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
                 ) : (
                   <Banknote className="size-4 shrink-0" />
                 )}
-                {m === 'ONLINE' ? 'Online (wallet)' : 'Cash at door'}
+                {m === 'ONLINE' ? t('paymentOnline') : t('paymentCash')}
               </button>
             ))}
           </div>
           {isCash && (
             <p className="mt-1.5 text-xs text-muted-foreground">
-              Your ticket is reserved; settle the payment at the door on the event day.
+              {t('cashHint')}
             </p>
           )}
         </div>
@@ -178,15 +179,15 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
 
       <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
         <div className="flex items-center justify-between text-muted-foreground">
-          <span>Ticket</span>
+          <span>{t('ticket')}</span>
           <span className="tabular-nums">
-            {isFree ? <span className="font-medium text-emerald-700">Free</span> : formatCurrency(event.price, locale)}
+            {isFree ? <span className="font-medium text-emerald-700">{t('free')}</span> : formatCurrency(event.price, locale)}
           </span>
         </div>
         {!isFree && promoResult && (
           <div className="mt-1 flex items-center justify-between text-emerald-700">
             <span>
-              Promo ({promoResult.discountType === 'PERCENTAGE'
+              {t('promo')} ({promoResult.discountType === 'PERCENTAGE'
                 ? `${promoResult.discountValue}% off`
                 : `−${promoResult.discountAmount.toLocaleString()} DZD`})
             </span>
@@ -221,7 +222,7 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
         >
           <span className="inline-flex items-center gap-1.5">
             <WalletIcon className="size-3.5" />
-            Wallet balance
+            {t('walletBalance')}
           </span>
           <span className="font-medium tabular-nums">{formatCurrency(balance, locale)}</span>
         </div>
@@ -235,28 +236,28 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
 
       {!isAuthed ? (
         <Button asChild className="w-full" size="lg">
-          <Link href={`/login?next=${encodeURIComponent('/events')}`}>Sign in to register</Link>
+          <Link href={`/login?next=${encodeURIComponent('/events')}`}>{t('signIn')}</Link>
         </Button>
       ) : insufficient ? (
         <div className="space-y-2">
           <Button asChild className="w-full" size="lg" variant="outline">
             <Link href="/dashboard/entrepreneur/wallet">
-              Top up to {formatCurrency(finalTotal, locale)}
+              {t('topUp', { amount: formatCurrency(finalTotal, locale) })}
             </Link>
           </Button>
           <Badge variant="warning" className="w-full justify-center py-1">
-            Pay from wallet — top up first
+            {t('topUpWarning')}
           </Badge>
         </div>
       ) : (
         <Button type="submit" size="lg" className="w-full" loading={submitting}>
           {submitting
-            ? 'Registering…'
+            ? t('submitting')
             : isFree || finalTotal === 0
-            ? 'Register for free'
+            ? t('submitFree')
             : isCash
-            ? `Register — pay ${formatCurrency(finalTotal, locale)} at door`
-            : `Register — ${formatCurrency(finalTotal, locale)}`}
+            ? t('submitCash', { amount: formatCurrency(finalTotal, locale) })
+            : t('submitOnline', { amount: formatCurrency(finalTotal, locale) })}
         </Button>
       )}
     </form>
@@ -272,6 +273,7 @@ export function EventRegisterSuccess({
   newBalance: number;
   paid: boolean;
 }) {
+  const t = useTranslations('events.register');
   const locale = useLocale() as Locale;
   const isCash = booking.paymentMethod === 'manual';
 
@@ -287,44 +289,42 @@ export function EventRegisterSuccess({
         }
         <div className="min-w-0 flex-1">
           <p className={cn('text-base font-semibold', isCash ? 'text-amber-900' : 'text-emerald-900')}>
-            {isCash ? 'Ticket reserved — pay at door' : "You're in"}
+            {isCash ? t('successTitleCash') : t('successTitleOnline')}
           </p>
           <p className={cn('mt-1 text-sm', isCash ? 'text-amber-800' : 'text-emerald-800')}>
-            {isCash
-              ? 'Your spot is confirmed. Please bring the payment on the event day.'
-              : "Your ticket is reserved. We'll email a reminder 24 hours before."}
+            {isCash ? t('successMessageCash') : t('successMessageOnline')}
           </p>
           <dl className={cn('mt-3 grid grid-cols-2 gap-2 text-xs', isCash ? 'text-amber-900' : 'text-emerald-900')}>
             <div>
-              <dt className={isCash ? 'text-amber-700' : 'text-emerald-700'}>Reference</dt>
+              <dt className={isCash ? 'text-amber-700' : 'text-emerald-700'}>{t('reference')}</dt>
               <dd className="font-mono">{booking.id.slice(0, 8)}…</dd>
             </div>
             <div>
               <dt className={isCash ? 'text-amber-700' : 'text-emerald-700'}>
-                {isCash ? 'Due at door' : paid ? 'Paid' : 'Ticket'}
+                {isCash ? t('dueAtDoor') : paid ? t('paid') : t('ticket')}
               </dt>
               <dd className="font-medium tabular-nums">
-                {paid || isCash ? formatCurrency(booking.totalAmount, locale) : 'Free'}
+                {paid || isCash ? formatCurrency(booking.totalAmount, locale) : t('free')}
               </dd>
             </div>
             {paid && !isCash && (
               <div>
-                <dt className="text-emerald-700">New balance</dt>
+                <dt className="text-emerald-700">{t('newBalance')}</dt>
                 <dd className="font-medium tabular-nums">{formatCurrency(newBalance, locale)}</dd>
               </div>
             )}
             <div>
-              <dt className={isCash ? 'text-amber-700' : 'text-emerald-700'}>Status</dt>
-              <dd className="font-medium">{isCash ? 'Awaiting payment' : 'Confirmed'}</dd>
+              <dt className={isCash ? 'text-amber-700' : 'text-emerald-700'}>{t('status')}</dt>
+              <dd className="font-medium">{isCash ? t('awaitingPayment') : t('confirmed')}</dd>
             </div>
           </dl>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button asChild size="sm">
-              <Link href="/dashboard/entrepreneur/bookings">View my bookings</Link>
+              <Link href="/dashboard/entrepreneur/bookings">{t('viewBookings')}</Link>
             </Button>
             {paid && !isCash && (
               <Button asChild size="sm" variant="outline">
-                <Link href="/dashboard/entrepreneur/wallet">View wallet</Link>
+                <Link href="/dashboard/entrepreneur/wallet">{t('viewWallet')}</Link>
               </Button>
             )}
           </div>

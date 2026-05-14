@@ -21,6 +21,7 @@ const patchSchema = z.object({
   capacity: z.number().int().positive().optional(),
   eventDate: z.string().datetime({ offset: true }).optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'CANCELLED']).optional(),
+  slug: z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
 });
 
 async function findIncubator(userId: string) {
@@ -64,6 +65,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (input.capacity !== undefined) event.capacity = input.capacity;
     if (input.eventDate !== undefined) event.eventDate = input.eventDate;
     if (input.status !== undefined) event.isActive = input.status === 'PUBLISHED';
+    if (input.slug !== undefined) event.slug = input.slug ?? undefined;
     event.updatedAt = new Date().toISOString();
     return { ...event };
   });

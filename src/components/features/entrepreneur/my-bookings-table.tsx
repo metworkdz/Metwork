@@ -5,6 +5,7 @@
  * cancel PENDING / CONFIRMED bookings via PATCH /api/bookings/:id.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Calendar, QrCode, Info } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,6 +34,7 @@ interface Props {
 }
 
 export function MyBookingsTable({ initial, locale }: Props) {
+  const t = useTranslations('bookings');
   const [rows, setRows] = useState<BookingRecord[]>(initial);
   const [cancelling, setCancelling] = useState<BookingRecord | null>(null);
   const [qrBooking,  setQrBooking]  = useState<BookingRecord | null>(null);
@@ -75,21 +77,21 @@ export function MyBookingsTable({ initial, locale }: Props) {
     <>
       {/* Summary tiles */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <SummaryTile label="Upcoming"    value={upcoming}                            accent="primary" />
-        <SummaryTile label="Past"        value={past}                                accent="muted"   />
-        <SummaryTile label="Total spent" value={formatCurrency(totalSpent, locale)} accent="muted"   />
+        <SummaryTile label={t('upcoming')}    value={upcoming}                            accent="primary" />
+        <SummaryTile label={t('past')}        value={past}                                accent="muted"   />
+        <SummaryTile label={t('totalSpent')} value={formatCurrency(totalSpent, locale)} accent="muted"   />
       </div>
 
       <Card>
         <CardContent className="p-0">
           {rows.length === 0 ? (
             <InlineEmptyState
-              title="No bookings yet"
-              description="Browse coworking spaces, training rooms, and programs."
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
               icon={<Calendar className="size-5 text-muted-foreground" />}
               action={
                 <Button asChild size="sm">
-                  <Link href="/spaces">Browse spaces</Link>
+                  <Link href="/spaces">{t('browseSpaces')}</Link>
                 </Button>
               }
             />

@@ -6,7 +6,7 @@
  * Allows saving/un-saving per listing.
  */
 import { useMemo, useState, useTransition } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Bookmark, BookmarkCheck, Search } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { Input } from '@/components/ui/input';
@@ -35,6 +35,7 @@ const ALL = 'all';
 
 export function StartupMarketplace({ startups, savedIds: initialSavedIds }: Props) {
   const locale = useLocale() as Locale;
+  const t = useTranslations('investor.startups');
   const [query,    setQuery]    = useState('');
   const [industry, setIndustry] = useState(ALL);
   const [saved,    setSaved]    = useState<Set<string>>(new Set(initialSavedIds));
@@ -79,7 +80,7 @@ export function StartupMarketplace({ startups, savedIds: initialSavedIds }: Prop
           <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search startups, descriptions, industry…"
+            placeholder={t('searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="ps-9"
@@ -87,10 +88,10 @@ export function StartupMarketplace({ startups, savedIds: initialSavedIds }: Prop
         </div>
         <Select value={industry} onValueChange={setIndustry}>
           <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Industry" />
+            <SelectValue placeholder={t('industryPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>All industries</SelectItem>
+            <SelectItem value={ALL}>{t('allIndustries')}</SelectItem>
             {industries.map((i) => (
               <SelectItem key={i} value={i}>{i}</SelectItem>
             ))}
@@ -99,14 +100,16 @@ export function StartupMarketplace({ startups, savedIds: initialSavedIds }: Prop
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {filtered.length} of {startups.length} listing{startups.length !== 1 ? 's' : ''}
+        {startups.length !== 1
+          ? t('listingsCountPlural', { filtered: filtered.length, total: startups.length })
+          : t('listingsCount', { filtered: filtered.length, total: startups.length })}
       </p>
 
       {filtered.length === 0 ? (
         <Card>
           <InlineEmptyState
-            title="No startups match your filters"
-            description="Try clearing the search or selecting a different industry."
+            title={t('noMatch')}
+            description={t('noMatchHint')}
           />
         </Card>
       ) : (
@@ -139,6 +142,8 @@ function StartupCard({
   isSaved:      boolean;
   onToggleSave: (id: string) => void;
 }) {
+  const t = useTranslations('investor.startups');
+
   return (
     <Card className="group flex flex-col transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md">
       <CardContent className="flex-1 p-6">
@@ -147,7 +152,7 @@ function StartupCard({
           <button
             type="button"
             onClick={() => onToggleSave(startup.id)}
-            aria-label={isSaved ? 'Remove from saved' : 'Save startup'}
+            aria-label={isSaved ? t('removeFromSaved') : t('saveStartup')}
             className="shrink-0 text-muted-foreground transition-colors hover:text-primary-600"
           >
             {isSaved
@@ -163,16 +168,16 @@ function StartupCard({
 
         <div className="mt-5 grid grid-cols-2 gap-3 border-t border-border/60 pt-4 text-sm">
           <div>
-            <p className="text-xs text-muted-foreground">Funding goal</p>
+            <p className="text-xs text-muted-foreground">{t('fundingGoal')}</p>
             <p className="mt-0.5 font-semibold tabular-nums">{formatDZD(startup.fundingGoal, locale)}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Equity offered</p>
+            <p className="text-xs text-muted-foreground">{t('equityOffered')}</p>
             <p className="mt-0.5 font-semibold">{startup.equityOffered}%</p>
           </div>
           {startup.valuation && (
             <div className="col-span-2">
-              <p className="text-xs text-muted-foreground">Pre-money valuation</p>
+              <p className="text-xs text-muted-foreground">{t('preMoneyValuation')}</p>
               <p className="mt-0.5 font-semibold tabular-nums">{formatDZD(startup.valuation, locale)}</p>
             </div>
           )}
@@ -182,7 +187,7 @@ function StartupCard({
       <CardFooter className="border-t border-border/60 px-6 py-4">
         <Button asChild size="sm" className="w-full">
           <Link href={`/dashboard/investor/startups/${startup.id}`}>
-            View details
+            {t('viewDetails')}
           </Link>
         </Button>
       </CardFooter>

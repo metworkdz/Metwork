@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ArrowUpCircle, Banknote, CreditCard, Loader2, Pencil, PlusCircle, Trash2 } from 'lucide-react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -135,6 +135,7 @@ function CreateIncomeDialog({
   onCreated: () => void;
   services: ServiceOption[];
 }) {
+  const t = useTranslations('incubator.income');
   const [open, setOpen]           = useState(false);
   const [sub, setSub]             = useState(false);
   const [error, setError]         = useState<string | null>(null);
@@ -188,30 +189,30 @@ function CreateIncomeDialog({
       <DialogTrigger asChild>
         <Button size="sm" className="gap-1.5">
           <PlusCircle className="size-4" />
-          Add income
+          {t('addIncome')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New income record</DialogTitle>
-          <DialogDescription>Record a manual income entry.</DialogDescription>
+          <DialogTitle>{t('createTitle')}</DialogTitle>
+          <DialogDescription>{t('createDescription')}</DialogDescription>
         </DialogHeader>
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3 py-2">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="inc-date">Date *</Label>
+              <Label htmlFor="inc-date">{t('labelDate')}</Label>
               <Input id="inc-date" type="date" className="mt-1" value={date}
                 onChange={(e) => setDate(e.target.value)} required />
             </div>
             <div>
-              <Label htmlFor="inc-amount">Amount (DZD) *</Label>
+              <Label htmlFor="inc-amount">{t('labelAmount')}</Label>
               <Input id="inc-amount" type="number" min="0" className="mt-1" value={amount}
                 onChange={(e) => setAmt(e.target.value)} required placeholder="0" />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="inc-client">Client *</Label>
+            <Label htmlFor="inc-client">{t('labelClient')}</Label>
             <ClientSelector
               id="inc-client"
               value={client}
@@ -230,7 +231,7 @@ function CreateIncomeDialog({
           </div>
 
           <div>
-            <Label htmlFor="inc-svc">Service *</Label>
+            <Label htmlFor="inc-svc">{t('labelService')}</Label>
             <ServiceField
               id="inc-svc"
               value={svcSelect}
@@ -242,7 +243,7 @@ function CreateIncomeDialog({
           </div>
 
           <div>
-            <Label htmlFor="inc-method">Payment method</Label>
+            <Label htmlFor="inc-method">{t('labelPaymentMethod')}</Label>
             <Select value={method} onValueChange={(v) => setMethod(v as IncomePaymentMethod)}>
               <SelectTrigger id="inc-method" className="mt-1">
                 <SelectValue />
@@ -256,7 +257,7 @@ function CreateIncomeDialog({
           </div>
 
           <div>
-            <Label htmlFor="inc-notes">Notes</Label>
+            <Label htmlFor="inc-notes">{t('labelNotes')}</Label>
             <textarea
               id="inc-notes"
               className="mt-1 min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -270,7 +271,7 @@ function CreateIncomeDialog({
             </div>
           )}
           <DialogFooter>
-            <Button type="submit" loading={sub}>Add income</Button>
+            <Button type="submit" loading={sub}>{t('addIncome')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -280,6 +281,7 @@ function CreateIncomeDialog({
 
 export function IncomeManager() {
   const locale                      = useLocale() as Locale;
+  const t                           = useTranslations('incubator.income');
   const [rows, setRows]             = useState<IncomeRow[]>([]);
   const [loading, setLoading]       = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -388,12 +390,12 @@ export function IncomeManager() {
   const columns: ListingColumn<IncomeRow>[] = [
     {
       key: 'date',
-      label: 'Date',
+      label: t('colDate'),
       render: (r) => <span className="text-sm">{r.date}</span>,
     },
     {
       key: 'client',
-      label: 'Client',
+      label: t('colClient'),
       render: (r) => (
         <div>
           <div className="font-medium">{r.clientName}</div>
@@ -405,12 +407,12 @@ export function IncomeManager() {
     },
     {
       key: 'service',
-      label: 'Service',
+      label: t('colService'),
       render: (r) => <Badge variant="outline">{r.serviceName}</Badge>,
     },
     {
       key: 'method',
-      label: 'Payment',
+      label: t('colPayment'),
       render: (r) => (
         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
           {paymentIcon(r.paymentMethod)}
@@ -420,7 +422,7 @@ export function IncomeManager() {
     },
     {
       key: 'amount',
-      label: 'Amount',
+      label: t('colAmount'),
       align: 'end',
       render: (r) => (
         <span className="font-medium text-green-600 dark:text-green-400">
@@ -464,29 +466,29 @@ export function IncomeManager() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit income record</DialogTitle>
-            <DialogDescription>Update the income details.</DialogDescription>
+            <DialogTitle>{t('editTitle')}</DialogTitle>
+            <DialogDescription>{t('editDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={(e) => void handleSaveEdit(e)} className="space-y-3 py-2">
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label htmlFor="einc-date">Date *</Label>
+                <Label htmlFor="einc-date">{t('labelDate')}</Label>
                 <Input id="einc-date" type="date" className="mt-1" value={editDate}
                   onChange={(e) => setEditDate(e.target.value)} required />
               </div>
               <div>
-                <Label htmlFor="einc-amt">Amount (DZD) *</Label>
+                <Label htmlFor="einc-amt">{t('labelAmount')}</Label>
                 <Input id="einc-amt" type="number" min="0" className="mt-1" value={editAmt}
                   onChange={(e) => setEditAmt(e.target.value)} required />
               </div>
             </div>
             <div>
-              <Label htmlFor="einc-client">Client name *</Label>
+              <Label htmlFor="einc-client">{t('labelClientName')}</Label>
               <Input id="einc-client" className="mt-1" value={editClient}
                 onChange={(e) => setEditClient(e.target.value)} required maxLength={120} />
             </div>
             <div>
-              <Label htmlFor="einc-svc">Service *</Label>
+              <Label htmlFor="einc-svc">{t('labelService')}</Label>
               <ServiceField
                 id="einc-svc"
                 value={editSvcSelect}
@@ -497,7 +499,7 @@ export function IncomeManager() {
               />
             </div>
             <div>
-              <Label htmlFor="einc-method">Payment method</Label>
+              <Label htmlFor="einc-method">{t('labelPaymentMethod')}</Label>
               <Select value={editMethod} onValueChange={(v) => setEditMethod(v as IncomePaymentMethod)}>
                 <SelectTrigger id="einc-method" className="mt-1">
                   <SelectValue />
@@ -510,7 +512,7 @@ export function IncomeManager() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="einc-notes">Notes</Label>
+              <Label htmlFor="einc-notes">{t('labelNotes')}</Label>
               <textarea
                 id="einc-notes"
                 className="mt-1 min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -523,7 +525,7 @@ export function IncomeManager() {
               </div>
             )}
             <DialogFooter>
-              <Button type="submit" loading={saving}>Save changes</Button>
+              <Button type="submit" loading={saving}>{t('saveChanges')}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -535,11 +537,11 @@ export function IncomeManager() {
         rowKey={(r) => r.id}
         createSlot={headerSlot}
         emptyIcon={<ArrowUpCircle className="size-5 text-muted-foreground" />}
-        emptyTitle="No income records yet"
-        emptyDescription="Add income manually or import from CSV."
+        emptyTitle={t('emptyTitle')}
+        emptyDescription={t('emptyDescription')}
         actions={[
-          { label: 'Edit', icon: <Pencil className="size-4" />, onSelect: openEdit },
-          { label: 'Delete', icon: <Trash2 className="size-4" />, onSelect: (row) => void handleDelete(row), destructive: true },
+          { label: t('actionEdit'), icon: <Pencil className="size-4" />, onSelect: openEdit },
+          { label: t('actionDelete'), icon: <Trash2 className="size-4" />, onSelect: (row) => void handleDelete(row), destructive: true },
         ]}
       />
     </>

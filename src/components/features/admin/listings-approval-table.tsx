@@ -6,7 +6,7 @@
  * actions will hit /api/admin/listings/:id with PATCH state changes.
  */
 import { useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Briefcase, Building2, Calendar, Check, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -30,20 +30,21 @@ const kindIcon: Record<PendingListingRow['kind'], React.ReactNode> = {
   EVENT: <Calendar className="size-3.5" />,
 };
 
-const kindLabel: Record<PendingListingRow['kind'], string> = {
-  SPACE: 'Space',
-  PROGRAM: 'Program',
-  EVENT: 'Event',
-};
-
 export function ListingsApprovalTable({
   initial,
 }: {
   initial: PendingListingRow[];
 }) {
+  const t = useTranslations('admin.listingsApproval');
   const locale = useLocale() as Locale;
   const [rows, setRows] = useState(initial);
   const [resolved, setResolved] = useState<{ id: string; outcome: 'approved' | 'rejected' } | null>(null);
+
+  const kindLabel: Record<PendingListingRow['kind'], string> = {
+    SPACE: t('kindSpace'),
+    PROGRAM: t('kindProgram'),
+    EVENT: t('kindEvent'),
+  };
 
   function decide(id: string, outcome: 'approved' | 'rejected') {
     setRows((rs) => rs.filter((r) => r.id !== id));
@@ -61,13 +62,13 @@ export function ListingsApprovalTable({
               : 'rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800'
           }
         >
-          Listing {resolved.outcome}.{' '}
+          {t('listingOutcome', { outcome: resolved.outcome })}{' '}
           <button
             type="button"
             onClick={() => setResolved(null)}
             className="font-medium underline-offset-2 hover:underline"
           >
-            Dismiss
+            {t('dismiss')}
           </button>
         </div>
       )}
@@ -75,8 +76,8 @@ export function ListingsApprovalTable({
         <CardContent className="p-0">
           {rows.length === 0 ? (
             <InlineEmptyState
-              title="Inbox zero"
-              description="No listings are waiting for review right now."
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
               icon={<Check className="size-5 text-emerald-600" />}
             />
           ) : (
@@ -84,12 +85,12 @@ export function ListingsApprovalTable({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Listing</TableHead>
-                    <TableHead className="hidden sm:table-cell">Submitted by</TableHead>
-                    <TableHead className="hidden md:table-cell">City</TableHead>
-                    <TableHead className="hidden md:table-cell">Submitted</TableHead>
-                    <TableHead className="hidden sm:table-cell text-end">Price</TableHead>
-                    <TableHead className="w-44 text-end">Action</TableHead>
+                    <TableHead>{t('colListing')}</TableHead>
+                    <TableHead className="hidden sm:table-cell">{t('colSubmittedBy')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('colCity')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('colSubmitted')}</TableHead>
+                    <TableHead className="hidden sm:table-cell text-end">{t('colPrice')}</TableHead>
+                    <TableHead className="w-44 text-end">{t('colAction')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -111,7 +112,7 @@ export function ListingsApprovalTable({
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-end tabular-nums">
                         {r.price === 0 ? (
-                          <Badge variant="success">Free</Badge>
+                          <Badge variant="success">{t('free')}</Badge>
                         ) : (
                           formatCurrency(r.price, locale)
                         )}
@@ -125,7 +126,7 @@ export function ListingsApprovalTable({
                             onClick={() => decide(r.id, 'rejected')}
                           >
                             <X />
-                            Reject
+                            {t('reject')}
                           </Button>
                           <Button
                             type="button"
@@ -133,7 +134,7 @@ export function ListingsApprovalTable({
                             onClick={() => decide(r.id, 'approved')}
                           >
                             <Check />
-                            Approve
+                            {t('approve')}
                           </Button>
                         </div>
                       </TableCell>

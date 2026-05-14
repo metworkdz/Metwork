@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Layers, Loader2, Pencil, PlusCircle, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ interface ServiceRow {
 
 /* ── Create dialog ── */
 function CreateServiceDialog({ onCreated }: { onCreated: () => void }) {
+  const t = useTranslations('incubator.services');
   const [open, setOpen]         = useState(false);
   const [submitting, setSub]    = useState(false);
   const [error, setError]       = useState<string | null>(null);
@@ -59,22 +61,22 @@ function CreateServiceDialog({ onCreated }: { onCreated: () => void }) {
       <DialogTrigger asChild>
         <Button size="sm" className="gap-1.5">
           <PlusCircle className="size-4" />
-          Add service
+          {t('addService')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>New service</DialogTitle>
-          <DialogDescription>Add a new service to your catalog.</DialogDescription>
+          <DialogTitle>{t('createTitle')}</DialogTitle>
+          <DialogDescription>{t('createDescription')}</DialogDescription>
         </DialogHeader>
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3 py-2">
           <div>
-            <Label htmlFor="svc-name">Service name *</Label>
+            <Label htmlFor="svc-name">{t('labelServiceName')}</Label>
             <Input id="svc-name" className="mt-1" value={name}
               onChange={(e) => setName(e.target.value)} required minLength={1} maxLength={120} />
           </div>
           <div>
-            <Label htmlFor="svc-desc">Description</Label>
+            <Label htmlFor="svc-desc">{t('labelDescription')}</Label>
             <textarea
               id="svc-desc"
               className="mt-1 min-h-[70px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -90,7 +92,7 @@ function CreateServiceDialog({ onCreated }: { onCreated: () => void }) {
             </div>
           )}
           <DialogFooter>
-            <Button type="submit" loading={submitting}>Create</Button>
+            <Button type="submit" loading={submitting}>{t('create')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -99,6 +101,7 @@ function CreateServiceDialog({ onCreated }: { onCreated: () => void }) {
 }
 
 export function ServicesManager() {
+  const t = useTranslations('incubator.services');
   const [rows, setRows]             = useState<ServiceRow[]>([]);
   const [loading, setLoading]       = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -173,7 +176,7 @@ export function ServicesManager() {
   const columns: ListingColumn<ServiceRow>[] = [
     {
       key: 'name',
-      label: 'Service',
+      label: t('colService'),
       render: (r) => (
         <div>
           <div className="font-medium">{r.name}</div>
@@ -185,16 +188,16 @@ export function ServicesManager() {
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('colStatus'),
       render: (r) => (
         <Badge variant={r.isActive ? 'default' : 'outline'}>
-          {r.isActive ? 'Active' : 'Inactive'}
+          {r.isActive ? t('statusActive') : t('statusInactive')}
         </Badge>
       ),
     },
     {
       key: 'added',
-      label: 'Created',
+      label: t('colCreated'),
       align: 'end',
       render: (r) => (
         <span className="text-xs text-muted-foreground">
@@ -226,17 +229,17 @@ export function ServicesManager() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Edit service</DialogTitle>
-            <DialogDescription>Update the service name and description.</DialogDescription>
+            <DialogTitle>{t('editTitle')}</DialogTitle>
+            <DialogDescription>{t('editDescription')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={(e) => void handleSaveEdit(e)} className="space-y-3 py-2">
             <div>
-              <Label htmlFor="esvc-name">Service name *</Label>
+              <Label htmlFor="esvc-name">{t('labelServiceName')}</Label>
               <Input id="esvc-name" className="mt-1" value={editName}
                 onChange={(e) => setEditName(e.target.value)} required minLength={1} maxLength={120} />
             </div>
             <div>
-              <Label htmlFor="esvc-desc">Description</Label>
+              <Label htmlFor="esvc-desc">{t('labelDescription')}</Label>
               <textarea
                 id="esvc-desc"
                 className="mt-1 min-h-[70px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -251,7 +254,7 @@ export function ServicesManager() {
               </div>
             )}
             <DialogFooter>
-              <Button type="submit" loading={saving}>Save changes</Button>
+              <Button type="submit" loading={saving}>{t('saveChanges')}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -263,21 +266,21 @@ export function ServicesManager() {
         rowKey={(r) => r.id}
         createSlot={<CreateServiceDialog onCreated={() => void fetchServices()} />}
         emptyIcon={<Layers className="size-5 text-muted-foreground" />}
-        emptyTitle="No services yet"
-        emptyDescription="Build your service catalog to use in income records."
+        emptyTitle={t('emptyTitle')}
+        emptyDescription={t('emptyDescription')}
         actions={[
           {
-            label: 'Edit',
+            label: t('actionEdit'),
             icon: <Pencil className="size-4" />,
             onSelect: openEdit,
           },
           {
-            label: 'Toggle active',
+            label: t('actionToggleActive'),
             icon: <ToggleRight className="size-4" />,
             onSelect: (row) => void toggleActive(row),
           },
           {
-            label: 'Delete',
+            label: t('actionDelete'),
             icon: <Trash2 className="size-4" />,
             onSelect: (row) => void handleDelete(row),
             destructive: true,

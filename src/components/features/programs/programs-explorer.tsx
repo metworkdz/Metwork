@@ -6,7 +6,7 @@
  * renders as a wider featured card.
  */
 import { useMemo, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Search } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -41,6 +41,7 @@ function isOpen(p: Program, taken: number): boolean {
 }
 
 export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplorerProps) {
+  const t = useTranslations('programs.explorer');
   const locale = useLocale() as Locale;
   const [query, setQuery] = useState('');
   const [city, setCity] = useState<string>(ALL);
@@ -97,7 +98,7 @@ export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplo
       <div className="flex flex-wrap gap-2">
         <TypePill
           active={type === ALL}
-          label="All programs"
+          label={t('all')}
           count={counts.ALL}
           onClick={() => setType(ALL)}
         />
@@ -118,7 +119,7 @@ export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplo
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search programs, hosts, topics…"
+            placeholder={t('searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="ps-9"
@@ -127,10 +128,10 @@ export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplo
         </div>
         <Select value={city} onValueChange={setCity}>
           <SelectTrigger className="w-full md:w-[170px]">
-            <SelectValue placeholder="City" />
+            <SelectValue placeholder={t('city')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>All cities</SelectItem>
+            <SelectItem value={ALL}>{t('allCities')}</SelectItem>
             {cities.map((c) => (
               <SelectItem key={c.code} value={c.name}>
                 {c.name}
@@ -143,9 +144,9 @@ export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplo
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All applications</SelectItem>
-            <SelectItem value="open">Open now</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
+            <SelectItem value="all">{t('allStatus')}</SelectItem>
+            <SelectItem value="open">{t('openNow')}</SelectItem>
+            <SelectItem value="closed">{t('closedStatus')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
@@ -153,19 +154,19 @@ export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplo
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="recommended">Recommended</SelectItem>
-            <SelectItem value="deadlineAsc">Closing soonest</SelectItem>
-            <SelectItem value="startAsc">Starting soonest</SelectItem>
-            <SelectItem value="priceAsc">Price: low → high</SelectItem>
+            <SelectItem value="recommended">{t('sortRecommended')}</SelectItem>
+            <SelectItem value="deadlineAsc">{t('sortClosingSoonest')}</SelectItem>
+            <SelectItem value="startAsc">{t('sortStartingSoonest')}</SelectItem>
+            <SelectItem value="priceAsc">{t('sortPriceLow')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {filtered.length} of {programs.length} program{programs.length === 1 ? '' : 's'}
+        {filtered.length} {t('of')} {programs.length} {programs.length === 1 ? t('program') : t('programs')}
         {city !== ALL && (
           <>
-            {' '}in <span className="font-medium text-foreground">{city}</span>
+            {' '}{t('in')} <span className="font-medium text-foreground">{city}</span>
           </>
         )}
         {type !== ALL && <> · {programTypeLabel[type as ProgramType]}</>}
@@ -174,8 +175,8 @@ export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplo
       {filtered.length === 0 ? (
         <Card>
           <InlineEmptyState
-            title="No programs match"
-            description="Try widening the type, switching city, or clearing the search."
+            title={t('emptyTitle')}
+            description={t('emptyDescription')}
           />
         </Card>
       ) : (

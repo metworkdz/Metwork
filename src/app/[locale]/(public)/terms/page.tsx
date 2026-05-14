@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { Container } from '@/components/ui/container';
 import { siteConfig } from '@/config/site';
 
@@ -16,24 +16,30 @@ export const metadata: Metadata = {
 const EFFECTIVE_DATE = '2024-01-01';
 const LAST_UPDATED = '2025-05-01';
 
-const TOC = [
-  { id: 'acceptance',    label: '1. Acceptance of terms' },
-  { id: 'services',     label: '2. Description of services' },
-  { id: 'accounts',     label: '3. Account registration' },
-  { id: 'conduct',      label: '4. User conduct' },
-  { id: 'payments',     label: '5. Payments & wallet' },
-  { id: 'ip',           label: '6. Intellectual property' },
-  { id: 'disclaimer',   label: '7. Disclaimer of warranties' },
-  { id: 'liability',    label: '8. Limitation of liability' },
-  { id: 'termination',  label: '9. Termination' },
-  { id: 'changes',      label: '10. Changes to terms' },
-  { id: 'governing',    label: '11. Governing law' },
-  { id: 'contact',      label: '12. Contact' },
-];
+const TOC_IDS = [
+  'acceptance', 'services', 'accounts', 'conduct', 'payments',
+  'ip', 'disclaimer', 'liability', 'termination', 'changes', 'governing', 'contact',
+] as const;
 
 export default async function TermsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('pages.terms');
+
+  const tocLabels: Record<string, string> = {
+    acceptance:  t('toc1'),
+    services:    t('toc2'),
+    accounts:    t('toc3'),
+    conduct:     t('toc4'),
+    payments:    t('toc5'),
+    ip:          t('toc6'),
+    disclaimer:  t('toc7'),
+    liability:   t('toc8'),
+    termination: t('toc9'),
+    changes:     t('toc10'),
+    governing:   t('toc11'),
+    contact:     t('toc12'),
+  };
 
   return (
     <>
@@ -42,19 +48,16 @@ export default async function TermsPage({ params }: PageProps) {
         <Container size="md">
           <div className="max-w-2xl">
             <p className="text-xs font-medium uppercase tracking-widest text-primary">
-              Legal
+              {t('heroEyebrow')}
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Terms of service
+              {t('heroTitle')}
             </h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Effective {EFFECTIVE_DATE} · Last updated {LAST_UPDATED} ·{' '}
-              <span className="font-medium text-foreground">EURL METWORK</span>
+              {t('heroMeta', { effectiveDate: EFFECTIVE_DATE, lastUpdated: LAST_UPDATED })}
             </p>
             <p className="mt-4 text-base text-muted-foreground leading-relaxed">
-              Please read these Terms of Service carefully before using the Metwork platform.
-              By creating an account or accessing any part of the platform, you agree to be
-              bound by these terms.
+              {t('heroIntro')}
             </p>
           </div>
         </Container>
@@ -69,16 +72,16 @@ export default async function TermsPage({ params }: PageProps) {
             <aside className="hidden lg:block">
               <div className="sticky top-20">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Contents
+                  {t('tocHeading')}
                 </p>
                 <nav className="space-y-1">
-                  {TOC.map((item) => (
+                  {TOC_IDS.map((id) => (
                     <a
-                      key={item.id}
-                      href={`#${item.id}`}
+                      key={id}
+                      href={`#${id}`}
                       className="block rounded-sm px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     >
-                      {item.label}
+                      {tocLabels[id]}
                     </a>
                   ))}
                 </nav>
@@ -89,7 +92,7 @@ export default async function TermsPage({ params }: PageProps) {
             <article className="space-y-12 text-sm leading-relaxed text-foreground">
 
               {/* 1 */}
-              <Section id="acceptance" title="1. Acceptance of terms">
+              <Section id="acceptance" title={t('sec1Title')}>
                 <p>
                   These Terms of Service (&ldquo;Terms&rdquo;) constitute a legally binding
                   agreement between you and EURL METWORK (&ldquo;Metwork&rdquo;,
@@ -118,7 +121,7 @@ export default async function TermsPage({ params }: PageProps) {
               </Section>
 
               {/* 2 */}
-              <Section id="services" title="2. Description of services">
+              <Section id="services" title={t('sec2Title')}>
                 <p>
                   Metwork is an online platform that connects stakeholders in the Algerian
                   startup ecosystem. The Platform provides, among other things:
@@ -146,7 +149,7 @@ export default async function TermsPage({ params }: PageProps) {
               </Section>
 
               {/* 3 */}
-              <Section id="accounts" title="3. Account registration">
+              <Section id="accounts" title={t('sec3Title')}>
                 <p>
                   To access most features of the Platform, you must create an account. You
                   agree to:
@@ -172,14 +175,12 @@ export default async function TermsPage({ params }: PageProps) {
               </Section>
 
               {/* 4 */}
-              <Section id="conduct" title="4. User conduct">
+              <Section id="conduct" title={t('sec4Title')}>
                 <p>
                   By using the Platform you agree not to:
                 </p>
                 <ul>
-                  <li>
-                    Violate any applicable Algerian or international law or regulation
-                  </li>
+                  <li>Violate any applicable Algerian or international law or regulation</li>
                   <li>
                     Post or transmit content that is false, misleading, defamatory, obscene,
                     or infringes any third-party rights
@@ -196,9 +197,7 @@ export default async function TermsPage({ params }: PageProps) {
                     Attempt to gain unauthorised access to any portion of the Platform or
                     its related systems
                   </li>
-                  <li>
-                    Interfere with or disrupt the integrity or performance of the Platform
-                  </li>
+                  <li>Interfere with or disrupt the integrity or performance of the Platform</li>
                   <li>
                     Use automated means (bots, scrapers, crawlers) to access the Platform
                     without our prior written consent
@@ -215,21 +214,21 @@ export default async function TermsPage({ params }: PageProps) {
               </Section>
 
               {/* 5 */}
-              <Section id="payments" title="5. Payments & wallet">
+              <Section id="payments" title={t('sec5Title')}>
                 <p>
                   Certain features of the Platform require payment, including membership
                   subscriptions, coworking space bookings, and program applications. All
                   prices are displayed in Algerian Dinars (DZD) and are inclusive of
                   applicable taxes unless stated otherwise.
                 </p>
-                <SubSection title="5.1 Digital wallet">
+                <SubSection title={t('sec5sub1')}>
                   <p>
                     The Platform provides a digital wallet that you can top up using supported
                     payment methods. Wallet balances are non-transferable, non-refundable
                     (except in cases of platform error), and may not be exchanged for cash.
                   </p>
                 </SubSection>
-                <SubSection title="5.2 Refunds">
+                <SubSection title={t('sec5sub2')}>
                   <p>
                     Booking cancellations and refund eligibility are governed by the
                     cancellation policy of the relevant incubator or space provider. Metwork
@@ -237,7 +236,7 @@ export default async function TermsPage({ params }: PageProps) {
                     Membership fees are non-refundable once a billing period has begun.
                   </p>
                 </SubSection>
-                <SubSection title="5.3 Failed or disputed payments">
+                <SubSection title={t('sec5sub3')}>
                   <p>
                     If you dispute a charge, please contact us first at{' '}
                     <a href={`mailto:${siteConfig.contact.email}`} className="text-primary hover:underline">
@@ -249,7 +248,7 @@ export default async function TermsPage({ params }: PageProps) {
               </Section>
 
               {/* 6 */}
-              <Section id="ip" title="6. Intellectual property">
+              <Section id="ip" title={t('sec6Title')}>
                 <p>
                   The Platform and all of its content — including but not limited to text,
                   graphics, logos, icons, images, audio clips, and software — are the property
@@ -271,7 +270,7 @@ export default async function TermsPage({ params }: PageProps) {
               </Section>
 
               {/* 7 */}
-              <Section id="disclaimer" title="7. Disclaimer of warranties">
+              <Section id="disclaimer" title={t('sec7Title')}>
                 <p>
                   The Platform is provided on an &ldquo;as is&rdquo; and &ldquo;as
                   available&rdquo; basis, without warranties of any kind, express or implied,
@@ -291,7 +290,7 @@ export default async function TermsPage({ params }: PageProps) {
               </Section>
 
               {/* 8 */}
-              <Section id="liability" title="8. Limitation of liability">
+              <Section id="liability" title={t('sec8Title')}>
                 <p>
                   To the fullest extent permitted by Algerian law, EURL METWORK and its
                   directors, employees, agents, and licensors shall not be liable for any
@@ -307,7 +306,7 @@ export default async function TermsPage({ params }: PageProps) {
               </Section>
 
               {/* 9 */}
-              <Section id="termination" title="9. Termination">
+              <Section id="termination" title={t('sec9Title')}>
                 <p>
                   You may close your account at any time from your account settings. Upon
                   closure, your access to the Platform will be revoked and your personal data
@@ -327,7 +326,7 @@ export default async function TermsPage({ params }: PageProps) {
               </Section>
 
               {/* 10 */}
-              <Section id="changes" title="10. Changes to terms">
+              <Section id="changes" title={t('sec10Title')}>
                 <p>
                   We reserve the right to update these Terms at any time. When we make
                   material changes, we will update the &ldquo;Last updated&rdquo; date at
@@ -342,7 +341,7 @@ export default async function TermsPage({ params }: PageProps) {
               </Section>
 
               {/* 11 */}
-              <Section id="governing" title="11. Governing law & disputes">
+              <Section id="governing" title={t('sec11Title')}>
                 <p>
                   These Terms are governed by and construed in accordance with the laws of
                   the People&apos;s Democratic Republic of Algeria. Any dispute arising out
@@ -361,7 +360,7 @@ export default async function TermsPage({ params }: PageProps) {
               </Section>
 
               {/* 12 */}
-              <Section id="contact" title="12. Contact">
+              <Section id="contact" title={t('sec12Title')}>
                 <p>
                   For any questions or concerns about these Terms, please contact us:
                 </p>

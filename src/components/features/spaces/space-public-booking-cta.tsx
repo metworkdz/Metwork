@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { LogIn, UserPlus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
 import { useAuth } from '@/components/providers/auth-provider';
@@ -15,6 +16,7 @@ interface Props {
 
 export function SpacePublicBookingCTA({ space }: Props) {
   const { user } = useAuth();
+  const t = useTranslations('spaces.detail');
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const redirect = `/spaces/${space.id}`;
@@ -25,13 +27,13 @@ export function SpacePublicBookingCTA({ space }: Props) {
         <Link href={`/login?redirect=${encodeURIComponent(redirect)}`}>
           <Button className="w-full" variant="default">
             <LogIn className="size-4" />
-            Sign in to book
+            {t('signInToBook')}
           </Button>
         </Link>
         <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`}>
           <Button className="w-full" variant="outline">
             <UserPlus className="size-4" />
-            Create account &amp; book
+            {t('createAndBook')}
           </Button>
         </Link>
       </div>
@@ -41,7 +43,7 @@ export function SpacePublicBookingCTA({ space }: Props) {
   if (user.role !== 'ENTREPRENEUR') {
     return (
       <p className="text-sm text-muted-foreground text-center">
-        Space bookings are available for entrepreneur accounts.
+        {t('entrepreneurOnly')}
       </p>
     );
   }
@@ -49,7 +51,7 @@ export function SpacePublicBookingCTA({ space }: Props) {
   return (
     <>
       <Button className="w-full" onClick={() => setSheetOpen(true)}>
-        Book this space
+        {t('bookThisSpace')}
       </Button>
       <SpaceDetailSheet
         space={space}

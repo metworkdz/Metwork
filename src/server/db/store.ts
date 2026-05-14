@@ -540,6 +540,12 @@ export interface ProgramRecord {
   endDate: string;
   acceptedPaymentMethods: PaymentMethod[];
   isActive: boolean;
+  /**
+   * SEO-friendly URL slug, e.g. "startup-bootcamp-oran-2025".
+   * Optional for backward compat — old records lack this field.
+   * Unique per incubator (enforced in API layer).
+   */
+  slug?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -558,6 +564,70 @@ export interface EventRecord {
   eventDate: string;
   acceptedPaymentMethods: PaymentMethod[];
   isActive: boolean;
+  /**
+   * SEO-friendly URL slug, e.g. "ai-founders-meetup-oran".
+   * Optional for backward compat — old records lack this field.
+   * Unique per incubator (enforced in API layer).
+   */
+  slug?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/* ─────────────────────────── Registration System ─────────────────────────── */
+
+/** Supported field types for the dynamic registration form builder. */
+export type RegistrationFieldType =
+  | 'SHORT_TEXT'
+  | 'LONG_TEXT'
+  | 'DROPDOWN'
+  | 'MULTIPLE_CHOICE'
+  | 'CHECKBOX'
+  | 'PHONE'
+  | 'EMAIL';
+
+/**
+ * One custom field definition for a program or event's registration form.
+ * Incubators create/edit these via the form builder in their dashboard.
+ */
+export interface RegistrationFormFieldRecord {
+  id: string;
+  entityType: 'PROGRAM' | 'EVENT';
+  entityId: string;
+  incubatorId: string;
+  label: string;
+  type: RegistrationFieldType;
+  /** For DROPDOWN / MULTIPLE_CHOICE / CHECKBOX — the list of choices. */
+  options: string[] | null;
+  required: boolean;
+  /** Display order (0-indexed). */
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Status of a registration. */
+export type RegistrationStatus = 'CONFIRMED' | 'WAITLISTED' | 'CANCELLED';
+
+/**
+ * One registration by a guest or authenticated user for a program or event.
+ * Separate from BookingRecord — no wallet transaction is required.
+ */
+export interface RegistrationRecord {
+  id: string;
+  entityType: 'PROGRAM' | 'EVENT';
+  entityId: string;
+  incubatorId: string;
+  /** Null for guest (no-account) registrations. */
+  userId: string | null;
+  fullName: string;
+  email: string;
+  phone: string;
+  /** Answers to custom form fields. */
+  answers: Array<{ fieldId: string; value: string | string[] }>;
+  status: RegistrationStatus;
+  /** FK to ClientRecord.id — set when a CRM client was matched or created. */
+  clientId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1176,6 +1246,12 @@ interface DbShape {
   /** Per-attempt audit trail for every check-in scan or manual entry. */
   networkCheckInAuditLogs: NetworkCheckInAuditRecord[];
 
+  // ─── Registration System ──────────────────────────────────────────────
+  /** Custom form field definitions per program or event. */
+  registrationFormFields: RegistrationFormFieldRecord[];
+  /** Guest + authenticated registrations for programs and events. */
+  registrations: RegistrationRecord[];
+
   /**
    * One-shot flags and platform-wide config.
    */
@@ -1229,6 +1305,8 @@ const empty: DbShape = {
   userPartnerAffiliations: [],
   networkCheckInCodes: [],
   networkCheckInAuditLogs: [],
+  registrationFormFields: [],
+  registrations: [],
   meta: {},
 };
 

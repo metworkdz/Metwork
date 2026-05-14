@@ -13,6 +13,7 @@
  *   └── SpacesExplorer  (reads + writes category/city; owns query + sort)
  */
 import { useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Container } from '@/components/ui/container';
 import { SpacesHero } from './spaces-hero';
 import { SpacesExplorer } from './spaces-explorer';
@@ -26,6 +27,7 @@ interface SpacesPageClientProps {
 }
 
 export function SpacesPageClient({ spaces, cities }: SpacesPageClientProps) {
+  const t = useTranslations('spaces.pageClient');
   const [category, setCategory] = useState<SpaceCategory | 'all'>(ALL);
   const [city, setCity] = useState<string>(ALL);
 
@@ -49,7 +51,7 @@ export function SpacesPageClient({ spaces, cities }: SpacesPageClientProps) {
 
       <section
         ref={resultsRef}
-        aria-label="Workspace results"
+        aria-label={t('workspaceResultsLabel')}
         className="scroll-mt-4 py-10 sm:py-14"
       >
         <Container>

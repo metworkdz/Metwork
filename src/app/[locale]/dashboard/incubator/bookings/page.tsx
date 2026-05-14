@@ -1,4 +1,4 @@
-import { setRequestLocale, getLocale } from 'next-intl/server';
+import { setRequestLocale, getLocale, getTranslations } from 'next-intl/server';
 import { Banknote, Calendar, Briefcase, Building2, CreditCard } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,11 +34,7 @@ const kindIcon: Record<'SPACE' | 'PROGRAM' | 'EVENT', React.ReactNode> = {
   EVENT:   <Calendar className="size-3.5" />,
 };
 
-const kindLabel: Record<'SPACE' | 'PROGRAM' | 'EVENT', string> = {
-  SPACE:   'Space',
-  PROGRAM: 'Program',
-  EVENT:   'Event',
-};
+// kindLabel is built inside the component using t() to enable translations
 
 interface IncubatorBookingRow {
   id: string;
@@ -57,8 +53,15 @@ interface IncubatorBookingRow {
 export default async function IncubatorBookingsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t    = await getTranslations('pages.dashboard.incubator.bookings');
   const lang = (await getLocale()) as Locale;
   const user = await requireRole(['INCUBATOR']);
+
+  const kindLabel: Record<'SPACE' | 'PROGRAM' | 'EVENT', string> = {
+    SPACE:   t('kindSpace'),
+    PROGRAM: t('kindProgram'),
+    EVENT:   t('kindEvent'),
+  };
 
   const inc  = await findIncubatorByUserEmail(user.email);
   let rows: IncubatorBookingRow[] = [];
@@ -120,8 +123,8 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        title="Bookings"
-        subtitle="Platform and manual bookings for your spaces, programs, and events."
+        title={t('title')}
+        subtitle={t('subtitleFull')}
         action={
           mySpaces.length > 0 ? (
             <ManualBookingDialog
@@ -137,15 +140,15 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Upcoming confirmed" value={upcoming} icon={Calendar} />
+        <StatCard label={t('statUpcoming')} value={upcoming} icon={Calendar} />
         <StatCard
-          label="Awaiting payment"
+          label={t('statAwaiting')}
           value={awaitingPayment}
           icon={Banknote}
-          hint="Cash reservations pending"
+          hint={t('statAwaitingHint')}
         />
         <StatCard
-          label="Gross this month"
+          label={t('statGrossMonth')}
           value={formatCurrency(grossThisMonth, lang)}
           icon={Building2}
         />
@@ -155,21 +158,21 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
         <CardContent className="p-0">
           {rows.length === 0 ? (
             <InlineEmptyState
-              title="No bookings yet"
-              description="When customers book your spaces, programs, or events, they'll show up here."
+              title={t('emptyTitle')}
+              description={t('emptyDesc')}
             />
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>From</TableHead>
-                    <TableHead>To</TableHead>
-                    <TableHead>Payment</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-end">Amount</TableHead>
+                    <TableHead>{t('colCustomer')}</TableHead>
+                    <TableHead>{t('colItem')}</TableHead>
+                    <TableHead>{t('colFrom')}</TableHead>
+                    <TableHead>{t('colTo')}</TableHead>
+                    <TableHead>{t('colPayment')}</TableHead>
+                    <TableHead>{t('colStatus')}</TableHead>
+                    <TableHead className="text-end">{t('colAmount')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -197,11 +200,11 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                         <TableCell>
                           {b.paymentMethod === 'manual' ? (
                             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                              <Banknote className="size-3.5" /> Cash
+                              <Banknote className="size-3.5" /> {t('paymentCash')}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                              <CreditCard className="size-3.5" /> Online
+                              <CreditCard className="size-3.5" /> {t('paymentOnline')}
                             </span>
                           )}
                         </TableCell>
@@ -210,7 +213,7 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                         </TableCell>
                         <TableCell className="text-end tabular-nums font-medium">
                           {b.totalAmount === 0 ? (
-                            <span className="text-muted-foreground">Free</span>
+                            <span className="text-muted-foreground">{t('free')}</span>
                           ) : (
                             formatCurrency(b.totalAmount, lang)
                           )}

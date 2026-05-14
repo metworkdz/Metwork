@@ -5,6 +5,7 @@
  * Each rule card shows the current rate with an inline edit field.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Pencil, X, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ async function patchRule(id: string, body: { rate?: number; isActive?: boolean }
 }
 
 function RuleCard({ rule: initial }: { rule: CommissionRuleRecord }) {
+  const t = useTranslations('admin.commissions');
   const [rule,     setRule]     = useState(initial);
   const [editing,  setEditing]  = useState(false);
   const [draft,    setDraft]    = useState('');
@@ -41,7 +43,7 @@ function RuleCard({ rule: initial }: { rule: CommissionRuleRecord }) {
 
   async function saveRate() {
     const num = parseFloat(draft);
-    if (isNaN(num) || num < 0 || num > 100) { setErr('Enter a value between 0 and 100'); return; }
+    if (isNaN(num) || num < 0 || num > 100) { setErr(t('rateError')); return; }
     setBusy(true);
     try {
       const updated = await patchRule(rule.id, { rate: num / 100 });
@@ -72,7 +74,7 @@ function RuleCard({ rule: initial }: { rule: CommissionRuleRecord }) {
             <p className="text-xs text-muted-foreground mt-0.5">{rule.description}</p>
           </div>
           <Badge variant={rule.isActive ? 'success' : 'default'}>
-            {rule.isActive ? 'Active' : 'Inactive'}
+            {rule.isActive ? t('active') : t('inactive')}
           </Badge>
         </div>
       </CardHeader>
@@ -95,7 +97,7 @@ function RuleCard({ rule: initial }: { rule: CommissionRuleRecord }) {
                 <span className="absolute end-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
               </div>
               <Button size="sm" loading={busy} onClick={saveRate}>
-                <Check className="size-3" /> Save
+                <Check className="size-3" /> {t('saveButton')}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setErr(null); }}>
                 <X className="size-3" />
@@ -120,12 +122,12 @@ function RuleCard({ rule: initial }: { rule: CommissionRuleRecord }) {
             onClick={toggleActive}
             className="ms-auto"
           >
-            {rule.isActive ? 'Disable' : 'Enable'}
+            {rule.isActive ? t('disable') : t('enable')}
           </Button>
         </div>
         {err && <p className="mt-2 text-xs text-destructive">{err}</p>}
         <p className="mt-2 text-xs text-muted-foreground">
-          Applies to: <code className="rounded bg-muted px-1">{rule.transactionType}</code>
+          {t('appliesTo')} <code className="rounded bg-muted px-1">{rule.transactionType}</code>
         </p>
       </CardContent>
     </Card>
@@ -133,10 +135,11 @@ function RuleCard({ rule: initial }: { rule: CommissionRuleRecord }) {
 }
 
 export function CommissionsManager({ rules }: { rules: CommissionRuleRecord[] }) {
+  const t = useTranslations('admin.commissions');
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Commission rates are applied automatically to matching transaction types. Changes take effect immediately on new transactions.
+        {t('description')}
       </p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {rules.map((rule) => (

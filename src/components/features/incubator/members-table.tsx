@@ -4,6 +4,7 @@
  * Members table — displays entrepreneurs enrolled in any of the incubator's programs.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Users, Search, Briefcase } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export function MembersTable({ initial }: Props) {
+  const t = useTranslations('incubator.membersTable');
   const [q, setQ] = useState('');
 
   const filtered = q.trim()
@@ -47,10 +49,10 @@ export function MembersTable({ initial }: Props) {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Total members" value={initial.length} icon={Users} />
-        <StatCard label="Programs" value={programs.length} icon={Briefcase} />
+        <StatCard label={t('statTotalMembers')} value={initial.length} icon={Users} />
+        <StatCard label={t('statPrograms')} value={programs.length} icon={Briefcase} />
         <StatCard
-          label="Most recent"
+          label={t('statMostRecent')}
           value={
             initial.length > 0
               ? new Date(
@@ -68,7 +70,7 @@ export function MembersTable({ initial }: Props) {
             <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="ps-9"
-              placeholder="Search members or programs…"
+              placeholder={t('searchPlaceholder')}
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
@@ -77,8 +79,8 @@ export function MembersTable({ initial }: Props) {
         <CardContent className="p-0">
           {filtered.length === 0 ? (
             <InlineEmptyState
-              title={q ? 'No matches' : 'No members yet'}
-              description={q ? 'Try a different search.' : 'Members appear here once someone enrols in one of your programs.'}
+              title={q ? t('noMatches') : t('emptyTitle')}
+              description={q ? t('tryDifferentSearch') : t('emptyDescription')}
               icon={<Users className="size-5 text-muted-foreground" />}
             />
           ) : (
@@ -86,10 +88,10 @@ export function MembersTable({ initial }: Props) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Member</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Program</TableHead>
-                    <TableHead className="whitespace-nowrap">Enrolled</TableHead>
+                    <TableHead>{t('colMember')}</TableHead>
+                    <TableHead>{t('colPhone')}</TableHead>
+                    <TableHead>{t('colProgram')}</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('colEnrolled')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

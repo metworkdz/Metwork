@@ -9,7 +9,7 @@
  * No external chart library required.
  */
 import { useEffect, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   BarChart2,
   Calendar,
@@ -90,8 +90,9 @@ function KpiCard({
 
 /* ── Horizontal bar (revenue by service) ── */
 function ServiceBars({ items, locale }: { items: ServiceRevenue[]; locale: Locale }) {
+  const t = useTranslations('incubator.analytics');
   if (items.length === 0) return (
-    <p className="py-6 text-center text-sm text-muted-foreground">No revenue data for this period.</p>
+    <p className="py-6 text-center text-sm text-muted-foreground">{t('noRevenueData')}</p>
   );
   const max = Math.max(...items.map((i) => i.amount), 1);
   return (
@@ -116,8 +117,9 @@ function ServiceBars({ items, locale }: { items: ServiceRevenue[]; locale: Local
 
 /* ── SVG trend chart ── */
 function TrendChart({ points, locale }: { points: TrendPoint[]; locale: Locale }) {
+  const t = useTranslations('incubator.analytics');
   if (points.length === 0) return (
-    <p className="py-6 text-center text-sm text-muted-foreground">No trend data for this period.</p>
+    <p className="py-6 text-center text-sm text-muted-foreground">{t('noTrendData')}</p>
   );
 
   const W = 600, H = 200, PAD = { top: 16, right: 16, bottom: 36, left: 56 };
@@ -197,11 +199,11 @@ function TrendChart({ points, locale }: { points: TrendPoint[]; locale: Locale }
       <div className="mt-1 flex items-center justify-center gap-5 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="inline-block size-2.5 rounded-full bg-green-500" />
-          Income
+          {t('legendIncome')}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block size-2.5 rounded-full bg-red-500" />
-          Expenses
+          {t('legendExpenses')}
         </span>
       </div>
     </div>
@@ -218,10 +220,11 @@ function Controls({
   grain: 'day' | 'week' | 'month';
   onChange: (f: string, t: string, g: 'day' | 'week' | 'month') => void;
 }) {
+  const t = useTranslations('incubator.analytics');
   const GRAINS: { value: 'day' | 'week' | 'month'; label: string }[] = [
-    { value: 'day',   label: 'Daily' },
-    { value: 'week',  label: 'Weekly' },
-    { value: 'month', label: 'Monthly' },
+    { value: 'day',   label: t('grainDaily') },
+    { value: 'week',  label: t('grainWeekly') },
+    { value: 'month', label: t('grainMonthly') },
   ];
 
   return (
@@ -263,6 +266,7 @@ function Controls({
 /* ── Main component ── */
 export function AnalyticsDashboard() {
   const locale    = useLocale() as Locale;
+  const t         = useTranslations('incubator.analytics');
   const today     = new Date().toISOString().slice(0, 10);
   const yearStart = today.slice(0, 4) + '-01-01';
 
@@ -300,14 +304,14 @@ export function AnalyticsDashboard() {
     <div className="space-y-6">
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Financial overview</h2>
+        <h2 className="text-sm font-medium text-muted-foreground">{t('financialOverview')}</h2>
         <Controls from={from} to={to} grain={grain} onChange={handleChange} />
       </div>
 
       {loading && (
         <div className="flex items-center justify-center py-16 text-muted-foreground">
           <Loader2 className="mr-2 size-5 animate-spin" />
-          Loading analytics…
+          {t('loadingAnalytics')}
         </div>
       )}
 
@@ -322,32 +326,32 @@ export function AnalyticsDashboard() {
           {/* KPI row */}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <KpiCard
-              label="Total income"
+              label={t('totalIncome')}
               value={formatCurrency(data.totalIncome, locale)}
               icon={TrendingUp}
               positive
             />
             <KpiCard
-              label="Total expenses"
+              label={t('totalExpenses')}
               value={formatCurrency(data.totalExpenses, locale)}
               icon={TrendingDown}
               positive={false}
             />
             <KpiCard
-              label="Net profit"
+              label={t('netProfit')}
               value={formatCurrency(data.netProfit, locale)}
               icon={Wallet}
               positive={data.netProfit >= 0}
             />
             <KpiCard
-              label="MRR (this month)"
+              label={t('mrr')}
               value={formatCurrency(data.mrr, locale)}
               icon={BarChart2}
             />
             <KpiCard
-              label="Platform bookings"
+              label={t('platformBookings')}
               value={String(data.bookingCount)}
-              sub="in selected period"
+              sub={t('inSelectedPeriod')}
               icon={Calendar}
             />
           </div>
@@ -357,7 +361,7 @@ export function AnalyticsDashboard() {
             {/* Trend chart */}
             <Card className="lg:col-span-3">
               <div className="border-b border-border/60 px-4 py-3">
-                <p className="text-sm font-medium">Income vs Expenses</p>
+                <p className="text-sm font-medium">{t('incomeVsExpenses')}</p>
               </div>
               <CardContent className="p-4">
                 <TrendChart points={data.trend} locale={locale} />
@@ -367,7 +371,7 @@ export function AnalyticsDashboard() {
             {/* Revenue by service */}
             <Card className="lg:col-span-2">
               <div className="border-b border-border/60 px-4 py-3">
-                <p className="text-sm font-medium">Revenue by service</p>
+                <p className="text-sm font-medium">{t('revenueByService')}</p>
               </div>
               <CardContent className="p-4">
                 <ServiceBars items={data.revenueByService} locale={locale} />
@@ -379,16 +383,16 @@ export function AnalyticsDashboard() {
           {data.trend.length > 0 && (
             <Card>
               <div className="border-b border-border/60 px-4 py-3">
-                <p className="text-sm font-medium">Period breakdown</p>
+                <p className="text-sm font-medium">{t('periodBreakdown')}</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="border-b border-border/60">
                     <tr>
-                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Period</th>
-                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Income</th>
-                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Expenses</th>
-                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Net</th>
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">{t('colPeriod')}</th>
+                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">{t('colIncome')}</th>
+                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">{t('colExpenses')}</th>
+                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">{t('colNet')}</th>
                     </tr>
                   </thead>
                   <tbody>

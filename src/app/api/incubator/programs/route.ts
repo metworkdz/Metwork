@@ -10,6 +10,7 @@ import { db, type ProgramRecord } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { listProgramsByIncubator } from '@/server/bookings/program-catalog';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { slugify, uniqueSlug } from '@/lib/slugify';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,6 +27,8 @@ const createProgramSchema = z.object({
   startDate:   z.string().datetime(),
   endDate:     z.string().datetime(),
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).default(['ONLINE', 'CASH']),
+  /** Optional custom slug. Auto-generated from title if omitted. */
+  slug:        z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
 });
 
 export async function GET() {
@@ -63,6 +66,14 @@ export async function POST(req: NextRequest) {
   const now = new Date().toISOString();
   const record = await db.update<ProgramRecord>((d) => {
     if (!Array.isArray(d.programs)) d.programs = [];
+
+    // Slug: use provided value or auto-generate from title; ensure uniqueness per incubator
+    const existingSlugs = d.programs
+      .filter((p) => p.incubatorId === inc.id && p.slug)
+      .map((p) => p.slug as string);
+    const baseSlug = input.slug ? input.slug : slugify(input.title.trim());
+    const slug = uniqueSlug(baseSlug, existingSlugs);
+
     const prog: ProgramRecord = {
       id:                     randomUUID(),
       incubatorId:            inc.id,
@@ -79,6 +90,7 @@ export async function POST(req: NextRequest) {
       endDate:                input.endDate,
       acceptedPaymentMethods: paymentMethods,
       isActive:               true,
+      slug,
       createdAt:              now,
       updatedAt:              now,
     };

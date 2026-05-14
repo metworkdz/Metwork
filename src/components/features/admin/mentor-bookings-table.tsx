@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Check, X, ChevronDown, Calendar, Clock, Timer, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +58,7 @@ interface ReviewDialogProps {
 }
 
 function ReviewDialog({ booking, onClose, onSave }: ReviewDialogProps) {
+  const t = useTranslations('admin.mentorBookings');
   const [note,        setNote]        = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
   const [meetLink,    setMeetLink]    = useState('');
@@ -71,7 +73,7 @@ function ReviewDialog({ booking, onClose, onSave }: ReviewDialogProps) {
     if (!booking) return;
 
     if (status === 'APPROVED' && !approveReady) {
-      setErrorMsg('Please enter a meeting link or mark the session as offline before approving.');
+      setErrorMsg(t('approveValidationError'));
       return;
     }
 
@@ -98,7 +100,7 @@ function ReviewDialog({ booking, onClose, onSave }: ReviewDialogProps) {
     <Dialog open={booking !== null} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Review booking request</DialogTitle>
+          <DialogTitle>{t('reviewDialogTitle')}</DialogTitle>
           {booking && (
             <DialogDescription>
               {booking.userName} → {booking.mentorName}
@@ -110,11 +112,11 @@ function ReviewDialog({ booking, onClose, onSave }: ReviewDialogProps) {
           <div className="space-y-4">
             {/* Booking info */}
             <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm space-y-1">
-              <p><span className="font-medium">Email:</span> {booking.userEmail}</p>
-              <p><span className="font-medium">Phone:</span> {booking.userPhone}</p>
+              <p><span className="font-medium">{t('emailLabel')}:</span> {booking.userEmail}</p>
+              <p><span className="font-medium">{t('phoneLabel')}:</span> {booking.userPhone}</p>
               {booking.scheduledAt && (
                 <p>
-                  <span className="font-medium">Preferred time:</span>{' '}
+                  <span className="font-medium">{t('preferredTimeLabel')}:</span>{' '}
                   {new Date(booking.scheduledAt).toLocaleString()}
                 </p>
               )}
@@ -125,7 +127,7 @@ function ReviewDialog({ booking, onClose, onSave }: ReviewDialogProps) {
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label htmlFor="rev-scheduled">
-                  Confirmed date &amp; time <span className="text-muted-foreground text-xs">(overrides user&apos;s preference)</span>
+                  {t('confirmedDateTimeLabel')} <span className="text-muted-foreground text-xs">{t('confirmedDateTimeHint')}</span>
                 </Label>
                 <Input
                   id="rev-scheduled"
@@ -150,34 +152,34 @@ function ReviewDialog({ booking, onClose, onSave }: ReviewDialogProps) {
                   className="size-4 rounded"
                 />
                 <MapPin className="size-4 shrink-0 text-muted-foreground" />
-                <span className="text-sm font-medium">In-person meeting (offline)</span>
+                <span className="text-sm font-medium">{t('offlineLabel')}</span>
               </label>
 
               {/* Meet link — hidden when offline */}
               {!isOffline && (
                 <div className="space-y-1.5">
                   <Label htmlFor="rev-meet">
-                    Meeting link <span className="text-destructive text-xs">* required for approval</span>
+                    {t('meetingLinkLabel')} <span className="text-destructive text-xs">{t('meetingLinkRequired')}</span>
                   </Label>
                   <Input
                     id="rev-meet"
                     type="url"
                     value={meetLink}
                     onChange={(e) => { setMeetLink(e.target.value); setErrorMsg(null); }}
-                    placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                    placeholder={t('meetingLinkPlaceholder')}
                     disabled={saving}
                   />
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <Label htmlFor="admin-note">Note to client <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                <Label htmlFor="admin-note">{t('noteLabel')} <span className="text-muted-foreground text-xs">{t('noteHint')}</span></Label>
                 <textarea
                   id="admin-note"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   rows={2}
-                  placeholder="Add a note visible to the client in their confirmation email…"
+                  placeholder={t('notePlaceholder')}
                   disabled={saving}
                   className={cn(
                     'flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm',
@@ -199,22 +201,22 @@ function ReviewDialog({ booking, onClose, onSave }: ReviewDialogProps) {
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={saving}>
-            Cancel
+            {t('cancel')}
           </Button>
           <Button
             variant="destructive"
             loading={saving}
             onClick={() => submit('REJECTED')}
           >
-            <X className="size-4" /> Reject
+            <X className="size-4" /> {t('reject')}
           </Button>
           <Button
             loading={saving}
             disabled={!approveReady}
-            title={!approveReady ? 'Enter a meeting link or mark as offline to approve' : undefined}
+            title={!approveReady ? t('approveTooltip') : undefined}
             onClick={() => submit('APPROVED')}
           >
-            <Check className="size-4" /> Approve
+            <Check className="size-4" /> {t('approve')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -227,15 +229,16 @@ interface MentorBookingsTableProps {
 }
 
 export function MentorBookingsTable({ initial }: MentorBookingsTableProps) {
+  const t = useTranslations('admin.mentorBookings');
   const [rows,         setRows]      = useState<BookingRow[]>(initial);
   const [reviewing,    setReviewing] = useState<BookingRow | null>(null);
   const [statusFilter, setFilter]    = useState<MentorBookingStatus | 'ALL'>('ALL');
 
   const filters: Array<{ value: MentorBookingStatus | 'ALL'; label: string }> = [
-    { value: 'ALL',      label: 'All' },
-    { value: 'PENDING',  label: 'Pending' },
-    { value: 'APPROVED', label: 'Approved' },
-    { value: 'REJECTED', label: 'Rejected' },
+    { value: 'ALL',      label: t('filterAll') },
+    { value: 'PENDING',  label: t('filterPending') },
+    { value: 'APPROVED', label: t('filterApproved') },
+    { value: 'REJECTED', label: t('filterRejected') },
   ];
 
   const visible = statusFilter === 'ALL'
@@ -328,7 +331,7 @@ export function MentorBookingsTable({ initial }: MentorBookingsTableProps) {
                           {row.durationMinutes && (
                             <span className="inline-flex items-center gap-1">
                               <Timer className="size-3" />
-                              {row.durationMinutes} min
+                              {t('durationMin', { min: row.durationMinutes })}
                             </span>
                           )}
                         </div>
@@ -338,11 +341,11 @@ export function MentorBookingsTable({ initial }: MentorBookingsTableProps) {
                       </p>
                       {row.adminNote && (
                         <p className="mt-1 text-xs italic text-muted-foreground">
-                          Note: {row.adminNote}
+                          {t('notePrefix')}{row.adminNote}
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground/60">
-                        Submitted {new Date(row.createdAt).toLocaleString()}
+                        {t('submittedAt', { date: new Date(row.createdAt).toLocaleString() })}
                       </p>
                     </div>
 
@@ -353,7 +356,7 @@ export function MentorBookingsTable({ initial }: MentorBookingsTableProps) {
                         className="shrink-0"
                         onClick={() => setReviewing(row)}
                       >
-                        Review
+                        {t('reviewButton')}
                         <ChevronDown className="size-3" />
                       </Button>
                     )}

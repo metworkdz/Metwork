@@ -10,6 +10,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle2, XCircle, Loader2, Wallet } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -35,6 +36,7 @@ function formatDZD(amount: number) {
 }
 
 export default function PaymentSuccessPage() {
+  const t = useTranslations('pages.payment.success');
   const searchParams = useSearchParams();
   const topUpId = searchParams.get('topUpId');
 
@@ -95,15 +97,15 @@ export default function PaymentSuccessPage() {
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-16">
       <Card className="w-full max-w-md border-border/60 shadow-lg">
         <CardContent className="p-8 text-center">
-          {phase === 'verifying' && <VerifyingState />}
-          {phase === 'success' && <SuccessState balance={balance} walletPath={walletPath} />}
+          {phase === 'verifying' && <VerifyingState t={t} />}
+          {phase === 'success' && <SuccessState balance={balance} walletPath={walletPath} t={t} />}
           {phase === 'pending' && (
-            <PendingState walletPath={walletPath} onRetry={() => {
+            <PendingState walletPath={walletPath} t={t} onRetry={() => {
               setPhase('verifying');
               setRetryCount((c) => c + 1);
             }} />
           )}
-          {phase === 'error' && <ErrorState walletPath={walletPath} />}
+          {phase === 'error' && <ErrorState walletPath={walletPath} t={t} />}
         </CardContent>
       </Card>
     </div>
@@ -112,7 +114,9 @@ export default function PaymentSuccessPage() {
 
 /* ─────────────────────────── States ─────────────────────────── */
 
-function VerifyingState() {
+type TFn = ReturnType<typeof useTranslations<'pages.payment.success'>>;
+
+function VerifyingState({ t }: { t: TFn }) {
   return (
     <div className="space-y-4">
       <div className="flex justify-center">
@@ -121,16 +125,16 @@ function VerifyingState() {
         </div>
       </div>
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Verifying payment…</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t('verifyingTitle')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Confirming your transaction with SlickPay. This takes just a moment.
+          {t('verifyingDesc')}
         </p>
       </div>
     </div>
   );
 }
 
-function SuccessState({ balance, walletPath }: { balance: number | null; walletPath: string }) {
+function SuccessState({ balance, walletPath, t }: { balance: number | null; walletPath: string; t: TFn }) {
   return (
     <div className="space-y-5">
       <div className="flex justify-center">
@@ -140,16 +144,16 @@ function SuccessState({ balance, walletPath }: { balance: number | null; walletP
       </div>
       <div>
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Payment confirmed!
+          {t('successTitle')}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Your wallet has been credited successfully.
+          {t('successDesc')}
         </p>
         {balance !== null && (
           <div className={cn(
             'mt-4 rounded-lg border border-emerald-200 bg-emerald-50 py-3 px-4',
           )}>
-            <p className="text-xs font-medium text-emerald-700">New balance</p>
+            <p className="text-xs font-medium text-emerald-700">{t('newBalance')}</p>
             <p className="mt-0.5 text-2xl font-semibold tabular-nums text-emerald-800">
               {formatDZD(balance)}
             </p>
@@ -160,18 +164,18 @@ function SuccessState({ balance, walletPath }: { balance: number | null; walletP
         <Button asChild className="w-full">
           <Link href={walletPath}>
             <Wallet className="size-4" />
-            Go to wallet
+            {t('goToWallet')}
           </Link>
         </Button>
         <Button asChild variant="ghost" size="sm" className="w-full text-muted-foreground">
-          <Link href="/">Back to home</Link>
+          <Link href="/">{t('backHome')}</Link>
         </Button>
       </div>
     </div>
   );
 }
 
-function PendingState({ walletPath, onRetry }: { walletPath: string; onRetry: () => void }) {
+function PendingState({ walletPath, t, onRetry }: { walletPath: string; t: TFn; onRetry: () => void }) {
   return (
     <div className="space-y-5">
       <div className="flex justify-center">
@@ -180,24 +184,24 @@ function PendingState({ walletPath, onRetry }: { walletPath: string; onRetry: ()
         </div>
       </div>
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Payment pending</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t('pendingTitle')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Your payment hasn&apos;t been confirmed yet. This can take up to a minute.
+          {t('pendingDesc')}
         </p>
       </div>
       <div className="flex flex-col gap-2">
         <Button onClick={onRetry} className="w-full">
-          Check again
+          {t('checkAgain')}
         </Button>
         <Button asChild variant="outline" className="w-full">
-          <Link href={walletPath}>Go to wallet</Link>
+          <Link href={walletPath}>{t('goToWallet')}</Link>
         </Button>
       </div>
     </div>
   );
 }
 
-function ErrorState({ walletPath }: { walletPath: string }) {
+function ErrorState({ walletPath, t }: { walletPath: string; t: TFn }) {
   return (
     <div className="space-y-5">
       <div className="flex justify-center">
@@ -206,17 +210,17 @@ function ErrorState({ walletPath }: { walletPath: string }) {
         </div>
       </div>
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Verification failed</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t('errorTitle')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          We couldn&apos;t verify your payment. If your card was charged, contact support.
+          {t('errorDesc')}
         </p>
       </div>
       <div className="flex flex-col gap-2">
         <Button asChild className="w-full">
-          <Link href={walletPath}>Go to wallet</Link>
+          <Link href={walletPath}>{t('goToWallet')}</Link>
         </Button>
         <Button asChild variant="ghost" size="sm" className="w-full text-muted-foreground">
-          <Link href="/">Back to home</Link>
+          <Link href="/">{t('backHome')}</Link>
         </Button>
       </div>
     </div>

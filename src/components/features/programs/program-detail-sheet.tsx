@@ -5,7 +5,7 @@
  * Fetches live attendance and the caller's apply status when opened.
  */
 import { useEffect, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { CalendarRange, Clock, MapPin, Users } from 'lucide-react';
 import { Sheet, SheetClose, SheetContent } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,7 @@ interface ProgramDetailSheetProps {
 }
 
 export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetailSheetProps) {
+  const t = useTranslations('programs.detail');
   const locale = useLocale() as Locale;
   const [status, setStatus] = useState<ItemAttendanceStatus | null>(null);
   const [success, setSuccess] = useState<{ booking: BookingDto; newBalance: number; paid: boolean } | null>(null);
@@ -78,7 +79,7 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <Users className="size-3.5" />
-                  {(status?.taken ?? program.seatsTaken)}/{program.seatsTotal} enrolled
+                  {t('enrolled', { count: status?.taken ?? program.seatsTaken })}
                 </span>
               </div>
 
@@ -90,32 +91,32 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <DetailTile
                   icon={<CalendarRange className="size-4" />}
-                  label="Cohort dates"
+                  label={t('cohortDates')}
                   value={`${formatDate(program.startDate, locale)} → ${formatDate(program.endDate, locale)}`}
                 />
                 <DetailTile
                   icon={<Clock className="size-4" />}
-                  label="Application deadline"
+                  label={t('deadline')}
                   value={formatDate(program.deadline, locale, { dateStyle: 'medium' })}
                   hint={status?.deadline ? formatRelativeTime(status.deadline, locale) : undefined}
                   hintTone={status?.deadlinePassed ? 'danger' : 'default'}
                 />
                 <DetailTile
                   icon={<Users className="size-4" />}
-                  label="Cohort size"
-                  value={`${program.seatsTotal} seats`}
+                  label={t('cohortSize')}
+                  value={t('seats', { count: program.seatsTotal })}
                   hint={
                     status
-                      ? `${Math.max(0, status.capacity - status.taken)} left`
-                      : `${Math.max(0, program.seatsTotal - program.seatsTaken)} left`
+                      ? t('seatsLeft', { count: Math.max(0, status.capacity - status.taken) })
+                      : t('seatsLeft', { count: Math.max(0, program.seatsTotal - program.seatsTaken) })
                   }
                 />
                 <DetailTile
-                  icon={<Badge variant="primary" className="text-[10px]">FEE</Badge>}
-                  label="Application fee"
+                  icon={<Badge variant="primary" className="text-[10px]">{t('fee')}</Badge>}
+                  label={t('applicationFee')}
                   value={
                     program.price === 0
-                      ? 'Free'
+                      ? t('free')
                       : formatCurrency(program.price, locale)
                   }
                 />

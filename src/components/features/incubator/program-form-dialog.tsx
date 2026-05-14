@@ -6,6 +6,7 @@
  * PATCH /api/incubator/programs/[id]  (edit)
  */
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,13 +32,7 @@ import { ImageUploadField } from '@/components/shared/image-upload-field';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 import type { ProgramType } from '@/types/domain';
 
-const PROGRAM_TYPES: { value: ProgramType; label: string }[] = [
-  { value: 'INCUBATION',   label: 'Incubation' },
-  { value: 'ACCELERATION', label: 'Acceleration' },
-  { value: 'TRAINING',     label: 'Training' },
-  { value: 'BOOTCAMP',     label: 'Bootcamp' },
-  { value: 'WORKSHOP',     label: 'Workshop' },
-];
+const PROGRAM_TYPE_KEYS: ProgramType[] = ['INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP'];
 
 // FIX: BUG-2 — added edit mode props; FIX: BUG-5 — added cashEnabled prop
 interface ProgramFormDialogProps {
@@ -54,6 +49,7 @@ interface ProgramFormDialogProps {
 }
 
 export function ProgramFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange, cashEnabled = true }: ProgramFormDialogProps) {
+  const t = useTranslations('incubator.programForm');
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -141,14 +137,14 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { message?: string };
-        setError(data.message ?? (editId ? 'Failed to update program.' : 'Failed to create program.'));
+        setError(data.message ?? (editId ? t('errorUpdate') : t('errorCreate')));
         return;
       }
       onCreated();
       setOpen(false);
       reset();
     } catch {
-      setError('Network error — try again.');
+      setError(t('errorNetwork'));
     } finally {
       setSubmitting(false);
     }
@@ -161,49 +157,48 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
         <DialogTrigger asChild>
           <Button size="sm" className="gap-1.5">
             <PlusCircle className="size-4" />
-            Add program
+            {t('addProgram')}
           </Button>
         </DialogTrigger>
       )}
 
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{editId ? 'Edit program' : 'New program'}</DialogTitle>
+          <DialogTitle>{editId ? t('titleEdit') : t('titleNew')}</DialogTitle>
           <DialogDescription>
-            {editId
-              ? 'Update the details for this program listing.'
-              : 'Create an incubation, acceleration, or training program listing.'}
+            {editId ? t('descriptionEdit') : t('descriptionNew')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4 py-2">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Label htmlFor="p-title">Title</Label>
+              <Label htmlFor="p-title">{t('labelTitle')}</Label>
               <Input id="p-title" className="mt-1" value={title} onChange={(e) => setTitle(e.target.value)} required minLength={2} />
             </div>
             <div>
-              <Label htmlFor="p-type">Type</Label>
+              <Label htmlFor="p-type">{t('labelType')}</Label>
               <Select value={type} onValueChange={(v) => setType(v as ProgramType)}>
                 <SelectTrigger id="p-type" className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {PROGRAM_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                  ))}
+                  {PROGRAM_TYPE_KEYS.map((key) => {
+                    const labelKey = `type${key.charAt(0)}${key.slice(1).toLowerCase()}` as 'typeIncubation' | 'typeAcceleration' | 'typeTraining' | 'typeBootcamp' | 'typeWorkshop';
+                    return <SelectItem key={key} value={key}>{t(labelKey)}</SelectItem>;
+                  })}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="p-city">City</Label>
+              <Label htmlFor="p-city">{t('labelCity')}</Label>
               {/* FIX: BUG-4 — searchable wilaya dropdown */}
               <div className="mt-1">
                 <AlgerianCitySelect id="p-city" value={city} onChange={setCity} required />
               </div>
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="p-desc">Description</Label>
+              <Label htmlFor="p-desc">{t('labelDescription')}</Label>
               <textarea
                 id="p-desc"
                 className="mt-1 min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -215,7 +210,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
             </div>
             <div className="sm:col-span-2">
               <ImageUploadField
-                label="Cover image (optional)"
+                label={t('labelCoverImage')}
                 currentUrl={imageUrl || null}
                 onUpload={(url) => setImageUrl(url)}
                 onRemove={() => setImageUrl('')}
@@ -225,29 +220,29 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label htmlFor="p-price">Price (DZD)</Label>
+              <Label htmlFor="p-price">{t('labelPrice')}</Label>
               <Input id="p-price" type="number" min="0" className="mt-1" value={price} onChange={(e) => setPrice(e.target.value)} />
             </div>
             <div>
-              <Label htmlFor="p-seats">Total seats</Label>
+              <Label htmlFor="p-seats">{t('labelTotalSeats')}</Label>
               <Input id="p-seats" type="number" min="1" className="mt-1" value={seatsTotal} onChange={(e) => setSeatsTotal(e.target.value)} required />
             </div>
             <div>
-              <Label htmlFor="p-deadline">Application deadline</Label>
+              <Label htmlFor="p-deadline">{t('labelDeadline')}</Label>
               <Input id="p-deadline" type="date" className="mt-1" value={deadline} onChange={(e) => setDeadline(e.target.value)} required />
             </div>
             <div>
-              <Label htmlFor="p-start">Start date</Label>
+              <Label htmlFor="p-start">{t('labelStartDate')}</Label>
               <Input id="p-start" type="date" className="mt-1" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
             </div>
             <div>
-              <Label htmlFor="p-end">End date</Label>
+              <Label htmlFor="p-end">{t('labelEndDate')}</Label>
               <Input id="p-end" type="date" className="mt-1" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
             </div>
           </div>
 
           <div>
-            <p className="text-sm font-medium">Accepted payment methods</p>
+            <p className="text-sm font-medium">{t('labelPaymentMethods')}</p>
             <div className="mt-1.5 flex gap-3">
               {(['ONLINE', 'CASH'] as const).map((m) => {
                 // FIX: BUG-5 — hide CASH button when cash is not allowed for this subscription
@@ -264,7 +259,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
                         : 'border-border text-muted-foreground hover:border-primary/40',
                     )}
                   >
-                    {m === 'ONLINE' ? 'Online (wallet)' : 'Cash on-site'}
+                    {m === 'ONLINE' ? t('methodOnline') : t('methodCash')}
                   </button>
                 );
               })}
@@ -279,7 +274,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
 
           <DialogFooter>
             <Button type="submit" loading={submitting}>
-              {submitting ? (editId ? 'Saving…' : 'Creating…') : (editId ? 'Save changes' : 'Create program')}
+              {submitting ? (editId ? t('saving') : t('creating')) : (editId ? t('saveChanges') : t('createProgram'))}
             </Button>
           </DialogFooter>
         </form>

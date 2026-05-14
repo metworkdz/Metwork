@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Building2, Briefcase, Calendar, CheckCircle2, XCircle, ReceiptText, Wifi, WifiOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -50,6 +51,7 @@ type SourceFilter = 'ALL' | 'online' | 'offline';
 type StatusFilter = 'ALL' | 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
 
 export function BookingsManager({ initial, incubator, spaces, programs }: Props) {
+  const t = useTranslations('incubator.bookings');
   const [bookings, setBookings] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [receiptBookingId, setReceiptBookingId] = useState<string | null>(null);
@@ -97,9 +99,9 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Pending review" value={pending} icon={Calendar} hint="Need confirmation" />
-        <StatCard label="Confirmed" value={confirmed} icon={CheckCircle2} />
-        <StatCard label="Total revenue" value={`${gross.toLocaleString()} DZD`} icon={ReceiptText} hint="Confirmed + completed" />
+        <StatCard label={t('statPendingReview')} value={pending} icon={Calendar} hint={t('statPendingHint')} />
+        <StatCard label={t('statConfirmed')} value={confirmed} icon={CheckCircle2} />
+        <StatCard label={t('statTotalRevenue')} value={`${gross.toLocaleString()} DZD`} icon={ReceiptText} hint={t('statTotalRevenueHint')} />
       </div>
 
       {/* Filters + actions */}
@@ -109,9 +111,9 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All sources</SelectItem>
-            <SelectItem value="online">Online only</SelectItem>
-            <SelectItem value="offline">Offline only</SelectItem>
+            <SelectItem value="ALL">{t('filterAllSources')}</SelectItem>
+            <SelectItem value="online">{t('filterOnlineOnly')}</SelectItem>
+            <SelectItem value="offline">{t('filterOfflineOnly')}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -120,11 +122,11 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All statuses</SelectItem>
-            <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-            <SelectItem value="CANCELLED">Cancelled</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
+            <SelectItem value="ALL">{t('filterAllStatuses')}</SelectItem>
+            <SelectItem value="PENDING">{t('filterPending')}</SelectItem>
+            <SelectItem value="CONFIRMED">{t('filterConfirmed')}</SelectItem>
+            <SelectItem value="CANCELLED">{t('filterCancelled')}</SelectItem>
+            <SelectItem value="COMPLETED">{t('filterCompleted')}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -143,8 +145,8 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
         <CardContent className="p-0">
           {filtered.length === 0 ? (
             <InlineEmptyState
-              title={bookings.length === 0 ? 'No bookings yet' : 'No bookings match the filters'}
-              description={bookings.length === 0 ? "When customers book your spaces or programs, they'll appear here." : 'Try adjusting the filters above.'}
+              title={bookings.length === 0 ? t('emptyTitle') : t('emptyTitleFiltered')}
+              description={bookings.length === 0 ? t('emptyDescription') : t('emptyDescriptionFiltered')}
               icon={<Calendar className="size-5 text-muted-foreground" />}
             />
           ) : (
@@ -152,11 +154,11 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-end">Amount</TableHead>
+                    <TableHead>{t('colCustomer')}</TableHead>
+                    <TableHead>{t('colItem')}</TableHead>
+                    <TableHead>{t('colDate')}</TableHead>
+                    <TableHead>{t('colStatus')}</TableHead>
+                    <TableHead className="text-end">{t('colAmount')}</TableHead>
                     <TableHead className="w-36" />
                   </TableRow>
                 </TableHeader>
@@ -182,8 +184,8 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                               title={isOffline ? 'Manual / offline booking' : 'Online booking'}
                             >
                               {isOffline
-                                ? <><WifiOff className="size-3" /> Offline</>
-                                : <><Wifi className="size-3" /> Online</>
+                                ? <><WifiOff className="size-3" /> {t('badgeOffline')}</>
+                                : <><Wifi className="size-3" /> {t('badgeOnline')}</>
                               }
                             </Badge>
                           </div>
@@ -198,7 +200,7 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                         </TableCell>
                         <TableCell className="text-end tabular-nums font-medium text-sm">
                           {b.totalAmount === 0 ? (
-                            <span className="text-muted-foreground">Free</span>
+                            <span className="text-muted-foreground">{t('free')}</span>
                           ) : (
                             `${b.totalAmount.toLocaleString()} DZD`
                           )}

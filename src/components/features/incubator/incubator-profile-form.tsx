@@ -6,6 +6,7 @@
  * Also updates the manager's personal fullName and avatar.
  */
 import { useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Building2, Upload, Globe, CreditCard, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export function IncubatorProfileForm({ incubator, user }: Props) {
+  const t = useTranslations('incubator.profileForm');
   const [form, setForm] = useState({
     incubatorName: incubator.name,
     description: incubator.description ?? '',
@@ -50,11 +52,11 @@ export function IncubatorProfileForm({ incubator, user }: Props) {
       const fd = new FormData();
       fd.append('file', file);
       const res = await fetch('/api/incubator/upload', { method: 'POST', credentials: 'include', body: fd });
-      if (!res.ok) throw new Error('Upload failed');
+      if (!res.ok) throw new Error(t('errorUpload'));
       const data = await res.json() as { url: string };
       setForm((f) => ({ ...f, logoUrl: data.url }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : t('errorUpload'));
     } finally {
       setUploading(false);
     }
@@ -81,11 +83,11 @@ export function IncubatorProfileForm({ incubator, user }: Props) {
           avatarUrl: form.avatarUrl.trim() || null,
         }),
       });
-      if (!res.ok) throw new Error('Save failed');
+      if (!res.ok) throw new Error(t('errorSave'));
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('errorSave'));
     } finally {
       setSaving(false);
     }
@@ -97,23 +99,23 @@ export function IncubatorProfileForm({ incubator, user }: Props) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Building2 className="size-4" /> Manager profile
+            <Building2 className="size-4" /> {t('sectionManager')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="mgr-name">Your full name</Label>
+              <Label htmlFor="mgr-name">{t('labelYourFullName')}</Label>
               <Input id="mgr-name" value={form.fullName}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, fullName: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label>Email (read-only)</Label>
+              <Label>{t('labelEmailReadOnly')}</Label>
               <Input value={user.email} disabled />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Profile picture</Label>
+            <Label>{t('labelProfilePicture')}</Label>
             <div className="flex items-center gap-4">
               <AvatarUpload
                 currentUrl={form.avatarUrl || null}
@@ -123,13 +125,13 @@ export function IncubatorProfileForm({ incubator, user }: Props) {
                 size="size-16"
               />
               <div>
-                <p className="text-sm text-muted-foreground">Click to upload a profile photo</p>
-                <p className="text-xs text-muted-foreground">JPG, PNG, WebP — max 5 MB</p>
+                <p className="text-sm text-muted-foreground">{t('uploadPhotoHint')}</p>
+                <p className="text-xs text-muted-foreground">{t('uploadPhotoTypes')}</p>
               </div>
             </div>
             <Input id="mgr-avatar" value={form.avatarUrl}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, avatarUrl: e.target.value }))}
-              placeholder="Or paste a URL: https://…" />
+              placeholder={t('avatarUrlPlaceholder')} />
           </div>
         </CardContent>
       </Card>
@@ -138,50 +140,50 @@ export function IncubatorProfileForm({ incubator, user }: Props) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Building2 className="size-4" /> Incubator profile
+            <Building2 className="size-4" /> {t('sectionIncubator')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="inc-name">Incubator name *</Label>
+              <Label htmlFor="inc-name">{t('labelIncubatorName')}</Label>
               <Input id="inc-name" value={form.incubatorName}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, incubatorName: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="inc-city">City *</Label>
+              <Label htmlFor="inc-city">{t('labelCity')}</Label>
               <Input id="inc-city" value={form.city}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, city: e.target.value }))} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="inc-desc">Description</Label>
+            <Label htmlFor="inc-desc">{t('labelDescription')}</Label>
             <textarea id="inc-desc" rows={3} value={form.description}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder="Describe your incubator, mission, history…"
+              placeholder={t('descriptionPlaceholder')}
               className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none" />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="inc-website">
-                <Globe className="me-1 inline size-3.5" />Website
+                <Globe className="me-1 inline size-3.5" />{t('labelWebsite')}
               </Label>
               <Input id="inc-website" type="url" value={form.website}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, website: e.target.value }))}
                 placeholder="https://myincubator.dz" />
             </div>
             <div className="space-y-1.5">
-              <Label>Logo</Label>
+              <Label>{t('labelLogo')}</Label>
               <div className="flex gap-2">
                 <Input value={form.logoUrl}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, logoUrl: e.target.value }))}
-                  placeholder="https://… or upload below" />
+                  placeholder={t('logoUrlPlaceholder')} />
                 <Button type="button" variant="outline" size="icon"
                   disabled={uploading}
                   onClick={() => fileRef.current?.click()}
-                  title="Upload logo">
+                  title={t('uploadLogoTitle')}>
                   <Upload className="size-4" />
                 </Button>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden"
@@ -193,7 +195,7 @@ export function IncubatorProfileForm({ incubator, user }: Props) {
               </div>
               {form.logoUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={form.logoUrl} alt="Logo preview"
+                <img src={form.logoUrl} alt={t('logoPreviewAlt')}
                   className="mt-2 h-12 w-12 rounded object-contain border border-border" />
               )}
             </div>
@@ -205,29 +207,29 @@ export function IncubatorProfileForm({ incubator, user }: Props) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <FileText className="size-4" /> Legal &amp; billing info
+            <FileText className="size-4" /> {t('sectionLegal')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="inc-address">Address</Label>
+            <Label htmlFor="inc-address">{t('labelAddress')}</Label>
             <Input id="inc-address" value={form.address}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, address: e.target.value }))}
-              placeholder="Street address, city, postal code…" />
-            <p className="text-xs text-muted-foreground">Shown on printed receipts.</p>
+              placeholder={t('addressPlaceholder')} />
+            <p className="text-xs text-muted-foreground">{t('addressHint')}</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="inc-rc">Commercial register number (RC)</Label>
+              <Label htmlFor="inc-rc">{t('labelRc')}</Label>
               <Input id="inc-rc" value={form.commercialRegNumber}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, commercialRegNumber: e.target.value }))}
-                placeholder="e.g. 16/00-0000000B00" />
+                placeholder={t('rcPlaceholder')} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="inc-nif">Tax ID (NIF)</Label>
+              <Label htmlFor="inc-nif">{t('labelNif')}</Label>
               <Input id="inc-nif" value={form.nif}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, nif: e.target.value }))}
-                placeholder="e.g. 000000000000000" />
+                placeholder={t('nifPlaceholder')} />
             </div>
           </div>
         </CardContent>
@@ -237,12 +239,12 @@ export function IncubatorProfileForm({ incubator, user }: Props) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <CreditCard className="size-4" /> Billing plan
+            <CreditCard className="size-4" /> {t('sectionBilling')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-1.5">
-            <Label>Subscription tier</Label>
+            <Label>{t('labelSubscriptionTier')}</Label>
             <Select
               value={form.subscriptionTier}
               onValueChange={(v) => setForm((f) => ({ ...f, subscriptionTier: v as 'COMMISSION' | 'FLAT' }))}
@@ -251,12 +253,12 @@ export function IncubatorProfileForm({ incubator, user }: Props) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="COMMISSION">Commission (20% per booking)</SelectItem>
-                <SelectItem value="FLAT">Flat rate (6 000 DZD/month, keep 100%)</SelectItem>
+                <SelectItem value="COMMISSION">{t('tierCommission')}</SelectItem>
+                <SelectItem value="FLAT">{t('tierFlat')}</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Contact support to switch from Commission to Flat if you have an active subscription.
+              {t('tierSwitchHint')}
             </p>
           </div>
         </CardContent>
@@ -269,13 +271,13 @@ export function IncubatorProfileForm({ incubator, user }: Props) {
       )}
       {success && (
         <div className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-400">
-          Profile saved successfully.
+          {t('successSaved')}
         </div>
       )}
 
       <div className="flex justify-end">
         <Button loading={saving} onClick={save} disabled={!form.incubatorName.trim()}>
-          Save changes
+          {t('saveChanges')}
         </Button>
       </div>
     </div>

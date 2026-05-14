@@ -4,6 +4,7 @@
  * Admin: review investor → founder contact requests and update status.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ const STATUS_VARIANT: Record<InvestorContactStatus, 'warning' | 'success' | 'dan
 interface Props { initial: InvestorContactRecord[] }
 
 export function InvestorContactsManager({ initial }: Props) {
+  const t = useTranslations('admin.investorContacts');
   const [contacts, setContacts] = useState(initial);
   const [editing,  setEditing]  = useState<InvestorContactRecord | null>(null);
   const [status,   setStatus]   = useState<InvestorContactStatus>('PENDING');
@@ -58,12 +60,12 @@ export function InvestorContactsManager({ initial }: Props) {
         credentials: 'include',
         body: JSON.stringify({ status, adminNote: note }),
       });
-      if (!res.ok) throw new Error('Update failed');
+      if (!res.ok) throw new Error(t('updateFailed'));
       const data = await res.json() as { contact: InvestorContactRecord };
       setContacts((prev) => prev.map((c) => c.id === editing.id ? data.contact : c));
       setEditing(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Update failed');
+      setError(err instanceof Error ? err.message : t('updateFailed'));
     } finally {
       setSaving(false);
     }
@@ -75,8 +77,8 @@ export function InvestorContactsManager({ initial }: Props) {
         <CardContent className="p-0">
           {contacts.length === 0 ? (
             <InlineEmptyState
-              title="No contact requests yet"
-              description="When investors contact founders through Metwork, requests appear here."
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
               icon={<MessageSquare className="size-5 text-muted-foreground" />}
             />
           ) : (
@@ -84,12 +86,12 @@ export function InvestorContactsManager({ initial }: Props) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Investor</TableHead>
-                    <TableHead>Startup</TableHead>
-                    <TableHead>Founder</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden md:table-cell">Admin note</TableHead>
-                    <TableHead>Date</TableHead>
+                    <TableHead>{t('colInvestor')}</TableHead>
+                    <TableHead>{t('colStartup')}</TableHead>
+                    <TableHead>{t('colFounder')}</TableHead>
+                    <TableHead>{t('colStatus')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('colAdminNote')}</TableHead>
+                    <TableHead>{t('colDate')}</TableHead>
                     <TableHead className="w-20" />
                   </TableRow>
                 </TableHeader>
@@ -115,7 +117,7 @@ export function InvestorContactsManager({ initial }: Props) {
                       </TableCell>
                       <TableCell>
                         <Button variant="outline" size="sm" onClick={() => openEdit(c)}>
-                          Review
+                          {t('reviewButton')}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -130,11 +132,11 @@ export function InvestorContactsManager({ initial }: Props) {
       <Dialog open={editing !== null} onOpenChange={(o) => { if (!o) setEditing(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Review contact request</DialogTitle>
+            <DialogTitle>{t('dialogTitle')}</DialogTitle>
             <DialogDescription>
               {editing && (
                 <>
-                  <strong>{editing.investorName}</strong> wants to connect with the founder of{' '}
+                  <strong>{editing.investorName}</strong> {t('dialogWantsToConnect')}{' '}
                   <strong>{editing.startupName}</strong>.
                 </>
               )}
@@ -144,29 +146,29 @@ export function InvestorContactsManager({ initial }: Props) {
           {editing && (
             <div className="space-y-4">
               <div className="rounded-md border border-border/60 bg-muted/30 p-3 text-sm text-muted-foreground">
-                <p className="mb-1 text-xs font-medium text-foreground">Investor message</p>
+                <p className="mb-1 text-xs font-medium text-foreground">{t('investorMessage')}</p>
                 {editing.message}
               </div>
 
               <div className="space-y-1.5">
-                <Label>Status</Label>
+                <Label>{t('fieldStatus')}</Label>
                 <Select value={status} onValueChange={(v) => setStatus(v as InvestorContactStatus)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="CONNECTED">Connected</SelectItem>
-                    <SelectItem value="DECLINED">Declined</SelectItem>
+                    <SelectItem value="PENDING">{t('statusPending')}</SelectItem>
+                    <SelectItem value="CONNECTED">{t('statusConnected')}</SelectItem>
+                    <SelectItem value="DECLINED">{t('statusDeclined')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="admin-note">Admin note (visible to investor)</Label>
+                <Label htmlFor="admin-note">{t('fieldAdminNote')}</Label>
                 <Input
                   id="admin-note"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="e.g. We've introduced you to the founder via email."
+                  placeholder={t('adminNotePlaceholder')}
                 />
               </div>
 
@@ -175,8 +177,8 @@ export function InvestorContactsManager({ initial }: Props) {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>Cancel</Button>
-            <Button loading={saving} onClick={save}>Save</Button>
+            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>{t('cancel')}</Button>
+            <Button loading={saving} onClick={save}>{t('save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
