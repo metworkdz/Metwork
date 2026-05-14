@@ -64,6 +64,9 @@ export interface UserRecord {
   /** ISO datetime — next 1st-of-month UTC when credits reset to networkCreditsMax. */
   networkCreditsResetDate?: string | null;
 
+  /** Biological sex as provided at signup. Optional — older accounts may lack this field. */
+  sex?: 'MALE' | 'FEMALE' | null;
+
   /** PartnerMembershipRecord.id of the partner who referred this user. */
   affiliatedPartnerId?: string | null;
   /** % discount the user received via the partner referral (e.g. 50). */
@@ -137,6 +140,8 @@ export interface PendingUserRecord {
   createdAt: string;
   /** Only set when role === 'INCUBATOR'. Used to create the IncubatorRecord. */
   incubatorName?: string;
+  /** Biological sex provided at signup. Optional. */
+  sex?: 'MALE' | 'FEMALE';
 }
 
 /* ─────────────────────────── Wallet ─────────────────────────── */

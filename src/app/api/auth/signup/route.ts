@@ -87,6 +87,7 @@ export async function POST(req: NextRequest) {
     city: input.city,
     locale,
     incubatorName: input.role === 'INCUBATOR' ? input.incubatorName?.trim() : undefined,
+    sex: input.sex,
   });
 
   // Primary: WhatsApp (Infobip). Secondary: email as reliable fallback.

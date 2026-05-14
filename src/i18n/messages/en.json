@@ -126,10 +126,10 @@
   },
   "landing": {
     "hero": {
-      "badge": "Now live in Algeria",
+      "badge": "For The First Time In Algeria",
       "title": "Build, launch, and grow your startup",
       "subtitle": "The unified platform connecting entrepreneurs, investors, and incubators across Algeria. Programs, coworking spaces, funding — all in one place.",
-      "ctaPrimary": "Apply now",
+      "ctaPrimary": "Join now",
       "ctaSecondary": "Browse programs"
     },
     "stats": {
@@ -233,7 +233,11 @@
       "passwordPlaceholder": "At least 8 characters",
       "passwordHint": "Use 8+ characters with letters, numbers, and symbols",
       "confirmPasswordLabel": "Confirm password",
-      "termsAgreement": "I agree to metwork {privacyLink}",
+      "sexLabel": "Sex",
+      "sexMale": "Male",
+      "sexFemale": "Female",
+      "sexPlaceholder": "Select your sex",
+      "termsAgreement": "I accept Metwork's <termsLink>Terms of Use</termsLink> and <privacyLink>Privacy Policy</privacyLink>",
       "privacyAgreement": "I accept the {privacyLink} and consent to the processing of my personal data in accordance with Algerian Law 18-07",
       "termsLink": "Terms of Service",
       "privacyLink": "Privacy Policy",
@@ -861,7 +865,7 @@
     "analytics": "Analytics",
     "partnerNetwork": "Partner Network",
     "partnerPromoCodes": "Partner Promo Codes",
-    "networkPass": "Network Pass"
+    "networkPass": "Metwork Pass"
   },
   "pages": {
     "programs": {
@@ -1089,7 +1093,7 @@
           "subtitle": "Exclusive benefits included with your membership."
         },
         "networkPass": {
-          "title": "My Network Pass",
+          "title": "My Metwork Pass",
           "subtitle": "Use your pass to check in at partner coworking spaces across the network."
         }
       },

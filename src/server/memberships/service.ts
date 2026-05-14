@@ -17,21 +17,33 @@ import { db } from '@/server/db/store';
 export interface MembershipUserLike {
   membershipCode: string | null;
   membershipExpiresAt?: string | null;
+  /** New-style tier field (EXPLORER | BUILDER | FOUNDER). Optional for backward compat. */
+  membershipTier?: string | null;
 }
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-/** Free monthly consultation quota per membership tier. */
+/**
+ * Free monthly consultation quota per membership tier.
+ * Keyed by both old membershipCode ('ENTREPRENEUR'/'STARTUP') and
+ * new membershipTier ('BUILDER'/'FOUNDER') so both naming systems work.
+ */
 export const CONSULTATION_QUOTA: Record<string, number> = {
   ENTREPRENEUR: 1,
-  STARTUP: 3,
+  STARTUP:      3,
+  BUILDER:      1, // BUILDER = ENTREPRENEUR tier
+  FOUNDER:      3, // FOUNDER = STARTUP tier
 };
 
-/** Space booking discount fraction per membership tier (e.g. 0.20 = 20 % off). */
+/**
+ * Space booking discount fraction per membership tier (e.g. 0.20 = 20 % off).
+ * Keyed by both old membershipCode and new membershipTier.
+ */
 export const SPACE_DISCOUNT: Record<string, number> = {
-  STARTUP: 0.2,
+  STARTUP:  0.2,
+  FOUNDER:  0.2, // FOUNDER = STARTUP tier
 };
 
 /** Membership prices in integer DZD. */
@@ -55,12 +67,31 @@ function currentQuotaMonth(): string {
  * Accepts any object with `membershipCode` and optional `membershipExpiresAt`
  * (works with both `UserRecord` and `SessionUser`).
  */
+/**
+ * Return the user's *effective* membership code, taking expiry into account.
+ *
+ * Priority:
+ *   1. If expired → 'FREE'
+ *   2. membershipCode if set (old system: 'ENTREPRENEUR' | 'STARTUP')
+ *   3. membershipTier if set (new system: 'BUILDER' | 'FOUNDER')
+ *   4. 'FREE' fallback
+ *
+ * This dual lookup ensures both purchase-route users (which set membershipCode)
+ * and partner-promo users (which only set membershipTier) get correct quotas.
+ */
 export function getEffectiveMembershipCode(user: MembershipUserLike): string {
-  if (!user.membershipCode) return 'FREE';
+  // Expiry check applies to both code and tier
   if (user.membershipExpiresAt && new Date(user.membershipExpiresAt) <= new Date()) {
     return 'FREE';
   }
-  return user.membershipCode;
+  // Old system: membershipCode ('ENTREPRENEUR' | 'STARTUP')
+  if (user.membershipCode && user.membershipCode !== 'FREE') {
+    return user.membershipCode;
+  }
+  // New system: membershipTier ('BUILDER' | 'FOUNDER')
+  if (user.membershipTier === 'BUILDER') return 'BUILDER';
+  if (user.membershipTier === 'FOUNDER') return 'FOUNDER';
+  return 'FREE';
 }
 
 /**

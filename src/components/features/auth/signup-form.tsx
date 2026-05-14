@@ -57,6 +57,7 @@ export function SignupForm() {
       acceptTerms: false as unknown as true,
       acceptPrivacy: false as unknown as true,
       incubatorName: '',
+      sex: undefined,
     },
   });
 
@@ -276,6 +277,30 @@ export function SignupForm() {
             </FormField>
           )}
         />
+
+        {/* Sex — shown for ENTREPRENEUR and INVESTOR */}
+        {(selectedRole === 'ENTREPRENEUR' || selectedRole === 'INVESTOR') && (
+          <Controller
+            control={control}
+            name="sex"
+            render={({ field }) => (
+              <FormField
+                label={t('signup.sexLabel')}
+                htmlFor="sex"
+              >
+                <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                  <SelectTrigger id="sex">
+                    <SelectValue placeholder={t('signup.sexPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MALE">{t('signup.sexMale')}</SelectItem>
+                    <SelectItem value="FEMALE">{t('signup.sexFemale')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormField>
+            )}
+          />
+        )}
 
         <FormField
           label={t('signup.passwordLabel')}

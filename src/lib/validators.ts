@@ -69,6 +69,8 @@ export const signupSchema = z
     }),
     /** Optional — only shown when role === 'INCUBATOR'. */
     incubatorName: z.string().max(100).optional(),
+    /** Biological sex — shown for ENTREPRENEUR and INVESTOR roles. */
+    sex: z.enum(['MALE', 'FEMALE']).optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ['confirmPassword'],

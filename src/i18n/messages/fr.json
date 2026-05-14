@@ -126,10 +126,10 @@
   },
   "landing": {
     "hero": {
-      "badge": "Disponible en Algérie",
+      "badge": "Pour La Première Fois En Algérie",
       "title": "Construisez, lancez et développez votre startup",
       "subtitle": "La plateforme unifiée qui connecte entrepreneurs, investisseurs et incubateurs partout en Algérie. Programmes, espaces de coworking, financement — tout en un.",
-      "ctaPrimary": "Rejoindre l'écosystème",
+      "ctaPrimary": "Rejoindre maintenant",
       "ctaSecondary": "Voir les programmes"
     },
     "stats": {
@@ -233,7 +233,11 @@
       "passwordPlaceholder": "Au moins 8 caractères",
       "passwordHint": "Utilisez 8+ caractères avec lettres, chiffres et symboles",
       "confirmPasswordLabel": "Confirmer le mot de passe",
-      "termsAgreement": "J'accepte les {termsLink} et la {privacyLink}",
+      "sexLabel": "Sexe",
+      "sexMale": "Masculin",
+      "sexFemale": "Féminin",
+      "sexPlaceholder": "Sélectionnez votre sexe",
+      "termsAgreement": "J'accepte les <termsLink>Conditions d'utilisation</termsLink> et la <privacyLink>Politique de confidentialité</privacyLink> de Metwork",
       "privacyAgreement": "J'accepte la {privacyLink} et consens au traitement de mes données personnelles conformément à la loi algérienne 18-07",
       "termsLink": "conditions d'utilisation",
       "privacyLink": "politique de confidentialité",
@@ -861,7 +865,7 @@
     "analytics": "Analytique",
     "partnerNetwork": "Réseau Partenaires",
     "partnerPromoCodes": "Codes Promo Partenaires",
-    "networkPass": "Pass Réseau"
+    "networkPass": "Metwork Pass"
   },
   "pages": {
     "programs": {
@@ -1089,7 +1093,7 @@
           "subtitle": "Avantages exclusifs inclus dans votre abonnement."
         },
         "networkPass": {
-          "title": "Mon Pass Réseau",
+          "title": "Mon Metwork Pass",
           "subtitle": "Utilisez votre pass pour vous enregistrer dans les espaces coworking partenaires."
         }
       },

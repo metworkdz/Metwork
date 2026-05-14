@@ -137,6 +137,7 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
   ADMIN: [
     // ── Platform management ──────────────────────────────────────────────────
     { labelKey: 'dashboard.overview',      href: '/dashboard/admin',                 icon: LayoutDashboard },
+    { labelKey: 'dashboard.analytics',     href: '/dashboard/admin/analytics',       icon: BarChart2       },
     { labelKey: 'dashboard.users',         href: '/dashboard/admin/users',           icon: Users },
     { labelKey: 'dashboard.incubators',    href: '/dashboard/admin/incubators',      icon: Building2 },
     { labelKey: 'dashboard.memberships',      href: '/dashboard/admin/memberships',          icon: CreditCard },

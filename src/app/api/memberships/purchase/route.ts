@@ -164,9 +164,28 @@ export async function POST(req: NextRequest) {
       updatedAt: now.toISOString(),
     });
 
-    // Update user record
-    user.membershipCode = input.plan;
+    // ── Update user record — set both old code and new tier/credit fields ──
+    user.membershipCode      = input.plan;
     user.membershipExpiresAt = expiresAtIso;
+    user.membershipStartDate = now.toISOString();
+
+    // Resolve the new-style tier and assign Network Pass credits
+    const isFounder          = input.plan === 'STARTUP';
+    user.membershipTier      = isFounder ? 'FOUNDER' : 'BUILDER';
+    const creditsMax         = isFounder ? 10 : 3;
+    user.networkCreditsMax   = creditsMax;
+    // Only reset credits if they're currently below the new max
+    // (handles upgrades gracefully — don't remove credits already earned)
+    if ((user.networkCredits ?? 0) < creditsMax) {
+      user.networkCredits = creditsMax;
+    }
+    // Reset date = 1st of next calendar month at 00:00 UTC
+    const resetDate = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth() + 1, // automatically wraps Dec → Jan+1yr
+      1, 0, 0, 0,
+    ));
+    user.networkCreditsResetDate = resetDate.toISOString();
     user.updatedAt = now.toISOString();
 
     return {

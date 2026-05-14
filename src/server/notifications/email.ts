@@ -48,7 +48,7 @@ export async function sendResendEmail(opts: SendOptions): Promise<boolean> {
 
 /* ─────────────────────────── HTML templates ─────────────────────────── */
 
-function layout(content: string): string {
+export function layout(content: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -62,7 +62,7 @@ function layout(content: string): string {
       <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e4e4e7;">
         <!-- Header -->
         <tr>
-          <td style="background:#166534;padding:24px 40px;">
+          <td style="background:#30a735;padding:24px 40px;">
             <a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}" style="text-decoration:none;">
               <img src="https://metwork.dz/assets/Metworkwhitelogo.png"
                    alt="Metwork" width="160" height="44"
@@ -91,7 +91,7 @@ function layout(content: string): string {
 }
 
 function button(href: string, label: string): string {
-  return `<a href="${href}" style="display:inline-block;margin-top:8px;padding:14px 32px;background:#166534;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">${label}</a>`;
+  return `<a href="${href}" style="display:inline-block;margin-top:8px;padding:14px 32px;background:#30a735;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">${label}</a>`;
 }
 
 function p(text: string): string {

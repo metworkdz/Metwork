@@ -87,6 +87,19 @@
   html[lang='ar'] body {
     @apply font-arabic;
   }
+  /* Arabic locale — override display/heading font so bold titles use Cairo too.
+     font-display maps to Plus Jakarta Sans (Latin-only), which clashes visually
+     with Cairo body text in RTL layouts. */
+  html[lang='ar'] .font-display,
+  html[lang='ar'] h1,
+  html[lang='ar'] h2,
+  html[lang='ar'] h3,
+  html[lang='ar'] h4,
+  html[lang='ar'] h5,
+  html[lang='ar'] h6 {
+    font-family: var(--font-cairo), system-ui, sans-serif;
+    letter-spacing: 0;
+  }
 
   /* Reduce motion for users who prefer it */
   @media (prefers-reduced-motion: reduce) {

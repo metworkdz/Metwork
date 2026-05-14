@@ -16,7 +16,7 @@ import {
   type RegistrationFieldType,
   type RegistrationStatus,
 } from '@/server/db/store';
-import { sendResendEmail } from '@/server/notifications/email';
+import { sendResendEmail, layout } from '@/server/notifications/email';
 
 /* ─────────────────────────── Types ─────────────────────────── */
 
@@ -370,7 +370,6 @@ async function sendConfirmationEmail(
     const entityTitle = getEntityTitle(data, entityType, entityId);
     const incubatorName = getIncubatorName(data, reg.incubatorId);
     const incubator = (data.incubators ?? []).find((i) => i.id === reg.incubatorId);
-    const primaryColor = '#166534'; // Metwork green
 
     const isWaitlisted = reg.status === 'WAITLISTED';
 
@@ -378,114 +377,62 @@ async function sendConfirmationEmail(
       ? `You're on the waitlist — ${entityTitle}`
       : `Registration confirmed — ${entityTitle}`;
 
-    const statusBanner = isWaitlisted
-      ? `<tr><td style="background:#fef3c7;border-radius:8px;padding:16px 24px;margin-bottom:16px;">
-           <p style="margin:0;color:#92400e;font-size:14px;font-weight:600;">
-             📋 You're on the waitlist
-           </p>
-           <p style="margin:4px 0 0;color:#92400e;font-size:13px;">
-             We'll notify you if a spot opens up.
-           </p>
-         </td></tr>`
-      : `<tr><td style="background:#dcfce7;border-radius:8px;padding:16px 24px;margin-bottom:16px;">
-           <p style="margin:0;color:#166534;font-size:14px;font-weight:600;">
-             ✅ Your registration is confirmed
-           </p>
-         </td></tr>`;
+    const statusBannerHtml = isWaitlisted
+      ? `<div style="background:#fef3c7;border-radius:8px;padding:16px 24px;margin-bottom:20px;">
+           <p style="margin:0;color:#92400e;font-size:14px;font-weight:600;">📋 You're on the waitlist</p>
+           <p style="margin:4px 0 0;color:#92400e;font-size:13px;">We'll notify you if a spot opens up.</p>
+         </div>`
+      : `<div style="background:#dcfce7;border-radius:8px;padding:16px 24px;margin-bottom:20px;">
+           <p style="margin:0;color:#15803d;font-size:14px;font-weight:600;">✅ Your registration is confirmed</p>
+         </div>`;
 
-    const html = `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8" /><title>${subject}</title></head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:Inter,Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0"
-             style="background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e4e4e7;">
-        <!-- Header -->
+    // Use the shared layout() so this email gets the Metwork white logo + green header
+    const html = layout(`
+      <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#09090b;letter-spacing:-0.3px;">
+        ${isWaitlisted ? 'Waitlist confirmed' : 'Registration confirmed'}
+      </h1>
+      <p style="margin:0 0 20px;font-size:15px;color:#3f3f46;line-height:1.6;">
+        Hi <strong>${escHtml(reg.fullName)}</strong>,
+      </p>
+      ${statusBannerHtml}
+      <table width="100%" cellpadding="0" cellspacing="0"
+             style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin-bottom:20px;">
         <tr>
-          <td style="background:${primaryColor};padding:24px 40px;">
-            <p style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">${incubatorName}</p>
-          </td>
-        </tr>
-        <!-- Body -->
-        <tr>
-          <td style="padding:32px 40px;">
-            <h1 style="margin:0 0 8px;font-size:24px;color:#111827;">
-              ${isWaitlisted ? 'Waitlist confirmed' : 'Registration confirmed'}
-            </h1>
-            <p style="margin:0 0 24px;color:#6b7280;font-size:15px;">
-              Hi ${escHtml(reg.fullName)},
+          <td style="padding:20px 24px;">
+            <p style="margin:0 0 4px;font-size:11px;font-weight:600;text-transform:uppercase;
+                       letter-spacing:.05em;color:#9ca3af;">
+              ${entityType === 'PROGRAM' ? 'Program' : 'Event'}
             </p>
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
-              ${statusBanner}
-            </table>
-            <!-- Event details -->
-            <table width="100%" cellpadding="0" cellspacing="0"
-                   style="border:1px solid #e4e4e7;border-radius:8px;margin-bottom:24px;">
-              <tr>
-                <td style="padding:20px 24px;">
-                  <p style="margin:0 0 4px;font-size:11px;font-weight:600;text-transform:uppercase;
-                             letter-spacing:.05em;color:#9ca3af;">
-                    ${entityType === 'PROGRAM' ? 'Program' : 'Event'}
-                  </p>
-                  <p style="margin:0;font-size:18px;font-weight:600;color:#111827;">
-                    ${escHtml(entityTitle)}
-                  </p>
-                  <p style="margin:4px 0 0;font-size:13px;color:#6b7280;">
-                    Hosted by ${escHtml(incubatorName)}
-                  </p>
-                </td>
-              </tr>
-            </table>
-            <!-- Details row -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
-              <tr>
-                <td style="padding:0 0 8px;">
-                  <p style="margin:0;font-size:13px;color:#6b7280;">
-                    <strong style="color:#374151;">Name:</strong> ${escHtml(reg.fullName)}
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:0 0 8px;">
-                  <p style="margin:0;font-size:13px;color:#6b7280;">
-                    <strong style="color:#374151;">Email:</strong> ${escHtml(reg.email)}
-                  </p>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <p style="margin:0;font-size:13px;color:#6b7280;">
-                    <strong style="color:#374151;">Phone:</strong> ${escHtml(reg.phone)}
-                  </p>
-                </td>
-              </tr>
-            </table>
-            ${
-              incubator?.email
-                ? `<p style="font-size:13px;color:#6b7280;margin:0;">
-                     Questions? Contact us at
-                     <a href="mailto:${escHtml(incubator.email)}" style="color:${primaryColor};">
-                       ${escHtml(incubator.email)}
-                     </a>
-                   </p>`
-                : ''
-            }
-          </td>
-        </tr>
-        <!-- Footer -->
-        <tr>
-          <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e4e4e7;">
-            <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
-              Powered by <a href="https://metwork.dz" style="color:${primaryColor};text-decoration:none;">Metwork</a>
+            <p style="margin:0;font-size:18px;font-weight:600;color:#09090b;">
+              ${escHtml(entityTitle)}
+            </p>
+            <p style="margin:4px 0 0;font-size:13px;color:#71717a;">
+              Hosted by ${escHtml(incubatorName)}
             </p>
           </td>
         </tr>
       </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
+      <table width="100%" cellpadding="0" cellspacing="0"
+             style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin-bottom:20px;">
+        <tr>
+          <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;width:100px;border-bottom:1px solid #f4f4f5;">Name</td>
+          <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;">${escHtml(reg.fullName)}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #f4f4f5;">Email</td>
+          <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;">${escHtml(reg.email)}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;">Phone</td>
+          <td style="padding:10px 16px;font-size:13px;color:#09090b;">${escHtml(reg.phone)}</td>
+        </tr>
+      </table>
+      ${incubator?.email
+        ? `<p style="margin:0;font-size:13px;color:#71717a;">
+             Questions? Contact <a href="mailto:${escHtml(incubator.email)}" style="color:#30a735;">${escHtml(incubator.email)}</a>
+           </p>`
+        : ''}
+    `);
 
     await sendResendEmail({ to: reg.email, subject, html });
   } catch {

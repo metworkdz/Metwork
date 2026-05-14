@@ -31,6 +31,7 @@ export interface PendingUserInput {
   city: string;
   locale: 'en' | 'fr' | 'ar';
   incubatorName?: string;
+  sex?: 'MALE' | 'FEMALE';
 }
 
 export interface IssuePendingResult {
@@ -74,6 +75,7 @@ export async function issuePendingUser(input: PendingUserInput): Promise<IssuePe
       city: input.city,
       locale: input.locale,
       incubatorName: input.incubatorName,
+      sex: input.sex,
       otpHash: hashOtp(code),
       otpAttempts: 0,
       expiresAt,
@@ -159,6 +161,7 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
       membershipCode: null,
       avatarUrl: null,
       locale: pending.locale,
+      sex: pending.sex ?? null,
       createdAt: now,
       updatedAt: now,
     };

@@ -126,10 +126,10 @@
   },
   "landing": {
     "hero": {
-      "badge": "متوفر الآن في الجزائر",
+      "badge": "للمرة الأولى في الجزائر",
       "title": "ابنِ، أطلق، وطوّر شركتك الناشئة",
       "subtitle": "المنصة الموحّدة التي تربط رواد الأعمال والمستثمرين والحاضنات في كل أنحاء الجزائر. برامج، فضاءات عمل، تمويل — كل شيء في مكان واحد.",
-      "ctaPrimary": "انضم إلى المنظومة",
+      "ctaPrimary": "انضم الآن",
       "ctaSecondary": "تصفح البرامج"
     },
     "stats": {
@@ -233,7 +233,11 @@
       "passwordPlaceholder": "8 أحرف على الأقل",
       "passwordHint": "استخدم 8+ أحرف مع حروف وأرقام ورموز",
       "confirmPasswordLabel": "تأكيد كلمة المرور",
-      "termsAgreement": "أوافق على {termsLink} و{privacyLink}",
+      "sexLabel": "الجنس",
+      "sexMale": "ذكر",
+      "sexFemale": "أنثى",
+      "sexPlaceholder": "اختر جنسك",
+      "termsAgreement": "أوافق على <termsLink>شروط الاستخدام</termsLink> و<privacyLink>سياسة الخصوصية</privacyLink> لميتورك",
       "privacyAgreement": "أوافق على {privacyLink} وأقبل معالجة بياناتي الشخصية وفقًا للقانون الجزائري 18-07",
       "termsLink": "شروط الاستخدام",
       "privacyLink": "سياسة الخصوصية",
@@ -861,7 +865,7 @@
     "analytics": "التحليلات",
     "partnerNetwork": "شبكة الشركاء",
     "partnerPromoCodes": "رموز الترويج للشركاء",
-    "networkPass": "بطاقة الشبكة"
+    "networkPass": "Metwork Pass"
   },
   "pages": {
     "programs": {
@@ -1089,7 +1093,7 @@
           "subtitle": "مزايا حصرية مضمّنة في عضويتك."
         },
         "networkPass": {
-          "title": "بطاقتي الشبكية",
+          "title": "Metwork Pass الخاص بي",
           "subtitle": "استخدم بطاقتك لتسجيل الحضور في فضاءات العمل المشترك الشريكة عبر الشبكة."
         }
       },
