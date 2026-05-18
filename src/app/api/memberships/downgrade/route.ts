@@ -20,6 +20,7 @@ import { requireApiSession } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { getEffectiveMembershipCode } from '@/server/memberships/service';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,6 +36,10 @@ const TIER_RANK: Record<string, number> = { FREE: 0, ENTREPRENEUR: 1, STARTUP: 2
 export async function POST(req: NextRequest) {
   const guard = await requireApiSession();
   if (!guard.ok) return guard.response;
+
+  if (!checkRateLimit(`downgrade:${guard.user.id}`, 5, 60_000)) {
+    return jsonError(429, 'RATE_LIMITED', 'Too many downgrade requests; please wait a moment.');
+  }
 
   let body: unknown;
   try {
@@ -66,12 +71,11 @@ export async function POST(req: NextRequest) {
       return { ok: false, reason: 'NOT_A_DOWNGRADE' } as const;
     }
 
-    // Schedule the change for the end of the current billing period. If no
-    // expiry is set (shouldn't happen for a paid plan but be defensive),
-    // schedule it 30 days from now.
-    const scheduledChangeDate = user.membershipExpiresAt
-      ? user.membershipExpiresAt
-      : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    // Require an explicit expiry — refuse to silently grant free days.
+    if (!user.membershipExpiresAt) {
+      return { ok: false, reason: 'NO_EXPIRY' } as const;
+    }
+    const scheduledChangeDate = user.membershipExpiresAt;
 
     user.scheduledMembershipChange = input.plan;
     user.scheduledChangeDate = scheduledChangeDate;
@@ -93,6 +97,13 @@ export async function POST(req: NextRequest) {
         'Target plan must be strictly lower than your current plan',
       );
     }
+    if (result.reason === 'NO_EXPIRY') {
+      return jsonError(
+        422,
+        'NO_EXPIRY',
+        'Your membership has no expiry date. Please contact support to downgrade.',
+      );
+    }
   }
 
   return json({
@@ -104,6 +115,10 @@ export async function POST(req: NextRequest) {
 export async function DELETE() {
   const guard = await requireApiSession();
   if (!guard.ok) return guard.response;
+
+  if (!checkRateLimit(`downgrade:${guard.user.id}`, 5, 60_000)) {
+    return jsonError(429, 'RATE_LIMITED', 'Too many downgrade requests; please wait a moment.');
+  }
 
   const userId = guard.user.id;
   const now = new Date();

@@ -839,6 +839,18 @@ export interface MentorBookingRecord {
   appliedPromoCode?: string | null;
   /** Promo code discount percentage (0–100). */
   promoDiscountPercent?: number | null;
+  /**
+   * Whether this booking is being paid with a free monthly credit or paid.
+   * When FREE_QUOTA, `amountCharged === 0` and a matching row exists in
+   * `mentorConsultations` so the credit is properly consumed.
+   */
+  chargeType?: 'FREE_QUOTA' | 'PAID';
+  /** Membership-tier discount fraction applied (e.g. 0.20 for STARTUP). */
+  discountFraction?: number;
+  /** 'YYYY-MM' month the free credit was charged against (when chargeType === 'FREE_QUOTA'). */
+  freeQuotaMonth?: string | null;
+  /** Final integer DZD amount the admin should collect (0 for FREE_QUOTA). */
+  amountCharged?: number;
   createdAt: string;
   updatedAt: string;
 }

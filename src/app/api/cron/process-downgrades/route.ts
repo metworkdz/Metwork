@@ -81,7 +81,9 @@ export async function POST(req: Request): Promise<Response> {
 
         user.membershipCode = targetCode;
         user.membershipTier = newTier;
-        user.networkCredits = newMaxCredits;
+        // Cap at the new max AND don't grow credits on downgrade — a user with
+        // 0 credits remaining shouldn't suddenly gain credits by downgrading.
+        user.networkCredits = Math.min(user.networkCredits ?? 0, newMaxCredits);
         user.networkCreditsMax = newMaxCredits;
         user.networkPassesUsedThisMonth = 0;
         // If cancelling, also clear the expiry date.

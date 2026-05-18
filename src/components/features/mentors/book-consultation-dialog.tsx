@@ -243,9 +243,7 @@ export function BookConsultationDialog({
           consultationTime:  consultDate ? consultTime : null,
           durationMinutes:   consultDate ? duration : null,
           promoCode:         promoState === 'valid' ? promoCode.trim() : null,
-          // Pass the computed amounts so server can verify/store them
-          basePrice,
-          finalPrice,
+          useFreeCredit:     applyFreeCredit,
         }),
       });
 
@@ -468,8 +466,9 @@ export function BookConsultationDialog({
                 </div>
               </div>
 
-              {/* Free-consultation credit — checkbox to apply this month's quota */}
-              {feePerHour > 0 && freeQuota > 0 && (
+              {/* Free-consultation credit — checkbox to apply this month's quota.
+                  Hidden entirely when 0 remaining (avoids confusing disabled state). */}
+              {feePerHour > 0 && freeRemaining > 0 && (
                 <label
                   className={cn(
                     'flex items-start gap-3 rounded-lg border px-3 py-3 text-sm cursor-pointer transition-colors',

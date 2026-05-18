@@ -13,11 +13,12 @@ import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiSession } from '@/server/auth/api-guards';
-import { db } from '@/server/db/store';
+import { db, type MentorConsultationRecord } from '@/server/db/store';
 import { findMentorById } from '@/server/mentors/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { sendConsultationRequestReceivedEmail, sendAdminConsultationNotification } from '@/server/notifications/mock';
 import { validatePromoCode, promoAppliesToType, consumePromoCode } from '@/server/promo-codes/service';
+import { getEffectiveMembershipCode, getUserConsultationQuota } from '@/server/memberships/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,7 +38,19 @@ const schema = z.object({
   durationMinutes: z.number().int().min(30).max(180).optional().nullable(),
   /** Optional promo code string */
   promoCode: z.string().max(50).optional().nullable(),
+  /**
+   * If true (and the user still has free quota this month), the booking is
+   * recorded as FREE_QUOTA and a corresponding mentorConsultations row is
+   * written so the credit is consumed. Server is authoritative — sends 0 if
+   * the user has no remaining quota.
+   */
+  useFreeCredit: z.boolean().optional(),
 });
+
+function currentQuotaMonth(): string {
+  const d = new Date();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
 
 export async function POST(
   req: NextRequest,
@@ -92,7 +105,36 @@ export async function POST(
     appliedPromoCode = validation.promoCode.code;
   }
 
+  // Server-authoritative pricing — never trust the client.
+  const effectiveCode = getEffectiveMembershipCode(guard.user);
+  const discountFraction =
+    effectiveCode === 'STARTUP' ? 0.20 :
+    effectiveCode === 'ENTREPRENEUR' ? 0.15 :
+    0;
+
+  const quota = await getUserConsultationQuota(guard.user.id);
+  const useFree = input.useFreeCredit === true && quota.remaining > 0;
+
+  // Base price = (duration / 60) * hourly fee.  When no duration is supplied,
+  // assume 60 minutes for the indicative amount stored on the booking.
+  const feePerHour = mentor.consultationFee ?? 0;
+  const effectiveMinutes = input.durationMinutes ?? 60;
+  const basePrice = feePerHour > 0
+    ? Math.round((effectiveMinutes / 60) * feePerHour)
+    : 0;
+
+  const tierDiscountAmt = useFree ? 0 : Math.round(basePrice * discountFraction);
+  const afterTier = useFree ? 0 : Math.max(0, basePrice - tierDiscountAmt);
+
+  // Apply promo on top of tier discount (mirrors the client breakdown).
+  const promoDiscountAmt = !useFree && discountPercent > 0
+    ? Math.round(afterTier * discountPercent / 100)
+    : 0;
+  const finalPrice = useFree ? 0 : Math.max(0, afterTier - promoDiscountAmt);
+
   const now = new Date().toISOString();
+  const quotaMonth = currentQuotaMonth();
+
   const booking = await db.update((d) => {
     const record = {
       id:                   randomUUID(),
@@ -109,11 +151,38 @@ export async function POST(
       adminNote:            null,
       appliedPromoCode:     appliedPromoCode ?? null,
       promoDiscountPercent: discountPercent > 0 ? discountPercent : null,
+      chargeType:           useFree ? ('FREE_QUOTA' as const) : ('PAID' as const),
+      discountFraction:     useFree ? 0 : discountFraction,
+      freeQuotaMonth:       useFree ? quotaMonth : null,
+      amountCharged:        finalPrice,
       createdAt:            now,
       updatedAt:            now,
     };
     if (!Array.isArray(d.mentorBookings)) d.mentorBookings = [];
     d.mentorBookings.push(record);
+
+    // If using a free credit, also write a mentorConsultations row so the
+    // monthly quota is properly consumed (matches the consult-route pattern).
+    if (useFree) {
+      if (!Array.isArray(d.mentorConsultations)) d.mentorConsultations = [];
+      const consultation: MentorConsultationRecord = {
+        id:             randomUUID(),
+        mentorId,
+        mentorName:     mentor.fullName,
+        userId:         guard.user.id,
+        chargeType:     'FREE_QUOTA',
+        amountCharged:  0,
+        transactionId:  null,
+        status:         'PENDING',
+        quotaMonth,
+        message:        input.message,
+        durationMinutes: input.durationMinutes ?? null,
+        createdAt:      now,
+        updatedAt:      now,
+      };
+      d.mentorConsultations.push(consultation);
+    }
+
     return record;
   });
 
@@ -132,8 +201,11 @@ export async function POST(
   sendAdminConsultationNotification({ booking, mentor, lang });
 
   return json({
-    id:             booking.id,
-    status:         booking.status,
+    id:               booking.id,
+    status:           booking.status,
+    chargeType:       booking.chargeType,
+    amountCharged:    booking.amountCharged,
+    discountFraction: booking.discountFraction,
     discountPercent,
     appliedPromoCode,
   }, { status: 201 });
