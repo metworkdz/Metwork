@@ -42,8 +42,8 @@ export const CONSULTATION_QUOTA: Record<string, number> = {
  * Keyed by both old membershipCode and new membershipTier.
  */
 export const SPACE_DISCOUNT: Record<string, number> = {
-  STARTUP:  0.2,
-  FOUNDER:  0.2, // FOUNDER = STARTUP tier
+  ENTREPRENEUR: 0.15, // Builder tier — 15 % off
+  STARTUP:      0.2,  // Founder tier — 20 % off
 };
 
 /** Membership prices in integer DZD. */
@@ -133,4 +133,12 @@ export async function getSpaceDiscountForUser(userId: string): Promise<number> {
   if (!user) return 0;
   const effectiveCode = getEffectiveMembershipCode(user);
   return SPACE_DISCOUNT[effectiveCode] ?? 0;
+}
+
+/**
+ * Compute the event-registration discount percentage for a given user.
+ * Mirrors `SPACE_DISCOUNT` — Builder/Founder get the same fraction off events.
+ */
+export async function getEventDiscountForUser(userId: string): Promise<number> {
+  return getSpaceDiscountForUser(userId);
 }

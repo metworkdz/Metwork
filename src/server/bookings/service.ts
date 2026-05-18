@@ -645,6 +645,8 @@ export interface RegisterForEventArgs {
   clientReference: string;
   promoCode?: string;
   paymentMethod?: 'wallet' | 'manual';
+  /** Fractional membership discount to apply before the promo code (0–1). e.g. 0.20 = 20 % off. */
+  membershipDiscount?: number;
 }
 
 export async function registerForEvent(
@@ -696,7 +698,13 @@ export async function registerForEvent(
       return { ok: false, reason: 'CAPACITY_EXCEEDED', capacity: event.capacity, taken };
     }
 
-    const baseTotal = event.price;
+    // Apply tier membership discount to the base ticket price (server-side
+    // mirror of the booking-form's preview). Builder = 15 %, Founder = 20 %.
+    const membershipFraction = Math.min(1, Math.max(0, args.membershipDiscount ?? 0));
+    const baseTotal =
+      membershipFraction > 0 && event.price > 0
+        ? Math.round(event.price * (1 - membershipFraction))
+        : event.price;
     let wallet = d.wallets.find((w) => w.userId === args.userId);
     if (!wallet) {
       wallet = newWallet(args.userId);

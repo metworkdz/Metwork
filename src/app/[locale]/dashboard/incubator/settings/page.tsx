@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { SubscriptionManager } from '@/components/features/incubator/subscription-manager';
+import { DeleteAccountSection } from '@/components/features/settings/delete-account-section';
 import { db } from '@/server/db/store';
 
 interface PageProps {
@@ -29,6 +30,7 @@ export default async function IncubatorSettingsPage({ params }: PageProps) {
         <p className="text-sm text-muted-foreground">
           Your incubator profile is being set up. Please contact support if this persists.
         </p>
+        <DeleteAccountSection />
       </div>
     );
   }
@@ -40,6 +42,7 @@ export default async function IncubatorSettingsPage({ params }: PageProps) {
         subtitle="Manage your subscription plan and billing preferences."
       />
       <SubscriptionManager />
+      <DeleteAccountSection />
     </div>
   );
 }

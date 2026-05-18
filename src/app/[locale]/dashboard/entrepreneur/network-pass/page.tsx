@@ -2,7 +2,8 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { UserProfileHeader } from '@/components/features/membership/user-profile-header';
-import { MembershipPassCard, type PassRecentVisit } from '@/components/features/membership/membership-pass-card';
+import { type PassRecentVisit } from '@/components/features/membership/membership-pass-card';
+import { MembershipPassCardLive } from '@/components/features/membership/membership-pass-card-live';
 import { resolveTier } from '@/lib/tier-utils';
 import { db } from '@/server/db/store';
 
@@ -67,24 +68,25 @@ export default async function EntrepreneurNetworkPassPage({ params }: PageProps)
       {/* Profile header with tier ring */}
       <UserProfileHeader user={user} showMeta avatarSize="lg" />
 
-      {/* Network Pass card */}
-      <MembershipPassCard
-        user={user}
-        creditsRemaining={creditsRemaining}
-        creditsMax={creditsMax}
-        expiresOn={expiresOn}
-        qrCodeDataUrl={qrCodeUrl}
-        checkInCode={passCode}
-        recentVisits={recentVisits}
-      />
-
-      {/* Explorer notice */}
-      {tier === 'EXPLORER' && (
-        <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
-          Upgrade to <strong>Builder</strong> or <strong>Founder</strong> to unlock Metwork Pass
-          access at partner coworking spaces.
-        </p>
+      {/* Network Pass card (live — fetches current check-in QR client-side) */}
+      {tier === 'EXPLORER' ? (
+        <div className="rounded-2xl border-2 border-dashed border-border bg-card p-8 text-center">
+          <h2 className="text-lg font-semibold">No active Network Pass</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Upgrade to <strong>Builder</strong> or <strong>Founder</strong> to unlock check-in
+            access at partner coworking spaces.
+          </p>
+        </div>
+      ) : (
+        <MembershipPassCardLive
+          user={user}
+          creditsRemaining={creditsRemaining}
+          creditsMax={creditsMax}
+          expiresOn={expiresOn}
+          recentVisits={recentVisits}
+        />
       )}
+
     </div>
   );
 }

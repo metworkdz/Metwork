@@ -247,8 +247,18 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const unitPrice  = useMemo(() => units.find((u) => u.unit === unit)?.price ?? 0, [unit, units]);
   const qty        = validRange ? quantity(startIso, endIso, unit) : 0;
   const total      = unitPrice * qty;
-  // FOUNDER tier (mapped from STARTUP membershipCode) gets 20% off space bookings
-  const membershipDiscountFraction = isAuthed && userTier === 'FOUNDER' && !useNetworkPass ? 0.2 : 0;
+  // Membership-tier space discount (mirrors SPACE_DISCOUNT on the server):
+  //   BUILDER  (ENTREPRENEUR membershipCode) → 15 % off
+  //   FOUNDER  (STARTUP      membershipCode) → 20 % off
+  // Discount is suppressed when the Network Pass is used (already free).
+  const membershipDiscountFraction = !isAuthed || useNetworkPass
+    ? 0
+    : userTier === 'FOUNDER'
+    ? 0.20
+    : userTier === 'BUILDER'
+    ? 0.15
+    : 0;
+  const membershipDiscountPercent  = Math.round(membershipDiscountFraction * 100);
   const membershipDiscountAmount   = membershipDiscountFraction > 0 ? total - Math.round(total * (1 - membershipDiscountFraction)) : 0;
   const afterMembershipDiscount    = total - membershipDiscountAmount;
   const finalTotal = promoResult?.finalAmount ?? afterMembershipDiscount;
@@ -580,7 +590,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
             <div className="mt-1 flex items-center justify-between text-emerald-700 dark:text-emerald-400">
               <span className="flex items-center gap-1.5">
                 <MembershipTierBadge tier={userTier} size="xs" showIcon={false} />
-                {t('founderDiscount')}
+                {userTier === 'FOUNDER' ? 'Founder' : 'Builder'} discount ({membershipDiscountPercent}% off)
               </span>
               <span className="tabular-nums">−{formatCurrency(membershipDiscountAmount, locale)}</span>
             </div>

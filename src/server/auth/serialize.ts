@@ -19,6 +19,8 @@ export function toSessionUser(u: UserRecord): SessionUser {
     emailVerified: u.emailVerified,
     membershipCode: u.membershipCode,
     membershipExpiresAt: u.membershipExpiresAt ?? null,
+    scheduledMembershipChange: u.scheduledMembershipChange ?? null,
+    scheduledChangeDate: u.scheduledChangeDate ?? null,
     avatarUrl: u.avatarUrl,
     locale: u.locale,
     // Network Pass / tier fields — optional; omitted when not yet set on record

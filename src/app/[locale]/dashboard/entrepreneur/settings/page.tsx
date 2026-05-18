@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { ProfileForm } from '@/components/features/entrepreneur/profile-form';
+import { DeleteAccountSection } from '@/components/features/settings/delete-account-section';
 
 export const metadata = { title: 'Settings' };
 
@@ -30,6 +31,7 @@ export default async function EntrepreneurSettingsPage({ params }: PageProps) {
           avatarUrl: user.avatarUrl,
         }}
       />
+      <DeleteAccountSection />
     </div>
   );
 }

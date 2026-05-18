@@ -14,11 +14,34 @@ interface LandingMentorCardProps {
   className?: string;
 }
 
+/**
+ * Returns a safe LinkedIn URL or null. Requires `https://` and a
+ * `linkedin.com` host — anything else is dropped so we never render
+ * an outbound link to an arbitrary site.
+ */
+function safeLinkedinUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const withProto = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+    ? trimmed
+    : `https://${trimmed}`;
+  try {
+    const u = new URL(withProto);
+    if (u.protocol !== 'https:') return null;
+    if (!u.hostname.toLowerCase().endsWith('linkedin.com')) return null;
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function LandingMentorCard({
   mentor,
   hoverable = true,
   className,
 }: LandingMentorCardProps) {
+  const linkedinHref = safeLinkedinUrl(mentor.linkedinUrl);
   return (
     <article
       className={cn(
@@ -51,13 +74,9 @@ export function LandingMentorCard({
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/35 via-black/0 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         />
-        {mentor.linkedinUrl && (
+        {linkedinHref && (
           <a
-            href={
-              mentor.linkedinUrl.startsWith('http')
-                ? mentor.linkedinUrl
-                : `https://${mentor.linkedinUrl}`
-            }
+            href={linkedinHref}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}

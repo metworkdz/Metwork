@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
-import { db } from '@/server/db/store';
+import { db, type ClientRecord } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -70,6 +70,38 @@ export async function POST(req: NextRequest) {
     }
 
     const now = new Date().toISOString();
+
+    // Find-or-create the client record so this offline booking shows up in
+    // the incubator's CRM dashboard.  Match case-insensitively on name + phone
+    // (or name + email when no phone) within this incubator's scope.
+    if (!Array.isArray(d.clients)) d.clients = [];
+    const nameKey  = input.clientName.trim().toLowerCase();
+    const phoneKey = input.clientPhone.trim().toLowerCase();
+    const emailKey = (input.clientEmail ?? '').trim().toLowerCase();
+    let client = d.clients.find((c) => {
+      if (c.incubatorId !== incubator.id) return false;
+      if (c.fullName.trim().toLowerCase() !== nameKey) return false;
+      if (phoneKey) return c.phone.trim().toLowerCase() === phoneKey;
+      if (emailKey) return c.email.trim().toLowerCase() === emailKey;
+      return false;
+    });
+    if (!client) {
+      const newClient: ClientRecord = {
+        id:           randomUUID(),
+        incubatorId:  incubator.id,
+        fullName:     input.clientName.trim(),
+        phone:        input.clientPhone.trim(),
+        email:        input.clientEmail ?? '',
+        idCardNumber: input.clientIdNumber ?? null,
+        companyName:  null,
+        notes:        null,
+        createdAt:    now,
+        updatedAt:    now,
+      };
+      d.clients.push(newClient);
+      client = newClient;
+    }
+
     const booking = {
       id: randomUUID(),
       userId: null,

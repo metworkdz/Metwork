@@ -1,9 +1,11 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { Building2, MessageSquare, TrendingUp, Users, Wallet, BookOpen, UserCheck } from 'lucide-react';
+import { Building2, MessageSquare, TrendingUp, Users, Wallet, BookOpen, UserCheck, UserMinus } from 'lucide-react';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardWelcome } from '@/components/shared/dashboard-welcome';
 import { StatCard } from '@/components/shared/stat-card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { db } from '@/server/db/store';
+import type { UserRole } from '@/types/auth';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -43,6 +45,46 @@ export default async function AdminDashboard({ params }: PageProps) {
   const totalBookings      = data.bookings.length;
   const pendingMentorReqs  = data.mentorBookings.filter((b) => b.status === 'PENDING').length;
   const unhandledContacts  = data.contactSubmissions.filter((s) => !s.handled).length;
+
+  // ── Account deletion analytics ─────────────────────────────────────────
+  const deletionLogs = (data.auditLogs ?? []).filter(
+    (l) => l.action === 'ACCOUNT_DELETED',
+  );
+  const monthKey = (d: Date) => {
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  };
+  const currentMonthKey = monthKey(now);
+  const deletedThisMonth = deletionLogs.filter(
+    (l) => monthKey(new Date(l.createdAt)) === currentMonthKey,
+  ).length;
+  const deletionsByRole: Record<UserRole, number> = {
+    ENTREPRENEUR: 0,
+    INVESTOR: 0,
+    INCUBATOR: 0,
+    ADMIN: 0,
+  };
+  for (const log of deletionLogs) {
+    const role = (log.details as { role?: UserRole } | undefined)?.role;
+    if (role && role in deletionsByRole) deletionsByRole[role] += 1;
+  }
+  // Last 3 months trend, oldest → newest, formatted like "May 2026: 5"
+  const monthFormatter = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+  const trendParts: string[] = [];
+  for (let i = 2; i >= 0; i--) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    const key = monthKey(d);
+    const count = deletionLogs.filter(
+      (l) => monthKey(new Date(l.createdAt)) === key,
+    ).length;
+    trendParts.push(`${monthFormatter.format(d)}: ${count}`);
+  }
+  const deletionTrend = trendParts.join(' · ');
 
   return (
     <div className="space-y-6">
@@ -98,6 +140,45 @@ export default async function AdminDashboard({ params }: PageProps) {
           icon={MessageSquare}
         />
       </div>
+
+      {/* Account deletions analytics */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <UserMinus className="size-4 text-muted-foreground" />
+            Account deletions
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total deleted</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight">{deletionLogs.length}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">This month</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight">{deletedThisMonth}</p>
+            </div>
+            <div className="sm:col-span-2">
+              <p className="text-sm font-medium text-muted-foreground">By role</p>
+              <p className="mt-1 text-sm">
+                Entrepreneur:{' '}
+                <span className="font-semibold">{deletionsByRole.ENTREPRENEUR}</span>{' '}
+                · Incubator:{' '}
+                <span className="font-semibold">{deletionsByRole.INCUBATOR}</span>{' '}
+                · Investor:{' '}
+                <span className="font-semibold">{deletionsByRole.INVESTOR}</span>{' '}
+                · Admin:{' '}
+                <span className="font-semibold">{deletionsByRole.ADMIN}</span>
+              </p>
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Last 3 months</p>
+            <p className="mt-1 text-sm">{deletionTrend}</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

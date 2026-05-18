@@ -46,6 +46,16 @@ export async function PATCH(
     if (!request) return 'NOT_FOUND';
     if (request.status !== 'PENDING') return 'ALREADY_RESOLVED';
 
+    // Pre-flight check for rejection: if the user's wallet is frozen, we
+    // can't issue the refund and the funds would be silently lost. Force
+    // the admin to unfreeze first instead of pretending we processed it.
+    if (input.status === 'REJECTED') {
+      const userWallet = d.wallets.find((w) => w.userId === request.userId);
+      if (userWallet && userWallet.status === 'FROZEN') {
+        return 'WALLET_FROZEN';
+      }
+    }
+
     const now = new Date().toISOString();
     request.status = input.status;
     request.adminNote = input.adminNote;
@@ -99,6 +109,13 @@ export async function PATCH(
   if (result === 'NOT_FOUND') return jsonError(404, 'NOT_FOUND', 'Withdrawal request not found');
   if (result === 'ALREADY_RESOLVED') {
     return jsonError(409, 'ALREADY_RESOLVED', 'Withdrawal request is already resolved');
+  }
+  if (result === 'WALLET_FROZEN') {
+    return jsonError(
+      409,
+      'WALLET_FROZEN',
+      'Cannot reject withdrawal: user wallet is frozen. Unfreeze the wallet first, then retry.',
+    );
   }
 
   // Audit log
