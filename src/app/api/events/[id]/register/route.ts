@@ -9,6 +9,7 @@ import { ZodError } from 'zod';
 import { requireApiSession } from '@/server/auth/api-guards';
 import { registerForEventSchema } from '@/server/bookings/schemas';
 import { registerForEvent } from '@/server/bookings/service';
+import { getEventDiscountForUser } from '@/server/memberships/service';
 import { toBookingDto } from '@/server/bookings/serialize';
 import { toTransactionDto, toWalletDto } from '@/server/wallet/serialize';
 import { fromZod, json, jsonError } from '@/server/http/json';
@@ -43,12 +44,17 @@ export async function POST(
     throw err;
   }
 
+  // Membership tier discount (Builder 15 %, Founder 20 %) — applied to the
+  // event ticket the same way it is for space bookings.
+  const membershipDiscount = await getEventDiscountForUser(guard.user.id);
+
   const result = await registerForEvent({
     userId: guard.user.id,
     eventId,
     clientReference: input.clientReference,
     promoCode: input.promoCode,
     paymentMethod: input.paymentMethod,
+    membershipDiscount,
   });
 
   if (!result.ok) {

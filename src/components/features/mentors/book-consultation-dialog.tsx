@@ -12,8 +12,11 @@
  * Status is always PENDING until admin approves.
  * Success panel clearly says "pending approval" (not "confirmed").
  */
-import { useState, useCallback } from 'react';
-import { Clock, Calendar, Timer, Tag, Check, AlertCircle, DollarSign } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { Clock, Calendar, Timer, Tag, Check, AlertCircle, DollarSign, Gift } from 'lucide-react';
+import { useAuth } from '@/components/providers/auth-provider';
+import { resolveTier } from '@/lib/tier-utils';
+import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
 import {
   Dialog,
   DialogContent,
@@ -74,6 +77,9 @@ export function BookConsultationDialog({
   open,
   onOpenChange,
 }: BookConsultationDialogProps) {
+  const { user } = useAuth();
+  const userTier = user ? resolveTier(user) : 'EXPLORER';
+
   const [name,        setName]        = useState('');
   const [email,       setEmail]       = useState('');
   const [phone,       setPhone]       = useState('');
@@ -81,6 +87,11 @@ export function BookConsultationDialog({
   const [consultDate, setConsultDate] = useState('');
   const [consultTime, setConsultTime] = useState('10:00');
   const [duration,    setDuration]    = useState<number>(60);
+
+  // Free-consultation quota (fetched from /api/consultations on open)
+  const [freeQuota,         setFreeQuota]         = useState<number>(0);
+  const [freeRemaining,     setFreeRemaining]     = useState<number>(0);
+  const [useFreeCredit,     setUseFreeCredit]     = useState<boolean>(false);
 
   // Promo code state
   const [promoCode,   setPromoCode]      = useState('');
@@ -93,13 +104,47 @@ export function BookConsultationDialog({
   const [formState,   setFormState]   = useState<FormState>('idle');
   const [errorMsg,    setErrorMsg]    = useState<string | null>(null);
 
+  // Fetch the user's monthly free-consultation quota when the dialog opens
+  useEffect(() => {
+    if (!open || !user) return;
+    let cancelled = false;
+    void fetch('/api/consultations', { credentials: 'include' })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (cancelled || !data) return;
+        const q = Number(data.freeQuota ?? 0);
+        const rem = Number(data.freeSessionsRemaining ?? 0);
+        setFreeQuota(q);
+        setFreeRemaining(rem);
+        // Default the checkbox ON when credits are available — entrepreneurs
+        // expect their free consultation to be applied automatically.
+        if (rem > 0) setUseFreeCredit(true);
+      })
+      .catch(() => { /* ignore — fallback to paid display */ });
+    return () => { cancelled = true; };
+  }, [open, user]);
+
+  // Membership-tier consultation discount (BUILDER 15 %, FOUNDER 20 %).
+  // Suppressed when the user is applying a free credit (final price is 0).
+  const tierDiscountFraction = !user
+    ? 0
+    : userTier === 'FOUNDER' ? 0.20
+    : userTier === 'BUILDER' ? 0.15
+    : 0;
+  const tierDiscountPercent  = Math.round(tierDiscountFraction * 100);
+
   // Derived pricing
   const feePerHour   = mentor?.consultationFee ?? 0;
   const basePrice    = computePrice(feePerHour, duration);
-  const discountAmt  = promoState === 'valid'
-    ? (promoFixed > 0 ? promoFixed : Math.round(basePrice * promoDiscount / 100))
+  const applyFreeCredit = useFreeCredit && freeRemaining > 0 && basePrice > 0;
+  const tierDiscountAmt = !applyFreeCredit && tierDiscountFraction > 0
+    ? basePrice - Math.round(basePrice * (1 - tierDiscountFraction))
     : 0;
-  const finalPrice   = Math.max(0, basePrice - discountAmt);
+  const afterTierDiscount = applyFreeCredit ? 0 : Math.max(0, basePrice - tierDiscountAmt);
+  const discountAmt  = promoState === 'valid' && !applyFreeCredit
+    ? (promoFixed > 0 ? promoFixed : Math.round(afterTierDiscount * promoDiscount / 100))
+    : 0;
+  const finalPrice   = applyFreeCredit ? 0 : Math.max(0, afterTierDiscount - discountAmt);
   const isFree       = feePerHour === 0 || finalPrice === 0;
 
   function reset() {
@@ -107,6 +152,7 @@ export function BookConsultationDialog({
     setConsultDate(''); setConsultTime('10:00'); setDuration(60);
     setPromoCode(''); setPromoState('idle'); setPromoError(null);
     setPromoDiscount(0); setPromoFixed(0);
+    setUseFreeCredit(false);
     setFormState('idle'); setErrorMsg(null);
   }
 
@@ -422,6 +468,40 @@ export function BookConsultationDialog({
                 </div>
               </div>
 
+              {/* Free-consultation credit — checkbox to apply this month's quota */}
+              {feePerHour > 0 && freeQuota > 0 && (
+                <label
+                  className={cn(
+                    'flex items-start gap-3 rounded-lg border px-3 py-3 text-sm cursor-pointer transition-colors',
+                    applyFreeCredit
+                      ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950'
+                      : freeRemaining === 0
+                      ? 'border-border bg-muted/30 text-muted-foreground cursor-not-allowed'
+                      : 'border-border hover:border-primary/40',
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={applyFreeCredit}
+                    onChange={(e) => setUseFreeCredit(e.target.checked)}
+                    disabled={freeRemaining === 0 || formState === 'submitting'}
+                    className="mt-0.5 size-4 shrink-0 accent-emerald-600"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Gift className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="font-semibold">Use a free consultation</span>
+                      <MembershipTierBadge tier={userTier} size="xs" showIcon={false} />
+                    </div>
+                    <div className="mt-0.5 text-xs">
+                      {freeRemaining > 0
+                        ? `${freeRemaining} of ${freeQuota} remaining this month`
+                        : `0 of ${freeQuota} remaining — resets next month`}
+                    </div>
+                  </div>
+                </label>
+              )}
+
               {/* Price breakdown — only shown when mentor charges a fee */}
               {feePerHour > 0 && (
                 <div className="rounded-lg border border-border/60 bg-muted/10 px-3.5 py-3 space-y-1.5">
@@ -434,7 +514,25 @@ export function BookConsultationDialog({
                     </span>
                     <span className="tabular-nums font-medium">{formatDZD(basePrice)}</span>
                   </div>
-                  {promoState === 'valid' && discountAmt > 0 && (
+                  {applyFreeCredit && (
+                    <div className="flex justify-between text-sm text-emerald-700 dark:text-emerald-400">
+                      <span className="flex items-center gap-1.5">
+                        <Gift className="size-3" />
+                        Free consultation ({freeRemaining} of {freeQuota} remaining)
+                      </span>
+                      <span className="tabular-nums">− {formatDZD(basePrice)}</span>
+                    </div>
+                  )}
+                  {!applyFreeCredit && tierDiscountAmt > 0 && (
+                    <div className="flex justify-between text-sm text-emerald-700 dark:text-emerald-400">
+                      <span className="flex items-center gap-1.5">
+                        <MembershipTierBadge tier={userTier} size="xs" showIcon={false} />
+                        {userTier === 'FOUNDER' ? 'Founder' : 'Builder'} discount ({tierDiscountPercent}% off)
+                      </span>
+                      <span className="tabular-nums">− {formatDZD(tierDiscountAmt)}</span>
+                    </div>
+                  )}
+                  {!applyFreeCredit && promoState === 'valid' && discountAmt > 0 && (
                     <div className="flex justify-between text-sm text-emerald-700 dark:text-emerald-400">
                       <span>Promo code discount</span>
                       <span className="tabular-nums">− {formatDZD(discountAmt)}</span>
@@ -442,7 +540,11 @@ export function BookConsultationDialog({
                   )}
                   <div className="flex justify-between text-sm font-semibold border-t border-border/60 pt-1.5 mt-1.5">
                     <span>
-                      {finalPrice === 0 ? 'Free (promo applied)' : 'Total'}
+                      {finalPrice === 0
+                        ? applyFreeCredit
+                          ? 'Free (credit applied)'
+                          : 'Free (promo applied)'
+                        : 'Total'}
                     </span>
                     <span className={cn('tabular-nums', finalPrice === 0 && 'text-emerald-700 dark:text-emerald-400')}>
                       {finalPrice === 0 ? 'Free' : formatDZD(finalPrice)}

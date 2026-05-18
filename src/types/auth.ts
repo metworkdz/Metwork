@@ -27,6 +27,10 @@ export interface SessionUser {
   membershipCode: string | null;
   /** ISO datetime — when the paid membership expires. Null = no expiry or free tier. */
   membershipExpiresAt?: string | null;
+  /** Membership code the user has scheduled to switch to at `scheduledChangeDate`. */
+  scheduledMembershipChange?: string | null;
+  /** ISO datetime — when the scheduled downgrade takes effect. */
+  scheduledChangeDate?: string | null;
   avatarUrl: string | null;
   locale: 'en' | 'fr' | 'ar';
 

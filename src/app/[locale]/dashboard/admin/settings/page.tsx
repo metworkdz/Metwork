@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { PlatformSettingsForm } from '@/components/features/admin/platform-settings-form';
+import { DeleteAccountSection } from '@/components/features/settings/delete-account-section';
 import { db } from '@/server/db/store';
 import { DEFAULT_PLATFORM_SETTINGS } from '@/server/admin/settings-defaults';
 
@@ -27,6 +28,7 @@ export default async function AdminSettingsPage({ params }: PageProps) {
         subtitle={t('admin.settings.subtitle')}
       />
       <PlatformSettingsForm initial={settings} />
+      <DeleteAccountSection />
     </div>
   );
 }

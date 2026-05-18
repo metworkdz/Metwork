@@ -18,6 +18,8 @@ import { ApiClientError } from '@/lib/api-client';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
+import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
+import { resolveTier } from '@/lib/tier-utils';
 import type { Locale } from '@/i18n/config';
 import type { Event as PlatformEvent, PaymentMethod } from '@/types/domain';
 import type { BookingDto, ItemAttendanceStatus } from '@/types/booking';
@@ -60,7 +62,20 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
   const passed = status?.eventPassed === true;
   const full = status ? status.taken >= status.capacity : false;
   const alreadyRegistered = !!status?.mine;
-  const finalTotal = promoResult?.finalAmount ?? event.price;
+
+  // Membership tier discount (Builder 15 %, Founder 20 %) — mirrors the server.
+  const userTier = user ? resolveTier(user) : 'EXPLORER';
+  const membershipDiscountFraction = !isAuthed || isFree
+    ? 0
+    : userTier === 'FOUNDER' ? 0.20
+    : userTier === 'BUILDER' ? 0.15
+    : 0;
+  const membershipDiscountPercent = Math.round(membershipDiscountFraction * 100);
+  const membershipDiscountAmount = membershipDiscountFraction > 0
+    ? event.price - Math.round(event.price * (1 - membershipDiscountFraction))
+    : 0;
+  const afterMembership = event.price - membershipDiscountAmount;
+  const finalTotal = promoResult?.finalAmount ?? afterMembership;
   const insufficient = !isFree && !isCash && isAuthed && balance != null && finalTotal > 0 && balance < finalTotal;
 
   if (alreadyRegistered) {
@@ -183,6 +198,15 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
             {isFree ? <span className="font-medium text-emerald-700">Free</span> : formatCurrency(event.price, locale)}
           </span>
         </div>
+        {!isFree && membershipDiscountAmount > 0 && (
+          <div className="mt-1 flex items-center justify-between text-emerald-700 dark:text-emerald-400">
+            <span className="flex items-center gap-1.5">
+              <MembershipTierBadge tier={userTier} size="xs" showIcon={false} />
+              {userTier === 'FOUNDER' ? 'Founder' : 'Builder'} discount ({membershipDiscountPercent}% off)
+            </span>
+            <span className="tabular-nums">−{formatCurrency(membershipDiscountAmount, locale)}</span>
+          </div>
+        )}
         {!isFree && promoResult && (
           <div className="mt-1 flex items-center justify-between text-emerald-700">
             <span>
@@ -204,7 +228,8 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
       {/* Promo code — for all paid events (online and cash) */}
       {!isFree && isAuthed && (
         <PromoCodeInput
-          originalAmount={event.price}
+          key={afterMembership}
+          originalAmount={afterMembership}
           onApplied={setPromoResult}
           disabled={submitting}
         />

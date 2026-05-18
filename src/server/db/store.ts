@@ -41,6 +41,15 @@ export interface UserRecord {
   membershipCode: string | null;
   /** ISO datetime — when the paid membership expires. Null = no expiry (FREE or lifetime). */
   membershipExpiresAt?: string | null;
+  /**
+   * Membership code the user has scheduled to switch to at `scheduledChangeDate`.
+   * Used by the downgrade flow — keeps the user on the current paid tier until
+   * the end of the billing period, then a daily cron job applies the change.
+   * `'FREE'` here means the membership will be fully cancelled.
+   */
+  scheduledMembershipChange?: string | null;
+  /** ISO datetime — when the scheduled downgrade takes effect. */
+  scheduledChangeDate?: string | null;
   avatarUrl: string | null;
   locale: 'en' | 'fr' | 'ar';
   createdAt: string;
@@ -400,7 +409,8 @@ export type AuditAction =
   | 'PARTNER_PROMO_CODE_GENERATED'
   | 'PARTNER_PROMO_CODE_BULK_GENERATED'
   | 'WITHDRAWAL_APPROVED'
-  | 'WITHDRAWAL_REJECTED';
+  | 'WITHDRAWAL_REJECTED'
+  | 'ACCOUNT_DELETED';
 
 export interface AuditLogRecord {
   id: string;

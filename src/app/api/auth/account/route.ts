@@ -3,9 +3,10 @@
  * Requires: active session + password confirmation
  */
 import type { NextRequest } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import { z, ZodError } from 'zod';
 import { requireApiSession } from '@/server/auth/api-guards';
-import { db } from '@/server/db/store';
+import { db, type AuditLogRecord } from '@/server/db/store';
 import { verifyPassword } from '@/server/auth/password';
 import { json, jsonError, fromZod } from '@/server/http/json';
 
@@ -51,6 +52,23 @@ export async function DELETE(req: NextRequest) {
         b.userId = 'deleted';
         b.clientName = 'Deleted User';
       }
+    }
+
+    // Append an audit log record so admins can see deletion analytics.
+    if (!Array.isArray(d.auditLogs)) d.auditLogs = [];
+    const auditRecord: AuditLogRecord = {
+      id: randomUUID(),
+      adminId: guard.user.id,
+      adminEmail: guard.user.email,
+      action: 'ACCOUNT_DELETED',
+      targetType: 'user',
+      targetId: guard.user.id,
+      details: { role: user.role },
+      createdAt: new Date().toISOString(),
+    };
+    d.auditLogs.push(auditRecord);
+    if (d.auditLogs.length > 2_000) {
+      d.auditLogs = d.auditLogs.slice(-2_000);
     }
   });
 
