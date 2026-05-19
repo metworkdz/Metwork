@@ -64,7 +64,7 @@ export function layout(content: string): string {
         <tr>
           <td style="background:#30a735;padding:24px 40px;">
             <a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}" style="text-decoration:none;">
-              <img src="https://metwork.dz/assets/Metworkwhitelogo.png"
+              <img src="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/assets/Metworkwhitelogo.png"
                    alt="Metwork" width="160" height="44"
                    style="display:block;height:44px;width:auto;"
                    onerror="this.style.display='none';this.nextElementSibling.style.display='inline';" />

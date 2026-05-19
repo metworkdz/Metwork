@@ -8,9 +8,11 @@ export const siteConfig = {
   description:
     "Algeria's unified startup ecosystem. Connecting entrepreneurs, investors, incubators, and coworking spaces in one platform.",
   url: process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz',
-  ogImage: 'https://metwork.dz/assets/profilelogogreen.png',
+  /** Absolute URL — used in og:image meta tags and external email templates. */
+  ogImage: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/assets/profilelogogreen.png`,
   logo: '/assets/metworklogo.svg',
-  logoExternal: 'https://metwork.dz/assets/Metworkwhitelogo.png',
+  /** Absolute URL for use in emails / external embeds where a relative path won't work. */
+  logoExternal: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/assets/Metworkwhitelogo.png`,
   favicon: '/assets/Metworkfavicon.svg',
   links: {
     twitter: 'https://twitter.com/metworkdz',

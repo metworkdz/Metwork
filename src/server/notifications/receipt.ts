@@ -588,7 +588,7 @@ export async function generateMentorConfirmationPdf(input: MentorConfirmationInp
     : null;
 
   // Pre-fetch the Metwork logo for the consultation header
-  const metworkLogoBuffer = await fetchImageBuffer('https://metwork.dz/assets/Metworkwhitelogo.png');
+  const metworkLogoBuffer = await fetchImageBuffer(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/assets/Metworkwhitelogo.png`);
 
   const doc = makeDoc();
 
