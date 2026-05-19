@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Plus, Pencil, Building2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Plus, Pencil, Building2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,17 +27,21 @@ import type { IncubatorRecord, IncubatorStatus, IncubatorSubscription } from '@/
 
 /* ─────────────────────────── Status badge ─────────────────────────── */
 
-const STATUS_VARIANT: Record<IncubatorStatus, 'success' | 'warning' | 'danger'> = {
+const STATUS_VARIANT: Record<IncubatorStatus, 'success' | 'warning' | 'danger' | 'outline'> = {
+  PENDING:   'outline',
   ACTIVE:    'success',
   INACTIVE:  'warning',
   SUSPENDED: 'danger',
 };
 
 const STATUS_LABEL: Record<IncubatorStatus, string> = {
+  PENDING:   'Pending approval',
   ACTIVE:    'Active',
   INACTIVE:  'Inactive',
   SUSPENDED: 'Suspended',
 };
+
+type StatusFilter = 'ALL' | 'PENDING' | 'ACTIVE';
 
 const SUB_LABEL: Record<IncubatorSubscription, string> = {
   COMMISSION: 'Commission (20%)',
@@ -172,6 +176,7 @@ function IncubatorFormDialog({ open, editing, onClose, onSaved }: IncubatorFormD
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="PENDING">Pending approval</SelectItem>
                   <SelectItem value="ACTIVE">Active</SelectItem>
                   <SelectItem value="INACTIVE">Inactive</SelectItem>
                   <SelectItem value="SUSPENDED">Suspended</SelectItem>
@@ -224,6 +229,8 @@ export function AdminIncubatorsManager({ initial }: AdminIncubatorsManagerProps)
   const [incubators, setIncubators] = useState<IncubatorRecord[]>(initial);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing,    setEditing]    = useState<IncubatorRecord | null>(null);
+  const [filter,     setFilter]     = useState<StatusFilter>('ALL');
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   function openAdd()  { setEditing(null); setDialogOpen(true); }
   function openEdit(inc: IncubatorRecord) { setEditing(inc); setDialogOpen(true); }
@@ -240,24 +247,80 @@ export function AdminIncubatorsManager({ initial }: AdminIncubatorsManagerProps)
     });
   }
 
+  async function approve(inc: IncubatorRecord) {
+    setApprovingId(inc.id);
+    try {
+      const res = await fetch(`/api/admin/incubators/${inc.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'ACTIVE' }),
+      });
+      if (!res.ok) throw new Error('Approve failed');
+      const record = await res.json() as IncubatorRecord;
+      handleSaved(record);
+    } catch (err) {
+      console.error('approve incubator failed', err);
+    } finally {
+      setApprovingId(null);
+    }
+  }
+
+  const pendingCount = useMemo(
+    () => incubators.filter((i) => i.status === 'PENDING').length,
+    [incubators],
+  );
+  const activeOnlyCount = useMemo(
+    () => incubators.filter((i) => i.status === 'ACTIVE').length,
+    [incubators],
+  );
+  const filtered = useMemo(() => {
+    if (filter === 'ALL') return incubators;
+    return incubators.filter((i) => i.status === filter);
+  }, [incubators, filter]);
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {incubators.length} incubator{incubators.length !== 1 ? 's' : ''} registered
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant={filter === 'ALL' ? 'default' : 'outline'}
+            onClick={() => setFilter('ALL')}
+          >
+            All ({incubators.length})
+          </Button>
+          <Button
+            size="sm"
+            variant={filter === 'PENDING' ? 'default' : 'outline'}
+            onClick={() => setFilter('PENDING')}
+          >
+            Pending approval ({pendingCount})
+          </Button>
+          <Button
+            size="sm"
+            variant={filter === 'ACTIVE' ? 'default' : 'outline'}
+            onClick={() => setFilter('ACTIVE')}
+          >
+            Active ({activeOnlyCount})
+          </Button>
+        </div>
         <Button size="sm" onClick={openAdd}>
           <Plus className="size-4" />
           Add incubator
         </Button>
       </div>
 
-      {incubators.length === 0 ? (
+      {filtered.length === 0 ? (
         <Card>
           <CardContent className="p-0">
             <InlineEmptyState
-              title="No incubators yet"
-              description="Add the first incubator to get started."
+              title={filter === 'PENDING' ? 'No incubators awaiting approval' : 'No incubators yet'}
+              description={
+                filter === 'PENDING'
+                  ? 'New signups will appear here for review.'
+                  : 'Add the first incubator to get started.'
+              }
               action={
                 <Button size="sm" onClick={openAdd}>
                   <Plus className="size-4" />
@@ -269,7 +332,7 @@ export function AdminIncubatorsManager({ initial }: AdminIncubatorsManagerProps)
         </Card>
       ) : (
         <div className="space-y-3">
-          {incubators.map((inc) => (
+          {filtered.map((inc) => (
             <Card key={inc.id} className="border-border/60">
               <CardContent className="p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -288,10 +351,23 @@ export function AdminIncubatorsManager({ initial }: AdminIncubatorsManagerProps)
                       {inc.subscriptionCode ? SUB_LABEL[inc.subscriptionCode] : 'Commission'} · Added {new Date(inc.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <Button size="sm" variant="outline" className="shrink-0" onClick={() => openEdit(inc)}>
-                    <Pencil className="size-3" />
-                    Edit
-                  </Button>
+                  <div className="flex shrink-0 gap-2">
+                    {inc.status === 'PENDING' && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => approve(inc)}
+                        loading={approvingId === inc.id}
+                      >
+                        <CheckCircle2 className="size-3" />
+                        Approve
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => openEdit(inc)}>
+                      <Pencil className="size-3" />
+                      Edit
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

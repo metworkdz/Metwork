@@ -68,6 +68,24 @@ function todayStr(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/**
+ * Build a full ISO datetime string in the user's local timezone (with offset),
+ * e.g. "2026-05-20T14:00:00+01:00". The server uses this for the 24-hour
+ * advance check so that picking a time near midnight doesn't flip to the
+ * wrong UTC day.
+ */
+function buildLocalIso(dateStr: string, timeStr: string): string {
+  const [y = 1970, mo = 1, d = 1] = dateStr.split('-').map(Number);
+  const [h = 0, mi = 0]           = timeStr.split(':').map(Number);
+  const local                     = new Date(y, mo - 1, d, h, mi, 0, 0);
+  const tzMin                     = -local.getTimezoneOffset(); // minutes east of UTC
+  const sign       = tzMin >= 0 ? '+' : '-';
+  const abs        = Math.abs(tzMin);
+  const off        = `${sign}${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
+  const pad        = (n: number) => String(n).padStart(2, '0');
+  return `${local.getFullYear()}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}T${pad(local.getHours())}:${pad(local.getMinutes())}:00${off}`;
+}
+
 function formatDZD(amount: number): string {
   return `${amount.toLocaleString('fr-DZ')} DZD`;
 }
@@ -241,6 +259,9 @@ export function BookConsultationDialog({
           message,
           consultationDate:  consultDate || null,
           consultationTime:  consultDate ? consultTime : null,
+          // Full ISO with the user's local timezone offset — lets the server
+          // run the 24-hour advance check without forcing UTC.
+          scheduledAt:       consultDate ? buildLocalIso(consultDate, consultTime) : null,
           durationMinutes:   consultDate ? duration : null,
           promoCode:         promoState === 'valid' ? promoCode.trim() : null,
           useFreeCredit:     applyFreeCredit,

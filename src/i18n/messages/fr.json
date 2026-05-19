@@ -374,7 +374,17 @@
         },
         "consultations": {
           "title": "Consultations mentors",
-          "subtitle": "Réservez des sessions de 30 min avec nos mentors experts."
+          "subtitle": "Réservez des sessions de 30 min avec nos mentors experts.",
+          "quotaCard": {
+            "label": "Consultations gratuites",
+            "tierBuilder": "Builder",
+            "tierFounder": "Founder",
+            "remaining": "{remaining} sur {quota} consultations gratuites restantes ce mois-ci",
+            "resets": "Renouvellement le {date}",
+            "resetsZero": "Toutes les sessions gratuites utilisées — renouvellement le {date}",
+            "usedOf": "{used} / {quota} utilisées",
+            "thisMonth": "ce mois-ci"
+          }
         },
         "marketplace": {
           "title": "Marketplace",

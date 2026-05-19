@@ -25,17 +25,27 @@ function fromRecord(r: import('@/server/db/store').EventRecord): PlatformEvent {
   };
 }
 
-/** List all active events from the DB (no demo fallback). */
+/** List all active events whose owning incubator is ACTIVE (no demo fallback). */
 export async function listEvents(): Promise<PlatformEvent[]> {
   const data = await db.read();
-  return (data.events ?? []).filter((e) => e.isActive).map(fromRecord);
+  const activeIncIds = new Set(
+    (data.incubators ?? [])
+      .filter((i) => i.status === 'ACTIVE')
+      .map((i) => i.id),
+  );
+  return (data.events ?? [])
+    .filter((e) => e.isActive && activeIncIds.has(e.incubatorId))
+    .map(fromRecord);
 }
 
 /** Find a single active event by ID. */
 export async function findEventById(id: string): Promise<PlatformEvent | null> {
   const data = await db.read();
   const dbEv = (data.events ?? []).find((e) => e.id === id && e.isActive);
-  return dbEv ? fromRecord(dbEv) : null;
+  if (!dbEv) return null;
+  const inc = (data.incubators ?? []).find((i) => i.id === dbEv.incubatorId);
+  if (!inc || inc.status !== 'ACTIVE') return null;
+  return fromRecord(dbEv);
 }
 
 /** List all events (active and inactive) owned by a specific incubator. */

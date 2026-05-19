@@ -64,8 +64,14 @@ export interface CreateSpaceBookingArgs {
   endsAt: string;
   clientReference: string;
   promoCode?: string;
-  /** Default 'wallet'. manual = reserve only, no wallet debit, status PENDING_PAYMENT. */
-  paymentMethod?: 'wallet' | 'manual';
+  /**
+   * Default 'wallet'.
+   * - 'manual'        — reserve only, no wallet debit, status PENDING_PAYMENT.
+   * - 'NETWORK_PASS'  — redeem one of the user's monthly Network Pass credits.
+   *                     Only valid when the target space is enrolled in the
+   *                     Partner Program AND the user is BUILDER or FOUNDER tier.
+   */
+  paymentMethod?: 'wallet' | 'manual' | 'NETWORK_PASS';
   /** Fractional membership discount to apply before the promo code (0–1). e.g. 0.20 = 20 % off. */
   membershipDiscount?: number;
 }
@@ -200,6 +206,7 @@ export async function createSpaceBooking(
   if (args.promoCode) await ensurePromoCodesSeeded();
 
   const isCash = args.paymentMethod === 'manual';
+  const isNetworkPass = args.paymentMethod === 'NETWORK_PASS';
 
   // Pre-check: blocked dates (outside the DB lock for speed)
   const rawSpace = (await db.read()).spaces?.find((s) => s.id === args.spaceId);
@@ -276,6 +283,115 @@ export async function createSpaceBooking(
     if (!wallet) {
       wallet = newWallet(args.userId);
       d.wallets.push(wallet);
+    }
+
+    // ── Network Pass path: redeem a monthly credit, no wallet charge ───
+    if (isNetworkPass) {
+      const spaceRec = d.spaces?.find((s) => s.id === space.id);
+      if (!spaceRec?.isPartnerInNetwork) {
+        return { ok: false, reason: 'NOT_PARTNER_SPACE' };
+      }
+
+      const user = d.users.find((u) => u.id === args.userId);
+      if (!user) {
+        // Shouldn't happen — guard already gated on a valid session — but
+        // returning a 'TIER_NOT_ELIGIBLE' makes the failure mode explicit.
+        return { ok: false, reason: 'TIER_NOT_ELIGIBLE', tier: 'EXPLORER' };
+      }
+      const tier = user.membershipTier ?? 'EXPLORER';
+      if (tier === 'EXPLORER') {
+        return { ok: false, reason: 'TIER_NOT_ELIGIBLE', tier: 'EXPLORER' };
+      }
+      const currentCredits = user.networkCredits ?? 0;
+      if (currentCredits <= 0) {
+        return { ok: false, reason: 'NO_CREDITS', creditsRemaining: currentCredits };
+      }
+
+      const now = new Date().toISOString();
+
+      // Atomic credit decrement + counters
+      user.networkCredits = currentCredits - 1;
+      user.networkPassesUsedThisMonth = (user.networkPassesUsedThisMonth ?? 0) + 1;
+      user.lastNetworkVisit = now;
+      // Track unique partner spaces visited (used for fraud signals).
+      const visited = new Set(user.networkSpacesVisited ?? []);
+      visited.add(space.id);
+      user.networkSpacesVisited = Array.from(visited);
+      user.updatedAt = now;
+
+      // Free booking — CONFIRMED immediately, no wallet movement.
+      const booking: BookingRecord = {
+        id: randomUUID(),
+        userId: args.userId,
+        itemKind: 'SPACE',
+        itemId: space.id,
+        itemName: space.name,
+        vendorName: space.incubatorName,
+        city: space.city,
+        unit: args.unit,
+        quantity,
+        startsAt: args.startsAt,
+        endsAt,
+        totalAmount: 0,
+        status: 'CONFIRMED',
+        clientReference: args.clientReference,
+        transactionId: null,
+        paymentMethod: 'NETWORK_PASS',
+        createdAt: now,
+        updatedAt: now,
+      };
+      d.bookings.push(booking);
+
+      // Record the per-visit ledger entry that drives the monthly partner
+      // payout batch. payoutAmount comes from the partner enrolment record;
+      // fallback to 300 DZD if the rate isn't configured.
+      const partner = (d.partnerMemberships ?? []).find(
+        (p) => p.id === spaceRec.partnerMembershipId,
+      );
+      const payoutAmount = partner?.networkPayoutRate ?? 300;
+      if (!Array.isArray(d.networkVisits)) d.networkVisits = [];
+      const visit = {
+        id: randomUUID(),
+        userId: args.userId,
+        spaceId: space.id,
+        bookingId: booking.id,
+        checkedInAt: null,
+        checkedInBy: null,
+        checkedInMethod: null,
+        payoutStatus: 'PENDING' as const,
+        payoutAmount,
+        payoutBatchId: null,
+        paidOutDate: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      d.networkVisits.push(visit);
+      booking.networkVisitId = visit.id;
+
+      // Zero-amount placeholder transaction so callers (which expect a tx in
+      // the success branch) don't break. Matches the cash path's pattern.
+      const tx: TransactionRecord = {
+        id: randomUUID(),
+        walletId: wallet.id,
+        userId: args.userId,
+        type: 'PAYMENT',
+        amount: 0,
+        balanceAfter: wallet.balance,
+        status: 'COMPLETED',
+        description: `Network Pass — ${space.name}`,
+        reference: args.clientReference,
+        provider: 'network_pass',
+        providerTxnId: null,
+        metadata: {
+          bookingItemKind: 'SPACE',
+          bookingItemId: space.id,
+          networkVisitId: visit.id,
+        },
+        createdAt: now,
+        completedAt: now,
+      };
+
+      return { ok: true, replayed: false, booking, transaction: tx, wallet };
     }
 
     // ── Cash path: reserve without charging ────────────────────────────

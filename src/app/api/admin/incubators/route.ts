@@ -17,7 +17,7 @@ const createSchema = z.object({
   email:            z.string().email().max(200),
   phone:            z.string().min(6).max(30),
   city:             z.string().min(1).max(80),
-  status:           z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).default('ACTIVE'),
+  status:           z.enum(['PENDING', 'ACTIVE', 'INACTIVE', 'SUSPENDED']).default('ACTIVE'),
   subscriptionCode: z.enum(['COMMISSION', 'FLAT']).default('COMMISSION'),
 });
 

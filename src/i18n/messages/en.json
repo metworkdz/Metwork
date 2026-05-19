@@ -374,7 +374,17 @@
         },
         "consultations": {
           "title": "Mentor consultations",
-          "subtitle": "Book 30-min sessions with our expert mentors."
+          "subtitle": "Book 30-min sessions with our expert mentors.",
+          "quotaCard": {
+            "label": "Free consultations",
+            "tierBuilder": "Builder",
+            "tierFounder": "Founder",
+            "remaining": "{remaining} of {quota} free consultations remaining this month",
+            "resets": "Resets on {date}",
+            "resetsZero": "All free sessions used — quota resets on {date}",
+            "usedOf": "{used} / {quota} used",
+            "thisMonth": "this month"
+          }
         },
         "marketplace": {
           "title": "Marketplace",

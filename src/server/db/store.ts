@@ -319,7 +319,7 @@ export interface ContactSubmissionRecord {
 
 /* ─────────────────────────── Incubators ─────────────────────────── */
 
-export type IncubatorStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+export type IncubatorStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 export type IncubatorSubscription = 'COMMISSION' | 'FLAT';
 export type IncubatorBillingCycle = 'SEMESTERLY' | 'YEARLY';
 export type IncubatorSubscriptionStatus = 'ACTIVE' | 'NONE' | 'EXPIRED';
@@ -1104,6 +1104,13 @@ export interface MentorConsultationRecord {
   mentorName: string;
   status: MentorConsultationStatus;
   message: string;
+  /**
+   * Links this consultation row to the originating `MentorBookingRecord` so
+   * admin approve/reject can synchronously update the quota state (e.g. flip
+   * PENDING → CONFIRMED on approval, or → CANCELLED on rejection to release
+   * the monthly free credit).
+   */
+  bookingId?: string | null;
   /** ISO datetime of the scheduled session. Null until admin confirms a time. */
   scheduledAt?: string | null;
   durationMinutes?: number | null;

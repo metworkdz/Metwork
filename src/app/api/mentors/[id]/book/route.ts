@@ -34,6 +34,13 @@ const schema = z.object({
   consultationDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   /** Requested start time (HH:MM) */
   consultationTime: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
+  /**
+   * Full ISO datetime (with timezone offset) representing the consultation
+   * start. Sent by the client so the 24-hour guard isn't subject to UTC
+   * off-by-one-day errors near midnight. When provided, takes precedence
+   * over `consultationDate` + `consultationTime` for the advance check.
+   */
+  scheduledAt: z.string().datetime({ offset: true }).optional().nullable(),
   /** Duration in minutes: 30 | 60 | 90 | 120 | 150 | 180 */
   durationMinutes: z.number().int().min(30).max(180).optional().nullable(),
   /** Optional promo code string */
@@ -74,11 +81,21 @@ export async function POST(
     throw err;
   }
 
-  // Enforce 24-hour advance booking only when a date is supplied
-  if (input.consultationDate && input.consultationTime) {
-    const scheduled = new Date(`${input.consultationDate}T${input.consultationTime}:00Z`);
-    const minTime = new Date(Date.now() + MIN_ADVANCE_HOURS * 60 * 60 * 1000);
-    if (scheduled < minTime) {
+  // Enforce 24-hour advance booking only when a date is supplied. Prefer the
+  // client-provided full ISO `scheduledAt` (carries the timezone offset) over
+  // the legacy `consultationDate` + `consultationTime` pair so users near
+  // midnight aren't rejected by spurious UTC date shifts.
+  const scheduledIso =
+    input.scheduledAt ??
+    (input.consultationDate && input.consultationTime
+      ? `${input.consultationDate}T${input.consultationTime}:00`
+      : null);
+  if (scheduledIso) {
+    const scheduled = new Date(scheduledIso);
+    if (Number.isNaN(scheduled.getTime())) {
+      return jsonError(422, 'INVALID_DATE', 'Invalid consultation date/time');
+    }
+    if (scheduled.getTime() - Date.now() < MIN_ADVANCE_HOURS * 60 * 60 * 1000) {
       return jsonError(422, 'TOO_SOON', `Consultations must be booked at least ${MIN_ADVANCE_HOURS} hours in advance`);
     }
   }
@@ -135,9 +152,10 @@ export async function POST(
   const now = new Date().toISOString();
   const quotaMonth = currentQuotaMonth();
 
+  const bookingId = randomUUID();
   const booking = await db.update((d) => {
     const record = {
-      id:                   randomUUID(),
+      id:                   bookingId,
       mentorId,
       userId:               guard.user.id,
       userName:             input.name,
@@ -167,6 +185,7 @@ export async function POST(
       if (!Array.isArray(d.mentorConsultations)) d.mentorConsultations = [];
       const consultation: MentorConsultationRecord = {
         id:             randomUUID(),
+        bookingId,
         mentorId,
         mentorName:     mentor.fullName,
         userId:         guard.user.id,

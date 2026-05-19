@@ -16,7 +16,8 @@
  *  - Pending-review notice (not an automatic booking)
  */
 import { useState } from 'react';
-import { Clock, UserCheck, Timer, DollarSign } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { Clock, UserCheck, Timer, DollarSign, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -70,6 +71,12 @@ interface Props {
   mentors:        MentorRecord[];
   /** How many free consultations this user's plan includes per month (for display). */
   freeQuota:      number;
+  /** Free quota already consumed this calendar month. */
+  freeSessionsUsed?:      number;
+  /** Free sessions still available this month. */
+  freeSessionsRemaining?: number;
+  /** ISO timestamp (UTC) when the quota resets — typically the 1st of next month. */
+  quotaResetISO?:         string;
   membershipCode: string | null;
   locale:         Locale;
   /** Pre-filled from the user's profile. */
@@ -92,14 +99,34 @@ export function ConsultationsPanel({
   initial,
   mentors,
   freeQuota,
+  freeSessionsUsed = 0,
+  freeSessionsRemaining,
+  quotaResetISO,
   membershipCode,
   locale,
   userName,
   userEmail,
   userPhone,
 }: Props) {
+  const t = useTranslations('pages.dashboard.entrepreneur.consultations.quotaCard');
   const [bookings, setBookings]     = useState(initial);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Compute remaining if not explicitly provided.
+  const remaining = typeof freeSessionsRemaining === 'number'
+    ? freeSessionsRemaining
+    : Math.max(0, freeQuota - freeSessionsUsed);
+
+  // Show the prominent quota card only for paid tiers that grant free sessions.
+  const showQuotaCard = !!membershipCode && freeQuota > 0;
+  const tierLabel = membershipCode === 'ENTREPRENEUR'
+    ? t('tierBuilder')
+    : membershipCode === 'STARTUP'
+      ? t('tierFounder')
+      : '';
+  const resetDateLabel = quotaResetISO
+    ? formatDate(quotaResetISO, locale, { dateStyle: 'long' })
+    : '';
 
   /* Dialog form state */
   const [selectedMentorId, setSelectedMentorId] = useState('');
@@ -220,6 +247,47 @@ export function ConsultationsPanel({
 
   return (
     <div className="space-y-6">
+      {/* Prominent free-quota stat card — only for paid tiers with a free quota */}
+      {showQuotaCard && (
+        <div className="overflow-hidden rounded-xl border border-primary-200 bg-gradient-to-br from-primary-50 via-primary-50/70 to-background px-5 py-5 shadow-sm dark:border-primary-900/60 dark:from-primary-950/40 dark:via-primary-950/20">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-600 text-white shadow-sm">
+                <Sparkles className="size-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-primary-700 dark:text-primary-300">
+                    {t('label')}
+                  </p>
+                  {tierLabel && (
+                    <Badge variant="primary" className="text-[10px] uppercase tracking-wide">
+                      {tierLabel}
+                    </Badge>
+                  )}
+                </div>
+                <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                  {t('remaining', { remaining, quota: freeQuota })}
+                </p>
+                {resetDateLabel && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {remaining === 0
+                      ? t('resetsZero', { date: resetDateLabel })
+                      : t('resets', { date: resetDateLabel })}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="rounded-md bg-background/70 px-3 py-2 text-right text-xs text-muted-foreground dark:bg-background/40">
+              <p className="font-medium text-foreground">
+                {t('usedOf', { used: freeSessionsUsed, quota: freeQuota })}
+              </p>
+              <p className="mt-0.5">{t('thisMonth')}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Quota / plan info banner */}
       <div className="flex items-center justify-between rounded-md border border-border/60 bg-muted/30 px-4 py-3">
         <div>

@@ -374,7 +374,17 @@
         },
         "consultations": {
           "title": "استشارات المرشدين",
-          "subtitle": "احجز جلسات 30 دقيقة مع مرشدينا الخبراء."
+          "subtitle": "احجز جلسات 30 دقيقة مع مرشدينا الخبراء.",
+          "quotaCard": {
+            "label": "الاستشارات المجانية",
+            "tierBuilder": "Builder",
+            "tierFounder": "Founder",
+            "remaining": "متبقي {remaining} من أصل {quota} استشارة مجانية هذا الشهر",
+            "resets": "يُعاد التجديد في {date}",
+            "resetsZero": "تم استخدام جميع الجلسات المجانية — يُعاد التجديد في {date}",
+            "usedOf": "{used} / {quota} مستخدمة",
+            "thisMonth": "هذا الشهر"
+          }
         },
         "marketplace": {
           "title": "السوق",

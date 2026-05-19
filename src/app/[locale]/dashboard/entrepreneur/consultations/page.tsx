@@ -11,6 +11,17 @@ interface PageProps {
   params: Promise<{ locale: string }>;
 }
 
+function currentQuotaMonth(): string {
+  const d = new Date();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function nextMonthResetISO(): string {
+  const d = new Date();
+  // First day of next month, UTC.
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)).toISOString();
+}
+
 export default async function EntrepreneurConsultationsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -32,6 +43,18 @@ export default async function EntrepreneurConsultationsPage({ params }: PageProp
     .filter((b) => b.userId === user.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
+  // Free quota usage for the current calendar month — mirrors GET /api/consultations.
+  // Quick consultations (auto-charged against the free quota) live in mentorConsultations.
+  const quotaMonth = currentQuotaMonth();
+  const freeSessionsUsed = (data.mentorConsultations ?? []).filter(
+    (c) =>
+      c.userId === user.id &&
+      c.quotaMonth === quotaMonth &&
+      c.chargeType === 'FREE_QUOTA' &&
+      c.status !== 'CANCELLED',
+  ).length;
+  const freeSessionsRemaining = Math.max(0, freeQuota - freeSessionsUsed);
+
   return (
     <div className="space-y-6">
       <DashboardPageHeader
@@ -42,6 +65,9 @@ export default async function EntrepreneurConsultationsPage({ params }: PageProp
         initial={bookings}
         mentors={mentors}
         freeQuota={freeQuota}
+        freeSessionsUsed={freeSessionsUsed}
+        freeSessionsRemaining={freeSessionsRemaining}
+        quotaResetISO={nextMonthResetISO()}
         membershipCode={effectiveCode === 'FREE' ? null : effectiveCode}
         locale={lang}
         userName={user.fullName}
