@@ -23,7 +23,13 @@ export type CreateSpaceBookingResult =
   /** The start/end day is not among the space's configured working days. */
   | { ok: false; reason: 'NOT_A_WORKING_DAY'; workingDays: number[] }
   /** Another confirmed booking occupies all or part of the requested window. */
-  | { ok: false; reason: 'OVERLAP_CONFLICT'; conflictingBookingId: string };
+  | { ok: false; reason: 'OVERLAP_CONFLICT'; conflictingBookingId: string }
+  /** NETWORK_PASS rejected: space is not part of the partner network. */
+  | { ok: false; reason: 'NOT_PARTNER_SPACE' }
+  /** NETWORK_PASS rejected: user has no remaining monthly credits. */
+  | { ok: false; reason: 'NO_CREDITS'; creditsRemaining: number }
+  /** NETWORK_PASS rejected: user's tier is EXPLORER (Network Pass requires BUILDER or FOUNDER). */
+  | { ok: false; reason: 'TIER_NOT_ELIGIBLE'; tier: 'EXPLORER' };
 
 /** Quote returned to the UI before the user confirms a booking. */
 export interface BookingQuote {

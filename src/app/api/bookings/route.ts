@@ -113,6 +113,19 @@ export async function POST(req: NextRequest) {
         return jsonError(409, 'OVERLAP_CONFLICT', 'This time slot is already booked', {
           conflictingBookingId: result.conflictingBookingId,
         });
+      case 'NOT_PARTNER_SPACE':
+        return jsonError(422, 'NOT_PARTNER_SPACE',
+          'This space is not part of the Network Pass partner network.');
+      case 'NO_CREDITS':
+        return jsonError(422, 'NO_CREDITS',
+          'You have no Network Pass credits remaining this month.', {
+            creditsRemaining: result.creditsRemaining,
+          });
+      case 'TIER_NOT_ELIGIBLE':
+        return jsonError(403, 'TIER_NOT_ELIGIBLE',
+          'Network Pass requires a Builder or Founder membership.', {
+            tier: result.tier,
+          });
     }
   }
 
@@ -142,6 +155,7 @@ export async function POST(req: NextRequest) {
         const paymentLabel =
           result.booking.paymentMethod === 'wallet' ? 'En ligne (portefeuille)'
           : result.booking.paymentMethod === 'manual' ? 'Espèces sur place'
+          : result.booking.paymentMethod === 'NETWORK_PASS' ? 'Network Pass'
           : result.booking.paymentMethod ?? '—';
         sendAdminOrderNotification({
           orderKind:     'SPACE',

@@ -141,7 +141,9 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
     // ADMIN. The guard is "no ADMIN exists yet" — not "no INCUBATOR exists yet"
     // (the old check) which was always true once the bootstrap admin took the
     // ADMIN role, causing every subsequent incubator to be wrongly promoted.
-    if (role === 'INCUBATOR' && !d.users.some((u) => u.role === 'ADMIN')) {
+    const isBootstrapAdmin =
+      pending.role === 'INCUBATOR' && !d.users.some((u) => u.role === 'ADMIN');
+    if (isBootstrapAdmin) {
       role = 'ADMIN';
     }
 
@@ -181,7 +183,14 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
         /** email is required by findIncubatorByUserEmail for the fast lookup path */
         email:            pending.email,
         phone:            pending.phone,
-        status:           'ACTIVE',
+        /**
+         * New incubators land in PENDING and require admin approval before
+         * their spaces/programs/events become publicly visible. The single
+         * exception is the bootstrap-admin path (very first signup on a
+         * fresh platform), where the user is auto-promoted to ADMIN —
+         * that account is activated immediately.
+         */
+        status:           isBootstrapAdmin ? 'ACTIVE' : 'PENDING',
         website:          null,
         logoUrl:          null,
         subscriptionTier: 'COMMISSION',   // legacy field

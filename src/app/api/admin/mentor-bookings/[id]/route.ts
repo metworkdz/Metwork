@@ -66,12 +66,42 @@ export async function PATCH(
     if (!Array.isArray(d.mentorBookings)) return { ok: false };
     const booking = d.mentorBookings.find((b) => b.id === id);
     if (!booking) return { ok: false };
+    const nowIso = new Date().toISOString();
     booking.status    = input.status;
     booking.adminNote = input.adminNote ?? null;
     if (input.scheduledAt) booking.scheduledAt = input.scheduledAt;
     if (input.meetLink)    booking.meetLink    = input.meetLink;
     if (input.isOffline !== undefined) booking.isOffline = input.isOffline;
-    booking.updatedAt = new Date().toISOString();
+    booking.updatedAt = nowIso;
+
+    // Sync the linked mentorConsultations row created at booking time for
+    // FREE_QUOTA bookings. Without this, free-quota consultations linger as
+    // PENDING (consuming quota) regardless of admin decision.
+    if (booking.chargeType === 'FREE_QUOTA' && Array.isArray(d.mentorConsultations)) {
+      const consultation =
+        d.mentorConsultations.find((c) => c.bookingId === booking.id) ??
+        // Fallback for rows created before bookingId was introduced
+        d.mentorConsultations.find(
+          (c) =>
+            c.userId === booking.userId &&
+            c.mentorId === booking.mentorId &&
+            c.chargeType === 'FREE_QUOTA' &&
+            c.quotaMonth === booking.freeQuotaMonth &&
+            c.status === 'PENDING',
+        );
+      if (consultation) {
+        if (input.status === 'APPROVED') {
+          consultation.status = 'CONFIRMED';
+          if (booking.scheduledAt) consultation.scheduledAt = booking.scheduledAt;
+        } else {
+          // REJECTED → release the free credit
+          consultation.status = 'CANCELLED';
+        }
+        consultation.adminNote = input.adminNote ?? null;
+        consultation.updatedAt = nowIso;
+      }
+    }
+
     return { ok: true, booking };
   });
 

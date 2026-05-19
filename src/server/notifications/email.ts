@@ -123,6 +123,99 @@ export function welcomeEmailHtml(opts: { fullName: string; role: string; dashboa
   `);
 }
 
+/* ─────────────── Incubator approval (admin gate) ─────────────── */
+
+interface IncubatorApprovalCopy {
+  subject: string;
+  heading: string;
+  intro: string;
+  next: string;
+  cta: string;
+  footer: string;
+}
+
+/** Localized strings for the incubator-approval email. */
+const INCUBATOR_APPROVAL_COPY: Record<'en' | 'fr', (incubatorName: string) => IncubatorApprovalCopy> = {
+  en: (name) => ({
+    subject: 'Your incubator is approved on Metwork',
+    heading: `${name} is approved! 🎉`,
+    intro:
+      'Great news — your incubator profile has just been approved by the Metwork team. ' +
+      'Your coworking spaces, programs and events are now visible to the public on the platform.',
+    next: 'Here\'s what you can do next:',
+    cta: 'Open your dashboard',
+    footer: 'Need help getting started? Reply to this email and our team will guide you.',
+  }),
+  fr: (name) => ({
+    subject: 'Votre incubateur est approuvé sur Metwork',
+    heading: `${name} est approuvé ! 🎉`,
+    intro:
+      'Bonne nouvelle — votre profil d\'incubateur vient d\'être approuvé par l\'équipe Metwork. ' +
+      'Vos espaces de coworking, programmes et événements sont désormais visibles publiquement sur la plateforme.',
+    next: 'Voici ce que vous pouvez faire maintenant :',
+    cta: 'Accéder à mon tableau de bord',
+    footer: 'Besoin d\'aide pour démarrer ? Répondez à cet e-mail et notre équipe vous accompagnera.',
+  }),
+};
+
+export function incubatorApprovalEmailHtml(opts: {
+  incubatorName: string;
+  dashboardUrl: string;
+  lang?: 'en' | 'fr';
+}): string {
+  const lang = opts.lang === 'fr' ? 'fr' : 'en';
+  const c = INCUBATOR_APPROVAL_COPY[lang](opts.incubatorName);
+  const bullets =
+    lang === 'fr'
+      ? [
+          'Publier vos espaces et activer les réservations',
+          'Créer programmes et événements pour votre communauté',
+          'Inviter votre équipe et gérer les paiements',
+        ]
+      : [
+          'Publish spaces and start accepting bookings',
+          'Create programs and events for your community',
+          'Invite your team and manage payouts',
+        ];
+
+  return layout(`
+    ${h1(c.heading)}
+    ${p(c.intro)}
+    ${p(c.next)}
+    <ul style="margin:0 0 20px;padding:0 0 0 20px;color:#3f3f46;font-size:15px;line-height:2;">
+      ${bullets.map((b) => `<li>${b}</li>`).join('')}
+    </ul>
+    ${button(opts.dashboardUrl, c.cta)}
+    ${p(`<span style="color:#71717a;font-size:13px;">${c.footer}</span>`)}
+  `);
+}
+
+/**
+ * Send the "your incubator is approved" email when an admin transitions an
+ * incubator from PENDING → ACTIVE. Falls back to console logging when no
+ * Resend API key is configured (same convention as every other sender here).
+ */
+export async function sendIncubatorApprovalEmail(opts: {
+  to: string;
+  incubatorName: string;
+  lang?: 'en' | 'fr';
+}): Promise<boolean> {
+  const lang = opts.lang === 'fr' ? 'fr' : 'en';
+  const subject = INCUBATOR_APPROVAL_COPY[lang](opts.incubatorName).subject;
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard`;
+  const html = incubatorApprovalEmailHtml({
+    incubatorName: opts.incubatorName,
+    dashboardUrl,
+    lang,
+  });
+  const delivered = await sendResendEmail({ to: opts.to, subject, html });
+  if (!delivered) {
+    // Resend not configured — log for ops visibility.
+    console.log('[email/incubator-approval]', { to: opts.to, subject });
+  }
+  return delivered;
+}
+
 export function otpEmailHtml(code: string): string {
   return layout(`
     ${h1('Your verification code')}

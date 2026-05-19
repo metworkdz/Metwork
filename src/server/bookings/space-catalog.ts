@@ -37,17 +37,29 @@ function fromRecord(r: import('@/server/db/store').SpaceRecord): Space {
   };
 }
 
-/** List all active spaces from the DB (no demo fallback). */
+/** List all active spaces whose owning incubator is also ACTIVE (no demo fallback). */
 export async function listSpaces(): Promise<Space[]> {
   const data = await db.read();
-  return (data.spaces ?? []).filter((s) => s.isActive).map(fromRecord);
+  // Pre-compute the set of approved (ACTIVE) incubator IDs so we can filter
+  // out spaces belonging to PENDING / INACTIVE / SUSPENDED incubators.
+  const activeIncIds = new Set(
+    (data.incubators ?? [])
+      .filter((i) => i.status === 'ACTIVE')
+      .map((i) => i.id),
+  );
+  return (data.spaces ?? [])
+    .filter((s) => s.isActive && activeIncIds.has(s.incubatorId))
+    .map(fromRecord);
 }
 
 /** Find a single active space by ID from the DB. */
 export async function findSpaceById(id: string): Promise<Space | null> {
   const data = await db.read();
   const dbSpace = (data.spaces ?? []).find((s) => s.id === id && s.isActive);
-  return dbSpace ? fromRecord(dbSpace) : null;
+  if (!dbSpace) return null;
+  const inc = (data.incubators ?? []).find((i) => i.id === dbSpace.incubatorId);
+  if (!inc || inc.status !== 'ACTIVE') return null;
+  return fromRecord(dbSpace);
 }
 
 /** List all spaces (active and inactive) owned by a specific incubator. */
