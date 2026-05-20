@@ -1504,3 +1504,19 @@ export async function update<T>(mutator: (db: DbShape) => T | Promise<T>): Promi
 }
 
 export const db = { read, update };
+
+/**
+ * TEST-ONLY: reset the in-process cache and write queue so the next read
+ * fetches fresh state from Supabase. Used by the Vitest setup to prevent
+ * test-N from seeing test-N-1's data. Do NOT call this from production
+ * code — there's no scenario where a serverless function should discard
+ * its cache mid-request.
+ *
+ * The leading double-underscore is a convention signalling "internal" —
+ * lint can grep for it to forbid use outside __tests__/.
+ */
+export function __resetCacheForTests(): void {
+  cache = null;
+  cacheAt = 0;
+  writeQueue = Promise.resolve();
+}
