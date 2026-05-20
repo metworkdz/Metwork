@@ -926,6 +926,25 @@ export interface MentorBookingRecord {
   freeQuotaMonth?: string | null;
   /** Final integer DZD amount the admin should collect (0 for FREE_QUOTA). */
   amountCharged?: number;
+  /**
+   * ID of the COMPLETED `TransactionRecord` that debited the user's wallet
+   * when this booking was created (PAID only). Null for FREE_QUOTA and for
+   * legacy bookings created before the wallet-debit fix. Used by the admin
+   * reject flow to issue a refund.
+   */
+  transactionId?: string | null;
+  /**
+   * ID of the REFUND transaction issued when an admin rejected a PAID
+   * booking. Null until rejection (or never set for FREE_QUOTA bookings).
+   */
+  refundTransactionId?: string | null;
+  /**
+   * Idempotency key supplied by the client (random UUID). Prevents
+   * double-charging on network retries — a second POST with the same
+   * (userId, clientReference) replays the original booking instead of
+   * creating a new one.
+   */
+  clientReference?: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -19,6 +19,7 @@ import { db } from '@/server/db/store';
 import { hashPassword } from '@/server/auth/password';
 import { deleteAllSessionsForUser } from '@/server/auth/session';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,7 +28,24 @@ function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    req.headers.get('x-real-ip') ??
+    'unknown'
+  );
+}
+
 export async function POST(req: NextRequest) {
+  // Rate limit: 10 attempts per IP per hour. Per-token attempts are not
+  // possible (the attacker doesn't know the token), so brute-forcing a
+  // 32-byte random token is computationally infeasible. The IP cap exists
+  // to throttle credential-stuffing and DoS against the slow scrypt hash.
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`reset-password:ip:${ip}`, 10, 60 * 60_000)) {
+    return jsonError(429, 'RATE_LIMITED', 'Too many attempts. Please try again later.');
+  }
+
   let body: unknown;
   try {
     body = await req.json();

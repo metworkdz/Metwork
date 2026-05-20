@@ -674,12 +674,38 @@ export async function generateMentorConfirmationPdf(input: MentorConfirmationInp
       drawRow(doc, modeLabel, lang === 'fr' ? 'Présentiel' : 'In-person');
     }
 
-    if (estimatedFee !== null) {
-      const feeLabel = lang === 'fr' ? 'Frais estimés' : 'Estimated fee';
-      drawRow(doc, feeLabel,
-        estimatedFee === 0 ? t.free : fmt(estimatedFee),
+    // ── Amount charged ──────────────────────────────────────────────────
+    // Prefer the persisted booking.amountCharged (set authoritatively when
+    // the wallet was debited) over the locally re-computed `estimatedFee`.
+    // The "estimated" wording is reserved for the legacy code path where
+    // no chargeType was recorded — every recent booking has one.
+    const chargedAmount = typeof booking.amountCharged === 'number'
+      ? booking.amountCharged
+      : estimatedFee;
+
+    if (booking.chargeType === 'FREE_QUOTA') {
+      const feeLabel = lang === 'fr' ? 'Mode de paiement' : 'Payment method';
+      drawRow(
+        doc,
+        feeLabel,
+        lang === 'fr' ? 'Crédit mensuel gratuit' : 'Free monthly credit',
         { bold: true },
       );
+    } else if (chargedAmount !== null && chargedAmount !== undefined) {
+      // PAID: show the real amount that was debited from the user's wallet.
+      const feeLabel = booking.chargeType === 'PAID'
+        ? (lang === 'fr' ? 'Montant payé' : 'Amount paid')
+        : (lang === 'fr' ? 'Frais estimés' : 'Estimated fee');
+      drawRow(
+        doc,
+        feeLabel,
+        chargedAmount === 0 ? t.free : fmt(chargedAmount),
+        { bold: true },
+      );
+      if (booking.chargeType === 'PAID' && chargedAmount > 0) {
+        const methodLabel = lang === 'fr' ? 'Méthode' : 'Method';
+        drawRow(doc, methodLabel, lang === 'fr' ? 'Portefeuille Metwork' : 'Metwork wallet');
+      }
     }
 
     if (booking.appliedPromoCode) {
