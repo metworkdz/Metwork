@@ -50,29 +50,58 @@ export async function createSession(
   return { id, expiresAt };
 }
 
+/**
+ * Cookie domain helper.
+ *
+ * Returns the value to put in the cookie's `Domain` attribute so it works
+ * across both `metwork.dz` and `www.metwork.dz` in production.
+ *
+ * Returns undefined for localhost / vercel.app preview domains — browsers
+ * reject cookies with a Domain attribute that doesn't match the current host,
+ * and Vercel preview URLs are unpredictable. Without a Domain attribute, the
+ * cookie defaults to host-only, which is fine for previews.
+ */
+function getCookieDomain(): string | undefined {
+  const raw = serverEnvVars.AUTH_COOKIE_DOMAIN;
+  if (!raw || raw === 'localhost') return undefined;
+  // Don't set Domain on *.vercel.app — Vercel rejects cross-deployment cookies.
+  if (raw.includes('.vercel.app')) return undefined;
+  // Leading dot is legacy but harmless. Strip it; modern browsers treat
+  // "metwork.dz" as covering all subdomains automatically.
+  return raw.replace(/^\./, '');
+}
+
 export async function setSessionCookie(issued: IssuedSession): Promise<void> {
   const store = await cookies();
   const maxAge = Math.max(
     0,
     Math.floor((new Date(issued.expiresAt).getTime() - Date.now()) / 1000),
   );
+  const domain = getCookieDomain();
   store.set(serverEnvVars.AUTH_COOKIE_NAME, issued.id, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    // 'lax' (not 'strict') so the cookie is sent on the redirect that
+    // follows login (POST /api/auth/login → 302 → /dashboard). With
+    // 'strict', browsers omit the cookie on cross-site top-level navigation,
+    // breaking the post-login redirect flow.
+    sameSite: 'lax',
     path: '/',
     maxAge,
+    ...(domain ? { domain } : {}),
   });
 }
 
 export async function clearSessionCookie(): Promise<void> {
   const store = await cookies();
+  const domain = getCookieDomain();
   store.set(serverEnvVars.AUTH_COOKIE_NAME, '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/',
     maxAge: 0,
+    ...(domain ? { domain } : {}),
   });
 }
 
