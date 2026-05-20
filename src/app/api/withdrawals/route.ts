@@ -14,6 +14,7 @@ import { db, type TransactionRecord, type WithdrawalRequestRecord } from '@/serv
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { sendWithdrawalRequestedEmail } from '@/server/notifications/mock';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
+import { track } from '@/lib/analytics';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -115,6 +116,14 @@ export async function POST(req: NextRequest) {
     userName: guard.user.fullName ?? guard.user.email,
     amount: input.amount,
     accountDetails: input.accountDetails,
+  });
+
+  // Analytics: withdrawal_requested is a key engagement signal for mentors
+  // and incubator owners (the only roles that typically have payable balances).
+  void track({
+    event: 'withdrawal_requested',
+    distinctId: guard.user.id,
+    props: { amount: input.amount },
   });
 
   return json({ withdrawalRequest: result.request }, { status: 201 });

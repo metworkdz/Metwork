@@ -19,6 +19,7 @@ import {
   sendConsultationRejectedEmail,
   sendMentorSessionConfirmedEmail,
 } from '@/server/notifications/mock';
+import { track } from '@/lib/analytics';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -214,6 +215,25 @@ export async function PATCH(
         mentor,
         adminNote: input.adminNote ?? null,
         lang,
+      });
+    }
+  }
+
+  // Analytics: fire the approval/rejection event for funnel tracking.
+  // distinctId is the booking owner (existing.userId) — that's the user
+  // whose funnel this affects, not the admin who acted.
+  if (existing.userId) {
+    if (input.status === 'APPROVED') {
+      void track({
+        event: 'booking_approved',
+        distinctId: existing.userId,
+        props: { bookingId: result.booking.id, itemKind: 'CONSULTATION' },
+      });
+    } else {
+      void track({
+        event: 'booking_rejected',
+        distinctId: existing.userId,
+        props: { bookingId: result.booking.id, refundedAmount: result.refundedAmount },
       });
     }
   }

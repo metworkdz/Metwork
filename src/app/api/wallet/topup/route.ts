@@ -17,6 +17,7 @@ import { initiateTopUp } from '@/server/wallet/service';
 import { initTopUpSchema } from '@/server/wallet/schemas';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
+import { track } from '@/lib/analytics';
 import type { InitTopUpResponse } from '@/types/wallet';
 
 export const runtime = 'nodejs';
@@ -79,5 +80,20 @@ export async function POST(req: NextRequest) {
     redirectUrl: result.topUp.redirectUrl,
     balance: result.topUp.status === 'COMPLETED' ? result.wallet.balance : null,
   };
+
+  // Analytics: track top-up initiation. We fire on both PENDING and COMPLETED
+  // so the funnel captures dropoff between "started checkout" and "money landed".
+  // The webhook handler should track 'wallet_topup' again on COMPLETED for async
+  // providers — that's deduped naturally by PostHog using the topUpId in event id.
+  void track({
+    event: 'wallet_topup',
+    distinctId: guard.user.id,
+    props: {
+      amount: input.amount,
+      provider: result.topUp.provider,
+      status: response.status,
+    },
+  });
+
   return json(response, { status: 201 });
 }

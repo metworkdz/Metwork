@@ -21,6 +21,7 @@ import { sendBookingReceiptEmail, sendAdminOrderNotification } from '@/server/no
 import { validatePromoCode } from '@/server/promo-codes/service';
 import { getSpaceDiscountForUser } from '@/server/memberships/service';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
+import { track } from '@/lib/analytics';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -179,6 +180,28 @@ export async function POST(req: NextRequest) {
         });
       } catch { /* receipt errors must never break the booking response */ }
     })();
+  }
+
+  // Analytics: only fire on NEW bookings, never on idempotent replays —
+  // otherwise the same booking would inflate the funnel count every time
+  // a flaky network retries the request.
+  if (!result.replayed) {
+    // Coerce paymentMethod to the analytics enum — booking.paymentMethod
+    // can be widened by future additions, but the event schema is a fixed
+    // union. Map anything unknown to 'wallet' which is the safe default.
+    const pm = result.booking.paymentMethod;
+    const paymentMethod: 'wallet' | 'manual' | 'NETWORK_PASS' =
+      pm === 'manual' || pm === 'NETWORK_PASS' ? pm : 'wallet';
+    void track({
+      event: 'booking_created',
+      distinctId: guard.user.id,
+      props: {
+        itemKind: 'SPACE',
+        amount: result.booking.totalAmount,
+        paymentMethod,
+        appliedPromoCode: input.promoCode ?? null,
+      },
+    });
   }
 
   return json(

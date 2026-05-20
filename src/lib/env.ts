@@ -10,6 +10,16 @@ const clientSchema = z.object({
   NEXT_PUBLIC_DEFAULT_LOCALE: z.enum(['en', 'fr', 'ar']).default('en'),
   NEXT_PUBLIC_API_URL: z.string().url(),
   NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
+  /**
+   * PostHog public project API key (`phc_...`). Optional — analytics
+   * no-op when absent so previews and dev builds aren't blocked.
+   */
+  NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
+  /**
+   * PostHog API host. EU = https://eu.i.posthog.com (default, GDPR-friendly),
+   * US = https://us.i.posthog.com.
+   */
+  NEXT_PUBLIC_POSTHOG_HOST: z.string().url().default('https://eu.i.posthog.com'),
 });
 
 /**
@@ -67,6 +77,13 @@ const serverSchema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
+  /**
+   * PostHog server-side API key (`phx_...`). Optional. Used only by
+   * server-side `track()` calls so they reach PostHog directly instead
+   * of relying on the browser to flush them. SAFE TO LEAK is FALSE —
+   * keep this server-only.
+   */
+  POSTHOG_SERVER_KEY: z.string().optional(),
 });
 
 const clientEnv = {
@@ -75,6 +92,8 @@ const clientEnv = {
   NEXT_PUBLIC_DEFAULT_LOCALE: process.env.NEXT_PUBLIC_DEFAULT_LOCALE,
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+  NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
 };
 
 function parseClient() {

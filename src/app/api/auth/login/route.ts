@@ -20,6 +20,7 @@ import { createSession, setSessionCookie } from '@/server/auth/session';
 import { toSessionUser } from '@/server/auth/serialize';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
+import { identify } from '@/lib/analytics';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -85,6 +86,16 @@ export async function POST(req: NextRequest) {
 
   const issued = await createSession(user.id, { remember: input.rememberMe });
   await setSessionCookie(issued);
+
+  // Analytics: re-identify on every login so trait drift (role change,
+  // membership upgrade, city update) is reflected in PostHog. Fire-and-
+  // forget — never block the login response on analytics.
+  void identify(user.id, {
+    role: user.role,
+    city: user.city,
+    locale: user.locale,
+    createdAt: user.createdAt,
+  });
 
   return json({
     user: toSessionUser(user),

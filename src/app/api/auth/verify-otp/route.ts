@@ -23,6 +23,7 @@ import { sendVerificationEmail, sendWelcomeEmail, sendAdminNewIncubatorNotificat
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { clientEnvVars } from '@/lib/env';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
+import { track, identify } from '@/lib/analytics';
 import type { Locale } from '@/i18n/config';
 
 export const runtime = 'nodejs';
@@ -121,6 +122,22 @@ export async function POST(req: NextRequest) {
 
     const issued = await createSession(user.id);
     await setSessionCookie(issued);
+
+    // Analytics: this is the moment a user converts from anonymous signup
+    // to a real account. Identify them so future events on this distinctId
+    // get attributed to the right Person profile, then fire otp_verified.
+    // Fire-and-forget — never let analytics block the login response.
+    void identify(user.id, {
+      role: user.role,
+      city: user.city,
+      locale: user.locale,
+      createdAt: user.createdAt,
+    });
+    void track({
+      event: 'otp_verified',
+      distinctId: user.id,
+      props: { role: user.role },
+    });
 
     return json({ user: toSessionUser(user), expiresAt: issued.expiresAt });
   }

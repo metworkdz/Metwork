@@ -25,6 +25,7 @@ import { fromZod, json, jsonError } from '@/server/http/json';
 import { sendConsultationRequestReceivedEmail, sendAdminConsultationNotification } from '@/server/notifications/mock';
 import { validatePromoCode, promoAppliesToType, consumePromoCode } from '@/server/promo-codes/service';
 import { getEffectiveMembershipCode, getUserConsultationQuota } from '@/server/memberships/service';
+import { track } from '@/lib/analytics';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -361,6 +362,19 @@ export async function POST(
     sendConsultationRequestReceivedEmail({ booking, mentor, lang });
     // 2. Notify the admin that a new consultation request arrived.
     sendAdminConsultationNotification({ booking, mentor, lang });
+
+    // Analytics: track consultation creation. We use the same booking_created
+    // event as spaces so funnel queries can group by itemKind. Fire-and-forget.
+    void track({
+      event: 'booking_created',
+      distinctId: guard.user.id,
+      props: {
+        itemKind: 'CONSULTATION',
+        amount: finalPrice,
+        paymentMethod: 'wallet',
+        appliedPromoCode,
+      },
+    });
   }
 
   return json({
