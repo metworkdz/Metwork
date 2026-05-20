@@ -2,14 +2,28 @@ import { clientEnvVars } from './env';
 import type { ApiError } from '@/types/domain';
 
 /**
- * API base URL — points to the NestJS backend.
- * On the server we use the internal URL; on the client, the public one.
+ * API base URL.
+ *
+ * On the client: always use a relative path (`/api`) so requests are
+ * same-origin regardless of which domain the user is on (metwork.dz,
+ * metworkdz.vercel.app, preview deploys, etc.). This avoids:
+ *   - CSP `connect-src 'self'` blocking cross-origin fetches
+ *   - Cookie/credentials issues across origins
+ *   - Stale `NEXT_PUBLIC_API_URL` env vars after domain migrations
+ *
+ * On the server: use `API_INTERNAL_URL` if explicitly set, otherwise fall
+ * back to `NEXT_PUBLIC_APP_URL + /api`. Server-side fetches must use an
+ * absolute URL — there is no "current origin" on the server.
  */
 function getBaseUrl(): string {
   if (typeof window === 'undefined') {
-    return process.env.API_INTERNAL_URL ?? clientEnvVars.NEXT_PUBLIC_API_URL;
+    if (process.env.API_INTERNAL_URL) return process.env.API_INTERNAL_URL;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (appUrl) return `${appUrl.replace(/\/$/, '')}/api`;
+    return clientEnvVars.NEXT_PUBLIC_API_URL;
   }
-  return clientEnvVars.NEXT_PUBLIC_API_URL;
+  // Browser: always relative — same origin = no CORS, no CSP issues.
+  return '/api';
 }
 
 export class ApiClientError extends Error {
