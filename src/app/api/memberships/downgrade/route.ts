@@ -20,7 +20,7 @@ import { requireApiSession } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { getEffectiveMembershipCode } from '@/server/memberships/service';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   const guard = await requireApiSession();
   if (!guard.ok) return guard.response;
 
-  if (!checkRateLimit(`downgrade:${guard.user.id}`, 5, 60_000)) {
+  if (!(await checkRateLimitDistributed(`downgrade:${guard.user.id}`, 5, 60_000))) {
     return jsonError(429, 'RATE_LIMITED', 'Too many downgrade requests; please wait a moment.');
   }
 
@@ -116,7 +116,7 @@ export async function DELETE() {
   const guard = await requireApiSession();
   if (!guard.ok) return guard.response;
 
-  if (!checkRateLimit(`downgrade:${guard.user.id}`, 5, 60_000)) {
+  if (!(await checkRateLimitDistributed(`downgrade:${guard.user.id}`, 5, 60_000))) {
     return jsonError(429, 'RATE_LIMITED', 'Too many downgrade requests; please wait a moment.');
   }
 

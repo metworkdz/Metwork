@@ -16,6 +16,7 @@ import { requireApiSession } from '@/server/auth/api-guards';
 import { initiateTopUp } from '@/server/wallet/service';
 import { initTopUpSchema } from '@/server/wallet/schemas';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import type { InitTopUpResponse } from '@/types/wallet';
 
 export const runtime = 'nodejs';
@@ -24,6 +25,14 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   const guard = await requireApiSession();
   if (!guard.ok) return guard.response;
+
+  // Rate limit: 10 top-up attempts per user per hour. Top-ups are a deliberate
+  // user action — abuse here means someone is hammering the payment provider,
+  // which costs money even when the eventual charge fails. Generous enough
+  // for users retrying after a card decline or provider hiccup.
+  if (!(await checkRateLimitDistributed(`wallet-topup:user:${guard.user.id}`, 10, 60 * 60_000))) {
+    return jsonError(429, 'RATE_LIMITED', 'Too many top-up attempts. Please wait a few minutes.');
+  }
 
   let body: unknown;
   try {

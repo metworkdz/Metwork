@@ -14,7 +14,7 @@ import { sendPasswordResetEmail } from '@/server/notifications/mock';
 import { fromZod, jsonError, noContent } from '@/server/http/json';
 import { clientEnvVars } from '@/lib/env';
 import { isLocale } from '@/i18n/config';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   // email triggers an outbound mail). The endpoint always returns 204,
   // so the only feedback to abusers is the rate-limit response itself.
   const ip = getClientIp(req);
-  if (!checkRateLimit(`forgot-password:ip:${ip}`, 5, 60 * 60_000)) {
+  if (!(await checkRateLimitDistributed(`forgot-password:ip:${ip}`, 5, 60 * 60_000))) {
     return jsonError(429, 'RATE_LIMITED', 'Too many requests. Please try again later.');
   }
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   // Per-email cap: max 3 reset emails per address per hour. Prevents an
   // attacker who's iterating a target's known email from flooding their
   // inbox even from rotating IPs.
-  if (!checkRateLimit(`forgot-password:email:${email}`, 3, 60 * 60_000)) {
+  if (!(await checkRateLimitDistributed(`forgot-password:email:${email}`, 3, 60 * 60_000))) {
     // Return 204 to avoid confirming the email exists. The cap is silent
     // from the user's perspective — they just stop receiving reset mails.
     return noContent();

@@ -15,6 +15,7 @@ import { z, ZodError } from 'zod';
 import { requireApiSession } from '@/server/auth/api-guards';
 import { initiateTopUp } from '@/server/wallet/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,6 +28,14 @@ const bodySchema = z.object({
 export async function POST(req: NextRequest) {
   const guard = await requireApiSession();
   if (!guard.ok) return guard.response;
+
+  // Rate limit: 10 payment initiations per user per hour. This route hits
+  // the payment provider (SlickPay) which has its own rate caps and can
+  // bill us per call. Shared limit window with /wallet/topup would be
+  // ideal but they have different scopes — this keeps them independent.
+  if (!(await checkRateLimitDistributed(`payments-create:user:${guard.user.id}`, 10, 60 * 60_000))) {
+    return jsonError(429, 'RATE_LIMITED', 'Too many payment attempts. Please wait a few minutes.');
+  }
 
   let body: unknown;
   try {

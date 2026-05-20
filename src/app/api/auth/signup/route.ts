@@ -19,7 +19,7 @@ import { issuePendingUser } from '@/server/auth/pending-users';
 import { maskPhone, maskEmail, normalizePhone } from '@/server/auth/serialize';
 import { sendOtpWhatsApp, sendOtpEmail } from '@/server/notifications/mock';
 import { fromZod, json, jsonError } from '@/server/http/json';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import type { Locale } from '@/i18n/config';
 
 export const runtime = 'nodejs';
@@ -43,7 +43,7 @@ function pickLocale(req: NextRequest): Locale {
 export async function POST(req: NextRequest) {
   // Rate limit: 5 signups per IP per hour
   const ip = getClientIp(req);
-  if (!checkRateLimit(`signup:ip:${ip}`, 5, 60 * 60_000)) {
+  if (!(await checkRateLimitDistributed(`signup:ip:${ip}`, 5, 60 * 60_000))) {
     return jsonError(429, 'RATE_LIMITED', 'Too many signup attempts. Please try again later.');
   }
 

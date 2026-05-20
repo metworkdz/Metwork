@@ -19,7 +19,7 @@ import { db } from '@/server/db/store';
 import { hashPassword } from '@/server/auth/password';
 import { deleteAllSessionsForUser } from '@/server/auth/session';
 import { fromZod, json, jsonError } from '@/server/http/json';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   // 32-byte random token is computationally infeasible. The IP cap exists
   // to throttle credential-stuffing and DoS against the slow scrypt hash.
   const ip = getClientIp(req);
-  if (!checkRateLimit(`reset-password:ip:${ip}`, 10, 60 * 60_000)) {
+  if (!(await checkRateLimitDistributed(`reset-password:ip:${ip}`, 10, 60 * 60_000))) {
     return jsonError(429, 'RATE_LIMITED', 'Too many attempts. Please try again later.');
   }
 

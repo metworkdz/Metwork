@@ -14,7 +14,7 @@ import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { ensurePromoCodesSeeded } from '@/server/promo-codes/service';
 import { requireApiSession } from '@/server/auth/api-guards';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   if (!guard.ok) return guard.response;
 
   const ip = getClientIp(req);
-  if (!checkRateLimit(`promo-validate:${ip}`, 20, 5 * 60_000)) {
+  if (!(await checkRateLimitDistributed(`promo-validate:${ip}`, 20, 5 * 60_000))) {
     return jsonError(429, 'RATE_LIMITED', 'Too many promo code validation attempts. Please try again later.');
   }
 

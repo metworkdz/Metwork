@@ -16,7 +16,7 @@ import { db } from '@/server/db/store';
 import { issueOtp } from '@/server/auth/otp';
 import { reissuePendingOtp } from '@/server/auth/pending-users';
 import { sendOtpWhatsApp, sendOtpSms, sendOtpEmail } from '@/server/notifications/mock';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { fromZod, jsonError, noContent } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
 
   // Rate limit per IP (10 per hour)
-  if (!checkRateLimit(`ip:${ip}`, 10, RATE_WINDOW_MS)) {
+  if (!(await checkRateLimitDistributed(`ip:${ip}`, 10, RATE_WINDOW_MS))) {
     return jsonError(429, 'RATE_LIMITED', 'Too many OTP requests. Please try again later.');
   }
 
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   const pending = await reissuePendingOtp(input.userId);
   if (pending !== null) {
     // Rate limit per phone (5 per hour)
-    if (!checkRateLimit(`phone:${pending.phone}`, 5, RATE_WINDOW_MS)) {
+    if (!(await checkRateLimitDistributed(`phone:${pending.phone}`, 5, RATE_WINDOW_MS))) {
       return jsonError(429, 'RATE_LIMITED', 'Too many OTP requests for this number.');
     }
 
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
   const user = data.users.find((u) => u.id === input.userId);
   if (user && !user.phoneVerified) {
     // Rate limit per phone (5 per hour)
-    if (!checkRateLimit(`phone:${user.phone}`, 5, RATE_WINDOW_MS)) {
+    if (!(await checkRateLimitDistributed(`phone:${user.phone}`, 5, RATE_WINDOW_MS))) {
       return jsonError(429, 'RATE_LIMITED', 'Too many OTP requests for this number.');
     }
 

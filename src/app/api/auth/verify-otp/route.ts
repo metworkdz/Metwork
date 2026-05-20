@@ -22,7 +22,7 @@ import { toSessionUser } from '@/server/auth/serialize';
 import { sendVerificationEmail, sendWelcomeEmail, sendAdminNewIncubatorNotification } from '@/server/notifications/mock';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { clientEnvVars } from '@/lib/env';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import type { Locale } from '@/i18n/config';
 
 export const runtime = 'nodejs';
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   // 0.003%). The verifyPendingOtp helper also enforces a per-pending-user
   // attempt counter (5 strikes → invalidate), so this is belt-and-braces.
   const ip = getClientIp(req);
-  if (!checkRateLimit(`verify-otp:ip:${ip}`, 30, 15 * 60_000)) {
+  if (!(await checkRateLimitDistributed(`verify-otp:ip:${ip}`, 30, 15 * 60_000))) {
     return jsonError(429, 'RATE_LIMITED', 'Too many attempts. Please try again later.');
   }
 
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
   // so an attacker who knows the userId could otherwise burn the whole
   // keyspace. The pending-user attempt counter already invalidates after
   // 5 wrong codes, so 20 is just a hard ceiling against guessing pendingId.
-  if (!checkRateLimit(`verify-otp:user:${input.userId}`, 20, 60 * 60_000)) {
+  if (!(await checkRateLimitDistributed(`verify-otp:user:${input.userId}`, 20, 60 * 60_000))) {
     return jsonError(429, 'RATE_LIMITED', 'Too many attempts for this account. Please request a new code.');
   }
 

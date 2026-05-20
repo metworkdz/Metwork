@@ -11,7 +11,7 @@ import { z, ZodError } from 'zod';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { createRegistration } from '@/server/registrations/service';
 import { readSession } from '@/server/auth/session';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { db } from '@/server/db/store';
 
 export const runtime = 'nodejs';
@@ -34,7 +34,7 @@ const registrationSchema = z.object({
 export async function POST(req: NextRequest) {
   // Rate limit: 5 attempts per IP per 10 minutes (600 000 ms)
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-  if (!checkRateLimit(`reg:${ip}`, 5, 10 * 60_000)) {
+  if (!(await checkRateLimitDistributed(`reg:${ip}`, 5, 10 * 60_000))) {
     return jsonError(429, 'RATE_LIMITED', 'Too many registration attempts. Please try again later.');
   }
 

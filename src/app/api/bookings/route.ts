@@ -20,6 +20,7 @@ import { findIncubatorById } from '@/server/incubator/service';
 import { sendBookingReceiptEmail, sendAdminOrderNotification } from '@/server/notifications/mock';
 import { validatePromoCode } from '@/server/promo-codes/service';
 import { getSpaceDiscountForUser } from '@/server/memberships/service';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,6 +28,15 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   const guard = await requireApiSession();
   if (!guard.ok) return guard.response;
+
+  // Rate limit: 30 bookings per hour per authenticated user. Legitimate
+  // users rarely create more than a handful per session; this cap stops
+  // a compromised account / runaway script from spamming bookings and
+  // burning wallet balance. The idempotency key on clientReference handles
+  // honest retries, so this limit is for malicious / runaway-script traffic.
+  if (!(await checkRateLimitDistributed(`bookings:user:${guard.user.id}`, 30, 60 * 60_000))) {
+    return jsonError(429, 'RATE_LIMITED', 'Too many bookings in a short period. Please wait a moment.');
+  }
 
   let body: unknown;
   try {

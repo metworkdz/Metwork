@@ -13,6 +13,7 @@ import { requireApiSession } from '@/server/auth/api-guards';
 import { db, type TransactionRecord, type WithdrawalRequestRecord } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { sendWithdrawalRequestedEmail } from '@/server/notifications/mock';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,6 +28,15 @@ const createSchema = z.object({
 export async function POST(req: NextRequest) {
   const guard = await requireApiSession();
   if (!guard.ok) return guard.response;
+
+  // Rate limit: 5 withdrawal requests per user per day. Withdrawals are
+  // high-stakes (the amount is held in escrow until admin reviews), so
+  // a compromised account spamming requests could trap a user's full
+  // wallet balance in pending state. Five per day is more than any
+  // legitimate user would ever need.
+  if (!(await checkRateLimitDistributed(`withdrawals:user:${guard.user.id}`, 5, 24 * 60 * 60_000))) {
+    return jsonError(429, 'RATE_LIMITED', 'You have reached the daily withdrawal-request limit. Please try again tomorrow.');
+  }
 
   let body: unknown;
   try { body = await req.json(); } catch {

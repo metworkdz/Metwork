@@ -18,6 +18,7 @@ import {
   uploadBuffer,
   MAX_UPLOAD_BYTES,
 } from '@/lib/cloudinary';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,6 +34,14 @@ const MIME_TO_EXT: Record<string, string> = {
 export async function POST(req: NextRequest) {
   const guard = await requireApiSession();
   if (!guard.ok) return guard.response;
+
+  // Rate limit: 30 uploads per user per hour. Image uploads consume
+  // Cloudinary bandwidth + storage credits — a runaway script could
+  // exhaust the monthly quota quickly. 30/h is more than enough for
+  // legitimate avatar + listing image updates.
+  if (!(await checkRateLimitDistributed(`upload:user:${guard.user.id}`, 30, 60 * 60_000))) {
+    return jsonError(429, 'RATE_LIMITED', 'Too many uploads. Please wait a few minutes.');
+  }
 
   let form: FormData;
   try { form = await req.formData(); } catch {
