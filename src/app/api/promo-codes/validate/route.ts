@@ -10,9 +10,9 @@
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { ensurePromoCodesSeeded } from '@/server/promo-codes/service';
+import { lookupAnyPromoCode } from '@/server/promo-codes/lookup';
 import { requireApiSession } from '@/server/auth/api-guards';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 
@@ -30,6 +30,23 @@ function getClientIp(req: NextRequest): string {
     req.headers.get('x-real-ip') ??
     'unknown'
   );
+}
+
+/**
+ * Maps the unified lookup's reason codes to human-readable error strings.
+ * Centralised here so all client-facing copy stays consistent.
+ */
+function errorMessageForReason(reason: string): string {
+  switch (reason) {
+    case 'NOT_FOUND':         return 'Invalid promo code';
+    case 'INACTIVE':          return 'Promo code is no longer active';
+    case 'EXPIRED':           return 'Promo code has expired';
+    case 'LIMIT_REACHED':     return 'Promo code usage limit reached';
+    case 'ALREADY_USED':      return 'This promo code has already been used';
+    case 'PARTNER_INACTIVE':  return 'This promo code is no longer active';
+    case 'INVALID_FORMAT':    return 'Invalid promo code';
+    default:                  return 'Invalid promo code';
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -53,34 +70,29 @@ export async function POST(req: NextRequest) {
   }
 
   await ensurePromoCodesSeeded();
-  const data = await db.read();
-  const codes = data.promoCodes ?? [];
-  const now   = new Date().toISOString();
 
-  const promoCode = codes.find(
-    (c) => c.code === input.code.toUpperCase().trim() && c.isActive,
-  );
+  // Unified lookup: checks the regular promo table first, then partner
+  // promo codes. Consumers no longer need to know which system answers.
+  const result = await lookupAnyPromoCode(input.code);
 
-  if (!promoCode) {
-    return json({ valid: false, error: 'Invalid promo code' });
-  }
-  if (promoCode.expiresAt && promoCode.expiresAt < now) {
-    return json({ valid: false, error: 'Promo code has expired' });
-  }
-  if (promoCode.usageLimit !== null && promoCode.usedCount >= promoCode.usageLimit) {
-    return json({ valid: false, error: 'Promo code usage limit reached' });
+  if (result.kind === 'INVALID') {
+    return json({ valid: false, error: errorMessageForReason(result.reason) });
   }
 
-  // All current promo codes use a percentage discount
-  const discountAmount = Math.round(input.originalAmount * (promoCode.discountPercent / 100));
-  const finalAmount = Math.max(0, input.originalAmount - discountAmount);
+  // Both REGULAR and PARTNER kinds expose `discountPercent`. Compute the
+  // discount once — pricing math is identical regardless of code type.
+  const discountAmount = Math.round(input.originalAmount * (result.discountPercent / 100));
+  const finalAmount    = Math.max(0, input.originalAmount - discountAmount);
 
   return json({
-    valid:          true,
-    code:           promoCode.code,
+    valid:         true,
+    code:          result.code,
+    /** Surface the code kind so checkout flows can branch (partner → tie to
+     *  membership purchase + partner attribution; regular → multi-use bookings). */
+    kind:          result.kind,
     discountAmount,
     finalAmount,
-    discountType:   'PERCENTAGE',
-    discountValue:  promoCode.discountPercent,
+    discountType:  'PERCENTAGE',
+    discountValue: result.discountPercent,
   });
 }
