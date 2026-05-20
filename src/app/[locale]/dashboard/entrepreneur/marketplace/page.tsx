@@ -1,8 +1,7 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { Clock } from 'lucide-react';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
-import { EmptyState } from '@/components/shared/empty-state';
+import { StartupListingsManager } from '@/components/features/entrepreneur/startup-listings-manager';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -22,10 +21,7 @@ export default async function EntrepreneurMarketplacePage({ params }: PageProps)
         title={t('entrepreneur.marketplace.title')}
         subtitle={t('entrepreneur.marketplace.subtitle')}
       />
-      <EmptyState
-        icon={<Clock className="size-6 text-muted-foreground" />}
-        message="This section is coming soon. We're working on it."
-      />
+      <StartupListingsManager />
     </div>
   );
 }

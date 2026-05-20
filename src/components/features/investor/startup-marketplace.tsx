@@ -33,11 +33,38 @@ interface Props {
 
 const ALL = 'all';
 
+/**
+ * Funding-range buckets. We use coarse buckets rather than two number inputs
+ * because investors browse by rough size, not exact figures. Bucket boundaries
+ * chosen for Algerian SME funding norms (in DZD).
+ */
+type FundingBucket = 'all' | 'lt500k' | '500k-2m' | '2m-10m' | 'gt10m';
+
+const FUNDING_BUCKETS: Array<{ value: FundingBucket; label: string; min: number; max: number }> = [
+  { value: 'all',      label: 'Any',                min: 0,           max: Infinity },
+  { value: 'lt500k',   label: '< 500K',             min: 0,           max: 500_000 },
+  { value: '500k-2m',  label: '500K – 2M',          min: 500_000,     max: 2_000_000 },
+  { value: '2m-10m',   label: '2M – 10M',           min: 2_000_000,   max: 10_000_000 },
+  { value: 'gt10m',    label: '> 10M',              min: 10_000_000,  max: Infinity },
+];
+
+type SortKey = 'newest' | 'fundingDesc' | 'fundingAsc' | 'equityAsc';
+
+const SORT_OPTIONS: Array<{ value: SortKey; label: string }> = [
+  { value: 'newest',      label: 'Newest first' },
+  { value: 'fundingDesc', label: 'Funding: high → low' },
+  { value: 'fundingAsc',  label: 'Funding: low → high' },
+  { value: 'equityAsc',   label: 'Equity: low → high' },
+];
+
 export function StartupMarketplace({ startups, savedIds: initialSavedIds }: Props) {
   const locale = useLocale() as Locale;
   const t = useTranslations('investor.startups');
   const [query,    setQuery]    = useState('');
   const [industry, setIndustry] = useState(ALL);
+  const [bucket,   setBucket]   = useState<FundingBucket>('all');
+  const [sort,     setSort]     = useState<SortKey>('newest');
+  const [savedOnly, setSavedOnly] = useState(false);
   const [saved,    setSaved]    = useState<Set<string>>(new Set(initialSavedIds));
   const [, startTransition]     = useTransition();
 
@@ -48,8 +75,12 @@ export function StartupMarketplace({ startups, savedIds: initialSavedIds }: Prop
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return startups.filter((s) => {
+    const bk = FUNDING_BUCKETS.find((b) => b.value === bucket)!;
+
+    const matches = startups.filter((s) => {
       if (industry !== ALL && s.industry !== industry) return false;
+      if (savedOnly && !saved.has(s.id)) return false;
+      if (s.fundingGoal < bk.min || s.fundingGoal > bk.max) return false;
       if (!q) return true;
       return (
         s.name.toLowerCase().includes(q) ||
@@ -57,7 +88,36 @@ export function StartupMarketplace({ startups, savedIds: initialSavedIds }: Prop
         s.industry.toLowerCase().includes(q)
       );
     });
-  }, [startups, query, industry]);
+
+    // Sort a copy so the source array stays untouched.
+    const sorted = [...matches];
+    switch (sort) {
+      case 'newest':
+        sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+        break;
+      case 'fundingDesc':
+        sorted.sort((a, b) => b.fundingGoal - a.fundingGoal);
+        break;
+      case 'fundingAsc':
+        sorted.sort((a, b) => a.fundingGoal - b.fundingGoal);
+        break;
+      case 'equityAsc':
+        sorted.sort((a, b) => a.equityOffered - b.equityOffered);
+        break;
+    }
+    return sorted;
+  }, [startups, query, industry, bucket, sort, savedOnly, saved]);
+
+  const hasActiveFilter =
+    query.trim() !== '' || industry !== ALL || bucket !== 'all' || savedOnly;
+
+  function resetFilters() {
+    setQuery('');
+    setIndustry(ALL);
+    setBucket('all');
+    setSavedOnly(false);
+    setSort('newest');
+  }
 
   function toggleSave(id: string) {
     startTransition(async () => {
@@ -75,6 +135,7 @@ export function StartupMarketplace({ startups, savedIds: initialSavedIds }: Prop
 
   return (
     <div className="space-y-5">
+      {/* Row 1: search + industry */}
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -97,6 +158,59 @@ export function StartupMarketplace({ startups, savedIds: initialSavedIds }: Prop
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      {/* Row 2: funding bucket + sort + saved-only toggle */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <Select value={bucket} onValueChange={(v) => setBucket(v as FundingBucket)}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Funding goal" />
+          </SelectTrigger>
+          <SelectContent>
+            {FUNDING_BUCKETS.map((b) => (
+              <SelectItem key={b.value} value={b.value}>
+                Funding: {b.label}{b.value !== 'all' ? ' DZD' : ''}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Saved-only chip — toggleable */}
+        <Button
+          type="button"
+          size="sm"
+          variant={savedOnly ? 'default' : 'outline'}
+          onClick={() => setSavedOnly((v) => !v)}
+          className="gap-1.5"
+        >
+          {savedOnly
+            ? <BookmarkCheck className="size-3.5" />
+            : <Bookmark className="size-3.5" />}
+          Saved only
+        </Button>
+
+        {hasActiveFilter && (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={resetFilters}
+            className="ms-auto text-muted-foreground"
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       <p className="text-sm text-muted-foreground">
