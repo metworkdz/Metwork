@@ -1,0 +1,914 @@
+{
+  "pendingUsers": [],
+  "users": [
+    {
+      "id": "qa-admin-id",
+      "email": "test.admin@metwork.test",
+      "passwordHash": "scrypt$e7596778aca5294d6d48072c9ee8b393$4cbf90272ffd3ad7de36f4bee96eb633a502245a1652d52c814564d626f8ff86a55eefdca0633d49eaef9a564df2d34eb758dd6bbb798223fb80b39ae0bbc36c",
+      "fullName": "QA Admin",
+      "phone": "+2130700000000",
+      "city": "Alger",
+      "role": "ADMIN",
+      "status": "ACTIVE",
+      "phoneVerified": true,
+      "emailVerified": true,
+      "membershipCode": null,
+      "membershipTier": "EXPLORER",
+      "networkCredits": 0,
+      "networkCreditsMax": 0,
+      "avatarUrl": null,
+      "locale": "fr",
+      "createdAt": "2026-05-21T23:11:37.600Z",
+      "updatedAt": "2026-05-21T23:11:37.600Z"
+    },
+    {
+      "id": "qa-incubator-user-id",
+      "email": "test.incubator@metwork.test",
+      "passwordHash": "scrypt$a30ddf1b51ded693b4c671839e330311$2181f8c037de4340762bec3551857cb1a322064d7f0350885ab600b66bcdc32fec4a64d1633c43651428f0f89251c393db58bc5a22db298e9a470cad6a59f4f6",
+      "fullName": "QA Incubator Hub",
+      "phone": "+2130700000001",
+      "city": "Alger",
+      "role": "INCUBATOR",
+      "status": "ACTIVE",
+      "phoneVerified": true,
+      "emailVerified": true,
+      "membershipCode": null,
+      "membershipTier": "EXPLORER",
+      "networkCredits": 0,
+      "networkCreditsMax": 0,
+      "avatarUrl": null,
+      "locale": "fr",
+      "createdAt": "2026-05-21T23:11:37.600Z",
+      "updatedAt": "2026-05-21T23:11:37.600Z"
+    },
+    {
+      "id": "qa-builder-id",
+      "email": "test.builder@metwork.test",
+      "passwordHash": "scrypt$a5d69601501883079b2d75e76b6eab4c$99521e68dccdae4138b6fb2c743eb6fb2e672121caca9cbfad5bd20108cc647bbb8e61ab3955a9cf887daeb7bb802e5150ba5c16f8a3b60e2b36e29d1d80251c",
+      "fullName": "QA Builder Entrepreneur",
+      "phone": "+2130700000002",
+      "city": "Alger",
+      "role": "ENTREPRENEUR",
+      "status": "ACTIVE",
+      "phoneVerified": true,
+      "emailVerified": true,
+      "membershipCode": "BUILDER",
+      "membershipTier": "BUILDER",
+      "networkCredits": 3,
+      "networkCreditsMax": 3,
+      "avatarUrl": null,
+      "locale": "fr",
+      "createdAt": "2026-05-21T23:11:37.600Z",
+      "updatedAt": "2026-05-21T23:11:37.600Z"
+    },
+    {
+      "id": "qa-founder-id",
+      "email": "test.founder@metwork.test",
+      "passwordHash": "scrypt$1e2bf16282e9367961dbca18e0eeb30f$edc5048858a0da87b6309b3663150e04c8d92103453aa4f7f40aa8253f6b702bbd0d8846734420e351e2cbb9b401d2b74f9bda97d4ef63cfc84a76d291f6cc6f",
+      "fullName": "QA Founder Entrepreneur",
+      "phone": "+2130700000003",
+      "city": "Alger",
+      "role": "ENTREPRENEUR",
+      "status": "ACTIVE",
+      "phoneVerified": true,
+      "emailVerified": true,
+      "membershipCode": "FOUNDER",
+      "membershipTier": "FOUNDER",
+      "networkCredits": 10,
+      "networkCreditsMax": 10,
+      "avatarUrl": null,
+      "locale": "fr",
+      "createdAt": "2026-05-21T23:11:37.600Z",
+      "updatedAt": "2026-05-21T23:11:37.600Z"
+    },
+    {
+      "id": "qa-explorer-id",
+      "email": "test.explorer@metwork.test",
+      "passwordHash": "scrypt$4a1e4e896244a4944634327f7d0c059b$d010399263a458592ac44f05ec13f5b752f073466aa0ddf75dc8b6eb37fc9a3320392896d01fae439c7eff28d2a8d4caf7e97b659b810e72c14d811e8b11e995",
+      "fullName": "QA Explorer Entrepreneur",
+      "phone": "+2130700000004",
+      "city": "Alger",
+      "role": "ENTREPRENEUR",
+      "status": "ACTIVE",
+      "phoneVerified": true,
+      "emailVerified": true,
+      "membershipCode": null,
+      "membershipTier": "EXPLORER",
+      "networkCredits": 0,
+      "networkCreditsMax": 0,
+      "avatarUrl": null,
+      "locale": "fr",
+      "createdAt": "2026-05-21T23:11:37.600Z",
+      "updatedAt": "2026-05-21T23:11:37.600Z"
+    }
+  ],
+  "sessions": [
+    {
+      "idHash": "3bfa6ea8f0e416acdb2645bbe3175c13a89a997d038c1360f23d72abf7f61304",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-05-28T22:19:50.366Z",
+      "createdAt": "2026-05-21T22:19:50.366Z"
+    },
+    {
+      "idHash": "cffac8744dde8f771426eb9fabf55a167339696e9cc8e77861d4013c02a36df6",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-05-28T22:30:12.097Z",
+      "createdAt": "2026-05-21T22:30:12.097Z"
+    },
+    {
+      "idHash": "6506c6798ef8ac6260a0809146e29267366db2398146b69a03cfd000c31947fb",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T22:30:12.270Z",
+      "createdAt": "2026-05-21T22:30:12.270Z"
+    },
+    {
+      "idHash": "ba279c8cfb8dbb53d3d737b072f016dc1acd5ddfaf6b96a77a87c6adbc105eb4",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-05-28T22:30:12.359Z",
+      "createdAt": "2026-05-21T22:30:12.359Z"
+    },
+    {
+      "idHash": "e5edf97efbf7d8a13590b895993f8bb1d3b7aa8c5e21cda15cec1155a1c2dc56",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:30:15.783Z",
+      "createdAt": "2026-05-21T22:30:15.783Z"
+    },
+    {
+      "idHash": "502bb1596bc416f6122d9aec6ea4ead4416f3aba9096f0cdefd6dd5ea1cd0036",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-05-28T22:30:21.385Z",
+      "createdAt": "2026-05-21T22:30:21.385Z"
+    },
+    {
+      "idHash": "334ffbce19921891ded2f0442a296139b47c7643c8bbd0041dc725fc1834b901",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T22:30:22.162Z",
+      "createdAt": "2026-05-21T22:30:22.162Z"
+    },
+    {
+      "idHash": "ab7771355ee042378d65c95666ee3b9a8ef8f0359b44f9254268f403ba9e7025",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-05-28T22:30:23.037Z",
+      "createdAt": "2026-05-21T22:30:23.037Z"
+    },
+    {
+      "idHash": "099e6cabfdbdcd2ca24ab1b98a17157ea4d8ed889ac852c2b2057a661160459e",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:30:25.263Z",
+      "createdAt": "2026-05-21T22:30:25.263Z"
+    },
+    {
+      "idHash": "ed35d34237abc47897c1933875d92c3aab730d5043299c2d5c531bd5e256182d",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-05-28T22:30:28.452Z",
+      "createdAt": "2026-05-21T22:30:28.452Z"
+    },
+    {
+      "idHash": "4c4a11385161649d889457813fa2c552a689f31fbd8083efab196f7ed5a94e8b",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-05-28T22:30:30.719Z",
+      "createdAt": "2026-05-21T22:30:30.719Z"
+    },
+    {
+      "idHash": "52254eaf488f7ada6b1e1916b0b6ccddb59c8a53d4aefe2a7e4be93c553cb105",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T22:30:32.767Z",
+      "createdAt": "2026-05-21T22:30:32.767Z"
+    },
+    {
+      "idHash": "fc6a78b714a7793cce3a6a34264831617e22fbf7faf98d87b526298ffa294c2c",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-05-28T22:30:32.788Z",
+      "createdAt": "2026-05-21T22:30:32.788Z"
+    },
+    {
+      "idHash": "28b4ae4d0445355189bcd14dd574eb9b4840e8b99d8f150cc6d706b1f8422ee6",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:30:33.120Z",
+      "createdAt": "2026-05-21T22:30:33.120Z"
+    },
+    {
+      "idHash": "53c9d1d8d9641899204fd7953cc65ab43848b527512d4626f88eed46b0211f7b",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-05-28T22:30:38.236Z",
+      "createdAt": "2026-05-21T22:30:38.236Z"
+    },
+    {
+      "idHash": "4979b3f8dd72060b42bdb00cba4005da12db47d337b58a5178db6299fd997c1f",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-05-28T22:30:38.431Z",
+      "createdAt": "2026-05-21T22:30:38.431Z"
+    },
+    {
+      "idHash": "cce657f2dc1349bbe67675f11d2493993cfdc603e268ae00851d2b798457cf76",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T22:30:43.245Z",
+      "createdAt": "2026-05-21T22:30:43.245Z"
+    },
+    {
+      "idHash": "a44fba7934e011e8c6aba34ae880723a24c409b327119404ac1e776ccf4c3ae0",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:30:43.294Z",
+      "createdAt": "2026-05-21T22:30:43.294Z"
+    },
+    {
+      "idHash": "d9c9db15fcb46042ccdf21b4e6e53c3b39db365c76fe3d0a362f3eb8fb894fe0",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-05-28T22:30:44.831Z",
+      "createdAt": "2026-05-21T22:30:44.831Z"
+    },
+    {
+      "idHash": "cbedeae5955f8ea97e4ad8f9ab26c75df195fbec21d80fb78ef5efd456954576",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-05-28T22:30:48.053Z",
+      "createdAt": "2026-05-21T22:30:48.053Z"
+    },
+    {
+      "idHash": "e60a7bfe5c76216cee3350e7b7a2d55e63d91b311a156c813c1a61e43b9b90f1",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-05-28T22:30:48.829Z",
+      "createdAt": "2026-05-21T22:30:48.829Z"
+    },
+    {
+      "idHash": "edbc215100332ddc710f63c9cdbd8bb06c48189df6beee855c4d8161fea5c266",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T22:41:08.796Z",
+      "createdAt": "2026-05-21T22:41:08.796Z"
+    },
+    {
+      "idHash": "2a797d3903c0d5b146af499206ffc81327a5716588c0b79c6a9f36d73480742d",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T22:41:12.414Z",
+      "createdAt": "2026-05-21T22:41:12.414Z"
+    },
+    {
+      "idHash": "acb3d4ccb5716363c9957dac653270095028c504d5cfbae6e05e1952f8b2aeb1",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T22:41:16.089Z",
+      "createdAt": "2026-05-21T22:41:16.089Z"
+    },
+    {
+      "idHash": "39d9fbc3b82f1f39c987aa3d5edab85869cd934dfa127efa446ecf645c17eca0",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T22:41:20.884Z",
+      "createdAt": "2026-05-21T22:41:20.884Z"
+    },
+    {
+      "idHash": "81b732e4451c32719fe1e96d9063a7a6771550354e30ac3f5adca02fff72013d",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:41:21.398Z",
+      "createdAt": "2026-05-21T22:41:21.398Z"
+    },
+    {
+      "idHash": "4d7a4cbb670a5b982de926787dac4b48fb7b654b52abfb2c53517837d8cef425",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T22:41:27.014Z",
+      "createdAt": "2026-05-21T22:41:27.014Z"
+    },
+    {
+      "idHash": "e8504f8be507110aa6bb0c934ecae8eaa24d3c155c853984c951d41d3db4d43e",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-05-28T22:41:27.579Z",
+      "createdAt": "2026-05-21T22:41:27.579Z"
+    },
+    {
+      "idHash": "62ba79d6a2545bb166fd9af910bfc66aaddbecb7f9894111128b55c1ccc21bee",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:41:29.070Z",
+      "createdAt": "2026-05-21T22:41:29.070Z"
+    },
+    {
+      "idHash": "1978ce9b201cd76775dac8c4d932bc2edae93498f2de2315c0ffb61ece8571b0",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:41:30.915Z",
+      "createdAt": "2026-05-21T22:41:30.915Z"
+    },
+    {
+      "idHash": "832ec48e32409dfc03e4ae6028c3c7fb0e6e70c6a046c6d7ccc31c4a52e81419",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T22:41:33.672Z",
+      "createdAt": "2026-05-21T22:41:33.672Z"
+    },
+    {
+      "idHash": "d202643ae2403ee0c0f05334f88ea67828a37dba88b3ac5cf0ca5edbc5f2c506",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T22:41:33.821Z",
+      "createdAt": "2026-05-21T22:41:33.821Z"
+    },
+    {
+      "idHash": "c62ebb40c7e2c2a31c7beea6b8d6bcff8458dbafa9a98028cc742f11ce318327",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:41:35.810Z",
+      "createdAt": "2026-05-21T22:41:35.810Z"
+    },
+    {
+      "idHash": "62471c57e73f952baf8ddeebe344ca6651a6afb58a200317b3c5051522c5d8fe",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-05-28T22:41:37.155Z",
+      "createdAt": "2026-05-21T22:41:37.155Z"
+    },
+    {
+      "idHash": "84cbb900f98b98ac5e13123ca7766875db2868ad1ac6aa53cfc410fb2dbfe8b5",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-05-28T22:41:39.223Z",
+      "createdAt": "2026-05-21T22:41:39.223Z"
+    },
+    {
+      "idHash": "e70b2a2ffee4c29dd4be36b5ffc54329ecf8cbe6431d0679ffdf7c024f6b26d3",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:41:40.570Z",
+      "createdAt": "2026-05-21T22:41:40.570Z"
+    },
+    {
+      "idHash": "c5f13a9f1ba2c0687704d5c6f7f13bfb77d8478927ca70775718b30077448fff",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:41:46.375Z",
+      "createdAt": "2026-05-21T22:41:46.375Z"
+    },
+    {
+      "idHash": "2f6d5a89d388ab015b89958403c359929872ad65cb03ad3d4eb7ae5190761551",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:41:56.789Z",
+      "createdAt": "2026-05-21T22:41:56.789Z"
+    },
+    {
+      "idHash": "f28df8b1928c3131f86402d70ffd69422c4a6af5a228549d624bc67808bd111d",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:42:05.320Z",
+      "createdAt": "2026-05-21T22:42:05.320Z"
+    },
+    {
+      "idHash": "fa75f011980880deb69c01056564915cacff3779993e16a75ed0c3fec2b57fbc",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:42:17.037Z",
+      "createdAt": "2026-05-21T22:42:17.037Z"
+    },
+    {
+      "idHash": "6c131a45e1c69500a634535f8a4282615c6601484072c3b7913d8e3506da6a92",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:42:32.771Z",
+      "createdAt": "2026-05-21T22:42:32.771Z"
+    },
+    {
+      "idHash": "fdd7024b2e86a467027263f6dbe4f4ba43697d0d0aeeb3aba863cdba0cf1a0e7",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-05-28T22:55:38.458Z",
+      "createdAt": "2026-05-21T22:55:38.458Z"
+    },
+    {
+      "idHash": "9be860b66ffbb1d39fb00e823af7167d60ea2fa6fe5a50e53b10859e17694bbb",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T22:55:39.753Z",
+      "createdAt": "2026-05-21T22:55:39.753Z"
+    },
+    {
+      "idHash": "260cc706d70f25049b6d17c998a20fa1555fd16ac9a36355b3b5a1d2994d002e",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T22:55:40.927Z",
+      "createdAt": "2026-05-21T22:55:40.927Z"
+    },
+    {
+      "idHash": "f0c3b25ff30eb3e4013259b4947f44b62ffb2ad1c5eff37c19ea11e25750caaa",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-05-28T22:55:42.079Z",
+      "createdAt": "2026-05-21T22:55:42.079Z"
+    },
+    {
+      "idHash": "98a2b9fff18a57e62cd96fab52652a8ee5ce43d6bc28cb5146135d35e89d93db",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-05-28T22:55:43.293Z",
+      "createdAt": "2026-05-21T22:55:43.293Z"
+    },
+    {
+      "idHash": "01b7cd5f91d1b859195a03d9588fe79ec19abc7e9625f756f9400dd8e3a40747",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-05-28T23:01:42.340Z",
+      "createdAt": "2026-05-21T23:01:42.340Z"
+    },
+    {
+      "idHash": "5b148b6767b78b1d3bfb5e074e3baf3af184fcf43723f06eedb93358bf7422b6",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T23:01:43.698Z",
+      "createdAt": "2026-05-21T23:01:43.698Z"
+    },
+    {
+      "idHash": "a6bd8b8d0115c9d3e958f3bf2c824f95417667f2efd944ca7bc633fad3193b03",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T23:01:45.051Z",
+      "createdAt": "2026-05-21T23:01:45.051Z"
+    },
+    {
+      "idHash": "d4fe118431ca1570b19a309ddcd7379744a66725604a043240d857d15f9ccfea",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-05-28T23:01:46.323Z",
+      "createdAt": "2026-05-21T23:01:46.323Z"
+    },
+    {
+      "idHash": "1bcb313abfd69bc6b6a7f450b6c817d56753d8d709e86d0714e8c85c313076f7",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-05-28T23:01:47.652Z",
+      "createdAt": "2026-05-21T23:01:47.652Z"
+    },
+    {
+      "idHash": "da08031cd5b495d5d615a1a9492c72cf961ce99efaa6e4e265c8be39b1af1eff",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-05-28T23:03:33.116Z",
+      "createdAt": "2026-05-21T23:03:33.116Z"
+    },
+    {
+      "idHash": "f8b066c6f8a4e0976561c9eb8a6e27cc8a3187f6b1237b6941e6e508bab6c55d",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T23:03:34.480Z",
+      "createdAt": "2026-05-21T23:03:34.480Z"
+    },
+    {
+      "idHash": "64c586be20d47055ffecf4b06760258ce93cc903a532169c47e8f2599af45e49",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T23:03:35.844Z",
+      "createdAt": "2026-05-21T23:03:35.844Z"
+    },
+    {
+      "idHash": "866b6a5da81db9324b48a72ce622e7fc3830c715e8089bab21e79d7e93fedb19",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-05-28T23:03:37.183Z",
+      "createdAt": "2026-05-21T23:03:37.183Z"
+    },
+    {
+      "idHash": "15e922af0219225c44f785af9dc389e2381b75e854dbc774471fb6f464e6eafb",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-05-28T23:03:38.502Z",
+      "createdAt": "2026-05-21T23:03:38.502Z"
+    },
+    {
+      "idHash": "0ca184a7ca9d9c6ab55c628dfde22428cdedb99f554400e132ec119eea38ca9a",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-05-28T23:07:49.077Z",
+      "createdAt": "2026-05-21T23:07:49.077Z"
+    },
+    {
+      "idHash": "c4eaea9709a01fdd22d48225e568c2a379a8aaac9e8aee61541ff84a6d069f70",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T23:07:50.439Z",
+      "createdAt": "2026-05-21T23:07:50.439Z"
+    },
+    {
+      "idHash": "20fc104a810f9ce6bacd7a406b68cd94e13f5d535e4c0382adf9e57cba56156e",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T23:07:51.797Z",
+      "createdAt": "2026-05-21T23:07:51.797Z"
+    },
+    {
+      "idHash": "9132fde400d392bf8019ad976fe0d5991decdd33d3bb4c0aa8c23d497bffefd2",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-05-28T23:07:53.061Z",
+      "createdAt": "2026-05-21T23:07:53.061Z"
+    },
+    {
+      "idHash": "f1496e6e4bfae04a2870ffb1454eae2755cb8a7455cae844e17ac75b875316bc",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-05-28T23:07:54.344Z",
+      "createdAt": "2026-05-21T23:07:54.344Z"
+    },
+    {
+      "idHash": "a253f3ee6c0441a484cacb2d3c94fb6622a5dbb7c36fee59c5a77f3baeda6f67",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-05-28T23:12:54.455Z",
+      "createdAt": "2026-05-21T23:12:54.455Z"
+    },
+    {
+      "idHash": "8c593747736c08e293ae704fd79766ed879fc02ff96998df6df34998c6536219",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-28T23:12:55.962Z",
+      "createdAt": "2026-05-21T23:12:55.962Z"
+    },
+    {
+      "idHash": "a990a04a5a6f3497966fd6413c52bdc88b589b8be6c03a6ad0476ad250e3dbbd",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-28T23:12:57.453Z",
+      "createdAt": "2026-05-21T23:12:57.453Z"
+    },
+    {
+      "idHash": "7b254c7a73920527aad7211a05f620b748347b5428da0bb1cc7e17d42444a981",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-05-28T23:12:58.738Z",
+      "createdAt": "2026-05-21T23:12:58.738Z"
+    },
+    {
+      "idHash": "b15293b5522ee363ed66560699ab91e64c6dfe8d81c6408b6d1f25ea1c768a91",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-05-28T23:13:00.053Z",
+      "createdAt": "2026-05-21T23:13:00.053Z"
+    },
+    {
+      "idHash": "c101ae4f478236f7fa5a2b394b6c5ac083e2657642df9b0539ff1d7ce390d712",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-05-30T16:39:53.353Z",
+      "createdAt": "2026-05-23T16:39:53.353Z"
+    },
+    {
+      "idHash": "b07c1f028dcb5a09d7f1233dbe5531801d99e36a20e3bf31c57c958c55df3735",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-05-30T16:39:55.719Z",
+      "createdAt": "2026-05-23T16:39:55.719Z"
+    },
+    {
+      "idHash": "4436c28b37489c01581dea35a51dd364d14a1c6881c29207b06b68eebf85aec5",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-05-30T16:39:58.241Z",
+      "createdAt": "2026-05-23T16:39:58.241Z"
+    },
+    {
+      "idHash": "109c5f840bbb2c7649eba2eecd91196e07e3013e17a07ab96f3799ee74fc7328",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-05-30T16:40:00.593Z",
+      "createdAt": "2026-05-23T16:40:00.593Z"
+    },
+    {
+      "idHash": "01ab840235274e284c78d73d8de1120c15c436b2217dfe54d91cfc7684a75339",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-05-30T16:40:03.076Z",
+      "createdAt": "2026-05-23T16:40:03.076Z"
+    }
+  ],
+  "otps": [],
+  "emailTokens": [],
+  "passwordResets": [],
+  "wallets": [
+    {
+      "id": "8620b2c8-ab66-425b-ab95-eae0e25b4eb8",
+      "userId": "qa-incubator-user-id",
+      "balance": 0,
+      "currency": "DZD",
+      "status": "ACTIVE",
+      "createdAt": "2026-05-21T22:41:57.464Z",
+      "updatedAt": "2026-05-21T22:41:57.464Z"
+    },
+    {
+      "id": "d60a4689-ebc1-4297-808f-51f39e84f5e3",
+      "userId": "qa-founder-id",
+      "balance": 0,
+      "currency": "DZD",
+      "status": "ACTIVE",
+      "createdAt": "2026-05-21T22:42:45.318Z",
+      "updatedAt": "2026-05-21T22:42:45.318Z"
+    },
+    {
+      "id": "d8616fdb-ade1-49d1-99e2-3f7712d507fe",
+      "userId": "qa-builder-id",
+      "balance": 0,
+      "currency": "DZD",
+      "status": "ACTIVE",
+      "createdAt": "2026-05-21T22:42:54.354Z",
+      "updatedAt": "2026-05-21T22:42:54.354Z"
+    }
+  ],
+  "transactions": [],
+  "topUpIntents": [],
+  "bookings": [],
+  "contactSubmissions": [],
+  "startupListings": [],
+  "mentors": [
+    {
+      "id": "qa-mentor-id",
+      "fullName": "QA Mentor Expert",
+      "title": "Expert Test",
+      "bio": "Mentor de test pour les agents QA automatisés.",
+      "expertise": [
+        "Startup",
+        "Tech"
+      ],
+      "consultationFee": 5000,
+      "consultationAvailable": true,
+      "email": "qa.mentor@metwork.test",
+      "phone": null,
+      "linkedinUrl": "https://linkedin.com/in/qa-mentor",
+      "avatarUrl": null,
+      "city": "Alger",
+      "isActive": true,
+      "createdAt": "2026-05-21T21:55:59.726Z",
+      "updatedAt": "2026-05-21T21:55:59.726Z"
+    },
+    {
+      "id": "edf8294d-06bb-4ab0-9a96-582e79a3216d",
+      "bio": null,
+      "email": "mohamedbenhamada71@yahoo.fr",
+      "fullName": "Amira Hamdad",
+      "imageUrl": "https://res.cloudinary.com/dguqgjkuh/image/upload/v1777985786/metwork/mentors/se1pah1p3dudtaq9nx6m.jpg",
+      "position": "Consultante en management & entrepreneuriat I Fondatrice JUREX ITEK",
+      "createdAt": "2026-05-05T12:57:20.785Z",
+      "linkedinUrl": "https://www.linkedin.com/in/amira-hamdad-2a2b2022/",
+      "consultationFee": 4000
+    },
+    {
+      "id": "f648bdbd-f9a6-433c-8a34-6a85b2447ebb",
+      "bio": null,
+      "email": "mohamedbenhamada71@yahoo.fr",
+      "fullName": "Yacine Kheddaoui",
+      "imageUrl": "https://res.cloudinary.com/dguqgjkuh/image/upload/v1777985867/metwork/mentors/xfku5xadpu0ewafmyn7n.jpg",
+      "position": "Consultant en management et Communication",
+      "createdAt": "2026-05-05T12:58:07.150Z",
+      "linkedinUrl": "https://www.linkedin.com/in/yacine-kheddaoui-b02443a0/",
+      "consultationFee": 1000
+    },
+    {
+      "id": "e40bfcbc-153b-4bca-bbd1-009befa282df",
+      "bio": null,
+      "email": null,
+      "fullName": "Mejda Chekkal",
+      "imageUrl": "https://res.cloudinary.com/dguqgjkuh/image/upload/v1777985908/metwork/mentors/osh54eo5pdqvqwi1i9fr.jpg",
+      "position": "Consultante en Vente & Marketing",
+      "createdAt": "2026-05-05T12:59:41.144Z",
+      "linkedinUrl": "https://www.linkedin.com/in/majda-chekkal-89446678/",
+      "consultationFee": 3000
+    },
+    {
+      "id": "a1432e61-99ba-4e8c-963a-647abaa4d2cd",
+      "bio": null,
+      "email": null,
+      "fullName": "Dr Bahiri Kada",
+      "imageUrl": "https://res.cloudinary.com/dguqgjkuh/image/upload/v1777986004/metwork/mentors/cykyzc3amquwv4kkqeak.jpg",
+      "position": "Expert comptable I Consultant en Finance & comptabilité",
+      "createdAt": "2026-05-05T13:00:58.867Z",
+      "linkedinUrl": "https://www.linkedin.com/in/kada-bahiri-a1a15946/",
+      "consultationFee": 3000
+    },
+    {
+      "id": "2ef28806-cc4e-401b-bfa9-dcb734f9fc08",
+      "bio": null,
+      "email": null,
+      "fullName": "Moncef Haba",
+      "imageUrl": "https://res.cloudinary.com/dguqgjkuh/image/upload/v1777986090/metwork/mentors/kbzixb1mvf9pa9fgbtod.jpg",
+      "position": "Consultant en Business development",
+      "createdAt": "2026-05-05T13:01:53.999Z",
+      "linkedinUrl": "https://www.linkedin.com/in/moncef-haba-306577117/",
+      "consultationFee": 3000
+    },
+    {
+      "id": "f27d99e8-419b-4248-a436-2aae565d6a3a",
+      "bio": null,
+      "email": null,
+      "fullName": "Ali Hassani",
+      "imageUrl": "https://res.cloudinary.com/dguqgjkuh/image/upload/v1777986157/metwork/mentors/fygitafsry4f4f0jte9z.jpg",
+      "position": "Formateur I Consultant en Project management",
+      "createdAt": "2026-05-05T13:02:59.324Z",
+      "linkedinUrl": "https://www.linkedin.com/in/confluences-p%C3%A9dagogiques-001649326/",
+      "consultationFee": 3000
+    },
+    {
+      "id": "90e5f5fe-d30e-4418-837b-51f4bd3978d9",
+      "bio": null,
+      "email": null,
+      "fullName": "Cherif Haddad",
+      "imageUrl": "https://res.cloudinary.com/dguqgjkuh/image/upload/v1777986229/metwork/mentors/poxtxfunpurnwcg9vtms.jpg",
+      "position": "Consultant en IT & Cyber security",
+      "createdAt": "2026-05-05T13:04:24.798Z",
+      "linkedinUrl": "https://www.linkedin.com/in/cherif-haddad-3589b358/",
+      "consultationFee": 3000
+    }
+  ],
+  "mentorBookings": [],
+  "incubators": [
+    {
+      "id": "qa-incubator-profile-id",
+      "managerId": "qa-incubator-user-id",
+      "name": "QA Incubator Hub",
+      "description": "Espace de test QA automatisé",
+      "city": "Alger",
+      "address": "10 Rue des Tests, Alger",
+      "email": "test.incubator@metwork.test",
+      "phone": "+213070000001",
+      "website": null,
+      "logoUrl": null,
+      "subscriptionCode": "COMMISSION",
+      "subscriptionTier": "COMMISSION",
+      "subscriptionStatus": "ACTIVE",
+      "status": "ACTIVE",
+      "createdAt": "2026-05-21T23:11:37.600Z",
+      "updatedAt": "2026-05-21T23:11:37.600Z"
+    }
+  ],
+  "promoCodes": [
+    {
+      "id": "f0df77e3-b4b5-4670-8556-22bf8cf37403",
+      "code": "WELCOME50",
+      "discountType": "PERCENTAGE",
+      "discountValue": 50,
+      "discountPercent": 50,
+      "appliesTo": "ALL",
+      "maxUses": 100,
+      "usageLimit": 100,
+      "useCount": 0,
+      "usedCount": 0,
+      "validFrom": "2025-01-01T00:00:00Z",
+      "validUntil": "2027-12-31T23:59:59Z",
+      "expiresAt": "2027-12-31T23:59:59Z",
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-01T00:00:00Z"
+    },
+    {
+      "id": "3a747d0e-6ae7-4f4a-abfa-595a1d8c4e80",
+      "code": "FREE100",
+      "discountType": "PERCENTAGE",
+      "discountValue": 100,
+      "discountPercent": 100,
+      "appliesTo": "ALL",
+      "maxUses": 10,
+      "usageLimit": 10,
+      "useCount": 0,
+      "usedCount": 0,
+      "validFrom": "2025-01-01T00:00:00Z",
+      "validUntil": "2027-12-31T23:59:59Z",
+      "expiresAt": "2027-12-31T23:59:59Z",
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-01T00:00:00Z"
+    }
+  ],
+  "spaces": [
+    {
+      "id": "qa-space-id-001",
+      "incubatorId": "qa-incubator-profile-id",
+      "incubatorName": "QA Incubator Hub",
+      "name": "QA Coworking Space",
+      "description": "Espace de coworking pour tests automatisés",
+      "category": "COWORKING",
+      "capacity": 20,
+      "pricePerHour": 500,
+      "pricePerDay": 3000,
+      "pricePerMonth": null,
+      "imageUrl": null,
+      "city": "Alger",
+      "amenities": [
+        "wifi",
+        "parking"
+      ],
+      "acceptedPaymentMethods": [
+        "ONLINE",
+        "CASH"
+      ],
+      "workingDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "openingTime": "09:00",
+      "closingTime": "18:00",
+      "isActive": true,
+      "createdAt": "2026-05-21T23:11:37.600Z",
+      "updatedAt": "2026-05-21T23:11:37.600Z"
+    }
+  ],
+  "programs": [],
+  "events": [],
+  "clients": [],
+  "services": [
+    {
+      "id": "c693123f-6b76-4345-93a0-7b1d00c87408",
+      "incubatorId": "qa-incubator-profile-id",
+      "name": "Coworking",
+      "description": null,
+      "isActive": true,
+      "createdAt": "2026-05-21T22:56:20.970Z",
+      "updatedAt": "2026-05-21T22:56:20.970Z"
+    },
+    {
+      "id": "21128697-a737-4d25-a1c0-9a7febbe422e",
+      "incubatorId": "qa-incubator-profile-id",
+      "name": "Private Office",
+      "description": null,
+      "isActive": true,
+      "createdAt": "2026-05-21T22:56:20.970Z",
+      "updatedAt": "2026-05-21T22:56:20.970Z"
+    },
+    {
+      "id": "b4652d53-0d88-4ff3-9d8f-f551b589876f",
+      "incubatorId": "qa-incubator-profile-id",
+      "name": "Training Room",
+      "description": null,
+      "isActive": true,
+      "createdAt": "2026-05-21T22:56:20.970Z",
+      "updatedAt": "2026-05-21T22:56:20.970Z"
+    },
+    {
+      "id": "21f06911-bbbe-4967-b33d-736a4523f664",
+      "incubatorId": "qa-incubator-profile-id",
+      "name": "Domiciliation",
+      "description": null,
+      "isActive": true,
+      "createdAt": "2026-05-21T22:56:20.970Z",
+      "updatedAt": "2026-05-21T22:56:20.970Z"
+    },
+    {
+      "id": "88aae5a0-4c95-4887-b7a6-7b28ab337796",
+      "incubatorId": "qa-incubator-profile-id",
+      "name": "Training",
+      "description": null,
+      "isActive": true,
+      "createdAt": "2026-05-21T22:56:20.970Z",
+      "updatedAt": "2026-05-21T22:56:20.970Z"
+    },
+    {
+      "id": "b0128ef2-fe6f-4c2e-b8b5-56508188e917",
+      "incubatorId": "qa-incubator-profile-id",
+      "name": "Incubation Program",
+      "description": null,
+      "isActive": true,
+      "createdAt": "2026-05-21T22:56:20.970Z",
+      "updatedAt": "2026-05-21T22:56:20.970Z"
+    },
+    {
+      "id": "faa60654-7c1b-430f-9fe7-24b244371463",
+      "incubatorId": "qa-incubator-profile-id",
+      "name": "Acceleration Program",
+      "description": null,
+      "isActive": true,
+      "createdAt": "2026-05-21T22:56:20.970Z",
+      "updatedAt": "2026-05-21T22:56:20.970Z"
+    }
+  ],
+  "expenses": [],
+  "income": [],
+  "landingContent": null,
+  "platformSettings": null,
+  "commissionRules": [
+    {
+      "id": "rule_investment",
+      "name": "Investment commission",
+      "transactionType": "INVESTMENT",
+      "rate": 0.07,
+      "description": "Platform fee on each confirmed investment transaction (7%).",
+      "isActive": true,
+      "updatedAt": "1970-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "rule_booking",
+      "name": "Incubator booking commission",
+      "transactionType": "PAYMENT",
+      "rate": 0.2,
+      "description": "Metwork cut from space / program bookings when the incubator is on the COMMISSION plan (20%).",
+      "isActive": true,
+      "updatedAt": "1970-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "rule_topup",
+      "name": "Top-up processing fee",
+      "transactionType": "TOP_UP",
+      "rate": 0.015,
+      "description": "Payment gateway processing fee passed through to users on wallet top-ups (1.5%).",
+      "isActive": false,
+      "updatedAt": "1970-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "rule_mentor_consultation",
+      "name": "Mentor consultation commission",
+      "transactionType": "MENTOR_CONSULTATION",
+      "rate": 0.3,
+      "description": "Platform commission on paid mentor consultations (30%). Mentors receive the remaining 70%.",
+      "isActive": true,
+      "updatedAt": "1970-01-01T00:00:00.000Z"
+    }
+  ],
+  "userMemberships": [],
+  "auditLogs": [],
+  "notifications": [],
+  "investorContacts": [],
+  "savedStartups": [],
+  "investments": [],
+  "withdrawalRequests": [],
+  "mentorConsultations": [],
+  "networkVisits": [],
+  "partnerMemberships": [],
+  "partnerPromoCodes": [],
+  "partnerPromoCodeBatches": [],
+  "userPartnerAffiliations": [],
+  "networkCheckInCodes": [],
+  "networkCheckInAuditLogs": [],
+  "registrationFormFields": [],
+  "registrations": [],
+  "meta": {
+    "promoCodesSeeded": true
+  },
+  "incubatorProfiles": [
+    {
+      "id": "qa-incubator-profile-id",
+      "userId": "qa-incubator-user-id",
+      "name": "QA Incubator Hub",
+      "description": "Espace de test QA automatisé",
+      "city": "Alger",
+      "address": "10 Rue des Tests, Alger",
+      "email": "test.incubator@metwork.test",
+      "phone": "+213070000001",
+      "website": null,
+      "logoUrl": null,
+      "coverUrl": null,
+      "subscriptionModel": "COMMISSION",
+      "commissionRate": 0.2,
+      "createdAt": "2026-05-21T21:55:59.726Z",
+      "updatedAt": "2026-05-21T21:55:59.726Z",
+      "isPartnerInNetwork": true
+    }
+  ]
+}

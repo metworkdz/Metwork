@@ -101,7 +101,7 @@
     "mentors": "Mentors",
     "investors": "Investors",
     "startups": "Startups",
-    "pricing": "Pricing",
+    "pricing": "Membership",
     "academy": "Startup Academy",
     "login": "Log in",
     "signup": "Get started",
@@ -126,11 +126,11 @@
   },
   "landing": {
     "hero": {
-      "badge": "For The First Time In Algeria",
-      "title": "Build, launch, and grow your startup",
-      "subtitle": "The unified platform connecting entrepreneurs, investors, and incubators across Algeria. Programs, coworking spaces, funding — all in one place.",
+      "badge": "Applications open · Built in Oran",
+      "title": "Build Algeria's startup ecosystem.",
+      "subtitle": "Algeria's startup incubator and ecosystem platform. Founders, incubators & investors — all in one network.",
       "ctaPrimary": "Join now",
-      "ctaSecondary": "Browse programs"
+      "ctaSecondary": "Explore the platform"
     },
     "stats": {
       "founders": "Founders",
@@ -139,65 +139,65 @@
       "cities": "Cities"
     },
     "features": {
-      "title": "Everything entrepreneurs need",
-      "subtitle": "From idea to funded startup, in one platform.",
+      "title": "One operating system for your startup.",
+      "subtitle": "Every Metwork member gets access to the full platform. Pick the modules you need today — the rest are there when you need them.",
       "programs": {
-        "title": "World-class programs",
-        "description": "Access incubation, acceleration, and training programs from Algeria's top organizations."
+        "title": "Incubator programs",
+        "description": "Structured residencies and open-call sprints with partner incubators across Algeria — capital, mentorship and demo-day access included."
       },
       "spaces": {
-        "title": "Premium workspaces",
-        "description": "Book coworking, private offices, and meeting rooms in every major Algerian city."
+        "title": "Coworking spaces",
+        "description": "Book a hot desk or private studio at any Metwork space. One membership covers Oran HQ, Algiers, Constantine, and 12 partner locations."
       },
       "fundraising": {
-        "title": "Connect with investors",
-        "description": "Get discovered by investors actively looking to fund Algerian startups."
+        "title": "Investor access",
+        "description": "Warm intros to 120+ funds and angels. Curated, no spray-and-pray. Deck red-teams and term-sheet review included."
       },
       "community": {
-        "title": "Active community",
-        "description": "Join events, meet founders, and build relationships that last."
+        "title": "Events & community",
+        "description": "Demo days, founder dinners, technical workshops and open-house Fridays — across the whole national network."
       }
     },
     "roles": {
-      "title": "Built for everyone in the ecosystem",
+      "title": "Three audiences. One network.",
       "entrepreneur": {
-        "title": "For entrepreneurs",
-        "description": "Find programs, book spaces, raise capital — all from one dashboard."
+        "title": "For founders building from Algeria",
+        "description": "From idea-stage to Series A. Get the room, the mentors, the capital — and the network that keeps compounding after demo day."
       },
       "investor": {
-        "title": "For investors",
-        "description": "Discover vetted Algerian startups and connect with founders directly."
+        "title": "For investors backing Algerian startups",
+        "description": "One feed of vetted, ready-to-pitch teams. We do the diligence triage so your partner meetings stay sharp."
       },
       "incubator": {
-        "title": "For incubators",
-        "description": "Manage programs, spaces, and bookings from a single SaaS dashboard."
+        "title": "For incubators & coworking spaces",
+        "description": "Plug your space and your programs into the national network. We bring traffic, deal-flow and a shared operating layer — you keep your brand."
       }
     },
     "cta": {
-      "title": "Ready to join Algeria's startup movement?",
-      "subtitle": "Free to start. Join thousands of founders, investors, and innovators.",
-      "button": "Create your account",
-      "explorePrograms": "Explore programs"
+      "title": "Ready to build the future?",
+      "subtitle": "Join 500+ founders, 40+ incubators and 120+ investors already on Metwork. Applications take ten minutes.",
+      "button": "Join now",
+      "explorePrograms": "Talk to our team"
     },
     "about": {
-      "label": "About Metwork",
-      "title": "The network where Algeria's startups connect, grow, and scale.",
-      "body1": "Metwork is Algeria's unified startup platform — built to bring together founders, investors, and incubators under one roof. Whether you're launching your first product or managing a portfolio of programs, we built this for you.",
-      "body2": "We believe Algeria's next great companies won't be built in isolation. They'll emerge through the right connections — the right mentors, the right capital, and the right community, all in the same room.",
+      "label": "What is Metwork",
+      "title": "An incubator, a platform, and a national coworking network — in one place.",
+      "body1": "Metwork is built for the next decade of Algerian entrepreneurs. We run a hands-on startup incubator and accelerator out of Oran, and we operate the platform that ties the rest of the ecosystem together — coworking spaces, partner incubators, mentors, and investors from across the country.",
+      "body2": "One account. One network. Apply to a program, book a desk in Algiers, schedule a consultation with a CFO in Constantine, or pitch a fund in Sétif — without switching tools or starting from scratch.",
       "cta": "Work with us",
       "pillar1Title": "Incubate",
-      "pillar1Desc": "Hands-on programs, coworking space, and expert mentorship for early-stage Algerian startups.",
+      "pillar1Desc": "Structured residencies with capital, mentorship and demo-day access.",
       "pillar2Title": "Connect",
-      "pillar2Desc": "A curated network bridging founders with investors, mentors, and incubators across the country.",
-      "pillar3Title": "Scale",
-      "pillar3Desc": "Tools and partnerships to help Algerian startups grow beyond local markets and reach new frontiers."
+      "pillar2Desc": "One place for founders, mentors, incubators and investors to find each other.",
+      "pillar3Title": "Operate",
+      "pillar3Desc": "Drop into Metwork spaces nationwide on a single, founder-friendly membership."
     },
     "sections": {
-      "whatWeOffer": "What we offer",
-      "whoWeServe": "Who we serve",
-      "joinMovement": "Join the movement"
+      "whatWeOffer": "The platform",
+      "whoWeServe": "Who it's for",
+      "joinMovement": "Applications open"
     },
-    "socialProof": "Trusted by founders, investors, and incubators across Algeria."
+    "socialProof": "Oran HQ · 15 cities · 500+ founders"
   },
   "auth": {
     "login": {
@@ -865,6 +865,7 @@
     "analytics": "Analytics",
     "partnerNetwork": "Partner Network",
     "partnerPromoCodes": "Partner Promo Codes",
+    "perks": "Perks",
     "networkPass": "Metwork Pass"
   },
   "pages": {
