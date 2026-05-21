@@ -1,0 +1,88 @@
+{"agent":"BUILDER","id":"E1-01","name":"Login & Dashboard","status":"PASS","ts":"2026-05-21T23:13:08.484Z"}
+{"agent":"INCUBATOR","id":"I01","name":"Login & Dashboard","status":"PASS","ts":"2026-05-21T23:13:08.910Z"}
+{"agent":"FOUNDER","id":"E2-01","name":"Login & Dashboard","status":"PASS","ts":"2026-05-21T23:13:10.391Z"}
+{"agent":"EXPLORER","id":"E3-01","name":"Login & Dashboard","status":"PASS","ts":"2026-05-21T23:13:10.452Z"}
+{"agent":"INCUBATOR","id":"I02","name":"No Console Errors","status":"PASS","ts":"2026-05-21T23:13:12.892Z"}
+{"agent":"BUILDER","id":"E1-02","name":"No Console Errors","status":"PASS","ts":"2026-05-21T23:13:13.376Z"}
+{"agent":"FOUNDER","id":"E2-02","name":"Dashboard Shows FOUNDER","status":"PASS","ts":"2026-05-21T23:13:17.118Z"}
+{"agent":"EXPLORER","id":"E3-02","name":"Explorer Free Tier","status":"PASS","detail":"No paid tier shown as active","ts":"2026-05-21T23:13:17.367Z"}
+{"agent":"BUILDER","id":"E1-03","name":"Bookings","status":"PASS","ts":"2026-05-21T23:13:18.788Z"}
+{"agent":"INCUBATOR","id":"I03","name":"Analytics","status":"PASS","ts":"2026-05-21T23:13:19.033Z"}
+{"agent":"INCUBATOR","id":"I04","name":"Clients","status":"PASS","ts":"2026-05-21T23:13:26.268Z"}
+{"agent":"BUILDER","id":"E1-04","name":"Startup","status":"PASS","ts":"2026-05-21T23:13:26.348Z"}
+{"agent":"EXPLORER","id":"E3-03","name":"Upgrade CTA Visible","status":"PASS","detail":"Found on membership page","ts":"2026-05-21T23:13:26.480Z"}
+{"agent":"FOUNDER","id":"E2-03","name":"Membership Shows FOUNDER","status":"PASS","ts":"2026-05-21T23:13:26.610Z"}
+{"agent":"ADMIN","id":"A01","name":"Login & Dashboard","status":"PASS","ts":"2026-05-21T23:13:26.760Z"}
+{"agent":"BUILDER","id":"E1-05","name":"Marketplace","status":"PASS","ts":"2026-05-21T23:13:30.501Z"}
+{"agent":"INCUBATOR","id":"I05","name":"Income","status":"PASS","ts":"2026-05-21T23:13:30.726Z"}
+{"agent":"EXPLORER","id":"E3-04","name":"Public Spaces","status":"PASS","ts":"2026-05-21T23:13:31.026Z"}
+{"agent":"ADMIN","id":"A02","name":"No Console Errors","status":"PASS","ts":"2026-05-21T23:13:35.913Z"}
+{"agent":"BUILDER","id":"E1-06","name":"Consultations","status":"PASS","ts":"2026-05-21T23:13:36.446Z"}
+{"agent":"FOUNDER","id":"E2-04","name":"Network Pass 10 Sessions","status":"PASS","ts":"2026-05-21T23:13:36.585Z"}
+{"agent":"INCUBATOR","id":"I06","name":"Expenses","status":"PASS","ts":"2026-05-21T23:13:36.643Z"}
+{"agent":"EXPLORER","id":"E3-05","name":"Public Mentors","status":"PASS","ts":"2026-05-21T23:13:37.049Z"}
+{"agent":"FOUNDER","id":"E2-05","name":"Consultations Page","status":"PASS","ts":"2026-05-21T23:13:41.811Z"}
+{"agent":"INCUBATOR","id":"I07","name":"Services","status":"PASS","ts":"2026-05-21T23:13:41.916Z"}
+{"agent":"ADMIN","id":"A03","name":"Analytics","status":"PASS","ts":"2026-05-21T23:13:43.290Z"}
+{"agent":"EXPLORER","id":"E3-06","name":"Public Programs","status":"PASS","ts":"2026-05-21T23:13:43.854Z"}
+{"agent":"BUILDER","id":"E1-07","name":"Perks","status":"PASS","ts":"2026-05-21T23:13:44.648Z"}
+{"agent":"INCUBATOR","id":"I08","name":"Spaces","status":"PASS","ts":"2026-05-21T23:13:47.477Z"}
+{"agent":"ADMIN","id":"A04","name":"Users","status":"PASS","ts":"2026-05-21T23:13:48.002Z"}
+{"agent":"EXPLORER","id":"E3-07","name":"Public Events","status":"PASS","ts":"2026-05-21T23:13:48.892Z"}
+{"agent":"FOUNDER","id":"E2-06","name":"Wallet Page","status":"PASS","ts":"2026-05-21T23:13:49.742Z"}
+{"agent":"INCUBATOR","id":"I09","name":"Programs","status":"PASS","ts":"2026-05-21T23:13:53.981Z"}
+{"agent":"BUILDER","id":"E1-08","name":"Wallet","status":"PASS","ts":"2026-05-21T23:13:54.162Z"}
+{"agent":"ADMIN","id":"A05","name":"Incubators","status":"PASS","ts":"2026-05-21T23:13:54.755Z"}
+{"agent":"EXPLORER","id":"E3-08","name":"Public Pricing","status":"PASS","ts":"2026-05-21T23:13:55.018Z"}
+{"agent":"INCUBATOR","id":"I10","name":"Events","status":"PASS","ts":"2026-05-21T23:13:58.925Z"}
+{"agent":"BUILDER","id":"E1-09","name":"Membership","status":"PASS","ts":"2026-05-21T23:14:00.383Z"}
+{"agent":"ADMIN","id":"A06","name":"Memberships","status":"PASS","ts":"2026-05-21T23:14:01.868Z"}
+{"agent":"INCUBATOR","id":"I11","name":"Bookings","status":"PASS","ts":"2026-05-21T23:14:04.250Z"}
+{"agent":"EXPLORER","id":"E3-09","name":"Public Investors","status":"PASS","ts":"2026-05-21T23:14:04.856Z"}
+{"agent":"BUILDER","id":"E1-10","name":"Network Pass","status":"PASS","ts":"2026-05-21T23:14:05.950Z"}
+{"agent":"ADMIN","id":"A07","name":"Promo Codes","status":"PASS","ts":"2026-05-21T23:14:07.575Z"}
+{"agent":"INCUBATOR","id":"I12","name":"Revenue","status":"PASS","ts":"2026-05-21T23:14:10.073Z"}
+{"agent":"ADMIN","id":"A08","name":"Partner Network","status":"PASS","ts":"2026-05-21T23:14:12.847Z"}
+{"agent":"BUILDER","id":"E1-11","name":"Settings","status":"PASS","ts":"2026-05-21T23:14:12.956Z"}
+{"agent":"EXPLORER","id":"E3-10","name":"Public About","status":"PASS","ts":"2026-05-21T23:14:13.342Z"}
+{"agent":"FOUNDER","id":"E2-07","name":"All Nav Links Resolve","status":"PASS","ts":"2026-05-21T23:14:14.887Z"}
+{"agent":"INCUBATOR","id":"I13","name":"Invoices","status":"PASS","ts":"2026-05-21T23:14:17.761Z"}
+{"agent":"BUILDER","id":"E1-12","name":"Membership Shows BUILDER","status":"PASS","ts":"2026-05-21T23:14:18.607Z"}
+{"agent":"ADMIN","id":"A09","name":"Partner Promo Codes","status":"PASS","ts":"2026-05-21T23:14:18.965Z"}
+{"agent":"EXPLORER","id":"E3-11","name":"Pricing Has Tiers + Discounts","status":"PASS","ts":"2026-05-21T23:14:19.397Z"}
+{"agent":"FOUNDER","id":"E2-08","name":"Mentors LinkedIn Buttons","status":"PASS","detail":"1 valid link(s)","ts":"2026-05-21T23:14:20.839Z"}
+{"agent":"INCUBATOR","id":"I14","name":"Wallet","status":"PASS","ts":"2026-05-21T23:14:21.433Z"}
+{"agent":"ADMIN","id":"A10","name":"Commissions","status":"PASS","ts":"2026-05-21T23:14:24.130Z"}
+{"agent":"BUILDER","id":"E1-13","name":"Network Pass Has Credits","status":"PASS","detail":"Credit info visible","ts":"2026-05-21T23:14:26.051Z"}
+{"agent":"INCUBATOR","id":"I15","name":"Settings","status":"PASS","ts":"2026-05-21T23:14:27.137Z"}
+{"agent":"EXPLORER","id":"E3-12","name":"Language Switcher Visible","status":"PASS","ts":"2026-05-21T23:14:28.291Z"}
+{"agent":"FOUNDER","id":"E2-09","name":"Pricing Shows All Tiers","status":"PASS","ts":"2026-05-21T23:14:29.169Z"}
+{"agent":"ADMIN","id":"A11","name":"Bookings","status":"PASS","ts":"2026-05-21T23:14:31.132Z"}
+{"agent":"INCUBATOR","id":"I16","name":"Create Space Dialog","status":"PASS","ts":"2026-05-21T23:14:34.809Z"}
+{"agent":"BUILDER","id":"E1-14","name":"Book Mentor → Form Not Signup","status":"PASS","detail":"http://localhost:3000/en/mentors","ts":"2026-05-21T23:14:35.466Z"}
+{"agent":"FOUNDER","id":"E2-10","name":"Perks Page","status":"PASS","ts":"2026-05-21T23:14:35.496Z"}
+{"agent":"ADMIN","id":"A12","name":"Mentors","status":"PASS","ts":"2026-05-21T23:14:36.107Z"}
+{"agent":"EXPLORER","id":"E3-13","name":"Arabic RTL Direction","status":"PASS","ts":"2026-05-21T23:14:36.964Z"}
+{"agent":"BUILDER","id":"E1-15","name":"Settings Has Delete Account","status":"PASS","ts":"2026-05-21T23:14:41.288Z"}
+{"agent":"ADMIN","id":"A13","name":"Consultations","status":"PASS","ts":"2026-05-21T23:14:41.773Z"}
+{"agent":"INCUBATOR","id":"I17","name":"Income Service Is Dropdown","status":"PASS","ts":"2026-05-21T23:14:42.305Z"}
+{"agent":"EXPLORER","id":"E3-14","name":"Mobile No Horizontal Overflow","status":"PASS","ts":"2026-05-21T23:14:42.440Z"}
+{"agent":"BUILDER","id":"E1-16","name":"Spaces Page Loads","status":"PASS","ts":"2026-05-21T23:14:45.711Z"}
+{"agent":"ADMIN","id":"A14","name":"Mentor Revenue","status":"PASS","ts":"2026-05-21T23:14:46.218Z"}
+{"agent":"EXPLORER","id":"E3-15","name":"Network Pass 0 Credits","status":"PASS","detail":"0 credits shown (Explorer)","ts":"2026-05-21T23:14:47.165Z"}
+{"agent":"INCUBATOR","id":"I18","name":"Create Program Form","status":"PASS","ts":"2026-05-21T23:14:48.892Z"}
+{"agent":"BUILDER","id":"E1-17","name":"Events Page Loads","status":"PASS","ts":"2026-05-21T23:14:49.089Z"}
+{"agent":"ADMIN","id":"A15","name":"Contacts","status":"PASS","ts":"2026-05-21T23:14:50.157Z"}
+{"agent":"INCUBATOR","id":"I19","name":"Bookings List","status":"PASS","ts":"2026-05-21T23:14:51.556Z"}
+{"agent":"BUILDER","id":"E1-18","name":"Programs Page Loads","status":"PASS","ts":"2026-05-21T23:14:52.009Z"}
+{"agent":"ADMIN","id":"A16","name":"Investor Contacts","status":"PASS","ts":"2026-05-21T23:14:53.534Z"}
+{"agent":"INCUBATOR","id":"I20","name":"Mobile Responsive","status":"PASS","ts":"2026-05-21T23:14:53.887Z"}
+{"agent":"ADMIN","id":"A17","name":"Withdrawals","status":"PASS","ts":"2026-05-21T23:14:55.487Z"}
+{"agent":"ADMIN","id":"A18","name":"CMS Content","status":"PASS","ts":"2026-05-21T23:14:57.416Z"}
+{"agent":"ADMIN","id":"A19","name":"Audit Log","status":"PASS","ts":"2026-05-21T23:14:59.129Z"}
+{"agent":"ADMIN","id":"A20","name":"Settings","status":"PASS","ts":"2026-05-21T23:15:00.991Z"}
+{"agent":"ADMIN","id":"A21","name":"Create Promo Code Form","status":"PASS","detail":"heading:true inputs:4","ts":"2026-05-21T23:15:02.781Z"}
+{"agent":"ADMIN","id":"A22","name":"Settings Has Fields","status":"PASS","detail":"1 input(s) found","ts":"2026-05-21T23:15:04.540Z"}
+{"agent":"ADMIN","id":"A23","name":"Users Table Rows","status":"PASS","detail":"11 rows","ts":"2026-05-21T23:15:06.541Z"}
+{"agent":"ADMIN","id":"A24","name":"Incubators List","status":"PASS","ts":"2026-05-21T23:15:08.688Z"}
+{"agent":"ADMIN","id":"A25","name":"Mobile Responsive","status":"PASS","ts":"2026-05-21T23:15:10.187Z"}

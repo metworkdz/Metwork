@@ -2,11 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Menu } from 'lucide-react';
+import { Menu, ChevronDown } from 'lucide-react';
 import { Link, usePathname } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/ui/container';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Logo } from './logo';
 import { LocaleSwitcher } from './locale-switcher';
 import { UserMenu } from './user-menu';
@@ -46,11 +52,52 @@ export function Navbar() {
             {/* Desktop nav */}
             <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
               {publicNavItems.map((item) => {
+                if (item.children) {
+                  const active = item.children.some((c) => pathname === c.href);
+                  return (
+                    <DropdownMenu key={item.labelKey}>
+                      <DropdownMenuTrigger
+                        className={cn(
+                          'inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors outline-none',
+                          'hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring',
+                          'data-[state=open]:bg-accent data-[state=open]:text-accent-foreground',
+                          active ? 'text-foreground' : 'text-muted-foreground',
+                        )}
+                      >
+                        {t(item.labelKey)}
+                        <ChevronDown className="size-4 transition-transform data-[state=open]:rotate-180" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="min-w-56">
+                        {item.children.map((child) => {
+                          const Icon = child.icon;
+                          return (
+                            <DropdownMenuItem key={child.href} asChild>
+                              <Link
+                                href={child.href}
+                                {...(child.external
+                                  ? { target: '_blank', rel: 'noopener noreferrer' }
+                                  : {})}
+                                className={cn(
+                                  'flex w-full cursor-pointer items-center gap-2.5',
+                                  pathname === child.href && 'text-foreground',
+                                )}
+                              >
+                                {Icon && <Icon className="size-4 text-muted-foreground" />}
+                                {t(child.labelKey)}
+                              </Link>
+                            </DropdownMenuItem>
+                          );
+                        })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  );
+                }
+
                 const active = pathname === item.href;
                 return (
                   <Link
                     key={item.href}
-                    href={item.href}
+                    href={item.href!}
                     {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                     className={cn(
                       'rounded-md px-3 py-2 text-sm font-medium transition-colors',
@@ -108,6 +155,7 @@ export function Navbar() {
 
 function MobileNav({ onNavigate }: { onNavigate: () => void }) {
   const t = useTranslations();
+  const pathname = usePathname();
   const { isAuthenticated, user } = useAuth();
 
   return (
@@ -118,14 +166,52 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
       <nav className="flex-1 overflow-y-auto px-4">
         <ul className="space-y-1">
           {publicNavItems.map((item) => {
+            if (item.children) {
+              return (
+                <li key={item.labelKey} className="pt-2">
+                  <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t(item.labelKey)}
+                  </p>
+                  <ul className="space-y-1">
+                    {item.children.map((child) => {
+                      const Icon = child.icon;
+                      const active = pathname === child.href;
+                      return (
+                        <li key={child.href}>
+                          <Link
+                            href={child.href}
+                            {...(child.external
+                              ? { target: '_blank', rel: 'noopener noreferrer' }
+                              : {})}
+                            onClick={onNavigate}
+                            className={cn(
+                              'flex items-center gap-3 rounded-md px-3 py-2.5 text-base font-medium transition-colors hover:bg-accent',
+                              active && 'bg-accent',
+                            )}
+                          >
+                            {Icon && <Icon className="size-5 text-muted-foreground" />}
+                            {t(child.labelKey)}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
+              );
+            }
+
             const Icon = item.icon;
+            const active = pathname === item.href;
             return (
               <li key={item.href}>
                 <Link
-                  href={item.href}
+                  href={item.href!}
                   {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                   onClick={onNavigate}
-                  className="flex items-center gap-3 rounded-md px-3 py-3 text-base font-medium transition-colors hover:bg-accent"
+                  className={cn(
+                    'flex items-center gap-3 rounded-md px-3 py-3 text-base font-medium transition-colors hover:bg-accent',
+                    active && 'bg-accent',
+                  )}
                 >
                   {Icon && <Icon className="size-5 text-muted-foreground" />}
                   {t(item.labelKey)}

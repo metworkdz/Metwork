@@ -44,22 +44,36 @@ export interface NavItem {
 }
 
 /**
+ * Public navbar item — either a direct link (has `href`) or a dropdown
+ * trigger (has `children`). The desktop navbar renders `children` as a
+ * dropdown menu; the mobile drawer renders them as a labelled group.
+ */
+export interface PublicNavItem {
+  labelKey: string;
+  href?: string;
+  icon?: LucideIcon;
+  external?: boolean;
+  children?: readonly NavItem[];
+}
+
+/**
  * Public navbar items — visible on all marketing pages.
  * Order matches what's shown to the user.
  */
-export const publicNavItems: readonly NavItem[] = [
-  { labelKey: 'nav.programs', href: '/programs', icon: Briefcase },
-  { labelKey: 'nav.events', href: '/events', icon: Calendar },
-  { labelKey: 'nav.spaces', href: '/spaces', icon: Building2 },
-  { labelKey: 'nav.mentors', href: '/mentors', icon: Star },
-  { labelKey: 'nav.investors', href: '/investors', icon: TrendingUp },
-  { labelKey: 'nav.pricing', href: '/pricing', icon: Tag },
+export const publicNavItems: readonly PublicNavItem[] = [
   {
-    labelKey: 'nav.academy',
-    href: '/academy',
-    icon: GraduationCap,
-    external: true,
+    labelKey: 'nav.forEntrepreneurs',
+    children: [
+      { labelKey: 'nav.programs', href: '/programs', icon: Briefcase },
+      { labelKey: 'nav.events', href: '/events', icon: Calendar },
+      { labelKey: 'nav.spaces', href: '/spaces', icon: Building2 },
+      { labelKey: 'nav.mentors', href: '/mentors', icon: Star },
+      { labelKey: 'nav.academy', href: '/academy', icon: GraduationCap },
+    ],
   },
+  { labelKey: 'nav.forIncubators', href: '/incubators', icon: Building2 },
+  { labelKey: 'nav.forInvestors', href: '/investors', icon: TrendingUp },
+  { labelKey: 'nav.memberships', href: '/pricing', icon: Tag },
 ] as const;
 
 /**
@@ -73,7 +87,7 @@ export const footerNavGroups = [
       { labelKey: 'nav.events', href: '/events' },
       { labelKey: 'nav.spaces', href: '/spaces' },
       { labelKey: 'nav.investors', href: '/investors' },
-      { labelKey: 'nav.pricing', href: '/pricing' },
+      { labelKey: 'nav.memberships', href: '/pricing' },
     ],
   },
   {
@@ -81,7 +95,7 @@ export const footerNavGroups = [
     links: [
       { labelKey: 'footer.about', href: '/about' },
       { labelKey: 'footer.contact', href: '/contact' },
-      { labelKey: 'nav.academy', href: '/academy', external: true },
+      { labelKey: 'nav.academy', href: '/academy' },
     ],
   },
   {

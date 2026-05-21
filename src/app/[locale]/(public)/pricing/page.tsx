@@ -1,13 +1,17 @@
 import type { Metadata } from 'next';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { Check, ArrowRight, Zap } from 'lucide-react';
+import { ArrowRight, Zap, Sparkles } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/container';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  MembershipPlans,
+  type MembershipPlanCard,
+} from '@/components/features/membership/membership-plans';
 import { membershipTiers, incubatorSubscriptionTiers } from '@/config/memberships';
-import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/format';
+import type { Locale } from '@/i18n/config';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -20,13 +24,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: t('title'), description: t('subtitle') };
 }
 
-function formatDZD(amount: number): string {
-  return new Intl.NumberFormat('fr-DZ', { maximumFractionDigits: 0 }).format(amount);
-}
-
 export default async function PricingPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const lang = locale as Locale;
 
   const [t, tm, ti] = await Promise.all([
     getTranslations('pages.pricing'),
@@ -34,29 +35,27 @@ export default async function PricingPage({ params }: PageProps) {
     getTranslations('incubator'),
   ]);
 
-  // Map config data to display-ready tiers (explicit translation keys per tier)
-  const displayTiers = [
+  // Map config data to display-ready entrepreneur tiers (explicit keys per tier).
+  const tiers: MembershipPlanCard[] = [
     {
-      code: 'FREE' as const,
+      code: 'FREE',
       name: tm('tiers.free.name'),
       description: tm('tiers.free.description'),
       priceMonthly: membershipTiers[0].priceMonthly,
+      priceSemesterly: membershipTiers[0].priceMonthly * 6,
       priceYearly: membershipTiers[0].priceYearly,
-      yearlyDiscount: 0,
+      yearlyDiscountPercent: 0,
       highlighted: false,
-      features: [
-        tm('features.profile'),
-        tm('features.browse'),
-        tm('features.events'),
-      ],
+      features: [tm('features.profile'), tm('features.browse'), tm('features.events')],
     },
     {
-      code: 'ENTREPRENEUR' as const,
+      code: 'ENTREPRENEUR',
       name: tm('tiers.entrepreneur.name'),
       description: tm('tiers.entrepreneur.description'),
       priceMonthly: membershipTiers[1].priceMonthly,
+      priceSemesterly: membershipTiers[1].priceSemesterly,
       priceYearly: membershipTiers[1].priceYearly,
-      yearlyDiscount: 30,
+      yearlyDiscountPercent: membershipTiers[1].yearlyDiscountPercent,
       highlighted: false,
       features: [
         tm('features.allFree'),
@@ -68,12 +67,13 @@ export default async function PricingPage({ params }: PageProps) {
       ],
     },
     {
-      code: 'STARTUP' as const,
+      code: 'STARTUP',
       name: tm('tiers.startup.name'),
       description: tm('tiers.startup.description'),
       priceMonthly: membershipTiers[2].priceMonthly,
+      priceSemesterly: membershipTiers[2].priceSemesterly,
       priceYearly: membershipTiers[2].priceYearly,
-      yearlyDiscount: 30,
+      yearlyDiscountPercent: membershipTiers[2].yearlyDiscountPercent,
       highlighted: true,
       features: [
         tm('features.allEntrepreneur'),
@@ -88,20 +88,10 @@ export default async function PricingPage({ params }: PageProps) {
     },
   ];
 
-  const incubatorDisplayTiers = [
-    {
-      code: 'COMMISSION' as const,
-      name: ti('subscription.commission.name'),
-      description: ti('subscription.commission.description'),
-      priceMonthly: incubatorSubscriptionTiers[0].priceMonthly,
-    },
-    {
-      code: 'FLAT' as const,
-      name: ti('subscription.flat.name'),
-      description: ti('subscription.flat.description'),
-      priceMonthly: incubatorSubscriptionTiers[1].priceMonthly,
-    },
-  ];
+  const commissionTier = incubatorSubscriptionTiers[0];
+  const proTier = incubatorSubscriptionTiers[1];
+  const commissionPercent = Math.round(commissionTier.commissionRate * 100);
+  const proYearly = proTier.priceYearly;
 
   return (
     <>
@@ -119,100 +109,17 @@ export default async function PricingPage({ params }: PageProps) {
         </Container>
       </section>
 
-      {/* Membership tiers */}
+      {/* Entrepreneur memberships */}
       <section className="py-14 sm:py-20">
         <Container>
-          <div className="grid gap-6 md:grid-cols-3">
-            {displayTiers.map((tier) => {
-              const isFree = tier.code === 'FREE';
-
-              return (
-                <Card
-                  key={tier.code}
-                  className={cn(
-                    'relative flex flex-col overflow-hidden border-border/60 transition-all',
-                    tier.highlighted && 'border-primary shadow-lg shadow-primary/10',
-                  )}
-                >
-                  {tier.highlighted && (
-                    <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary-500 to-primary-700" />
-                  )}
-
-                  <CardContent className="flex flex-1 flex-col p-8">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h2 className="font-display text-xl font-bold uppercase tracking-wide text-foreground">
-                          {tier.name}
-                        </h2>
-                        <p className="mt-1 text-sm text-muted-foreground">{tier.description}</p>
-                      </div>
-                      {tier.highlighted && (
-                        <Badge variant="primary" className="shrink-0 text-xs">
-                          {t('mostPopular')}
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Price */}
-                    <div className="mt-8">
-                      {isFree ? (
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="font-display text-4xl font-bold text-foreground">
-                            {tm('tiers.free.name')}
-                          </span>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="font-display text-4xl font-bold text-foreground">
-                              {formatDZD(tier.priceMonthly)}
-                            </span>
-                            <span className="text-sm text-muted-foreground">
-                              DZD {tm('perMonth')}
-                            </span>
-                          </div>
-                          {tier.yearlyDiscount > 0 && (
-                            <p className="mt-1.5 text-xs text-muted-foreground">
-                              {tm('yearlySaveBadge', { percent: tier.yearlyDiscount })} billed
-                              annually
-                            </p>
-                          )}
-                        </>
-                      )}
-                    </div>
-
-                    {/* CTA */}
-                    <Button
-                      asChild
-                      size="lg"
-                      variant={tier.highlighted ? 'default' : 'outline'}
-                      className={cn(
-                        'mt-6 w-full rounded-full text-sm font-semibold',
-                        tier.highlighted && 'font-bold uppercase tracking-wider',
-                      )}
-                    >
-                      <Link href="/signup">
-                        {isFree ? tm('choosePlan') : tm('upgrade')}
-                        <ArrowRight className="size-4 rtl:rotate-180" />
-                      </Link>
-                    </Button>
-
-                    {/* Features */}
-                    <ul className="mt-8 space-y-3">
-                      {tier.features.map((label) => (
-                        <li key={label} className="flex items-start gap-3">
-                          <div className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700">
-                            <Check className="size-2.5" strokeWidth={3} />
-                          </div>
-                          <span className="text-sm text-muted-foreground">{label}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="mx-auto mb-10 max-w-2xl text-center">
+            <h2 className="font-display text-2xl font-bold uppercase tracking-tight sm:text-3xl">
+              {t('entrepreneurTitle')}
+            </h2>
+            <p className="mt-3 text-base text-muted-foreground">{t('entrepreneurSubtitle')}</p>
           </div>
+
+          <MembershipPlans tiers={tiers} locale={lang} mostPopularLabel={t('mostPopular')} />
 
           {/* FAQ link */}
           <p className="mt-10 text-center text-sm text-muted-foreground">
@@ -225,7 +132,10 @@ export default async function PricingPage({ params }: PageProps) {
       </section>
 
       {/* Incubator plans */}
-      <section className="border-t border-border/60 bg-muted/25 py-14 sm:py-20">
+      <section
+        id="incubator"
+        className="scroll-mt-20 border-t border-border/60 bg-muted/25 py-14 sm:py-20"
+      >
         <Container>
           <div className="mx-auto max-w-2xl text-center">
             <div className="inline-flex size-10 items-center justify-center rounded-xl bg-primary-100 text-primary-600">
@@ -237,41 +147,80 @@ export default async function PricingPage({ params }: PageProps) {
             <p className="mt-3 text-base text-muted-foreground">{t('incubatorSubtitle')}</p>
           </div>
 
-          <div className="mx-auto mt-10 grid max-w-2xl gap-6 sm:grid-cols-2">
-            {incubatorDisplayTiers.map((tier) => (
-              <Card
-                key={tier.code}
-                className="flex flex-col border-border/60 transition-all hover:border-primary-200 hover:shadow-md"
-              >
-                <CardContent className="flex flex-1 flex-col p-8">
+          <div className="mx-auto mt-10 grid max-w-2xl items-stretch gap-6 sm:grid-cols-2">
+            {/* Pay-as-you-go (commission) */}
+            <Card className="flex flex-col border-border/60 transition-all hover:border-primary-200 hover:shadow-md">
+              <CardContent className="flex flex-1 flex-col p-8">
+                <h3 className="font-display text-lg font-bold uppercase tracking-wide text-foreground">
+                  {ti('subscription.commission.name')}
+                </h3>
+                <p className="mt-2 flex-1 text-sm text-muted-foreground">
+                  {ti('subscription.commission.description')}
+                </p>
+
+                <div className="mt-6 flex items-baseline gap-1.5">
+                  <span className="font-display text-3xl font-bold text-foreground">
+                    {commissionPercent}%
+                  </span>
+                  <span className="text-sm text-muted-foreground">{t('perBooking')}</span>
+                </div>
+
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="mt-6 w-full rounded-full text-sm font-semibold"
+                >
+                  <Link href="/signup">
+                    {tm('choosePlan')}
+                    <ArrowRight className="size-4 rtl:rotate-180" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Pro (flat subscription) */}
+            <Card className="relative flex flex-col overflow-hidden border-primary shadow-lg shadow-primary/10">
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary-500 to-primary-700" />
+              <CardContent className="flex flex-1 flex-col p-8">
+                <div className="flex items-start justify-between gap-3">
                   <h3 className="font-display text-lg font-bold uppercase tracking-wide text-foreground">
-                    {tier.name}
+                    {ti('subscription.flat.name')}
                   </h3>
-                  <p className="mt-2 flex-1 text-sm text-muted-foreground">{tier.description}</p>
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-semibold text-green-700">
+                    <Sparkles className="size-3" />
+                    {t('incubatorProTrial')}
+                  </span>
+                </div>
+                <p className="mt-2 flex-1 text-sm text-muted-foreground">
+                  {ti('subscription.flat.description')}
+                </p>
 
-                  <div className="mt-6 flex items-baseline gap-1.5">
-                    <span className="font-display text-3xl font-bold text-foreground">
-                      {tier.priceMonthly === 0 ? '0' : formatDZD(tier.priceMonthly)}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      DZD {tm('perMonth')}
-                    </span>
-                  </div>
+                <div className="mt-6 flex items-baseline gap-1.5">
+                  <span className="font-display text-3xl font-bold text-foreground">
+                    {formatCurrency(proTier.priceMonthly, lang)}
+                  </span>
+                  <span className="text-sm text-muted-foreground">{tm('perMonth')}</span>
+                </div>
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  {t('incubatorBilledYearly', {
+                    yearly: formatCurrency(proYearly, lang),
+                    percent: 30,
+                  })}
+                </p>
 
-                  <Button
-                    asChild
-                    size="lg"
-                    variant="outline"
-                    className="mt-6 w-full rounded-full text-sm font-semibold"
-                  >
-                    <Link href="/signup">
-                      {tm('choosePlan')}
-                      <ArrowRight className="size-4 rtl:rotate-180" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                <Button
+                  asChild
+                  size="lg"
+                  className="mt-6 w-full rounded-full text-sm font-bold uppercase tracking-wider"
+                >
+                  <Link href="/signup">
+                    {t('incubatorProCta')}
+                    <ArrowRight className="size-4 rtl:rotate-180" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </Container>
       </section>

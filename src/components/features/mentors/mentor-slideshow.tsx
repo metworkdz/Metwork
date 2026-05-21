@@ -153,11 +153,13 @@ export function MentorSlideshow({ mentors }: MentorSlideshowProps) {
               </div>
             </div>
 
-            {/* Hover: subtle vignette pulse */}
+            {/* Hover: subtle vignette pulse. pointer-events-none so this
+                decorative full-card overlay never intercepts clicks on the
+                Book / LinkedIn buttons beneath it. */}
             <div
               aria-hidden
               className={cn(
-                'absolute inset-0 rounded-3xl ring-2 ring-white/20 transition-opacity duration-300',
+                'pointer-events-none absolute inset-0 rounded-3xl ring-2 ring-white/20 transition-opacity duration-300',
                 hovered ? 'opacity-100' : 'opacity-0',
               )}
             />

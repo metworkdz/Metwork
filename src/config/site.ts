@@ -27,6 +27,13 @@ export const siteConfig = {
   },
   academy: {
     externalUrl: 'https://learn.metwork.dz',
+    /** Student registration, then redirect into the LMS dashboard. */
+    registerUrl:
+      'https://learn.metwork.dz/student-registration/?redirect_to=https://learn.metwork.dz/dashboard',
+    /** Public course catalog on the LMS. */
+    coursesUrl: 'https://learn.metwork.dz/courses/',
+    /** WordPress REST endpoint for the LearnDash "courses" post type. */
+    apiUrl: 'https://learn.metwork.dz/wp-json/wp/v2/courses',
   },
   legal: {
     lawReference: 'Law 18-07 (Algerian Personal Data Protection Act)',

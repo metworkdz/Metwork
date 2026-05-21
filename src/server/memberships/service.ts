@@ -46,10 +46,21 @@ export const SPACE_DISCOUNT: Record<string, number> = {
   STARTUP:      0.2,  // Founder tier — 20 % off
 };
 
-/** Membership prices in integer DZD. */
-export const MEMBERSHIP_PRICES: Record<string, { monthly: number; yearly: number }> = {
-  ENTREPRENEUR: { monthly: 4_500, yearly: Math.round(4_500 * 12 * 0.7) },
-  STARTUP:      { monthly: 8_000, yearly: Math.round(8_000 * 12 * 0.7) },
+/**
+ * Membership prices in integer DZD.
+ *
+ * Entrepreneurs are billed SEMESTERLY (6 months, no discount) or YEARLY
+ * (12 months, 30 % off). `monthly` is the per-month figure shown in the UI
+ * — it is never charged directly.
+ *   semesterly = monthly × 6   (no discount)
+ *   yearly     = monthly × 12 × 0.7   (30 % off)
+ */
+export const MEMBERSHIP_PRICES: Record<
+  string,
+  { monthly: number; semesterly: number; yearly: number }
+> = {
+  ENTREPRENEUR: { monthly: 3_500, semesterly: 3_500 * 6, yearly: Math.round(3_500 * 12 * 0.7) },
+  STARTUP:      { monthly: 6_500, semesterly: 6_500 * 6, yearly: Math.round(6_500 * 12 * 0.7) },
 };
 
 // ---------------------------------------------------------------------------

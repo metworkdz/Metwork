@@ -5,9 +5,9 @@
  *
  * Fetches current plan + pricing from GET /api/incubator/subscription,
  * and allows the incubator to:
- *   • Activate the FLAT plan (SEMESTERLY or YEARLY)
- *   • Renew the FLAT plan when expired
- *   • Switch back to the COMMISSION plan
+ *   • Activate the Pro (FLAT) plan (MONTHLY or YEARLY) — first month free
+ *   • Renew the Pro plan when expired
+ *   • Switch back to the COMMISSION (pay-as-you-go) plan
  */
 import { useEffect, useState } from 'react';
 import { useLocale } from 'next-intl';
@@ -22,22 +22,21 @@ import type { Locale } from '@/i18n/config';
 // ─── API types ──────────────────────────────────────────────────────────────
 
 interface SubscriptionPricing {
-  monthlyPrice: number;
-  semesterlyMonths: number;
-  semesterlyAmount: number;
+  monthlyAmount: number;
   yearlyAmount: number;
-  yearlyDiscountPercent: number;
   yearlyMonthlyEquivalent: number;
+  yearlyDiscountPercent: number;
 }
 
 interface SubscriptionInfo {
   subscriptionCode: 'FLAT' | 'COMMISSION';
-  billingCycle: 'SEMESTERLY' | 'YEARLY' | null;
+  billingCycle: 'MONTHLY' | 'YEARLY' | null;
   subscriptionStatus: 'ACTIVE' | 'NONE' | 'EXPIRED';
   subscriptionPeriodStart: string | null;
   subscriptionPeriodEnd: string | null;
   subscriptionLastPaidAmount: number | null;
   isActive: boolean;
+  trialAvailable: boolean;
   pricing: SubscriptionPricing;
   commissionRate: number;
 }
@@ -78,18 +77,19 @@ function PricingCard({
   selected,
   onSelect,
   disabled,
+  trialAvailable,
 }: {
-  cycle: 'SEMESTERLY' | 'YEARLY';
+  cycle: 'MONTHLY' | 'YEARLY';
   pricing: SubscriptionPricing;
   locale: Locale;
   selected: boolean;
   onSelect: () => void;
   disabled: boolean;
+  trialAvailable: boolean;
 }) {
-  const isSemesterly = cycle === 'SEMESTERLY';
-  const amount = isSemesterly ? pricing.semesterlyAmount : pricing.yearlyAmount;
-  const months = isSemesterly ? pricing.semesterlyMonths : 12;
-  const perMonth = isSemesterly ? pricing.monthlyPrice : pricing.yearlyMonthlyEquivalent;
+  const isMonthly = cycle === 'MONTHLY';
+  const amount = isMonthly ? pricing.monthlyAmount : pricing.yearlyAmount;
+  const perMonth = isMonthly ? pricing.monthlyAmount : pricing.yearlyMonthlyEquivalent;
 
   return (
     <button
@@ -104,7 +104,7 @@ function PricingCard({
         disabled && 'cursor-not-allowed opacity-60',
       )}
     >
-      {!isSemesterly && (
+      {!isMonthly && (
         <span className="absolute end-3 top-3 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
           <TrendingDown className="size-3" />
           {pricing.yearlyDiscountPercent}% off
@@ -118,13 +118,20 @@ function PricingCard({
         )}
         <div>
           <div className="font-semibold leading-none">
-            {isSemesterly ? `${months}-month` : '12-month'} plan
+            {isMonthly ? 'Monthly' : '12-month (yearly)'} plan
           </div>
           <div className="mt-1 text-2xl font-bold tabular-nums">
             {formatCurrency(amount, locale)}
+            <span className="text-sm font-normal text-muted-foreground">
+              {isMonthly ? '/month' : '/year'}
+            </span>
           </div>
           <div className="mt-0.5 text-xs text-muted-foreground">
-            ≈ {formatCurrency(perMonth, locale)}/month · billed once
+            {isMonthly
+              ? trialAvailable
+                ? 'First month free · then billed monthly'
+                : 'Billed monthly from your wallet'
+              : `≈ ${formatCurrency(perMonth, locale)}/month · billed once`}
           </div>
         </div>
       </div>
@@ -139,7 +146,7 @@ export function SubscriptionManager() {
   const [info, setInfo] = useState<SubscriptionInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCycle, setSelectedCycle] = useState<'SEMESTERLY' | 'YEARLY'>('SEMESTERLY');
+  const [selectedCycle, setSelectedCycle] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -219,8 +226,8 @@ export function SubscriptionManager() {
               <CardTitle className="text-base">Current plan</CardTitle>
               <CardDescription className="mt-0.5">
                 {isFlat
-                  ? `FLAT — fixed monthly subscription`
-                  : `COMMISSION — platform fee on each booking`}
+                  ? `Pro — keep 100% of your booking revenue`
+                  : `Pay-as-you-go — platform commission on each booking`}
               </CardDescription>
             </div>
             <StatusBadge status={info.subscriptionStatus} isActive={info.isActive} />
@@ -234,9 +241,7 @@ export function SubscriptionManager() {
                 <div>
                   <span className="text-muted-foreground">Billing cycle</span>
                   <div className="font-medium capitalize">
-                    {info.billingCycle === 'SEMESTERLY'
-                      ? `${info.pricing.semesterlyMonths}-month`
-                      : '12-month (yearly)'}
+                    {info.billingCycle === 'MONTHLY' ? 'Monthly' : '12-month (yearly)'}
                   </div>
                 </div>
                 {info.subscriptionLastPaidAmount != null && (
@@ -301,21 +306,25 @@ export function SubscriptionManager() {
           <div>
             <h3 className="flex items-center gap-1.5 text-sm font-semibold">
               <Sparkles className="size-4 text-primary" />
-              {needsActivation && isFlat ? 'Renew FLAT plan' : 'Activate FLAT plan'}
+              {needsActivation && isFlat ? 'Renew Pro plan' : 'Activate Pro plan'}
             </h3>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              Pay a fixed monthly fee and keep 100% of booking revenue — no commission deducted.
+              Keep 100% of booking revenue — no commission deducted.{' '}
+              {info.trialAvailable && (
+                <span className="font-medium text-foreground">Your first month is free.</span>
+              )}
             </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <PricingCard
-              cycle="SEMESTERLY"
+              cycle="MONTHLY"
               pricing={info.pricing}
               locale={locale}
-              selected={selectedCycle === 'SEMESTERLY'}
-              onSelect={() => setSelectedCycle('SEMESTERLY')}
+              selected={selectedCycle === 'MONTHLY'}
+              onSelect={() => setSelectedCycle('MONTHLY')}
               disabled={submitting}
+              trialAvailable={info.trialAvailable}
             />
             <PricingCard
               cycle="YEARLY"
@@ -324,6 +333,7 @@ export function SubscriptionManager() {
               selected={selectedCycle === 'YEARLY'}
               onSelect={() => setSelectedCycle('YEARLY')}
               disabled={submitting}
+              trialAvailable={info.trialAvailable}
             />
           </div>
 
@@ -341,7 +351,9 @@ export function SubscriptionManager() {
           >
             {submitting
               ? 'Processing…'
-              : `Activate ${selectedCycle === 'YEARLY' ? '12-month' : `${info.pricing.semesterlyMonths}-month`} FLAT plan`}
+              : info.trialAvailable && selectedCycle === 'MONTHLY'
+                ? 'Start free month'
+                : `Activate ${selectedCycle === 'YEARLY' ? '12-month' : 'monthly'} Pro plan`}
           </Button>
         </div>
       ) : (
@@ -392,12 +404,13 @@ export function SubscriptionManager() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <PricingCard
-                cycle="SEMESTERLY"
+                cycle="MONTHLY"
                 pricing={info.pricing}
                 locale={locale}
-                selected={selectedCycle === 'SEMESTERLY'}
-                onSelect={() => setSelectedCycle('SEMESTERLY')}
+                selected={selectedCycle === 'MONTHLY'}
+                onSelect={() => setSelectedCycle('MONTHLY')}
                 disabled={submitting}
+                trialAvailable={info.trialAvailable}
               />
               <PricingCard
                 cycle="YEARLY"
@@ -406,6 +419,7 @@ export function SubscriptionManager() {
                 selected={selectedCycle === 'YEARLY'}
                 onSelect={() => setSelectedCycle('YEARLY')}
                 disabled={submitting}
+                trialAvailable={info.trialAvailable}
               />
             </div>
             {actionError && (

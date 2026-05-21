@@ -7,7 +7,7 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db, type ProgramRecord } from '@/server/db/store';
-import { findIncubatorByUserEmail } from '@/server/incubator/service';
+import { findIncubatorByUserEmail, getEffectiveSubscriptionCode } from '@/server/incubator/service';
 import { listProgramsByIncubator } from '@/server/bookings/program-catalog';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { slugify, uniqueSlug } from '@/lib/slugify';
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   }
 
   const paymentMethods: ('ONLINE' | 'CASH')[] =
-    inc.subscriptionCode === 'COMMISSION' ? ['ONLINE'] : input.acceptedPaymentMethods;
+    getEffectiveSubscriptionCode(inc) === 'COMMISSION' ? ['ONLINE'] : input.acceptedPaymentMethods;
 
   const now = new Date().toISOString();
   const record = await db.update<ProgramRecord>((d) => {

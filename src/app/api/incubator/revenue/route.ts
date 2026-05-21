@@ -8,6 +8,7 @@ import { requireApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { json, jsonError } from '@/server/http/json';
 import { platformCommissions } from '@/config/memberships';
+import { getEffectiveSubscriptionCode } from '@/server/incubator/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,9 @@ export async function GET() {
   const incubator = data.incubators.find((i) => i.managerId === guard.user.id);
   if (!incubator) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile found');
 
-  const subCode = incubator.subscriptionCode ?? incubator.subscriptionTier ?? 'COMMISSION';
+  // Effective plan applies read-time expiry: an expired/lapsed Pro plan reverts
+  // to commission automatically, so commission resumes without a sweep.
+  const subCode = getEffectiveSubscriptionCode(incubator);
   const commissionRate =
     subCode === 'COMMISSION' ? platformCommissions.incubatorBooking : 0;
 
@@ -86,7 +89,7 @@ export async function GET() {
     incubator: {
       id: incubator.id,
       name: incubator.name,
-      subscriptionTier: (incubator.subscriptionCode ?? incubator.subscriptionTier ?? 'COMMISSION') as 'COMMISSION' | 'FLAT',
+      subscriptionTier: subCode,
       commissionRate,
     },
     totals,

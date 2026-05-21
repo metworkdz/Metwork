@@ -1,15 +1,27 @@
 /**
  * Incubator server-side helpers.
  *
- * Subscription pricing:
- *   FLAT / SEMESTERLY — 5 000 DZD × semesterlyMonths (default 6) = 30 000 DZD
- *   FLAT / YEARLY     — monthly × 12 × (1 − yearlyDiscount%) = 42 000 DZD default
- *   COMMISSION        — no subscription fee; platform takes commissionRate on bookings
+ * Subscription pricing (the "Pro" / FLAT plan):
+ *   FLAT / MONTHLY — flatMonthlyPrice (default 5 000 DZD), charged each cycle
+ *   FLAT / YEARLY  — monthly × 12 × (1 − yearlyDiscount%) = 42 000 DZD default
+ *   COMMISSION     — no subscription fee; platform takes commissionRate on bookings
+ *
+ * Monthly Pro is debited from the incubator owner's wallet each cycle by the
+ * billing cron (`/api/cron/incubator-billing`). Yearly Pro is paid upfront and
+ * reverts to COMMISSION at read-time once the paid period lapses. The first-ever
+ * Pro activation grants one free month (tracked via `proTrialUsedAt`).
  *
  * All prices sourced from db.meta.platformConfig (admin-editable), falling
  * back to defaultPlatformConfig if not yet set.
  */
-import { db, type IncubatorRecord, defaultPlatformConfig, type PlatformConfig } from '@/server/db/store';
+import {
+  db,
+  type IncubatorRecord,
+  type IncubatorBillingCycle,
+  type IncubatorSubscription,
+  defaultPlatformConfig,
+  type PlatformConfig,
+} from '@/server/db/store';
 
 /* ─────────────────────────── Config helpers ─────────────────────────── */
 
@@ -21,36 +33,30 @@ export async function getPlatformConfig(): Promise<PlatformConfig> {
 /* ─────────────────────────── Pricing helpers ─────────────────────────── */
 
 export interface SubscriptionPricing {
-  semesterlyAmount: number;   // total charged for a semester
-  yearlyAmount: number;       // total charged for a year
-  monthlyEquivalentSemesterly: number;
-  monthlyEquivalentYearly: number;
+  /** Charged for one month on the MONTHLY cycle. */
+  monthlyAmount: number;
+  /** Charged once for a full year on the YEARLY cycle (discounted). */
+  yearlyAmount: number;
+  /** Per-month display figure shown for the YEARLY plan (yearly ÷ 12). */
+  yearlyMonthlyEquivalent: number;
   yearlyDiscountPercent: number;
-  semesterlyMonths: number;
 }
 
 export function computeSubscriptionPricing(cfg: PlatformConfig): SubscriptionPricing {
-  const { flatMonthlyPrice, semesterlyMonths, yearlyDiscountPercent } = cfg;
-  const semesterlyAmount = flatMonthlyPrice * semesterlyMonths;
+  const { flatMonthlyPrice, yearlyDiscountPercent } = cfg;
   const yearlyAmount = Math.round(flatMonthlyPrice * 12 * (1 - yearlyDiscountPercent / 100));
   return {
-    semesterlyAmount,
+    monthlyAmount: flatMonthlyPrice,
     yearlyAmount,
-    monthlyEquivalentSemesterly: flatMonthlyPrice,
-    monthlyEquivalentYearly: Math.round(yearlyAmount / 12),
+    yearlyMonthlyEquivalent: Math.round(yearlyAmount / 12),
     yearlyDiscountPercent,
-    semesterlyMonths,
   };
 }
 
 /** Compute the period-end date from a subscription start + billing cycle. */
-export function computePeriodEnd(
-  start: string,
-  billingCycle: 'SEMESTERLY' | 'YEARLY',
-  semesterlyMonths: number,
-): string {
+export function computePeriodEnd(start: string, billingCycle: IncubatorBillingCycle): string {
   const d = new Date(start);
-  d.setUTCMonth(d.getUTCMonth() + (billingCycle === 'YEARLY' ? 12 : semesterlyMonths));
+  d.setUTCMonth(d.getUTCMonth() + (billingCycle === 'YEARLY' ? 12 : 1));
   return d.toISOString();
 }
 
@@ -108,4 +114,25 @@ export function isSubscriptionActive(inc: IncubatorRecord): boolean {
   if (inc.subscriptionStatus !== 'ACTIVE') return false;
   if (!inc.subscriptionPeriodEnd) return false;
   return new Date(inc.subscriptionPeriodEnd) > new Date();
+}
+
+/**
+ * The incubator's *effective* billing model, applying read-time expiry.
+ *
+ * Returns 'FLAT' only while a paid (or trial) FLAT period is still running;
+ * otherwise 'COMMISSION'. This mirrors the lazy membership-expiry pattern, so
+ * an expired Pro plan automatically reverts to commission for revenue,
+ * payment-method gating, etc. — without needing a sweep to flip the stored code.
+ */
+export function getEffectiveSubscriptionCode(inc: IncubatorRecord): IncubatorSubscription {
+  return isSubscriptionActive(inc) ? 'FLAT' : 'COMMISSION';
+}
+
+/**
+ * Whether this incubator is on the *monthly* Pro plan and therefore subject to
+ * recurring wallet billing + the minimum-balance withdrawal guard. Yearly Pro
+ * and commission incubators are NOT subject.
+ */
+export function isMonthlyFlatActive(inc: IncubatorRecord): boolean {
+  return isSubscriptionActive(inc) && inc.billingCycle === 'MONTHLY';
 }

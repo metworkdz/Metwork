@@ -4,6 +4,7 @@ import { RevenueDashboard } from '@/components/features/incubator/revenue-dashbo
 import { requireRole } from '@/lib/auth-guards';
 import { db } from '@/server/db/store';
 import { platformCommissions } from '@/config/memberships';
+import { getEffectiveSubscriptionCode } from '@/server/incubator/service';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -32,8 +33,8 @@ export default async function IncubatorRevenuePage({ params }: PageProps) {
     );
   }
 
-  // Check either field for backward compatibility (legacy records use subscriptionTier)
-  const subCode = incubator.subscriptionCode ?? incubator.subscriptionTier ?? 'COMMISSION';
+  // Effective plan applies read-time expiry — a lapsed Pro plan reverts to commission.
+  const subCode = getEffectiveSubscriptionCode(incubator);
   const commissionRate =
     subCode === 'COMMISSION' ? platformCommissions.incubatorBooking : 0;
 
@@ -89,7 +90,7 @@ export default async function IncubatorRevenuePage({ params }: PageProps) {
     incubator: {
       id: incubator.id,
       name: incubator.name,
-      subscriptionTier: (incubator.subscriptionCode ?? incubator.subscriptionTier ?? 'COMMISSION') as 'COMMISSION' | 'FLAT',
+      subscriptionTier: subCode,
       commissionRate,
     },
     totals,

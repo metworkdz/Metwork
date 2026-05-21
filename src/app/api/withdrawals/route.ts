@@ -15,6 +15,7 @@ import { fromZod, json, jsonError } from '@/server/http/json';
 import { sendWithdrawalRequestedEmail } from '@/server/notifications/mock';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { track } from '@/lib/analytics';
+import { getPlatformConfig, isMonthlyFlatActive } from '@/server/incubator/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,6 +51,11 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
+  // Monthly-Pro incubator owners must keep at least one month's subscription fee
+  // in their wallet so the billing cron can always renew. Fetched outside the
+  // critical section; the plan check itself happens inside the atomic update.
+  const monthlyFee = (await getPlatformConfig()).flatMonthlyPrice;
+
   const result = await db.update((d) => {
     // Ensure wallet exists and has sufficient funds
     let wallet = d.wallets.find((w) => w.userId === guard.user.id);
@@ -61,6 +67,22 @@ export async function POST(req: NextRequest) {
     }
     if (wallet.balance < input.amount) {
       return { ok: false, reason: 'INSUFFICIENT_FUNDS', balance: wallet.balance, required: input.amount } as const;
+    }
+
+    // Minimum-balance guard for monthly-Pro incubator owners only. Annual Pro
+    // and commission incubators (and all other users) are unaffected.
+    const ownedIncubator = (d.incubators ?? []).find(
+      (inc) => inc.managerId === guard.user.id || inc.email === guard.user.email,
+    );
+    if (ownedIncubator && isMonthlyFlatActive(ownedIncubator)) {
+      if (wallet.balance - input.amount < monthlyFee) {
+        return {
+          ok: false,
+          reason: 'MIN_BALANCE',
+          balance: wallet.balance,
+          minBalance: monthlyFee,
+        } as const;
+      }
     }
 
     const now = new Date().toISOString();
@@ -105,6 +127,14 @@ export async function POST(req: NextRequest) {
   if (!result.ok) {
     if (result.reason === 'WALLET_FROZEN') {
       return jsonError(409, 'WALLET_FROZEN', 'Wallet is frozen');
+    }
+    if (result.reason === 'MIN_BALANCE') {
+      return jsonError(
+        422,
+        'MIN_BALANCE',
+        `As a monthly Pro incubator, you must keep at least ${result.minBalance.toLocaleString()} DZD (one month's subscription) in your wallet.`,
+        { balance: result.balance, minBalance: result.minBalance },
+      );
     }
     return jsonError(422, 'INSUFFICIENT_FUNDS', 'Insufficient wallet balance', {
       balance: result.balance,

@@ -139,18 +139,21 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
               <CardContent className="flex-1">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-semibold tracking-tight">
-                    {tier.priceMonthly === 0 ? 'Free' : formatCurrency(tier.priceMonthly, lang)}
+                    {tier.priceMonthly === 0 ? tm('tiers.free.name') : formatCurrency(tier.priceMonthly, lang)}
                   </span>
                   {tier.priceMonthly > 0 && (
-                    <span className="text-sm text-muted-foreground">/month</span>
+                    <span className="text-sm text-muted-foreground">{tm('perMonth')}</span>
                   )}
                 </div>
                 {tier.priceMonthly > 0 && (
                   <p className="mt-1 text-xs text-muted-foreground">
-                    or {formatCurrency(Math.round(tier.priceYearly), lang)}/year
-                    {'yearlyDiscountPercent' in tier && tier.yearlyDiscountPercent
-                      ? ` — save ${tier.yearlyDiscountPercent}%`
-                      : ''}
+                    {tm('billedSemesterlyOrYearly', {
+                      yearly: formatCurrency(Math.round(tier.priceYearly), lang),
+                      percent:
+                        'yearlyDiscountPercent' in tier && tier.yearlyDiscountPercent
+                          ? tier.yearlyDiscountPercent
+                          : 30,
+                    })}
                   </p>
                 )}
                 <ul className="mt-5 space-y-2 text-sm">
@@ -182,6 +185,7 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
                   <MembershipUpgradeButton
                     plan={tier.code as 'ENTREPRENEUR' | 'STARTUP'}
                     priceMonthly={tier.priceMonthly}
+                    priceSemesterly={'priceSemesterly' in tier ? tier.priceSemesterly : tier.priceMonthly * 6}
                     priceYearly={Math.round(tier.priceYearly)}
                     planName={copy.name}
                     highlighted={isHighlighted}

@@ -10,7 +10,7 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db, type SpaceRecord } from '@/server/db/store';
-import { findIncubatorByUserEmail } from '@/server/incubator/service';
+import { findIncubatorByUserEmail, getEffectiveSubscriptionCode } from '@/server/incubator/service';
 import { listSpacesByIncubator } from '@/server/bookings/space-catalog';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -65,9 +65,10 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
-  // Commission-plan incubators can only accept ONLINE payment.
+  // Commission-plan incubators can only accept ONLINE payment. Uses the
+  // effective plan so a lapsed Pro plan reverts to ONLINE-only automatically.
   const paymentMethods: ('ONLINE' | 'CASH')[] =
-    inc.subscriptionCode === 'COMMISSION' ? ['ONLINE'] : input.acceptedPaymentMethods;
+    getEffectiveSubscriptionCode(inc) === 'COMMISSION' ? ['ONLINE'] : input.acceptedPaymentMethods;
 
   const now = new Date().toISOString();
   const record = await db.update<SpaceRecord>((d) => {

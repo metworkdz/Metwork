@@ -6,7 +6,7 @@
  * UserMembershipRecord.  Supports promo codes (percentage discounts).
  *
  * Body:
- *   { plan: 'ENTREPRENEUR' | 'STARTUP', billingPeriod: 'monthly' | 'yearly', promoCode?: string }
+ *   { plan: 'ENTREPRENEUR' | 'STARTUP', billingPeriod: 'semesterly' | 'yearly', promoCode?: string }
  *
  * Response (201):
  *   { plan, expiresAt, amountCharged, discountApplied }
@@ -25,7 +25,7 @@ export const dynamic = 'force-dynamic';
 
 const schema = z.object({
   plan: z.enum(['ENTREPRENEUR', 'STARTUP']),
-  billingPeriod: z.enum(['monthly', 'yearly']).default('monthly'),
+  billingPeriod: z.enum(['semesterly', 'yearly']).default('semesterly'),
   promoCode: z.string().optional(),
 });
 
@@ -71,8 +71,8 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Price computation ──────────────────────────────────────────────────────
-  const prices = MEMBERSHIP_PRICES[input.plan] ?? { monthly: 0, yearly: 0 };
-  const basePrice = input.billingPeriod === 'yearly' ? prices.yearly : prices.monthly;
+  const prices = MEMBERSHIP_PRICES[input.plan] ?? { monthly: 0, semesterly: 0, yearly: 0 };
+  const basePrice = input.billingPeriod === 'yearly' ? prices.yearly : prices.semesterly;
   const discountAmount = Math.floor((basePrice * discountPercent) / 100);
   const finalPrice = Math.max(0, basePrice - discountAmount);
 
@@ -80,9 +80,9 @@ export async function POST(req: NextRequest) {
   const now = new Date();
   const expiresAt = new Date(now);
   if (input.billingPeriod === 'yearly') {
-    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    expiresAt.setMonth(expiresAt.getMonth() + 12);
   } else {
-    expiresAt.setMonth(expiresAt.getMonth() + 1);
+    expiresAt.setMonth(expiresAt.getMonth() + 6);
   }
   const expiresAtIso = expiresAt.toISOString();
 

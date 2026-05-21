@@ -326,7 +326,7 @@ export interface ContactSubmissionRecord {
 
 export type IncubatorStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 export type IncubatorSubscription = 'COMMISSION' | 'FLAT';
-export type IncubatorBillingCycle = 'SEMESTERLY' | 'YEARLY';
+export type IncubatorBillingCycle = 'MONTHLY' | 'YEARLY';
 export type IncubatorSubscriptionStatus = 'ACTIVE' | 'NONE' | 'EXPIRED';
 
 export interface IncubatorRecord {
@@ -349,6 +349,11 @@ export interface IncubatorRecord {
   subscriptionPeriodStart?: string | null;
   subscriptionPeriodEnd?: string | null;
   subscriptionLastPaidAmount?: number | null;
+  /**
+   * ISO timestamp of the first-ever Pro (FLAT) activation. Set once and never
+   * cleared — guarantees the one-month free trial is granted only once.
+   */
+  proTrialUsedAt?: string | null;
   logoUrl?: string | null;
   stampUrl?: string | null;
   /** Physical / postal address — printed on receipts. */
@@ -1364,6 +1369,40 @@ const empty: DbShape = {
 };
 
 // ---------------------------------------------------------------------------
+// Local JSON file backend (dev / CI — activated by USE_LOCAL_DB=true)
+// ---------------------------------------------------------------------------
+
+function isLocalMode(): boolean {
+  return process.env.USE_LOCAL_DB === 'true';
+}
+
+function localDbPath(): string {
+  // Keep the file outside src/ so hot-reload doesn't re-trigger on writes.
+  return process.env.LOCAL_DB_PATH ?? '.local-db.json';
+}
+
+function localLoad(): DbShape {
+  // Node is guaranteed in this path (API routes, seed scripts).
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fs = require('fs') as typeof import('fs');
+  const p = localDbPath();
+  if (!fs.existsSync(p)) return structuredClone(empty);
+  try {
+    const raw = fs.readFileSync(p, 'utf8');
+    const parsed: Partial<DbShape> = JSON.parse(raw);
+    return { ...empty, ...parsed };
+  } catch {
+    return structuredClone(empty);
+  }
+}
+
+function localPersist(data: DbShape): void {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fs = require('fs') as typeof import('fs');
+  fs.writeFileSync(localDbPath(), JSON.stringify(data, null, 2), 'utf8');
+}
+
+// ---------------------------------------------------------------------------
 // Supabase client (service-role — never exposed to the browser)
 // ---------------------------------------------------------------------------
 
@@ -1419,6 +1458,12 @@ async function load(): Promise<DbShape> {
   // Cache is absent or stale — discard and re-fetch.
   cache = null;
 
+  if (isLocalMode()) {
+    cache = localLoad();
+    cacheAt = Date.now();
+    return cache;
+  }
+
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('app_state')
@@ -1461,6 +1506,10 @@ async function load(): Promise<DbShape> {
  * Always updates row id = 1.
  */
 async function persist(db: DbShape): Promise<void> {
+  if (isLocalMode()) {
+    localPersist(db);
+    return;
+  }
   const supabase = getSupabase();
   const { error } = await supabase
     .from('app_state')

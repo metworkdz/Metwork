@@ -12,19 +12,24 @@ import type { Locale } from '@/i18n/config';
 
 interface Props {
   plan: 'ENTREPRENEUR' | 'STARTUP';
+  /** Per-month display figure (never charged directly). */
   priceMonthly: number;
+  /** Full amount charged for a 6-month period (monthly × 6, no discount). */
+  priceSemesterly: number;
+  /** Full amount charged for a 12-month period (monthly × 12 × 0.7). */
   priceYearly: number;
   planName: string;
   highlighted?: boolean;
   locale: Locale;
 }
 
-type BillingPeriod = 'monthly' | 'yearly';
+type BillingPeriod = 'semesterly' | 'yearly';
 type DialogStep = 'idle' | 'confirm' | 'success' | 'error';
 
 export function MembershipUpgradeButton({
   plan,
   priceMonthly,
+  priceSemesterly,
   priceYearly,
   planName,
   highlighted,
@@ -33,7 +38,7 @@ export function MembershipUpgradeButton({
   const t = useTranslations('entrepreneur.membershipUpgrade');
   const router = useRouter();
   const [step, setStep] = useState<DialogStep>('idle');
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('semesterly');
   const [promoCode, setPromoCode] = useState('');
   const [promoStatus, setPromoStatus] = useState<{
     checking: boolean;
@@ -44,7 +49,8 @@ export function MembershipUpgradeButton({
   const [errorMsg, setErrorMsg] = useState('');
   const [isPending, startTransition] = useTransition();
 
-  const basePrice = billingPeriod === 'yearly' ? priceYearly : priceMonthly;
+  const basePrice = billingPeriod === 'yearly' ? priceYearly : priceSemesterly;
+  const perMonth = billingPeriod === 'yearly' ? Math.round(priceYearly / 12) : priceMonthly;
   const discountAmount = Math.floor((basePrice * promoStatus.discount) / 100);
   const finalPrice = Math.max(0, basePrice - discountAmount);
 
@@ -148,7 +154,7 @@ export function MembershipUpgradeButton({
 
       {/* Billing period toggle */}
       <div className="flex overflow-hidden rounded-md border border-input text-xs font-medium">
-        {(['monthly', 'yearly'] as BillingPeriod[]).map((period) => (
+        {(['semesterly', 'yearly'] as BillingPeriod[]).map((period) => (
           <button
             key={period}
             type="button"
@@ -160,12 +166,28 @@ export function MembershipUpgradeButton({
                 : 'bg-background text-muted-foreground hover:bg-muted',
             )}
           >
-            {period === 'monthly'
-              ? t('billingMonthly', { price: formatCurrency(priceMonthly, locale) })
-              : t('billingYearly', { price: formatCurrency(priceYearly, locale) })}
+            {period === 'semesterly' ? t('billingSemesterly') : t('billingYearly')}
           </button>
         ))}
       </div>
+
+      {/* Per-month price + billing cadence */}
+      <div className="flex items-baseline justify-center gap-1.5 text-center">
+        <span className="text-2xl font-semibold tracking-tight">
+          {formatCurrency(perMonth, locale)}
+        </span>
+        <span className="text-xs text-muted-foreground">{t('perMonth')}</span>
+        {billingPeriod === 'yearly' && (
+          <span className="ms-1 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700">
+            {t('yearlySave', { percent: 30 })}
+          </span>
+        )}
+      </div>
+      <p className="-mt-1 text-center text-[11px] text-muted-foreground">
+        {billingPeriod === 'yearly'
+          ? t('billedYearly', { total: formatCurrency(priceYearly, locale) })
+          : t('billedSemesterly', { total: formatCurrency(priceSemesterly, locale) })}
+      </p>
 
       {/* Promo code */}
       <div className="flex gap-2">

@@ -27,8 +27,9 @@ export const membershipTiers = [
     code: 'ENTREPRENEUR',
     nameKey: 'membership.tiers.entrepreneur.name',
     descriptionKey: 'membership.tiers.entrepreneur.description',
-    priceMonthly: 4500,
-    priceYearly: 4500 * 12 * 0.7, // 30% yearly discount
+    priceMonthly: 3500,
+    priceSemesterly: 3500 * 6, // billed every 6 months, no discount
+    priceYearly: Math.round(3500 * 12 * 0.7), // 30% yearly discount
     yearlyDiscountPercent: 30,
     features: [
       'membership.features.allFree',
@@ -45,8 +46,9 @@ export const membershipTiers = [
     code: 'STARTUP',
     nameKey: 'membership.tiers.startup.name',
     descriptionKey: 'membership.tiers.startup.description',
-    priceMonthly: 8000,
-    priceYearly: 8000 * 12 * 0.7,
+    priceMonthly: 6500,
+    priceSemesterly: 6500 * 6, // billed every 6 months, no discount
+    priceYearly: Math.round(6500 * 12 * 0.7),
     yearlyDiscountPercent: 30,
     features: [
       'membership.features.allEntrepreneur',
@@ -64,9 +66,9 @@ export const membershipTiers = [
 export type MembershipCode = (typeof membershipTiers)[number]['code'];
 
 /**
- * Incubator subscription model.
- * Either pay 6000 DZD/month flat OR give 20% commission per booking.
- * Incubator chooses one at signup.
+ * Incubator subscription model (the "Pro" plan).
+ * Either pay 5000 DZD/month (billed monthly or yearly at 30 % off) OR give
+ * 20 % commission per booking. Incubator chooses one and can switch anytime.
  */
 export const incubatorSubscriptionTiers = [
   {
@@ -80,7 +82,8 @@ export const incubatorSubscriptionTiers = [
     code: 'FLAT',
     nameKey: 'incubator.subscription.flat.name',
     descriptionKey: 'incubator.subscription.flat.description',
-    priceMonthly: 6000,
+    priceMonthly: 5000,
+    priceYearly: Math.round(5000 * 12 * 0.7), // 42 000 DZD, 30 % off
     commissionRate: 0,
   },
 ] as const;

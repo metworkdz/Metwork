@@ -4,7 +4,12 @@
  *
  * Body for POST:
  *   { action: 'SWITCH_TO_COMMISSION' }
- *   { action: 'ACTIVATE_FLAT'; billingCycle: 'SEMESTERLY' | 'YEARLY' }
+ *   { action: 'ACTIVATE_FLAT'; billingCycle: 'MONTHLY' | 'YEARLY' }
+ *
+ * Trial: the first-ever FLAT activation on the MONTHLY cycle grants one free
+ * month (no wallet charge), tracked once via `proTrialUsedAt`. The billing cron
+ * charges the monthly fee when the free month ends (or downgrades to commission
+ * if the wallet can't cover it).
  */
 import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
@@ -27,7 +32,7 @@ const switchSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('SWITCH_TO_COMMISSION') }),
   z.object({
     action: z.literal('ACTIVATE_FLAT'),
-    billingCycle: z.enum(['SEMESTERLY', 'YEARLY']),
+    billingCycle: z.enum(['MONTHLY', 'YEARLY']),
   }),
 ]);
 
@@ -49,6 +54,8 @@ export async function GET() {
     subscriptionPeriodEnd:    inc.subscriptionPeriodEnd,
     subscriptionLastPaidAmount: inc.subscriptionLastPaidAmount,
     isActive:                 isSubscriptionActive(inc),
+    /** True when the one-month free trial has not yet been consumed. */
+    trialAvailable:           !inc.proTrialUsedAt,
     pricing,
     commissionRate:           cfg.commissionRate,
   });
@@ -87,52 +94,65 @@ export async function POST(req: NextRequest) {
       record.subscriptionPeriodEnd    = null;
       record.subscriptionLastPaidAmount = null;
     } else {
-      // ACTIVATE_FLAT — debit the incubator owner's wallet before activating
+      // ACTIVATE_FLAT — activate the Pro plan, debiting the owner's wallet.
+      //
+      // First-ever activation on the MONTHLY cycle = one free trial month
+      // (no charge). The free month always runs on a monthly cadence; the
+      // billing cron charges the monthly fee when it ends. Choosing YEARLY
+      // up-front is a normal paid activation (and consumes the trial slot).
       const pricing     = computeSubscriptionPricing(cfg);
-      const paidAmount  = input.billingCycle === 'YEARLY'
-        ? pricing.yearlyAmount
-        : pricing.semesterlyAmount;
-      const periodEnd   = computePeriodEnd(now, input.billingCycle, cfg.semesterlyMonths);
+      const isTrial     = !record.proTrialUsedAt && input.billingCycle === 'MONTHLY';
+      const effectiveCycle = isTrial ? 'MONTHLY' : input.billingCycle;
+      const paidAmount  = isTrial
+        ? 0
+        : effectiveCycle === 'YEARLY'
+          ? pricing.yearlyAmount
+          : pricing.monthlyAmount;
+      const periodEnd   = computePeriodEnd(now, effectiveCycle);
 
-      // Find the incubator owner's userId (by managerId or by email match)
-      const ownerUser = (d.users ?? []).find(
-        (u) => u.id === record.managerId || u.email === record.email,
-      );
-      if (!ownerUser) return 'NO_OWNER';
+      if (paidAmount > 0) {
+        // Find the incubator owner's userId (by managerId or by email match)
+        const ownerUser = (d.users ?? []).find(
+          (u) => u.id === record.managerId || u.email === record.email,
+        );
+        if (!ownerUser) return 'NO_OWNER';
 
-      const wallet = (d.wallets ?? []).find((w) => w.userId === ownerUser.id);
-      if (!wallet || wallet.status === 'FROZEN') return 'WALLET_NOT_FOUND';
-      if (wallet.balance < paidAmount) return 'INSUFFICIENT_FUNDS';
+        const wallet = (d.wallets ?? []).find((w) => w.userId === ownerUser.id);
+        if (!wallet || wallet.status === 'FROZEN') return 'WALLET_NOT_FOUND';
+        if (wallet.balance < paidAmount) return 'INSUFFICIENT_FUNDS';
 
-      // Debit the wallet
-      wallet.balance  -= paidAmount;
-      wallet.updatedAt = now;
+        // Debit the wallet
+        wallet.balance  -= paidAmount;
+        wallet.updatedAt = now;
 
-      const tx = {
-        id:            randomUUID(),
-        walletId:      wallet.id,
-        userId:        ownerUser.id,
-        type:          'PAYMENT' as const,
-        amount:        -paidAmount,
-        balanceAfter:  wallet.balance,
-        status:        'COMPLETED' as const,
-        description:   `Flat subscription — ${input.billingCycle}`,
-        reference:     `subscription-flat-${record.id}-${now}`,
-        provider:      'internal',
-        providerTxnId: null,
-        metadata:      { incubatorId: record.id, billingCycle: input.billingCycle },
-        createdAt:     now,
-        completedAt:   now,
-      };
-      if (!Array.isArray(d.transactions)) d.transactions = [];
-      d.transactions.push(tx);
+        const tx = {
+          id:            randomUUID(),
+          walletId:      wallet.id,
+          userId:        ownerUser.id,
+          type:          'PAYMENT' as const,
+          amount:        -paidAmount,
+          balanceAfter:  wallet.balance,
+          status:        'COMPLETED' as const,
+          description:   `Pro subscription — ${effectiveCycle}`,
+          reference:     `subscription-flat-${record.id}-${now}`,
+          provider:      'internal',
+          providerTxnId: null,
+          metadata:      { incubatorId: record.id, billingCycle: effectiveCycle },
+          createdAt:     now,
+          completedAt:   now,
+        };
+        if (!Array.isArray(d.transactions)) d.transactions = [];
+        d.transactions.push(tx);
+      }
 
       record.subscriptionCode           = 'FLAT';
-      record.billingCycle               = input.billingCycle;
+      record.billingCycle               = effectiveCycle;
       record.subscriptionStatus         = 'ACTIVE';
       record.subscriptionPeriodStart    = now;
       record.subscriptionPeriodEnd      = periodEnd;
       record.subscriptionLastPaidAmount = paidAmount;
+      // Mark the trial consumed on the first-ever activation (any cycle).
+      record.proTrialUsedAt             = record.proTrialUsedAt ?? now;
     }
 
     record.updatedAt = now;
@@ -153,6 +173,8 @@ export async function POST(req: NextRequest) {
     subscriptionPeriodEnd:      updated.subscriptionPeriodEnd,
     subscriptionLastPaidAmount: updated.subscriptionLastPaidAmount,
     isActive:                   isSubscriptionActive(updated),
+    trialAvailable:             !updated.proTrialUsedAt,
     pricing,
+    commissionRate:             cfg.commissionRate,
   });
 }
