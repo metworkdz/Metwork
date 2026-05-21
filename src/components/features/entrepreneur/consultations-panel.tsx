@@ -111,6 +111,11 @@ export function ConsultationsPanel({
   userPhone,
 }: Props) {
   const t = useTranslations('pages.dashboard.entrepreneur.consultations.quotaCard');
+  // Additional namespaces used inside the render tree below. Previously
+  // referenced (tCommon, tAdminBookings) without being declared — a refactor
+  // dropped the calls, leaving runtime ReferenceErrors that crashed the page.
+  const tCommon         = useTranslations('common');
+  const tAdminBookings  = useTranslations('admin.bookings');
   const [bookings, setBookings]     = useState(initial);
   const [dialogOpen, setDialogOpen] = useState(false);
 

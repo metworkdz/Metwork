@@ -14,6 +14,7 @@
  */
 import { useState, useCallback, useEffect } from 'react';
 import { Clock, Calendar, Timer, Tag, Check, AlertCircle, DollarSign, Gift } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/components/providers/auth-provider';
 import { resolveTier } from '@/lib/tier-utils';
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
@@ -97,6 +98,10 @@ export function BookConsultationDialog({
 }: BookConsultationDialogProps) {
   const { user } = useAuth();
   const userTier = user ? resolveTier(user) : 'EXPLORER';
+  // Translation scope for the booking dialog. ~46 references downstream
+  // assume `t` is in scope — a previous refactor dropped this call and
+  // left the entire dialog throwing ReferenceError on every render.
+  const t = useTranslations('mentors.bookConsultation');
 
   const [name,        setName]        = useState('');
   const [email,       setEmail]       = useState('');
