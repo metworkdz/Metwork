@@ -86,3 +86,103 @@
 {"agent":"ADMIN","id":"A23","name":"Users Table Rows","status":"PASS","detail":"11 rows","ts":"2026-05-21T23:15:06.541Z"}
 {"agent":"ADMIN","id":"A24","name":"Incubators List","status":"PASS","ts":"2026-05-21T23:15:08.688Z"}
 {"agent":"ADMIN","id":"A25","name":"Mobile Responsive","status":"PASS","ts":"2026-05-21T23:15:10.187Z"}
+{"agent":"EXPLORER","id":"E3-13","name":"Arabic RTL Direction","status":"PASS","ts":"2026-06-01T13:57:00.660Z"}
+{"agent":"INCUBATOR","id":"I01","name":"Login & Dashboard","status":"PASS","ts":"2026-06-01T14:13:28.785Z"}
+{"agent":"FOUNDER","id":"E2-01","name":"Login & Dashboard","status":"PASS","ts":"2026-06-01T14:13:28.992Z"}
+{"agent":"BUILDER","id":"E1-01","name":"Login & Dashboard","status":"PASS","ts":"2026-06-01T14:13:29.575Z"}
+{"agent":"ADMIN","id":"A01","name":"Login & Dashboard","status":"PASS","ts":"2026-06-01T14:13:29.875Z"}
+{"agent":"EXPLORER","id":"E3-01","name":"Login & Dashboard","status":"PASS","ts":"2026-06-01T14:13:29.899Z"}
+{"agent":"ADMIN","id":"A02","name":"No Console Errors","status":"FAIL","detail":"IntlError: MISSING_MESSAGE: Could not resolve `dashboard.mentors` in messages for locale `en`.\n    at getFallbackFromErrorAndNotify (webpack-internal:///(app-pages-browser)/./node_modules/use-intl/dist/esm/development/initializeConfig-CUsOI8u2.js:108:19)\n    at translateBaseFn (webpack-internal:///(app-pages-browser)/./node_modules/use-intl/dist/esm/development/initializeConfig-CUsOI8u2.js:141:18)\n    at translateFn (webpack-internal:///(app-pages-browser)/./node_modules/use-intl/dist/esm/development/initializeConfig-CUsOI8u2.js:173:20)\n    at eval (webpack-internal:///(app-pages-browser)/./src/components/layout/dashboard-sidebar.tsx:78:51)\n    at Array.map (<anonymous>)\n    at DashboardSidebar (webpack-internal:///(app-pages-browser)/./src/components/layout/dashboard-sidebar.tsx:44:37)\n    at renderWithHooks (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:11121:18)\n    at updateFunctionComponent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:16290:20)\n    at mountLazyComponent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:16765:17)\n    at beginWork$1 (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:18464:16)\n    at beginWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:26927:14)\n    at performUnitOfWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:25748:12)\n    at workLoopConcurrent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:25734:5)\n    at renderRootConcurrent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:25690:9)\n    at performConcurrentWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:24504:38)\n    at workLoop (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:256:34)\n    at flushWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:225:14)\n    at MessagePort.performWorkUntilDeadline (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:534:21) | IntlError: MISSING_MESSAGE: Could not resolve `dashboard.mentorRevenue` in messages for locale `en`.\n    at getFallbackFromErrorAndNotify (webpack-internal:///(app-pages-browser)/./node_modules/use-intl/dist/esm/development/initializeConfig-CUsOI8u2.js:108:19)\n    at translateBaseFn (webpack-internal:///(app-pages-browser)/./node_modules/use-intl/dist/esm/development/initializeConfig-CUsOI8u2.js:141:18)\n    at translateFn (webpack-internal:///(app-pages-browser)/./node_modules/use-intl/dist/esm/development/initializeConfig-CUsOI8u2.js:173:20)\n    at eval (webpack-internal:///(app-pages-browser)/./src/components/layout/dashboard-sidebar.tsx:78:51)\n    at Array.map (<anonymous>)\n    at DashboardSidebar (webpack-internal:///(app-pages-browser)/./src/components/layout/dashboard-sidebar.tsx:44:37)\n    at renderWithHooks (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:11121:18)\n    at updateFunctionComponent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:16290:20)\n    at mountLazyComponent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:16765:17)\n    at beginWork$1 (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:18464:16)\n    at beginWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:26927:14)\n    at performUnitOfWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:25748:12)\n    at workLoopConcurrent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:25734:5)\n    at renderRootConcurrent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:25690:9)\n    at performConcurrentWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:24504:38)\n    at workLoop (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:256:34)\n    at flushWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:225:14)\n    at MessagePort.performWorkUntilDeadline (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:534:21) | IntlError: MISSING_MESSAGE: Could not resolve `dashboard.contacts` in messages for locale `en`.\n    at getFallbackFromErrorAndNotify (webpack-internal:///(app-pages-browser)/./node_modules/use-intl/dist/esm/development/initializeConfig-CUsOI8u2.js:108:19)\n    at translateBaseFn (webpack-internal:///(app-pages-browser)/./node_modules/use-intl/dist/esm/development/initializeConfig-CUsOI8u2.js:141:18)\n    at translateFn (webpack-internal:///(app-pages-browser)/./node_modules/use-intl/dist/esm/development/initializeConfig-CUsOI8u2.js:173:20)\n    at eval (webpack-internal:///(app-pages-browser)/./src/components/layout/dashboard-sidebar.tsx:78:51)\n    at Array.map (<anonymous>)\n    at DashboardSidebar (webpack-internal:///(app-pages-browser)/./src/components/layout/dashboard-sidebar.tsx:44:37)\n    at renderWithHooks (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:11121:18)\n    at updateFunctionComponent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:16290:20)\n    at mountLazyComponent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:16765:17)\n    at beginWork$1 (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:18464:16)\n    at beginWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:26927:14)\n    at performUnitOfWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:25748:12)\n    at workLoopConcurrent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:25734:5)\n    at renderRootConcurrent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:25690:9)\n    at performConcurrentWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:24504:38)\n    at workLoop (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:256:34)\n    at flushWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:225:14)\n    at MessagePort.performWorkUntilDeadline (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:534:21)","ts":"2026-06-01T14:14:00.822Z"}
+{"agent":"INCUBATOR","id":"I02","name":"No Console Errors","status":"PASS","ts":"2026-06-01T14:14:01.215Z"}
+{"agent":"BUILDER","id":"E1-02","name":"No Console Errors","status":"FAIL","detail":"Failed to load resource: the server responded with a status of 500 (Internal Server Error) | Cannot read properties of null (reading 'useContext') | Loading plugin data from 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBpZD0ic3ZnIj48dGV4dCB4PSIxMCIgeT0iMjAiIGlkPSJzdmctbGluay10ZXh0Ij50ZXh0PC90ZXh0Pjwvc3ZnPg==' violates the following Content Security Policy directive: \"object-src 'none'\". The action has been blocked.","ts":"2026-06-01T14:14:02.861Z"}
+{"agent":"EXPLORER","id":"E3-02","name":"Explorer Free Tier","status":"PASS","detail":"No paid tier shown as active","ts":"2026-06-01T14:14:03.484Z"}
+{"agent":"FOUNDER","id":"E2-02","name":"Dashboard Shows FOUNDER","status":"PASS","ts":"2026-06-01T14:14:13.558Z"}
+{"agent":"FOUNDER","id":"E2-03","name":"Membership Shows FOUNDER","status":"PASS","ts":"2026-06-01T14:14:39.228Z"}
+{"agent":"INCUBATOR","id":"I03","name":"Analytics","status":"PASS","ts":"2026-06-01T14:14:42.759Z"}
+{"agent":"BUILDER","id":"E1-03","name":"Bookings","status":"PASS","ts":"2026-06-01T14:14:43.957Z"}
+{"agent":"ADMIN","id":"A03","name":"Analytics","status":"PASS","ts":"2026-06-01T14:14:44.402Z"}
+{"agent":"INCUBATOR","id":"I04","name":"Clients","status":"PASS","ts":"2026-06-01T14:15:19.033Z"}
+{"agent":"BUILDER","id":"E1-04","name":"Startup","status":"PASS","ts":"2026-06-01T14:15:20.239Z"}
+{"agent":"ADMIN","id":"A04","name":"Users","status":"PASS","ts":"2026-06-01T14:15:20.582Z"}
+{"agent":"FOUNDER","id":"E2-04","name":"Network Pass 10 Sessions","status":"PASS","ts":"2026-06-01T14:16:08.800Z"}
+{"agent":"BUILDER","id":"E1-05","name":"Marketplace","status":"PASS","ts":"2026-06-01T14:16:15.994Z"}
+{"agent":"ADMIN","id":"A05","name":"Incubators","status":"PASS","ts":"2026-06-01T14:16:16.088Z"}
+{"agent":"EXPLORER","id":"E3-04","name":"Public Spaces","status":"PASS","ts":"2026-06-01T14:16:50.544Z"}
+{"agent":"INCUBATOR","id":"I05","name":"Income","status":"PASS","ts":"2026-06-01T14:17:02.029Z"}
+{"agent":"ADMIN","id":"A05","name":"Incubators","status":"PASS","ts":"2026-06-01T14:17:02.154Z"}
+{"agent":"BUILDER","id":"E1-05","name":"Marketplace","status":"PASS","ts":"2026-06-01T14:17:02.552Z"}
+{"agent":"EXPLORER","id":"E3-05","name":"Public Mentors","status":"PASS","ts":"2026-06-01T14:17:26.990Z"}
+{"agent":"BUILDER","id":"E1-06","name":"Consultations","status":"PASS","ts":"2026-06-01T14:17:29.916Z"}
+{"agent":"FOUNDER","id":"E2-05","name":"Consultations Page","status":"PASS","ts":"2026-06-01T14:17:30.509Z"}
+{"agent":"ADMIN","id":"A06","name":"Memberships","status":"PASS","ts":"2026-06-01T14:17:37.406Z"}
+{"agent":"INCUBATOR","id":"I06","name":"Expenses","status":"PASS","ts":"2026-06-01T14:17:37.783Z"}
+{"agent":"EXPLORER","id":"E3-06","name":"Public Programs","status":"PASS","ts":"2026-06-01T14:17:55.264Z"}
+{"agent":"INCUBATOR","id":"I07","name":"Services","status":"PASS","ts":"2026-06-01T14:18:12.891Z"}
+{"agent":"BUILDER","id":"E1-07","name":"Perks","status":"PASS","ts":"2026-06-01T14:18:13.020Z"}
+{"agent":"ADMIN","id":"A07","name":"Promo Codes","status":"PASS","ts":"2026-06-01T14:18:13.768Z"}
+{"agent":"BUILDER","id":"E1-08","name":"Wallet","status":"PASS","ts":"2026-06-01T14:18:46.276Z"}
+{"agent":"FOUNDER","id":"E2-06","name":"Wallet Page","status":"PASS","ts":"2026-06-01T14:18:49.394Z"}
+{"agent":"ADMIN","id":"A08","name":"Partner Network","status":"PASS","ts":"2026-06-01T14:18:50.147Z"}
+{"agent":"INCUBATOR","id":"I08","name":"Spaces","status":"PASS","ts":"2026-06-01T14:18:51.056Z"}
+{"agent":"EXPLORER","id":"E3-07","name":"Public Events","status":"PASS","ts":"2026-06-01T14:19:05.347Z"}
+{"agent":"BUILDER","id":"E1-09","name":"Membership","status":"PASS","ts":"2026-06-01T14:19:21.913Z"}
+{"agent":"EXPLORER","id":"E3-08","name":"Public Pricing","status":"PASS","ts":"2026-06-01T14:19:24.746Z"}
+{"agent":"ADMIN","id":"A09","name":"Partner Promo Codes","status":"PASS","ts":"2026-06-01T14:19:25.347Z"}
+{"agent":"INCUBATOR","id":"I09","name":"Programs","status":"PASS","ts":"2026-06-01T14:19:25.423Z"}
+{"agent":"BUILDER","id":"E1-10","name":"Network Pass","status":"PASS","ts":"2026-06-01T14:19:52.218Z"}
+{"agent":"EXPLORER","id":"E3-09","name":"Public Investors","status":"PASS","ts":"2026-06-01T14:19:54.395Z"}
+{"agent":"ADMIN","id":"A10","name":"Commissions","status":"PASS","ts":"2026-06-01T14:20:05.881Z"}
+{"agent":"INCUBATOR","id":"I10","name":"Events","status":"PASS","ts":"2026-06-01T14:20:06.152Z"}
+{"agent":"FOUNDER","id":"E2-07","name":"All Nav Links Resolve","status":"PASS","ts":"2026-06-01T14:20:30.467Z"}
+{"agent":"EXPLORER","id":"E3-10","name":"Public About","status":"PASS","ts":"2026-06-01T14:21:05.839Z"}
+{"agent":"BUILDER","id":"E1-11","name":"Settings","status":"PASS","ts":"2026-06-01T14:21:16.327Z"}
+{"agent":"EXPLORER","id":"E3-11","name":"Pricing Has Tiers + Discounts","status":"PASS","ts":"2026-06-01T14:21:20.339Z"}
+{"agent":"BUILDER","id":"E1-12","name":"Membership Shows BUILDER","status":"PASS","ts":"2026-06-01T14:21:33.667Z"}
+{"agent":"EXPLORER","id":"E3-12","name":"Language Switcher Visible","status":"PASS","ts":"2026-06-01T14:21:46.306Z"}
+{"agent":"FOUNDER","id":"E2-07","name":"All Nav Links Resolve","status":"PASS","ts":"2026-06-01T14:22:02.484Z"}
+{"agent":"INCUBATOR","id":"I11","name":"Bookings","status":"PASS","ts":"2026-06-01T14:22:19.361Z"}
+{"agent":"ADMIN","id":"A11","name":"Bookings","status":"PASS","ts":"2026-06-01T14:22:20.499Z"}
+{"agent":"EXPLORER","id":"E3-13","name":"Arabic RTL Direction","status":"PASS","ts":"2026-06-01T14:22:21.565Z"}
+{"agent":"BUILDER","id":"E1-13","name":"Network Pass Has Credits","status":"PASS","detail":"Credit info visible","ts":"2026-06-01T14:22:24.808Z"}
+{"agent":"EXPLORER","id":"E3-14","name":"Mobile No Horizontal Overflow","status":"PASS","ts":"2026-06-01T14:22:31.702Z"}
+{"agent":"EXPLORER","id":"E3-15","name":"Network Pass 0 Credits","status":"PASS","detail":"0 credits shown (Explorer)","ts":"2026-06-01T14:23:10.317Z"}
+{"agent":"FOUNDER","id":"E2-08","name":"Mentors LinkedIn Buttons","status":"PASS","detail":"1 valid link(s)","ts":"2026-06-01T14:23:11.355Z"}
+{"agent":"ADMIN","id":"A12","name":"Mentors","status":"PASS","ts":"2026-06-01T14:23:13.577Z"}
+{"agent":"INCUBATOR","id":"I12","name":"Revenue","status":"PASS","ts":"2026-06-01T14:23:14.183Z"}
+{"agent":"BUILDER","id":"E1-14","name":"Book Mentor → Form Not Signup","status":"PASS","detail":"http://localhost:3000/en/mentors","ts":"2026-06-01T14:23:14.840Z"}
+{"agent":"INCUBATOR","id":"I12","name":"Revenue","status":"PASS","ts":"2026-06-01T14:23:44.839Z"}
+{"agent":"ADMIN","id":"A13","name":"Consultations","status":"PASS","ts":"2026-06-01T14:23:45.883Z"}
+{"agent":"BUILDER","id":"E1-15","name":"Settings Has Delete Account","status":"PASS","ts":"2026-06-01T14:23:46.103Z"}
+{"agent":"FOUNDER","id":"E2-09","name":"Pricing Shows All Tiers","status":"PASS","ts":"2026-06-01T14:23:46.314Z"}
+{"agent":"FOUNDER","id":"E2-10","name":"Perks Page","status":"PASS","ts":"2026-06-01T14:24:06.612Z"}
+{"agent":"BUILDER","id":"E1-16","name":"Spaces Page Loads","status":"PASS","ts":"2026-06-01T14:24:07.993Z"}
+{"agent":"ADMIN","id":"A14","name":"Mentor Revenue","status":"PASS","ts":"2026-06-01T14:24:11.383Z"}
+{"agent":"INCUBATOR","id":"I13","name":"Invoices","status":"PASS","ts":"2026-06-01T14:24:12.193Z"}
+{"agent":"BUILDER","id":"E1-17","name":"Events Page Loads","status":"PASS","ts":"2026-06-01T14:24:34.116Z"}
+{"agent":"ADMIN","id":"A15","name":"Contacts","status":"PASS","ts":"2026-06-01T14:24:41.301Z"}
+{"agent":"INCUBATOR","id":"I14","name":"Wallet","status":"PASS","ts":"2026-06-01T14:24:41.694Z"}
+{"agent":"BUILDER","id":"E1-18","name":"Programs Page Loads","status":"PASS","ts":"2026-06-01T14:25:26.556Z"}
+{"agent":"INCUBATOR","id":"I15","name":"Settings","status":"PASS","ts":"2026-06-01T14:25:34.839Z"}
+{"agent":"ADMIN","id":"A16","name":"Investor Contacts","status":"PASS","ts":"2026-06-01T14:25:39.425Z"}
+{"agent":"BUILDER","id":"E1-18","name":"Programs Page Loads","status":"PASS","ts":"2026-06-01T14:26:32.216Z"}
+{"agent":"ADMIN","id":"A16","name":"Investor Contacts","status":"PASS","ts":"2026-06-01T14:26:41.656Z"}
+{"agent":"INCUBATOR","id":"I15","name":"Settings","status":"PASS","ts":"2026-06-01T14:26:41.836Z"}
+{"agent":"ADMIN","id":"A17","name":"Withdrawals","status":"PASS","ts":"2026-06-01T14:27:22.738Z"}
+{"agent":"INCUBATOR","id":"I16","name":"Create Space Dialog","status":"PASS","ts":"2026-06-01T14:27:35.095Z"}
+{"agent":"ADMIN","id":"A18","name":"CMS Content","status":"PASS","ts":"2026-06-01T14:27:39.430Z"}
+{"agent":"ADMIN","id":"A19","name":"Audit Log","status":"PASS","ts":"2026-06-01T14:34:44.924Z"}
+{"agent":"INCUBATOR","id":"I17","name":"Income Service Is Dropdown","status":"PASS","ts":"2026-06-01T14:34:44.984Z"}
+{"agent":"ADMIN","id":"A20","name":"Settings","status":"PASS","ts":"2026-06-01T14:36:40.762Z"}
+{"agent":"INCUBATOR","id":"I18","name":"Create Program Form","status":"PASS","ts":"2026-06-01T14:36:45.328Z"}
+{"agent":"ADMIN","id":"A21","name":"Create Promo Code Form","status":"FAIL","detail":"No form heading or inputs found on promo-codes page","ts":"2026-06-01T14:37:35.719Z"}
+{"agent":"ADMIN","id":"A21","name":"Create Promo Code Form","status":"PASS","detail":"heading:true inputs:4","ts":"2026-06-01T14:37:59.740Z"}
+{"agent":"INCUBATOR","id":"I19","name":"Bookings List","status":"PASS","ts":"2026-06-01T14:38:01.879Z"}
+{"agent":"ADMIN","id":"A22","name":"Settings Has Fields","status":"PASS","detail":"1 input(s) found","ts":"2026-06-01T14:38:11.843Z"}
+{"agent":"INCUBATOR","id":"I20","name":"Mobile Responsive","status":"PASS","ts":"2026-06-01T14:38:32.807Z"}
+{"agent":"ADMIN","id":"A23","name":"Users Table Rows","status":"PASS","detail":"11 rows","ts":"2026-06-01T14:38:33.638Z"}
+{"agent":"ADMIN","id":"A24","name":"Incubators List","status":"PASS","ts":"2026-06-01T14:38:47.109Z"}
+{"agent":"ADMIN","id":"A25","name":"Mobile Responsive","status":"PASS","ts":"2026-06-01T14:38:54.634Z"}
+{"agent":"ADMIN","id":"A16","name":"Investor Contacts","status":"PASS","ts":"2026-06-01T14:41:10.256Z"}
+{"agent":"INCUBATOR","id":"I15","name":"Settings","status":"PASS","ts":"2026-06-01T14:41:26.406Z"}
+{"agent":"FOUNDER","id":"E2-07","name":"All Nav Links Resolve","status":"PASS","ts":"2026-06-01T14:42:22.276Z"}
+{"agent":"EXPLORER","id":"E3-03","name":"Upgrade CTA Visible","status":"PASS","detail":"Found on membership page","ts":"2026-06-01T14:42:36.215Z"}

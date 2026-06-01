@@ -889,7 +889,14 @@
     "partnerNetwork": "Réseau Partenaires",
     "partnerPromoCodes": "Codes Promo Partenaires",
     "perks": "Avantages",
-    "networkPass": "Metwork Pass"
+    "networkPass": "Metwork Pass",
+    "saved": "Sauvegardés",
+    "mentors": "Mentors",
+    "mentorRevenue": "Revenus mentors",
+    "contacts": "Contacts",
+    "investorContacts": "Contacts investisseurs",
+    "withdrawals": "Retraits",
+    "auditLog": "Journal d'audit"
   },
   "pages": {
     "programs": {

@@ -51,6 +51,19 @@ const nextConfig = {
   },
 
   async headers() {
+    // Next.js dev mode (Fast Refresh / webpack eval source maps) requires
+    // 'unsafe-eval'. Production bundles never eval, so we keep the prod CSP
+    // locked down and only relax it for `next dev`. Without this, client-side
+    // React fails to hydrate in dev and forms fall back to native submits.
+    const isDev = process.env.NODE_ENV !== 'production';
+    const scriptSrc = [
+      "script-src 'self' 'unsafe-inline'",
+      isDev ? "'unsafe-eval'" : '',
+      'https://browser.sentry-cdn.com https://js.sentry-cdn.com',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
     return [
       {
         source: '/:path*',
@@ -71,7 +84,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://browser.sentry-cdn.com https://js.sentry-cdn.com",
+              scriptSrc,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://res.cloudinary.com https://metwork.dz https://*.supabase.co",
               "font-src 'self'",
