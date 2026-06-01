@@ -314,7 +314,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
       return;
     }
     if (!validRange) {
-      setError({ code: 'INVALID_RANGE', message: 'End must be after start.' });
+      setError({ code: 'INVALID_RANGE', message: t('endAfterStart') });
       return;
     }
     setSubmitting(true);
@@ -380,7 +380,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
       {/* Working hours hint */}
       <div className="flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
         <Clock className="size-3.5 shrink-0" />
-        <span>Open {workingDaysLabel} · {openingTime} – {closingTime}</span>
+        <span>{t('open')} {workingDaysLabel} · {openingTime} – {closingTime}</span>
       </div>
 
       {/* 7-hour cap notice — shown for hourly bookings only */}
@@ -388,8 +388,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         <div className="flex items-center gap-1.5 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-700 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300">
           <Clock className="size-3.5 shrink-0" />
           <span>
-            Hourly bookings: max 7 hours per day
-            {hasDayUnit ? ' — exceeding this will automatically switch to the day rate' : ''}.
+            {hasDayUnit ? t('hourlyCapAutoSwitch') : t('hourlyCapNotice')}.
           </span>
         </div>
       )}
@@ -590,7 +589,9 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
             <div className="mt-1 flex items-center justify-between text-emerald-700 dark:text-emerald-400">
               <span className="flex items-center gap-1.5">
                 <MembershipTierBadge tier={userTier} size="xs" showIcon={false} />
-                {userTier === 'FOUNDER' ? 'Founder' : 'Builder'} discount ({membershipDiscountPercent}% off)
+                {userTier === 'FOUNDER'
+                  ? t('founderDiscount', { percent: membershipDiscountPercent })
+                  : t('builderDiscount', { percent: membershipDiscountPercent })}
               </span>
               <span className="tabular-nums">−{formatCurrency(membershipDiscountAmount, locale)}</span>
             </div>

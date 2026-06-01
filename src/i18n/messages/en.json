@@ -1754,7 +1754,7 @@
       "networkPassCredits": "{count} left · Resets {date}",
       "networkPassNoCredits": "No credits remaining this month",
       "networkPassWarning": "You have no credits left this month. Credits reset on the 1st.",
-      "founderDiscount": "Founder discount (20% off)",
+      "founderDiscount": "Founder discount ({percent}% off)",
       "promoLabel": "Promo",
       "networkPassTotal": "Network Pass (1 credit)",
       "totalFree": "Free",
@@ -1803,7 +1803,9 @@
       "errorUnitNotAvailable": "That billing unit is no longer available.",
       "errorGeneric": "Booking failed. Try again.",
       "passCreditsInfo": "Uses 1 credit — {count} of {max} left",
-      "passResetsDate": "· Resets {date}"
+      "passResetsDate": "· Resets {date}",
+      "hourlyCapAutoSwitch": "Hourly bookings: max 7 hours per day — exceeding this will automatically switch to the day rate",
+      "builderDiscount": "Builder discount ({percent}% off)"
     },
     "explorer": {
       "searchPlaceholder": "Search spaces, amenities, hosts…",
@@ -2004,7 +2006,13 @@
       "awaitingPayment": "Awaiting payment",
       "confirmed": "Confirmed",
       "viewBookings": "View my bookings",
-      "viewWallet": "View wallet"
+      "viewWallet": "View wallet",
+      "total": "Total",
+      "errorInsufficientFunds": "Not enough wallet balance — top up to continue.",
+      "errorAlreadyApplied": "You've already applied to this program.",
+      "errorCapacityExceeded": "Program just filled up.",
+      "errorDeadlinePassed": "Applications just closed.",
+      "errorGeneric": "Apply failed. Try again."
     },
     "explorer": {
       "all": "All programs",

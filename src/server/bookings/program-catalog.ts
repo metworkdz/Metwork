@@ -4,10 +4,11 @@
  * Returns only real programs created by incubators or the admin.
  * Demo/seed data is never shown.
  */
-import { db } from '@/server/db/store';
+import { db, type ProgramRecord } from '@/server/db/store';
+import { countAttendance } from '@/server/attendance';
 import type { Program } from '@/types/domain';
 
-function fromRecord(r: import('@/server/db/store').ProgramRecord): Program {
+function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
   return {
     id:                     r.id,
     incubatorId:            r.incubatorId,
@@ -19,7 +20,7 @@ function fromRecord(r: import('@/server/db/store').ProgramRecord): Program {
     imageUrl:               r.imageUrl,
     price:                  r.price,
     seatsTotal:             r.seatsTotal,
-    seatsTaken:             0, // computed live by the caller
+    seatsTaken,
     deadline:               r.deadline,
     startDate:              r.startDate,
     endDate:                r.endDate,
@@ -38,7 +39,7 @@ export async function listPrograms(): Promise<Program[]> {
   );
   return (data.programs ?? [])
     .filter((p) => p.isActive && activeIncIds.has(p.incubatorId))
-    .map(fromRecord);
+    .map((p) => fromRecord(p, countAttendance(data, 'PROGRAM', p.id)));
 }
 
 /** Find a single active program by ID. */
@@ -48,7 +49,7 @@ export async function findProgramById(id: string): Promise<Program | null> {
   if (!dbProg) return null;
   const inc = (data.incubators ?? []).find((i) => i.id === dbProg.incubatorId);
   if (!inc || inc.status !== 'ACTIVE') return null;
-  return fromRecord(dbProg);
+  return fromRecord(dbProg, countAttendance(data, 'PROGRAM', dbProg.id));
 }
 
 /** List all programs (active and inactive) owned by a specific incubator. */
@@ -57,5 +58,5 @@ export async function listProgramsByIncubator(incubatorId: string): Promise<Prog
   return (data.programs ?? [])
     .filter((p) => p.incubatorId === incubatorId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map(fromRecord);
+    .map((p) => fromRecord(p, countAttendance(data, 'PROGRAM', p.id)));
 }

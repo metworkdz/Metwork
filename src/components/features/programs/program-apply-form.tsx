@@ -129,18 +129,18 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
           const detailBalance =
             typeof err.details?.balance === 'number' ? err.details.balance : null;
           if (detailBalance != null) setBalance(detailBalance);
-          setError({ code: err.code, message: 'Not enough wallet balance — top up to continue.' });
+          setError({ code: err.code, message: t('errorInsufficientFunds') });
         } else if (err.code === 'ALREADY_APPLIED') {
-          setError({ code: err.code, message: "You've already applied to this program." });
+          setError({ code: err.code, message: t('errorAlreadyApplied') });
         } else if (err.code === 'CAPACITY_EXCEEDED') {
-          setError({ code: err.code, message: 'Program just filled up.' });
+          setError({ code: err.code, message: t('errorCapacityExceeded') });
         } else if (err.code === 'DEADLINE_PASSED') {
-          setError({ code: err.code, message: 'Applications just closed.' });
+          setError({ code: err.code, message: t('errorDeadlinePassed') });
         } else {
-          setError({ code: err.code, message: err.message || 'Apply failed.' });
+          setError({ code: err.code, message: t('errorGeneric') });
         }
       } else {
-        setError({ code: 'UNKNOWN', message: 'Apply failed. Try again.' });
+        setError({ code: 'UNKNOWN', message: t('errorGeneric') });
       }
     } finally {
       setSubmitting(false);
@@ -202,7 +202,7 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
         )}
         {!isFree && (
           <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2 text-base font-semibold">
-            <span>Total</span>
+            <span>{t('total')}</span>
             <span className="tabular-nums">{formatCurrency(finalTotal, locale)}</span>
           </div>
         )}

@@ -17,6 +17,7 @@ import {
   type RegistrationStatus,
 } from '@/server/db/store';
 import { sendResendEmail, layout } from '@/server/notifications/email';
+import { countAttendance } from '@/server/attendance';
 
 /* ─────────────────────────── Types ─────────────────────────── */
 
@@ -211,11 +212,11 @@ export async function createRegistration(input: CreateRegistrationInput): Promis
   );
   if (existing) return { registration: existing, alreadyRegistered: true };
 
-  // Capacity check
+  // Capacity check — unified count (confirmed registrations + active bookings)
+  // so the waitlist trigger agrees with the public seat badge and the booking
+  // capacity gate.
   const capacity = getEntityCapacity(data, input.entityType, input.entityId);
-  const taken = (data.registrations ?? []).filter(
-    (r) => r.entityType === input.entityType && r.entityId === input.entityId && r.status !== 'CANCELLED',
-  ).length;
+  const taken = countAttendance(data, input.entityType, input.entityId);
   const status: RegistrationStatus = capacity !== null && taken >= capacity ? 'WAITLISTED' : 'CONFIRMED';
 
   // CRM: find or create client within incubator scope

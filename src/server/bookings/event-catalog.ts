@@ -4,10 +4,11 @@
  * Returns only real events created by incubators or the admin.
  * Demo/seed data is never shown.
  */
-import { db } from '@/server/db/store';
+import { db, type EventRecord } from '@/server/db/store';
+import { countAttendance } from '@/server/attendance';
 import type { Event as PlatformEvent } from '@/types/domain';
 
-function fromRecord(r: import('@/server/db/store').EventRecord): PlatformEvent {
+function fromRecord(r: EventRecord, attendeeCount = 0): PlatformEvent {
   return {
     id:                     r.id,
     incubatorId:            r.incubatorId,
@@ -19,7 +20,7 @@ function fromRecord(r: import('@/server/db/store').EventRecord): PlatformEvent {
     price:                  r.price,
     isOnline:               r.isOnline,
     capacity:               r.capacity,
-    attendeeCount:          0, // computed live by the caller
+    attendeeCount,
     eventDate:              r.eventDate,
     acceptedPaymentMethods: r.acceptedPaymentMethods,
     slug:                   r.slug ?? null,
@@ -36,7 +37,7 @@ export async function listEvents(): Promise<PlatformEvent[]> {
   );
   return (data.events ?? [])
     .filter((e) => e.isActive && activeIncIds.has(e.incubatorId))
-    .map(fromRecord);
+    .map((e) => fromRecord(e, countAttendance(data, 'EVENT', e.id)));
 }
 
 /** Find a single active event by ID. */
@@ -46,7 +47,7 @@ export async function findEventById(id: string): Promise<PlatformEvent | null> {
   if (!dbEv) return null;
   const inc = (data.incubators ?? []).find((i) => i.id === dbEv.incubatorId);
   if (!inc || inc.status !== 'ACTIVE') return null;
-  return fromRecord(dbEv);
+  return fromRecord(dbEv, countAttendance(data, 'EVENT', dbEv.id));
 }
 
 /** List all events (active and inactive) owned by a specific incubator. */
@@ -55,5 +56,5 @@ export async function listEventsByIncubator(incubatorId: string): Promise<Platfo
   return (data.events ?? [])
     .filter((e) => e.incubatorId === incubatorId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map(fromRecord);
+    .map((e) => fromRecord(e, countAttendance(data, 'EVENT', e.id)));
 }

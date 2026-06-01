@@ -1754,7 +1754,7 @@
       "networkPassCredits": "{count} متبقية · تجديد {date}",
       "networkPassNoCredits": "لا توجد رصيد متبقٍ هذا الشهر",
       "networkPassWarning": "لم يتبقَّ لديك أي رصيد هذا الشهر. يتجدد الرصيد في الأول من الشهر.",
-      "founderDiscount": "خصم المؤسس (20% خصم)",
+      "founderDiscount": "خصم المؤسِّس ({percent}٪)",
       "promoLabel": "خصم",
       "networkPassTotal": "بطاقة الشبكة (رصيد واحد)",
       "totalFree": "مجاني",
@@ -1803,7 +1803,9 @@
       "errorUnitNotAvailable": "وحدة الفوترة هذه لم تعد متاحة.",
       "errorGeneric": "فشل الحجز. حاول مجدداً.",
       "passCreditsInfo": "يستخدم رصيداً واحداً — {count} من {max} متبقية",
-      "passResetsDate": "· يُعاد في {date}"
+      "passResetsDate": "· يُعاد في {date}",
+      "hourlyCapAutoSwitch": "الحجوزات بالساعة: حد أقصى 7 ساعات يومياً — تجاوز ذلك يحوّل تلقائياً إلى السعر اليومي",
+      "builderDiscount": "خصم الباني ({percent}٪)"
     },
     "explorer": {
       "searchPlaceholder": "ابحث عن فضاءات، مرافق، مضيفين…",
@@ -2004,7 +2006,13 @@
       "awaitingPayment": "في انتظار الدفع",
       "confirmed": "مؤكد",
       "viewBookings": "عرض حجوزاتي",
-      "viewWallet": "عرض المحفظة"
+      "viewWallet": "عرض المحفظة",
+      "total": "المجموع",
+      "errorInsufficientFunds": "رصيد المحفظة غير كافٍ — أعد الشحن للمتابعة.",
+      "errorAlreadyApplied": "لقد سجّلت بالفعل في هذا البرنامج.",
+      "errorCapacityExceeded": "اكتمل البرنامج للتو.",
+      "errorDeadlinePassed": "أُغلق باب التسجيل للتو.",
+      "errorGeneric": "فشل التسجيل. حاول مرة أخرى."
     },
     "explorer": {
       "all": "جميع البرامج",

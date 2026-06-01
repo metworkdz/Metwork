@@ -18,6 +18,7 @@ import {
 import { findSpaceById } from './space-catalog';
 import { findProgramById } from './program-catalog';
 import { findEventById } from './event-catalog';
+import { countAttendance } from '@/server/attendance';
 import { validatePromoCodeSync as validatePromoCode, consumePromoCodeSync as consumePromoCode, ensurePromoCodesSeeded } from '@/server/promo-codes/service';
 import type {
   ApplyToProgramResult,
@@ -601,14 +602,9 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
     );
     if (active) return { ok: false, reason: 'ALREADY_APPLIED', existingBookingId: active.id };
 
-    // Capacity — bookings are the source of truth, NOT the cached `seatsTaken`.
-    const taken = d.bookings.filter(
-      (b) =>
-        b.itemKind === 'PROGRAM' &&
-        b.itemId === program.id &&
-        b.status !== 'CANCELLED' &&
-        b.status !== 'REFUNDED',
-    ).length;
+    // Capacity — unified count (active bookings + confirmed registrations),
+    // NOT the cached `seatsTaken`.
+    const taken = countAttendance(d, 'PROGRAM', program.id);
     if (taken >= program.seatsTotal) {
       return { ok: false, reason: 'CAPACITY_EXCEEDED', capacity: program.seatsTotal, taken };
     }
@@ -733,13 +729,10 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
 /** Public attendance count + my-status, used by the detail sheet. */
 export async function getProgramAttendance(programId: string, userId?: string) {
   const data = await db.read();
-  const taken = data.bookings.filter(
-    (b) =>
-      b.itemKind === 'PROGRAM' &&
-      b.itemId === programId &&
-      b.status !== 'CANCELLED' &&
-      b.status !== 'REFUNDED',
-  ).length;
+  // Unified seat count (active bookings + confirmed registrations).
+  const taken = countAttendance(data, 'PROGRAM', programId);
+  // `mine` stays booking-specific — it powers the explorer detail sheet's
+  // "you've applied" chip, which only reflects the wallet booking flow.
   const mine = userId
     ? data.bookings.find(
         (b) =>
@@ -803,13 +796,8 @@ export async function registerForEvent(
       return { ok: false, reason: 'ALREADY_REGISTERED', existingBookingId: active.id };
     }
 
-    const taken = d.bookings.filter(
-      (b) =>
-        b.itemKind === 'EVENT' &&
-        b.itemId === event.id &&
-        b.status !== 'CANCELLED' &&
-        b.status !== 'REFUNDED',
-    ).length;
+    // Capacity — unified count (active bookings + confirmed registrations).
+    const taken = countAttendance(d, 'EVENT', event.id);
     if (taken >= event.capacity) {
       return { ok: false, reason: 'CAPACITY_EXCEEDED', capacity: event.capacity, taken };
     }
@@ -938,13 +926,9 @@ export async function registerForEvent(
 
 export async function getEventAttendance(eventId: string, userId?: string) {
   const data = await db.read();
-  const taken = data.bookings.filter(
-    (b) =>
-      b.itemKind === 'EVENT' &&
-      b.itemId === eventId &&
-      b.status !== 'CANCELLED' &&
-      b.status !== 'REFUNDED',
-  ).length;
+  // Unified seat count (active bookings + confirmed registrations).
+  const taken = countAttendance(data, 'EVENT', eventId);
+  // `mine` stays booking-specific (explorer detail sheet "you're registered").
   const mine = userId
     ? data.bookings.find(
         (b) =>

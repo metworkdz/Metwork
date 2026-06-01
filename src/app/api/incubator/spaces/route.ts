@@ -34,7 +34,13 @@ const createSpaceSchema = z.object({
   /** "HH:MM" 24h. */
   openingTime:  z.string().regex(/^\d{2}:\d{2}$/).default('09:00'),
   closingTime:  z.string().regex(/^\d{2}:\d{2}$/).default('18:00'),
-});
+}).refine(
+  // A space with no price for any unit is unbookable (availableUnits() would
+  // be empty). Require at least one pricing unit, mirroring the program/event
+  // price requirement.
+  (d) => d.pricePerHour != null || d.pricePerDay != null || d.pricePerMonth != null,
+  { message: 'At least one price (per hour, day, or month) is required', path: ['pricePerHour'] },
+);
 
 export async function GET() {
   const guard = await requireApiRole(['INCUBATOR']);

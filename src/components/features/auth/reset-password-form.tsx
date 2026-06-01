@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
 import { Link } from '@/i18n/routing';
 import { authService } from '@/services/auth.service';
+import { ApiClientError } from '@/lib/api-client';
 
 /* ─── Local schema (mirrors server resetPasswordRequestSchema) ─── */
 
@@ -38,6 +39,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   const t = useTranslations('auth.resetPassword');
   const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [linkExpired, setLinkExpired] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -64,6 +66,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
 
   function onSubmit(values: FormValues) {
     setServerError(null);
+    setLinkExpired(false);
     startTransition(async () => {
       try {
         await authService.resetPassword({
@@ -73,13 +76,10 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
         });
         setSuccess(true);
       } catch (err: unknown) {
-        const msg =
-          err instanceof Error ? err.message : t('errorGeneric');
-        setServerError(
-          msg.includes('invalid or has expired')
-            ? t('errorLinkExpired')
-            : msg,
-        );
+        const expired =
+          err instanceof ApiClientError && err.code === 'INVALID_OR_EXPIRED_TOKEN';
+        setLinkExpired(expired);
+        setServerError(expired ? t('errorLinkExpired') : t('errorGeneric'));
       }
     });
   }
@@ -191,7 +191,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           >
             {serverError}{' '}
-            {serverError.includes('expired') && (
+            {linkExpired && (
               <Link href="/forgot-password" className="font-medium underline underline-offset-2">
                 {t('requestNewOne')}
               </Link>

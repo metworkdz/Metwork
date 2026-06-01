@@ -1754,7 +1754,7 @@
       "networkPassCredits": "{count} restant · Réinitialisation le {date}",
       "networkPassNoCredits": "Aucun crédit restant ce mois-ci",
       "networkPassWarning": "Vous n'avez plus de crédits ce mois-ci. Les crédits se réinitialisent le 1er.",
-      "founderDiscount": "Remise Fondateur (20% de réduction)",
+      "founderDiscount": "Remise Fondateur ({percent} % de réduction)",
       "promoLabel": "Promo",
       "networkPassTotal": "Network Pass (1 crédit)",
       "totalFree": "Gratuit",
@@ -1803,7 +1803,9 @@
       "errorUnitNotAvailable": "Cette unité de facturation n'est plus disponible.",
       "errorGeneric": "Réservation échouée. Réessayez.",
       "passCreditsInfo": "Utilise 1 crédit — {count} sur {max} restants",
-      "passResetsDate": "· Réinitialisation le {date}"
+      "passResetsDate": "· Réinitialisation le {date}",
+      "hourlyCapAutoSwitch": "Réservations horaires : max 7 heures par jour — au-delà, le tarif journalier s'applique automatiquement",
+      "builderDiscount": "Remise Bâtisseur ({percent} % de réduction)"
     },
     "explorer": {
       "searchPlaceholder": "Rechercher espaces, équipements, hôtes…",
@@ -2004,7 +2006,13 @@
       "awaitingPayment": "En attente de paiement",
       "confirmed": "Confirmé",
       "viewBookings": "Voir mes réservations",
-      "viewWallet": "Voir le portefeuille"
+      "viewWallet": "Voir le portefeuille",
+      "total": "Total",
+      "errorInsufficientFunds": "Solde du portefeuille insuffisant — rechargez pour continuer.",
+      "errorAlreadyApplied": "Vous avez déjà postulé à ce programme.",
+      "errorCapacityExceeded": "Le programme vient d'afficher complet.",
+      "errorDeadlinePassed": "Les candidatures viennent de fermer.",
+      "errorGeneric": "Échec de la candidature. Réessayez."
     },
     "explorer": {
       "all": "Tous les programmes",

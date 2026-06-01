@@ -49,6 +49,12 @@ export async function PATCH(
     if (!s) return null;
     const incubator = d.incubators.find((i) => i.id === s.incubatorId);
     if (!incubator || incubator.managerId !== guard.user.id) return 'FORBIDDEN';
+    // Reject (before mutating) any edit that would leave the space with no
+    // price for any unit — that makes it unbookable. Mirrors the create guard.
+    const nextHour  = input.pricePerHour  !== undefined ? input.pricePerHour  : s.pricePerHour;
+    const nextDay   = input.pricePerDay   !== undefined ? input.pricePerDay   : s.pricePerDay;
+    const nextMonth = input.pricePerMonth !== undefined ? input.pricePerMonth : s.pricePerMonth;
+    if (nextHour == null && nextDay == null && nextMonth == null) return 'NO_PRICE';
     if (input.name !== undefined) s.name = input.name;
     if (input.description !== undefined) s.description = input.description;
     if (input.category !== undefined) s.category = input.category;
@@ -66,6 +72,7 @@ export async function PATCH(
 
   if (space === null) return jsonError(404, 'NOT_FOUND', 'Space not found');
   if (space === 'FORBIDDEN') return jsonError(403, 'FORBIDDEN', 'Not your space');
+  if (space === 'NO_PRICE') return jsonError(400, 'NO_PRICE', 'At least one price (per hour, day, or month) is required');
   return json({ space });
 }
 
