@@ -889,14 +889,7 @@
     "partnerNetwork": "شبكة الشركاء",
     "partnerPromoCodes": "رموز الترويج للشركاء",
     "perks": "المزايا",
-    "networkPass": "Metwork Pass",
-    "saved": "المحفوظة",
-    "mentors": "المرشدون",
-    "mentorRevenue": "إيرادات المرشدين",
-    "contacts": "جهات الاتصال",
-    "investorContacts": "تواصل المستثمرين",
-    "withdrawals": "طلبات السحب",
-    "auditLog": "سجل التدقيق"
+    "networkPass": "Metwork Pass"
   },
   "pages": {
     "programs": {
