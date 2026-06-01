@@ -9,23 +9,33 @@ import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
-import { Link, useRouter } from '@/i18n/routing';
+import { Link, useRouter, routing } from '@/i18n/routing';
 import { loginSchema, type LoginInput } from '@/lib/validators';
 import { authService } from '@/services/auth.service';
 import { ApiClientError } from '@/lib/api-client';
 import { useAuth } from '@/components/providers/auth-provider';
-import type { UserRole } from '@/types/auth';
+import { dashboardPathForRole } from '@/lib/dashboard-routes';
 
-const DASHBOARD_BY_ROLE: Record<UserRole, string> = {
-  ADMIN: '/dashboard/admin',
-  ENTREPRENEUR: '/dashboard/entrepreneur',
-  INVESTOR: '/dashboard/investor',
-  INCUBATOR: '/dashboard/incubator',
-};
+/**
+ * Sanitize the `?next=` redirect target set by the auth middleware. The
+ * middleware stores the full, locale-prefixed pathname; the next-intl router
+ * re-adds the active locale, so we strip the leading locale segment and only
+ * allow internal absolute paths (guards against open-redirect).
+ */
+function safeNextPath(raw: string | null): string | null {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) {
+    return null;
+  }
+  const segments = raw.split('/').filter(Boolean);
+  const locales = routing.locales as readonly string[];
+  const path = segments.length && locales.includes(segments[0]!)
+    ? '/' + segments.slice(1).join('/')
+    : raw;
+  return path === '/' ? null : path;
+}
 
 export function LoginForm() {
   const t = useTranslations('auth');
-  const tCommon = useTranslations('common');
   const router = useRouter();
   const { refresh } = useAuth();
   const [isPending, startTransition] = useTransition();
@@ -49,7 +59,8 @@ export function LoginForm() {
       try {
         const session = await authService.login(values);
         await refresh();
-        router.push(DASHBOARD_BY_ROLE[session.user.role] ?? '/dashboard/entrepreneur');
+        const next = safeNextPath(searchParams.get('next'));
+        router.push(next ?? dashboardPathForRole(session.user.role));
       } catch (err) {
         if (err instanceof ApiClientError) {
           if (err.status === 401) setSubmitError(t('errors.invalidCredentials'));
@@ -70,8 +81,8 @@ export function LoginForm() {
         <div className="mb-5 flex items-start gap-3 rounded-md border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-800 dark:bg-green-950/60 dark:text-green-300">
           <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
           <div>
-            <p className="font-medium">Email verified!</p>
-            <p className="text-xs opacity-80 mt-0.5">Your email has been verified. You can now sign in.</p>
+            <p className="font-medium">{t('emailVerified.successTitle')}</p>
+            <p className="text-xs opacity-80 mt-0.5">{t('emailVerified.successBody')}</p>
           </div>
         </div>
       )}
@@ -80,12 +91,14 @@ export function LoginForm() {
           <AlertCircle className="mt-0.5 size-4 shrink-0" />
           <div>
             <p className="font-medium">
-              {emailVerifiedParam === 'expired' ? 'Verification link expired' : 'Invalid verification link'}
+              {emailVerifiedParam === 'expired'
+                ? t('emailVerified.expiredTitle')
+                : t('emailVerified.invalidTitle')}
             </p>
             <p className="text-xs opacity-80 mt-0.5">
               {emailVerifiedParam === 'expired'
-                ? 'This link has expired. Please sign in and request a new verification email.'
-                : 'This verification link is invalid or has already been used.'}
+                ? t('emailVerified.expiredBody')
+                : t('emailVerified.invalidBody')}
             </p>
           </div>
         </div>

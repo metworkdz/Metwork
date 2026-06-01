@@ -22,6 +22,7 @@ import { toSessionUser } from '@/server/auth/serialize';
 import { sendVerificationEmail, sendWelcomeEmail, sendAdminNewIncubatorNotification } from '@/server/notifications/mock';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { clientEnvVars } from '@/lib/env';
+import { dashboardPathForRole } from '@/lib/dashboard-routes';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { track, identify } from '@/lib/analytics';
 import type { Locale } from '@/i18n/config';
@@ -92,10 +93,7 @@ export async function POST(req: NextRequest) {
     if (!user) return jsonError(500, 'INTERNAL_ERROR', 'Failed to create account');
 
     const base = clientEnvVars.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
-    const dashboardPath =
-      user.role === 'INVESTOR'  ? '/dashboard/investor'
-      : user.role === 'INCUBATOR' ? '/dashboard/incubator'
-      : '/dashboard/entrepreneur';
+    const dashboardPath = dashboardPathForRole(user.role);
 
     // Email-verification link (fire-and-forget)
     const emailToken = await issueEmailToken(user.id);

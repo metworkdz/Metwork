@@ -312,6 +312,20 @@
       "errorRequired": "Ce champ est obligatoire.",
       "errorGeneric": "Une erreur s'est produite. Veuillez réessayer.",
       "errorLinkExpired": "Ce lien de réinitialisation est invalide ou a expiré. Veuillez en demander un nouveau."
+    },
+    "emailVerified": {
+      "successTitle": "E-mail vérifié !",
+      "successBody": "Votre e-mail a été vérifié. Vous pouvez maintenant vous connecter.",
+      "expiredTitle": "Lien de vérification expiré",
+      "expiredBody": "Ce lien a expiré. Connectez-vous et demandez un nouvel e-mail de vérification.",
+      "invalidTitle": "Lien de vérification invalide",
+      "invalidBody": "Ce lien de vérification est invalide ou a déjà été utilisé."
+    },
+    "forgotPassword": {
+      "subtitle": "Saisissez l’e-mail associé à votre compte.",
+      "submit": "Envoyer le lien de réinitialisation",
+      "checkEmailTitle": "Vérifiez votre e-mail",
+      "checkEmailBody": "Si un compte existe pour cet e-mail, nous avons envoyé les instructions de réinitialisation."
     }
   },
   "membership": {

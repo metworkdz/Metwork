@@ -7,17 +7,10 @@
  */
 import { redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/session';
-import type { UserRole } from '@/types/auth';
-
-const DASHBOARD_BY_ROLE: Record<UserRole, string> = {
-  ADMIN: '/dashboard/admin',
-  ENTREPRENEUR: '/dashboard/entrepreneur',
-  INVESTOR: '/dashboard/investor',
-  INCUBATOR: '/dashboard/incubator',
-};
+import { dashboardPathForRole } from '@/lib/dashboard-routes';
 
 export default async function DashboardIndexPage() {
   const user = await getServerSession();
   if (!user) redirect('/login');
-  redirect(DASHBOARD_BY_ROLE[user.role] ?? '/dashboard/entrepreneur');
+  redirect(dashboardPathForRole(user.role));
 }

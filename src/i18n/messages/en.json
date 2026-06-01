@@ -312,6 +312,20 @@
       "errorRequired": "This field is required.",
       "errorGeneric": "Something went wrong. Please try again.",
       "errorLinkExpired": "This reset link is invalid or has expired. Please request a new one."
+    },
+    "emailVerified": {
+      "successTitle": "Email verified!",
+      "successBody": "Your email has been verified. You can now sign in.",
+      "expiredTitle": "Verification link expired",
+      "expiredBody": "This link has expired. Please sign in and request a new verification email.",
+      "invalidTitle": "Invalid verification link",
+      "invalidBody": "This verification link is invalid or has already been used."
+    },
+    "forgotPassword": {
+      "subtitle": "Enter the email associated with your account.",
+      "submit": "Send reset link",
+      "checkEmailTitle": "Check your email",
+      "checkEmailBody": "If an account exists for that email, we've sent reset instructions."
     }
   },
   "membership": {

@@ -9,6 +9,7 @@ import { useRouter, Link } from '@/i18n/routing';
 import { authService } from '@/services/auth.service';
 import { ApiClientError } from '@/lib/api-client';
 import { useAuth } from '@/components/providers/auth-provider';
+import { dashboardPathForRole } from '@/lib/dashboard-routes';
 import { cn } from '@/lib/utils';
 
 const OTP_LENGTH = 6;
@@ -78,9 +79,9 @@ export function OtpForm() {
 
     startTransition(async () => {
       try {
-        await authService.verifyOtp({ userId, code });
+        const session = await authService.verifyOtp({ userId, code });
         await refresh();
-        router.push('/dashboard/entrepreneur');
+        router.push(dashboardPathForRole(session.user.role));
         router.refresh();
       } catch (err) {
         if (err instanceof ApiClientError && (err.code === 'INVALID_OTP' || err.status === 400)) {

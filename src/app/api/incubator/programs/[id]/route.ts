@@ -11,8 +11,16 @@ import { fromZod, json, jsonError } from '@/server/http/json';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-const isoDate = z.string().regex(datePattern, 'Must be YYYY-MM-DD');
+// Accept either a date-only string (YYYY-MM-DD) or a full ISO datetime, so the
+// edit form (which sends ISO datetimes, like the create route) validates the
+// same way create does. The refine below still orders the dates correctly
+// because all three fields are produced in the same format together.
+const isoDate = z
+  .string()
+  .refine(
+    (s) => /^\d{4}-\d{2}-\d{2}$/.test(s) || !Number.isNaN(Date.parse(s)),
+    'Must be a valid date (YYYY-MM-DD or ISO 8601)',
+  );
 
 const patchSchema = z.object({
   title: z.string().min(2).max(150).optional(),

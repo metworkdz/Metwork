@@ -48,9 +48,9 @@ export function ForgotPasswordForm() {
           <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary-100 text-primary-600">
             <CheckCircle2 className="size-6" />
           </div>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight">Check your email</h1>
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight">{t('forgotPassword.checkEmailTitle')}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            If an account exists for that email, we&apos;ve sent reset instructions.
+            {t('forgotPassword.checkEmailBody')}
           </p>
           <Button asChild variant="outline" className="mt-6 w-full">
             <Link href="/login">{t('login.submit')}</Link>
@@ -65,7 +65,7 @@ export function ForgotPasswordForm() {
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">{t('login.forgotPassword')}</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Enter the email associated with your account.
+          {t('forgotPassword.subtitle')}
         </p>
       </div>
 
@@ -98,7 +98,7 @@ export function ForgotPasswordForm() {
           size="lg"
           loading={isSubmitting || isPending}
         >
-          Send reset link
+          {t('forgotPassword.submit')}
         </Button>
       </form>
 
