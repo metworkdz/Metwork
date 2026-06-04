@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { ImageUploadField } from '@/components/shared/image-upload-field';
+import { GalleryUploadField } from '@/components/shared/gallery-upload-field';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 import type { SpaceCategory } from '@/types/domain';
 
@@ -43,6 +43,7 @@ interface SpaceFormDialogProps {
     city?: string; pricePerHour?: number | null; pricePerDay?: number | null;
     pricePerMonth?: number | null; capacity?: number; amenities?: string[];
     acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
+    imageUrls?: string[] | null;
     workingDays?: number[]; openingTime?: string; closingTime?: string;
   };
   open?: boolean;
@@ -69,7 +70,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
   const [capacity, setCapacity] = useState('10');
   const [amenities, setAmenities] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   // Working hours
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [openingTime, setOpeningTime] = useState('09:00');
@@ -88,7 +89,11 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
       setCapacity(initialData.capacity != null ? String(initialData.capacity) : '10');
       setAmenities((initialData.amenities ?? []).join(', '));
       setAcceptedMethods(initialData.acceptedPaymentMethods ?? ['ONLINE', 'CASH']);
-      setImageUrl(initialData.imageUrl ?? '');
+      setImageUrls(
+        initialData.imageUrls?.length
+          ? initialData.imageUrls
+          : (initialData.imageUrl ? [initialData.imageUrl] : []),
+      );
       setWorkingDays(initialData.workingDays ?? [1, 2, 3, 4, 5]);
       setOpeningTime(initialData.openingTime ?? '09:00');
       setClosingTime(initialData.closingTime ?? '18:00');
@@ -111,7 +116,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
     setPricePerHour(''); setPricePerDay(''); setPricePerMonth('');
     setCapacity('10'); setAmenities('');
     setAcceptedMethods(['ONLINE', 'CASH']);
-    setImageUrl('');
+    setImageUrls([]);
     setWorkingDays([1, 2, 3, 4, 5]); setOpeningTime('09:00'); setClosingTime('18:00');
     setError(null);
   }
@@ -158,7 +163,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
           capacity:      Number(capacity),
           amenities:     amenities.split(',').map((s) => s.trim()).filter(Boolean),
           acceptedPaymentMethods: acceptedMethods,
-          imageUrl:      imageUrl || null,
+          imageUrls,
           workingDays,
           openingTime,
           closingTime,
@@ -238,11 +243,10 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
               />
             </div>
             <div className="sm:col-span-2">
-              <ImageUploadField
+              <GalleryUploadField
                 label={t('labelCoverImage')}
-                currentUrl={imageUrl || null}
-                onUpload={(url) => setImageUrl(url)}
-                onRemove={() => setImageUrl('')}
+                value={imageUrls}
+                onChange={setImageUrls}
               />
             </div>
           </div>

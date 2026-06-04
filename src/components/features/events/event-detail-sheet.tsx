@@ -11,6 +11,7 @@ import {
   EventRegisterForm,
   EventRegisterSuccess,
 } from './event-register-form';
+import { FixedDateCalendar } from '@/components/shared/fixed-date-calendar';
 import { bookingService } from '@/services/booking.service';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
@@ -118,6 +119,21 @@ export function EventDetailSheet({ event, open, onOpenChange }: EventDetailSheet
                   icon={<Badge variant="primary" className="text-[10px]">FEE</Badge>}
                   label={t('ticket')}
                   value={event.price === 0 ? t('free') : formatCurrency(event.price, locale)}
+                />
+              </div>
+
+              {/* Event calendar — marks the fixed date and whether registration is open */}
+              <div className="mt-6">
+                <FixedDateCalendar
+                  date={event.eventDate}
+                  state={
+                    status?.eventPassed
+                      ? 'closed'
+                      : status && status.taken >= status.capacity
+                        ? 'full'
+                        : 'open'
+                  }
+                  locale={locale}
                 />
               </div>
 

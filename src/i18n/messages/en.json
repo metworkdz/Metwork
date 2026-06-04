@@ -93,6 +93,21 @@
     "changeProfilePicture": "Change profile picture",
     "profilePicture": "Profile picture",
     "preview": "Preview",
+    "addPhotos": "Add photos",
+    "cover": "Cover",
+    "setCover": "Set as cover",
+    "removePhoto": "Remove",
+    "movePhotoEarlier": "Move earlier",
+    "movePhotoLater": "Move later",
+    "galleryHint": "Up to {max} images — JPG, PNG, WebP or GIF, max 5 MB each. The first image is the cover.",
+    "photoTooLarge": "Image is too large (max {mb} MB).",
+    "photoTypeInvalid": "Only image files are allowed.",
+    "photoUploadFailed": "Upload failed. Please try again.",
+    "photoNetworkError": "Network error — could not upload the image.",
+    "photoMaxReached": "You can add up to {max} images.",
+    "photosCount": "{count} photos",
+    "previousImage": "Previous image",
+    "nextImage": "Next image",
     "calendar": {
       "previousMonth": "Previous month",
       "nextMonth": "Next month",
@@ -105,6 +120,11 @@
       "selectTime": "Select a time",
       "available": "Available",
       "unavailable": "Unavailable"
+    },
+    "fixedDate": {
+      "availableOn": "Spots open on this date",
+      "fullyBooked": "Fully booked",
+      "closed": "Registration closed"
     }
   },
   "nav": {
@@ -1846,6 +1866,15 @@
       "hourlyCapAutoSwitch": "Hourly bookings: max 7 hours per day — exceeding this will automatically switch to the day rate",
       "builderDiscount": "Builder discount ({percent}% off)"
     },
+    "scheduler": {
+      "noAvailabilityThisMonth": "No availability this month",
+      "pickEndDate": "Now pick a check-out date",
+      "rangeHint": "Pick your start and end dates",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "loadingTimes": "Loading times…",
+      "capHint": "Up to 7 hours per day"
+    },
     "explorer": {
       "searchPlaceholder": "Search spaces, amenities, hosts…",
       "allCities": "All cities",
@@ -3069,6 +3098,7 @@
     "title": "Registration Form",
     "subtitle": "Add custom questions for applicants to answer when registering.",
     "addField": "Add field",
+    "insertDefaults": "Insert default questions",
     "save": "Save",
     "saved": "Saved",
     "saveError": "Failed to save. Please try again.",
@@ -3089,8 +3119,33 @@
     "typeDropdown": "Dropdown",
     "typeMultipleChoice": "Multiple choice",
     "typeCheckbox": "Checkbox",
+    "typeUrl": "Link (URL)",
     "validationLabelRequired": "All fields must have a label.",
     "validationOptionsRequired": "Field \"{label}\" needs at least one option."
+  },
+  "defaultQuestions": {
+    "city": "City / Wilaya",
+    "startupName": "Startup / project name",
+    "stage": "Stage / maturity",
+    "stageIdea": "Idea",
+    "stagePrototype": "Prototype / MVP",
+    "stageRevenue": "Generating revenue",
+    "stageGrowth": "Growth / scaling",
+    "sector": "Sector",
+    "sectorTech": "Technology",
+    "sectorAgritech": "Agritech",
+    "sectorFintech": "Fintech",
+    "sectorHealth": "Health",
+    "sectorEcommerce": "E-commerce",
+    "sectorEducation": "Education",
+    "sectorEnergy": "Energy",
+    "sectorOther": "Other",
+    "website": "Website / social link",
+    "description": "Short description of your project",
+    "mvpLink": "MVP / demo link",
+    "pitchDeck": "Pitch deck link",
+    "motivation": "Why do you want to join this program?",
+    "outcomes": "What outcomes do you expect from this program?"
   },
   "registrationsTable": {
     "title": "Registrations",

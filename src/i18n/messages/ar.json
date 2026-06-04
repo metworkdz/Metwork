@@ -93,6 +93,21 @@
     "changeProfilePicture": "تغيير صورة الملف الشخصي",
     "profilePicture": "صورة الملف الشخصي",
     "preview": "معاينة",
+    "addPhotos": "إضافة صور",
+    "cover": "الغلاف",
+    "setCover": "تعيين كغلاف",
+    "removePhoto": "إزالة",
+    "movePhotoEarlier": "تقديم",
+    "movePhotoLater": "تأخير",
+    "galleryHint": "حتى {max} صور — JPG أو PNG أو WebP أو GIF، بحد أقصى 5 ميغابايت لكل صورة. الصورة الأولى هي الغلاف.",
+    "photoTooLarge": "الصورة كبيرة جدًا (بحد أقصى {mb} ميغابايت).",
+    "photoTypeInvalid": "يُسمح بملفات الصور فقط.",
+    "photoUploadFailed": "فشل الرفع. يرجى المحاولة مرة أخرى.",
+    "photoNetworkError": "خطأ في الشبكة — تعذّر رفع الصورة.",
+    "photoMaxReached": "يمكنك إضافة حتى {max} صور.",
+    "photosCount": "{count} صور",
+    "previousImage": "الصورة السابقة",
+    "nextImage": "الصورة التالية",
     "calendar": {
       "previousMonth": "الشهر السابق",
       "nextMonth": "الشهر التالي",
@@ -105,6 +120,11 @@
       "selectTime": "اختر وقتًا",
       "available": "متاح",
       "unavailable": "غير متاح"
+    },
+    "fixedDate": {
+      "availableOn": "التسجيل مفتوح في هذا التاريخ",
+      "fullyBooked": "اكتمل العدد",
+      "closed": "التسجيل مغلق"
     }
   },
   "nav": {
@@ -1846,6 +1866,15 @@
       "hourlyCapAutoSwitch": "الحجوزات بالساعة: حد أقصى 7 ساعات يومياً — تجاوز ذلك يحوّل تلقائياً إلى السعر اليومي",
       "builderDiscount": "خصم الباني ({percent}٪)"
     },
+    "scheduler": {
+      "noAvailabilityThisMonth": "لا توجد مواعيد متاحة هذا الشهر",
+      "pickEndDate": "اختر الآن تاريخ المغادرة",
+      "rangeHint": "اختر تاريخ البداية والنهاية",
+      "startTime": "وقت البداية",
+      "endTime": "وقت النهاية",
+      "loadingTimes": "جارٍ تحميل المواعيد…",
+      "capHint": "حتى 7 ساعات يومياً"
+    },
     "explorer": {
       "searchPlaceholder": "ابحث عن فضاءات، مرافق، مضيفين…",
       "allCities": "جميع المدن",
@@ -3069,6 +3098,7 @@
     "title": "نموذج التسجيل",
     "subtitle": "أضف أسئلة مخصصة للمتقدمين عند التسجيل.",
     "addField": "إضافة حقل",
+    "insertDefaults": "إدراج الأسئلة الافتراضية",
     "save": "حفظ",
     "saved": "تم الحفظ",
     "saveError": "فشل الحفظ. يرجى المحاولة مرة أخرى.",
@@ -3089,8 +3119,33 @@
     "typeDropdown": "قائمة منسدلة",
     "typeMultipleChoice": "اختيار متعدد",
     "typeCheckbox": "مربع اختيار",
+    "typeUrl": "رابط (URL)",
     "validationLabelRequired": "يجب أن يكون لكل حقل تسمية.",
     "validationOptionsRequired": "الحقل \"{label}\" يحتاج خياراً واحداً على الأقل."
+  },
+  "defaultQuestions": {
+    "city": "المدينة / الولاية",
+    "startupName": "اسم الشركة الناشئة / المشروع",
+    "stage": "المرحلة / النضج",
+    "stageIdea": "فكرة",
+    "stagePrototype": "نموذج أولي / MVP",
+    "stageRevenue": "يحقق إيرادات",
+    "stageGrowth": "نمو / توسّع",
+    "sector": "القطاع",
+    "sectorTech": "التكنولوجيا",
+    "sectorAgritech": "التكنولوجيا الزراعية",
+    "sectorFintech": "التكنولوجيا المالية",
+    "sectorHealth": "الصحة",
+    "sectorEcommerce": "التجارة الإلكترونية",
+    "sectorEducation": "التعليم",
+    "sectorEnergy": "الطاقة",
+    "sectorOther": "أخرى",
+    "website": "الموقع الإلكتروني / رابط اجتماعي",
+    "description": "وصف موجز لمشروعك",
+    "mvpLink": "رابط النموذج الأولي / العرض التوضيحي",
+    "pitchDeck": "رابط عرض المشروع التقديمي",
+    "motivation": "لماذا تريد الانضمام إلى هذا البرنامج؟",
+    "outcomes": "ما النتائج التي تتوقعها من هذا البرنامج؟"
   },
   "registrationsTable": {
     "title": "التسجيلات",

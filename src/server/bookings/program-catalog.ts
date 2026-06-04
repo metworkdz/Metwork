@@ -18,6 +18,7 @@ function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
     type:                   r.type,
     city:                   r.city,
     imageUrl:               r.imageUrl,
+    imageUrls:              r.imageUrls?.length ? r.imageUrls : (r.imageUrl ? [r.imageUrl] : []),
     price:                  r.price,
     seatsTotal:             r.seatsTotal,
     seatsTaken,

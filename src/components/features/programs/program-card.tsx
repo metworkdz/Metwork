@@ -5,7 +5,7 @@
  * deadline countdown chip, and a strong "Apply" affordance.
  */
 import { useTranslations } from 'next-intl';
-import { ArrowRight, CalendarRange, MapPin, Users } from 'lucide-react';
+import { ArrowRight, CalendarRange, Images, MapPin, Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ProgramImage } from './program-image';
@@ -32,6 +32,8 @@ function daysUntil(iso: string): number {
 
 export function ProgramCard({ program, taken, locale, onSelect, featured }: ProgramCardProps) {
   const t = useTranslations('programs.card');
+  const tc = useTranslations('common');
+  const photoCount = program.imageUrls?.length ?? 0;
   const occupied = taken ?? program.seatsTaken;
   const remaining = Math.max(0, program.seatsTotal - occupied);
   const fillPct = Math.min(100, Math.round((occupied / program.seatsTotal) * 100));
@@ -73,6 +75,12 @@ export function ProgramCard({ program, taken, locale, onSelect, featured }: Prog
         <div className="absolute start-3 top-3 inline-flex items-center gap-1 rounded-full bg-foreground/90 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-background">
           {programTypeLabel[program.type]}
         </div>
+        {photoCount > 1 && (
+          <div className="absolute end-3 bottom-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
+            <Images className="size-3" />
+            {tc('photosCount', { count: photoCount })}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col p-6">

@@ -23,6 +23,7 @@ function fromRecord(r: import('@/server/db/store').SpaceRecord): Space {
     category:               r.category,
     city:                   r.city,
     imageUrl:               r.imageUrl,
+    imageUrls:              r.imageUrls?.length ? r.imageUrls : (r.imageUrl ? [r.imageUrl] : []),
     pricePerHour:           r.pricePerHour,
     pricePerDay:            r.pricePerDay,
     pricePerMonth:          r.pricePerMonth,

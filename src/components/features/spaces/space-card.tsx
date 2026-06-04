@@ -11,7 +11,7 @@
  *  - Hover: shadow lift + very subtle scale; no jarring transitions
  */
 import { useTranslations } from 'next-intl';
-import { ArrowRight, MapPin, Star } from 'lucide-react';
+import { ArrowRight, Images, MapPin, Star } from 'lucide-react';
 import { SpaceImage } from './space-image';
 import { categoryLabel } from './space-meta';
 import { formatCurrency } from '@/lib/format';
@@ -36,7 +36,9 @@ function startingPrice(space: Space): { amount: number; suffixKey: PriceSuffixKe
 
 export function SpaceCard({ space, locale, onSelect }: SpaceCardProps) {
   const t = useTranslations('spaces.card');
+  const tc = useTranslations('common');
   const price = startingPrice(space);
+  const photoCount = space.imageUrls?.length ?? 0;
 
   return (
     <article
@@ -72,6 +74,16 @@ export function SpaceCard({ space, locale, onSelect }: SpaceCardProps) {
             {categoryLabel[space.category]}
           </span>
         </div>
+
+        {/* Photo count badge */}
+        {photoCount > 1 && (
+          <div className="absolute end-3 bottom-3">
+            <span className="inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
+              <Images className="size-3" />
+              {tc('photosCount', { count: photoCount })}
+            </span>
+          </div>
+        )}
 
         {/* Rating badge */}
         {space.rating != null && (

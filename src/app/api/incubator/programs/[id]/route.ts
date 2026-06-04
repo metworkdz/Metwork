@@ -28,6 +28,7 @@ const patchSchema = z.object({
   type: z.enum(['INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP']).optional(),
   city: z.string().min(1).optional(),
   imageUrl: z.string().url().nullable().optional(),
+  imageUrls: z.array(z.string().url()).max(8).optional(),
   price: z.number().int().nonnegative().optional(),
   seatsTotal: z.number().int().positive().optional(),
   deadline:  isoDate.optional(),
@@ -73,6 +74,11 @@ export async function PATCH(
     if (input.type !== undefined) p.type = input.type;
     if (input.city !== undefined) p.city = input.city;
     if (input.imageUrl !== undefined) p.imageUrl = input.imageUrl ?? null;
+    // imageUrls wins when sent: it's the ordered gallery, cover = imageUrls[0].
+    if (input.imageUrls !== undefined) {
+      p.imageUrls = input.imageUrls;
+      p.imageUrl = input.imageUrls[0] ?? null;
+    }
     if (input.price !== undefined) p.price = input.price;
     if (input.seatsTotal !== undefined) p.seatsTotal = input.seatsTotal;
     if (input.deadline !== undefined) p.deadline = input.deadline;

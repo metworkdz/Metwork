@@ -28,8 +28,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { ImageUploadField } from '@/components/shared/image-upload-field';
+import { GalleryUploadField } from '@/components/shared/gallery-upload-field';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
+import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
 import type { ProgramType } from '@/types/domain';
 
 const PROGRAM_TYPE_KEYS: ProgramType[] = ['INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP'];
@@ -42,6 +43,7 @@ interface ProgramFormDialogProps {
     title?: string; description?: string; type?: ProgramType; city?: string;
     price?: number; seatsTotal?: number; deadline?: string; startDate?: string;
     endDate?: string; acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
+    imageUrls?: string[] | null;
   };
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
@@ -50,6 +52,7 @@ interface ProgramFormDialogProps {
 
 export function ProgramFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange, cashEnabled = true }: ProgramFormDialogProps) {
   const t = useTranslations('incubator.programForm');
+  const tQuestions = useTranslations('defaultQuestions');
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -66,7 +69,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   // FIX: BUG-2 — pre-fill form when in edit mode
   useEffect(() => {
@@ -82,7 +85,11 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
       setStartDate(initialData.startDate ? initialData.startDate.substring(0, 10) : '');
       setEndDate(initialData.endDate ? initialData.endDate.substring(0, 10) : '');
       setAcceptedMethods(initialData.acceptedPaymentMethods ?? ['ONLINE', 'CASH']);
-      setImageUrl(initialData.imageUrl ?? '');
+      setImageUrls(
+        initialData.imageUrls?.length
+          ? initialData.imageUrls
+          : (initialData.imageUrl ? [initialData.imageUrl] : []),
+      );
       setError(null);
     }
   }, [editId, initialData]);
@@ -101,13 +108,30 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
     setTitle(''); setDescription(''); setType('INCUBATION'); setCity('');
     setPrice('0'); setSeatsTotal('20'); setDeadline(''); setStartDate(''); setEndDate('');
     setAcceptedMethods(['ONLINE', 'CASH']);
-    setImageUrl('');
+    setImageUrls([]);
     setError(null);
   }
 
   function toIso(dateLocal: string) {
     // Convert local date input (YYYY-MM-DD) to ISO string at noon local
     return new Date(`${dateLocal}T12:00:00`).toISOString();
+  }
+
+  // Seed a brand-new program's application form with the default question set,
+  // localized to the incubator's current locale. Best-effort: never blocks
+  // program creation (the builder's "Insert default questions" button is the
+  // manual fallback). Runs on CREATE only — existing programs are never touched.
+  async function seedDefaultQuestions(programId: string) {
+    try {
+      const fields = buildDefaultApplicationFields((k) => tQuestions(k));
+      await fetch('/api/incubator/registration-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entityType: 'PROGRAM', entityId: programId, fields }),
+      });
+    } catch {
+      // swallow — seeding is non-critical
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -132,13 +156,18 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
           startDate: toIso(startDate),
           endDate: toIso(endDate),
           acceptedPaymentMethods: acceptedMethods,
-          imageUrl: imageUrl || null,
+          imageUrls,
         }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { message?: string };
         setError(data.message ?? (editId ? t('errorUpdate') : t('errorCreate')));
         return;
+      }
+      // On CREATE only, pre-populate the application form with default questions.
+      if (!editId) {
+        const created = await res.json().catch(() => null) as { id?: string } | null;
+        if (created?.id) await seedDefaultQuestions(created.id);
       }
       onCreated();
       setOpen(false);
@@ -209,11 +238,10 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
               />
             </div>
             <div className="sm:col-span-2">
-              <ImageUploadField
+              <GalleryUploadField
                 label={t('labelCoverImage')}
-                currentUrl={imageUrl || null}
-                onUpload={(url) => setImageUrl(url)}
-                onRemove={() => setImageUrl('')}
+                value={imageUrls}
+                onChange={setImageUrls}
               />
             </div>
           </div>

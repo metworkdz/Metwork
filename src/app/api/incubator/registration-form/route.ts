@@ -29,6 +29,7 @@ const FIELD_TYPES = [
   'CHECKBOX',
   'PHONE',
   'EMAIL',
+  'URL',
 ] as const;
 
 const fieldSchema = z.object({

@@ -16,6 +16,7 @@ const patchSchema = z.object({
   description: z.string().max(2000).optional(),
   city: z.string().min(1).optional(),
   imageUrl: z.string().url().nullable().optional(),
+  imageUrls: z.array(z.string().url()).max(8).optional(),
   price: z.number().int().nonnegative().optional(),
   isOnline: z.boolean().optional(),
   capacity: z.number().int().positive().optional(),
@@ -60,6 +61,11 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (input.description !== undefined) event.description = input.description;
     if (input.city !== undefined) event.city = input.city;
     if (input.imageUrl !== undefined) event.imageUrl = input.imageUrl ?? null;
+    // imageUrls wins when sent: it's the ordered gallery, cover = imageUrls[0].
+    if (input.imageUrls !== undefined) {
+      event.imageUrls = input.imageUrls;
+      event.imageUrl = input.imageUrls[0] ?? null;
+    }
     if (input.price !== undefined) event.price = input.price;
     if (input.isOnline !== undefined) event.isOnline = input.isOnline;
     if (input.capacity !== undefined) event.capacity = input.capacity;

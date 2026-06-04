@@ -18,6 +18,7 @@ import { listFormFields } from '@/server/registrations/service';
 import { getProgramAttendance } from '@/server/bookings/service';
 import { programTypeLabel } from '@/components/features/programs/program-meta';
 import { RegistrationForm } from '@/components/features/registrations/registration-form';
+import { ImageCarousel } from '@/components/shared/image-carousel';
 import { readSession } from '@/server/auth/session';
 import type { ProgramType } from '@/types/domain';
 import { formatCurrency, formatDate } from '@/lib/format';
@@ -55,6 +56,10 @@ export default async function ProgramDetailPage({ params }: PageProps) {
   const program = await findProgramBySlugOrId(slug);
   if (!program) notFound();
 
+  const galleryImages = program.imageUrls?.length
+    ? program.imageUrls
+    : (program.imageUrl ? [program.imageUrl] : []);
+
   const [{ taken: seatsTaken }, formFields] = await Promise.all([
     getProgramAttendance(program.id),
     listFormFields('PROGRAM', program.id),
@@ -89,21 +94,16 @@ export default async function ProgramDetailPage({ params }: PageProps) {
       <div className="grid gap-8 lg:grid-cols-5">
         {/* ── Left: image + meta ── */}
         <div className="lg:col-span-3 space-y-6">
-          {/* Image */}
-          <div className="overflow-hidden rounded-2xl border border-border bg-muted aspect-video">
-            {program.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={program.imageUrl}
-                alt={program.title}
-                className="size-full object-cover"
-              />
-            ) : (
+          {/* Image gallery */}
+          {galleryImages.length > 0 ? (
+            <ImageCarousel images={galleryImages} alt={program.title} />
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-border bg-muted aspect-video">
               <div className="flex size-full items-center justify-center">
                 <Briefcase className="size-12 text-muted-foreground/30" />
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Badges + title */}
           <div>

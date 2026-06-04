@@ -193,6 +193,7 @@ export function EventsManager() {
             eventDate: editingEvent.eventDate,
             acceptedPaymentMethods: editingEvent.acceptedPaymentMethods ?? ['ONLINE'],
             imageUrl: editingEvent.imageUrl,
+            imageUrls: editingEvent.imageUrls,
           }}
           open={true}
           onOpenChange={(v) => { if (!v) setEditingEvent(null); }}

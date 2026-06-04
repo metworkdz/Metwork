@@ -35,6 +35,13 @@ export interface AvailabilityCalendarProps {
   /** ISO yyyy-mm-dd dates rendered as unavailable / blocked. */
   unavailableDates?: string[];
   selectedDate?: string | null;
+  /**
+   * Optional range end (ISO). When set together with `selectedDate`, days
+   * strictly between the two are tinted and the end day gets the brand fill —
+   * used by the space scheduler's multi-day (DAY/MONTH) picker. Default off,
+   * so single-date consumers (mentors) are unaffected.
+   */
+  selectedRangeEnd?: string | null;
   onSelectDate: (date: string) => void;
   /** Earliest selectable date (ISO). Defaults to today. Past dates are always disabled. */
   minDate?: string;
@@ -104,6 +111,7 @@ export function AvailabilityCalendar({
   availableDates = [],
   unavailableDates = [],
   selectedDate = null,
+  selectedRangeEnd = null,
   onSelectDate,
   minDate,
   locale = 'en',
@@ -298,7 +306,13 @@ export function AvailabilityCalendar({
           const isPast = iso < floor;
           const isUnavailable = unavailableSet.has(iso);
           const isAvailable = availableSet.has(iso);
-          const isSelected = selectedDate === iso;
+          const isRangeEnd = selectedRangeEnd != null && selectedRangeEnd === iso;
+          const isSelected = selectedDate === iso || isRangeEnd;
+          const isInRange =
+            selectedDate != null &&
+            selectedRangeEnd != null &&
+            iso > selectedDate &&
+            iso < selectedRangeEnd;
           const selectable = isSelectable(iso);
           const isFocusTarget = iso === focusedDate;
 
@@ -335,6 +349,8 @@ export function AvailabilityCalendar({
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card',
                 // Selected — brand green.
                 isSelected && 'bg-primary text-primary-foreground shadow-sm hover:bg-primary',
+                // In-range (between start and end) — subtle brand tint.
+                !isSelected && isInRange && 'bg-primary/15 text-foreground hover:bg-primary/25',
                 // Blocked (block mode) — clickable but visibly struck.
                 !isSelected &&
                   mode === 'block' &&
@@ -347,9 +363,10 @@ export function AvailabilityCalendar({
                   'hover:bg-accent hover:text-accent-foreground',
                 // Unavailable (select mode) / past — muted & struck.
                 !isSelected &&
+                  !isInRange &&
                   !selectable &&
                   'cursor-not-allowed text-muted-foreground/40',
-                !isSelected && !selectable && (isUnavailable || (mode === 'select' && !isPast)) && 'line-through',
+                !isSelected && !isInRange && !selectable && (isUnavailable || (mode === 'select' && !isPast)) && 'line-through',
               )}
             >
               {day}

@@ -93,6 +93,21 @@
     "changeProfilePicture": "Changer la photo de profil",
     "profilePicture": "Photo de profil",
     "preview": "Aperçu",
+    "addPhotos": "Ajouter des photos",
+    "cover": "Couverture",
+    "setCover": "Définir comme couverture",
+    "removePhoto": "Supprimer",
+    "movePhotoEarlier": "Déplacer avant",
+    "movePhotoLater": "Déplacer après",
+    "galleryHint": "Jusqu'à {max} images — JPG, PNG, WebP ou GIF, max 5 Mo chacune. La première image est la couverture.",
+    "photoTooLarge": "Image trop volumineuse (max {mb} Mo).",
+    "photoTypeInvalid": "Seuls les fichiers image sont autorisés.",
+    "photoUploadFailed": "Échec du téléversement. Veuillez réessayer.",
+    "photoNetworkError": "Erreur réseau — impossible de téléverser l'image.",
+    "photoMaxReached": "Vous pouvez ajouter jusqu'à {max} images.",
+    "photosCount": "{count} photos",
+    "previousImage": "Image précédente",
+    "nextImage": "Image suivante",
     "calendar": {
       "previousMonth": "Mois précédent",
       "nextMonth": "Mois suivant",
@@ -105,6 +120,11 @@
       "selectTime": "Choisir un horaire",
       "available": "Disponible",
       "unavailable": "Indisponible"
+    },
+    "fixedDate": {
+      "availableOn": "Inscriptions ouvertes à cette date",
+      "fullyBooked": "Complet",
+      "closed": "Inscriptions closes"
     }
   },
   "nav": {
@@ -1846,6 +1866,15 @@
       "hourlyCapAutoSwitch": "Réservations horaires : max 7 heures par jour — au-delà, le tarif journalier s'applique automatiquement",
       "builderDiscount": "Remise Bâtisseur ({percent} % de réduction)"
     },
+    "scheduler": {
+      "noAvailabilityThisMonth": "Aucune disponibilité ce mois-ci",
+      "pickEndDate": "Choisissez maintenant une date de fin",
+      "rangeHint": "Choisissez vos dates de début et de fin",
+      "startTime": "Heure de début",
+      "endTime": "Heure de fin",
+      "loadingTimes": "Chargement des horaires…",
+      "capHint": "Jusqu'à 7 heures par jour"
+    },
     "explorer": {
       "searchPlaceholder": "Rechercher espaces, équipements, hôtes…",
       "allCities": "Toutes les villes",
@@ -3069,6 +3098,7 @@
     "title": "Formulaire d'inscription",
     "subtitle": "Ajoutez des questions personnalisées pour les candidats.",
     "addField": "Ajouter un champ",
+    "insertDefaults": "Insérer les questions par défaut",
     "save": "Enregistrer",
     "saved": "Enregistré",
     "saveError": "Échec de l'enregistrement. Veuillez réessayer.",
@@ -3089,8 +3119,33 @@
     "typeDropdown": "Liste déroulante",
     "typeMultipleChoice": "Choix multiple",
     "typeCheckbox": "Cases à cocher",
+    "typeUrl": "Lien (URL)",
     "validationLabelRequired": "Tous les champs doivent avoir un libellé.",
     "validationOptionsRequired": "Le champ \"{label}\" nécessite au moins une option."
+  },
+  "defaultQuestions": {
+    "city": "Ville / Wilaya",
+    "startupName": "Nom de la startup / du projet",
+    "stage": "Stade / maturité",
+    "stageIdea": "Idée",
+    "stagePrototype": "Prototype / MVP",
+    "stageRevenue": "Génère des revenus",
+    "stageGrowth": "Croissance / mise à l'échelle",
+    "sector": "Secteur",
+    "sectorTech": "Technologie",
+    "sectorAgritech": "Agritech",
+    "sectorFintech": "Fintech",
+    "sectorHealth": "Santé",
+    "sectorEcommerce": "E-commerce",
+    "sectorEducation": "Éducation",
+    "sectorEnergy": "Énergie",
+    "sectorOther": "Autre",
+    "website": "Site web / réseau social",
+    "description": "Brève description de votre projet",
+    "mvpLink": "Lien MVP / démo",
+    "pitchDeck": "Lien du pitch deck",
+    "motivation": "Pourquoi voulez-vous rejoindre ce programme ?",
+    "outcomes": "Quels résultats attendez-vous de ce programme ?"
   },
   "registrationsTable": {
     "title": "Inscriptions",

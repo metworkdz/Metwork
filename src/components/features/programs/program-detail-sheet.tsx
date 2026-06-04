@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { ProgramImage } from './program-image';
 import { programTypeLabel } from './program-meta';
 import { ProgramApplyForm, ProgramApplySuccess } from './program-apply-form';
+import { FixedDateCalendar } from '@/components/shared/fixed-date-calendar';
 import { bookingService } from '@/services/booking.service';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
@@ -119,6 +120,22 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                       ? t('free')
                       : formatCurrency(program.price, locale)
                   }
+                />
+              </div>
+
+              {/* Cohort calendar — surfaces the fixed dates and whether it's still bookable */}
+              <div className="mt-6">
+                <FixedDateCalendar
+                  date={program.startDate}
+                  endDate={program.endDate}
+                  state={
+                    status?.deadlinePassed
+                      ? 'closed'
+                      : status && status.taken >= status.capacity
+                        ? 'full'
+                        : 'open'
+                  }
+                  locale={locale}
                 />
               </div>
 

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from '@/i18n/routing';
 import { findSpaceById } from '@/server/bookings/space-catalog';
 import { SpacePublicBookingCTA } from '@/components/features/spaces/space-public-booking-cta';
+import { ImageCarousel } from '@/components/shared/image-carousel';
 import { categoryLabel } from '@/components/features/spaces/space-meta';
 import type { SpaceCategory } from '@/types/domain';
 import { formatCurrency } from '@/lib/format';
@@ -37,6 +38,10 @@ export default async function SpaceDetailPage({ params }: PageProps) {
   const space = await findSpaceById(id);
   if (!space) notFound();
 
+  const galleryImages = space.imageUrls?.length
+    ? space.imageUrls
+    : (space.imageUrl ? [space.imageUrl] : []);
+
   const prices: { label: string; value: number }[] = [];
   if (space.pricePerHour != null) prices.push({ label: t('hourLabel'), value: space.pricePerHour });
   if (space.pricePerDay != null) prices.push({ label: t('dayLabel'), value: space.pricePerDay });
@@ -56,21 +61,16 @@ export default async function SpaceDetailPage({ params }: PageProps) {
       <div className="grid gap-8 lg:grid-cols-5">
         {/* Left: image + meta */}
         <div className="lg:col-span-3 space-y-6">
-          {/* Image */}
-          <div className="overflow-hidden rounded-2xl border border-border bg-muted aspect-video">
-            {space.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={space.imageUrl}
-                alt={space.name}
-                className="size-full object-cover"
-              />
-            ) : (
+          {/* Image gallery */}
+          {galleryImages.length > 0 ? (
+            <ImageCarousel images={galleryImages} alt={space.name} />
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-border bg-muted aspect-video">
               <div className="flex size-full items-center justify-center">
                 <Building2 className="size-12 text-muted-foreground/30" />
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Badges + title */}
           <div>

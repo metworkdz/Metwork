@@ -21,6 +21,7 @@ const createProgramSchema = z.object({
   type:        z.enum(['INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP']),
   city:        z.string().min(1).max(80),
   imageUrl:    z.string().url().optional().nullable(),
+  imageUrls:   z.array(z.string().url()).max(8).optional(),
   price:       z.number().int().min(0),
   seatsTotal:  z.number().int().min(1).max(10_000),
   deadline:    z.string().datetime(),
@@ -63,6 +64,11 @@ export async function POST(req: NextRequest) {
   const paymentMethods: ('ONLINE' | 'CASH')[] =
     getEffectiveSubscriptionCode(inc) === 'COMMISSION' ? ['ONLINE'] : input.acceptedPaymentMethods;
 
+  // Multi-image: imageUrls is the ordered gallery; imageUrls[0] is the cover.
+  // Keep imageUrl in sync with the cover so legacy readers keep working.
+  const imageUrls = input.imageUrls?.length ? input.imageUrls : (input.imageUrl ? [input.imageUrl] : []);
+  const coverUrl = imageUrls[0] ?? null;
+
   const now = new Date().toISOString();
   const record = await db.update<ProgramRecord>((d) => {
     if (!Array.isArray(d.programs)) d.programs = [];
@@ -82,7 +88,8 @@ export async function POST(req: NextRequest) {
       description:            input.description.trim(),
       type:                   input.type,
       city:                   input.city.trim(),
-      imageUrl:               input.imageUrl ?? null,
+      imageUrl:               coverUrl,
+      imageUrls,
       price:                  input.price,
       seatsTotal:             input.seatsTotal,
       deadline:               input.deadline,

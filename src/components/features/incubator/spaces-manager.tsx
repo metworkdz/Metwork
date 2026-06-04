@@ -187,6 +187,7 @@ export function SpacesManager() {
             amenities: editingSpace.amenities ?? [],
             acceptedPaymentMethods: editingSpace.acceptedPaymentMethods ?? ['ONLINE'],
             imageUrl: editingSpace.imageUrl,
+            imageUrls: editingSpace.imageUrls,
             workingDays: editingSpace.workingDays ?? [1, 2, 3, 4, 5],
             openingTime: editingSpace.openingTime ?? '09:00',
             closingTime: editingSpace.closingTime ?? '18:00',

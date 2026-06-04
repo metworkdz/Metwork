@@ -17,6 +17,7 @@ const patchSchema = z.object({
   category: z.enum(['COWORKING', 'PRIVATE_OFFICE', 'TRAINING_ROOM', 'DOMICILIATION']).optional(),
   city: z.string().min(1).optional(),
   imageUrl: z.string().url().nullable().optional(),
+  imageUrls: z.array(z.string().url()).max(8).optional(),
   pricePerHour: z.number().int().nonnegative().nullable().optional(),
   pricePerDay: z.number().int().nonnegative().nullable().optional(),
   pricePerMonth: z.number().int().nonnegative().nullable().optional(),
@@ -60,6 +61,11 @@ export async function PATCH(
     if (input.category !== undefined) s.category = input.category;
     if (input.city !== undefined) s.city = input.city;
     if (input.imageUrl !== undefined) s.imageUrl = input.imageUrl ?? null;
+    // imageUrls wins when sent: it's the ordered gallery, cover = imageUrls[0].
+    if (input.imageUrls !== undefined) {
+      s.imageUrls = input.imageUrls;
+      s.imageUrl = input.imageUrls[0] ?? null;
+    }
     if (input.pricePerHour !== undefined) s.pricePerHour = input.pricePerHour ?? null;
     if (input.pricePerDay !== undefined) s.pricePerDay = input.pricePerDay ?? null;
     if (input.pricePerMonth !== undefined) s.pricePerMonth = input.pricePerMonth ?? null;

@@ -20,6 +20,7 @@ const createEventSchema = z.object({
   description: z.string().min(10).max(2000),
   city:        z.string().min(1).max(80),
   imageUrl:    z.string().url().optional().nullable(),
+  imageUrls:   z.array(z.string().url()).max(8).optional(),
   price:       z.number().int().min(0),
   isOnline:    z.boolean().default(false),
   capacity:    z.number().int().min(1).max(100_000),
@@ -60,6 +61,11 @@ export async function POST(req: NextRequest) {
   const paymentMethods: ('ONLINE' | 'CASH')[] =
     getEffectiveSubscriptionCode(inc) === 'COMMISSION' ? ['ONLINE'] : input.acceptedPaymentMethods;
 
+  // Multi-image: imageUrls is the ordered gallery; imageUrls[0] is the cover.
+  // Keep imageUrl in sync with the cover so legacy readers keep working.
+  const imageUrls = input.imageUrls?.length ? input.imageUrls : (input.imageUrl ? [input.imageUrl] : []);
+  const coverUrl = imageUrls[0] ?? null;
+
   const now = new Date().toISOString();
   const record = await db.update<EventRecord>((d) => {
     if (!Array.isArray(d.events)) d.events = [];
@@ -76,7 +82,8 @@ export async function POST(req: NextRequest) {
       title:                  input.title.trim(),
       description:            input.description.trim(),
       city:                   input.city.trim(),
-      imageUrl:               input.imageUrl ?? null,
+      imageUrl:               coverUrl,
+      imageUrls,
       price:                  input.price,
       isOnline:               input.isOnline,
       capacity:               input.capacity,

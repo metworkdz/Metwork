@@ -15,6 +15,7 @@ import { Link } from '@/i18n/routing';
 import { findEventBySlugOrId, listFormFields } from '@/server/registrations/service';
 import { getEventAttendance } from '@/server/bookings/service';
 import { RegistrationForm } from '@/components/features/registrations/registration-form';
+import { ImageCarousel } from '@/components/shared/image-carousel';
 import { readSession } from '@/server/auth/session';
 import { formatCurrency, formatDate } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
@@ -51,6 +52,10 @@ export default async function EventDetailPage({ params }: PageProps) {
   const event = await findEventBySlugOrId(slug);
   if (!event) notFound();
 
+  const galleryImages = event.imageUrls?.length
+    ? event.imageUrls
+    : (event.imageUrl ? [event.imageUrl] : []);
+
   const [{ taken: attendeeCount }, formFields] = await Promise.all([
     getEventAttendance(event.id),
     listFormFields('EVENT', event.id),
@@ -85,21 +90,16 @@ export default async function EventDetailPage({ params }: PageProps) {
       <div className="grid gap-8 lg:grid-cols-5">
         {/* ── Left: image + meta ── */}
         <div className="lg:col-span-3 space-y-6">
-          {/* Image */}
-          <div className="overflow-hidden rounded-2xl border border-border bg-muted aspect-video">
-            {event.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={event.imageUrl}
-                alt={event.title}
-                className="size-full object-cover"
-              />
-            ) : (
+          {/* Image gallery */}
+          {galleryImages.length > 0 ? (
+            <ImageCarousel images={galleryImages} alt={event.title} />
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-border bg-muted aspect-video">
               <div className="flex size-full items-center justify-center">
                 <Ticket className="size-12 text-muted-foreground/30" />
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Badges + title */}
           <div>

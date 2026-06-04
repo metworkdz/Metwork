@@ -316,6 +316,16 @@ function CustomField({
         />
       )}
 
+      {field.type === 'URL' && (
+        <Input
+          type="url"
+          inputMode="url"
+          value={stringValue}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="https://…"
+        />
+      )}
+
       {field.type === 'LONG_TEXT' && (
         <Textarea
           value={stringValue}

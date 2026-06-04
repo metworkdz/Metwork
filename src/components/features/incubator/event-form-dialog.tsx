@@ -21,7 +21,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { ImageUploadField } from '@/components/shared/image-upload-field';
+import { GalleryUploadField } from '@/components/shared/gallery-upload-field';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 
 // FIX: BUG-2 — added edit mode props; FIX: BUG-5 — added cashEnabled prop
@@ -32,6 +32,7 @@ interface EventFormDialogProps {
     title?: string; description?: string; city?: string; price?: number;
     capacity?: number; isOnline?: boolean; eventDate?: string;
     acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
+    imageUrls?: string[] | null;
   };
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
@@ -54,7 +55,7 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
   const [isOnline, setIsOnline] = useState(false);
   const [eventDate, setEventDate] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   // FIX: BUG-2 — pre-fill form when in edit mode
   useEffect(() => {
@@ -68,7 +69,11 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
       // FIX: BUG-2 — convert ISO date string back to YYYY-MM-DD for date input
       setEventDate(initialData.eventDate ? initialData.eventDate.substring(0, 10) : '');
       setAcceptedMethods(initialData.acceptedPaymentMethods ?? ['ONLINE', 'CASH']);
-      setImageUrl(initialData.imageUrl ?? '');
+      setImageUrls(
+        initialData.imageUrls?.length
+          ? initialData.imageUrls
+          : (initialData.imageUrl ? [initialData.imageUrl] : []),
+      );
       setError(null);
     }
   }, [editId, initialData]);
@@ -87,7 +92,7 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
     setTitle(''); setDescription(''); setCity('');
     setPrice('0'); setCapacity('50'); setIsOnline(false); setEventDate('');
     setAcceptedMethods(['ONLINE', 'CASH']);
-    setImageUrl('');
+    setImageUrls([]);
     setError(null);
   }
 
@@ -111,7 +116,7 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
           isOnline,
           eventDate: new Date(`${eventDate}T12:00:00`).toISOString(),
           acceptedPaymentMethods: acceptedMethods,
-          imageUrl: imageUrl || null,
+          imageUrls,
         }),
       });
       if (!res.ok) {
@@ -178,11 +183,10 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
               />
             </div>
             <div className="sm:col-span-2">
-              <ImageUploadField
+              <GalleryUploadField
                 label={t('labelBanner')}
-                currentUrl={imageUrl || null}
-                onUpload={(url) => setImageUrl(url)}
-                onRemove={() => setImageUrl('')}
+                value={imageUrls}
+                onChange={setImageUrls}
               />
             </div>
           </div>

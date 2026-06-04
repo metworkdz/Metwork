@@ -25,11 +25,13 @@ import {
   CheckCircle2,
   ChevronUp,
   ChevronDown,
+  ListPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
 import type { RegistrationFieldType, RegistrationFormField } from '@/types/domain';
 
 const FIELD_TYPE_OPTIONS: { value: RegistrationFieldType; labelKey: string }[] = [
@@ -37,6 +39,7 @@ const FIELD_TYPE_OPTIONS: { value: RegistrationFieldType; labelKey: string }[] =
   { value: 'LONG_TEXT',       labelKey: 'typeLongText' },
   { value: 'EMAIL',           labelKey: 'typeEmail' },
   { value: 'PHONE',           labelKey: 'typePhone' },
+  { value: 'URL',             labelKey: 'typeUrl' },
   { value: 'DROPDOWN',        labelKey: 'typeDropdown' },
   { value: 'MULTIPLE_CHOICE', labelKey: 'typeMultipleChoice' },
   { value: 'CHECKBOX',        labelKey: 'typeCheckbox' },
@@ -83,6 +86,7 @@ export function RegistrationFormBuilder({
   initialFields,
 }: RegistrationFormBuilderProps) {
   const t = useTranslations('formBuilder');
+  const tQuestions = useTranslations('defaultQuestions');
   const [fields, setFields] = useState<BuilderField[]>(initialFields.map(toBuilderField));
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
@@ -91,6 +95,20 @@ export function RegistrationFormBuilder({
   /* ── Field mutations ──────────────────────────────────────────────── */
   function addField() {
     setFields((prev) => [...prev, emptyField()]);
+    setSaved(false);
+  }
+
+  // Append the localized default question set. Additive (never clears existing
+  // work) and unsaved until the incubator clicks Save.
+  function insertDefaultQuestions() {
+    const defaults = buildDefaultApplicationFields((k) => tQuestions(k)).map<BuilderField>((f) => ({
+      _key: newKey(),
+      label: f.label,
+      type: f.type,
+      options: f.options ?? [],
+      required: f.required,
+    }));
+    setFields((prev) => [...prev, ...defaults]);
     setSaved(false);
   }
 
@@ -255,15 +273,28 @@ export function RegistrationFormBuilder({
         ))}
       </div>
 
-      {/* Add field button */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-full gap-1.5 border-dashed"
-        onClick={addField}
-      >
-        <Plus className="size-4" /> {t('addField')}
-      </Button>
+      {/* Add-field actions */}
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full gap-1.5 border-dashed"
+          onClick={addField}
+        >
+          <Plus className="size-4" /> {t('addField')}
+        </Button>
+        {entityType === 'PROGRAM' && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="w-full gap-1.5 text-muted-foreground hover:text-foreground sm:w-auto sm:shrink-0"
+            onClick={insertDefaultQuestions}
+          >
+            <ListPlus className="size-4" /> {t('insertDefaults')}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

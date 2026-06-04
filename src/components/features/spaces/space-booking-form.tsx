@@ -13,7 +13,7 @@
  * Quantity is derived server-side from (endsAt − startsAt) / unit.
  * The price preview is derived client-side the same way.
  */
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   Banknote,
@@ -25,7 +25,6 @@ import {
   Wallet as WalletIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -40,9 +39,10 @@ import { useAuth } from '@/components/providers/auth-provider';
 import { walletService } from '@/services/wallet.service';
 import { bookingService } from '@/services/booking.service';
 import { ApiClientError } from '@/lib/api-client';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { unitLabel } from './space-meta';
+import { SpaceScheduler } from './space-scheduler';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
 import { resolveTier } from '@/lib/tier-utils';
@@ -293,10 +293,18 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
     }
   }, [unit, startDate, endDate, startTime, endTime, maxHourlyEndTime, hasDayUnit]);
 
-  const startDateId = useId();
-  const startTimeId = useId();
-  const endDateId   = useId();
-  const endTimeId   = useId();
+  // Single sink for the scheduler — maps its changes onto the existing booking
+  // state. The 7-hour-cap effect above still owns rule enforcement; this just
+  // applies whichever fields the scheduler reports.
+  const handleScheduleChange = useCallback(
+    (next: { startDate?: string; endDate?: string; startTime?: string; endTime?: string }) => {
+      if (next.startDate !== undefined) setStartDate(next.startDate);
+      if (next.endDate !== undefined) setEndDate(next.endDate);
+      if (next.startTime !== undefined) setStartTime(next.startTime);
+      if (next.endTime !== undefined) setEndTime(next.endTime);
+    },
+    [],
+  );
 
   if (units.length === 0) {
     return (
@@ -393,78 +401,31 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         </div>
       )}
 
-      {/* Start */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label htmlFor={startDateId}>{t('startDate')}</Label>
-          <div className="relative mt-1.5">
-            <CalendarDays className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id={startDateId}
-              type="date"
-              min={todayStr()}
-              value={startDate}
-              onChange={(e) => {
-                setStartDate(e.target.value);
-                if (e.target.value > endDate) setEndDate(e.target.value);
-              }}
-              className="ps-9"
-              required
-            />
-          </div>
-        </div>
-        <div>
-          <Label htmlFor={startTimeId}>{t('startTime')}</Label>
-          <div className="relative mt-1.5">
-            <Clock className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id={startTimeId}
-              type="time"
-              value={startTime}
-              min={openingTime}
-              max={closingTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="ps-9"
-              required
-            />
-          </div>
-        </div>
-      </div>
+      {/* Date + time selection — Airbnb-style calendar (replaces raw inputs) */}
+      <SpaceScheduler
+        spaceId={space.id}
+        openingTime={openingTime}
+        closingTime={closingTime}
+        unit={unit}
+        startDate={startDate}
+        endDate={endDate}
+        startTime={startTime}
+        endTime={endTime}
+        onChange={handleScheduleChange}
+        locale={locale}
+      />
 
-      {/* End */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label htmlFor={endDateId}>{t('endDate')}</Label>
-          <div className="relative mt-1.5">
-            <CalendarDays className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id={endDateId}
-              type="date"
-              min={startDate}
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="ps-9"
-              required
-            />
-          </div>
+      {/* Selected window summary */}
+      {validRange && (
+        <div className="flex items-center justify-center gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-foreground">
+          <CalendarDays className="size-3.5 shrink-0 text-muted-foreground" />
+          <span className="font-medium">
+            {unit === 'HOUR'
+              ? `${formatDate(startIso, locale, { dateStyle: 'medium' })} · ${startTime}–${endTime}`
+              : `${formatDate(startIso, locale, { dateStyle: 'medium' })} → ${formatDate(endIso, locale, { dateStyle: 'medium' })}`}
+          </span>
         </div>
-        <div>
-          <Label htmlFor={endTimeId}>{t('endTime')}</Label>
-          <div className="relative mt-1.5">
-            <Clock className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id={endTimeId}
-              type="time"
-              value={endTime}
-              min={unit === 'HOUR' && endDate === startDate ? startTime : openingTime}
-              max={unit === 'HOUR' && endDate === startDate ? maxHourlyEndTime : closingTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="ps-9"
-              required
-            />
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Unit (pricing model) */}
       {units.length > 1 && (

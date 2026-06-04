@@ -205,6 +205,7 @@ export function ProgramsManager() {
             endDate: editingProgram.endDate,
             acceptedPaymentMethods: editingProgram.acceptedPaymentMethods ?? ['ONLINE'],
             imageUrl: editingProgram.imageUrl,
+            imageUrls: editingProgram.imageUrls,
           }}
           open={true}
           onOpenChange={(v) => { if (!v) setEditingProgram(null); }}

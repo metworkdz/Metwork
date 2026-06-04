@@ -24,6 +24,8 @@ export interface Space {
   category: SpaceCategory;
   city: string;
   imageUrl: string | null;
+  /** Ordered gallery; imageUrls[0] is the cover (kept in sync with imageUrl). Backfilled from imageUrl for legacy records. */
+  imageUrls?: string[];
   pricePerHour: number | null;
   pricePerDay: number | null;
   pricePerMonth: number | null;
@@ -56,6 +58,8 @@ export interface Program {
   type: ProgramType;
   city: string;
   imageUrl: string | null;
+  /** Ordered gallery; imageUrls[0] is the cover (kept in sync with imageUrl). Backfilled from imageUrl for legacy records. */
+  imageUrls?: string[];
   price: number;
   seatsTotal: number;
   seatsTaken: number;
@@ -75,6 +79,8 @@ export interface Event {
   description: string;
   city: string;
   imageUrl: string | null;
+  /** Ordered gallery; imageUrls[0] is the cover (kept in sync with imageUrl). Backfilled from imageUrl for legacy records. */
+  imageUrls?: string[];
   price: number;
   isOnline: boolean;
   capacity: number;
@@ -94,7 +100,8 @@ export type RegistrationFieldType =
   | 'MULTIPLE_CHOICE'
   | 'CHECKBOX'
   | 'PHONE'
-  | 'EMAIL';
+  | 'EMAIL'
+  | 'URL';
 
 export interface RegistrationFormField {
   id: string;

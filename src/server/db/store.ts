@@ -507,6 +507,8 @@ export interface SpaceRecord {
   category: SpaceCategory;
   city: string;
   imageUrl: string | null;
+  /** Ordered gallery; imageUrls[0] is the cover and is kept in sync with imageUrl. Additive — legacy records lack this. */
+  imageUrls?: string[];
   pricePerHour: number | null;
   pricePerDay: number | null;
   pricePerMonth: number | null;
@@ -554,6 +556,8 @@ export interface ProgramRecord {
   type: ProgramType;
   city: string;
   imageUrl: string | null;
+  /** Ordered gallery; imageUrls[0] is the cover and is kept in sync with imageUrl. Additive — legacy records lack this. */
+  imageUrls?: string[];
   price: number;
   seatsTotal: number;
   deadline: string;
@@ -579,6 +583,8 @@ export interface EventRecord {
   description: string;
   city: string;
   imageUrl: string | null;
+  /** Ordered gallery; imageUrls[0] is the cover and is kept in sync with imageUrl. Additive — legacy records lack this. */
+  imageUrls?: string[];
   price: number;
   isOnline: boolean;
   capacity: number;
@@ -605,7 +611,8 @@ export type RegistrationFieldType =
   | 'MULTIPLE_CHOICE'
   | 'CHECKBOX'
   | 'PHONE'
-  | 'EMAIL';
+  | 'EMAIL'
+  | 'URL';
 
 /**
  * One custom field definition for a program or event's registration form.
