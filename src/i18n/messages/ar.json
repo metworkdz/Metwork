@@ -92,7 +92,20 @@
     "daysAgo": "منذ {n} يوم",
     "changeProfilePicture": "تغيير صورة الملف الشخصي",
     "profilePicture": "صورة الملف الشخصي",
-    "preview": "معاينة"
+    "preview": "معاينة",
+    "calendar": {
+      "previousMonth": "الشهر السابق",
+      "nextMonth": "الشهر التالي",
+      "available": "متاح",
+      "unavailable": "غير متاح",
+      "selected": "محدد"
+    },
+    "timeSlots": {
+      "noSlots": "لا توجد مواعيد متاحة",
+      "selectTime": "اختر وقتًا",
+      "available": "متاح",
+      "unavailable": "غير متاح"
+    }
   },
   "nav": {
     "forEntrepreneurs": "لرواد الأعمال",
@@ -2485,11 +2498,33 @@
       "emptyDescription": "أضف أول مرشد لتعبئة الكاروسيل في الصفحة الرئيسية.",
       "actionsFor": "إجراءات لـ {name}",
       "edit": "تعديل",
+      "availability": "التوفر",
       "delete": "حذف",
       "deleteDialogTitle": "حذف المرشد؟",
       "deleteDialogDescription": "سيتم إزالة {name} من كاروسيل الصفحة الرئيسية. لا يمكن التراجع عن هذا الإجراء.",
       "cancel": "إلغاء",
       "deleteFailed": "فشل الحذف"
+    },
+    "mentorAvailability": {
+      "title": "التوفر",
+      "manageFor": "حدّد الأوقات التي يمكن فيها حجز {name}.",
+      "weeklyTitle": "الجدول الأسبوعي",
+      "weeklyHint": "أضف الفترات الزمنية التي يتوفر فيها هذا المرشد كل يوم.",
+      "blockedTitle": "التواريخ المحظورة",
+      "blockedHint": "انقر على يوم لتحديده كغير متاح، حتى لو سمح الجدول الأسبوعي بذلك.",
+      "timezoneLabel": "المنطقة الزمنية",
+      "addRange": "إضافة فترة",
+      "removeRange": "إزالة الفترة",
+      "noRanges": "لا يوجد توفر محدد لهذا اليوم.",
+      "start": "البداية",
+      "end": "النهاية",
+      "save": "حفظ",
+      "saveFailed": "فشل الحفظ",
+      "errorInvalidTime": "أدخل وقتًا صالحًا (HH:MM).",
+      "errorEndBeforeStart": "يجب أن يكون وقت النهاية بعد وقت البداية.",
+      "errorOverlap": "لا يمكن أن تتداخل الفترات الزمنية.",
+      "blockedCount": "{count} تاريخ محظور",
+      "cancel": "إلغاء"
     },
     "partnerStatsCard": {
       "statusActive": "نشط",
@@ -2784,7 +2819,15 @@
       "errorDateTooSoon": "يرجى اختيار تاريخ ووقت بعد 24 ساعة على الأقل من الآن.",
       "errorLoginRequired": "يرجى تسجيل الدخول لحجز استشارة.",
       "errorGeneric": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
-      "errorNetwork": "خطأ في الشبكة. تحقق من اتصالك."
+      "errorNetwork": "خطأ في الشبكة. تحقق من اتصالك.",
+      "continue": "متابعة",
+      "back": "رجوع",
+      "change": "تغيير",
+      "pickATime": "اختر وقتًا",
+      "noTimeSelected": "لم يتم تحديد وقت",
+      "scheduledForDate": "{date}",
+      "scheduledForDateTime": "{date} · {time}",
+      "noAvailabilityNote": "لم ينشر هذا الموجّه أوقات توفّره بعد. يمكنك إرسال طلب وسنتفق على موعد عبر البريد الإلكتروني."
     },
     "landing": {
       "badge": "مرشدونا",
@@ -2804,6 +2847,43 @@
       "mentorCount": "{count} مرشد (مرشدون) · اسحب أو استخدم الأسهم",
       "prevMentors": "المرشدون السابقون",
       "nextMentors": "المرشدون التاليون"
+    },
+    "scheduler": {
+      "pickTime": "الأوقات المتاحة",
+      "pickDateFirst": "اختر تاريخًا لعرض الأوقات المتاحة.",
+      "loadingTimes": "جارٍ تحميل الأوقات…",
+      "timezoneNote": "الأوقات معروضة بتوقيت {timezone}"
+    },
+    "profile": {
+      "backLink": "كل الموجّهين",
+      "mentorBadge": "موجّه موثّق",
+      "noPhoto": "لا توجد صورة",
+      "linkedinCta": "عرض لينكدإن",
+      "aboutTitle": "نبذة",
+      "noBio": "لم يُضِف هذا الموجّه نبذة بعد.",
+      "expertiseTitle": "مجال الخبرة",
+      "durationsTitle": "مدد الجلسات والأسعار",
+      "freeIntro": "يقدّم هذا الموجّه استشارات مجانية.",
+      "hourlyRate": "السعر بالساعة: {rate}",
+      "free": "مجاني",
+      "perHour": "في الساعة",
+      "freeConsultations": "استشارات مجانية",
+      "bookHeading": "احجز موعدًا",
+      "bookSubtitle": "اختر التاريخ والوقت ثم أكّد طلبك. تتم مراجعة الحجوزات قبل تأكيدها.",
+      "bookCta": "احجز موعدًا"
+    },
+    "directory": {
+      "searchPlaceholder": "ابحث بالاسم أو مجال الخبرة…",
+      "filterLabel": "تصفية حسب المجال",
+      "filterAll": "كل المجالات",
+      "resultsCount": "{count} موجّهين",
+      "resultOne": "موجّه واحد",
+      "clear": "مسح",
+      "noMentors": "لا يوجد موجّهون بعد. عُد قريبًا.",
+      "noResults": "لا يوجد موجّهون يطابقون بحثك.",
+      "noPhoto": "لا توجد صورة",
+      "viewProfile": "عرض الملف",
+      "book": "احجز"
     }
   },
   "network": {

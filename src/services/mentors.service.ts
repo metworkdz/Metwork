@@ -3,7 +3,7 @@
  */
 import { apiClient } from '@/lib/api-client';
 import { clientEnvVars } from '@/lib/env';
-import type { Mentor, MentorInput, UploadedFile } from '@/types/mentor';
+import type { Mentor, MentorInput, MentorAvailabilityInput, UploadedFile } from '@/types/mentor';
 
 export const mentorsService = {
   async list(): Promise<{ items: Mentor[]; total: number }> {
@@ -20,6 +20,14 @@ export const mentorsService = {
 
   async remove(id: string): Promise<void> {
     return apiClient.delete<void>(`/mentors/${encodeURIComponent(id)}`);
+  },
+
+  /** Admin-only: replace a mentor's availability (weekly template + blocked dates). */
+  async updateAvailability(id: string, input: MentorAvailabilityInput): Promise<Mentor> {
+    return apiClient.patch<Mentor>(
+      `/admin/mentors/${encodeURIComponent(id)}/availability`,
+      input,
+    );
   },
 
   /**

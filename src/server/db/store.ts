@@ -14,6 +14,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { UserRole, UserStatus } from '@/types/auth';
 import type { LandingContent } from '@/types/cms';
+import type { WeeklyAvailabilityDay } from '@/types/mentor';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -959,6 +960,8 @@ export interface MentorRecord {
   fullName: string;
   position: string;
   imageUrl: string;
+  /** SEO-friendly URL slug (kebab-case, deduped). Optional & additive — pre-slug mentors fall back to id in routes. */
+  slug?: string;
   bio: string | null;
   linkedinUrl: string | null;
   /** Contact email for consultation notifications. */
@@ -966,6 +969,18 @@ export interface MentorRecord {
   /** Optional per-session fee in DZD. 0 or absent = free. */
   consultationFee?: number;
   createdAt: string;
+
+  // ─── Availability (Airbnb-style scheduling) ─────────────────────────────
+  // All fields below are optional & additive: mentors created before this
+  // feature simply lack the keys and are treated as "no availability set"
+  // (every page still renders; the public endpoint returns no dates).
+
+  /** Recurring weekly template in the mentor's local time. */
+  weeklyAvailability?: WeeklyAvailabilityDay[];
+  /** Specific dates (YYYY-MM-DD) the mentor is unavailable — overrides the weekly template. */
+  blockedDates?: string[];
+  /** IANA timezone for the weekly template. Defaults to "Africa/Algiers". */
+  availabilityTimezone?: string;
 }
 
 /* ─────────────────── CRM — Clients ─────────────────── */

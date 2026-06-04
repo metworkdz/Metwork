@@ -13,9 +13,11 @@
  * Success panel clearly says "pending approval" (not "confirmed").
  */
 import { useState, useCallback, useEffect } from 'react';
-import { Clock, Calendar, Timer, Tag, Check, AlertCircle, DollarSign, Gift } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { Clock, Calendar, Timer, Tag, Check, AlertCircle, DollarSign, Gift, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/components/providers/auth-provider';
+import { MentorScheduler } from './mentor-scheduler';
+import type { DaySlot } from '@/types/mentor';
 import { resolveTier } from '@/lib/tier-utils';
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
 import {
@@ -38,35 +40,28 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { DURATION_OPTIONS, computePrice } from '@/lib/consultation-pricing';
 import type { Mentor } from '@/types/mentor';
+
+export { DURATION_OPTIONS };
 
 interface BookConsultationDialogProps {
   mentor: Mentor | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Pre-seed the date when opened from the profile scheduler (additive). */
+  initialDate?: string | null;
+  /** Pre-seed the start time ("HH:MM") when opened from the profile scheduler (additive). */
+  initialTime?: string | null;
 }
 
 type FormState = 'idle' | 'submitting' | 'success' | 'error';
 type PromoState = 'idle' | 'validating' | 'valid' | 'invalid';
+type Step = 'schedule' | 'details';
 
-export const DURATION_OPTIONS = [
-  { value: 30,  label: '30 min' },
-  { value: 60,  label: '1 hour' },
-  { value: 90,  label: '1 h 30' },
-  { value: 120, label: '2 hours' },
-  { value: 150, label: '2 h 30' },
-  { value: 180, label: '3 hours' },
-];
-
-/** Compute price from hourly rate and duration. Returns 0 if fee is free. */
-function computePrice(feePerHour: number, durationMinutes: number): number {
-  if (!feePerHour || feePerHour <= 0) return 0;
-  return Math.round((durationMinutes / 60) * feePerHour);
-}
-
-function todayStr(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+type SchedulerLocale = 'en' | 'fr' | 'ar';
+function toSchedulerLocale(loc: string): SchedulerLocale {
+  return loc === 'fr' || loc === 'ar' ? loc : 'en';
 }
 
 /**
@@ -95,6 +90,8 @@ export function BookConsultationDialog({
   mentor,
   open,
   onOpenChange,
+  initialDate = null,
+  initialTime = null,
 }: BookConsultationDialogProps) {
   const { user } = useAuth();
   const userTier = user ? resolveTier(user) : 'EXPLORER';
@@ -102,14 +99,17 @@ export function BookConsultationDialog({
   // assume `t` is in scope — a previous refactor dropped this call and
   // left the entire dialog throwing ReferenceError on every render.
   const t = useTranslations('mentors.bookConsultation');
+  const schedulerLocale = toSchedulerLocale(useLocale());
 
+  const [step,        setStep]        = useState<Step>('schedule');
   const [name,        setName]        = useState('');
   const [email,       setEmail]       = useState('');
   const [phone,       setPhone]       = useState('');
   const [message,     setMessage]     = useState('');
   const [consultDate, setConsultDate] = useState('');
-  const [consultTime, setConsultTime] = useState('10:00');
+  const [consultTime, setConsultTime] = useState('');
   const [duration,    setDuration]    = useState<number>(60);
+  const [hasAvailability, setHasAvailability] = useState<boolean | null>(null);
 
   // Free-consultation quota (fetched from /api/consultations on open)
   const [freeQuota,         setFreeQuota]         = useState<number>(0);
@@ -171,11 +171,13 @@ export function BookConsultationDialog({
   const isFree       = feePerHour === 0 || finalPrice === 0;
 
   function reset() {
+    setStep('schedule');
     setName(''); setEmail(''); setPhone(''); setMessage('');
-    setConsultDate(''); setConsultTime('10:00'); setDuration(60);
+    setConsultDate(''); setConsultTime(''); setDuration(60);
     setPromoCode(''); setPromoState('idle'); setPromoError(null);
     setPromoDiscount(0); setPromoFixed(0);
     setUseFreeCredit(false);
+    setHasAvailability(null);
     setFormState('idle'); setErrorMsg(null);
   }
 
@@ -183,6 +185,19 @@ export function BookConsultationDialog({
     if (!next) reset();
     onOpenChange(next);
   }
+
+  // Seed the date/time when the dialog is opened from the profile scheduler.
+  // With a pre-chosen slot we jump straight to the details step; otherwise we
+  // start on the schedule step so the user picks a time first.
+  useEffect(() => {
+    if (!open) return;
+    if (initialDate) {
+      setConsultDate(initialDate);
+      setConsultTime(initialTime ?? '');
+      setStep('details');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialDate, initialTime]);
 
   /** Real-time promo code validation — calls /api/promo-codes/validate */
   const validatePromo = useCallback(async () => {
@@ -263,10 +278,11 @@ export function BookConsultationDialog({
           phone,
           message,
           consultationDate:  consultDate || null,
-          consultationTime:  consultDate ? consultTime : null,
+          consultationTime:  consultDate && consultTime ? consultTime : null,
           // Full ISO with the user's local timezone offset — lets the server
-          // run the 24-hour advance check without forcing UTC.
-          scheduledAt:       consultDate ? buildLocalIso(consultDate, consultTime) : null,
+          // run the 24-hour advance check without forcing UTC. Only sent when a
+          // concrete time slot was chosen.
+          scheduledAt:       consultDate && consultTime ? buildLocalIso(consultDate, consultTime) : null,
           durationMinutes:   consultDate ? duration : null,
           promoCode:         promoState === 'valid' ? promoCode.trim() : null,
           useFreeCredit:     applyFreeCredit,
@@ -310,7 +326,7 @@ export function BookConsultationDialog({
             {consultDate && (
               <div className="mt-4 flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-4 py-2.5 text-sm text-muted-foreground">
                 <Calendar className="size-3.5 shrink-0" />
-                <span>{consultDate} at {consultTime}</span>
+                <span>{consultTime ? `${consultDate} · ${consultTime}` : consultDate}</span>
                 <span>·</span>
                 <Timer className="size-3.5 shrink-0" />
                 <span>{DURATION_OPTIONS.find((d) => d.value === duration)?.label}</span>
@@ -351,7 +367,60 @@ export function BookConsultationDialog({
               </div>
             </DialogHeader>
 
+            {step === 'schedule' ? (
+              /* ── Step 1: pick a date, then a time (Airbnb-style) ── */
+              <div className="space-y-4">
+                <MentorScheduler
+                  mentorId={mentor.id}
+                  selectedDate={consultDate || null}
+                  onSelectDate={(d) => { setConsultDate(d); setConsultTime(''); }}
+                  selectedTime={consultTime || null}
+                  onSelectTime={(slot: DaySlot) => setConsultTime(slot.start)}
+                  locale={schedulerLocale}
+                  onAvailabilityResolved={(has) => setHasAvailability(has)}
+                />
+                {hasAvailability === false && (
+                  <p className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
+                    <AlertCircle className="size-3.5 mt-0.5 shrink-0" />
+                    {t('noAvailabilityNote')}
+                  </p>
+                )}
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleOpenChange(false)}
+                  >
+                    {t('cancel')}
+                  </Button>
+                  <Button type="button" onClick={() => setStep('details')}>
+                    {t('continue')}
+                    <ChevronRight className="size-4 rtl:rotate-180" />
+                  </Button>
+                </DialogFooter>
+              </div>
+            ) : (
             <form onSubmit={onSubmit} className="space-y-4">
+              {/* Chosen schedule summary + change link */}
+              <button
+                type="button"
+                onClick={() => setStep('schedule')}
+                className="flex w-full items-center gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5 text-start text-sm transition-colors hover:border-primary/40 hover:bg-accent"
+              >
+                <Calendar className="size-4 shrink-0 text-primary" />
+                <span className="flex-1">
+                  {consultDate
+                    ? consultTime
+                      ? t('scheduledForDateTime', { date: consultDate, time: consultTime })
+                      : t('scheduledForDate', { date: consultDate })
+                    : t('noTimeSelected')}
+                </span>
+                <span className="flex items-center gap-1 text-xs font-medium text-primary">
+                  <Pencil className="size-3" />
+                  {consultDate ? t('change') : t('pickATime')}
+                </span>
+              </button>
+
               {/* Personal info */}
               <div className="space-y-1.5">
                 <Label htmlFor="bc-name">{t('fullNameLabel')}</Label>
@@ -412,82 +481,45 @@ export function BookConsultationDialog({
                 />
               </div>
 
-              {/* Preferred schedule + duration (optional) */}
-              <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-3">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  {t('preferredSchedule')}{' '}
-                  <span className="normal-case font-normal text-muted-foreground/70">{t('optional')}</span>
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="bc-date" className="flex items-center gap-1 text-xs">
-                      <Calendar className="size-3.5" /> {t('dateLabel')}
-                    </Label>
-                    <Input
-                      id="bc-date"
-                      type="date"
-                      min={todayStr()}
-                      value={consultDate}
-                      onChange={(e) => setConsultDate(e.target.value)}
-                      disabled={formState === 'submitting'}
-                      className="text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="bc-time" className="flex items-center gap-1 text-xs">
-                      <Clock className="size-3.5" /> {t('startTimeLabel')}
-                    </Label>
-                    <Input
-                      id="bc-time"
-                      type="time"
-                      value={consultTime}
-                      onChange={(e) => setConsultTime(e.target.value)}
-                      disabled={formState === 'submitting' || !consultDate}
-                      className="text-sm"
-                    />
-                  </div>
-                </div>
-
-                {/* Duration — drives dynamic pricing */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="bc-dur" className="flex items-center gap-1 text-xs">
-                    <Timer className="size-3.5" /> {t('durationLabel')}
-                  </Label>
-                  <Select
-                    value={String(duration)}
-                    onValueChange={(v) => {
-                      setDuration(Number(v));
-                      // Invalidate promo if base price changes
-                      if (promoState === 'valid') {
-                        setPromoState('idle');
-                        setPromoDiscount(0);
-                        setPromoFixed(0);
-                      }
-                    }}
-                    disabled={formState === 'submitting'}
-                  >
-                    <SelectTrigger id="bc-dur" className="text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DURATION_OPTIONS.map((opt) => {
-                        const price = computePrice(feePerHour, opt.value);
-                        return (
-                          <SelectItem key={opt.value} value={String(opt.value)}>
-                            <span className="flex items-center justify-between gap-6">
-                              <span>{opt.label}</span>
-                              {feePerHour > 0 && (
-                                <span className="text-xs text-muted-foreground tabular-nums">
-                                  {formatDZD(price)}
-                                </span>
-                              )}
-                            </span>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Duration — drives dynamic pricing */}
+              <div className="space-y-1.5">
+                <Label htmlFor="bc-dur" className="flex items-center gap-1 text-xs">
+                  <Timer className="size-3.5" /> {t('durationLabel')}
+                </Label>
+                <Select
+                  value={String(duration)}
+                  onValueChange={(v) => {
+                    setDuration(Number(v));
+                    // Invalidate promo if base price changes
+                    if (promoState === 'valid') {
+                      setPromoState('idle');
+                      setPromoDiscount(0);
+                      setPromoFixed(0);
+                    }
+                  }}
+                  disabled={formState === 'submitting'}
+                >
+                  <SelectTrigger id="bc-dur" className="text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DURATION_OPTIONS.map((opt) => {
+                      const price = computePrice(feePerHour, opt.value);
+                      return (
+                        <SelectItem key={opt.value} value={String(opt.value)}>
+                          <span className="flex items-center justify-between gap-6">
+                            <span>{opt.label}</span>
+                            {feePerHour > 0 && (
+                              <span className="text-xs text-muted-foreground tabular-nums">
+                                {formatDZD(price)}
+                              </span>
+                            )}
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Free-consultation credit — checkbox to apply this month's quota.
@@ -680,10 +712,11 @@ export function BookConsultationDialog({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleOpenChange(false)}
+                  onClick={() => setStep('schedule')}
                   disabled={formState === 'submitting'}
                 >
-                  {t('cancel')}
+                  <ChevronLeft className="size-4 rtl:rotate-180" />
+                  {t('back')}
                 </Button>
                 <Button type="submit" loading={formState === 'submitting'}>
                   <Calendar className="size-4" />
@@ -693,6 +726,7 @@ export function BookConsultationDialog({
                 </Button>
               </DialogFooter>
             </form>
+            )}
           </>
         )}
       </DialogContent>

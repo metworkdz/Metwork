@@ -92,7 +92,20 @@
     "daysAgo": "il y a {n}j",
     "changeProfilePicture": "Changer la photo de profil",
     "profilePicture": "Photo de profil",
-    "preview": "Aperçu"
+    "preview": "Aperçu",
+    "calendar": {
+      "previousMonth": "Mois précédent",
+      "nextMonth": "Mois suivant",
+      "available": "Disponible",
+      "unavailable": "Indisponible",
+      "selected": "Sélectionné"
+    },
+    "timeSlots": {
+      "noSlots": "Aucun créneau disponible",
+      "selectTime": "Choisir un horaire",
+      "available": "Disponible",
+      "unavailable": "Indisponible"
+    }
   },
   "nav": {
     "forEntrepreneurs": "Pour les entrepreneurs",
@@ -2485,11 +2498,33 @@
       "emptyDescription": "Ajoutez le premier mentor pour alimenter le carrousel de la page d'accueil.",
       "actionsFor": "Actions pour {name}",
       "edit": "Modifier",
+      "availability": "Disponibilités",
       "delete": "Supprimer",
       "deleteDialogTitle": "Supprimer le mentor ?",
       "deleteDialogDescription": "Cela supprimera {name} du carrousel de la page d'accueil. Cette action est irréversible.",
       "cancel": "Annuler",
       "deleteFailed": "Échec de la suppression"
+    },
+    "mentorAvailability": {
+      "title": "Disponibilités",
+      "manageFor": "Gérez les moments où {name} peut être réservé.",
+      "weeklyTitle": "Horaire hebdomadaire",
+      "weeklyHint": "Ajoutez les plages horaires où ce mentor est disponible chaque jour.",
+      "blockedTitle": "Dates bloquées",
+      "blockedHint": "Cliquez sur un jour pour le marquer indisponible, même si l'horaire hebdomadaire le permet.",
+      "timezoneLabel": "Fuseau horaire",
+      "addRange": "Ajouter une plage",
+      "removeRange": "Supprimer la plage",
+      "noRanges": "Aucune disponibilité définie pour ce jour.",
+      "start": "Début",
+      "end": "Fin",
+      "save": "Enregistrer",
+      "saveFailed": "Échec de l'enregistrement",
+      "errorInvalidTime": "Saisissez une heure valide (HH:MM).",
+      "errorEndBeforeStart": "L'heure de fin doit être postérieure à l'heure de début.",
+      "errorOverlap": "Les plages horaires ne peuvent pas se chevaucher.",
+      "blockedCount": "{count} date{count, plural, one {} other {s}} bloquée{count, plural, one {} other {s}}",
+      "cancel": "Annuler"
     },
     "partnerStatsCard": {
       "statusActive": "Actif",
@@ -2784,7 +2819,15 @@
       "errorDateTooSoon": "Veuillez choisir une date et une heure au moins 24 heures à l'avance.",
       "errorLoginRequired": "Veuillez vous connecter pour réserver une consultation.",
       "errorGeneric": "Une erreur s'est produite. Veuillez réessayer.",
-      "errorNetwork": "Erreur réseau. Vérifiez votre connexion."
+      "errorNetwork": "Erreur réseau. Vérifiez votre connexion.",
+      "continue": "Continuer",
+      "back": "Retour",
+      "change": "Modifier",
+      "pickATime": "Choisir un créneau",
+      "noTimeSelected": "Aucun horaire sélectionné",
+      "scheduledForDate": "{date}",
+      "scheduledForDateTime": "{date} · {time}",
+      "noAvailabilityNote": "Ce mentor n'a pas encore publié de disponibilités. Vous pouvez tout de même envoyer une demande et nous conviendrons d'un horaire par e-mail."
     },
     "landing": {
       "badge": "Nos mentors",
@@ -2804,6 +2847,43 @@
       "mentorCount": "{count} mentor(s) · faites glisser ou utilisez les flèches",
       "prevMentors": "Mentors précédents",
       "nextMentors": "Mentors suivants"
+    },
+    "scheduler": {
+      "pickTime": "Créneaux disponibles",
+      "pickDateFirst": "Sélectionnez une date pour voir les créneaux disponibles.",
+      "loadingTimes": "Chargement des créneaux…",
+      "timezoneNote": "Horaires affichés en {timezone}"
+    },
+    "profile": {
+      "backLink": "Tous les mentors",
+      "mentorBadge": "Mentor vérifié",
+      "noPhoto": "Pas de photo",
+      "linkedinCta": "Voir LinkedIn",
+      "aboutTitle": "À propos",
+      "noBio": "Ce mentor n'a pas encore ajouté de biographie.",
+      "expertiseTitle": "Domaine d'expertise",
+      "durationsTitle": "Durées & tarifs des séances",
+      "freeIntro": "Ce mentor propose des consultations gratuites.",
+      "hourlyRate": "Tarif horaire : {rate}",
+      "free": "Gratuit",
+      "perHour": "par heure",
+      "freeConsultations": "Consultations gratuites",
+      "bookHeading": "Prendre rendez-vous",
+      "bookSubtitle": "Choisissez une date et un horaire, puis confirmez votre demande. Les réservations sont examinées avant confirmation.",
+      "bookCta": "Prendre rendez-vous"
+    },
+    "directory": {
+      "searchPlaceholder": "Rechercher par nom ou expertise…",
+      "filterLabel": "Filtrer par domaine",
+      "filterAll": "Tous les domaines",
+      "resultsCount": "{count} mentors",
+      "resultOne": "1 mentor",
+      "clear": "Effacer",
+      "noMentors": "Aucun mentor pour le moment. Revenez bientôt.",
+      "noResults": "Aucun mentor ne correspond à votre recherche.",
+      "noPhoto": "Pas de photo",
+      "viewProfile": "Voir le profil",
+      "book": "Réserver"
     }
   },
   "network": {

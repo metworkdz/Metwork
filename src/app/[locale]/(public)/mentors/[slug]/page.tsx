@@ -1,0 +1,189 @@
+/**
+ * /mentors/[slug] — public, SEO-friendly mentor profile + booking page.
+ *
+ * The `slug` segment accepts both SEO slugs AND legacy ids
+ * (backward-compatible lookup via findMentorBySlugOrId), so mentors created
+ * before slugs existed stay reachable.
+ */
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
+import { ArrowLeft, Linkedin, Clock, Sparkles } from 'lucide-react';
+import { Link } from '@/i18n/routing';
+import { Container } from '@/components/ui/container';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { MentorProfileBooking } from '@/components/features/mentors/mentor-profile-booking';
+import { findMentorBySlugOrId } from '@/server/mentors/service';
+import { toMentorDto } from '@/server/mentors/serialize';
+import { safeLinkedinUrl } from '@/lib/linkedin';
+import { DURATION_OPTIONS, computePrice } from '@/lib/consultation-pricing';
+import { formatCurrency } from '@/lib/format';
+import type { Locale } from '@/i18n/config';
+
+export const dynamic = 'force-dynamic';
+
+interface PageProps {
+  params: Promise<{ locale: string; slug: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale, slug } = await params;
+  setRequestLocale(locale);
+  const mentor = await findMentorBySlugOrId(slug);
+  if (!mentor) return { title: 'Mentor not found' };
+
+  const description =
+    (mentor.bio?.trim().slice(0, 160)) || `${mentor.fullName} — ${mentor.position}`;
+  return {
+    title: `${mentor.fullName} — ${mentor.position}`,
+    description,
+    openGraph: {
+      title: `${mentor.fullName} — ${mentor.position}`,
+      description,
+      type: 'profile',
+      images: mentor.imageUrl ? [{ url: mentor.imageUrl }] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${mentor.fullName} — ${mentor.position}`,
+      description,
+      images: mentor.imageUrl ? [mentor.imageUrl] : [],
+    },
+  };
+}
+
+export default async function MentorProfilePage({ params }: PageProps) {
+  const { locale, slug } = await params;
+  setRequestLocale(locale);
+
+  const record = await findMentorBySlugOrId(slug);
+  if (!record) notFound();
+  const mentor = toMentorDto(record);
+
+  const t = await getTranslations('mentors.profile');
+  const linkedinHref = safeLinkedinUrl(mentor.linkedinUrl);
+  const feePerHour = mentor.consultationFee ?? 0;
+  const isFree = feePerHour <= 0;
+
+  return (
+    <Container className="py-10 sm:py-14">
+      {/* Back link */}
+      <Link
+        href="/mentors"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="size-4 rtl:rotate-180" />
+        {t('backLink')}
+      </Link>
+
+      <div className="grid gap-8 lg:grid-cols-5">
+        {/* ── Left: profile ── */}
+        <div className="space-y-8 lg:col-span-3">
+          {/* Hero */}
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            <div className="relative size-28 shrink-0 overflow-hidden rounded-2xl border border-border bg-muted sm:size-36">
+              {mentor.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={mentor.imageUrl}
+                  alt={mentor.fullName}
+                  className="size-full object-cover"
+                />
+              ) : (
+                <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
+                  {t('noPhoto')}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <Badge variant="primary" className="gap-1.5">
+                <Sparkles className="size-3" />
+                {t('mentorBadge')}
+              </Badge>
+              <h1 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+                {mentor.fullName}
+              </h1>
+              <p className="mt-1.5 text-base text-muted-foreground">{mentor.position}</p>
+              {linkedinHref && (
+                <Button asChild variant="outline" size="sm" className="mt-4">
+                  <a href={linkedinHref} target="_blank" rel="noopener noreferrer">
+                    <Linkedin className="size-4" />
+                    {t('linkedinCta')}
+                  </a>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* About */}
+          <section>
+            <h2 className="text-lg font-semibold tracking-tight">{t('aboutTitle')}</h2>
+            <p className="mt-3 whitespace-pre-line leading-relaxed text-muted-foreground">
+              {mentor.bio?.trim() || t('noBio')}
+            </p>
+          </section>
+
+          {/* Expertise / area */}
+          <section>
+            <h2 className="text-lg font-semibold tracking-tight">{t('expertiseTitle')}</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Badge variant="outline" className="gap-1.5 px-3 py-1 text-sm">
+                <Sparkles className="size-3.5 text-primary" />
+                {mentor.position}
+              </Badge>
+            </div>
+          </section>
+
+          {/* Session lengths & pricing */}
+          <section>
+            <h2 className="text-lg font-semibold tracking-tight">{t('durationsTitle')}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isFree ? t('freeIntro') : t('hourlyRate', { rate: formatCurrency(feePerHour, locale as Locale) })}
+            </p>
+            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+              {DURATION_OPTIONS.map((opt) => {
+                const price = computePrice(feePerHour, opt.value);
+                return (
+                  <li
+                    key={opt.value}
+                    className="flex items-center justify-between rounded-xl border border-border/60 bg-card px-4 py-3 text-sm"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Clock className="size-4 text-muted-foreground" />
+                      {opt.label}
+                    </span>
+                    <span className="font-medium tabular-nums">
+                      {isFree ? t('free') : formatCurrency(price, locale as Locale)}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        </div>
+
+        {/* ── Right: sticky booking card ── */}
+        <div className="lg:col-span-2">
+          <div className="sticky top-20 space-y-5 rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <div className="border-b border-border pb-4 text-center">
+              <p className="text-3xl font-bold tabular-nums">
+                {isFree ? t('free') : formatCurrency(feePerHour, locale as Locale)}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {isFree ? t('freeConsultations') : t('perHour')}
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-base font-semibold">{t('bookHeading')}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{t('bookSubtitle')}</p>
+            </div>
+
+            <MentorProfileBooking mentor={mentor} />
+          </div>
+        </div>
+      </div>
+    </Container>
+  );
+}

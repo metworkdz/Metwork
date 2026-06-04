@@ -92,7 +92,20 @@
     "daysAgo": "{n}d ago",
     "changeProfilePicture": "Change profile picture",
     "profilePicture": "Profile picture",
-    "preview": "Preview"
+    "preview": "Preview",
+    "calendar": {
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "available": "Available",
+      "unavailable": "Unavailable",
+      "selected": "Selected"
+    },
+    "timeSlots": {
+      "noSlots": "No time slots available",
+      "selectTime": "Select a time",
+      "available": "Available",
+      "unavailable": "Unavailable"
+    }
   },
   "nav": {
     "forEntrepreneurs": "For Entrepreneurs",
@@ -2485,11 +2498,33 @@
       "emptyDescription": "Add the first mentor to populate the landing-page carousel.",
       "actionsFor": "Actions for {name}",
       "edit": "Edit",
+      "availability": "Availability",
       "delete": "Delete",
       "deleteDialogTitle": "Delete mentor?",
       "deleteDialogDescription": "This will remove {name} from the landing-page carousel. This action can't be undone.",
       "cancel": "Cancel",
       "deleteFailed": "Delete failed"
+    },
+    "mentorAvailability": {
+      "title": "Availability",
+      "manageFor": "Manage when {name} can be booked.",
+      "weeklyTitle": "Weekly schedule",
+      "weeklyHint": "Add the time ranges this mentor is available each weekday.",
+      "blockedTitle": "Blocked dates",
+      "blockedHint": "Click a day to mark it unavailable, even if the weekly schedule allows it.",
+      "timezoneLabel": "Timezone",
+      "addRange": "Add range",
+      "removeRange": "Remove range",
+      "noRanges": "No availability set for this day.",
+      "start": "Start",
+      "end": "End",
+      "save": "Save",
+      "saveFailed": "Save failed",
+      "errorInvalidTime": "Enter a valid time (HH:MM).",
+      "errorEndBeforeStart": "End time must be after the start time.",
+      "errorOverlap": "Time ranges can't overlap.",
+      "blockedCount": "{count} date{count, plural, one {} other {s}} blocked",
+      "cancel": "Cancel"
     },
     "partnerStatsCard": {
       "statusActive": "Active",
@@ -2784,7 +2819,15 @@
       "errorDateTooSoon": "Please choose a date and time at least 24 hours from now.",
       "errorLoginRequired": "Please log in to book a consultation.",
       "errorGeneric": "Something went wrong. Please try again.",
-      "errorNetwork": "Network error. Please check your connection."
+      "errorNetwork": "Network error. Please check your connection.",
+      "continue": "Continue",
+      "back": "Back",
+      "change": "Change",
+      "pickATime": "Pick a time",
+      "noTimeSelected": "No specific time selected",
+      "scheduledForDate": "{date}",
+      "scheduledForDateTime": "{date} · {time}",
+      "noAvailabilityNote": "This mentor hasn't published availability yet. You can still send a request and we'll coordinate a time by email."
     },
     "landing": {
       "badge": "Our mentors",
@@ -2804,6 +2847,43 @@
       "mentorCount": "{count} mentor(s) · drag, swipe, or use the arrows",
       "prevMentors": "Previous mentors",
       "nextMentors": "Next mentors"
+    },
+    "scheduler": {
+      "pickTime": "Available times",
+      "pickDateFirst": "Select a date to see available times.",
+      "loadingTimes": "Loading times…",
+      "timezoneNote": "Times shown in {timezone}"
+    },
+    "profile": {
+      "backLink": "All mentors",
+      "mentorBadge": "Verified mentor",
+      "noPhoto": "No photo",
+      "linkedinCta": "View LinkedIn",
+      "aboutTitle": "About",
+      "noBio": "This mentor hasn't added a bio yet.",
+      "expertiseTitle": "Area of expertise",
+      "durationsTitle": "Session lengths & pricing",
+      "freeIntro": "This mentor offers free consultations.",
+      "hourlyRate": "Hourly rate: {rate}",
+      "free": "Free",
+      "perHour": "per hour",
+      "freeConsultations": "Free consultations",
+      "bookHeading": "Book an appointment",
+      "bookSubtitle": "Pick a date and time, then confirm your request. Bookings are reviewed before they're confirmed.",
+      "bookCta": "Book an appointment"
+    },
+    "directory": {
+      "searchPlaceholder": "Search by name or expertise…",
+      "filterLabel": "Filter by area",
+      "filterAll": "All areas",
+      "resultsCount": "{count} mentors",
+      "resultOne": "1 mentor",
+      "clear": "Clear",
+      "noMentors": "No mentors listed yet. Check back soon.",
+      "noResults": "No mentors match your search.",
+      "noPhoto": "No photo",
+      "viewProfile": "View profile",
+      "book": "Book"
     }
   },
   "network": {

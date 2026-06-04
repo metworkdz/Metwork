@@ -13,10 +13,14 @@ export function toMentorDto(m: MentorRecord): Mentor {
     fullName: m.fullName,
     position: m.position,
     imageUrl: m.imageUrl,
+    slug: m.slug,
     bio: m.bio,
     linkedinUrl: m.linkedinUrl,
     email: m.email ?? null,
     consultationFee: m.consultationFee,
     createdAt: m.createdAt,
+    weeklyAvailability: m.weeklyAvailability ?? [],
+    blockedDates: m.blockedDates ?? [],
+    availabilityTimezone: m.availabilityTimezone ?? 'Africa/Algiers',
   };
 }

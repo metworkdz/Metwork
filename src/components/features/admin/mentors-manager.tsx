@@ -11,7 +11,7 @@
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { MoreVertical, Pencil, Plus, Trash2, UserPlus } from 'lucide-react';
+import { CalendarClock, MoreVertical, Pencil, Plus, Trash2, UserPlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,6 +32,7 @@ import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { mentorsService } from '@/services/mentors.service';
 import { ApiClientError } from '@/lib/api-client';
 import { MentorFormDialog } from './mentor-form-dialog';
+import { MentorAvailabilityDialog } from './mentor-availability-dialog';
 import { LandingMentorCard } from '@/components/features/mentors/landing-mentor-card';
 import type { Mentor } from '@/types/mentor';
 
@@ -43,6 +44,7 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
   const [deleting, setDeleting] = useState<Mentor | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [availabilityFor, setAvailabilityFor] = useState<Mentor | null>(null);
 
   function openCreate() {
     setEditing(null);
@@ -131,6 +133,10 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
                       <Pencil />
                       {t('edit')}
                     </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setAvailabilityFor(m)}>
+                      <CalendarClock />
+                      {t('availability')}
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onSelect={() => setDeleting(m)}
                       className="text-destructive focus:text-destructive"
@@ -153,6 +159,15 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
           if (!open) setEditing(null);
         }}
         initial={editing}
+        onSaved={onSaved}
+      />
+
+      <MentorAvailabilityDialog
+        open={availabilityFor !== null}
+        onOpenChange={(open) => {
+          if (!open) setAvailabilityFor(null);
+        }}
+        mentor={availabilityFor}
         onSaved={onSaved}
       />
 

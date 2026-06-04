@@ -5,7 +5,7 @@ import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/container';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MentorSlideshow } from '@/components/features/mentors/mentor-slideshow';
+import { MentorsDirectory } from '@/components/features/mentors/mentors-directory';
 import { listMentors } from '@/server/mentors/service';
 import { toMentorDto } from '@/server/mentors/serialize';
 
@@ -75,10 +75,10 @@ export default async function MentorsPage({ params }: PageProps) {
         </Container>
       </section>
 
-      {/* ── Slideshow ── */}
+      {/* ── Directory grid ── */}
       <section id="mentors" className="scroll-mt-20 py-10 sm:py-20">
-        <Container size="md">
-          <MentorSlideshow mentors={mentors} />
+        <Container>
+          <MentorsDirectory mentors={mentors} />
         </Container>
       </section>
 
