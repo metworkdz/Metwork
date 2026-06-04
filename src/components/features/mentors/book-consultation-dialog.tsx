@@ -12,10 +12,11 @@
  * Status is always PENDING until admin approves.
  * Success panel clearly says "pending approval" (not "confirmed").
  */
-import { useState, useCallback, useEffect } from 'react';
-import { Clock, Calendar, Timer, Tag, Check, AlertCircle, DollarSign, Gift, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { Clock, Calendar, Timer, Tag, Check, AlertCircle, DollarSign, Gift, ChevronLeft, ChevronRight, Pencil, UserPlus, LogIn, ArrowRight, Mail } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/components/providers/auth-provider';
+import { Link, usePathname } from '@/i18n/routing';
 import { MentorScheduler } from './mentor-scheduler';
 import type { DaySlot } from '@/types/mentor';
 import { resolveTier } from '@/lib/tier-utils';
@@ -99,7 +100,18 @@ export function BookConsultationDialog({
   // assume `t` is in scope — a previous refactor dropped this call and
   // left the entire dialog throwing ReferenceError on every render.
   const t = useTranslations('mentors.bookConsultation');
-  const schedulerLocale = toSchedulerLocale(useLocale());
+  const locale = useLocale();
+  const schedulerLocale = toSchedulerLocale(locale);
+  const pathname = usePathname();
+
+  // Anonymous visitors choose between booking as a guest (pay-after-approval)
+  // or signing in (wallet / free credits / member discounts). Logged-in users
+  // skip the choice entirely and use the existing registered flow.
+  const isGuest = !user;
+  const [guestChosen, setGuestChosen] = useState(false);
+  // Stable idempotency key for the guest booking — reused across retries so a
+  // double-submit can't create two pending requests.
+  const clientRef = useRef<string | null>(null);
 
   const [step,        setStep]        = useState<Step>('schedule');
   const [name,        setName]        = useState('');
@@ -178,6 +190,8 @@ export function BookConsultationDialog({
     setPromoDiscount(0); setPromoFixed(0);
     setUseFreeCredit(false);
     setHasAvailability(null);
+    setGuestChosen(false);
+    clientRef.current = null;
     setFormState('idle'); setErrorMsg(null);
   }
 
@@ -267,27 +281,53 @@ export function BookConsultationDialog({
     setFormState('submitting');
     setErrorMsg(null);
 
+    const scheduledAt = consultDate && consultTime ? buildLocalIso(consultDate, consultTime) : null;
+
     try {
-      const res = await fetch(`/api/mentors/${mentor.id}/book`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          name,
-          email,
-          phone,
-          message,
-          consultationDate:  consultDate || null,
-          consultationTime:  consultDate && consultTime ? consultTime : null,
-          // Full ISO with the user's local timezone offset — lets the server
-          // run the 24-hour advance check without forcing UTC. Only sent when a
-          // concrete time slot was chosen.
-          scheduledAt:       consultDate && consultTime ? buildLocalIso(consultDate, consultTime) : null,
-          durationMinutes:   consultDate ? duration : null,
-          promoCode:         promoState === 'valid' ? promoCode.trim() : null,
-          useFreeCredit:     applyFreeCredit,
-        }),
-      });
+      let res: Response;
+      if (isGuest) {
+        // Guest: NO payment now. The server creates a PENDING/UNPAID request and
+        // emails a pay link once an admin approves. Reuse one idempotency key.
+        if (!clientRef.current) clientRef.current = crypto.randomUUID();
+        res = await fetch(`/api/mentors/${mentor.id}/guest-book`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            email,
+            phone,
+            message,
+            consultationDate: consultDate || null,
+            consultationTime: consultDate && consultTime ? consultTime : null,
+            scheduledAt,
+            durationMinutes:  consultDate ? duration : null,
+            promoCode:        promoCode.trim() ? promoCode.trim() : null,
+            locale:           locale === 'en' || locale === 'fr' || locale === 'ar' ? locale : undefined,
+            clientReference:  clientRef.current,
+          }),
+        });
+      } else {
+        res = await fetch(`/api/mentors/${mentor.id}/book`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            name,
+            email,
+            phone,
+            message,
+            consultationDate:  consultDate || null,
+            consultationTime:  consultDate && consultTime ? consultTime : null,
+            // Full ISO with the user's local timezone offset — lets the server
+            // run the 24-hour advance check without forcing UTC. Only sent when a
+            // concrete time slot was chosen.
+            scheduledAt,
+            durationMinutes:   consultDate ? duration : null,
+            promoCode:         promoState === 'valid' ? promoCode.trim() : null,
+            useFreeCredit:     applyFreeCredit,
+          }),
+        });
+      }
 
       if (res.status === 401) {
         setErrorMsg(t('errorLoginRequired'));
@@ -315,13 +355,24 @@ export function BookConsultationDialog({
         {formState === 'success' ? (
           /* ── Success: pending approval state ── */
           <div className="flex flex-col items-center py-6 text-center">
-            <div className="flex size-14 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-950">
-              <Clock className="size-7 text-amber-600 dark:text-amber-400" />
+            <div className={cn(
+              'flex size-14 items-center justify-center rounded-full',
+              isGuest ? 'bg-sky-50 dark:bg-sky-950' : 'bg-amber-50 dark:bg-amber-950',
+            )}>
+              {isGuest
+                ? <Mail className="size-7 text-sky-600 dark:text-sky-400" />
+                : <Clock className="size-7 text-amber-600 dark:text-amber-400" />}
             </div>
-            <h2 className="mt-4 text-lg font-semibold">{t('successTitle')}</h2>
-            <Badge variant="warning" className="mt-2">{t('pendingReview')}</Badge>
+            <h2 className="mt-4 text-lg font-semibold">
+              {isGuest ? t('guestSuccessTitle') : t('successTitle')}
+            </h2>
+            <Badge variant={isGuest ? 'info' : 'warning'} className="mt-2">
+              {isGuest ? t('guestPendingBadge') : t('pendingReview')}
+            </Badge>
             <p className="mt-3 text-sm text-muted-foreground max-w-xs">
-              {t('successMessage', { mentorName: mentor.fullName })}
+              {isGuest
+                ? t('guestSuccessMessage', { mentorName: mentor.fullName })
+                : t('successMessage', { mentorName: mentor.fullName })}
             </p>
             {consultDate && (
               <div className="mt-4 flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-4 py-2.5 text-sm text-muted-foreground">
@@ -345,6 +396,57 @@ export function BookConsultationDialog({
             <Button className="mt-6" onClick={() => handleOpenChange(false)}>
               {t('done')}
             </Button>
+          </div>
+        ) : isGuest && !guestChosen ? (
+          /* ── Anonymous visitor: choose guest vs account ── */
+          <div className="space-y-5">
+            <DialogHeader>
+              <DialogTitle>{t('chooseTitle')}</DialogTitle>
+              <DialogDescription>{t('chooseSubtitle')}</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              {/* Continue as guest */}
+              <button
+                type="button"
+                onClick={() => { setGuestChosen(true); setStep('schedule'); }}
+                className="flex w-full items-start gap-3 rounded-lg border border-border/60 bg-background px-4 py-3.5 text-start transition-colors hover:border-primary/50 hover:bg-accent"
+              >
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary-600">
+                  <UserPlus className="size-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">{t('guestOptionTitle')}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{t('guestOptionDesc')}</p>
+                </div>
+                <ArrowRight className="size-4 shrink-0 self-center text-muted-foreground rtl:rotate-180" />
+              </button>
+
+              {/* Log in / create account */}
+              <Link
+                href={{ pathname: '/login', query: { next: pathname } }}
+                className="flex w-full items-start gap-3 rounded-lg border border-border/60 bg-background px-4 py-3.5 text-start transition-colors hover:border-primary/50 hover:bg-accent"
+              >
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground">
+                  <LogIn className="size-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">{t('accountOptionTitle')}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{t('accountOptionDesc')}</p>
+                </div>
+                <ArrowRight className="size-4 shrink-0 self-center text-muted-foreground rtl:rotate-180" />
+              </Link>
+
+              <p className="text-center text-xs text-muted-foreground">
+                {t('noAccountPrompt')}{' '}
+                <Link
+                  href={{ pathname: '/signup', query: { next: pathname } }}
+                  className="font-medium text-primary hover:underline"
+                >
+                  {t('signUpLink')}
+                </Link>
+              </p>
+            </div>
           </div>
         ) : (
           <>
@@ -691,11 +793,11 @@ export function BookConsultationDialog({
                 )}
               </div>
 
-              {/* Pending-review notice */}
+              {/* Pending-review notice — guests are told a pay link follows approval */}
               <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
                 <Clock className="size-3.5 mt-0.5 shrink-0" />
                 <span>
-                  {t('reviewNotice')}
+                  {isGuest ? t('guestReviewNotice') : t('reviewNotice')}
                 </span>
               </div>
 

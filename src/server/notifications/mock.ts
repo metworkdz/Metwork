@@ -24,6 +24,7 @@ import {
   withdrawalRequestedEmailHtml,
   withdrawalProcessedEmailHtml,
   consultationConfirmationEmailHtml,
+  consultationPayLinkEmailHtml,
   consultationRequestReceivedEmailHtml,
   consultationRejectedEmailHtml,
   adminConsultationNotificationHtml,
@@ -480,6 +481,74 @@ export function sendConsultationConfirmationEmail(input: MentorConfirmationInput
     } else {
       // eslint-disable-next-line no-console
       console.log(`${banner} WHATSAPP (consult-confirm) → ${booking.userPhone} :: ${waText.slice(0, 80)}…`);
+    }
+  }
+}
+
+/**
+ * Send a GUEST their secure pay link after admin approval.
+ * Contains the confirmed schedule + amount + single-use pay button.
+ * Fire-and-forget — never blocks the admin approval response.
+ */
+export function sendConsultationPayLinkEmail(input: {
+  booking:    MentorConfirmationInput['booking'];
+  mentor:     MentorConfirmationInput['mentor'];
+  lang:       'en' | 'fr';
+  payUrl:     string;
+  amount:     number;
+  expiresAt:  string;
+}): void {
+  const { booking, mentor, lang, payUrl, amount, expiresAt } = input;
+  const isFr = lang === 'fr';
+  const subject = isFr
+    ? `Paiement requis — consultation avec ${mentor.fullName}`
+    : `Payment required — consultation with ${mentor.fullName}`;
+
+  sendResendEmail({
+    to:      booking.userEmail,
+    subject,
+    html:    consultationPayLinkEmailHtml({
+      clientName:      booking.userName,
+      mentorName:      mentor.fullName,
+      reference:       booking.id,
+      payUrl,
+      amount,
+      expiresAt,
+      lang,
+      scheduledAt:     booking.scheduledAt ?? null,
+      durationMinutes: booking.durationMinutes ?? null,
+      meetLink:        booking.meetLink ?? null,
+      isOffline:       booking.isOffline ?? false,
+    }),
+  })
+    .then((sent) => {
+      if (!sent)
+        // eslint-disable-next-line no-console
+        console.log(`${banner} CONSULT PAY LINK (no Resend) → ${booking.userEmail} :: ${payUrl}`);
+      else
+        // eslint-disable-next-line no-console
+        console.log(`${banner} CONSULT PAY LINK sent → ${booking.userEmail}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Consultation pay-link email failed →`, err.message),
+    );
+
+  // WhatsApp nudge — fire-and-forget.
+  if (booking.userPhone) {
+    const waText =
+      (isFr ? '💳 Metwork — Paiement requis\n' : '💳 Metwork — Payment required\n') +
+      (isFr ? `Consultant : ${mentor.fullName}` : `Consultant: ${mentor.fullName}`) +
+      `\n${isFr ? 'Montant' : 'Amount'}: ${amount.toLocaleString('fr-DZ')} DZD` +
+      `\n${isFr ? 'Payer ici' : 'Pay here'}: ${payUrl}`;
+    if (process.env.SMS_PROVIDER === 'infobip') {
+      sendWhatsAppMessage(booking.userPhone, waText).catch((err: Error) =>
+        // eslint-disable-next-line no-console
+        console.error(`${banner} WhatsApp pay-link failed →`, err.message),
+      );
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(`${banner} WHATSAPP (pay-link) → ${booking.userPhone} :: ${waText.slice(0, 80)}…`);
     }
   }
 }

@@ -696,6 +696,98 @@ export function consultationConfirmationEmailHtml(params: ConsultEmailParams): s
   `);
 }
 
+/* ── New: guest pay link (approved, awaiting online payment) ── */
+
+interface ConsultPayLinkParams {
+  clientName:      string;
+  mentorName:      string;
+  reference:       string;
+  payUrl:          string;
+  amount:          number;
+  expiresAt:       string;
+  lang:            'en' | 'fr';
+  scheduledAt?:    string | null;
+  durationMinutes?: number | null;
+  meetLink?:       string | null;
+  isOffline?:      boolean;
+}
+
+/**
+ * Sent to a GUEST after an admin approves their consultation. Contains the
+ * confirmed schedule, the amount, and a single-use pay button. NOT a
+ * confirmation — the session is only confirmed once payment succeeds.
+ */
+export function consultationPayLinkEmailHtml(params: ConsultPayLinkParams): string {
+  const { clientName, mentorName, reference, payUrl, amount, expiresAt, lang, scheduledAt, durationMinutes, meetLink, isOffline } = params;
+  const isFr = lang === 'fr';
+
+  const fmtDt = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString(isFr ? 'fr-DZ' : 'en-GB', {
+        dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC',
+      });
+    } catch { return iso; }
+  };
+  const fmtAmt = `${amount.toLocaleString('fr-DZ')} DZD`;
+
+  const greeting = isFr ? `Bonjour ${clientName},` : `Hello ${clientName},`;
+  const title    = isFr ? 'Votre consultation est approuvée — paiement requis' : 'Your consultation is approved — payment required';
+  const body     = isFr
+    ? `Bonne nouvelle — votre demande de consultation avec <strong>${mentorName}</strong> a été approuvée. Pour confirmer votre créneau, veuillez régler le montant ci-dessous. Votre séance sera confirmée dès réception du paiement.`
+    : `Good news — your consultation request with <strong>${mentorName}</strong> has been approved. To lock in your slot, please pay the amount below. Your session is confirmed as soon as payment is received.`;
+
+  const schedRow = scheduledAt
+    ? `<tr>
+        <td style="padding:8px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:160px;">${isFr ? 'Date confirmée' : 'Confirmed date'}</td>
+        <td style="padding:8px 12px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;font-weight:500;">${fmtDt(scheduledAt)}</td>
+      </tr>`
+    : '';
+  const durRow = durationMinutes
+    ? `<tr>
+        <td style="padding:8px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:160px;">${isFr ? 'Durée' : 'Duration'}</td>
+        <td style="padding:8px 12px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;font-weight:500;">${durationMinutes} min</td>
+      </tr>`
+    : '';
+  const formatRow = meetLink
+    ? `<tr>
+        <td style="padding:8px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:160px;">${isFr ? 'Format' : 'Format'}</td>
+        <td style="padding:8px 12px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;font-weight:500;">${isFr ? 'En ligne' : 'Online'}</td>
+      </tr>`
+    : isOffline
+    ? `<tr>
+        <td style="padding:8px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:160px;">${isFr ? 'Format' : 'Format'}</td>
+        <td style="padding:8px 12px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;font-weight:500;">${isFr ? 'En présentiel' : 'In-person'}</td>
+      </tr>`
+    : '';
+
+  return layout(`
+    ${h1(title)}
+    ${p(greeting)}
+    ${p(body)}
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin:20px 0;">
+      <tr>
+        <td style="padding:8px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:160px;">${isFr ? 'Consultant' : 'Consultant'}</td>
+        <td style="padding:8px 12px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;font-weight:500;">${mentorName}</td>
+      </tr>
+      ${schedRow}
+      ${durRow}
+      ${formatRow}
+      <tr style="background:#f4fdf7;">
+        <td style="padding:12px;font-size:14px;color:#166534;font-weight:700;border-top:1px solid #e4e4e7;width:160px;">${isFr ? 'Montant à payer' : 'Amount due'}</td>
+        <td style="padding:12px;font-size:16px;color:#166534;font-weight:700;border-top:1px solid #e4e4e7;">${fmtAmt}</td>
+      </tr>
+    </table>
+    <div style="margin:24px 0;text-align:center;">
+      ${button(payUrl, isFr ? `Payer ${fmtAmt}` : `Pay ${fmtAmt}`)}
+      <p style="margin:12px 0 0;font-size:12px;color:#71717a;word-break:break-all;">${payUrl}</p>
+    </div>
+    ${p(`<span style="color:#71717a;font-size:13px;">${isFr
+        ? `Ce lien de paiement sécurisé (CIB / Edahabia) expire le ${fmtDt(expiresAt)}. Référence : `
+        : `This secure payment link (CIB / Edahabia) expires on ${fmtDt(expiresAt)}. Reference: `}<code style="background:#f4f4f5;padding:2px 6px;border-radius:4px;font-family:monospace;">${reference.slice(0, 8).toUpperCase()}</code></span>`)}
+  `);
+}
+
 /* ── New: request received (pending, not yet approved) ── */
 
 interface ConsultRequestParams {

@@ -28,7 +28,7 @@
  * Admin-only.
  */
 import { requireApiRole } from '@/server/auth/api-guards';
-import { db } from '@/server/db/store';
+import { db, type MentorBookingStatus } from '@/server/db/store';
 import { json } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -42,7 +42,7 @@ interface ReconciliationItem {
   userName: string;
   userEmail: string;
   amountCharged: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: MentorBookingStatus;
   chargeType: 'PAID';
   createdAt: string;
   /** True when the booking has been APPROVED — i.e. admin sent a receipt without a payment record. Highest-priority items. */

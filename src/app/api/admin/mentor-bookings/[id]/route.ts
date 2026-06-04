@@ -18,11 +18,17 @@ import {
   sendConsultationConfirmationEmail,
   sendConsultationRejectedEmail,
   sendMentorSessionConfirmedEmail,
+  sendConsultationPayLinkEmail,
 } from '@/server/notifications/mock';
+import { validatePromoCode, promoAppliesToType, consumePromoCode } from '@/server/promo-codes/service';
+import { sendGuestConfirmationOnce } from '@/server/notifications/guest-confirm';
 import { track } from '@/lib/analytics';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+/** Guest pay links live for 7 days from approval, then the token is dead. */
+const PAY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const schema = z.object({
   status:      z.enum(['APPROVED', 'REJECTED']),
@@ -31,6 +37,8 @@ const schema = z.object({
   meetLink:    z.string().url().optional(),
   /** True when the session will be held in-person instead of online. */
   isOffline:   z.boolean().optional(),
+  /** Final session length the admin confirms (guest flow). */
+  durationMinutes: z.number().int().min(30).max(180).optional(),
 });
 
 export async function PATCH(
@@ -61,6 +69,14 @@ export async function PATCH(
   // Idempotency: only PENDING bookings can be transitioned
   if (existing.status !== 'PENDING') {
     return jsonError(409, 'ALREADY_REVIEWED', 'This booking has already been reviewed');
+  }
+
+  // ── GUEST flow (pay-after-approval) — fully separate path ─────────────────
+  // Guests never paid at booking, so there is no wallet/refund logic. Approval
+  // recomputes the price server-side and emails a tokenized pay link; the
+  // registered (wallet) path below is left completely untouched.
+  if (existing.source === 'guest') {
+    return reviewGuestBooking({ id, input });
   }
 
   // Pre-flight check (outside the lock): rejecting a PAID booking when the
@@ -242,4 +258,172 @@ export async function PATCH(
     ...result.booking,
     refundedAmount: result.refundedAmount,
   });
+}
+
+/* ─────────────────────────── Guest review branch ───────────────────────────
+ * Guests pay AFTER approval via a hosted-checkout pay link, so there is no
+ * wallet and never a refund. Approval recomputes the price server-side, mints a
+ * single-use 7-day token, and emails the pay link. A 0-amount (full-promo)
+ * booking is confirmed immediately. This path is fully additive — it never
+ * touches the registered (wallet) logic above. */
+async function reviewGuestBooking({
+  id,
+  input,
+}: {
+  id: string;
+  input: z.infer<typeof schema>;
+}) {
+  const snapshot = await db.read();
+  const existing = (snapshot.mentorBookings ?? []).find((b) => b.id === id);
+  if (!existing) return jsonError(404, 'NOT_FOUND', 'Booking not found');
+
+  const mentor = await findMentorById(existing.mentorId);
+  if (!mentor) return jsonError(404, 'NOT_FOUND', 'Mentor not found');
+
+  const lang: 'en' | 'fr' = existing.guestLocale === 'en' ? 'en' : 'fr';
+
+  // ── REJECT: no money ever moved for a guest — just mark + notify ──────────
+  if (input.status === 'REJECTED') {
+    const result = await db.update<
+      | { ok: true; booking: MentorBookingRecord }
+      | { ok: false; reason: 'NOT_FOUND' | 'ALREADY_REVIEWED' }
+    >((d) => {
+      const booking = (d.mentorBookings ?? []).find((b) => b.id === id);
+      if (!booking) return { ok: false, reason: 'NOT_FOUND' };
+      if (booking.status !== 'PENDING') return { ok: false, reason: 'ALREADY_REVIEWED' };
+      booking.status    = 'REJECTED';
+      booking.adminNote = input.adminNote ?? null;
+      booking.updatedAt = new Date().toISOString();
+      return { ok: true, booking };
+    });
+
+    if (!result.ok) {
+      if (result.reason === 'ALREADY_REVIEWED')
+        return jsonError(409, 'ALREADY_REVIEWED', 'This booking has already been reviewed');
+      return jsonError(404, 'NOT_FOUND', 'Booking not found');
+    }
+
+    sendConsultationRejectedEmail({
+      booking:   result.booking,
+      mentor,
+      adminNote: input.adminNote ?? null,
+      lang,
+    });
+    void track({
+      event: 'booking_rejected',
+      distinctId: result.booking.id,
+      props: { bookingId: result.booking.id, refundedAmount: 0 },
+    });
+    return json({ ...result.booking, refundedAmount: 0 });
+  }
+
+  // ── APPROVE: require a confirmed format (online link OR in-person) ────────
+  // Mirrors the admin UI's "meeting link OR offline checkbox" rule so a guest
+  // is never asked to pay for a session with no agreed format.
+  const hasLink = typeof input.meetLink === 'string' && input.meetLink.trim().length > 0;
+  if (!hasLink && input.isOffline !== true) {
+    return jsonError(
+      422,
+      'FORMAT_REQUIRED',
+      'Provide a meeting link or mark the session as in-person before approving.',
+    );
+  }
+
+  // Server-authoritative pricing. Guests have NO membership tier discount.
+  const feePerHour = mentor.consultationFee ?? 0;
+  const minutes    = input.durationMinutes ?? existing.durationMinutes ?? 60;
+  const basePrice  = feePerHour > 0 ? Math.round((minutes / 60) * feePerHour) : 0;
+
+  // Re-validate the promo stored at request time. If it has since expired or
+  // hit its limit we silently drop it (price reverts to full) rather than block
+  // the admin. NEVER consumed here — only on successful payment / 0-amount.
+  let discountPercent = 0;
+  let appliedPromoCode: string | null = null;
+  if (existing.appliedPromoCode) {
+    const validation = await validatePromoCode(existing.appliedPromoCode);
+    if (validation.valid && promoAppliesToType(validation.promoCode, 'CONSULTATION')) {
+      discountPercent  = validation.discountPercent;
+      appliedPromoCode = validation.promoCode.code;
+    }
+  }
+  const promoCut   = discountPercent > 0 ? Math.round(basePrice * discountPercent / 100) : 0;
+  const amountDue  = Math.max(0, basePrice - promoCut); // never negative
+
+  const nowIso    = new Date().toISOString();
+  const token     = randomUUID();
+  const expiresAt = new Date(Date.now() + PAY_TOKEN_TTL_MS).toISOString();
+
+  const result = await db.update<
+    | { ok: true; mode: 'confirmed' | 'awaiting'; booking: MentorBookingRecord }
+    | { ok: false; reason: 'NOT_FOUND' | 'ALREADY_REVIEWED' }
+  >((d) => {
+    const booking = (d.mentorBookings ?? []).find((b) => b.id === id);
+    if (!booking) return { ok: false, reason: 'NOT_FOUND' };
+    if (booking.status !== 'PENDING') return { ok: false, reason: 'ALREADY_REVIEWED' };
+
+    booking.adminNote = input.adminNote ?? null;
+    if (input.scheduledAt)     booking.scheduledAt     = input.scheduledAt;
+    if (input.meetLink)        booking.meetLink        = input.meetLink;
+    if (input.isOffline !== undefined) booking.isOffline = input.isOffline;
+    if (input.durationMinutes) booking.durationMinutes = input.durationMinutes;
+    booking.appliedPromoCode     = appliedPromoCode;
+    booking.promoDiscountPercent = discountPercent > 0 ? discountPercent : null;
+    booking.guestAmountDue       = amountDue;
+    booking.amountCharged        = amountDue;
+    booking.updatedAt            = nowIso;
+
+    if (amountDue === 0) {
+      // Nothing to collect (full promo) → confirm immediately, no pay link.
+      booking.status            = 'CONFIRMED';
+      booking.paymentStatus     = 'PAID';
+      booking.payToken          = null;
+      booking.payTokenExpiresAt = null;
+      return { ok: true, mode: 'confirmed', booking };
+    }
+
+    booking.status            = 'AWAITING_PAYMENT';
+    booking.paymentStatus     = 'AWAITING_PAYMENT';
+    booking.payToken          = token;
+    booking.payTokenExpiresAt = expiresAt;
+    return { ok: true, mode: 'awaiting', booking };
+  });
+
+  if (!result.ok) {
+    if (result.reason === 'ALREADY_REVIEWED')
+      return jsonError(409, 'ALREADY_REVIEWED', 'This booking has already been reviewed');
+    return jsonError(404, 'NOT_FOUND', 'Booking not found');
+  }
+
+  if (result.mode === 'confirmed') {
+    // 0-amount guest booking → consume the promo now, then send both emails once.
+    if (appliedPromoCode) await consumePromoCode(appliedPromoCode);
+    await sendGuestConfirmationOnce(result.booking.id);
+    void track({
+      event: 'booking_approved',
+      distinctId: result.booking.id,
+      props: { bookingId: result.booking.id, itemKind: 'CONSULTATION' },
+    });
+    return json({ ...result.booking, refundedAmount: 0 });
+  }
+
+  // Awaiting payment → email the guest a single-use pay link. The SlickPay
+  // transfer itself is created lazily when the guest clicks Pay (their checkout
+  // sessions expire in minutes, so we don't pin one for 7 days).
+  const localeSeg = existing.guestLocale ?? 'fr';
+  const base = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  const payUrl = `${base}/${localeSeg}/consultation/pay/${token}`;
+  sendConsultationPayLinkEmail({
+    booking: result.booking,
+    mentor,
+    lang,
+    payUrl,
+    amount: amountDue,
+    expiresAt,
+  });
+  void track({
+    event: 'booking_approved',
+    distinctId: result.booking.id,
+    props: { bookingId: result.booking.id, itemKind: 'CONSULTATION' },
+  });
+  return json({ ...result.booking, refundedAmount: 0 });
 }

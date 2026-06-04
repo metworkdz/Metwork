@@ -35,14 +35,22 @@ export interface BookingRow {
   consultationDate?: string | null;
   consultationTime?: string | null;
   durationMinutes?: number | null;
+  /** 'guest' for pay-after-approval requests; absent/undefined = registered. */
+  source?: 'registered' | 'guest';
+  paymentStatus?: 'UNPAID' | 'AWAITING_PAYMENT' | 'PAID';
+  guestAmountDue?: number | null;
   createdAt: string;
   updatedAt: string;
 }
 
-const STATUS_BADGE: Record<MentorBookingStatus, { variant: 'warning' | 'success' | 'danger'; label: string }> = {
-  PENDING:  { variant: 'warning', label: 'Pending' },
-  APPROVED: { variant: 'success', label: 'Approved' },
-  REJECTED: { variant: 'danger',  label: 'Rejected' },
+type BadgeVariant = 'warning' | 'success' | 'danger' | 'info' | 'primary';
+
+const STATUS_BADGE: Record<MentorBookingStatus, { variant: BadgeVariant; labelKey: string }> = {
+  PENDING:          { variant: 'warning', labelKey: 'statusPending' },
+  APPROVED:         { variant: 'success', labelKey: 'statusApproved' },
+  REJECTED:         { variant: 'danger',  labelKey: 'statusRejected' },
+  AWAITING_PAYMENT: { variant: 'info',    labelKey: 'statusAwaitingPayment' },
+  CONFIRMED:        { variant: 'primary', labelKey: 'statusConfirmed' },
 };
 
 interface ReviewDialogProps {
@@ -235,10 +243,12 @@ export function MentorBookingsTable({ initial }: MentorBookingsTableProps) {
   const [statusFilter, setFilter]    = useState<MentorBookingStatus | 'ALL'>('ALL');
 
   const filters: Array<{ value: MentorBookingStatus | 'ALL'; label: string }> = [
-    { value: 'ALL',      label: t('filterAll') },
-    { value: 'PENDING',  label: t('filterPending') },
-    { value: 'APPROVED', label: t('filterApproved') },
-    { value: 'REJECTED', label: t('filterRejected') },
+    { value: 'ALL',              label: t('filterAll') },
+    { value: 'PENDING',          label: t('filterPending') },
+    { value: 'AWAITING_PAYMENT', label: t('filterAwaitingPayment') },
+    { value: 'CONFIRMED',        label: t('filterConfirmed') },
+    { value: 'APPROVED',         label: t('filterApproved') },
+    { value: 'REJECTED',         label: t('filterRejected') },
   ];
 
   const visible = statusFilter === 'ALL'
@@ -310,8 +320,13 @@ export function MentorBookingsTable({ initial }: MentorBookingsTableProps) {
                         <span className="text-muted-foreground">→</span>
                         <p className="text-sm font-medium text-primary truncate">{row.mentorName}</p>
                         <Badge variant={badge.variant} className="text-xs">
-                          {badge.label}
+                          {t(badge.labelKey)}
                         </Badge>
+                        {row.source === 'guest' && (
+                          <Badge variant="outline" className="text-xs">
+                            {t('guestBadge')}
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {row.userEmail} · {row.userPhone}

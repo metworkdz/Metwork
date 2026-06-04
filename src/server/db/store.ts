@@ -891,7 +891,20 @@ export interface NetworkCheckInAuditRecord {
 
 /* ─────────────────────────── Mentors ─────────────────────────── */
 
-export type MentorBookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+/**
+ * Booking lifecycle.
+ *
+ * Registered (wallet-paid) flow: PENDING → APPROVED | REJECTED.
+ * Guest (pay-after-approval) flow: PENDING → AWAITING_PAYMENT → CONFIRMED,
+ * or PENDING → REJECTED. AWAITING_PAYMENT/CONFIRMED are additive and only
+ * ever apply to guest bookings — the registered path is unchanged.
+ */
+export type MentorBookingStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'AWAITING_PAYMENT'
+  | 'CONFIRMED';
 
 export interface MentorBookingRecord {
   id: string;
@@ -951,6 +964,59 @@ export interface MentorBookingRecord {
    * creating a new one.
    */
   clientReference?: string | null;
+
+  /* ── Guest (pay-after-approval) flow. All additive & optional. ──────────
+   * Absent on registered (wallet) bookings, which keep their existing
+   * shape untouched. */
+
+  /**
+   * Booking origin. 'registered' = authenticated wallet booking (existing
+   * behaviour, paid at booking). 'guest' = unauthenticated request that
+   * pays online via the hosted checkout AFTER admin approval. Absent ⇒
+   * 'registered' (legacy bookings predate this field).
+   */
+  source?: 'registered' | 'guest';
+  /**
+   * Payment state for the guest flow (registered bookings track money via
+   * transactionId/refundTransactionId instead).
+   *   UNPAID           — guest request created, not yet approved.
+   *   AWAITING_PAYMENT — admin approved, pay link emailed, not yet paid.
+   *   PAID             — guest completed hosted checkout (settled).
+   */
+  paymentStatus?: 'UNPAID' | 'AWAITING_PAYMENT' | 'PAID';
+  /**
+   * Unguessable single-use token embedded in the public pay URL
+   * (/consultation/pay/[token]). Cleared once payment settles so the link
+   * cannot be replayed.
+   */
+  payToken?: string | null;
+  /** ISO expiry for payToken (7 days from approval). */
+  payTokenExpiresAt?: string | null;
+  /**
+   * Hosted-checkout provider reference (SlickPay transfer id) for the guest
+   * payment. Used to verify payment status server-side on return — never
+   * trusting the redirect.
+   */
+  paymentProviderRef?: string | null;
+  /**
+   * Final integer DZD the guest must pay, recomputed server-side at approval
+   * (mentor fee × confirmed duration − validated promo). Distinct from
+   * amountCharged so the guest amount is auditable independent of any legacy
+   * indicative value.
+   */
+  guestAmountDue?: number | null;
+  /**
+   * Set once the post-payment confirmation emails (client + mentor) have been
+   * dispatched, so re-verifying a settled booking never re-sends them.
+   */
+  confirmationEmailSentAt?: string | null;
+  /**
+   * Locale the guest used when requesting (en|fr|ar). Drives the pay-link
+   * email language and the locale segment of the public pay URL. Absent on
+   * registered bookings (their language comes from the user record).
+   */
+  guestLocale?: 'en' | 'fr' | 'ar';
+
   createdAt: string;
   updatedAt: string;
 }
