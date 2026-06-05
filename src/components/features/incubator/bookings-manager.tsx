@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Building2, Briefcase, Calendar, CheckCircle2, XCircle, ReceiptText, Wifi, WifiOff } from 'lucide-react';
+import { Building2, Briefcase, Calendar, CheckCircle2, XCircle, ReceiptText, Wifi, WifiOff, Banknote } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -66,6 +66,21 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ status }),
+      });
+      if (!res.ok) return;
+      const data = await res.json() as { booking: BookingWithCustomer };
+      setBookings((prev) => prev.map((b) => b.id === id ? data.booking : b));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function markCashPaid(id: string) {
+    setBusy(id);
+    try {
+      const res = await fetch(`/api/incubator/bookings/${id}/mark-cash-paid`, {
+        method: 'PATCH',
+        credentials: 'include',
       });
       if (!res.ok) return;
       const data = await res.json() as { booking: BookingWithCustomer };
@@ -165,6 +180,10 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                 <TableBody>
                   {filtered.map((b) => {
                     const isOffline = b.source === 'offline';
+                    const isCashDeposit = b.paymentMethod === 'card' && b.paymentMode === 'CASH_DEPOSIT';
+                    const awaitingCash = isCashDeposit && b.status === 'CONFIRMED' && b.paymentStatus === 'AWAITING_CASH';
+                    const cashCollected = isCashDeposit && b.paymentStatus === 'PAID';
+                    const balanceDue = b.cashRemainingAmount ?? 0;
                     return (
                       <TableRow key={b.id}>
                         <TableCell>
@@ -197,12 +216,29 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                           <Badge variant={STATUS_VARIANT[b.status] ?? 'outline'}>
                             {b.status.charAt(0) + b.status.slice(1).toLowerCase()}
                           </Badge>
+                          {awaitingCash && (
+                            <Badge variant="warning" className="mt-1 flex w-fit items-center gap-1 text-xs">
+                              <Banknote className="size-3" /> {t('awaitingCash')}
+                            </Badge>
+                          )}
+                          {cashCollected && (
+                            <Badge variant="success" className="mt-1 flex w-fit items-center gap-1 text-xs">
+                              <Banknote className="size-3" /> {t('cashCollected')}
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell className="text-end tabular-nums font-medium text-sm">
                           {b.totalAmount === 0 ? (
                             <span className="text-muted-foreground">{t('free')}</span>
                           ) : (
                             `${b.totalAmount.toLocaleString()} DZD`
+                          )}
+                          {isCashDeposit && balanceDue > 0 && (
+                            <div className={`mt-0.5 text-xs font-normal ${awaitingCash ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                              {awaitingCash
+                                ? t('balanceDue', { amount: `${balanceDue.toLocaleString()} DZD` })
+                                : t('balanceCollected', { amount: `${balanceDue.toLocaleString()} DZD` })}
+                            </div>
                           )}
                         </TableCell>
                         <TableCell className="text-end">
@@ -222,6 +258,14 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                                   <XCircle className="size-4" />
                                 </Button>
                               </>
+                            )}
+                            {awaitingCash && (
+                              <Button size="sm" variant="outline" className="h-8 gap-1 text-xs"
+                                title={t('markCashPaid')}
+                                disabled={busy === b.id}
+                                onClick={() => markCashPaid(b.id)}>
+                                <Banknote className="size-3.5" /> {t('markCashPaid')}
+                              </Button>
                             )}
                             {b.status !== 'PENDING' && b.status !== 'CANCELLED' && (
                               <Button size="icon" variant="ghost" title="View receipt"

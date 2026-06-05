@@ -13,6 +13,13 @@ export interface Money {
 /** Accepted client payment methods on a booking. */
 export type PaymentMethod = 'ONLINE' | 'CASH';
 
+/**
+ * Cash-deposit kind for listings that accept CASH. PERCENT → value is 1–100
+ * (percent of total); FIXED → value is an integer-DZD amount. Paid online by
+ * card; the remaining balance is settled in cash with the incubator.
+ */
+export type CashDepositType = 'FIXED' | 'PERCENT';
+
 export type SpaceCategory = 'COWORKING' | 'PRIVATE_OFFICE' | 'TRAINING_ROOM' | 'DOMICILIATION';
 
 export interface Space {
@@ -35,6 +42,9 @@ export interface Space {
   reviewCount: number;
   /** Accepted client payment methods. Defaults to ['ONLINE','CASH'] for demo spaces. */
   acceptedPaymentMethods: PaymentMethod[];
+  /** Cash deposit config — present only when CASH is accepted. */
+  cashDepositType?: CashDepositType;
+  cashDepositValue?: number;
   /** Days of week this space is open. 0=Sun…6=Sat. Defaults to Mon–Fri. */
   workingDays: number[];
   /** Opening time "HH:MM" 24h. Defaults to "09:00". */
@@ -67,6 +77,9 @@ export interface Program {
   startDate: string;
   endDate: string;
   acceptedPaymentMethods: PaymentMethod[];
+  /** Cash deposit config — present only when CASH is accepted. */
+  cashDepositType?: CashDepositType;
+  cashDepositValue?: number;
   /** URL slug for the public detail page. May be absent on legacy records. */
   slug?: string | null;
 }
@@ -87,6 +100,9 @@ export interface Event {
   attendeeCount: number;
   eventDate: string;
   acceptedPaymentMethods: PaymentMethod[];
+  /** Cash deposit config — present only when CASH is accepted. */
+  cashDepositType?: CashDepositType;
+  cashDepositValue?: number;
   /** URL slug for the public detail page. May be absent on legacy records. */
   slug?: string | null;
 }

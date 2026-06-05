@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LogIn, UserPlus } from 'lucide-react';
+import { LogIn, User, UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
@@ -21,22 +21,41 @@ export function SpacePublicBookingCTA({ space }: Props) {
 
   const redirect = `/spaces/${space.id}`;
 
+  // A guest can book by card only when there's a chargeable amount: ONLINE is
+  // accepted, or CASH is accepted with an online deposit configured.
+  const acceptedMethods = space.acceptedPaymentMethods ?? ['ONLINE'];
+  const hasDeposit = space.cashDepositType != null && space.cashDepositValue != null;
+  const guestCanBook =
+    acceptedMethods.includes('ONLINE') ||
+    (acceptedMethods.includes('CASH') && hasDeposit);
+
   if (!user) {
     return (
-      <div className="space-y-2">
-        <Link href={`/login?redirect=${encodeURIComponent(redirect)}`}>
-          <Button className="w-full" variant="default">
-            <LogIn className="size-4" />
-            {t('signInToBook')}
-          </Button>
-        </Link>
-        <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`}>
-          <Button className="w-full" variant="outline">
-            <UserPlus className="size-4" />
-            {t('createAndBook')}
-          </Button>
-        </Link>
-      </div>
+      <>
+        <div className="space-y-2">
+          <Link href={`/login?redirect=${encodeURIComponent(redirect)}`}>
+            <Button className="w-full" variant="default">
+              <LogIn className="size-4" />
+              {t('signInToBook')}
+            </Button>
+          </Link>
+          <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`}>
+            <Button className="w-full" variant="outline">
+              <UserPlus className="size-4" />
+              {t('createAndBook')}
+            </Button>
+          </Link>
+          {guestCanBook && (
+            <Button className="w-full" variant="ghost" onClick={() => setSheetOpen(true)}>
+              <User className="size-4" />
+              {t('continueAsGuest')}
+            </Button>
+          )}
+        </div>
+        {guestCanBook && (
+          <SpaceDetailSheet space={space} open={sheetOpen} onOpenChange={setSheetOpen} />
+        )}
+      </>
     );
   }
 

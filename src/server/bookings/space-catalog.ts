@@ -32,6 +32,8 @@ function fromRecord(r: import('@/server/db/store').SpaceRecord): Space {
     rating:                 null,
     reviewCount:            0,
     acceptedPaymentMethods: r.acceptedPaymentMethods,
+    cashDepositType:        r.cashDepositType,
+    cashDepositValue:       r.cashDepositValue,
     workingDays:  r.workingDays  ?? DEFAULT_WORKING_DAYS,
     openingTime:  r.openingTime  ?? DEFAULT_OPENING_TIME,
     closingTime:  r.closingTime  ?? DEFAULT_CLOSING_TIME,

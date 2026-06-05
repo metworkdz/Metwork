@@ -69,3 +69,51 @@ export const registerForEventSchema = z.object({
   paymentMethod: nonPassPaymentMethodField,
 });
 export type RegisterForEventInput = z.infer<typeof registerForEventSchema>;
+
+/**
+ * Card-settled booking intent (SPACE / PROGRAM / EVENT) — used by both guest
+ * and registered clients who pay by card (CIB / Edahabia) instead of wallet.
+ * The `paymentMode` chooses the surface:
+ *   - ONLINE_FULL  → pay the whole total online now.
+ *   - CASH_DEPOSIT → pay a deposit online now, balance in cash on-site.
+ * No price is ever supplied by the client; the server recomputes T / D / C.
+ */
+const cardCustomerSchema = z.object({
+  fullName: z.string().min(2).max(120),
+  email: z.string().email().max(160),
+  phone: z.string().min(6).max(40),
+  idNumber: z.string().min(2).max(60).optional().nullable(),
+});
+
+export const createCardBookingSchema = z
+  .object({
+    target: z.discriminatedUnion('itemKind', [
+      z.object({
+        itemKind: z.literal('SPACE'),
+        spaceId: z.string().min(1),
+        unit: z.enum(['HOUR', 'DAY', 'MONTH']),
+        startsAt: z.string().datetime(),
+        endsAt: z.string().datetime(),
+      }),
+      z.object({ itemKind: z.literal('PROGRAM'), programId: z.string().min(1) }),
+      z.object({ itemKind: z.literal('EVENT'), eventId: z.string().min(1) }),
+    ]),
+    paymentMode: z.enum(['ONLINE_FULL', 'CASH_DEPOSIT']),
+    customer: cardCustomerSchema,
+    clientReference: z.string().min(8).max(128),
+    promoCode: promoCodeField,
+    locale: z.enum(['en', 'fr', 'ar']).optional(),
+  })
+  .superRefine((d, ctx) => {
+    if (
+      d.target.itemKind === 'SPACE' &&
+      new Date(d.target.endsAt) <= new Date(d.target.startsAt)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'endsAt must be after startsAt',
+        path: ['target', 'endsAt'],
+      });
+    }
+  });
+export type CreateCardBookingApiInput = z.infer<typeof createCardBookingSchema>;

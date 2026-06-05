@@ -105,10 +105,75 @@ export async function PATCH(
       booking.declineReason = input.declineReason;
     }
 
-    // ── Wallet movements (skip for manual/offline bookings) ──────────────────
+    // ── Wallet movements ─────────────────────────────────────────────────
+    // Three disjoint payment models:
+    //   • manual  — offline/cash with no online leg → never touches a wallet.
+    //   • card    — guest / card-deposit bookings. The incubator wallet was
+    //               moved at settlement (+online −commission, in card-payment.ts).
+    //               On CANCEL we REVERSE exactly those two movements. We NEVER
+    //               refund the user wallet — they paid by card (and any cash
+    //               balance), so refunds are handled off-platform.
+    //   • wallet  — registered online/cash via the Metwork wallet (escrow).
     const isManual = booking.paymentMethod === 'manual';
+    const isCard = booking.paymentMethod === 'card';
 
-    if (!isManual && input.status === 'CONFIRMED' && booking.totalAmount > 0) {
+    if (isCard) {
+      // Reverse the settlement movements only if money actually moved (the
+      // booking had been CONFIRMED/settled). A still-PENDING_PAYMENT card
+      // intent never credited anyone, so cancelling it moves nothing.
+      if (input.status === 'CANCELLED' && previousStatus === 'CONFIRMED' && incubator.managerId) {
+        const incubatorWallet = ensureWallet(d, incubator.managerId);
+        if (incubatorWallet.status !== 'FROZEN') {
+          const online = booking.onlinePaidAmount ?? 0;
+          const commission = booking.commissionAmount ?? 0;
+          // Reverse the PAYOUT (−online). No clamp — a negative balance is an
+          // allowed platform debt the incubator settles by recharging.
+          if (online > 0) {
+            incubatorWallet.balance -= online;
+            incubatorWallet.updatedAt = now;
+            const payoutReversal: TransactionRecord = {
+              id: randomUUID(),
+              walletId: incubatorWallet.id,
+              userId: incubator.managerId,
+              type: 'ADJUSTMENT',
+              amount: -online,
+              balanceAfter: incubatorWallet.balance,
+              status: 'COMPLETED',
+              description: `Booking payout reversed — ${booking.itemName}`,
+              reference: `payout-reversal-${booking.id}`,
+              provider: 'internal',
+              providerTxnId: null,
+              metadata: { bookingId: booking.id },
+              createdAt: now,
+              completedAt: now,
+            };
+            d.transactions.push(payoutReversal);
+          }
+          // Reverse the COMMISSION debit (+commission back to the incubator).
+          if (commission > 0) {
+            incubatorWallet.balance += commission;
+            incubatorWallet.updatedAt = now;
+            const commissionReversal: TransactionRecord = {
+              id: randomUUID(),
+              walletId: incubatorWallet.id,
+              userId: incubator.managerId,
+              type: 'ADJUSTMENT',
+              amount: commission,
+              balanceAfter: incubatorWallet.balance,
+              status: 'COMPLETED',
+              description: `Platform commission reversed — ${booking.itemName}`,
+              reference: `commission-reversal-${booking.id}`,
+              provider: 'internal',
+              providerTxnId: null,
+              metadata: { bookingId: booking.id },
+              createdAt: now,
+              completedAt: now,
+            };
+            d.transactions.push(commissionReversal);
+          }
+        }
+      }
+    } else if (!isManual && input.status === 'CONFIRMED' && booking.totalAmount > 0) {
       // Credit incubator wallet (escrow → incubator)
       const incubatorWallet = ensureWallet(d, incubator.managerId!);
       if (incubatorWallet.status !== 'FROZEN') {
@@ -157,10 +222,11 @@ export async function PATCH(
         d.transactions.push(refundTx);
 
         // If the incubator had already been credited (i.e., was CONFIRMED before),
-        // claw it back from their wallet.
+        // claw it back from their wallet. No clamp — a negative balance is an
+        // allowed platform debt the incubator settles by recharging.
         if (previousStatus === 'CONFIRMED') {
           const incubatorWallet = ensureWallet(d, incubator.managerId!);
-          incubatorWallet.balance = Math.max(0, incubatorWallet.balance - booking.totalAmount);
+          incubatorWallet.balance = incubatorWallet.balance - booking.totalAmount;
           incubatorWallet.updatedAt = now;
           const clawbackTx: TransactionRecord = {
             id: randomUUID(),

@@ -492,7 +492,12 @@
       "emptyDescriptionFiltered": "حاول تعديل الفلاتر أعلاه.",
       "free": "مجاني",
       "badgeOffline": "أوفلاين",
-      "badgeOnline": "أونلاين"
+      "badgeOnline": "أونلاين",
+      "awaitingCash": "في انتظار النقد",
+      "cashCollected": "تم تحصيل النقد",
+      "balanceDue": "الرصيد المستحق: {amount}",
+      "balanceCollected": "تم التحصيل: {amount}",
+      "markCashPaid": "تأكيد الدفع نقدًا"
     },
     "clients": {
       "editTitle": "تعديل العميل",
@@ -644,6 +649,10 @@
       "labelPaymentMethods": "طرق الدفع المقبولة",
       "methodOnline": "عبر الإنترنت (محفظة)",
       "methodCash": "نقداً عند الدخول",
+      "labelDeposit": "عربون (يُدفع عبر الإنترنت بالبطاقة)",
+      "depositHint": "يدفع العملاء هذا العربون عبر الإنترنت بالبطاقة، ويُسدَّد الباقي نقداً في الموقع.",
+      "depositPercent": "نسبة من الإجمالي",
+      "depositFixed": "مبلغ ثابت (دج)",
       "saving": "جارٍ الحفظ…",
       "creating": "جارٍ الإنشاء…",
       "saveChanges": "حفظ التغييرات",
@@ -801,6 +810,10 @@
       "labelPaymentMethods": "طرق الدفع المقبولة",
       "methodOnline": "عبر الإنترنت (محفظة)",
       "methodCash": "نقداً في الموقع",
+      "labelDeposit": "عربون (يُدفع عبر الإنترنت بالبطاقة)",
+      "depositHint": "يدفع العملاء هذا العربون عبر الإنترنت بالبطاقة، ويُسدَّد الباقي نقداً في الموقع.",
+      "depositPercent": "نسبة من الإجمالي",
+      "depositFixed": "مبلغ ثابت (دج)",
       "saving": "جارٍ الحفظ…",
       "creating": "جارٍ الإنشاء…",
       "saveChanges": "حفظ التغييرات",
@@ -881,6 +894,10 @@
       "labelPaymentMethods": "طرق الدفع المقبولة",
       "methodOnline": "عبر الإنترنت (محفظة)",
       "methodCash": "نقداً في الموقع",
+      "labelDeposit": "عربون (يُدفع عبر الإنترنت بالبطاقة)",
+      "depositHint": "يدفع العملاء هذا العربون عبر الإنترنت بالبطاقة، ويُسدَّد الباقي نقداً في الموقع.",
+      "depositPercent": "نسبة من الإجمالي",
+      "depositFixed": "مبلغ ثابت (دج)",
       "saving": "جارٍ الحفظ…",
       "creating": "جارٍ الإنشاء…",
       "saveChanges": "حفظ التغييرات",
@@ -949,6 +966,35 @@
       "rejectedDesc": "تم رفض طلب الاستشارة هذا، لذا لا يوجد ما يُدفع.",
       "invalidTitle": "الرابط غير موجود",
       "invalidDesc": "رابط الدفع هذا غير صالح. يرجى التحقق من الرابط في بريدك الإلكتروني.",
+      "backHome": "العودة إلى الرئيسية"
+    },
+    "bookingPay": {
+      "awaitingTitle": "التأكيد والدفع",
+      "awaitingDescFull": "ادفع بأمان بالبطاقة لتأكيد حجزك.",
+      "awaitingDescDeposit": "ادفع عربونك بأمان بالبطاقة. ويُسدَّد الباقي نقدًا في الموقع.",
+      "item": "الحجز",
+      "provider": "مقدّم الخدمة",
+      "date": "التاريخ والوقت",
+      "total": "الإجمالي",
+      "depositDue": "العربون المستحق الآن",
+      "cashOnSite": "الباقي (نقدًا في الموقع)",
+      "amountDue": "المبلغ المستحق",
+      "secureNote": "دفع آمن عبر CIB / الذهبية. لا يتم حفظ بيانات بطاقتك أبدًا.",
+      "payNow": "ادفع الآن",
+      "starting": "جارٍ البدء…",
+      "payError": "تعذّر بدء الدفع. يرجى المحاولة مرة أخرى.",
+      "errorExpired": "انتهت صلاحية رابط الدفع هذا. يرجى التواصل مع المنظّم.",
+      "confirmedTitle": "تم تأكيد الدفع",
+      "confirmedDescFull": "تم تأكيد حجزك. رسالة تأكيد في طريقها إليك.",
+      "confirmedDescDeposit": "تم استلام عربونك وتأكيد حجزك. يرجى دفع المبلغ المتبقي {amount} نقدًا في الموقع.",
+      "expiredTitle": "انتهت صلاحية الرابط",
+      "expiredDesc": "لم يعد رابط الدفع هذا صالحًا. يرجى التواصل مع المنظّم للحصول على رابط جديد.",
+      "cancelledTitle": "تم إلغاء الحجز",
+      "cancelledDesc": "تم إلغاء هذا الحجز، لذا لا يوجد ما يُدفع.",
+      "slotTakenTitle": "لم يعد متاحًا",
+      "slotTakenDesc": "للأسف تم حجز هذا الموعد قبل اكتمال دفعك. سيُعاد أي مبلغ تم خصمه.",
+      "invalidTitle": "الرابط غير موجود",
+      "invalidDesc": "رابط الدفع هذا غير صالح. يرجى التحقق من الرابط الذي تلقيته.",
       "backHome": "العودة إلى الرئيسية"
     },
     "programs": {
@@ -1864,7 +1910,14 @@
       "passCreditsInfo": "يستخدم رصيداً واحداً — {count} من {max} متبقية",
       "passResetsDate": "· يُعاد في {date}",
       "hourlyCapAutoSwitch": "الحجوزات بالساعة: حد أقصى 7 ساعات يومياً — تجاوز ذلك يحوّل تلقائياً إلى السعر اليومي",
-      "builderDiscount": "خصم الباني ({percent}٪)"
+      "builderDiscount": "خصم الباني ({percent}٪)",
+      "depositDueNow": "العربون المستحق الآن",
+      "balanceOnSite": "الرصيد المتبقي في المكان",
+      "payDeposit": "ادفع العربون — {amount}",
+      "payNow": "ادفع الآن — {amount}",
+      "errorContact": "يرجى إدخال اسم وبريد إلكتروني ورقم هاتف صالح.",
+      "errorDateUnavailable": "التواريخ المحددة غير متاحة للحجز.",
+      "errorAlreadyBooked": "لديك حجز نشط بالفعل لهذا الفضاء."
     },
     "scheduler": {
       "noAvailabilityThisMonth": "لا توجد مواعيد متاحة هذا الشهر",
@@ -1912,7 +1965,8 @@
       "signInToBook": "تسجيل الدخول للحجز",
       "createAndBook": "إنشاء حساب والحجز",
       "entrepreneurOnly": "الحجز متاح لحسابات رواد الأعمال.",
-      "bookThisSpace": "احجز هذه المساحة"
+      "bookThisSpace": "احجز هذه المساحة",
+      "continueAsGuest": "المتابعة كضيف"
     },
     "hero": {
       "eyebrow": "سوق المساحات",
@@ -1984,7 +2038,18 @@
       "awaitingPayment": "في انتظار الدفع",
       "confirmed": "مؤكد",
       "viewBookings": "عرض حجوزاتي",
-      "viewWallet": "عرض المحفظة"
+      "viewWallet": "عرض المحفظة",
+      "total": "المجموع",
+      "depositDueNow": "العربون المستحق الآن",
+      "balanceOnSite": "الرصيد المتبقي في المكان",
+      "payDeposit": "ادفع العربون — {amount}",
+      "payNow": "ادفع الآن — {amount}",
+      "errorContact": "يرجى إدخال اسم وبريد إلكتروني ورقم هاتف صالح.",
+      "errorGeneric": "فشل التسجيل. حاول مرة أخرى.",
+      "errorInsufficientFunds": "رصيد المحفظة غير كافٍ — اشحن للمتابعة.",
+      "errorAlreadyRegistered": "أنت مسجَّل بالفعل في هذا الحدث.",
+      "errorCapacityExceeded": "نفدت تذاكر هذا الحدث للتو.",
+      "errorEventPassed": "لقد انتهى هذا الحدث بالفعل."
     },
     "explorer": {
       "all": "جميع الفعاليات",
@@ -2080,7 +2145,12 @@
       "errorAlreadyApplied": "لقد سجّلت بالفعل في هذا البرنامج.",
       "errorCapacityExceeded": "اكتمل البرنامج للتو.",
       "errorDeadlinePassed": "أُغلق باب التسجيل للتو.",
-      "errorGeneric": "فشل التسجيل. حاول مرة أخرى."
+      "errorGeneric": "فشل التسجيل. حاول مرة أخرى.",
+      "depositDueNow": "العربون المستحق الآن",
+      "balanceOnSite": "الرصيد المتبقي في المكان",
+      "payDeposit": "ادفع العربون — {amount}",
+      "payNow": "ادفع الآن — {amount}",
+      "errorContact": "يرجى إدخال اسم وبريد إلكتروني ورقم هاتف صالح."
     },
     "explorer": {
       "all": "جميع البرامج",
@@ -2126,7 +2196,8 @@
       "endsLabel": "ينتهي",
       "fullText": "هذا البرنامج ممتلئ.",
       "seatsRemainingOne": "مقعد واحد متبقٍ",
-      "seatsRemainingMany": "{count} مقاعد متبقية"
+      "seatsRemainingMany": "{count} مقاعد متبقية",
+      "continueAsGuest": "المتابعة كضيف"
     }
   },
   "admin": {
@@ -2651,7 +2722,9 @@
     "colSpace": "الفضاء / البرنامج",
     "colDate": "التاريخ",
     "colStatus": "الحالة",
-    "colAmount": "المبلغ"
+    "colAmount": "المبلغ",
+    "balanceDueOnSite": "الرصيد المستحق في الموقع: {amount}",
+    "cashBalancePaid": "تم دفع الرصيد النقدي"
   },
   "investor": {
     "startups": {
@@ -3040,7 +3113,9 @@
       "typeRefund": "استرداد",
       "typeAdjustment": "تعديل",
       "typePayout": "صرف",
-      "typeCommission": "عمولة"
+      "typeCommission": "عمولة",
+      "negativeBalanceTitle": "محفظتك في حالة دين",
+      "negativeBalanceHint": "أنت مدين بمبلغ {amount} كعمولة للمنصّة. اشحن المحفظة لتسوية الدين وإعادة تفعيل السحب."
     },
     "withdrawalForm": {
       "title": "سحب الأموال",
@@ -3172,5 +3247,13 @@
     "tabRegistrations": "التسجيلات",
     "tabFormBuilder": "منشئ النموذج",
     "publicPage": "الصفحة العامة"
+  },
+  "booking": {
+    "guest": {
+      "title": "بيانات الاتصال الخاصة بك",
+      "fullName": "الاسم الكامل",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف"
+    }
   }
 }

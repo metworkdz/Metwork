@@ -163,7 +163,13 @@ export interface PendingUserRecord {
 export interface WalletRecord {
   id: string;
   userId: string;
-  /** Integer DZD. Always >= 0. */
+  /**
+   * Integer DZD. Usually >= 0, but incubator wallets MAY go negative: a
+   * CASH_DEPOSIT booking credits only the online deposit (+D) while debiting
+   * the full platform commission (-C) on commission-based subscriptions, so
+   * when C > D the running balance dips below zero. A negative balance is a
+   * real debt the incubator must recharge before further payouts.
+   */
   balance: number;
   currency: 'DZD';
   status: 'ACTIVE' | 'FROZEN';
@@ -248,9 +254,28 @@ export type BookingUnit = 'HOUR' | 'DAY' | 'MONTH';
 export type BookingPaymentMethod =
   | 'wallet'
   | 'manual'
+  | 'card'
   | 'NETWORK_PASS'
   | 'PROGRAM'
   | 'PARTNER_DISCOUNT';
+
+/**
+ * How a card-settled booking splits the total between an upfront online card
+ * payment and cash collected off-platform.
+ * - 'ONLINE_FULL'  — client paid the whole total T online by card.
+ * - 'CASH_DEPOSIT' — client paid a deposit D online by card; the remaining
+ *                    T − D is paid in cash to the incubator on site.
+ * Unset for legacy wallet / manual / network-pass bookings.
+ */
+export type BookingPaymentMode = 'ONLINE_FULL' | 'CASH_DEPOSIT';
+
+/**
+ * Payment lifecycle for a card-settled booking, independent of the booking's
+ * scheduling `status`.
+ * - 'AWAITING_CASH' — deposit paid online; the cash balance is still due.
+ * - 'PAID'          — fully settled (online-full, or cash collected on site).
+ */
+export type BookingPaymentStatus = 'AWAITING_CASH' | 'PAID';
 
 /**
  * Booking ledger entry. The wallet transaction that paid for it is
@@ -307,6 +332,45 @@ export interface BookingRecord {
   notes?: string | null;
   /** Admin-supplied reason when a booking is declined/cancelled. */
   declineReason?: string | null;
+
+  /* ── Card-deposit / cash-lifecycle extensions (additive) ──────────────────
+   * Present only on card-settled bookings (paymentMode set). Legacy wallet,
+   * manual and network-pass bookings leave these undefined. Every amount is
+   * recomputed and frozen SERVER-SIDE at settlement — never client-supplied. */
+
+  /** Split model for this card booking. Unset for wallet/manual bookings. */
+  paymentMode?: BookingPaymentMode;
+  /** Amount actually paid online by card (D for CASH_DEPOSIT, T for ONLINE_FULL). */
+  onlinePaidAmount?: number;
+  /** Cash still due on site (T − D for CASH_DEPOSIT, 0 for ONLINE_FULL). */
+  cashRemainingAmount?: number;
+  /** Platform commission charged on the TOTAL (0 for non-commission subs). */
+  commissionAmount?: number;
+  /** Commission rate snapshot at settlement (decimal 0–1). */
+  commissionRate?: number;
+  /** Payment lifecycle. 'AWAITING_CASH' after deposit; 'PAID' once settled. */
+  paymentStatus?: BookingPaymentStatus;
+  /** Idempotency stamp — set once the wallet settlement has been applied. */
+  settledAt?: string | null;
+
+  /** Cash-collection audit — who/when the incubator marked the balance paid. */
+  cashCollectedAt?: string | null;
+  cashCollectedBy?: string | null;
+
+  /** Receipt dedup guards — interim deposit receipt and final paid receipt. */
+  depositReceiptSentAt?: string | null;
+  finalReceiptSentAt?: string | null;
+
+  /* ── Hosted-checkout intent (guest + registered card flows) ───────────── */
+  /** Single-use token addressing this PENDING_PAYMENT intent on the pay page. */
+  payToken?: string | null;
+  /** ISO expiry for payToken. */
+  payTokenExpiresAt?: string | null;
+  /** Provider transfer id, recorded lazily at checkout init; polled on return. */
+  paymentProviderRef?: string | null;
+  /** Locale to render the hosted-checkout return + receipts in. */
+  bookingLocale?: string | null;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -514,8 +578,16 @@ export interface SpaceRecord {
   pricePerMonth: number | null;
   capacity: number;
   amenities: string[];
-  /** Accepted client payment methods. Commission incubators: always ['ONLINE']. */
+  /**
+   * Accepted client payment methods (single source of truth for online/cash
+   * enablement). 'CASH' here means "card deposit now + cash on site"; when set,
+   * cashDepositType/Value below define the required deposit.
+   */
   acceptedPaymentMethods: PaymentMethod[];
+  /** Deposit model for CASH bookings. Unset = legacy listing (no deposit configured). */
+  cashDepositType?: 'FIXED' | 'PERCENT';
+  /** Deposit value: integer DZD when FIXED, or 1–100 when PERCENT. */
+  cashDepositValue?: number;
   /**
    * Days of the week this space is open.
    * 0 = Sunday, 1 = Monday … 6 = Saturday.
@@ -564,6 +636,10 @@ export interface ProgramRecord {
   startDate: string;
   endDate: string;
   acceptedPaymentMethods: PaymentMethod[];
+  /** Deposit model for CASH bookings. Unset = legacy listing (no deposit configured). */
+  cashDepositType?: 'FIXED' | 'PERCENT';
+  /** Deposit value: integer DZD when FIXED, or 1–100 when PERCENT. */
+  cashDepositValue?: number;
   isActive: boolean;
   /**
    * SEO-friendly URL slug, e.g. "startup-bootcamp-oran-2025".
@@ -590,6 +666,10 @@ export interface EventRecord {
   capacity: number;
   eventDate: string;
   acceptedPaymentMethods: PaymentMethod[];
+  /** Deposit model for CASH bookings. Unset = legacy listing (no deposit configured). */
+  cashDepositType?: 'FIXED' | 'PERCENT';
+  /** Deposit value: integer DZD when FIXED, or 1–100 when PERCENT. */
+  cashDepositValue?: number;
   isActive: boolean;
   /**
    * SEO-friendly URL slug, e.g. "ai-founders-meetup-oran".

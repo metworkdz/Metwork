@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LogIn, UserPlus } from 'lucide-react';
+import { LogIn, User, UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
@@ -21,22 +21,42 @@ export function ProgramPublicApplyCTA({ program }: Props) {
 
   const redirect = `/programs/${program.id}`;
 
+  // A guest can apply by card only for a paid program with a chargeable amount:
+  // ONLINE is accepted, or CASH is accepted with an online deposit configured.
+  const acceptedMethods = program.acceptedPaymentMethods ?? ['ONLINE'];
+  const hasDeposit = program.cashDepositType != null && program.cashDepositValue != null;
+  const guestCanApply =
+    program.price > 0 &&
+    (acceptedMethods.includes('ONLINE') ||
+      (acceptedMethods.includes('CASH') && hasDeposit));
+
   if (!user) {
     return (
-      <div className="space-y-2">
-        <Link href={`/login?redirect=${encodeURIComponent(redirect)}`}>
-          <Button className="w-full" variant="default">
-            <LogIn className="size-4" />
-            {t('signInToApply')}
-          </Button>
-        </Link>
-        <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`}>
-          <Button className="w-full" variant="outline">
-            <UserPlus className="size-4" />
-            {t('createAndApply')}
-          </Button>
-        </Link>
-      </div>
+      <>
+        <div className="space-y-2">
+          <Link href={`/login?redirect=${encodeURIComponent(redirect)}`}>
+            <Button className="w-full" variant="default">
+              <LogIn className="size-4" />
+              {t('signInToApply')}
+            </Button>
+          </Link>
+          <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`}>
+            <Button className="w-full" variant="outline">
+              <UserPlus className="size-4" />
+              {t('createAndApply')}
+            </Button>
+          </Link>
+          {guestCanApply && (
+            <Button className="w-full" variant="ghost" onClick={() => setSheetOpen(true)}>
+              <User className="size-4" />
+              {t('continueAsGuest')}
+            </Button>
+          )}
+        </div>
+        {guestCanApply && (
+          <ProgramDetailSheet program={program} open={sheetOpen} onOpenChange={setSheetOpen} />
+        )}
+      </>
     );
   }
 

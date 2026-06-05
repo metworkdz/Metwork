@@ -34,7 +34,7 @@ import type { SpaceCategory } from '@/types/domain';
 
 const CATEGORY_KEYS: SpaceCategory[] = ['COWORKING', 'PRIVATE_OFFICE', 'TRAINING_ROOM', 'DOMICILIATION'];
 
-// FIX: BUG-2 — added edit mode props; FIX: BUG-5 — added cashEnabled prop
+// FIX: BUG-2 — added edit mode props
 interface SpaceFormDialogProps {
   onCreated: () => void;
   editId?: string;
@@ -44,14 +44,14 @@ interface SpaceFormDialogProps {
     pricePerMonth?: number | null; capacity?: number; amenities?: string[];
     acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
     imageUrls?: string[] | null;
+    cashDepositType?: 'FIXED' | 'PERCENT'; cashDepositValue?: number;
     workingDays?: number[]; openingTime?: string; closingTime?: string;
   };
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
-  cashEnabled?: boolean;
 }
 
-export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange, cashEnabled = true }: SpaceFormDialogProps) {
+export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange }: SpaceFormDialogProps) {
   const t = useTranslations('incubator.spaceForm');
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
@@ -70,6 +70,8 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
   const [capacity, setCapacity] = useState('10');
   const [amenities, setAmenities] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
+  const [depositType, setDepositType] = useState<'FIXED' | 'PERCENT'>('PERCENT');
+  const [depositValue, setDepositValue] = useState('10');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   // Working hours
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
@@ -89,6 +91,8 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
       setCapacity(initialData.capacity != null ? String(initialData.capacity) : '10');
       setAmenities((initialData.amenities ?? []).join(', '));
       setAcceptedMethods(initialData.acceptedPaymentMethods ?? ['ONLINE', 'CASH']);
+      setDepositType(initialData.cashDepositType ?? 'PERCENT');
+      setDepositValue(initialData.cashDepositValue != null ? String(initialData.cashDepositValue) : '10');
       setImageUrls(
         initialData.imageUrls?.length
           ? initialData.imageUrls
@@ -116,6 +120,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
     setPricePerHour(''); setPricePerDay(''); setPricePerMonth('');
     setCapacity('10'); setAmenities('');
     setAcceptedMethods(['ONLINE', 'CASH']);
+    setDepositType('PERCENT'); setDepositValue('10');
     setImageUrls([]);
     setWorkingDays([1, 2, 3, 4, 5]); setOpeningTime('09:00'); setClosingTime('18:00');
     setError(null);
@@ -163,6 +168,9 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
           capacity:      Number(capacity),
           amenities:     amenities.split(',').map((s) => s.trim()).filter(Boolean),
           acceptedPaymentMethods: acceptedMethods,
+          ...(acceptedMethods.includes('CASH')
+            ? { cashDepositType: depositType, cashDepositValue: Number(depositValue) }
+            : { cashDepositType: null, cashDepositValue: null }),
           imageUrls,
           workingDays,
           openingTime,
@@ -345,8 +353,6 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
             <p className="text-sm font-medium">{t('labelPaymentMethods')}</p>
             <div className="mt-1.5 flex gap-3">
               {(['ONLINE', 'CASH'] as const).map((m) => {
-                // FIX: BUG-5 — hide CASH button when cash is not allowed for this subscription
-                if (m === 'CASH' && !cashEnabled) return null;
                 return (
                   <button
                     key={m}
@@ -365,6 +371,44 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
               })}
             </div>
           </div>
+
+          {acceptedMethods.includes('CASH') && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-sm font-medium">{t('labelDeposit')}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t('depositHint')}</p>
+              <div className="mt-2 flex items-center gap-3">
+                <div className="flex gap-2">
+                  {(['PERCENT', 'FIXED'] as const).map((dt) => (
+                    <button
+                      key={dt}
+                      type="button"
+                      onClick={() => setDepositType(dt)}
+                      className={cn(
+                        'rounded-lg border px-3 py-2 text-sm transition-colors',
+                        depositType === dt
+                          ? 'border-primary bg-primary/5 font-medium text-primary'
+                          : 'border-border text-muted-foreground hover:border-primary/40',
+                      )}
+                    >
+                      {dt === 'PERCENT' ? t('depositPercent') : t('depositFixed')}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex-1">
+                  <Input
+                    type="number"
+                    min="1"
+                    max={depositType === 'PERCENT' ? '100' : undefined}
+                    className="w-full"
+                    value={depositValue}
+                    onChange={(e) => setDepositValue(e.target.value)}
+                    required
+                    aria-label={t('labelDeposit')}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">

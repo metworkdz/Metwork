@@ -6,6 +6,7 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
+import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -23,6 +24,9 @@ const patchSchema = z.object({
   pricePerMonth: z.number().int().nonnegative().nullable().optional(),
   capacity: z.number().int().positive().optional(),
   amenities: z.array(z.string()).optional(),
+  acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).optional(),
+  cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
+  cashDepositValue: z.number().int().positive().optional().nullable(),
   status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
 });
 
@@ -45,6 +49,7 @@ export async function PATCH(
     throw err;
   }
 
+  let depositError: string | null = null;
   const space = await db.update((d) => {
     const s = (d.spaces ?? []).find((x) => x.id === id);
     if (!s) return null;
@@ -56,6 +61,26 @@ export async function PATCH(
     const nextDay   = input.pricePerDay   !== undefined ? input.pricePerDay   : s.pricePerDay;
     const nextMonth = input.pricePerMonth !== undefined ? input.pricePerMonth : s.pricePerMonth;
     if (nextHour == null && nextDay == null && nextMonth == null) return 'NO_PRICE';
+
+    // Payment config: validate against the merged (existing + patched) state so
+    // turning CASH on always carries a valid deposit, and turning it off clears
+    // the deposit. Only runs when a payment field is actually being changed.
+    if (
+      input.acceptedPaymentMethods !== undefined ||
+      input.cashDepositType !== undefined ||
+      input.cashDepositValue !== undefined
+    ) {
+      const nextMethods = input.acceptedPaymentMethods ?? s.acceptedPaymentMethods ?? ['ONLINE'];
+      const nextType  = input.cashDepositType  !== undefined ? input.cashDepositType  : (s.cashDepositType  ?? null);
+      const nextValue = input.cashDepositValue !== undefined ? input.cashDepositValue : (s.cashDepositValue ?? null);
+      depositError = validateCashDeposit(nextMethods, nextType, nextValue);
+      if (depositError) return 'INVALID_DEPOSIT';
+      s.acceptedPaymentMethods = nextMethods;
+      const cfg = normalizeDepositConfig(nextMethods, nextType, nextValue);
+      s.cashDepositType  = cfg.cashDepositType;
+      s.cashDepositValue = cfg.cashDepositValue;
+    }
+
     if (input.name !== undefined) s.name = input.name;
     if (input.description !== undefined) s.description = input.description;
     if (input.category !== undefined) s.category = input.category;
@@ -79,6 +104,7 @@ export async function PATCH(
   if (space === null) return jsonError(404, 'NOT_FOUND', 'Space not found');
   if (space === 'FORBIDDEN') return jsonError(403, 'FORBIDDEN', 'Not your space');
   if (space === 'NO_PRICE') return jsonError(400, 'NO_PRICE', 'At least one price (per hour, day, or month) is required');
+  if (space === 'INVALID_DEPOSIT') return jsonError(400, 'INVALID_DEPOSIT', depositError ?? 'Invalid cash deposit configuration');
   return json({ space });
 }
 

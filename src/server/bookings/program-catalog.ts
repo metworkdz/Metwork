@@ -26,6 +26,8 @@ function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
     startDate:              r.startDate,
     endDate:                r.endDate,
     acceptedPaymentMethods: r.acceptedPaymentMethods,
+    cashDepositType:        r.cashDepositType,
+    cashDepositValue:       r.cashDepositValue,
     slug:                   r.slug ?? null,
   };
 }

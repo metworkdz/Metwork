@@ -2,16 +2,17 @@
  * GET  /api/incubator/spaces  — list this incubator's spaces
  * POST /api/incubator/spaces  — create a new space
  *
- * Commission-plan incubators: acceptedPaymentMethods is forced to ['ONLINE'].
- * Flat-plan incubators: may choose ['ONLINE'], ['CASH'], or ['ONLINE','CASH'].
+ * Every subscription plan may accept ['ONLINE'], ['CASH'], or ['ONLINE','CASH'].
+ * When CASH is accepted a deposit (paid online by card) must be configured.
  */
 import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db, type SpaceRecord } from '@/server/db/store';
-import { findIncubatorByUserEmail, getEffectiveSubscriptionCode } from '@/server/incubator/service';
+import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { listSpacesByIncubator } from '@/server/bookings/space-catalog';
+import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -30,6 +31,9 @@ const createSpaceSchema = z.object({
   capacity:     z.number().int().min(1).max(10_000),
   amenities:    z.array(z.string().max(80)).max(30).default([]),
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).default(['ONLINE', 'CASH']),
+  /** Cash deposit (paid online by card). Required when CASH is accepted. */
+  cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
+  cashDepositValue: z.number().int().positive().optional().nullable(),
   /** Working days: 0=Sun…6=Sat. Defaults to Mon–Fri. */
   workingDays:  z.array(z.number().int().min(0).max(6)).min(1).default([1, 2, 3, 4, 5]),
   /** "HH:MM" 24h. */
@@ -72,10 +76,13 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
-  // Commission-plan incubators can only accept ONLINE payment. Uses the
-  // effective plan so a lapsed Pro plan reverts to ONLINE-only automatically.
-  const paymentMethods: ('ONLINE' | 'CASH')[] =
-    getEffectiveSubscriptionCode(inc) === 'COMMISSION' ? ['ONLINE'] : input.acceptedPaymentMethods;
+  // Cash is allowed for every subscription plan; the deposit (and any platform
+  // commission) is settled online — so we honor the incubator's choice as-is.
+  const paymentMethods = input.acceptedPaymentMethods;
+
+  const depositError = validateCashDeposit(paymentMethods, input.cashDepositType, input.cashDepositValue);
+  if (depositError) return jsonError(400, 'INVALID_DEPOSIT', depositError);
+  const depositConfig = normalizeDepositConfig(paymentMethods, input.cashDepositType, input.cashDepositValue);
 
   // Multi-image: imageUrls is the ordered gallery; imageUrls[0] is the cover.
   // Keep imageUrl in sync with the cover so legacy readers keep working.
@@ -101,6 +108,7 @@ export async function POST(req: NextRequest) {
       capacity:               input.capacity,
       amenities:              input.amenities,
       acceptedPaymentMethods: paymentMethods,
+      ...depositConfig,
       workingDays:            input.workingDays,
       openingTime:            input.openingTime,
       closingTime:            input.closingTime,

@@ -7,8 +7,9 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db, type EventRecord } from '@/server/db/store';
-import { findIncubatorByUserEmail, getEffectiveSubscriptionCode } from '@/server/incubator/service';
+import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { listEventsByIncubator } from '@/server/bookings/event-catalog';
+import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { slugify, uniqueSlug } from '@/lib/slugify';
 
@@ -26,6 +27,9 @@ const createEventSchema = z.object({
   capacity:    z.number().int().min(1).max(100_000),
   eventDate:   z.string().datetime(),
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).default(['ONLINE', 'CASH']),
+  /** Cash deposit (paid online by card). Required when CASH is accepted. */
+  cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
+  cashDepositValue: z.number().int().positive().optional().nullable(),
   slug:        z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
 });
 
@@ -58,8 +62,13 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
-  const paymentMethods: ('ONLINE' | 'CASH')[] =
-    getEffectiveSubscriptionCode(inc) === 'COMMISSION' ? ['ONLINE'] : input.acceptedPaymentMethods;
+  // Cash is allowed for every subscription plan; the deposit (and any platform
+  // commission) is settled online — so we honor the incubator's choice as-is.
+  const paymentMethods = input.acceptedPaymentMethods;
+
+  const depositError = validateCashDeposit(paymentMethods, input.cashDepositType, input.cashDepositValue);
+  if (depositError) return jsonError(400, 'INVALID_DEPOSIT', depositError);
+  const depositConfig = normalizeDepositConfig(paymentMethods, input.cashDepositType, input.cashDepositValue);
 
   // Multi-image: imageUrls is the ordered gallery; imageUrls[0] is the cover.
   // Keep imageUrl in sync with the cover so legacy readers keep working.
@@ -89,6 +98,7 @@ export async function POST(req: NextRequest) {
       capacity:               input.capacity,
       eventDate:              input.eventDate,
       acceptedPaymentMethods: paymentMethods,
+      ...depositConfig,
       isActive:               true,
       slug,
       createdAt:              now,

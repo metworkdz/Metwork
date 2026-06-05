@@ -16,6 +16,15 @@ import type { BookingRecord, IncubatorRecord, MentorBookingRecord, MentorRecord 
 
 export type ReceiptLang = 'en' | 'fr';
 
+/**
+ * Which receipt this is:
+ *  - 'standard' — single full payment (wallet / manual / ONLINE_FULL card).
+ *  - 'deposit'  — interim receipt for a CASH_DEPOSIT booking: deposit paid by
+ *                 card, balance still due in cash on-site.
+ *  - 'final'    — issued once the cash balance has been collected (paid in full).
+ */
+export type ReceiptVariant = 'standard' | 'deposit' | 'final';
+
 export interface BookingReceiptInput {
   booking:      BookingRecord;
   /** Display name of the client (platform user or offline client). */
@@ -24,6 +33,8 @@ export interface BookingReceiptInput {
   clientEmail:  string;
   incubator:    Pick<IncubatorRecord, 'name' | 'email' | 'phone' | 'city' | 'logoUrl' | 'stampUrl' | 'address' | 'registrationNumber'>;
   lang:         ReceiptLang;
+  /** Defaults to 'standard'. CASH_DEPOSIT bookings use 'deposit' / 'final'. */
+  variant?:     ReceiptVariant;
 }
 
 export interface MentorConfirmationInput {
@@ -48,7 +59,9 @@ type LangKey =
   | 'monthly'      | 'thankYou'       | 'consultTitle'
   | 'consultRef'   | 'consultMessage' | 'requestedBy'
   | 'phone'        | 'consultant'     | 'requested'
-  | 'consultNote';
+  | 'consultNote'
+  | 'depositReceipt' | 'card'         | 'depositPaid'
+  | 'cashBalance'    | 'paidInFull'   | 'awaitingCashPay';
 
 const T: Record<ReceiptLang, Record<LangKey, string>> = {
   en: {
@@ -92,6 +105,12 @@ const T: Record<ReceiptLang, Record<LangKey, string>> = {
     consultant:    'Consultant',
     requested:     'Requested on',
     consultNote:   'Our team will contact you shortly to confirm the appointment.',
+    depositReceipt:'DEPOSIT RECEIPT',
+    card:          'Card (CIB / Edahabia)',
+    depositPaid:   'Deposit paid (card)',
+    cashBalance:   'Balance (cash on-site)',
+    paidInFull:    'Paid in full',
+    awaitingCashPay:'Awaiting cash on-site',
   },
   fr: {
     receipt:       'REÇU',
@@ -134,6 +153,12 @@ const T: Record<ReceiptLang, Record<LangKey, string>> = {
     consultant:    'Consultant',
     requested:     'Demandé le',
     consultNote:   'Notre équipe vous contactera prochainement pour confirmer le rendez-vous.',
+    depositReceipt:'REÇU D’ACOMPTE',
+    card:          'Carte (CIB / Edahabia)',
+    depositPaid:   'Acompte payé (carte)',
+    cashBalance:   'Solde (espèces sur place)',
+    paidInFull:    'Payé intégralement',
+    awaitingCashPay:'En attente d’espèces sur place',
   },
 };
 
@@ -351,13 +376,14 @@ function drawReceiptTitle(
   reference: string,
   issuedOn: string,
   lang: ReceiptLang,
+  title: string = t.receipt,
 ): void {
   doc.moveDown(0.8);
   doc
     .fillColor(DARK)
     .font('Helvetica-Bold')
     .fontSize(18)
-    .text(t.receipt, MARGIN, doc.y);
+    .text(title, MARGIN, doc.y);
 
   doc.moveDown(0.4);
   doc
@@ -389,6 +415,7 @@ function paymentLabel(
 ): string {
   if (method === 'wallet') return t.online;
   if (method === 'manual') return t.cash;
+  if (method === 'card') return t.card;
   return '—';
 }
 
@@ -497,6 +524,17 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
   const { booking, clientName, clientEmail, incubator, lang } = input;
   const t = T[lang];
 
+  // Card CASH_DEPOSIT bookings carry a deposit/balance split. The variant
+  // controls the title; the split rows are driven directly by the frozen
+  // server-side booking amounts so the receipt can never disagree with the
+  // ledger. Default to 'standard' for legacy wallet / manual bookings.
+  const isCashDeposit = booking.paymentMode === 'CASH_DEPOSIT';
+  const variant: ReceiptVariant = input.variant ?? (isCashDeposit
+    ? (booking.paymentStatus === 'PAID' ? 'final' : 'deposit')
+    : 'standard');
+  const onlinePaid = booking.onlinePaidAmount ?? 0;
+  const cashBalance = booking.cashRemainingAmount ?? 0;
+
   // Pre-fetch images in parallel (non-blocking — failures return null)
   const [logoBuffer, stampBuffer] = await Promise.all([
     fetchImageBuffer(incubator.logoUrl),
@@ -510,7 +548,10 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
   drawIncubatorContact(doc, incubator, lang);
 
   // ── Receipt title ──
-  drawReceiptTitle(doc, t, booking.clientReference, booking.createdAt, lang);
+  drawReceiptTitle(
+    doc, t, booking.clientReference, booking.createdAt, lang,
+    variant === 'deposit' ? t.depositReceipt : t.receipt,
+  );
 
   // ── Billed to ──
   drawSectionLabel(doc, t.billedTo);
@@ -539,7 +580,19 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
   drawSectionLabel(doc, t.payment);
   doc.moveDown(0.2);
   drawRow(doc, t.paymentMethod, paymentLabel(booking.paymentMethod, t));
-  drawRow(doc, t.status, statusLabel(booking.status, t));
+  if (isCashDeposit) {
+    // Deposit / balance split for CASH_DEPOSIT card bookings.
+    drawRow(doc, t.depositPaid, fmt(onlinePaid), { bold: true });
+    drawRow(
+      doc,
+      t.cashBalance,
+      variant === 'final'
+        ? `${fmt(cashBalance)} — ${t.paidInFull}`
+        : `${fmt(cashBalance)} — ${t.awaitingCashPay}`,
+    );
+  } else {
+    drawRow(doc, t.status, statusLabel(booking.status, t));
+  }
   drawDivider(doc);
 
   // ── Total (highlighted row) ──

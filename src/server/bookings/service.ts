@@ -25,7 +25,6 @@ import type {
   CreateSpaceBookingResult,
   RegisterForEventResult,
 } from './types';
-import type { Space } from '@/types/domain';
 
 /** Returns the YYYY-MM-DD portion of an ISO datetime string or Date. */
 function toDateStr(iso: string): string {
@@ -33,7 +32,7 @@ function toDateStr(iso: string): string {
 }
 
 /** True if the booking window [startsAt, endsAt) overlaps any blocked date. */
-function overlapsBlockedDates(
+export function overlapsBlockedDates(
   blockedDates: string[],
   startsAt: string,
   endsAt: string,
@@ -57,6 +56,55 @@ function overlapsBlockedDates(
   return false;
 }
 
+/**
+ * Find an active booking on `spaceId` whose window overlaps [startsAt, endsAt),
+ * returning its id (else null). CANCELLED / REFUNDED / PENDING_PAYMENT bookings
+ * hold no slot — an unpaid card-deposit intent must never block a real booking.
+ * Shared by the wallet flow and the card-deposit settlement re-check so both
+ * apply identical occupancy rules.
+ */
+export function findSpaceOverlapConflict(
+  bookings: BookingRecord[],
+  spaceId: string,
+  startsAt: string,
+  endsAt: string,
+): string | null {
+  const newStart = new Date(startsAt).getTime();
+  const newEnd   = new Date(endsAt).getTime();
+  const conflict = bookings.find((b) => {
+    if (b.itemKind !== 'SPACE' || b.itemId !== spaceId) return false;
+    if (b.status === 'CANCELLED' || b.status === 'REFUNDED' || b.status === 'PENDING_PAYMENT') return false;
+    const bStart = new Date(b.startsAt).getTime();
+    const bEnd   = new Date(b.endsAt).getTime();
+    return newStart < bEnd && newEnd > bStart;
+  });
+  return conflict ? conflict.id : null;
+}
+
+/**
+ * Count active bookings occupying any part of [startsAt, endsAt) on `spaceId`
+ * — the concurrent-occupancy capacity gate. CANCELLED / REFUNDED /
+ * PENDING_PAYMENT do not count. Shared by the wallet flow and the card-deposit
+ * settlement re-check.
+ */
+export function countSpaceConcurrent(
+  bookings: BookingRecord[],
+  spaceId: string,
+  startsAt: string,
+  endsAt: string,
+): number {
+  return bookings.filter(
+    (b) =>
+      b.itemKind === 'SPACE' &&
+      b.itemId === spaceId &&
+      b.status !== 'CANCELLED' &&
+      b.status !== 'REFUNDED' &&
+      b.status !== 'PENDING_PAYMENT' &&
+      b.startsAt < endsAt &&
+      b.endsAt > startsAt,
+  ).length;
+}
+
 export interface CreateSpaceBookingArgs {
   userId: string;
   spaceId: string;
@@ -77,7 +125,14 @@ export interface CreateSpaceBookingArgs {
   membershipDiscount?: number;
 }
 
-function unitPrice(space: Space, unit: BookingUnit): number | null {
+/** Minimal price shape — satisfied by both the domain `Space` and the raw `SpaceRecord`. */
+export type SpacePricing = {
+  pricePerHour: number | null;
+  pricePerDay: number | null;
+  pricePerMonth: number | null;
+};
+
+export function unitPrice(space: SpacePricing, unit: BookingUnit): number | null {
   switch (unit) {
     case 'HOUR': return space.pricePerHour;
     case 'DAY': return space.pricePerDay;
@@ -85,7 +140,7 @@ function unitPrice(space: Space, unit: BookingUnit): number | null {
   }
 }
 
-function availableUnits(space: Space): BookingUnit[] {
+export function availableUnits(space: SpacePricing): BookingUnit[] {
   const out: BookingUnit[] = [];
   if (space.pricePerHour != null) out.push('HOUR');
   if (space.pricePerDay != null) out.push('DAY');
@@ -94,7 +149,7 @@ function availableUnits(space: Space): BookingUnit[] {
 }
 
 /** Derive how many billing units the [startsAt, endsAt) window covers. */
-function computeQuantity(startsAt: string, endsAt: string, unit: BookingUnit): number {
+export function computeQuantity(startsAt: string, endsAt: string, unit: BookingUnit): number {
   const diffMs = new Date(endsAt).getTime() - new Date(startsAt).getTime();
   switch (unit) {
     case 'HOUR':  return Math.max(1, Math.ceil(diffMs / 3_600_000));
@@ -129,10 +184,17 @@ function isoToUtcDow(iso: string): number {
  * Validate a booking window against the space's working-hours config.
  * Returns null if valid, or the specific error reason.
  */
-function validateWorkingHours(
+/** Minimal working-hours shape — satisfied by both `Space` and `SpaceRecord`. */
+export type SpaceHours = {
+  workingDays?: number[] | null;
+  openingTime?: string | null;
+  closingTime?: string | null;
+};
+
+export function validateWorkingHours(
   startsAt: string,
   endsAt: string,
-  space: Space,
+  space: SpaceHours,
 ): null | 'OUTSIDE_WORKING_HOURS' | 'NOT_A_WORKING_DAY' {
   const workingDays  = space.workingDays  ?? [1, 2, 3, 4, 5];
   const openingMins  = timeToMinutes(space.openingTime ?? '09:00');
@@ -231,18 +293,9 @@ export async function createSpaceBooking(
     }
 
     // ── Overlap check: reject if an active booking occupies part of the window ──
-    const newStart = new Date(args.startsAt).getTime();
-    const newEnd   = new Date(args.endsAt).getTime();
-    const conflict = d.bookings.find((b) => {
-      if (b.itemKind !== 'SPACE' || b.itemId !== space.id) return false;
-      if (b.status === 'CANCELLED' || b.status === 'REFUNDED') return false;
-      const bStart = new Date(b.startsAt).getTime();
-      const bEnd   = new Date(b.endsAt).getTime();
-      // Overlap when: newStart < bEnd && newEnd > bStart
-      return newStart < bEnd && newEnd > bStart;
-    });
-    if (conflict) {
-      return { ok: false, reason: 'OVERLAP_CONFLICT', conflictingBookingId: conflict.id };
+    const conflictId = findSpaceOverlapConflict(d.bookings, space.id, args.startsAt, args.endsAt);
+    if (conflictId) {
+      return { ok: false, reason: 'OVERLAP_CONFLICT', conflictingBookingId: conflictId };
     }
 
     // Apply promo code discount (only for online payment)
@@ -266,15 +319,7 @@ export async function createSpaceBooking(
 
     // Concurrent-occupancy capacity check: count active bookings for this
     // space whose time window overlaps with the requested [startsAt, endsAt).
-    const overlapping = d.bookings.filter(
-      (b) =>
-        b.itemKind === 'SPACE' &&
-        b.itemId === space.id &&
-        b.status !== 'CANCELLED' &&
-        b.status !== 'REFUNDED' &&
-        b.startsAt < endsAt &&
-        b.endsAt > args.startsAt,
-    ).length;
+    const overlapping = countSpaceConcurrent(d.bookings, space.id, args.startsAt, endsAt);
     if (overlapping >= space.capacity) {
       return { ok: false, reason: 'CAPACITY_EXCEEDED', capacity: space.capacity, taken: overlapping };
     }

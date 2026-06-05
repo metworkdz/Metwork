@@ -20,8 +20,6 @@ export function EventsManager() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   // FIX: BUG-2 — edit state
   const [editingEvent, setEditingEvent] = useState<PlatformEvent | null>(null);
-  // FIX: BUG-5 — cash allowed only for active FLAT plan
-  const [cashEnabled, setCashEnabled] = useState(true);
 
   async function fetchEvents() {
     setLoading(true);
@@ -40,16 +38,6 @@ export function EventsManager() {
 
   useEffect(() => {
     void fetchEvents();
-    // FIX: BUG-5 — fetch subscription to determine if CASH is allowed
-    fetch('/api/incubator/subscription', { cache: 'no-store' })
-      .then((r) => r.ok ? r.json() as Promise<{ subscriptionCode: string; isActive: boolean }> : null)
-      .then((sub) => {
-        if (sub) {
-          // FIX: BUG-5 — cash only allowed for active FLAT plan
-          setCashEnabled(sub.subscriptionCode === 'FLAT' && sub.isActive);
-        }
-      })
-      .catch(() => { /* ignore subscription fetch errors */ });
   }, []);
 
   async function handleDelete(id: string) {
@@ -154,7 +142,7 @@ export function EventsManager() {
         rows={rows}
         columns={columns}
         rowKey={(e) => e.id}
-        createSlot={<EventFormDialog onCreated={() => void fetchEvents()} cashEnabled={cashEnabled} />}
+        createSlot={<EventFormDialog onCreated={() => void fetchEvents()} />}
         emptyIcon={<Calendar className="size-5 text-muted-foreground" />}
         emptyTitle={t('emptyTitle')}
         emptyDescription={t('emptyDescription')}
@@ -192,12 +180,13 @@ export function EventsManager() {
             isOnline: editingEvent.isOnline,
             eventDate: editingEvent.eventDate,
             acceptedPaymentMethods: editingEvent.acceptedPaymentMethods ?? ['ONLINE'],
+            cashDepositType: editingEvent.cashDepositType,
+            cashDepositValue: editingEvent.cashDepositValue,
             imageUrl: editingEvent.imageUrl,
             imageUrls: editingEvent.imageUrls,
           }}
           open={true}
           onOpenChange={(v) => { if (!v) setEditingEvent(null); }}
-          cashEnabled={cashEnabled}
         />
       )}
     </>

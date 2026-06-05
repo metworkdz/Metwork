@@ -93,6 +93,12 @@ export async function GET(
         method: booking.paymentMethod ?? 'wallet',
         transactionRef: tx?.reference ?? booking.clientReference,
         paidAt: tx?.completedAt ?? booking.createdAt,
+        // Card deposit / cash split (present only on card CASH_DEPOSIT bookings).
+        paymentMode: booking.paymentMode ?? null,
+        paymentStatus: booking.paymentStatus ?? null,
+        onlinePaidAmount: booking.onlinePaidAmount ?? null,
+        cashRemainingAmount: booking.cashRemainingAmount ?? null,
+        cashCollectedAt: booking.cashCollectedAt ?? null,
       },
     },
   });

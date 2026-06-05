@@ -325,18 +325,36 @@ export function sendBookingReceiptEmail(input: BookingReceiptInput): void {
   const { booking, clientName, clientEmail, incubator, lang } = input;
   const isFr = lang === 'fr';
 
+  // Resolve the receipt variant (deposit vs final vs standard). Card
+  // CASH_DEPOSIT bookings get an interim 'deposit' receipt at settlement and a
+  // 'final' one once the cash balance is collected.
+  const isCashDeposit = booking.paymentMode === 'CASH_DEPOSIT';
+  const variant = input.variant ?? (isCashDeposit
+    ? (booking.paymentStatus === 'PAID' ? 'final' : 'deposit')
+    : 'standard');
+
   const paymentLabel =
     booking.paymentMethod === 'wallet'
       ? isFr ? 'En ligne (portefeuille)' : 'Online (wallet)'
       : booking.paymentMethod === 'manual'
       ? isFr ? 'Espèces sur place' : 'Cash on-site'
+      : booking.paymentMethod === 'card'
+      ? isFr ? 'Carte (CIB / Edahabia)' : 'Card (CIB / Edahabia)'
       : '—';
 
-  const subject = isFr
-    ? `Votre reçu – ${booking.itemName} – ${incubator.name}`
-    : `Your receipt – ${booking.itemName} – ${incubator.name}`;
+  const subject = variant === 'deposit'
+    ? (isFr
+        ? `Votre reçu d’acompte – ${booking.itemName} – ${incubator.name}`
+        : `Your deposit receipt – ${booking.itemName} – ${incubator.name}`)
+    : variant === 'final'
+    ? (isFr
+        ? `Votre reçu (payé) – ${booking.itemName} – ${incubator.name}`
+        : `Your receipt (paid in full) – ${booking.itemName} – ${incubator.name}`)
+    : (isFr
+        ? `Votre reçu – ${booking.itemName} – ${incubator.name}`
+        : `Your receipt – ${booking.itemName} – ${incubator.name}`);
 
-  const filename = `receipt-${booking.clientReference.slice(0, 8)}.pdf`;
+  const filename = `${variant === 'deposit' ? 'deposit-receipt' : 'receipt'}-${booking.clientReference.slice(0, 8)}.pdf`;
 
   generateBookingReceiptPdf(input)
     .then((pdfBuffer) =>

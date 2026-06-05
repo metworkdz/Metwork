@@ -492,7 +492,12 @@
       "emptyDescriptionFiltered": "Try adjusting the filters above.",
       "free": "Free",
       "badgeOffline": "Offline",
-      "badgeOnline": "Online"
+      "badgeOnline": "Online",
+      "awaitingCash": "Awaiting cash",
+      "cashCollected": "Cash collected",
+      "balanceDue": "Balance due: {amount}",
+      "balanceCollected": "Collected: {amount}",
+      "markCashPaid": "Mark cash paid"
     },
     "clients": {
       "editTitle": "Edit client",
@@ -644,6 +649,10 @@
       "labelPaymentMethods": "Accepted payment methods",
       "methodOnline": "Online (wallet)",
       "methodCash": "Cash at door",
+      "labelDeposit": "Cash deposit (paid online by card)",
+      "depositHint": "Clients pay this deposit online by card; the balance is paid in cash on-site.",
+      "depositPercent": "Percent of total",
+      "depositFixed": "Fixed amount (DZD)",
       "saving": "Saving…",
       "creating": "Creating…",
       "saveChanges": "Save changes",
@@ -801,6 +810,10 @@
       "labelPaymentMethods": "Accepted payment methods",
       "methodOnline": "Online (wallet)",
       "methodCash": "Cash on-site",
+      "labelDeposit": "Cash deposit (paid online by card)",
+      "depositHint": "Clients pay this deposit online by card; the balance is paid in cash on-site.",
+      "depositPercent": "Percent of total",
+      "depositFixed": "Fixed amount (DZD)",
       "saving": "Saving…",
       "creating": "Creating…",
       "saveChanges": "Save changes",
@@ -881,6 +894,10 @@
       "labelPaymentMethods": "Accepted payment methods",
       "methodOnline": "Online (wallet)",
       "methodCash": "Cash on-site",
+      "labelDeposit": "Cash deposit (paid online by card)",
+      "depositHint": "Clients pay this deposit online by card; the balance is paid in cash on-site.",
+      "depositPercent": "Percent of total",
+      "depositFixed": "Fixed amount (DZD)",
       "saving": "Saving…",
       "creating": "Creating…",
       "saveChanges": "Save changes",
@@ -949,6 +966,35 @@
       "rejectedDesc": "This consultation request was declined, so there is nothing to pay.",
       "invalidTitle": "Link not found",
       "invalidDesc": "This payment link is invalid. Please check the link in your email.",
+      "backHome": "Back to home"
+    },
+    "bookingPay": {
+      "awaitingTitle": "Confirm and pay",
+      "awaitingDescFull": "Pay securely by card to confirm your booking.",
+      "awaitingDescDeposit": "Pay your deposit securely by card. The balance is paid in cash on-site.",
+      "item": "Booking",
+      "provider": "Provider",
+      "date": "Date & time",
+      "total": "Total",
+      "depositDue": "Deposit due now",
+      "cashOnSite": "Balance (cash on-site)",
+      "amountDue": "Amount due",
+      "secureNote": "Secure payment via CIB / Edahabia. Your card details are never stored.",
+      "payNow": "Pay now",
+      "starting": "Starting…",
+      "payError": "We couldn't start the payment. Please try again.",
+      "errorExpired": "This payment link has expired. Please contact the organiser.",
+      "confirmedTitle": "Payment confirmed",
+      "confirmedDescFull": "Your booking is confirmed. A confirmation email is on its way.",
+      "confirmedDescDeposit": "Your deposit is received and your booking is confirmed. Please pay the remaining {amount} in cash on-site.",
+      "expiredTitle": "Link expired",
+      "expiredDesc": "This payment link is no longer valid. Please contact the organiser to arrange a new one.",
+      "cancelledTitle": "Booking cancelled",
+      "cancelledDesc": "This booking was cancelled, so there is nothing to pay.",
+      "slotTakenTitle": "No longer available",
+      "slotTakenDesc": "Unfortunately this slot was taken before your payment completed. Any amount charged will be refunded.",
+      "invalidTitle": "Link not found",
+      "invalidDesc": "This payment link is invalid. Please check the link you were given.",
       "backHome": "Back to home"
     },
     "programs": {
@@ -1864,7 +1910,14 @@
       "passCreditsInfo": "Uses 1 credit — {count} of {max} left",
       "passResetsDate": "· Resets {date}",
       "hourlyCapAutoSwitch": "Hourly bookings: max 7 hours per day — exceeding this will automatically switch to the day rate",
-      "builderDiscount": "Builder discount ({percent}% off)"
+      "builderDiscount": "Builder discount ({percent}% off)",
+      "depositDueNow": "Deposit due now",
+      "balanceOnSite": "Balance on-site",
+      "payDeposit": "Pay deposit — {amount}",
+      "payNow": "Pay now — {amount}",
+      "errorContact": "Please enter a valid name, email, and phone number.",
+      "errorDateUnavailable": "The selected date(s) are not available for booking.",
+      "errorAlreadyBooked": "You already have an active booking for this space."
     },
     "scheduler": {
       "noAvailabilityThisMonth": "No availability this month",
@@ -1912,7 +1965,8 @@
       "signInToBook": "Sign in to book",
       "createAndBook": "Create account & book",
       "entrepreneurOnly": "Space bookings are available for entrepreneur accounts.",
-      "bookThisSpace": "Book this space"
+      "bookThisSpace": "Book this space",
+      "continueAsGuest": "Continue as guest"
     },
     "hero": {
       "eyebrow": "Spaces marketplace",
@@ -1984,7 +2038,18 @@
       "awaitingPayment": "Awaiting payment",
       "confirmed": "Confirmed",
       "viewBookings": "View my bookings",
-      "viewWallet": "View wallet"
+      "viewWallet": "View wallet",
+      "total": "Total",
+      "depositDueNow": "Deposit due now",
+      "balanceOnSite": "Balance on-site",
+      "payDeposit": "Pay deposit — {amount}",
+      "payNow": "Pay now — {amount}",
+      "errorContact": "Please enter a valid name, email, and phone number.",
+      "errorGeneric": "Registration failed. Try again.",
+      "errorInsufficientFunds": "Not enough wallet balance — top up to continue.",
+      "errorAlreadyRegistered": "You're already registered for this event.",
+      "errorCapacityExceeded": "This event just sold out.",
+      "errorEventPassed": "This event has already taken place."
     },
     "explorer": {
       "all": "All events",
@@ -2080,7 +2145,12 @@
       "errorAlreadyApplied": "You've already applied to this program.",
       "errorCapacityExceeded": "Program just filled up.",
       "errorDeadlinePassed": "Applications just closed.",
-      "errorGeneric": "Apply failed. Try again."
+      "errorGeneric": "Apply failed. Try again.",
+      "depositDueNow": "Deposit due now",
+      "balanceOnSite": "Balance on-site",
+      "payDeposit": "Pay deposit — {amount}",
+      "payNow": "Pay now — {amount}",
+      "errorContact": "Please enter a valid name, email, and phone number."
     },
     "explorer": {
       "all": "All programs",
@@ -2126,7 +2196,8 @@
       "endsLabel": "Ends",
       "fullText": "This program is full.",
       "seatsRemainingOne": "1 seat remaining",
-      "seatsRemainingMany": "{count} seats remaining"
+      "seatsRemainingMany": "{count} seats remaining",
+      "continueAsGuest": "Continue as guest"
     }
   },
   "admin": {
@@ -2651,7 +2722,9 @@
     "colSpace": "Space / program",
     "colDate": "Date",
     "colStatus": "Status",
-    "colAmount": "Amount"
+    "colAmount": "Amount",
+    "balanceDueOnSite": "Balance due on site: {amount}",
+    "cashBalancePaid": "Cash balance paid"
   },
   "investor": {
     "startups": {
@@ -3040,7 +3113,9 @@
       "typeRefund": "Refund",
       "typeAdjustment": "Adjustment",
       "typePayout": "Payout",
-      "typeCommission": "Commission"
+      "typeCommission": "Commission",
+      "negativeBalanceTitle": "Your wallet is in debt",
+      "negativeBalanceHint": "You owe {amount} in platform commission. Top up to clear it and re-enable withdrawals."
     },
     "withdrawalForm": {
       "title": "Withdraw Funds",
@@ -3172,5 +3247,13 @@
     "tabRegistrations": "Registrations",
     "tabFormBuilder": "Form Builder",
     "publicPage": "Public page"
+  },
+  "booking": {
+    "guest": {
+      "title": "Your contact details",
+      "fullName": "Full name",
+      "email": "Email",
+      "phone": "Phone"
+    }
   }
 }

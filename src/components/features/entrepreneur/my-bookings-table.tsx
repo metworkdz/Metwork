@@ -132,6 +132,13 @@ export function MyBookingsTable({ initial, locale }: Props) {
                       </TableCell>
                       <TableCell className="text-end tabular-nums font-medium">
                         {formatCurrency(b.totalAmount, locale)}
+                        {b.paymentMode === 'CASH_DEPOSIT' && (b.cashRemainingAmount ?? 0) > 0 && (
+                          <div className={`text-xs font-normal ${b.paymentStatus === 'AWAITING_CASH' ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                            {b.paymentStatus === 'AWAITING_CASH'
+                              ? t('balanceDueOnSite', { amount: formatCurrency(b.cashRemainingAmount ?? 0, locale) })
+                              : t('cashBalancePaid')}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-end">
                         <div className="flex items-center justify-end gap-1">

@@ -492,7 +492,12 @@
       "emptyDescriptionFiltered": "Essayez d'ajuster les filtres ci-dessus.",
       "free": "Gratuit",
       "badgeOffline": "Hors ligne",
-      "badgeOnline": "En ligne"
+      "badgeOnline": "En ligne",
+      "awaitingCash": "En attente d’espèces",
+      "cashCollected": "Espèces encaissées",
+      "balanceDue": "Solde dû : {amount}",
+      "balanceCollected": "Encaissé : {amount}",
+      "markCashPaid": "Marquer payé"
     },
     "clients": {
       "editTitle": "Modifier le client",
@@ -644,6 +649,10 @@
       "labelPaymentMethods": "Méthodes de paiement acceptées",
       "methodOnline": "En ligne (portefeuille)",
       "methodCash": "Espèces à l'entrée",
+      "labelDeposit": "Acompte (payé en ligne par carte)",
+      "depositHint": "Les clients paient cet acompte en ligne par carte ; le solde est réglé en espèces sur place.",
+      "depositPercent": "Pourcentage du total",
+      "depositFixed": "Montant fixe (DZD)",
       "saving": "Enregistrement…",
       "creating": "Création…",
       "saveChanges": "Enregistrer les modifications",
@@ -801,6 +810,10 @@
       "labelPaymentMethods": "Méthodes de paiement acceptées",
       "methodOnline": "En ligne (portefeuille)",
       "methodCash": "Espèces sur place",
+      "labelDeposit": "Acompte (payé en ligne par carte)",
+      "depositHint": "Les clients paient cet acompte en ligne par carte ; le solde est réglé en espèces sur place.",
+      "depositPercent": "Pourcentage du total",
+      "depositFixed": "Montant fixe (DZD)",
       "saving": "Enregistrement…",
       "creating": "Création…",
       "saveChanges": "Enregistrer les modifications",
@@ -881,6 +894,10 @@
       "labelPaymentMethods": "Méthodes de paiement acceptées",
       "methodOnline": "En ligne (portefeuille)",
       "methodCash": "Espèces sur place",
+      "labelDeposit": "Acompte (payé en ligne par carte)",
+      "depositHint": "Les clients paient cet acompte en ligne par carte ; le solde est réglé en espèces sur place.",
+      "depositPercent": "Pourcentage du total",
+      "depositFixed": "Montant fixe (DZD)",
       "saving": "Enregistrement…",
       "creating": "Création…",
       "saveChanges": "Enregistrer les modifications",
@@ -949,6 +966,35 @@
       "rejectedDesc": "Cette demande de consultation a été refusée, il n'y a donc rien à payer.",
       "invalidTitle": "Lien introuvable",
       "invalidDesc": "Ce lien de paiement est invalide. Veuillez vérifier le lien dans votre e-mail.",
+      "backHome": "Retour à l'accueil"
+    },
+    "bookingPay": {
+      "awaitingTitle": "Confirmer et payer",
+      "awaitingDescFull": "Payez en toute sécurité par carte pour confirmer votre réservation.",
+      "awaitingDescDeposit": "Payez votre acompte en toute sécurité par carte. Le solde est réglé en espèces sur place.",
+      "item": "Réservation",
+      "provider": "Prestataire",
+      "date": "Date et heure",
+      "total": "Total",
+      "depositDue": "Acompte à payer maintenant",
+      "cashOnSite": "Solde (espèces sur place)",
+      "amountDue": "Montant à payer",
+      "secureNote": "Paiement sécurisé via CIB / Edahabia. Vos données de carte ne sont jamais enregistrées.",
+      "payNow": "Payer maintenant",
+      "starting": "Démarrage…",
+      "payError": "Nous n'avons pas pu démarrer le paiement. Veuillez réessayer.",
+      "errorExpired": "Ce lien de paiement a expiré. Veuillez contacter l'organisateur.",
+      "confirmedTitle": "Paiement confirmé",
+      "confirmedDescFull": "Votre réservation est confirmée. Un e-mail de confirmation est en route.",
+      "confirmedDescDeposit": "Votre acompte est reçu et votre réservation est confirmée. Veuillez régler le solde de {amount} en espèces sur place.",
+      "expiredTitle": "Lien expiré",
+      "expiredDesc": "Ce lien de paiement n'est plus valide. Veuillez contacter l'organisateur pour en obtenir un nouveau.",
+      "cancelledTitle": "Réservation annulée",
+      "cancelledDesc": "Cette réservation a été annulée, il n'y a donc rien à payer.",
+      "slotTakenTitle": "Plus disponible",
+      "slotTakenDesc": "Malheureusement, ce créneau a été pris avant la fin de votre paiement. Tout montant débité sera remboursé.",
+      "invalidTitle": "Lien introuvable",
+      "invalidDesc": "Ce lien de paiement est invalide. Veuillez vérifier le lien qui vous a été communiqué.",
       "backHome": "Retour à l'accueil"
     },
     "programs": {
@@ -1864,7 +1910,14 @@
       "passCreditsInfo": "Utilise 1 crédit — {count} sur {max} restants",
       "passResetsDate": "· Réinitialisation le {date}",
       "hourlyCapAutoSwitch": "Réservations horaires : max 7 heures par jour — au-delà, le tarif journalier s'applique automatiquement",
-      "builderDiscount": "Remise Bâtisseur ({percent} % de réduction)"
+      "builderDiscount": "Remise Bâtisseur ({percent} % de réduction)",
+      "depositDueNow": "Acompte à payer maintenant",
+      "balanceOnSite": "Solde sur place",
+      "payDeposit": "Payer l'acompte — {amount}",
+      "payNow": "Payer maintenant — {amount}",
+      "errorContact": "Veuillez saisir un nom, un e-mail et un numéro de téléphone valides.",
+      "errorDateUnavailable": "Les dates sélectionnées ne sont pas disponibles à la réservation.",
+      "errorAlreadyBooked": "Vous avez déjà une réservation active pour cet espace."
     },
     "scheduler": {
       "noAvailabilityThisMonth": "Aucune disponibilité ce mois-ci",
@@ -1912,7 +1965,8 @@
       "signInToBook": "Se connecter pour réserver",
       "createAndBook": "Créer un compte & réserver",
       "entrepreneurOnly": "Les réservations d'espaces sont disponibles pour les comptes entrepreneur.",
-      "bookThisSpace": "Réserver cet espace"
+      "bookThisSpace": "Réserver cet espace",
+      "continueAsGuest": "Continuer en tant qu'invité"
     },
     "hero": {
       "eyebrow": "Marché des espaces",
@@ -1984,7 +2038,18 @@
       "awaitingPayment": "En attente de paiement",
       "confirmed": "Confirmé",
       "viewBookings": "Voir mes réservations",
-      "viewWallet": "Voir le portefeuille"
+      "viewWallet": "Voir le portefeuille",
+      "total": "Total",
+      "depositDueNow": "Acompte à payer maintenant",
+      "balanceOnSite": "Solde sur place",
+      "payDeposit": "Payer l'acompte — {amount}",
+      "payNow": "Payer maintenant — {amount}",
+      "errorContact": "Veuillez saisir un nom, un e-mail et un numéro de téléphone valides.",
+      "errorGeneric": "Échec de l'inscription. Réessayez.",
+      "errorInsufficientFunds": "Solde du portefeuille insuffisant — rechargez pour continuer.",
+      "errorAlreadyRegistered": "Vous êtes déjà inscrit à cet événement.",
+      "errorCapacityExceeded": "Cet événement vient d'afficher complet.",
+      "errorEventPassed": "Cet événement a déjà eu lieu."
     },
     "explorer": {
       "all": "Tous les événements",
@@ -2080,7 +2145,12 @@
       "errorAlreadyApplied": "Vous avez déjà postulé à ce programme.",
       "errorCapacityExceeded": "Le programme vient d'afficher complet.",
       "errorDeadlinePassed": "Les candidatures viennent de fermer.",
-      "errorGeneric": "Échec de la candidature. Réessayez."
+      "errorGeneric": "Échec de la candidature. Réessayez.",
+      "depositDueNow": "Acompte à payer maintenant",
+      "balanceOnSite": "Solde sur place",
+      "payDeposit": "Payer l'acompte — {amount}",
+      "payNow": "Payer maintenant — {amount}",
+      "errorContact": "Veuillez saisir un nom, un e-mail et un numéro de téléphone valides."
     },
     "explorer": {
       "all": "Tous les programmes",
@@ -2126,7 +2196,8 @@
       "endsLabel": "Fin",
       "fullText": "Ce programme est complet.",
       "seatsRemainingOne": "1 place restante",
-      "seatsRemainingMany": "{count} places restantes"
+      "seatsRemainingMany": "{count} places restantes",
+      "continueAsGuest": "Continuer en tant qu'invité"
     }
   },
   "admin": {
@@ -2651,7 +2722,9 @@
     "colSpace": "Espace / programme",
     "colDate": "Date",
     "colStatus": "Statut",
-    "colAmount": "Montant"
+    "colAmount": "Montant",
+    "balanceDueOnSite": "Solde à payer sur place : {amount}",
+    "cashBalancePaid": "Solde en espèces payé"
   },
   "investor": {
     "startups": {
@@ -3040,7 +3113,9 @@
       "typeRefund": "Remboursement",
       "typeAdjustment": "Ajustement",
       "typePayout": "Versement",
-      "typeCommission": "Commission"
+      "typeCommission": "Commission",
+      "negativeBalanceTitle": "Votre portefeuille est à découvert",
+      "negativeBalanceHint": "Vous devez {amount} de commission de la plateforme. Rechargez pour régulariser et réactiver les retraits."
     },
     "withdrawalForm": {
       "title": "Retirer des fonds",
@@ -3172,5 +3247,13 @@
     "tabRegistrations": "Inscriptions",
     "tabFormBuilder": "Constructeur de formulaire",
     "publicPage": "Page publique"
+  },
+  "booking": {
+    "guest": {
+      "title": "Vos coordonnées",
+      "fullName": "Nom complet",
+      "email": "E-mail",
+      "phone": "Téléphone"
+    }
   }
 }

@@ -6,6 +6,7 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
+import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -21,6 +22,9 @@ const patchSchema = z.object({
   isOnline: z.boolean().optional(),
   capacity: z.number().int().positive().optional(),
   eventDate: z.string().datetime({ offset: true }).optional(),
+  acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).optional(),
+  cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
+  cashDepositValue: z.number().int().positive().optional().nullable(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'CANCELLED']).optional(),
   slug: z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
 });
@@ -52,11 +56,32 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     throw err;
   }
 
+  let depositError: string | null = null;
   const updated = await db.update((d) => {
     const event = (d.events ?? []).find(
       (e) => e.id === id && e.incubatorId === incubator.id,
     );
     if (!event) return null;
+
+    // Payment config: validate against the merged (existing + patched) state so
+    // turning CASH on always carries a valid deposit, and turning it off clears
+    // the deposit. Only runs when a payment field is actually being changed.
+    if (
+      input.acceptedPaymentMethods !== undefined ||
+      input.cashDepositType !== undefined ||
+      input.cashDepositValue !== undefined
+    ) {
+      const nextMethods = input.acceptedPaymentMethods ?? event.acceptedPaymentMethods ?? ['ONLINE'];
+      const nextType  = input.cashDepositType  !== undefined ? input.cashDepositType  : (event.cashDepositType  ?? null);
+      const nextValue = input.cashDepositValue !== undefined ? input.cashDepositValue : (event.cashDepositValue ?? null);
+      depositError = validateCashDeposit(nextMethods, nextType, nextValue);
+      if (depositError) return 'INVALID_DEPOSIT';
+      event.acceptedPaymentMethods = nextMethods;
+      const cfg = normalizeDepositConfig(nextMethods, nextType, nextValue);
+      event.cashDepositType  = cfg.cashDepositType;
+      event.cashDepositValue = cfg.cashDepositValue;
+    }
+
     if (input.title !== undefined) event.title = input.title;
     if (input.description !== undefined) event.description = input.description;
     if (input.city !== undefined) event.city = input.city;
@@ -76,6 +101,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return { ...event };
   });
 
+  if (updated === 'INVALID_DEPOSIT') return jsonError(400, 'INVALID_DEPOSIT', depositError ?? 'Invalid cash deposit configuration');
   if (!updated) return jsonError(404, 'NOT_FOUND', 'Event not found');
   return json({ event: updated });
 }

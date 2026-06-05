@@ -12,8 +12,12 @@
  * reads, WITHOUT touching the wallet/payment paths.
  *
  * A seat is "taken" by:
- *   - any active booking (not CANCELLED / REFUNDED), or
+ *   - any active booking (not CANCELLED / REFUNDED / PENDING_PAYMENT), or
  *   - any CONFIRMED registration (WAITLISTED holds no seat; CANCELLED is gone).
+ *
+ * PENDING_PAYMENT bookings are unpaid card-deposit intents — they deliberately
+ * hold NO seat until the deposit (or full online payment) is verified, at which
+ * point the booking flips to CONFIRMED and a commit-time capacity re-check runs.
  *
  * Attendees are deduped by identity (userId, else lowercased email) so a user
  * who both booked and registered counts once. When neither is available the
@@ -54,7 +58,8 @@ export function countAttendance(
 
   for (const b of data.bookings ?? []) {
     if (b.itemKind !== kind || b.itemId !== id) continue;
-    if (b.status === 'CANCELLED' || b.status === 'REFUNDED') continue;
+    // Unpaid card-deposit intents hold no seat until verified.
+    if (b.status === 'CANCELLED' || b.status === 'REFUNDED' || b.status === 'PENDING_PAYMENT') continue;
     seats.add(attendeeKey(b.userId, b.clientEmail, b.id));
   }
 

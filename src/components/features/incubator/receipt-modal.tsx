@@ -20,7 +20,7 @@ interface ReceiptData {
   bookingId: string;
   issuedAt: string;
   source: 'online' | 'offline';
-  paymentMethod: 'wallet' | 'manual';
+  paymentMethod: 'wallet' | 'manual' | 'card';
   vendor: VendorInfo | null;
   customer: { name: string; email: string; phone: string; city: string; idNumber: string | null };
   item: {
@@ -30,6 +30,11 @@ interface ReceiptData {
   payment: {
     amount: number; currency: string; status: string; method: string;
     transactionRef: string; paidAt: string;
+    paymentMode?: 'ONLINE_FULL' | 'CASH_DEPOSIT' | null;
+    paymentStatus?: 'AWAITING_CASH' | 'PAID' | null;
+    onlinePaidAmount?: number | null;
+    cashRemainingAmount?: number | null;
+    cashCollectedAt?: string | null;
   };
 }
 
@@ -51,8 +56,15 @@ const L = {
     method: 'Method',
     wallet: 'Platform wallet',
     manual: 'Manual payment',
+    card: 'Card (CIB / Edahabia)',
     ref2: 'Ref',
     status: 'Status',
+    depositReceipt: 'Deposit receipt',
+    finalReceipt: 'Paid in full',
+    depositPaid: 'Deposit paid (card)',
+    cashBalance: 'Balance (cash on-site)',
+    awaitingCash: 'Awaiting cash on-site',
+    cashPaid: 'Paid',
     footer: 'Thank you for using Metwork · metwork.dz',
   },
   fr: {
@@ -70,8 +82,15 @@ const L = {
     method: 'Mode de paiement',
     wallet: 'Portefeuille Metwork',
     manual: 'Paiement manuel',
+    card: 'Carte (CIB / Edahabia)',
     ref2: 'Réf',
     status: 'Statut',
+    depositReceipt: 'Reçu d\'acompte',
+    finalReceipt: 'Payé intégralement',
+    depositPaid: 'Acompte payé (carte)',
+    cashBalance: 'Solde (espèces sur place)',
+    awaitingCash: 'En attente d\'espèces sur place',
+    cashPaid: 'Payé',
     footer: 'Merci d\'utiliser Metwork · metwork.dz',
   },
 };
@@ -185,12 +204,19 @@ export function ReceiptModal({ bookingId, onClose }: Props) {
 
             {/* ── Payment ── */}
             <div>
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.payment}</p>
+              <p className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t.payment}
+                {receipt.payment.paymentMode === 'CASH_DEPOSIT' && (
+                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold normal-case ${receipt.payment.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {receipt.payment.paymentStatus === 'PAID' ? t.finalReceipt : t.depositReceipt}
+                  </span>
+                )}
+              </p>
               <div className="rounded-md border border-border/60 bg-muted/30 p-3 space-y-1">
                 <div className="flex items-start justify-between">
                   <div className="space-y-0.5">
                     <p className="text-xs text-muted-foreground">
-                      {t.method}: {receipt.payment.method === 'manual' ? t.manual : t.wallet}
+                      {t.method}: {receipt.payment.method === 'manual' ? t.manual : receipt.payment.method === 'card' ? t.card : t.wallet}
                     </p>
                     <p className="text-muted-foreground text-xs">{t.ref2}: {receipt.payment.transactionRef}</p>
                     <p className="text-muted-foreground text-xs">
@@ -202,6 +228,26 @@ export function ReceiptModal({ bookingId, onClose }: Props) {
                     {receipt.payment.amount === 0 ? tr('free') : `${receipt.payment.amount.toLocaleString()} ${receipt.payment.currency}`}
                   </p>
                 </div>
+
+                {/* Card deposit / cash split */}
+                {receipt.payment.paymentMode === 'CASH_DEPOSIT' && (
+                  <div className="mt-2 space-y-1 border-t border-border/60 pt-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">{t.depositPaid}</span>
+                      <span className="font-medium tabular-nums">
+                        {(receipt.payment.onlinePaidAmount ?? 0).toLocaleString()} {receipt.payment.currency}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">{t.cashBalance}</span>
+                      <span className={`font-medium tabular-nums ${receipt.payment.paymentStatus === 'PAID' ? 'text-green-700' : 'text-amber-600'}`}>
+                        {(receipt.payment.cashRemainingAmount ?? 0).toLocaleString()} {receipt.payment.currency}
+                        {' · '}
+                        {receipt.payment.paymentStatus === 'PAID' ? t.cashPaid : t.awaitingCash}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

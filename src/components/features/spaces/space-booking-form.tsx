@@ -46,6 +46,13 @@ import { SpaceScheduler } from './space-scheduler';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
 import { resolveTier } from '@/lib/tier-utils';
+import { computeClientDeposit } from '@/lib/deposit';
+import {
+  GuestContactFields,
+  emptyGuestContact,
+  isGuestContactValid,
+  type GuestContact,
+} from '@/components/features/booking/guest-contact-fields';
 import type { Locale } from '@/i18n/config';
 import type { PaymentMethod, Space } from '@/types/domain';
 import type { BookingDto, BookingUnit } from '@/types/booking';
@@ -216,10 +223,29 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const [promoResult, setPromoResult] = useState<PromoResult | null>(null);
 
   const acceptedMethods = space.acceptedPaymentMethods ?? ['ONLINE'];
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(acceptedMethods[0] ?? 'ONLINE');
+  const hasDeposit =
+    space.cashDepositType != null && space.cashDepositValue != null;
+  // CASH is offered to guests only when a deposit is configured (the card needs
+  // something to charge); registered users can always pick CASH (→ card deposit
+  // when configured, else the legacy reserve-on-site flow).
+  const onlineOffered = acceptedMethods.includes('ONLINE');
+  const cashOffered = acceptedMethods.includes('CASH') && (isAuthed || hasDeposit);
+  const showMethodPicker = onlineOffered && cashOffered;
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    acceptedMethods.includes('ONLINE') ? 'ONLINE' : 'CASH',
+  );
   const [useNetworkPass, setUseNetworkPass] = useState(false);
-  const isCash         = paymentMethod === 'CASH' && !useNetworkPass;
-  const showMethodPicker = acceptedMethods.includes('ONLINE') && acceptedMethods.includes('CASH');
+  const method: PaymentMethod = showMethodPicker
+    ? paymentMethod
+    : onlineOffered
+    ? 'ONLINE'
+    : 'CASH';
+  const isCash         = method === 'CASH' && !useNetworkPass;
+
+  // Guests pay by card; collect contact details for the receipt / checkout.
+  const [contact, setContact] = useState<GuestContact>(emptyGuestContact);
+  // Listing is bookable by a guest only if there's a card-chargeable amount.
+  const guestCanCard = onlineOffered || (acceptedMethods.includes('CASH') && hasDeposit);
 
   // Network Pass eligibility
   const userTier = user ? resolveTier(user) : 'EXPLORER';
@@ -262,7 +288,16 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const membershipDiscountAmount   = membershipDiscountFraction > 0 ? total - Math.round(total * (1 - membershipDiscountFraction)) : 0;
   const afterMembershipDiscount    = total - membershipDiscountAmount;
   const finalTotal = promoResult?.finalAmount ?? afterMembershipDiscount;
-  const insufficient = !isCash && !useNetworkPass && isAuthed && balance != null && finalTotal > 0 && balance < finalTotal;
+  // Goes through the hosted card checkout: any guest, or a registered CASH
+  // deposit. Registered ONLINE stays on the wallet; the Network Pass and a
+  // registered CASH booking on a listing WITHOUT a configured deposit keep
+  // their existing (wallet / legacy reserve-on-site) flows.
+  const useCard = !useNetworkPass && (!isAuthed || (isCash && hasDeposit));
+  const cashDeposit = isCash && hasDeposit && validRange && finalTotal > 0
+    ? computeClientDeposit(finalTotal, space.cashDepositType, space.cashDepositValue)
+    : null;
+  const cashBalance = cashDeposit != null ? Math.max(0, finalTotal - cashDeposit) : null;
+  const insufficient = !useCard && !isCash && !useNetworkPass && isAuthed && balance != null && finalTotal > 0 && balance < finalTotal;
 
   const workingDaysLabel = (space.workingDays ?? [1,2,3,4,5]).map((d) => DOW_LABELS[d]).join(', ');
   const openingTime      = space.openingTime ?? '09:00';
@@ -314,15 +349,74 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
     );
   }
 
+  function mapCardError(err: unknown): { code: string; message: string } {
+    if (err instanceof ApiClientError) {
+      switch (err.code) {
+        case 'OUTSIDE_WORKING_HOURS':
+          return {
+            code: err.code,
+            message: t('errorOutsideHours', {
+              open: (err.details as { openingTime?: string })?.openingTime ?? openingTime,
+              close: (err.details as { closingTime?: string })?.closingTime ?? closingTime,
+            }),
+          };
+        case 'NOT_A_WORKING_DAY':
+          return { code: err.code, message: t('errorNotWorkingDay', { days: workingDaysLabel }) };
+        case 'OVERLAP_CONFLICT':
+          return { code: err.code, message: t('errorOverlap') };
+        case 'UNIT_NOT_AVAILABLE':
+          return { code: err.code, message: t('errorUnitNotAvailable') };
+        case 'DATE_UNAVAILABLE':
+          return { code: err.code, message: t('errorDateUnavailable') };
+        case 'ALREADY_BOOKED':
+          return { code: err.code, message: t('errorAlreadyBooked') };
+        default:
+          return { code: err.code, message: err.message || t('errorGeneric') };
+      }
+    }
+    return { code: 'UNKNOWN', message: t('errorGeneric') };
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!isAuthed) {
-      router.push(`/login?next=${encodeURIComponent('/spaces')}`);
-      return;
-    }
     if (!validRange) {
       setError({ code: 'INVALID_RANGE', message: t('endAfterStart') });
+      return;
+    }
+
+    // ── Card checkout: guests, or a registered CASH deposit ────────────────
+    if (useCard) {
+      if (!isAuthed && !isGuestContactValid(contact)) {
+        setError({ code: 'INVALID_CONTACT', message: t('errorContact') });
+        return;
+      }
+      const customer = isAuthed && user
+        ? { fullName: user.fullName, email: user.email, phone: user.phone }
+        : contact;
+      setSubmitting(true);
+      try {
+        const res = await bookingService.createCardBooking({
+          target: { itemKind: 'SPACE', spaceId: space.id, unit, startsAt: startIso, endsAt: endIso },
+          paymentMode: isCash ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
+          customer,
+          clientReference: crypto.randomUUID(),
+          promoCode: promoResult?.code,
+          locale,
+        });
+        // Leave the SPA for the hosted-checkout pay page.
+        window.location.assign(res.payPath);
+        return;
+      } catch (err) {
+        setError(mapCardError(err));
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // ── Registered wallet / network pass / legacy cash reserve ─────────────
+    if (!isAuthed) {
+      router.push(`/login?next=${encodeURIComponent('/spaces')}`);
       return;
     }
     setSubmitting(true);
@@ -334,7 +428,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         endsAt:   endIso,
         clientReference: crypto.randomUUID(),
         promoCode: promoResult?.code,
-        paymentMethod: useNetworkPass ? ('NETWORK_PASS' as PaymentMethod) : paymentMethod,
+        paymentMethod: useNetworkPass ? ('NETWORK_PASS' as PaymentMethod) : method,
       });
       setBalance(res.wallet.balance);
       void refresh();
@@ -478,6 +572,16 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         </div>
       )}
 
+      {/* Guest contact details — only when a guest is booking by card */}
+      {!isAuthed && guestCanCard && (
+        <GuestContactFields
+          value={contact}
+          onChange={setContact}
+          disabled={submitting}
+          idPrefix="space"
+        />
+      )}
+
       {/* ── Network Pass option (Builder / Founder only, partner spaces) ── */}
       {canUsePass && (
         <div>
@@ -579,6 +683,18 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
               {useNetworkPass ? t('totalFree') : formatCurrency(finalTotal, locale)}
             </span>
           </div>
+          {cashDeposit != null && cashBalance != null && (
+            <div className="mt-2 space-y-1 border-t border-border/60 pt-2">
+              <div className="flex items-center justify-between font-medium text-foreground">
+                <span>{t('depositDueNow')}</span>
+                <span className="tabular-nums">{formatCurrency(cashDeposit, locale)}</span>
+              </div>
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>{t('balanceOnSite')}</span>
+                <span className="tabular-nums">{formatCurrency(cashBalance, locale)}</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -618,7 +734,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         </div>
       )}
 
-      {!isAuthed ? (
+      {!isAuthed && !guestCanCard ? (
         <Button asChild className="w-full" size="lg">
           <Link href={`/login?next=${encodeURIComponent('/spaces')}`}>{t('signIn')}</Link>
         </Button>
@@ -643,10 +759,14 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         >
           {submitting
             ? t('submitting')
+            : useNetworkPass || finalTotal === 0
+            ? t('submitFree')
+            : useCard
+            ? isCash
+              ? t('payDeposit', { amount: formatCurrency(cashDeposit ?? finalTotal, locale) })
+              : t('payNow', { amount: formatCurrency(finalTotal, locale) })
             : isCash
             ? t('submitCash')
-            : finalTotal === 0
-            ? t('submitFree')
             : t('submitOnline', { amount: formatCurrency(finalTotal, locale) })}
         </Button>
       )}

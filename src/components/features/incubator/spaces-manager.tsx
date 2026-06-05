@@ -26,8 +26,6 @@ export function SpacesManager() {
   // FIX: BUG-2 — edit/delete state
   const [editingSpace, setEditingSpace] = useState<Space | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  // FIX: BUG-5 — cash allowed only for active FLAT plan
-  const [cashEnabled, setCashEnabled] = useState(true);
 
   async function fetchSpaces() {
     setLoading(true);
@@ -46,16 +44,6 @@ export function SpacesManager() {
 
   useEffect(() => {
     void fetchSpaces();
-    // FIX: BUG-5 — fetch subscription to determine if CASH is allowed
-    fetch('/api/incubator/subscription', { cache: 'no-store' })
-      .then((r) => r.ok ? r.json() as Promise<{ subscriptionCode: string; isActive: boolean }> : null)
-      .then((sub) => {
-        if (sub) {
-          // FIX: BUG-5 — cash only allowed for active FLAT plan
-          setCashEnabled(sub.subscriptionCode === 'FLAT' && sub.isActive);
-        }
-      })
-      .catch(() => { /* ignore subscription fetch errors */ });
   }, []);
 
   async function handleDelete(id: string) {
@@ -151,7 +139,7 @@ export function SpacesManager() {
         rows={rows}
         columns={columns}
         rowKey={(s) => s.id}
-        createSlot={<SpaceFormDialog onCreated={() => void fetchSpaces()} cashEnabled={cashEnabled} />}
+        createSlot={<SpaceFormDialog onCreated={() => void fetchSpaces()} />}
         emptyIcon={<Building2 className="size-5 text-muted-foreground" />}
         emptyTitle={t('emptyTitle')}
         emptyDescription={t('emptyDescription')}
@@ -186,6 +174,8 @@ export function SpacesManager() {
             capacity: editingSpace.capacity,
             amenities: editingSpace.amenities ?? [],
             acceptedPaymentMethods: editingSpace.acceptedPaymentMethods ?? ['ONLINE'],
+            cashDepositType: editingSpace.cashDepositType,
+            cashDepositValue: editingSpace.cashDepositValue,
             imageUrl: editingSpace.imageUrl,
             imageUrls: editingSpace.imageUrls,
             workingDays: editingSpace.workingDays ?? [1, 2, 3, 4, 5],
@@ -194,7 +184,6 @@ export function SpacesManager() {
           }}
           open={true}
           onOpenChange={(v) => { if (!v) setEditingSpace(null); }}
-          cashEnabled={cashEnabled}
         />
       )}
       {/* suppress unused deletingId warning */}

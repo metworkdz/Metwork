@@ -152,6 +152,7 @@ function BalanceCard({
   refreshing: boolean;
 }) {
   const t = useTranslations('wallet.dashboard');
+  const isNegative = wallet.balance < 0;
   return (
     <Card className="lg:col-span-2 overflow-hidden border-primary-100 bg-gradient-to-br from-primary-50 via-background to-background">
       <CardContent className="p-6">
@@ -160,7 +161,10 @@ function BalanceCard({
             <p className="text-xs font-medium uppercase tracking-wide text-primary-700">
               {t('availableBalance')}
             </p>
-            <p className="mt-3 text-4xl font-semibold tracking-tight">
+            <p className={cn(
+              'mt-3 text-4xl font-semibold tracking-tight tabular-nums',
+              isNegative && 'text-destructive',
+            )}>
               {formatCurrency(wallet.balance, locale)}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -171,6 +175,17 @@ function BalanceCard({
             <WalletIcon className="size-5" />
           </div>
         </div>
+        {isNegative && (
+          <div
+            role="alert"
+            className="mt-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+          >
+            <p className="font-semibold">{t('negativeBalanceTitle')}</p>
+            <p className="mt-0.5">
+              {t('negativeBalanceHint', { amount: formatCurrency(Math.abs(wallet.balance), locale) })}
+            </p>
+          </div>
+        )}
         {wallet.status === 'FROZEN' && (
           <Badge variant="warning" className="mt-4">
             {t('frozen')}

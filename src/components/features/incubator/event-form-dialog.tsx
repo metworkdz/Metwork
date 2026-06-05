@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { GalleryUploadField } from '@/components/shared/gallery-upload-field';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 
-// FIX: BUG-2 — added edit mode props; FIX: BUG-5 — added cashEnabled prop
+// FIX: BUG-2 — added edit mode props
 interface EventFormDialogProps {
   onCreated: () => void;
   editId?: string;
@@ -33,13 +33,13 @@ interface EventFormDialogProps {
     capacity?: number; isOnline?: boolean; eventDate?: string;
     acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
     imageUrls?: string[] | null;
+    cashDepositType?: 'FIXED' | 'PERCENT'; cashDepositValue?: number;
   };
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
-  cashEnabled?: boolean;
 }
 
-export function EventFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange, cashEnabled = true }: EventFormDialogProps) {
+export function EventFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange }: EventFormDialogProps) {
   const t = useTranslations('incubator.eventForm');
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
@@ -55,6 +55,8 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
   const [isOnline, setIsOnline] = useState(false);
   const [eventDate, setEventDate] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
+  const [depositType, setDepositType] = useState<'FIXED' | 'PERCENT'>('PERCENT');
+  const [depositValue, setDepositValue] = useState('10');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   // FIX: BUG-2 — pre-fill form when in edit mode
@@ -69,6 +71,8 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
       // FIX: BUG-2 — convert ISO date string back to YYYY-MM-DD for date input
       setEventDate(initialData.eventDate ? initialData.eventDate.substring(0, 10) : '');
       setAcceptedMethods(initialData.acceptedPaymentMethods ?? ['ONLINE', 'CASH']);
+      setDepositType(initialData.cashDepositType ?? 'PERCENT');
+      setDepositValue(initialData.cashDepositValue != null ? String(initialData.cashDepositValue) : '10');
       setImageUrls(
         initialData.imageUrls?.length
           ? initialData.imageUrls
@@ -92,6 +96,7 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
     setTitle(''); setDescription(''); setCity('');
     setPrice('0'); setCapacity('50'); setIsOnline(false); setEventDate('');
     setAcceptedMethods(['ONLINE', 'CASH']);
+    setDepositType('PERCENT'); setDepositValue('10');
     setImageUrls([]);
     setError(null);
   }
@@ -116,6 +121,9 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
           isOnline,
           eventDate: new Date(`${eventDate}T12:00:00`).toISOString(),
           acceptedPaymentMethods: acceptedMethods,
+          ...(acceptedMethods.includes('CASH')
+            ? { cashDepositType: depositType, cashDepositValue: Number(depositValue) }
+            : { cashDepositType: null, cashDepositValue: null }),
           imageUrls,
         }),
       });
@@ -217,8 +225,6 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
             <p className="text-sm font-medium">{t('labelPaymentMethods')}</p>
             <div className="mt-1.5 flex gap-3">
               {(['ONLINE', 'CASH'] as const).map((m) => {
-                // FIX: BUG-5 — hide CASH button when cash is not allowed for this subscription
-                if (m === 'CASH' && !cashEnabled) return null;
                 return (
                   <button
                     key={m}
@@ -237,6 +243,44 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
               })}
             </div>
           </div>
+
+          {acceptedMethods.includes('CASH') && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-sm font-medium">{t('labelDeposit')}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t('depositHint')}</p>
+              <div className="mt-2 flex items-center gap-3">
+                <div className="flex gap-2">
+                  {(['PERCENT', 'FIXED'] as const).map((dt) => (
+                    <button
+                      key={dt}
+                      type="button"
+                      onClick={() => setDepositType(dt)}
+                      className={cn(
+                        'rounded-lg border px-3 py-2 text-sm transition-colors',
+                        depositType === dt
+                          ? 'border-primary bg-primary/5 font-medium text-primary'
+                          : 'border-border text-muted-foreground hover:border-primary/40',
+                      )}
+                    >
+                      {dt === 'PERCENT' ? t('depositPercent') : t('depositFixed')}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex-1">
+                  <Input
+                    type="number"
+                    min="1"
+                    max={depositType === 'PERCENT' ? '100' : undefined}
+                    className="w-full"
+                    value={depositValue}
+                    onChange={(e) => setDepositValue(e.target.value)}
+                    required
+                    aria-label={t('labelDeposit')}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">

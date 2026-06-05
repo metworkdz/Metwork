@@ -40,6 +40,7 @@ export interface BookingDto {
 export type BookingPaymentMethodDto =
   | 'wallet'
   | 'manual'
+  | 'card'
   | 'NETWORK_PASS'
   | 'PROGRAM'
   | 'PARTNER_DISCOUNT';

@@ -20,6 +20,13 @@ import { cn } from '@/lib/utils';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
 import { resolveTier } from '@/lib/tier-utils';
+import { computeClientDeposit } from '@/lib/deposit';
+import {
+  GuestContactFields,
+  emptyGuestContact,
+  isGuestContactValid,
+  type GuestContact,
+} from '@/components/features/booking/guest-contact-fields';
 import type { Locale } from '@/i18n/config';
 import type { Event as PlatformEvent, PaymentMethod } from '@/types/domain';
 import type { BookingDto, ItemAttendanceStatus } from '@/types/booking';
@@ -42,11 +49,31 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const [promoResult, setPromoResult] = useState<PromoResult | null>(null);
 
-  // Payment method
+  // ── Payment method / surface ────────────────────────────────────────────
   const acceptedMethods = event.acceptedPaymentMethods ?? ['ONLINE'];
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(acceptedMethods[0] ?? 'ONLINE');
-  const isCash = paymentMethod === 'CASH';
-  const showMethodPicker = !isFree && acceptedMethods.includes('ONLINE') && acceptedMethods.includes('CASH');
+  const hasDeposit =
+    event.cashDepositType != null && event.cashDepositValue != null;
+  // CASH is offered to guests only when a deposit is configured (the card needs
+  // something to charge); registered users can always pick CASH (→ card deposit
+  // when configured, else the legacy reserve-on-site flow).
+  const onlineOffered = !isFree && acceptedMethods.includes('ONLINE');
+  const cashOffered = !isFree && acceptedMethods.includes('CASH') && (isAuthed || hasDeposit);
+  const showMethodPicker = onlineOffered && cashOffered;
+
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    acceptedMethods.includes('ONLINE') ? 'ONLINE' : 'CASH',
+  );
+  const method: PaymentMethod = showMethodPicker
+    ? paymentMethod
+    : onlineOffered
+    ? 'ONLINE'
+    : 'CASH';
+  const isCash = method === 'CASH';
+
+  // Guests pay by card; collect contact details for the receipt / checkout.
+  const [contact, setContact] = useState<GuestContact>(emptyGuestContact);
+  // Listing is bookable by a guest only if there's a card-chargeable amount.
+  const guestCanCard = !isFree && (onlineOffered || (acceptedMethods.includes('CASH') && hasDeposit));
 
   const [balance, setBalance] = useState<number | null>(null);
   useEffect(() => {
@@ -77,7 +104,15 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
     : 0;
   const afterMembership = event.price - membershipDiscountAmount;
   const finalTotal = promoResult?.finalAmount ?? afterMembership;
-  const insufficient = !isFree && !isCash && isAuthed && balance != null && finalTotal > 0 && balance < finalTotal;
+  // Goes through the hosted card checkout: any guest, or a registered CASH
+  // deposit. Registered ONLINE stays on the wallet; registered CASH on a
+  // listing WITHOUT a configured deposit keeps the legacy reserve-on-site flow.
+  const useCard = !isFree && (!isAuthed || (isCash && hasDeposit));
+  const cashDeposit = isCash && hasDeposit
+    ? computeClientDeposit(finalTotal, event.cashDepositType, event.cashDepositValue)
+    : null;
+  const cashBalance = cashDeposit != null ? Math.max(0, finalTotal - cashDeposit) : null;
+  const insufficient = !useCard && !isFree && !isCash && isAuthed && balance != null && finalTotal > 0 && balance < finalTotal;
 
   if (alreadyRegistered) {
     return (
@@ -115,9 +150,50 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
     );
   }
 
+  function mapCardError(err: unknown): { code: string; message: string } {
+    if (err instanceof ApiClientError) {
+      if (err.code === 'CAPACITY_EXCEEDED') return { code: err.code, message: t('errorCapacityExceeded') };
+      if (err.code === 'EVENT_PASSED') return { code: err.code, message: t('errorEventPassed') };
+      if (err.code === 'ALREADY_BOOKED') return { code: err.code, message: t('errorAlreadyRegistered') };
+      return { code: err.code, message: err.message || t('errorGeneric') };
+    }
+    return { code: 'UNKNOWN', message: t('errorGeneric') };
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    // ── Card checkout: guests, or a registered CASH deposit ────────────────
+    if (useCard) {
+      if (!isAuthed && !isGuestContactValid(contact)) {
+        setError({ code: 'INVALID_CONTACT', message: t('errorContact') });
+        return;
+      }
+      const customer = isAuthed && user
+        ? { fullName: user.fullName, email: user.email, phone: user.phone }
+        : contact;
+      setSubmitting(true);
+      try {
+        const res = await bookingService.createCardBooking({
+          target: { itemKind: 'EVENT', eventId: event.id },
+          paymentMode: isCash ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
+          customer,
+          clientReference: crypto.randomUUID(),
+          promoCode: promoResult?.code,
+          locale,
+        });
+        // Leave the SPA for the hosted-checkout pay page.
+        window.location.assign(res.payPath);
+        return;
+      } catch (err) {
+        setError(mapCardError(err));
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // ── Registered wallet / legacy cash reserve ────────────────────────────
     if (!isAuthed) {
       router.push(`/login?next=${encodeURIComponent('/events')}`);
       return;
@@ -127,7 +203,7 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
       const res = await bookingService.registerForEvent(event.id, {
         clientReference: crypto.randomUUID(),
         promoCode: promoResult?.code,
-        paymentMethod,
+        paymentMethod: method,
       });
       setBalance(res.wallet.balance);
       void refresh();
@@ -138,18 +214,18 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
           const detailBalance =
             typeof err.details?.balance === 'number' ? err.details.balance : null;
           if (detailBalance != null) setBalance(detailBalance);
-          setError({ code: err.code, message: 'Not enough wallet balance — top up to continue.' });
+          setError({ code: err.code, message: t('errorInsufficientFunds') });
         } else if (err.code === 'ALREADY_REGISTERED') {
-          setError({ code: err.code, message: "You're already registered for this event." });
+          setError({ code: err.code, message: t('errorAlreadyRegistered') });
         } else if (err.code === 'CAPACITY_EXCEEDED') {
-          setError({ code: err.code, message: 'Event just sold out.' });
+          setError({ code: err.code, message: t('errorCapacityExceeded') });
         } else if (err.code === 'EVENT_PASSED') {
-          setError({ code: err.code, message: 'Event has just ended.' });
+          setError({ code: err.code, message: t('errorEventPassed') });
         } else {
-          setError({ code: err.code, message: err.message || 'Registration failed.' });
+          setError({ code: err.code, message: err.message || t('errorGeneric') });
         }
       } else {
-        setError({ code: 'UNKNOWN', message: 'Registration failed. Try again.' });
+        setError({ code: 'UNKNOWN', message: t('errorGeneric') });
       }
     } finally {
       setSubmitting(false);
@@ -192,6 +268,16 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
         </div>
       )}
 
+      {/* Guest contact details — only when a guest is booking by card */}
+      {!isAuthed && guestCanCard && (
+        <GuestContactFields
+          value={contact}
+          onChange={setContact}
+          disabled={submitting}
+          idPrefix="event"
+        />
+      )}
+
       <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
         <div className="flex items-center justify-between text-muted-foreground">
           <span>{t('ticket')}</span>
@@ -220,8 +306,20 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
         )}
         {!isFree && (
           <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2 text-base font-semibold">
-            <span>Total</span>
+            <span>{t('total')}</span>
             <span className="tabular-nums">{formatCurrency(finalTotal, locale)}</span>
+          </div>
+        )}
+        {cashDeposit != null && cashBalance != null && (
+          <div className="mt-2 space-y-1 border-t border-border/60 pt-2">
+            <div className="flex items-center justify-between font-medium text-foreground">
+              <span>{t('depositDueNow')}</span>
+              <span className="tabular-nums">{formatCurrency(cashDeposit, locale)}</span>
+            </div>
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span>{t('balanceOnSite')}</span>
+              <span className="tabular-nums">{formatCurrency(cashBalance, locale)}</span>
+            </div>
           </div>
         )}
       </div>
@@ -259,7 +357,7 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
         </div>
       )}
 
-      {!isAuthed ? (
+      {!isAuthed && (isFree || !guestCanCard) ? (
         <Button asChild className="w-full" size="lg">
           <Link href={`/login?next=${encodeURIComponent('/events')}`}>{t('signIn')}</Link>
         </Button>
@@ -280,6 +378,10 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
             ? t('submitting')
             : isFree || finalTotal === 0
             ? t('submitFree')
+            : useCard
+            ? isCash
+              ? t('payDeposit', { amount: formatCurrency(cashDeposit ?? finalTotal, locale) })
+              : t('payNow', { amount: formatCurrency(finalTotal, locale) })
             : isCash
             ? t('submitCash', { amount: formatCurrency(finalTotal, locale) })
             : t('submitOnline', { amount: formatCurrency(finalTotal, locale) })}

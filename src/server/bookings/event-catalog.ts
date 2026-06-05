@@ -24,6 +24,8 @@ function fromRecord(r: EventRecord, attendeeCount = 0): PlatformEvent {
     attendeeCount,
     eventDate:              r.eventDate,
     acceptedPaymentMethods: r.acceptedPaymentMethods,
+    cashDepositType:        r.cashDepositType,
+    cashDepositValue:       r.cashDepositValue,
     slug:                   r.slug ?? null,
   };
 }

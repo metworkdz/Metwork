@@ -28,8 +28,6 @@ export function ProgramsManager() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   // FIX: BUG-2 — edit state
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
-  // FIX: BUG-5 — cash allowed only for active FLAT plan
-  const [cashEnabled, setCashEnabled] = useState(true);
 
   async function fetchPrograms() {
     setLoading(true);
@@ -48,16 +46,6 @@ export function ProgramsManager() {
 
   useEffect(() => {
     void fetchPrograms();
-    // FIX: BUG-5 — fetch subscription to determine if CASH is allowed
-    fetch('/api/incubator/subscription', { cache: 'no-store' })
-      .then((r) => r.ok ? r.json() as Promise<{ subscriptionCode: string; isActive: boolean }> : null)
-      .then((sub) => {
-        if (sub) {
-          // FIX: BUG-5 — cash only allowed for active FLAT plan
-          setCashEnabled(sub.subscriptionCode === 'FLAT' && sub.isActive);
-        }
-      })
-      .catch(() => { /* ignore subscription fetch errors */ });
   }, []);
 
   async function handleDelete(id: string) {
@@ -164,7 +152,7 @@ export function ProgramsManager() {
         rows={rows}
         columns={columns}
         rowKey={(p) => p.id}
-        createSlot={<ProgramFormDialog onCreated={() => void fetchPrograms()} cashEnabled={cashEnabled} />}
+        createSlot={<ProgramFormDialog onCreated={() => void fetchPrograms()} />}
         emptyIcon={<Briefcase className="size-5 text-muted-foreground" />}
         emptyTitle={t('emptyTitle')}
         emptyDescription={t('emptyDescription')}
@@ -204,12 +192,13 @@ export function ProgramsManager() {
             startDate: editingProgram.startDate,
             endDate: editingProgram.endDate,
             acceptedPaymentMethods: editingProgram.acceptedPaymentMethods ?? ['ONLINE'],
+            cashDepositType: editingProgram.cashDepositType,
+            cashDepositValue: editingProgram.cashDepositValue,
             imageUrl: editingProgram.imageUrl,
             imageUrls: editingProgram.imageUrls,
           }}
           open={true}
           onOpenChange={(v) => { if (!v) setEditingProgram(null); }}
-          cashEnabled={cashEnabled}
         />
       )}
     </>
