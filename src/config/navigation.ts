@@ -27,6 +27,7 @@ import {
   ShieldAlert,
   Network,
   IdCard,
+  MapPin,
 } from 'lucide-react';
 import type { UserRole } from '@/types/auth';
 
@@ -147,6 +148,16 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.invoices',  href: '/dashboard/incubator/invoices',     icon: FileText },
     { labelKey: 'dashboard.wallet',    href: '/dashboard/incubator/wallet',       icon: Wallet },
     { labelKey: 'dashboard.settings',  href: '/dashboard/incubator/settings',     icon: Settings },
+  ],
+  TRAINER: [
+    { labelKey: 'dashboard.overview',    href: '/dashboard/trainer',             icon: LayoutDashboard },
+    { labelKey: 'dashboard.programs',    href: '/dashboard/trainer/programs',    icon: Briefcase       },
+    { labelKey: 'dashboard.events',      href: '/dashboard/trainer/events',      icon: Calendar        },
+    { labelKey: 'dashboard.bookings',    href: '/dashboard/trainer/bookings',    icon: CalendarIcon    },
+    { labelKey: 'dashboard.bookSpace',   href: '/spaces',                        icon: MapPin          },
+    { labelKey: 'dashboard.wallet',      href: '/dashboard/trainer/wallet',      icon: Wallet          },
+    { labelKey: 'dashboard.withdrawals', href: '/dashboard/trainer/withdrawals', icon: ArrowUpCircle   },
+    { labelKey: 'dashboard.settings',    href: '/dashboard/trainer/settings',    icon: Settings        },
   ],
   ADMIN: [
     // ── Platform management ──────────────────────────────────────────────────

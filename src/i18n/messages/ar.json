@@ -290,8 +290,12 @@
       "roleInvestorDesc": "أبحث عن تمويل الشركات الناشئة الجزائرية",
       "roleIncubator": "حاضنة / فضاء عمل مشترك",
       "roleIncubatorDesc": "أدير حاضنة، مسرّعة، أو فضاء عمل مشترك",
+      "roleTrainer": "مدرّب / مركز تدريب / شركة",
+      "roleTrainerDesc": "أقدّم تدريبات، أو أدير مركز تدريب أو شركة تقدّم برامج",
       "incubatorNameLabel": "اسم الحاضنة",
-      "incubatorNamePlaceholder": "مثال: مركز ابتكار الجزائر"
+      "incubatorNamePlaceholder": "مثال: مركز ابتكار الجزائر",
+      "trainerNameLabel": "اسم مركز التدريب / الشركة",
+      "trainerNamePlaceholder": "مثال: أكاديمية وهران للمهارات"
     },
     "verifyOtp": {
       "title": "تحقّق من هاتفك",
@@ -939,7 +943,9 @@
     "partnerNetwork": "شبكة الشركاء",
     "partnerPromoCodes": "رموز الترويج للشركاء",
     "perks": "المزايا",
-    "networkPass": "Metwork Pass"
+    "networkPass": "Metwork Pass",
+    "bookSpace": "حجز فضاء",
+    "withdrawals": "السحوبات"
   },
   "pages": {
     "consultationPay": {
@@ -1280,6 +1286,22 @@
         "networkPass": {
           "title": "Metwork Pass الخاص بي",
           "subtitle": "استخدم بطاقتك لتسجيل الحضور في فضاءات العمل المشترك الشريكة عبر الشبكة."
+        }
+      },
+      "trainer": {
+        "overview": {
+          "title": "نظرة عامة",
+          "subtitle": "برامجك وفعالياتك وحجوزاتك وإيراداتك في لمحة."
+        },
+        "withdrawals": {
+          "title": "السحوبات",
+          "subtitle": "اطلب سحبًا من رصيد محفظتك وتابع حالته."
+        },
+        "settings": {
+          "title": "الإعدادات",
+          "subtitle": "أدِر ملف المدرّب الخاص بك وحسابك.",
+          "subtitleNoProfile": "يتم إعداد ملف المدرّب الخاص بك.",
+          "settingUp": "يتم إعداد ملف المدرّب الخاص بك. يُرجى التواصل مع الدعم إذا استمرت هذه الحالة."
         }
       },
       "incubator": {

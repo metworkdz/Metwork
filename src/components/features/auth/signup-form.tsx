@@ -176,10 +176,14 @@ export function SignupForm() {
           />
         </FormField>
 
-        {/* Incubator name — only shown when role is INCUBATOR */}
-        {selectedRole === 'INCUBATOR' && (
+        {/* Organisation name — shown for INCUBATOR and TRAINER providers */}
+        {(selectedRole === 'INCUBATOR' || selectedRole === 'TRAINER') && (
           <FormField
-            label={t('signup.incubatorNameLabel')}
+            label={
+              selectedRole === 'TRAINER'
+                ? t('signup.trainerNameLabel')
+                : t('signup.incubatorNameLabel')
+            }
             htmlFor="incubatorName"
             error={
               errors.incubatorName &&
@@ -189,7 +193,11 @@ export function SignupForm() {
             <Input
               id="incubatorName"
               autoComplete="organization"
-              placeholder={t('signup.incubatorNamePlaceholder')}
+              placeholder={
+                selectedRole === 'TRAINER'
+                  ? t('signup.trainerNamePlaceholder')
+                  : t('signup.incubatorNamePlaceholder')
+              }
               error={!!errors.incubatorName}
               {...register('incubatorName')}
             />

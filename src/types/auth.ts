@@ -2,14 +2,14 @@
  * User roles in the Metwork platform.
  * These map 1:1 with the `role` enum in the Prisma schema.
  */
-export const USER_ROLES = ['ENTREPRENEUR', 'INVESTOR', 'INCUBATOR', 'ADMIN'] as const;
+export const USER_ROLES = ['ENTREPRENEUR', 'INVESTOR', 'INCUBATOR', 'TRAINER', 'ADMIN'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 /**
  * Roles a user can self-select at signup.
  * ADMIN is provisioned manually only.
  */
-export const SIGNUP_ROLES = ['ENTREPRENEUR', 'INVESTOR', 'INCUBATOR'] as const;
+export const SIGNUP_ROLES = ['ENTREPRENEUR', 'INVESTOR', 'INCUBATOR', 'TRAINER'] as const;
 export type SignupRole = (typeof SIGNUP_ROLES)[number];
 
 export type UserStatus = 'PENDING_VERIFICATION' | 'ACTIVE' | 'SUSPENDED' | 'BANNED';

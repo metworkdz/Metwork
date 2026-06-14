@@ -29,7 +29,7 @@ const patchSchema = z.object({
 });
 
 export async function GET() {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
+  const guard = await requireApiRole(['INCUBATOR', 'ADMIN', 'TRAINER']);
   if (!guard.ok) return guard.response;
 
   const data = await db.read();
@@ -48,7 +48,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
+  const guard = await requireApiRole(['INCUBATOR', 'ADMIN', 'TRAINER']);
   if (!guard.ok) return guard.response;
 
   let body: unknown;

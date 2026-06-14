@@ -22,9 +22,15 @@ import type { IncubatorRecord, UserRecord } from '@/server/db/store';
 interface Props {
   incubator: IncubatorRecord;
   user: Pick<UserRecord, 'id' | 'fullName' | 'email' | 'avatarUrl'>;
+  /**
+   * Whether to show the billing / subscription-tier section. Defaults to true
+   * (incubator behaviour unchanged). Trainers are commission-only and have no
+   * subscription plan, so the trainer settings page passes false.
+   */
+  showSubscriptionTier?: boolean;
 }
 
-export function IncubatorProfileForm({ incubator, user }: Props) {
+export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = true }: Props) {
   const t = useTranslations('incubator.profileForm');
   const [form, setForm] = useState({
     incubatorName: incubator.name,
@@ -75,7 +81,7 @@ export function IncubatorProfileForm({ incubator, user }: Props) {
           city: form.city.trim(),
           website: form.website.trim() || null,
           logoUrl: form.logoUrl.trim() || null,
-          subscriptionTier: form.subscriptionTier,
+          ...(showSubscriptionTier ? { subscriptionTier: form.subscriptionTier } : {}),
           address: form.address.trim() || null,
           commercialRegNumber: form.commercialRegNumber.trim() || null,
           nif: form.nif.trim() || null,
@@ -236,33 +242,35 @@ export function IncubatorProfileForm({ incubator, user }: Props) {
       </Card>
 
       {/* Billing */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <CreditCard className="size-4" /> {t('sectionBilling')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-1.5">
-            <Label>{t('labelSubscriptionTier')}</Label>
-            <Select
-              value={form.subscriptionTier}
-              onValueChange={(v) => setForm((f) => ({ ...f, subscriptionTier: v as 'COMMISSION' | 'FLAT' }))}
-            >
-              <SelectTrigger className="max-w-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="COMMISSION">{t('tierCommission')}</SelectItem>
-                <SelectItem value="FLAT">{t('tierFlat')}</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              {t('tierSwitchHint')}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {showSubscriptionTier && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CreditCard className="size-4" /> {t('sectionBilling')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1.5">
+              <Label>{t('labelSubscriptionTier')}</Label>
+              <Select
+                value={form.subscriptionTier}
+                onValueChange={(v) => setForm((f) => ({ ...f, subscriptionTier: v as 'COMMISSION' | 'FLAT' }))}
+              >
+                <SelectTrigger className="max-w-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="COMMISSION">{t('tierCommission')}</SelectItem>
+                  <SelectItem value="FLAT">{t('tierFlat')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {t('tierSwitchHint')}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">

@@ -169,8 +169,13 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
     };
     d.users.push(user);
 
-    // Auto-create an IncubatorRecord for INCUBATOR-role users.
-    if (role === 'INCUBATOR') {
+    // Auto-create a provider IncubatorRecord for INCUBATOR- and TRAINER-role
+    // users. Trainers reuse the exact same record + managerId-linking pattern;
+    // the only difference is the providerType discriminator (and that they get
+    // no Spaces/subscription sections in their dashboard). Bootstrap-admin
+    // promotion above only applies to INCUBATOR, so a TRAINER always lands as
+    // a plain provider record.
+    if (role === 'INCUBATOR' || role === 'TRAINER') {
       const incubatorId = randomUUID();
       const incubatorName =
         pending.incubatorName?.trim() || pending.fullName.trim();
@@ -180,6 +185,8 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
         description:      '',
         city:             pending.city,
         managerId:        userId,
+        /** Distinguishes trainers from incubators; INCUBATOR keeps the legacy default. */
+        providerType:     role === 'TRAINER' ? 'TRAINER' : 'INCUBATOR',
         /** email is required by findIncubatorByUserEmail for the fast lookup path */
         email:            pending.email,
         phone:            pending.phone,

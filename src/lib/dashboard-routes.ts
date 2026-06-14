@@ -5,6 +5,7 @@ const DASHBOARD_BY_ROLE: Record<UserRole, string> = {
   ENTREPRENEUR: '/dashboard/entrepreneur',
   INVESTOR: '/dashboard/investor',
   INCUBATOR: '/dashboard/incubator',
+  TRAINER: '/dashboard/trainer',
 };
 
 /** Resolve the role-specific dashboard landing path. */

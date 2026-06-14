@@ -53,7 +53,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
+  const guard = await requireApiRole(['INCUBATOR', 'ADMIN', 'TRAINER']);
   if (!guard.ok) return guard.response;
   const { id } = await params;
 
@@ -125,7 +125,7 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
+  const guard = await requireApiRole(['INCUBATOR', 'ADMIN', 'TRAINER']);
   if (!guard.ok) return guard.response;
   const { id } = await params;
 

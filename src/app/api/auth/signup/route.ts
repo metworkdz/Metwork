@@ -86,7 +86,10 @@ export async function POST(req: NextRequest) {
     role: input.role,
     city: input.city,
     locale,
-    incubatorName: input.role === 'INCUBATOR' ? input.incubatorName?.trim() : undefined,
+    incubatorName:
+      input.role === 'INCUBATOR' || input.role === 'TRAINER'
+        ? input.incubatorName?.trim()
+        : undefined,
     sex: input.sex,
   });
 

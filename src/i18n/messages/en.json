@@ -290,8 +290,12 @@
       "roleInvestorDesc": "I'm looking to fund Algerian startups",
       "roleIncubator": "Incubator / coworking space",
       "roleIncubatorDesc": "I run an incubator, accelerator, or coworking space",
+      "roleTrainer": "Trainer / Training center / Company",
+      "roleTrainerDesc": "I run trainings, a training center, or a company offering programs",
       "incubatorNameLabel": "Incubator name",
-      "incubatorNamePlaceholder": "e.g. Algiers Innovation Hub"
+      "incubatorNamePlaceholder": "e.g. Algiers Innovation Hub",
+      "trainerNameLabel": "Training center / company name",
+      "trainerNamePlaceholder": "e.g. Oran Skills Academy"
     },
     "verifyOtp": {
       "title": "Verify your phone",
@@ -939,7 +943,9 @@
     "partnerNetwork": "Partner Network",
     "partnerPromoCodes": "Partner Promo Codes",
     "perks": "Perks",
-    "networkPass": "Metwork Pass"
+    "networkPass": "Metwork Pass",
+    "bookSpace": "Book a space",
+    "withdrawals": "Withdrawals"
   },
   "pages": {
     "consultationPay": {
@@ -1280,6 +1286,22 @@
         "networkPass": {
           "title": "My Metwork Pass",
           "subtitle": "Use your pass to check in at partner coworking spaces across the network."
+        }
+      },
+      "trainer": {
+        "overview": {
+          "title": "Overview",
+          "subtitle": "Your programs, events, bookings, and revenue at a glance."
+        },
+        "withdrawals": {
+          "title": "Withdrawals",
+          "subtitle": "Request a payout from your wallet balance and track its status."
+        },
+        "settings": {
+          "title": "Settings",
+          "subtitle": "Manage your trainer profile and account.",
+          "subtitleNoProfile": "Your trainer profile is being set up.",
+          "settingUp": "Your trainer profile is being set up. Please contact support if this persists."
         }
       },
       "incubator": {

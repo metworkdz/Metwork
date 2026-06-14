@@ -63,6 +63,7 @@ export default async function AdminDashboard({ params }: PageProps) {
     ENTREPRENEUR: 0,
     INVESTOR: 0,
     INCUBATOR: 0,
+    TRAINER: 0,
     ADMIN: 0,
   };
   for (const log of deletionLogs) {

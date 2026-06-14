@@ -30,7 +30,7 @@ const MIME_TO_EXT: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
+  const guard = await requireApiRole(['INCUBATOR', 'ADMIN', 'TRAINER']);
   if (!guard.ok) return guard.response;
 
   let form: FormData;

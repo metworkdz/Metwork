@@ -403,6 +403,14 @@ export interface IncubatorRecord {
   city: string;
   /** References UserRecord.id — the INCUBATOR-role user that manages this profile */
   managerId?: string | null;
+  /**
+   * Provider discriminator. Additive & nullable for backward compatibility:
+   * missing/null ⇒ 'INCUBATOR' (every pre-existing record and all managerId
+   * lookups keep working unchanged). 'TRAINER' marks a trainer / training
+   * centre / company that can post programs & events and receive payments,
+   * but cannot manage spaces and has no subscription plan.
+   */
+  providerType?: 'INCUBATOR' | 'TRAINER';
   status: IncubatorStatus;
   website?: string | null;
   /** Billing model — legacy alias. Prefer subscriptionCode. */

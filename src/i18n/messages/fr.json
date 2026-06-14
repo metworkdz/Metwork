@@ -290,8 +290,12 @@
       "roleInvestorDesc": "Je cherche à financer des startups algériennes",
       "roleIncubator": "Incubateur / espace de coworking",
       "roleIncubatorDesc": "Je gère un incubateur, accélérateur ou coworking",
+      "roleTrainer": "Formateur / Centre de formation / Entreprise",
+      "roleTrainerDesc": "Je propose des formations, gère un centre de formation ou une entreprise avec des programmes",
       "incubatorNameLabel": "Nom de l'incubateur",
-      "incubatorNamePlaceholder": "ex. Hub Innovation Alger"
+      "incubatorNamePlaceholder": "ex. Hub Innovation Alger",
+      "trainerNameLabel": "Nom du centre de formation / de l'entreprise",
+      "trainerNamePlaceholder": "ex. Académie des Compétences d'Oran"
     },
     "verifyOtp": {
       "title": "Vérifiez votre téléphone",
@@ -939,7 +943,9 @@
     "partnerNetwork": "Réseau Partenaires",
     "partnerPromoCodes": "Codes Promo Partenaires",
     "perks": "Avantages",
-    "networkPass": "Metwork Pass"
+    "networkPass": "Metwork Pass",
+    "bookSpace": "Réserver un espace",
+    "withdrawals": "Retraits"
   },
   "pages": {
     "consultationPay": {
@@ -1280,6 +1286,22 @@
         "networkPass": {
           "title": "Mon Metwork Pass",
           "subtitle": "Utilisez votre pass pour vous enregistrer dans les espaces coworking partenaires."
+        }
+      },
+      "trainer": {
+        "overview": {
+          "title": "Aperçu",
+          "subtitle": "Vos programmes, événements, réservations et revenus en un coup d'œil."
+        },
+        "withdrawals": {
+          "title": "Retraits",
+          "subtitle": "Demandez un retrait du solde de votre portefeuille et suivez son statut."
+        },
+        "settings": {
+          "title": "Paramètres",
+          "subtitle": "Gérez votre profil de formateur et votre compte.",
+          "subtitleNoProfile": "Votre profil de formateur est en cours de configuration.",
+          "settingUp": "Votre profil de formateur est en cours de configuration. Veuillez contacter le support si cela persiste."
         }
       },
       "incubator": {
