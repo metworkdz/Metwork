@@ -19,6 +19,8 @@ const patchSchema = z.object({
   imageUrl: z.string().url().nullable().optional(),
   imageUrls: z.array(z.string().url()).max(8).optional(),
   price: z.number().int().nonnegative().optional(),
+  onlinePrice: z.number().int().nonnegative().nullable().optional(),
+  cashPrice: z.number().int().nonnegative().nullable().optional(),
   isOnline: z.boolean().optional(),
   capacity: z.number().int().positive().optional(),
   eventDate: z.string().datetime({ offset: true }).optional(),
@@ -92,6 +94,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       event.imageUrl = input.imageUrls[0] ?? null;
     }
     if (input.price !== undefined) event.price = input.price;
+    if (input.onlinePrice !== undefined) event.onlinePrice = input.onlinePrice;
+    if (input.cashPrice !== undefined) event.cashPrice = input.cashPrice;
     if (input.isOnline !== undefined) event.isOnline = input.isOnline;
     if (input.capacity !== undefined) event.capacity = input.capacity;
     if (input.eventDate !== undefined) event.eventDate = input.eventDate;

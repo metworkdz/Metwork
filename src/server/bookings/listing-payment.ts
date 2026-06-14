@@ -47,3 +47,44 @@ export function normalizeDepositConfig(
   if (!methods?.includes('CASH') || !type || value == null) return {};
   return { cashDepositType: type, cashDepositValue: value };
 }
+
+/* ─────────────────────── Dual pricing (online / cash) ─────────────────────── */
+
+/** Booking surface that selects the base price for a single-price listing. */
+export type ListingPriceMode = 'ONLINE_FULL' | 'CASH_DEPOSIT';
+
+export interface SplitPricing {
+  onlinePrice?: number | null;
+  cashPrice?: number | null;
+}
+
+/**
+ * Effective base price (integer DZD) for a PROGRAM/EVENT, picking the
+ * online/cash split when configured and falling back to the single `price`
+ * field otherwise. Fully backward compatible: a listing with neither override
+ * always resolves to `price` on both surfaces.
+ */
+export function effectiveListingPrice(
+  price: number,
+  split: SplitPricing | undefined,
+  mode: ListingPriceMode,
+): number {
+  const candidate = mode === 'CASH_DEPOSIT' ? split?.cashPrice : split?.onlinePrice;
+  if (candidate != null && Number.isFinite(candidate) && candidate >= 0) return Math.round(candidate);
+  return price;
+}
+
+/**
+ * Validate optional split-price overrides. Returns null when valid, or a
+ * human-readable message. Each override is optional; when present it must be a
+ * non-negative integer.
+ */
+export function validateSplitPricing(split: SplitPricing | undefined): string | null {
+  for (const v of [split?.onlinePrice, split?.cashPrice]) {
+    if (v == null) continue;
+    if (!Number.isFinite(v) || v < 0 || !Number.isInteger(v)) {
+      return 'Online and cash prices must be non-negative whole numbers';
+    }
+  }
+  return null;
+}

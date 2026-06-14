@@ -58,6 +58,9 @@ export default async function BookingPayPage({ params }: PageProps) {
 
   const isDeposit = view.paymentMode === 'CASH_DEPOSIT';
   const cashRemaining = view.cashRemaining ?? 0;
+  const onlineBase = view.onlineAmount ?? 0;
+  const payerFee = view.payerFee ?? 0;
+  const onlineCharge = view.onlineCharge ?? onlineBase + payerFee;
 
   return (
     <section className="py-14 sm:py-20">
@@ -89,11 +92,21 @@ export default async function BookingPayPage({ params }: PageProps) {
                   {isDeposit && cashRemaining > 0 && (
                     <Row label={t('cashOnSite')} value={fmtAmount(cashRemaining)} />
                   )}
+                  {/* Online charge breakdown: base portion + platform fee. */}
+                  {payerFee > 0 && (
+                    <>
+                      <Row
+                        label={isDeposit ? t('depositBase') : t('subtotal')}
+                        value={fmtAmount(onlineBase)}
+                      />
+                      <Row label={t('platformFee')} value={`+ ${fmtAmount(payerFee)}`} />
+                    </>
+                  )}
                   <div className="flex items-center justify-between bg-emerald-50/60 px-4 py-3">
                     <dt className="font-semibold text-emerald-800">
                       {isDeposit ? t('depositDue') : t('amountDue')}
                     </dt>
-                    <dd className="text-base font-bold text-emerald-800">{fmtAmount(view.onlineAmount ?? 0)}</dd>
+                    <dd className="text-base font-bold text-emerald-800">{fmtAmount(onlineCharge)}</dd>
                   </div>
                 </dl>
 

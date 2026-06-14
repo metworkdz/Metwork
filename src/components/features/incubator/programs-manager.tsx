@@ -187,6 +187,8 @@ export function ProgramsManager() {
             type: editingProgram.type,
             city: editingProgram.city,
             price: editingProgram.price,
+            onlinePrice: editingProgram.onlinePrice,
+            cashPrice: editingProgram.cashPrice,
             seatsTotal: editingProgram.seatsTotal,
             deadline: editingProgram.deadline,
             startDate: editingProgram.startDate,

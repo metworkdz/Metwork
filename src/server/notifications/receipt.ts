@@ -61,7 +61,8 @@ type LangKey =
   | 'phone'        | 'consultant'     | 'requested'
   | 'consultNote'
   | 'depositReceipt' | 'card'         | 'depositPaid'
-  | 'cashBalance'    | 'paidInFull'   | 'awaitingCashPay';
+  | 'cashBalance'    | 'paidInFull'   | 'awaitingCashPay'
+  | 'platformFee'    | 'chargedOnline';
 
 const T: Record<ReceiptLang, Record<LangKey, string>> = {
   en: {
@@ -111,6 +112,8 @@ const T: Record<ReceiptLang, Record<LangKey, string>> = {
     cashBalance:   'Balance (cash on-site)',
     paidInFull:    'Paid in full',
     awaitingCashPay:'Awaiting cash on-site',
+    platformFee:   'Platform fee',
+    chargedOnline: 'Charged online (card)',
   },
   fr: {
     receipt:       'REÇU',
@@ -159,6 +162,8 @@ const T: Record<ReceiptLang, Record<LangKey, string>> = {
     cashBalance:   'Solde (espèces sur place)',
     paidInFull:    'Payé intégralement',
     awaitingCashPay:'En attente d’espèces sur place',
+    platformFee:   'Frais de plateforme',
+    chargedOnline: 'Débité en ligne (carte)',
   },
 };
 
@@ -534,6 +539,7 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
     : 'standard');
   const onlinePaid = booking.onlinePaidAmount ?? 0;
   const cashBalance = booking.cashRemainingAmount ?? 0;
+  const payerFee = booking.payerFeeAmount ?? 0;
 
   // Pre-fetch images in parallel (non-blocking — failures return null)
   const [logoBuffer, stampBuffer] = await Promise.all([
@@ -583,6 +589,8 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
   if (isCashDeposit) {
     // Deposit / balance split for CASH_DEPOSIT card bookings.
     drawRow(doc, t.depositPaid, fmt(onlinePaid), { bold: true });
+    // Payer-side platform fee charged on top of the deposit (when applied).
+    if (payerFee > 0) drawRow(doc, t.platformFee, `+ ${fmt(payerFee)}`);
     drawRow(
       doc,
       t.cashBalance,
@@ -591,6 +599,8 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
         : `${fmt(cashBalance)} — ${t.awaitingCashPay}`,
     );
   } else {
+    // Payer-side platform fee charged on top of the online payment (when applied).
+    if (payerFee > 0) drawRow(doc, t.platformFee, `+ ${fmt(payerFee)}`);
     drawRow(doc, t.status, statusLabel(booking.status, t));
   }
   drawDivider(doc);

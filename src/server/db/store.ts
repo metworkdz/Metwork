@@ -344,10 +344,29 @@ export interface BookingRecord {
   onlinePaidAmount?: number;
   /** Cash still due on site (T − D for CASH_DEPOSIT, 0 for ONLINE_FULL). */
   cashRemainingAmount?: number;
-  /** Platform commission charged on the TOTAL (0 for non-commission subs). */
+  /**
+   * Receiver-side platform commission taken from the provider at settlement
+   * (0 for FLAT/Pro subs). Central commission engine output. Historically this
+   * was computed on the TOTAL; under the engine it is computed on the ONLINE
+   * portion that flows through the platform (D for deposits, T for full).
+   */
   commissionAmount?: number;
-  /** Commission rate snapshot at settlement (decimal 0–1). */
+  /** Receiver commission rate snapshot at settlement (decimal 0–1). */
   commissionRate?: number;
+  /**
+   * Payer-side fee added ON TOP of the online portion and charged to the buyer
+   * (integer DZD). Central commission engine output. Additive & nullable —
+   * legacy bookings settled before the engine leave this undefined (⇒ 0).
+   */
+  payerFeeAmount?: number;
+  /** Payer-fee rate snapshot at settlement (decimal 0–1). */
+  payerFeeRate?: number;
+  /**
+   * Total charged to the buyer online by card = online base portion + payer
+   * fee. Additive & nullable — when absent, callers fall back to
+   * onlinePaidAmount (legacy, fee-free).
+   */
+  onlineChargeAmount?: number;
   /** Payment lifecycle. 'AWAITING_CASH' after deposit; 'PAID' once settled. */
   paymentStatus?: BookingPaymentStatus;
   /** Idempotency stamp — set once the wallet settlement has been applied. */
@@ -584,6 +603,16 @@ export interface SpaceRecord {
   pricePerHour: number | null;
   pricePerDay: number | null;
   pricePerMonth: number | null;
+  /**
+   * Optional CASH-booking per-unit prices (integer DZD). Additive & nullable:
+   * when set, a CASH (deposit + cash-on-site) booking is priced from these;
+   * when absent, it falls back to the matching pricePer* above — so legacy
+   * listings keep their single price for both online and cash. The online-card
+   * (ONLINE_FULL) booking always uses pricePer* above.
+   */
+  cashPricePerHour?: number | null;
+  cashPricePerDay?: number | null;
+  cashPricePerMonth?: number | null;
   capacity: number;
   amenities: string[];
   /**
@@ -639,6 +668,14 @@ export interface ProgramRecord {
   /** Ordered gallery; imageUrls[0] is the cover and is kept in sync with imageUrl. Additive — legacy records lack this. */
   imageUrls?: string[];
   price: number;
+  /**
+   * Optional split pricing (integer DZD). Additive & nullable: when set, an
+   * ONLINE_FULL booking is priced from onlinePrice and a CASH (deposit +
+   * cash-on-site) booking from cashPrice. When either is absent it falls back
+   * to `price`, so legacy programs keep a single price for both surfaces.
+   */
+  onlinePrice?: number | null;
+  cashPrice?: number | null;
   seatsTotal: number;
   deadline: string;
   startDate: string;
@@ -670,6 +707,14 @@ export interface EventRecord {
   /** Ordered gallery; imageUrls[0] is the cover and is kept in sync with imageUrl. Additive — legacy records lack this. */
   imageUrls?: string[];
   price: number;
+  /**
+   * Optional split pricing (integer DZD). Additive & nullable: when set, an
+   * ONLINE_FULL booking is priced from onlinePrice and a CASH (deposit +
+   * cash-on-site) booking from cashPrice. When either is absent it falls back
+   * to `price`, so legacy events keep a single price for both surfaces.
+   */
+  onlinePrice?: number | null;
+  cashPrice?: number | null;
   isOnline: boolean;
   capacity: number;
   eventDate: string;
@@ -1231,8 +1276,28 @@ export interface PlatformConfig {
   semesterlyMonths: number;
   /** Yearly discount percentage applied on top of monthly rate. Default 30 (= 30%). */
   yearlyDiscountPercent: number;
-  /** Commission rate (0–1) taken on bookings for COMMISSION-plan incubators. Default 0.20. */
+  /**
+   * Legacy flat booking commission (0–1) for COMMISSION-plan incubators.
+   * SUPERSEDED by the central commission engine (receiverCommissionRate +
+   * payerFeeRate). Kept for backward-compatible reads; no longer the
+   * settlement source. Default 0.20.
+   */
   commissionRate: number;
+
+  // ─── Central commission engine (admin-configurable) ──────────────────
+  /**
+   * Receiver-side commission (0–1) taken FROM the account holder on platform
+   * payments + online cash deposits. COMMISSION-plan incubators & all trainers
+   * pay this; FLAT (Pro) incubators are exempt (0). Default 0.05. Additive &
+   * nullable — missing ⇒ engine default (0.05).
+   */
+  receiverCommissionRate?: number;
+  /**
+   * Payer-side fee (0–1) added ON TOP of the base, charged to the buyer on
+   * platform payments + online cash deposits. Applies on EVERY plan (FLAT
+   * included). Default 0.02. Additive & nullable — missing ⇒ engine default.
+   */
+  payerFeeRate?: number;
 
   // ─── Network Pass credit allowances (admin-configurable) ─────────────
   /** Monthly pass credits for Builder-tier users. Default 3. */
@@ -1250,6 +1315,8 @@ export const defaultPlatformConfig: PlatformConfig = {
   semesterlyMonths: 6,
   yearlyDiscountPercent: 30,
   commissionRate: 0.20,
+  receiverCommissionRate: 0.05,
+  payerFeeRate: 0.02,
   builderMonthlyCredits: 3,
   founderMonthlyCredits: 10,
 };

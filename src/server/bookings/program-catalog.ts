@@ -20,6 +20,8 @@ function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
     imageUrl:               r.imageUrl,
     imageUrls:              r.imageUrls?.length ? r.imageUrls : (r.imageUrl ? [r.imageUrl] : []),
     price:                  r.price,
+    onlinePrice:            r.onlinePrice ?? null,
+    cashPrice:              r.cashPrice ?? null,
     seatsTotal:             r.seatsTotal,
     seatsTaken,
     deadline:               r.deadline,

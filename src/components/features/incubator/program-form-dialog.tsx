@@ -41,7 +41,8 @@ interface ProgramFormDialogProps {
   editId?: string;
   initialData?: {
     title?: string; description?: string; type?: ProgramType; city?: string;
-    price?: number; seatsTotal?: number; deadline?: string; startDate?: string;
+    price?: number; onlinePrice?: number | null; cashPrice?: number | null;
+    seatsTotal?: number; deadline?: string; startDate?: string;
     endDate?: string; acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
     imageUrls?: string[] | null;
     cashDepositType?: 'FIXED' | 'PERCENT'; cashDepositValue?: number;
@@ -64,6 +65,8 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
   const [type, setType] = useState<ProgramType>('INCUBATION');
   const [city, setCity] = useState('');
   const [price, setPrice] = useState('0');
+  const [onlinePrice, setOnlinePrice] = useState('');
+  const [cashPrice, setCashPrice] = useState('');
   const [seatsTotal, setSeatsTotal] = useState('20');
   const [deadline, setDeadline] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -81,6 +84,8 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
       setType(initialData.type ?? 'INCUBATION');
       setCity(initialData.city ?? '');
       setPrice(initialData.price != null ? String(initialData.price) : '0');
+      setOnlinePrice(initialData.onlinePrice != null ? String(initialData.onlinePrice) : '');
+      setCashPrice(initialData.cashPrice != null ? String(initialData.cashPrice) : '');
       setSeatsTotal(initialData.seatsTotal != null ? String(initialData.seatsTotal) : '20');
       // FIX: BUG-2 — convert ISO date strings back to YYYY-MM-DD for date inputs
       setDeadline(initialData.deadline ? initialData.deadline.substring(0, 10) : '');
@@ -110,7 +115,8 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
 
   function reset() {
     setTitle(''); setDescription(''); setType('INCUBATION'); setCity('');
-    setPrice('0'); setSeatsTotal('20'); setDeadline(''); setStartDate(''); setEndDate('');
+    setPrice('0'); setOnlinePrice(''); setCashPrice('');
+    setSeatsTotal('20'); setDeadline(''); setStartDate(''); setEndDate('');
     setAcceptedMethods(['ONLINE', 'CASH']);
     setDepositType('PERCENT'); setDepositValue('10');
     setImageUrls([]);
@@ -156,6 +162,8 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
           type,
           city,
           price: Number(price),
+          onlinePrice: onlinePrice.trim() === '' ? null : Number(onlinePrice),
+          cashPrice: cashPrice.trim() === '' ? null : Number(cashPrice),
           seatsTotal: Number(seatsTotal),
           deadline: toIso(deadline),
           startDate: toIso(startDate),
@@ -274,6 +282,37 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
             <div>
               <Label htmlFor="p-end">{t('labelEndDate')}</Label>
               <Input id="p-end" type="date" className="mt-1" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border bg-muted/30 p-3">
+            <p className="text-sm font-medium">{t('labelSplitPricing')}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t('splitPricingHint')}</p>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="p-online-price">{t('labelOnlinePrice')}</Label>
+                <Input
+                  id="p-online-price"
+                  type="number"
+                  min="0"
+                  className="mt-1"
+                  placeholder={price}
+                  value={onlinePrice}
+                  onChange={(e) => setOnlinePrice(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="p-cash-price">{t('labelCashPrice')}</Label>
+                <Input
+                  id="p-cash-price"
+                  type="number"
+                  min="0"
+                  className="mt-1"
+                  placeholder={price}
+                  value={cashPrice}
+                  onChange={(e) => setCashPrice(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 

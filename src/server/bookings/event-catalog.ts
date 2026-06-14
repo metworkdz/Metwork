@@ -19,6 +19,8 @@ function fromRecord(r: EventRecord, attendeeCount = 0): PlatformEvent {
     imageUrl:               r.imageUrl,
     imageUrls:              r.imageUrls?.length ? r.imageUrls : (r.imageUrl ? [r.imageUrl] : []),
     price:                  r.price,
+    onlinePrice:            r.onlinePrice ?? null,
+    cashPrice:              r.cashPrice ?? null,
     isOnline:               r.isOnline,
     capacity:               r.capacity,
     attendeeCount,

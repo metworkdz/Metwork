@@ -663,7 +663,11 @@
       "createEvent": "Create event",
       "errorUpdate": "Failed to update event.",
       "errorCreate": "Failed to create event.",
-      "errorNetwork": "Network error — try again."
+      "errorNetwork": "Network error — try again.",
+      "labelSplitPricing": "Online & cash pricing (optional)",
+      "splitPricingHint": "Leave empty to use the base price for both. Set a different price for online card payment or cash bookings.",
+      "labelOnlinePrice": "Online price",
+      "labelCashPrice": "Cash price"
     },
     "eventsManager": {
       "loading": "Loading…",
@@ -824,7 +828,11 @@
       "createProgram": "Create program",
       "errorUpdate": "Failed to update program.",
       "errorCreate": "Failed to create program.",
-      "errorNetwork": "Network error — try again."
+      "errorNetwork": "Network error — try again.",
+      "labelSplitPricing": "Online & cash pricing (optional)",
+      "splitPricingHint": "Leave empty to use the base price for both. Set a different price for online card payment or cash bookings.",
+      "labelOnlinePrice": "Online price",
+      "labelCashPrice": "Cash price"
     },
     "receiptModal": {
       "loading": "Loading…",
@@ -909,7 +917,9 @@
       "errorPricing": "Set at least one pricing option (hourly, daily, or monthly).",
       "errorUpdate": "Failed to update space.",
       "errorCreate": "Failed to create space.",
-      "errorNetwork": "Network error — try again."
+      "errorNetwork": "Network error — try again.",
+      "labelCashPricing": "Cash pricing (optional)",
+      "cashPricingHint": "Optional per-unit prices for cash bookings. Leave empty to use the online prices above."
     }
   },
   "dashboard": {
@@ -1001,7 +1011,10 @@
       "slotTakenDesc": "Unfortunately this slot was taken before your payment completed. Any amount charged will be refunded.",
       "invalidTitle": "Link not found",
       "invalidDesc": "This payment link is invalid. Please check the link you were given.",
-      "backHome": "Back to home"
+      "backHome": "Back to home",
+      "subtotal": "Subtotal",
+      "depositBase": "Deposit",
+      "platformFee": "Platform fee"
     },
     "programs": {
       "title": "Programs",
@@ -2464,7 +2477,14 @@
       "rateError": "Enter a value between 0 and 100",
       "appliesTo": "Applies to:",
       "enable": "Enable",
-      "disable": "Disable"
+      "disable": "Disable",
+      "engineTitle": "Platform commission engine",
+      "engineDescription": "The platform's take on every payment and online cash deposit: a cut from the account holder plus a fee from the payer.",
+      "receiverRate": "Receiver commission (account holder)",
+      "payerRate": "Payer fee (buyer)",
+      "totalTake": "Total platform take",
+      "savedNotice": "Saved. Applies to new transactions.",
+      "engineHint": "Applies to commission-plan incubators and trainers. Pro (flat-fee) incubators are exempt from the receiver commission; their buyers still pay the payer fee."
     },
     "withdrawals": {
       "pendingReview": "Pending review",

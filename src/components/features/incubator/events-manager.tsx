@@ -176,6 +176,8 @@ export function EventsManager() {
             description: editingEvent.description,
             city: editingEvent.city,
             price: editingEvent.price,
+            onlinePrice: editingEvent.onlinePrice,
+            cashPrice: editingEvent.cashPrice,
             capacity: editingEvent.capacity,
             isOnline: editingEvent.isOnline,
             eventDate: editingEvent.eventDate,

@@ -24,12 +24,17 @@
  *     (`getSlickPayTransferStatus`) or by a synchronous provider result — never
  *     by trusting the browser redirect.
  *
- * Incubator wallet at settlement (commission-subscription incubators):
- *   +onlinePaidAmount   (PAYOUT — the online card money received)
- *   −commissionAmount   (COMMISSION — platform cut on the TOTAL T)
- * The net may go NEGATIVE when C > D on a CASH_DEPOSIT booking; that is an
- * intentional debt the incubator must recharge. FLAT/Pro incubators pay 0
- * commission, so they are only credited.
+ * Money model — central commission engine (src/server/payments/commission.ts):
+ *   The buyer is charged the online base portion P (deposit D for CASH_DEPOSIT,
+ *   total T for ONLINE_FULL) PLUS a payer fee (default 2 % of P) frozen at
+ *   intent. At settlement the provider wallet moves:
+ *     +onlinePaidAmount   (PAYOUT — the online BASE money received, P)
+ *     −commissionAmount   (COMMISSION — receiver cut on P, default 5 %)
+ *   Because the receiver commission is taken on the ONLINE portion P (never the
+ *   cash remainder), net = P − commission is always ≥ 0 — no negative debt.
+ *   FLAT/Pro incubators are exempt from the receiver commission (credited the
+ *   full P) but their buyers still pay the payer fee. The payer fee is platform
+ *   revenue and is never credited to the provider.
  */
 import { randomUUID } from 'node:crypto';
 import {
@@ -43,11 +48,13 @@ import {
   type WalletRecord,
 } from '@/server/db/store';
 import { countAttendance } from '@/server/attendance';
+import { computeDeposit } from './pricing';
+import { effectiveListingPrice } from './listing-payment';
 import {
-  computeDeposit,
-  computeCommission,
-  effectiveCommissionRate,
-} from './pricing';
+  computeCommission as quoteCommission,
+  type ProviderPlan,
+} from '@/server/payments/commission';
+import { getEffectiveSubscriptionCode } from '@/server/incubator/service';
 import {
   computeQuantity,
   validateWorkingHours,
@@ -124,8 +131,12 @@ export type CardPayState =
 export interface CardPayView {
   state: CardPayState;
   booking?: BookingRecord;
-  /** Amount charged online now (deposit D for CASH_DEPOSIT, total T for ONLINE_FULL). */
+  /** Base online portion P (deposit D for CASH_DEPOSIT, total T for ONLINE_FULL), fee EXCLUDED. */
   onlineAmount?: number;
+  /** Payer fee added on top of P (default 2 %). 0 for legacy/fee-free bookings. */
+  payerFee?: number;
+  /** GROSS charged online now = onlineAmount + payerFee. What the buyer actually pays. */
+  onlineCharge?: number;
   total?: number;
   cashRemaining?: number;
   paymentMode?: BookingPaymentMode;
@@ -201,13 +212,17 @@ function resolveTarget(
   const fraction = Math.min(1, Math.max(0, input.membershipDiscount ?? 0));
   const activeInc = (id: string) =>
     (data.incubators ?? []).some((i) => i.id === id && i.status === 'ACTIVE');
+  // Booking surface selects the base price: ONLINE_FULL → online price,
+  // CASH_DEPOSIT → cash price (with per-listing fallback to the single price).
+  const priceMode: BookingPaymentMode =
+    input.paymentMode === 'CASH_DEPOSIT' ? 'CASH_DEPOSIT' : 'ONLINE_FULL';
 
   if (input.target.itemKind === 'SPACE') {
     const t = input.target;
     const rec = (data.spaces ?? []).find((s) => s.id === t.spaceId);
     if (!rec || !rec.isActive || !activeInc(rec.incubatorId)) return { ok: false, reason: 'ITEM_NOT_FOUND' };
 
-    const price = unitPrice(rec, t.unit);
+    const price = unitPrice(rec, t.unit, priceMode);
     if (price == null) {
       return { ok: false, reason: 'UNIT_NOT_AVAILABLE', detail: { available: availableUnits(rec) } };
     }
@@ -259,7 +274,7 @@ function resolveTarget(
         quantity: 1,
         startsAt: rec.startDate,
         endsAt: rec.endDate,
-        total: rec.price,
+        total: effectiveListingPrice(rec.price, rec, priceMode),
         acceptedPaymentMethods: rec.acceptedPaymentMethods,
         cashDepositType: rec.cashDepositType,
         cashDepositValue: rec.cashDepositValue,
@@ -272,7 +287,8 @@ function resolveTarget(
   const rec = (data.events ?? []).find((e) => e.id === (input.target as { eventId: string }).eventId);
   if (!rec || !rec.isActive || !activeInc(rec.incubatorId)) return { ok: false, reason: 'ITEM_NOT_FOUND' };
   if (Date.parse(rec.eventDate) <= Date.now()) return { ok: false, reason: 'EVENT_PASSED', detail: { eventDate: rec.eventDate } };
-  const total = fraction > 0 && rec.price > 0 ? Math.round(rec.price * (1 - fraction)) : rec.price;
+  const eventBase = effectiveListingPrice(rec.price, rec, priceMode);
+  const total = fraction > 0 && eventBase > 0 ? Math.round(eventBase * (1 - fraction)) : eventBase;
   return {
     ok: true,
     item: {
@@ -407,6 +423,21 @@ export async function createCardBookingIntent(
     }
     if (total <= 0) return { ok: false, reason: 'INVALID_TOTAL' };
 
+    // ── Freeze the payer-side fee on the online portion P (central engine) ──
+    // The buyer is charged P + payerFee online; the fee is locked here so the
+    // pay page and the hosted-checkout amount honor the quote at intent time.
+    // The receiver commission is (re)computed at settlement against the plan.
+    const feeIncubator = findOwningIncubator(d, item.promoKind, item.itemId);
+    const feePlan: ProviderPlan = feeIncubator
+      ? getEffectiveSubscriptionCode(feeIncubator)
+      : 'COMMISSION';
+    const feeQuote = quoteCommission({
+      transactionType: 'PAYMENT',
+      providerPlan: feePlan,
+      baseAmount: onlinePaidAmount,
+      config: d.meta?.platformConfig,
+    });
+
     const now = new Date().toISOString();
     const token = randomUUID();
     const booking: BookingRecord = {
@@ -435,6 +466,9 @@ export async function createCardBookingIntent(
       paymentMode: input.paymentMode,
       onlinePaidAmount,
       cashRemainingAmount,
+      payerFeeAmount: feeQuote.payerFee,
+      payerFeeRate: feeQuote.payerRate,
+      onlineChargeAmount: feeQuote.grossChargedToPayer,
       paymentStatus: undefined,
       settledAt: null,
       payToken: token,
@@ -466,10 +500,14 @@ function isExpired(b: BookingRecord): boolean {
 }
 
 function viewFor(b: BookingRecord, state: CardPayState): CardPayView {
+  const onlineAmount = b.onlinePaidAmount ?? 0;
+  const payerFee = b.payerFeeAmount ?? 0;
   return {
     state,
     booking: b,
-    onlineAmount: b.onlinePaidAmount ?? 0,
+    onlineAmount,
+    payerFee,
+    onlineCharge: b.onlineChargeAmount ?? onlineAmount + payerFee,
     total: b.totalAmount,
     cashRemaining: b.cashRemainingAmount ?? 0,
     paymentMode: b.paymentMode,
@@ -551,14 +589,24 @@ async function applyCardSettlement(bookingId: string, providerRef: string | null
     if (providerRef) booking.paymentProviderRef = providerRef;
     booking.updatedAt = now;
 
-    // ── Incubator wallet: +online received, −commission on the TOTAL ──────
+    // ── Incubator wallet: +online base received, −receiver commission ─────
+    // Central commission engine. Receiver commission is taken on the ONLINE
+    // portion P (deposit D or full T) — never the cash remainder — so the net
+    // credited (P − commission) is always ≥ 0. FLAT/Pro incubators are exempt.
     const incubator = findOwningIncubator(d, booking.itemKind, booking.itemId);
-    const rate = incubator ? effectiveCommissionRate(incubator) : 0;
-    const commission = computeCommission(booking.totalAmount, rate);
-    booking.commissionRate = rate;
-    booking.commissionAmount = commission;
-
     const online = booking.onlinePaidAmount ?? 0;
+    const providerPlan: ProviderPlan = incubator
+      ? getEffectiveSubscriptionCode(incubator)
+      : 'COMMISSION';
+    const quote = quoteCommission({
+      transactionType: 'PAYMENT',
+      providerPlan,
+      baseAmount: online,
+      config: d.meta?.platformConfig,
+    });
+    const commission = quote.receiverCommission;
+    booking.commissionRate = quote.receiverRate;
+    booking.commissionAmount = commission;
     if (incubator?.managerId) {
       const wallet = ensureWallet(d, incubator.managerId);
       // Credit the online card money received (deposit or full).
@@ -588,8 +636,8 @@ async function applyCardSettlement(bookingId: string, providerRef: string | null
         };
         d.transactions.push(payoutTx);
       }
-      // Debit the platform commission on the TOTAL. MAY drive the balance
-      // negative — that is an allowed debt, so NO clamp here.
+      // Debit the receiver commission on the ONLINE portion P. Net stays ≥ 0
+      // (commission ≤ P), so no negative-balance debt under the engine model.
       if (commission > 0 && wallet.status !== 'FROZEN') {
         wallet.balance -= commission;
         wallet.updatedAt = now;
@@ -608,7 +656,11 @@ async function applyCardSettlement(bookingId: string, providerRef: string | null
           metadata: {
             bookingId: booking.id,
             total: booking.totalAmount,
-            rate,
+            base: online,
+            rate: quote.receiverRate,
+            payerFee: booking.payerFeeAmount ?? 0,
+            payerRate: booking.payerFeeRate ?? 0,
+            platformTake: quote.platformTake,
           },
           createdAt: now,
           completedAt: now,
@@ -762,7 +814,9 @@ export async function initCardBookingPayment(
   if (isSettled(booking)) return { ok: false, reason: 'CONFIRMED' };
   if (isExpired(booking)) return { ok: false, reason: 'EXPIRED' };
 
-  const amount = booking.onlinePaidAmount ?? 0;
+  // Charge the GROSS online amount = base online portion + payer fee (frozen at
+  // intent). Fall back to the base for legacy bookings created before the fee.
+  const amount = booking.onlineChargeAmount ?? booking.onlinePaidAmount ?? 0;
   if (amount <= 0) return { ok: false, reason: 'PROVIDER_FAILED', message: 'Nothing to charge online' };
 
   const base = appBaseUrl.replace(/\/$/, '');

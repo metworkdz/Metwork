@@ -41,7 +41,9 @@ interface SpaceFormDialogProps {
   initialData?: {
     name?: string; description?: string; category?: SpaceCategory;
     city?: string; pricePerHour?: number | null; pricePerDay?: number | null;
-    pricePerMonth?: number | null; capacity?: number; amenities?: string[];
+    pricePerMonth?: number | null;
+    cashPricePerHour?: number | null; cashPricePerDay?: number | null; cashPricePerMonth?: number | null;
+    capacity?: number; amenities?: string[];
     acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
     imageUrls?: string[] | null;
     cashDepositType?: 'FIXED' | 'PERCENT'; cashDepositValue?: number;
@@ -67,6 +69,9 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
   const [pricePerHour, setPricePerHour] = useState('');
   const [pricePerDay, setPricePerDay] = useState('');
   const [pricePerMonth, setPricePerMonth] = useState('');
+  const [cashPricePerHour, setCashPricePerHour] = useState('');
+  const [cashPricePerDay, setCashPricePerDay] = useState('');
+  const [cashPricePerMonth, setCashPricePerMonth] = useState('');
   const [capacity, setCapacity] = useState('10');
   const [amenities, setAmenities] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
@@ -88,6 +93,9 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
       setPricePerHour(initialData.pricePerHour != null ? String(initialData.pricePerHour) : '');
       setPricePerDay(initialData.pricePerDay != null ? String(initialData.pricePerDay) : '');
       setPricePerMonth(initialData.pricePerMonth != null ? String(initialData.pricePerMonth) : '');
+      setCashPricePerHour(initialData.cashPricePerHour != null ? String(initialData.cashPricePerHour) : '');
+      setCashPricePerDay(initialData.cashPricePerDay != null ? String(initialData.cashPricePerDay) : '');
+      setCashPricePerMonth(initialData.cashPricePerMonth != null ? String(initialData.cashPricePerMonth) : '');
       setCapacity(initialData.capacity != null ? String(initialData.capacity) : '10');
       setAmenities((initialData.amenities ?? []).join(', '));
       setAcceptedMethods(initialData.acceptedPaymentMethods ?? ['ONLINE', 'CASH']);
@@ -118,6 +126,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
   function reset() {
     setName(''); setDescription(''); setCategory('COWORKING'); setCity('');
     setPricePerHour(''); setPricePerDay(''); setPricePerMonth('');
+    setCashPricePerHour(''); setCashPricePerDay(''); setCashPricePerMonth('');
     setCapacity('10'); setAmenities('');
     setAcceptedMethods(['ONLINE', 'CASH']);
     setDepositType('PERCENT'); setDepositValue('10');
@@ -165,6 +174,9 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
           pricePerHour:  hourVal,
           pricePerDay:   dayVal,
           pricePerMonth: monthVal,
+          cashPricePerHour:  cashPricePerHour  ? Number(cashPricePerHour)  : null,
+          cashPricePerDay:   cashPricePerDay   ? Number(cashPricePerDay)   : null,
+          cashPricePerMonth: cashPricePerMonth ? Number(cashPricePerMonth) : null,
           capacity:      Number(capacity),
           amenities:     amenities.split(',').map((s) => s.trim()).filter(Boolean),
           acceptedPaymentMethods: acceptedMethods,
@@ -371,6 +383,27 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
               })}
             </div>
           </div>
+
+          {acceptedMethods.includes('CASH') && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-sm font-medium">{t('labelCashPricing')}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t('cashPricingHint')}</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                <div>
+                  <Label htmlFor="s-cash-hour" className="text-xs text-muted-foreground">{t('perHour')}</Label>
+                  <Input id="s-cash-hour" type="number" min="0" className="mt-1" placeholder={pricePerHour || '0'} value={cashPricePerHour} onChange={(e) => setCashPricePerHour(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="s-cash-day" className="text-xs text-muted-foreground">{t('perDay')}</Label>
+                  <Input id="s-cash-day" type="number" min="0" className="mt-1" placeholder={pricePerDay || '0'} value={cashPricePerDay} onChange={(e) => setCashPricePerDay(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="s-cash-month" className="text-xs text-muted-foreground">{t('perMonth')}</Label>
+                  <Input id="s-cash-month" type="number" min="0" className="mt-1" placeholder={pricePerMonth || '0'} value={cashPricePerMonth} onChange={(e) => setCashPricePerMonth(e.target.value)} />
+                </div>
+              </div>
+            </div>
+          )}
 
           {acceptedMethods.includes('CASH') && (
             <div className="rounded-lg border border-border bg-muted/30 p-3">

@@ -6,8 +6,8 @@ import { requireRole } from '@/lib/auth-guards';
 import { getOrCreateAdminIncubator } from '@/lib/admin-incubator';
 import { DashboardWelcome } from '@/components/shared/dashboard-welcome';
 import { StatCard } from '@/components/shared/stat-card';
-import { db } from '@/server/db/store';
-import { platformCommissions } from '@/config/memberships';
+import { db, defaultPlatformConfig } from '@/server/db/store';
+import { resolveCommissionRates } from '@/server/payments/commission';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -49,9 +49,15 @@ export default async function AdminIncubatorOverviewPage({ params }: PageProps) 
 
   const grossMtd = bookingsThisMonth.reduce((s, b) => s + b.totalAmount, 0);
   const subCode = incubator.subscriptionCode ?? incubator.subscriptionTier ?? 'COMMISSION';
-  const commissionRate =
-    subCode === 'COMMISSION' ? platformCommissions.incubatorBooking : 0;
-  const netMtd = Math.round(grossMtd * (1 - commissionRate));
+  // Central engine receiver rate (FLAT ⇒ 0). Net prefers the commission frozen
+  // on each booking at settlement; un-settled bookings use the live estimate.
+  const cfg = { ...defaultPlatformConfig, ...data.meta?.platformConfig };
+  const { receiverRate: commissionRate } = resolveCommissionRates(subCode, cfg);
+  const commissionMtd = bookingsThisMonth.reduce(
+    (s, b) => s + (b.commissionAmount ?? Math.round(b.totalAmount * commissionRate)),
+    0,
+  );
+  const netMtd = grossMtd - commissionMtd;
 
   // Offline bookings have userId === null — exclude so the Set doesn't inflate.
   const memberIds = new Set(

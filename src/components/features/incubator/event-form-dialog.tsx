@@ -30,6 +30,7 @@ interface EventFormDialogProps {
   editId?: string;
   initialData?: {
     title?: string; description?: string; city?: string; price?: number;
+    onlinePrice?: number | null; cashPrice?: number | null;
     capacity?: number; isOnline?: boolean; eventDate?: string;
     acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
     imageUrls?: string[] | null;
@@ -51,6 +52,8 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
   const [description, setDescription] = useState('');
   const [city, setCity] = useState('');
   const [price, setPrice] = useState('0');
+  const [onlinePrice, setOnlinePrice] = useState('');
+  const [cashPrice, setCashPrice] = useState('');
   const [capacity, setCapacity] = useState('50');
   const [isOnline, setIsOnline] = useState(false);
   const [eventDate, setEventDate] = useState('');
@@ -66,6 +69,8 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
       setDescription(initialData.description ?? '');
       setCity(initialData.city ?? '');
       setPrice(initialData.price != null ? String(initialData.price) : '0');
+      setOnlinePrice(initialData.onlinePrice != null ? String(initialData.onlinePrice) : '');
+      setCashPrice(initialData.cashPrice != null ? String(initialData.cashPrice) : '');
       setCapacity(initialData.capacity != null ? String(initialData.capacity) : '50');
       setIsOnline(initialData.isOnline ?? false);
       // FIX: BUG-2 — convert ISO date string back to YYYY-MM-DD for date input
@@ -94,7 +99,8 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
 
   function reset() {
     setTitle(''); setDescription(''); setCity('');
-    setPrice('0'); setCapacity('50'); setIsOnline(false); setEventDate('');
+    setPrice('0'); setOnlinePrice(''); setCashPrice('');
+    setCapacity('50'); setIsOnline(false); setEventDate('');
     setAcceptedMethods(['ONLINE', 'CASH']);
     setDepositType('PERCENT'); setDepositValue('10');
     setImageUrls([]);
@@ -117,6 +123,8 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
           description,
           city,
           price: Number(price),
+          onlinePrice: onlinePrice.trim() === '' ? null : Number(onlinePrice),
+          cashPrice: cashPrice.trim() === '' ? null : Number(cashPrice),
           capacity: Number(capacity),
           isOnline,
           eventDate: new Date(`${eventDate}T12:00:00`).toISOString(),
@@ -219,6 +227,37 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
               onChange={(e) => setIsOnline(e.target.checked)}
             />
             <Label htmlFor="ev-online" className="cursor-pointer text-sm">{t('labelOnlineEvent')}</Label>
+          </div>
+
+          <div className="rounded-lg border border-border bg-muted/30 p-3">
+            <p className="text-sm font-medium">{t('labelSplitPricing')}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t('splitPricingHint')}</p>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="ev-online-price">{t('labelOnlinePrice')}</Label>
+                <Input
+                  id="ev-online-price"
+                  type="number"
+                  min="0"
+                  className="mt-1"
+                  placeholder={price}
+                  value={onlinePrice}
+                  onChange={(e) => setOnlinePrice(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="ev-cash-price">{t('labelCashPrice')}</Label>
+                <Input
+                  id="ev-cash-price"
+                  type="number"
+                  min="0"
+                  className="mt-1"
+                  placeholder={price}
+                  value={cashPrice}
+                  onChange={(e) => setCashPrice(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
 
           <div>

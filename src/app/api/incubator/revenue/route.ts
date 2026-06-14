@@ -5,9 +5,9 @@
  * incubator's spaces, programs, and events.
  */
 import { requireApiRole } from '@/server/auth/api-guards';
-import { db } from '@/server/db/store';
+import { db, defaultPlatformConfig } from '@/server/db/store';
 import { json, jsonError } from '@/server/http/json';
-import { platformCommissions } from '@/config/memberships';
+import { resolveCommissionRates } from '@/server/payments/commission';
 import { getEffectiveSubscriptionCode } from '@/server/incubator/service';
 
 export const runtime = 'nodejs';
@@ -28,8 +28,10 @@ export async function GET() {
   // Effective plan applies read-time expiry: an expired/lapsed Pro plan reverts
   // to commission automatically, so commission resumes without a sweep.
   const subCode = getEffectiveSubscriptionCode(incubator);
-  const commissionRate =
-    subCode === 'COMMISSION' ? platformCommissions.incubatorBooking : 0;
+  // Receiver-side rate from the central engine (FLAT ⇒ 0). Used only as a
+  // fallback estimate for bookings that have no frozen commission yet.
+  const cfg = { ...defaultPlatformConfig, ...data.meta?.platformConfig };
+  const { receiverRate: commissionRate } = resolveCommissionRates(subCode, cfg);
 
   const ownedSpaceIds = new Set(
     (data.spaces ?? []).filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
@@ -52,20 +54,23 @@ export async function GET() {
       ),
   );
 
-  // Monthly buckets
-  const bucketsMap = new Map<string, { gross: number; bookings: number }>();
+  // Monthly buckets. Commission prefers the amount FROZEN on the booking at
+  // settlement (the real ledger figure); only un-settled bookings fall back to
+  // the live receiver-rate estimate. This keeps the dashboard consistent with
+  // what actually moved through the wallet under the central engine.
+  const bucketsMap = new Map<string, { gross: number; commission: number; bookings: number }>();
   for (const b of relevant) {
     const ym = toYearMonth(b.createdAt);
-    const cur = bucketsMap.get(ym) ?? { gross: 0, bookings: 0 };
+    const cur = bucketsMap.get(ym) ?? { gross: 0, commission: 0, bookings: 0 };
     cur.gross += b.totalAmount;
+    cur.commission += b.commissionAmount ?? Math.round(b.totalAmount * commissionRate);
     cur.bookings += 1;
     bucketsMap.set(ym, cur);
   }
 
   const buckets = Array.from(bucketsMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([month, { gross, bookings }]) => {
-      const commission = Math.round(gross * commissionRate);
+    .map(([month, { gross, commission, bookings }]) => {
       return { month, gross, commission, net: gross - commission, bookings };
     });
 

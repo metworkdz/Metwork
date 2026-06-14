@@ -36,6 +36,10 @@ export interface Space {
   pricePerHour: number | null;
   pricePerDay: number | null;
   pricePerMonth: number | null;
+  /** Optional CASH-booking per-unit prices; fall back to pricePer* when absent. */
+  cashPricePerHour?: number | null;
+  cashPricePerDay?: number | null;
+  cashPricePerMonth?: number | null;
   capacity: number;
   amenities: string[];
   rating: number | null;
@@ -71,6 +75,9 @@ export interface Program {
   /** Ordered gallery; imageUrls[0] is the cover (kept in sync with imageUrl). Backfilled from imageUrl for legacy records. */
   imageUrls?: string[];
   price: number;
+  /** Optional split pricing; fall back to `price` when absent. */
+  onlinePrice?: number | null;
+  cashPrice?: number | null;
   seatsTotal: number;
   seatsTaken: number;
   deadline: string;
@@ -95,6 +102,9 @@ export interface Event {
   /** Ordered gallery; imageUrls[0] is the cover (kept in sync with imageUrl). Backfilled from imageUrl for legacy records. */
   imageUrls?: string[];
   price: number;
+  /** Optional split pricing; fall back to `price` when absent. */
+  onlinePrice?: number | null;
+  cashPrice?: number | null;
   isOnline: boolean;
   capacity: number;
   attendeeCount: number;

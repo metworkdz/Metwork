@@ -663,7 +663,11 @@
       "createEvent": "Créer l'événement",
       "errorUpdate": "Échec de la mise à jour de l'événement.",
       "errorCreate": "Échec de la création de l'événement.",
-      "errorNetwork": "Erreur réseau — réessayez."
+      "errorNetwork": "Erreur réseau — réessayez.",
+      "labelSplitPricing": "Tarifs en ligne et espèces (facultatif)",
+      "splitPricingHint": "Laissez vide pour utiliser le prix de base pour les deux. Définissez un prix différent pour le paiement en ligne par carte ou en espèces.",
+      "labelOnlinePrice": "Prix en ligne",
+      "labelCashPrice": "Prix en espèces"
     },
     "eventsManager": {
       "loading": "Chargement…",
@@ -824,7 +828,11 @@
       "createProgram": "Créer le programme",
       "errorUpdate": "Échec de la mise à jour du programme.",
       "errorCreate": "Échec de la création du programme.",
-      "errorNetwork": "Erreur réseau — réessayez."
+      "errorNetwork": "Erreur réseau — réessayez.",
+      "labelSplitPricing": "Tarifs en ligne et espèces (facultatif)",
+      "splitPricingHint": "Laissez vide pour utiliser le prix de base pour les deux. Définissez un prix différent pour le paiement en ligne par carte ou en espèces.",
+      "labelOnlinePrice": "Prix en ligne",
+      "labelCashPrice": "Prix en espèces"
     },
     "receiptModal": {
       "loading": "Chargement…",
@@ -909,7 +917,9 @@
       "errorPricing": "Définissez au moins une option tarifaire (horaire, journalière ou mensuelle).",
       "errorUpdate": "Échec de la mise à jour de l'espace.",
       "errorCreate": "Échec de la création de l'espace.",
-      "errorNetwork": "Erreur réseau — réessayez."
+      "errorNetwork": "Erreur réseau — réessayez.",
+      "labelCashPricing": "Tarifs en espèces (facultatif)",
+      "cashPricingHint": "Prix unitaires facultatifs pour les réservations en espèces. Laissez vide pour utiliser les tarifs en ligne ci-dessus."
     }
   },
   "dashboard": {
@@ -1001,7 +1011,10 @@
       "slotTakenDesc": "Malheureusement, ce créneau a été pris avant la fin de votre paiement. Tout montant débité sera remboursé.",
       "invalidTitle": "Lien introuvable",
       "invalidDesc": "Ce lien de paiement est invalide. Veuillez vérifier le lien qui vous a été communiqué.",
-      "backHome": "Retour à l'accueil"
+      "backHome": "Retour à l'accueil",
+      "subtotal": "Sous-total",
+      "depositBase": "Acompte",
+      "platformFee": "Frais de plateforme"
     },
     "programs": {
       "title": "Programmes",
@@ -2464,7 +2477,14 @@
       "rateError": "Enter a value between 0 and 100",
       "appliesTo": "Applies to:",
       "enable": "Enable",
-      "disable": "Disable"
+      "disable": "Disable",
+      "engineTitle": "Moteur de commission de la plateforme",
+      "engineDescription": "La part de la plateforme sur chaque paiement et acompte en ligne : une commission sur le bénéficiaire plus des frais sur le payeur.",
+      "receiverRate": "Commission bénéficiaire (titulaire)",
+      "payerRate": "Frais du payeur (acheteur)",
+      "totalTake": "Part totale de la plateforme",
+      "savedNotice": "Enregistré. S'applique aux nouvelles transactions.",
+      "engineHint": "S'applique aux incubateurs au forfait commission et aux formateurs. Les incubateurs Pro (forfait fixe) sont exonérés de la commission bénéficiaire ; leurs acheteurs paient toujours les frais du payeur."
     },
     "withdrawals": {
       "pendingReview": "Pending review",

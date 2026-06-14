@@ -18,6 +18,9 @@ const patchSchema = z.object({
   semesterlyMonths:      z.number().int().min(1).max(24).optional(),
   yearlyDiscountPercent: z.number().min(0).max(100).optional(),
   commissionRate:        z.number().min(0).max(1).optional(),
+  // Central commission engine rates (decimal 0–1).
+  receiverCommissionRate: z.number().min(0).max(1).optional(),
+  payerFeeRate:           z.number().min(0).max(1).optional(),
 });
 
 export async function GET() {

@@ -22,6 +22,9 @@ const patchSchema = z.object({
   pricePerHour: z.number().int().nonnegative().nullable().optional(),
   pricePerDay: z.number().int().nonnegative().nullable().optional(),
   pricePerMonth: z.number().int().nonnegative().nullable().optional(),
+  cashPricePerHour: z.number().int().nonnegative().nullable().optional(),
+  cashPricePerDay: z.number().int().nonnegative().nullable().optional(),
+  cashPricePerMonth: z.number().int().nonnegative().nullable().optional(),
   capacity: z.number().int().positive().optional(),
   amenities: z.array(z.string()).optional(),
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).optional(),
@@ -94,6 +97,9 @@ export async function PATCH(
     if (input.pricePerHour !== undefined) s.pricePerHour = input.pricePerHour ?? null;
     if (input.pricePerDay !== undefined) s.pricePerDay = input.pricePerDay ?? null;
     if (input.pricePerMonth !== undefined) s.pricePerMonth = input.pricePerMonth ?? null;
+    if (input.cashPricePerHour !== undefined) s.cashPricePerHour = input.cashPricePerHour ?? null;
+    if (input.cashPricePerDay !== undefined) s.cashPricePerDay = input.cashPricePerDay ?? null;
+    if (input.cashPricePerMonth !== undefined) s.cashPricePerMonth = input.cashPricePerMonth ?? null;
     if (input.capacity !== undefined) s.capacity = input.capacity;
     if (input.amenities !== undefined) s.amenities = input.amenities;
     if (input.status !== undefined) s.isActive = input.status === 'ACTIVE';

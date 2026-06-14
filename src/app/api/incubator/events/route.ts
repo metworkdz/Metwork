@@ -23,6 +23,9 @@ const createEventSchema = z.object({
   imageUrl:    z.string().url().optional().nullable(),
   imageUrls:   z.array(z.string().url()).max(8).optional(),
   price:       z.number().int().min(0),
+  /** Optional split pricing — fall back to `price` when omitted. */
+  onlinePrice: z.number().int().min(0).optional().nullable(),
+  cashPrice:   z.number().int().min(0).optional().nullable(),
   isOnline:    z.boolean().default(false),
   capacity:    z.number().int().min(1).max(100_000),
   eventDate:   z.string().datetime(),
@@ -94,6 +97,8 @@ export async function POST(req: NextRequest) {
       imageUrl:               coverUrl,
       imageUrls,
       price:                  input.price,
+      onlinePrice:            input.onlinePrice ?? null,
+      cashPrice:              input.cashPrice ?? null,
       isOnline:               input.isOnline,
       capacity:               input.capacity,
       eventDate:              input.eventDate,

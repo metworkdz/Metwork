@@ -31,6 +31,8 @@ const patchSchema = z.object({
   imageUrl: z.string().url().nullable().optional(),
   imageUrls: z.array(z.string().url()).max(8).optional(),
   price: z.number().int().nonnegative().optional(),
+  onlinePrice: z.number().int().nonnegative().nullable().optional(),
+  cashPrice: z.number().int().nonnegative().nullable().optional(),
   seatsTotal: z.number().int().positive().optional(),
   deadline:  isoDate.optional(),
   startDate: isoDate.optional(),
@@ -105,6 +107,8 @@ export async function PATCH(
       p.imageUrl = input.imageUrls[0] ?? null;
     }
     if (input.price !== undefined) p.price = input.price;
+    if (input.onlinePrice !== undefined) p.onlinePrice = input.onlinePrice;
+    if (input.cashPrice !== undefined) p.cashPrice = input.cashPrice;
     if (input.seatsTotal !== undefined) p.seatsTotal = input.seatsTotal;
     if (input.deadline !== undefined) p.deadline = input.deadline;
     if (input.startDate !== undefined) p.startDate = input.startDate;

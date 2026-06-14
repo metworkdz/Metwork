@@ -130,14 +130,37 @@ export type SpacePricing = {
   pricePerHour: number | null;
   pricePerDay: number | null;
   pricePerMonth: number | null;
+  /** Optional CASH-booking per-unit prices; fall back to pricePer* when absent. */
+  cashPricePerHour?: number | null;
+  cashPricePerDay?: number | null;
+  cashPricePerMonth?: number | null;
 };
 
-export function unitPrice(space: SpacePricing, unit: BookingUnit): number | null {
-  switch (unit) {
-    case 'HOUR': return space.pricePerHour;
-    case 'DAY': return space.pricePerDay;
-    case 'MONTH': return space.pricePerMonth;
-  }
+/** Which pricing surface a space booking is priced from. */
+export type SpacePriceMode = 'ONLINE_FULL' | 'CASH_DEPOSIT';
+
+/**
+ * Per-unit price for a booking. ONLINE_FULL uses the base pricePer*; a
+ * CASH_DEPOSIT booking uses the optional cashPricePer* when set, falling back
+ * to the base price. Returns null only when the base unit is unpriced (i.e. the
+ * unit is not offered at all) — cash prices never enable a new unit on their own.
+ */
+export function unitPrice(
+  space: SpacePricing,
+  unit: BookingUnit,
+  mode: SpacePriceMode = 'ONLINE_FULL',
+): number | null {
+  const base =
+    unit === 'HOUR' ? space.pricePerHour
+    : unit === 'DAY' ? space.pricePerDay
+    : space.pricePerMonth;
+  if (base == null) return null;
+  if (mode !== 'CASH_DEPOSIT') return base;
+  const cash =
+    unit === 'HOUR' ? space.cashPricePerHour
+    : unit === 'DAY' ? space.cashPricePerDay
+    : space.cashPricePerMonth;
+  return cash != null ? cash : base;
 }
 
 export function availableUnits(space: SpacePricing): BookingUnit[] {
