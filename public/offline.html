@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Metwork — Offline</title>
+    <link rel="icon" href="/assets/Metworkfavicon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        background: #ffffff;
+        color: #0d0d0d;
+        text-align: center;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #0a1f12;
+          color: #f5f5f5;
+        }
+      }
+      .card {
+        max-width: 22rem;
+      }
+      img {
+        width: 88px;
+        height: 88px;
+        margin-bottom: 20px;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin: 0 0 8px;
+        letter-spacing: -0.01em;
+      }
+      p {
+        margin: 0 0 20px;
+        font-size: 0.9375rem;
+        opacity: 0.7;
+        line-height: 1.5;
+      }
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 28px;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: #ffffff;
+        background: #1a8a4f;
+        cursor: pointer;
+      }
+      button:active {
+        opacity: 0.85;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <img src="/icons/icon-192.png" alt="Metwork" />
+      <h1>You're offline</h1>
+      <p>Metwork needs a connection to load this page. Check your network and try again.</p>
+      <button onclick="location.reload()">Retry</button>
+    </div>
+  </body>
+</html>

@@ -955,7 +955,8 @@
     "perks": "Avantages",
     "networkPass": "Metwork Pass",
     "bookSpace": "Réserver un espace",
-    "withdrawals": "Retraits"
+    "withdrawals": "Retraits",
+    "more": "Plus"
   },
   "pages": {
     "consultationPay": {

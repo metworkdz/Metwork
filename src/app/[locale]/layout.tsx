@@ -3,6 +3,7 @@ import { Inter, Cairo, Plus_Jakarta_Sans } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { Providers } from '@/components/providers';
+import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register';
 import { getServerSession } from '@/lib/session';
 import { siteConfig } from '@/config/site';
 import { locales, getDirection, type Locale } from '@/i18n/config';
@@ -46,6 +47,12 @@ export async function generateMetadata({
     },
     description: siteConfig.description,
     applicationName: siteConfig.name,
+    manifest: '/manifest.webmanifest',
+    appleWebApp: {
+      capable: true,
+      title: siteConfig.name,
+      statusBarStyle: 'default',
+    },
     authors: [{ name: siteConfig.name, url: siteConfig.url }],
     keywords: [
       'Algeria',
@@ -76,8 +83,10 @@ export async function generateMetadata({
     icons: {
       icon: [
         { url: siteConfig.favicon, type: 'image/svg+xml' },
+        { url: '/icons/icon-192.png', type: 'image/png', sizes: '192x192' },
+        { url: '/icons/icon-512.png', type: 'image/png', sizes: '512x512' },
       ],
-      apple: siteConfig.favicon,
+      apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
     },
     robots: { index: true, follow: true },
     alternates: {
@@ -128,6 +137,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         <Providers locale={locale} messages={messages} initialUser={sessionUser}>
           {children}
         </Providers>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

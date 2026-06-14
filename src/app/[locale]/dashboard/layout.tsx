@@ -3,6 +3,8 @@ import { getLocale } from 'next-intl/server';
 import { getServerSession } from '@/lib/session';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
 import { DashboardTopbar } from '@/components/layout/dashboard-topbar';
+import { MobileDashboardHeader } from '@/components/layout/mobile-dashboard-header';
+import { MobileTabBar } from '@/components/layout/mobile-tab-bar';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [user, locale] = await Promise.all([getServerSession(), getLocale()]);
@@ -12,8 +14,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="flex min-h-screen bg-muted/20">
       <DashboardSidebar role={user.role} />
       <div className="flex min-w-0 flex-1 flex-col">
+        {/* Desktop chrome (lg+) — unchanged. Hidden below lg. */}
         <DashboardTopbar user={user} />
-        <main className="flex-1 min-w-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">{children}</main>
+        {/* Mobile chrome (below lg) — native-app shell. Removed at lg+. */}
+        <MobileDashboardHeader user={user} />
+        <main className="flex-1 min-w-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+          {children}
+          {/* Clearance so content can scroll clear of the fixed mobile tab bar.
+              display:none at lg → desktop layout is byte-for-byte unchanged. */}
+          <div aria-hidden className="h-20 lg:hidden" />
+        </main>
+        <MobileTabBar role={user.role} />
       </div>
     </div>
   );

@@ -955,7 +955,8 @@
     "perks": "Perks",
     "networkPass": "Metwork Pass",
     "bookSpace": "Book a space",
-    "withdrawals": "Withdrawals"
+    "withdrawals": "Withdrawals",
+    "more": "More"
   },
   "pages": {
     "consultationPay": {
