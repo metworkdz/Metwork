@@ -5,6 +5,12 @@ import { Link } from '@/i18n/routing';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardWelcome } from '@/components/shared/dashboard-welcome';
 import { StatCard } from '@/components/shared/stat-card';
+import {
+  MobileGreeting,
+  MobileQuickActions,
+  MobileStatGrid,
+} from '@/components/dashboard/mobile/mobile-overview';
+import { mobileQuickActionsByRole } from '@/config/mobile-nav';
 import { db } from '@/server/db/store';
 import { formatCurrency } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
@@ -17,6 +23,7 @@ export default async function InvestorDashboard({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.dashboard');
+  const tRoot = await getTranslations();
   const lang = (await getLocale()) as Locale;
   const user = await requireRole(['INVESTOR']);
 
@@ -36,7 +43,32 @@ export default async function InvestorDashboard({ params }: PageProps) {
   const activeListings = data.startupListings.filter((l) => l.status === 'ACTIVE').length;
 
   return (
-    <div className="space-y-6">
+    <>
+      {/* ── Mobile app UI (below lg) ─────────────────────────────────────── */}
+      <div className="lg:hidden">
+        <MobileGreeting
+          title={t('investor.overview.greeting', { name: user.fullName.split(' ')[0] ?? user.fullName })}
+          subtitle={t('investor.overview.subtitle')}
+        />
+        <MobileQuickActions
+          actions={mobileQuickActionsByRole.INVESTOR.map((a) => ({
+            label: tRoot(a.labelKey),
+            href: a.href,
+            icon: a.icon,
+          }))}
+        />
+        <MobileStatGrid
+          stats={[
+            { label: t('investor.overview.statSavedStartups'), value: savedCount, icon: Bookmark },
+            { label: t('investor.overview.statPendingContacts'), value: pendingContacts, icon: MessageSquare, tone: 'amber' },
+            { label: t('investor.overview.statCommitted'), value: formatCurrency(totalCommitted, lang), icon: TrendingUp },
+            { label: t('investor.overview.statActiveListings'), value: activeListings, icon: Rocket, tone: 'blue' },
+          ]}
+        />
+      </div>
+
+      {/* ── Desktop (lg+) — unchanged ────────────────────────────────────── */}
+      <div className="hidden space-y-6 lg:block">
       <DashboardWelcome
         greeting={t('investor.overview.greeting', { name: user.fullName.split(' ')[0] ?? user.fullName })}
         subtitle={t('investor.overview.subtitle')}
@@ -72,6 +104,7 @@ export default async function InvestorDashboard({ params }: PageProps) {
           icon={Rocket}
         />
       </div>
-    </div>
+      </div>
+    </>
   );
 }

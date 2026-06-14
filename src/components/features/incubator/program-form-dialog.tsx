@@ -207,7 +207,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
         </DialogTrigger>
       )}
 
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg max-sm:inset-0 max-sm:h-full max-sm:max-h-full max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none max-sm:border-0 max-sm:pb-0 max-sm:pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <DialogHeader>
           <DialogTitle>{editId ? t('titleEdit') : t('titleNew')}</DialogTitle>
           <DialogDescription>
@@ -383,8 +383,8 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
             </div>
           )}
 
-          <DialogFooter>
-            <Button type="submit" loading={submitting}>
+          <DialogFooter className="max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:-mx-6 max-sm:border-t max-sm:border-border max-sm:bg-background max-sm:px-6 max-sm:py-3 max-sm:pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+            <Button type="submit" loading={submitting} className="max-sm:w-full">
               {submitting ? (editId ? t('saving') : t('creating')) : (editId ? t('saveChanges') : t('createProgram'))}
             </Button>
           </DialogFooter>

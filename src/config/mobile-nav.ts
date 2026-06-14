@@ -1,4 +1,19 @@
-import { MoreHorizontal } from 'lucide-react';
+import {
+  MoreHorizontal,
+  type LucideIcon,
+  MapPin,
+  Wallet,
+  TrendingUp,
+  Rocket,
+  Star,
+  Calendar,
+  Building2,
+  Briefcase,
+  UsersRound,
+  Users,
+  BarChart2,
+  ArrowUpCircle,
+} from 'lucide-react';
 import { dashboardNavByRole, type NavItem } from '@/config/navigation';
 import type { UserRole } from '@/types/auth';
 
@@ -75,3 +90,46 @@ export function getMobileMoreItems(role: UserRole): NavItem[] {
   const primary = new Set(getMobilePrimaryTabs(role).map((i) => i.href));
   return dashboardNavByRole[role].filter((i) => !i.sectionHeader && !primary.has(i.href));
 }
+
+/**
+ * Per-role "quick action" pills shown under the mobile overview greeting.
+ * Each is a one-tap deep link into an existing destination — `labelKey` reuses
+ * an existing `dashboard.*` translation key, so no new strings are introduced.
+ */
+export interface MobileQuickAction {
+  labelKey: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+export const mobileQuickActionsByRole: Record<UserRole, MobileQuickAction[]> = {
+  ENTREPRENEUR: [
+    { labelKey: 'dashboard.bookSpace',    href: '/spaces',                              icon: MapPin },
+    { labelKey: 'dashboard.wallet',       href: '/dashboard/entrepreneur/wallet',       icon: Wallet },
+    { labelKey: 'dashboard.marketplace',  href: '/dashboard/entrepreneur/marketplace',  icon: TrendingUp },
+    { labelKey: 'dashboard.startup',      href: '/dashboard/entrepreneur/startup',      icon: Rocket },
+  ],
+  INVESTOR: [
+    { labelKey: 'dashboard.startups',     href: '/dashboard/investor/startups',         icon: Rocket },
+    { labelKey: 'dashboard.saved',        href: '/dashboard/investor/saved',            icon: Star },
+    { labelKey: 'dashboard.meetings',     href: '/dashboard/investor/meetings',         icon: Calendar },
+  ],
+  INCUBATOR: [
+    { labelKey: 'dashboard.spaces',       href: '/dashboard/incubator/spaces',          icon: Building2 },
+    { labelKey: 'dashboard.programs',     href: '/dashboard/incubator/programs',        icon: Briefcase },
+    { labelKey: 'dashboard.bookings',     href: '/dashboard/incubator/bookings',        icon: Calendar },
+    { labelKey: 'dashboard.clients',      href: '/dashboard/incubator/clients',         icon: UsersRound },
+  ],
+  TRAINER: [
+    { labelKey: 'dashboard.programs',     href: '/dashboard/trainer/programs',          icon: Briefcase },
+    { labelKey: 'dashboard.events',       href: '/dashboard/trainer/events',            icon: Calendar },
+    { labelKey: 'dashboard.bookings',     href: '/dashboard/trainer/bookings',          icon: Calendar },
+    { labelKey: 'dashboard.wallet',       href: '/dashboard/trainer/wallet',            icon: Wallet },
+  ],
+  ADMIN: [
+    { labelKey: 'dashboard.users',        href: '/dashboard/admin/users',               icon: Users },
+    { labelKey: 'dashboard.bookings',     href: '/dashboard/admin/bookings',            icon: Calendar },
+    { labelKey: 'dashboard.withdrawals',  href: '/dashboard/admin/withdrawals',         icon: ArrowUpCircle },
+    { labelKey: 'dashboard.analytics',    href: '/dashboard/admin/analytics',           icon: BarChart2 },
+  ],
+};

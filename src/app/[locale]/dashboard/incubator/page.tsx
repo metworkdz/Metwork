@@ -5,6 +5,15 @@ import { Link } from '@/i18n/routing';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardWelcome } from '@/components/shared/dashboard-welcome';
 import { StatCard } from '@/components/shared/stat-card';
+import {
+  MobileGreeting,
+  MobileQuickActions,
+  MobileStatGrid,
+  MobileSection,
+  MobileListRow,
+  MobileEmpty,
+} from '@/components/dashboard/mobile/mobile-overview';
+import { mobileQuickActionsByRole } from '@/config/mobile-nav';
 import { db } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { formatCurrency } from '@/lib/format';
@@ -20,6 +29,7 @@ export default async function IncubatorDashboard({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.dashboard');
+  const tRoot = await getTranslations();
   const user = await requireRole(['INCUBATOR']);
 
   // Load real stats
@@ -59,12 +69,61 @@ export default async function IncubatorDashboard({ params }: PageProps) {
   }
 
   // Client count
-  const clientCount = inc
-    ? (data.clients ?? []).filter((c) => c.incubatorId === inc.id).length
-    : 0;
+  const myClients = inc
+    ? (data.clients ?? []).filter((c) => c.incubatorId === inc.id)
+    : [];
+  const clientCount = myClients.length;
+  const recentClients = [...myClients]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 4);
 
   return (
-    <div className="space-y-6">
+    <>
+      {/* ── Mobile app UI (below lg) ─────────────────────────────────────── */}
+      <div className="lg:hidden">
+        <MobileGreeting
+          title={`Hello, ${user.fullName.split(' ')[0]}`}
+          subtitle="Manage your spaces, programs & clients."
+        />
+        <MobileQuickActions
+          actions={mobileQuickActionsByRole.INCUBATOR.map((a) => ({
+            label: tRoot(a.labelKey),
+            href: a.href,
+            icon: a.icon,
+          }))}
+        />
+        <MobileStatGrid
+          stats={[
+            { label: 'Active spaces', value: mySpaces.length, icon: Building2 },
+            { label: 'Bookings (MTD)', value: bookingsThisMonth, icon: Calendar, tone: 'blue' },
+            { label: 'Income (MTD)', value: formatCurrency(mrrIncome, locale as Locale), icon: TrendingUp },
+            { label: 'Clients', value: clientCount, icon: UsersRound, tone: 'amber' },
+          ]}
+        />
+        <MobileSection
+          title={tRoot('dashboard.recentClients')}
+          actionLabel={tRoot('common.viewAll')}
+          actionHref="/dashboard/incubator/clients"
+        >
+          {recentClients.length === 0 ? (
+            <MobileEmpty icon={UsersRound} text={tRoot('dashboard.nothingYet')} />
+          ) : (
+            recentClients.map((c) => (
+              <MobileListRow
+                key={c.id}
+                icon={UsersRound}
+                tone="amber"
+                title={c.fullName}
+                meta={c.companyName ?? c.email}
+                href="/dashboard/incubator/clients"
+              />
+            ))
+          )}
+        </MobileSection>
+      </div>
+
+      {/* ── Desktop (lg+) — unchanged ────────────────────────────────────── */}
+      <div className="hidden space-y-6 lg:block">
       <DashboardWelcome
         greeting={`Hello, ${user.fullName.split(' ')[0]}`}
         subtitle="Manage your spaces, programs, clients, and finances."
@@ -110,6 +169,7 @@ export default async function IncubatorDashboard({ params }: PageProps) {
           icon={Wallet}
         />
       </div>
-    </div>
+      </div>
+    </>
   );
 }

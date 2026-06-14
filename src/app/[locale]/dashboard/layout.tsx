@@ -20,9 +20,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <MobileDashboardHeader user={user} />
         <main className="flex-1 min-w-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
           {children}
-          {/* Clearance so content can scroll clear of the fixed mobile tab bar.
+          {/* Scroll clearance so the last card never hides behind the fixed
+              mobile tab bar (nav content height + its safe-area inset).
               display:none at lg → desktop layout is byte-for-byte unchanged. */}
-          <div aria-hidden className="h-20 lg:hidden" />
+          <div aria-hidden className="h-[calc(4.5rem+env(safe-area-inset-bottom))] lg:hidden" />
         </main>
         <MobileTabBar role={user.role} />
       </div>

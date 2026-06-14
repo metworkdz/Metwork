@@ -956,7 +956,11 @@
     "networkPass": "Metwork Pass",
     "bookSpace": "Book a space",
     "withdrawals": "Withdrawals",
-    "more": "More"
+    "more": "More",
+    "quickActions": "Quick actions",
+    "recentBookings": "Recent bookings",
+    "recentClients": "Recent clients",
+    "nothingYet": "Nothing here yet"
   },
   "pages": {
     "consultationPay": {

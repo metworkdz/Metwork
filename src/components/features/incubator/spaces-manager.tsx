@@ -6,6 +6,7 @@ import { Building2, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { SpaceFormDialog } from './space-form-dialog';
+import { SpacesMobileList } from './spaces-mobile-list';
 import { formatCurrency } from '@/lib/format';
 import type { Space, SpaceCategory } from '@/types/domain';
 import type { Locale } from '@/i18n/config';
@@ -135,6 +136,8 @@ export function SpacesManager() {
 
   return (
     <>
+      {/* Desktop (lg+) — existing management table, unchanged. */}
+      <div className="hidden lg:block">
       <ListingManagementTable
         rows={rows}
         columns={columns}
@@ -157,6 +160,16 @@ export function SpacesManager() {
             destructive: true,
           },
         ]}
+      />
+      </div>
+
+      {/* Mobile (below lg) — tap-friendly cards. */}
+      <SpacesMobileList
+        spaces={rows}
+        categoryLabel={categoryLabel}
+        createSlot={<SpaceFormDialog onCreated={() => void fetchSpaces()} />}
+        onEdit={(s) => setEditingSpace(s)}
+        onDelete={(id) => void handleDelete(id)}
       />
       {/* FIX: BUG-2 — edit dialog rendered outside the table, controlled by editingSpace state */}
       {editingSpace && (

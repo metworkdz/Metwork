@@ -40,7 +40,7 @@ export function MobileTabBar({ role }: MobileTabBarProps) {
     <>
       <nav
         aria-label={t('nav.dashboard')}
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 shadow-[0_-1px_12px_rgba(13,13,13,0.06)] backdrop-blur-xl lg:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <ul className="mx-auto grid max-w-md grid-cols-5">
@@ -54,12 +54,15 @@ export function MobileTabBar({ role }: MobileTabBarProps) {
               type="button"
               onClick={() => setMoreOpen(true)}
               aria-haspopup="dialog"
+              aria-label={t(MORE_NAV.labelKey)}
               className={cn(
-                'flex w-full flex-col items-center justify-center gap-1 py-2 text-[0.6875rem] font-medium transition-colors',
+                'flex h-[3.25rem] w-full flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium transition-colors',
                 moreActive ? 'text-primary-600' : 'text-muted-foreground',
               )}
             >
-              {MORE_NAV.icon && <MORE_NAV.icon className="size-5" />}
+              {MORE_NAV.icon && (
+                <MORE_NAV.icon className="size-[1.375rem]" strokeWidth={moreActive ? 2.5 : 2} />
+              )}
               <span className="leading-none">{t(MORE_NAV.labelKey)}</span>
             </button>
           </li>
@@ -112,11 +115,11 @@ function TabLink({ item, active, label }: { item: NavItem; active: boolean; labe
       href={item.href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex flex-col items-center justify-center gap-1 py-2 text-[0.6875rem] font-medium transition-colors',
+        'flex h-[3.25rem] flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium transition-colors',
         active ? 'text-primary-600' : 'text-muted-foreground',
       )}
     >
-      {Icon && <Icon className="size-5" />}
+      {Icon && <Icon className="size-[1.375rem]" strokeWidth={active ? 2.5 : 2} />}
       <span className="leading-none">{label}</span>
     </Link>
   );

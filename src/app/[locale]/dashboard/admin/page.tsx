@@ -3,6 +3,12 @@ import { Building2, MessageSquare, TrendingUp, Users, Wallet, BookOpen, UserChec
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardWelcome } from '@/components/shared/dashboard-welcome';
 import { StatCard } from '@/components/shared/stat-card';
+import {
+  MobileGreeting,
+  MobileQuickActions,
+  MobileStatGrid,
+} from '@/components/dashboard/mobile/mobile-overview';
+import { mobileQuickActionsByRole } from '@/config/mobile-nav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { db } from '@/server/db/store';
 import type { UserRole } from '@/types/auth';
@@ -15,6 +21,7 @@ export default async function AdminDashboard({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.dashboard');
+  const tRoot = await getTranslations();
   await requireRole(['ADMIN']);
 
   const data = await db.read();
@@ -87,8 +94,35 @@ export default async function AdminDashboard({ params }: PageProps) {
   }
   const deletionTrend = trendParts.join(' · ');
 
+  const activeMemberships = data.userMemberships.filter((m) => m.status === 'ACTIVE').length;
+
   return (
-    <div className="space-y-6">
+    <>
+      {/* ── Mobile app UI (below lg) ─────────────────────────────────────── */}
+      <div className="lg:hidden">
+        <MobileGreeting title={t('admin.overview.greeting')} subtitle={t('admin.overview.subtitle')} />
+        <MobileQuickActions
+          actions={mobileQuickActionsByRole.ADMIN.map((a) => ({
+            label: tRoot(a.labelKey),
+            href: a.href,
+            icon: a.icon,
+          }))}
+        />
+        <MobileStatGrid
+          stats={[
+            { label: t('admin.overview.statTotalUsers'), value: totalUsers, hint: t('admin.overview.statTotalUsersHint', { count: newUsersThisMonth }), icon: Users },
+            { label: t('admin.overview.statActiveIncubators'), value: activeIncubators, icon: Building2 },
+            { label: t('admin.overview.statBookingRevenue'), value: `${bookingRevenue.toLocaleString()} DZD`, icon: TrendingUp },
+            { label: t('admin.overview.statWalletFloat'), value: `${walletFloat.toLocaleString()} DZD`, icon: Wallet },
+            { label: 'Active memberships', value: activeMemberships, icon: UserCheck, tone: 'gold' },
+            { label: t('admin.overview.statPendingMentorReqs'), value: pendingMentorReqs, icon: BookOpen, tone: 'amber' },
+            { label: t('admin.overview.statUnhandledContacts'), value: unhandledContacts, icon: MessageSquare, tone: 'amber' },
+          ]}
+        />
+      </div>
+
+      {/* ── Desktop (lg+) — unchanged ────────────────────────────────────── */}
+      <div className="hidden space-y-6 lg:block">
       <DashboardWelcome
         greeting={t('admin.overview.greeting')}
         subtitle={t('admin.overview.subtitle')}
@@ -180,6 +214,7 @@ export default async function AdminDashboard({ params }: PageProps) {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   );
 }

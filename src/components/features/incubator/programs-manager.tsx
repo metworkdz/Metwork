@@ -7,6 +7,7 @@ import { Briefcase, ClipboardList, Loader2, Pencil, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { ProgramFormDialog } from './program-form-dialog';
+import { ProgramsMobileList } from './programs-mobile-list';
 import { formatCurrency, formatDate } from '@/lib/format';
 import type { Program, ProgramType } from '@/types/domain';
 import type { Locale } from '@/i18n/config';
@@ -146,8 +147,13 @@ export function ProgramsManager() {
     );
   }
 
+  const openRegistrations = (p: Program) =>
+    router.push(`/dashboard/incubator/programs/${p.id}` as Parameters<typeof router.push>[0]);
+
   return (
     <>
+      {/* Desktop (lg+) — existing management table, unchanged. */}
+      <div className="hidden lg:block">
       <ListingManagementTable
         rows={rows}
         columns={columns}
@@ -161,7 +167,7 @@ export function ProgramsManager() {
           {
             label: t('actionRegistrations'),
             icon: <ClipboardList className="size-4" />,
-            onSelect: (p) => router.push(`/dashboard/incubator/programs/${p.id}` as Parameters<typeof router.push>[0]),
+            onSelect: (p) => openRegistrations(p),
           },
           {
             label: t('actionEdit'),
@@ -175,6 +181,17 @@ export function ProgramsManager() {
             destructive: true,
           },
         ]}
+      />
+      </div>
+
+      {/* Mobile (below lg) — tap-friendly cards. */}
+      <ProgramsMobileList
+        programs={rows}
+        typeLabel={typeLabel}
+        createSlot={<ProgramFormDialog onCreated={() => void fetchPrograms()} />}
+        onRegistrations={openRegistrations}
+        onEdit={(p) => setEditingProgram(p)}
+        onDelete={(id) => void handleDelete(id)}
       />
       {/* FIX: BUG-2 — edit dialog rendered outside the table, controlled by editingProgram state */}
       {editingProgram && (

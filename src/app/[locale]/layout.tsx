@@ -108,6 +108,9 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  // Let the PWA / mobile shell paint into the iOS safe-area insets so the
+  // bottom tab bar can pad itself with env(safe-area-inset-bottom).
+  viewportFit: 'cover',
 };
 
 interface LocaleLayoutProps {

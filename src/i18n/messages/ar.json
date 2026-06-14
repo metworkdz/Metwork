@@ -956,7 +956,11 @@
     "networkPass": "Metwork Pass",
     "bookSpace": "حجز فضاء",
     "withdrawals": "السحوبات",
-    "more": "المزيد"
+    "more": "المزيد",
+    "quickActions": "إجراءات سريعة",
+    "recentBookings": "الحجوزات الأخيرة",
+    "recentClients": "العملاء الجدد",
+    "nothingYet": "لا يوجد شيء بعد"
   },
   "pages": {
     "consultationPay": {
