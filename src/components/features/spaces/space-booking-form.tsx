@@ -25,14 +25,6 @@ import {
   Wallet as WalletIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Link, useRouter } from '@/i18n/routing';
 import { useAuth } from '@/components/providers/auth-provider';
@@ -41,7 +33,6 @@ import { bookingService } from '@/services/booking.service';
 import { ApiClientError } from '@/lib/api-client';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { unitLabel } from './space-meta';
 import { SpaceScheduler } from './space-scheduler';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
@@ -217,7 +208,14 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const [startDate, setStartDate] = useState<string>(todayStr());
   const [startTime, setStartTime] = useState<string>(space.openingTime ?? '09:00');
   const [endDate,   setEndDate]   = useState<string>(todayStr());
-  const [endTime,   setEndTime]   = useState<string>(space.closingTime ?? '18:00');
+  const [endTime,   setEndTime]   = useState<string>(() => {
+    // Default to a 1-hour window when Hourly is the initial mode, otherwise the
+    // full opening–closing span (used by Full day / Monthly).
+    const close = space.closingTime ?? '18:00';
+    if (firstUnit !== 'HOUR') return close;
+    const open = space.openingTime ?? '09:00';
+    return minutesToTime(Math.min(parseTime(open) + 60, parseTime(close)));
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]         = useState<{ code: string; message: string } | null>(null);
   const [promoResult, setPromoResult] = useState<PromoResult | null>(null);
@@ -270,9 +268,27 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const endIso   = toIso(endDate,   endTime);
   const validRange = new Date(endIso) > new Date(startIso);
 
-  const unitPrice  = useMemo(() => units.find((u) => u.unit === unit)?.price ?? 0, [unit, units]);
-  const qty        = validRange ? quantity(startIso, endIso, unit) : 0;
-  const total      = unitPrice * qty;
+  // Working-hours + booking-mode derived values.
+  const workingDaysLabel = (space.workingDays ?? [1, 2, 3, 4, 5]).map((d) => DOW_LABELS[d]).join(', ');
+  const openingTime      = space.openingTime ?? '09:00';
+  const closingTime      = space.closingTime ?? '18:00';
+  const hasDayUnit       = units.some((u) => u.unit === 'DAY');
+
+  // Explicit "7 hours or more is billed as a full day" rule. Replaces the old
+  // silent HOUR→DAY auto-convert (which made Hourly impossible to keep selected).
+  // The UI stays in HOUR mode, but pricing + the SUBMITTED unit become DAY once
+  // the window reaches 7h AND the space has a day rate. With no day rate we never
+  // invent one — the end-time picker already caps the hourly window at 7h.
+  const hourlyMinutes = unit === 'HOUR' && validRange ? parseTime(endTime) - parseTime(startTime) : 0;
+  const billedAsDay   = unit === 'HOUR' && hasDayUnit && hourlyMinutes >= MAX_HOURLY_MINUTES;
+  const effectiveUnit: BookingUnit = billedAsDay ? 'DAY' : unit;
+
+  const unitPrice = useMemo(
+    () => units.find((u) => u.unit === effectiveUnit)?.price ?? 0,
+    [effectiveUnit, units],
+  );
+  const qty   = validRange ? quantity(startIso, endIso, effectiveUnit) : 0;
+  const total = unitPrice * qty;
   // Membership-tier space discount (mirrors SPACE_DISCOUNT on the server):
   //   BUILDER  (ENTREPRENEUR membershipCode) → 15 % off
   //   FOUNDER  (STARTUP      membershipCode) → 20 % off
@@ -299,34 +315,31 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const cashBalance = cashDeposit != null ? Math.max(0, finalTotal - cashDeposit) : null;
   const insufficient = !useCard && !isCash && !useNetworkPass && isAuthed && balance != null && finalTotal > 0 && balance < finalTotal;
 
-  const workingDaysLabel = (space.workingDays ?? [1,2,3,4,5]).map((d) => DOW_LABELS[d]).join(', ');
-  const openingTime      = space.openingTime ?? '09:00';
-  const closingTime      = space.closingTime ?? '18:00';
-
-  // Part 6: 7-hour hourly cap derived values
-  const hasDayUnit = units.some((u) => u.unit === 'DAY');
-  const maxHourlyEndTime = useMemo(
-    () => minutesToTime(Math.min(parseTime(startTime) + MAX_HOURLY_MINUTES, parseTime(closingTime))),
-    [startTime, closingTime],
-  );
-
-  // Enforce 7-hour cap; auto-switch to DAY billing when exceeded (if available)
+  // Hourly bookings are single-day — keep the end date pinned to the start date.
   useEffect(() => {
-    if (unit !== 'HOUR') return;
-    // Hourly bookings must start and end on the same day — snap end date if needed
-    if (endDate !== startDate) {
-      setEndDate(startDate);
-      return;
-    }
-    const diffMins = parseTime(endTime) - parseTime(startTime);
-    if (diffMins > MAX_HOURLY_MINUTES) {
-      if (hasDayUnit) {
-        setUnit('DAY'); // auto-convert
+    if (unit === 'HOUR' && endDate !== startDate) setEndDate(startDate);
+  }, [unit, startDate, endDate]);
+
+  // Switch booking mode and seed a valid default window for it: Hourly → a
+  // 1-hour slot from opening; Full day / Monthly → the full opening–closing span
+  // (the scheduler also pins these). Replaces the old silent auto-convert that
+  // bounced the user straight back to DAY and made Hourly unselectable.
+  const handleModeChange = useCallback(
+    (next: BookingUnit) => {
+      setUnit(next);
+      if (next === 'HOUR') {
+        const open = parseTime(openingTime);
+        const close = parseTime(closingTime);
+        setStartTime(openingTime);
+        setEndTime(minutesToTime(Math.min(open + 60, close)));
+        setEndDate(startDate);
       } else {
-        setEndTime(maxHourlyEndTime); // hard cap
+        setStartTime(openingTime);
+        setEndTime(closingTime);
       }
-    }
-  }, [unit, startDate, endDate, startTime, endTime, maxHourlyEndTime, hasDayUnit]);
+    },
+    [openingTime, closingTime, startDate],
+  );
 
   // Single sink for the scheduler — maps its changes onto the existing booking
   // state. The 7-hour-cap effect above still owns rule enforcement; this just
@@ -397,7 +410,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
       setSubmitting(true);
       try {
         const res = await bookingService.createCardBooking({
-          target: { itemKind: 'SPACE', spaceId: space.id, unit, startsAt: startIso, endsAt: endIso },
+          target: { itemKind: 'SPACE', spaceId: space.id, unit: effectiveUnit, startsAt: startIso, endsAt: endIso },
           paymentMode: isCash ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
           customer,
           clientReference: crypto.randomUUID(),
@@ -423,7 +436,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
     try {
       const res = await bookingService.createSpaceBooking({
         spaceId: space.id,
-        unit,
+        unit: effectiveUnit,
         startsAt: startIso,
         endsAt:   endIso,
         clientReference: crypto.randomUUID(),
@@ -485,13 +498,53 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         <span>{t('open')} {workingDaysLabel} · {openingTime} – {closingTime}</span>
       </div>
 
-      {/* 7-hour cap notice — shown for hourly bookings only */}
+      {/* Booking type — Hourly / Full day / Monthly (mode toggle) */}
+      {units.length > 1 && (
+        <div>
+          <span className="text-sm font-medium">{t('bookingType')}</span>
+          <div className={cn('mt-1.5 grid gap-2', units.length === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
+            {units.map((u) => {
+              const Icon = u.unit === 'HOUR' ? Clock : CalendarDays;
+              const label =
+                u.unit === 'HOUR' ? t('modeHourly') : u.unit === 'DAY' ? t('modeFullDay') : t('modeMonthly');
+              const active = unit === u.unit;
+              return (
+                <button
+                  key={u.unit}
+                  type="button"
+                  onClick={() => handleModeChange(u.unit)}
+                  aria-pressed={active}
+                  className={cn(
+                    'flex flex-col items-center gap-1 rounded-lg border px-3 py-2.5 text-center text-sm transition-colors',
+                    active
+                      ? 'border-primary bg-primary/5 font-medium text-primary'
+                      : 'border-border text-muted-foreground hover:border-primary/40',
+                  )}
+                >
+                  <Icon className="size-4 shrink-0" />
+                  <span>{label}</span>
+                  <span className="text-xs tabular-nums opacity-80">
+                    {formatCurrency(u.price, locale)}/
+                    {u.unit === 'HOUR' ? t('hourShort') : u.unit === 'DAY' ? t('dayShort') : t('monthShort')}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Mode hint */}
       {unit === 'HOUR' && (
         <div className="flex items-center gap-1.5 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-700 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300">
           <Clock className="size-3.5 shrink-0" />
-          <span>
-            {hasDayUnit ? t('hourlyCapAutoSwitch') : t('hourlyCapNotice')}.
-          </span>
+          <span>{hasDayUnit ? t('hourlyBilledAsDay') : t('hourlyCapNotice')}</span>
+        </div>
+      )}
+      {unit === 'DAY' && (
+        <div className="flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          <CalendarDays className="size-3.5 shrink-0" />
+          <span>{t('fullDayHint', { open: openingTime, close: closingTime })}</span>
         </div>
       )}
 
@@ -518,25 +571,6 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
               ? `${formatDate(startIso, locale, { dateStyle: 'medium' })} · ${startTime}–${endTime}`
               : `${formatDate(startIso, locale, { dateStyle: 'medium' })} → ${formatDate(endIso, locale, { dateStyle: 'medium' })}`}
           </span>
-        </div>
-      )}
-
-      {/* Unit (pricing model) */}
-      {units.length > 1 && (
-        <div>
-          <Label htmlFor="booking-unit">{t('pricingUnit')}</Label>
-          <Select value={unit} onValueChange={(v) => setUnit(v as BookingUnit)}>
-            <SelectTrigger id="booking-unit" className="mt-1.5">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {units.map((u) => (
-                <SelectItem key={u.unit} value={u.unit}>
-                  {unitLabel[u.unit]} — {formatCurrency(u.price, locale)}/{u.unit === 'HOUR' ? t('hourShort') : u.unit === 'DAY' ? t('dayShort') : t('monthShort')}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
       )}
 
@@ -646,10 +680,13 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
           <div className="flex items-center justify-between text-muted-foreground">
             <span>
               {formatCurrency(unitPrice, locale)} × {qty}{' '}
-              {unit === 'HOUR' ? (qty === 1 ? t('hourShort') : t('hours')) : unit === 'DAY' ? (qty === 1 ? t('dayShort') : t('days')) : (qty === 1 ? t('monthShort') : t('months'))}
+              {effectiveUnit === 'HOUR' ? (qty === 1 ? t('hourShort') : t('hours')) : effectiveUnit === 'DAY' ? (qty === 1 ? t('dayShort') : t('days')) : (qty === 1 ? t('monthShort') : t('months'))}
             </span>
             <span className="tabular-nums">{formatCurrency(total, locale)}</span>
           </div>
+          {billedAsDay && (
+            <p className="mt-1 text-xs text-sky-700 dark:text-sky-300">{t('hourlyBilledAsDay')}</p>
+          )}
           {membershipDiscountAmount > 0 && (
             <div className="mt-1 flex items-center justify-between text-emerald-700 dark:text-emerald-400">
               <span className="flex items-center gap-1.5">
