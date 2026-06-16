@@ -54,7 +54,7 @@ export function ManualBookingDialog({ spaces, onCreated }: ManualBookingDialogPr
   const [startTime, setStartTime]     = useState('09:00');
   const [endDate, setEndDate]         = useState(today);
   const [endTime, setEndTime]         = useState('18:00');
-  const [unit, setUnit]               = useState<'HOUR' | 'DAY' | 'MONTH'>('HOUR');
+  const [unit, setUnit]               = useState<'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH'>('HOUR');
   const [amount, setAmount]           = useState('');
   const [payMethod, setPayMethod]     = useState<'CASH' | 'ONLINE' | 'OTHER'>('CASH');
   const [notes, setNotes]             = useState('');
@@ -219,12 +219,13 @@ export function ManualBookingDialog({ spaces, onCreated }: ManualBookingDialogPr
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="mb-unit">Billing unit</Label>
-                <Select value={unit} onValueChange={(v) => setUnit(v as 'HOUR' | 'DAY' | 'MONTH')}>
+                <Select value={unit} onValueChange={(v) => setUnit(v as 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH')}>
                   <SelectTrigger id="mb-unit" className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="HOUR">Hourly</SelectItem>
+                    <SelectItem value="HALF_DAY">Half-day</SelectItem>
                     <SelectItem value="DAY">Daily</SelectItem>
                     <SelectItem value="MONTH">Monthly</SelectItem>
                   </SelectContent>

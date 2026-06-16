@@ -7,6 +7,7 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db, type BookingRecord } from '@/server/db/store';
+import { checkSpaceAvailability } from '@/server/bookings/availability';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { sendBookingReceiptEmail } from '@/server/notifications/mock';
@@ -22,7 +23,7 @@ const manualBookingSchema = z.object({
   clientEmail:     z.string().email().max(200).optional().nullable(),
   startsAt:        z.string().datetime(),
   endsAt:          z.string().datetime(),
-  unit:            z.enum(['HOUR', 'DAY', 'MONTH']),
+  unit:            z.enum(['HOUR', 'HALF_DAY', 'DAY', 'MONTH']),
   totalAmount:     z.number().int().min(0),
   paymentMethod:   z.enum(['manual', 'wallet', 'OTHER']).default('manual'),
   notes:           z.string().max(500).optional().nullable(),
@@ -102,24 +103,26 @@ export async function POST(req: NextRequest) {
     const space = (d.spaces ?? []).find((s) => s.id === input.spaceId && s.incubatorId === inc.id);
     if (!space) return { ok: false, reason: 'SPACE_NOT_FOUND' };
 
-    // Overlap check against active bookings for this space
-    const newStart = new Date(input.startsAt).getTime();
-    const newEnd   = new Date(input.endsAt).getTime();
-    const conflict = d.bookings.find((b) => {
-      if (b.itemKind !== 'SPACE' || b.itemId !== space.id) return false;
-      if (b.status === 'CANCELLED' || b.status === 'REFUNDED') return false;
-      const bStart = new Date(b.startsAt).getTime();
-      const bEnd   = new Date(b.endsAt).getTime();
-      return newStart < bEnd && newEnd > bStart;
+    // Shared availability gate: blackouts + capacity-aware occupancy. A manual
+    // booking gets NO bypass of blackouts — the incubator must unblock the date
+    // first (the calendar lets them toggle it).
+    const avail = checkSpaceAvailability({
+      space,
+      bookings: d.bookings,
+      spaceId: space.id,
+      unit: input.unit,
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
     });
-    if (conflict) return { ok: false, reason: 'OVERLAP_CONFLICT' };
+    if (!avail.ok) return { ok: false, reason: avail.reason };
 
     // Compute quantity from range
-    const diffMs = newEnd - newStart;
+    const diffMs = new Date(input.endsAt).getTime() - new Date(input.startsAt).getTime();
     let quantity: number;
     switch (input.unit) {
-      case 'HOUR':  quantity = Math.max(1, Math.ceil(diffMs / 3_600_000)); break;
-      case 'DAY':   quantity = Math.max(1, Math.ceil(diffMs / 86_400_000)); break;
+      case 'HOUR':     quantity = Math.max(1, Math.ceil(diffMs / 3_600_000)); break;
+      case 'HALF_DAY': quantity = 1; break;
+      case 'DAY':      quantity = Math.max(1, Math.ceil(diffMs / 86_400_000)); break;
       case 'MONTH': {
         const s = new Date(input.startsAt);
         const e = new Date(input.endsAt);
@@ -160,6 +163,10 @@ export async function POST(req: NextRequest) {
       return jsonError(404, 'SPACE_NOT_FOUND', 'Space not found or does not belong to this incubator');
     if (result.reason === 'OVERLAP_CONFLICT')
       return jsonError(409, 'OVERLAP_CONFLICT', 'This time slot is already booked');
+    if (result.reason === 'DATE_UNAVAILABLE')
+      return jsonError(409, 'DATE_UNAVAILABLE', 'This date is blocked. Unblock it in the availability calendar first.');
+    if (result.reason === 'CAPACITY_EXCEEDED')
+      return jsonError(409, 'CAPACITY_EXCEEDED', 'No capacity left for this slot');
     return jsonError(400, 'BAD_REQUEST', result.reason);
   }
 

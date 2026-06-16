@@ -36,8 +36,13 @@ export interface Space {
   pricePerHour: number | null;
   pricePerDay: number | null;
   pricePerMonth: number | null;
+  /** Optional flat half-day price + incubator-configured window ("HH:MM"). */
+  pricePerHalfDay?: number | null;
+  halfDayStart?: string;
+  halfDayEnd?: string;
   /** Optional CASH-booking per-unit prices; fall back to pricePer* when absent. */
   cashPricePerHour?: number | null;
+  cashPricePerHalfDay?: number | null;
   cashPricePerDay?: number | null;
   cashPricePerMonth?: number | null;
   capacity: number;
@@ -59,6 +64,11 @@ export interface Space {
   partnerMembershipId?: string | null;
   /** True when the space accepts Network Pass bookings. */
   isPartnerInNetwork?: boolean;
+  /**
+   * Per-space duration discounts (e.g. 3+ days → 10% off). Surfaced so the
+   * booking form can preview the server-applied discount. Empty/absent = none.
+   */
+  durationDiscounts?: { unit: 'HOUR' | 'DAY'; minQty: number; percent: number }[];
 }
 
 export type ProgramType = 'INCUBATION' | 'ACCELERATION' | 'TRAINING' | 'BOOTCAMP' | 'WORKSHOP';

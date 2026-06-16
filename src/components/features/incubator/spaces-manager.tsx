@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Building2, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { Building2, CalendarClock, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { SpaceFormDialog } from './space-form-dialog';
+import { SpaceAvailabilityDialog } from './space-availability-dialog';
 import { SpacesMobileList } from './spaces-mobile-list';
 import { formatCurrency } from '@/lib/format';
 import type { Space, SpaceCategory } from '@/types/domain';
@@ -26,6 +27,7 @@ export function SpacesManager() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   // FIX: BUG-2 — edit/delete state
   const [editingSpace, setEditingSpace] = useState<Space | null>(null);
+  const [managingSpace, setManagingSpace] = useState<Space | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function fetchSpaces() {
@@ -154,6 +156,11 @@ export function SpacesManager() {
             onSelect: (s) => setEditingSpace(s),
           },
           {
+            label: t('actionAvailability'),
+            icon: <CalendarClock className="size-4" />,
+            onSelect: (s) => setManagingSpace(s),
+          },
+          {
             label: t('actionDelete'),
             icon: <Trash2 className="size-4" />,
             onSelect: (s) => void handleDelete(s.id),
@@ -170,6 +177,7 @@ export function SpacesManager() {
         createSlot={<SpaceFormDialog onCreated={() => void fetchSpaces()} />}
         onEdit={(s) => setEditingSpace(s)}
         onDelete={(id) => void handleDelete(id)}
+        onManageAvailability={(s) => setManagingSpace(s)}
       />
       {/* FIX: BUG-2 — edit dialog rendered outside the table, controlled by editingSpace state */}
       {editingSpace && (
@@ -184,7 +192,11 @@ export function SpacesManager() {
             pricePerHour: editingSpace.pricePerHour,
             pricePerDay: editingSpace.pricePerDay,
             pricePerMonth: editingSpace.pricePerMonth,
+            pricePerHalfDay: editingSpace.pricePerHalfDay,
+            halfDayStart: editingSpace.halfDayStart,
+            halfDayEnd: editingSpace.halfDayEnd,
             cashPricePerHour: editingSpace.cashPricePerHour,
+            cashPricePerHalfDay: editingSpace.cashPricePerHalfDay,
             cashPricePerDay: editingSpace.cashPricePerDay,
             cashPricePerMonth: editingSpace.cashPricePerMonth,
             capacity: editingSpace.capacity,
@@ -197,9 +209,23 @@ export function SpacesManager() {
             workingDays: editingSpace.workingDays ?? [1, 2, 3, 4, 5],
             openingTime: editingSpace.openingTime ?? '09:00',
             closingTime: editingSpace.closingTime ?? '18:00',
+            durationDiscounts: editingSpace.durationDiscounts ?? [],
           }}
           open={true}
           onOpenChange={(v) => { if (!v) setEditingSpace(null); }}
+        />
+      )}
+      {/* Manage-availability dialog (block/unblock dates per space) */}
+      {managingSpace && (
+        <SpaceAvailabilityDialog
+          space={{
+            id: managingSpace.id,
+            name: managingSpace.name,
+            openingTime: managingSpace.openingTime,
+            closingTime: managingSpace.closingTime,
+          }}
+          open={true}
+          onOpenChange={(v) => { if (!v) setManagingSpace(null); }}
         />
       )}
       {/* suppress unused deletingId warning */}

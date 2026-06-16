@@ -44,6 +44,7 @@ export default async function SpaceDetailPage({ params }: PageProps) {
 
   const prices: { label: string; value: number }[] = [];
   if (space.pricePerHour != null) prices.push({ label: t('hourLabel'), value: space.pricePerHour });
+  if (space.pricePerHalfDay != null) prices.push({ label: t('halfDayLabel'), value: space.pricePerHalfDay });
   if (space.pricePerDay != null) prices.push({ label: t('dayLabel'), value: space.pricePerDay });
   if (space.pricePerMonth != null) prices.push({ label: t('monthLabel'), value: space.pricePerMonth });
 

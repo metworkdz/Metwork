@@ -54,7 +54,8 @@ type LangKey =
   | 'total'        | 'free'           | 'online'
   | 'cash'         | 'confirmed'      | 'pending'
   | 'pendingPaymt' | 'hour'           | 'day'
-  | 'month'        | 'space'          | 'program'
+  | 'month'        | 'half_day'       | 'halfDaily'
+  | 'space'        | 'program'
   | 'event'        | 'hourly'         | 'daily'
   | 'monthly'      | 'thankYou'       | 'consultTitle'
   | 'consultRef'   | 'consultMessage' | 'requestedBy'
@@ -91,6 +92,8 @@ const T: Record<ReceiptLang, Record<LangKey, string>> = {
     hour:          'hour',
     day:           'day',
     month:         'month',
+    half_day:      'half-day',
+    halfDaily:     'Half-day',
     space:         'Space',
     program:       'Program',
     event:         'Event',
@@ -141,6 +144,8 @@ const T: Record<ReceiptLang, Record<LangKey, string>> = {
     hour:          'heure',
     day:           'jour',
     month:         'mois',
+    half_day:      'demi-journée',
+    halfDaily:     'Demi-journée',
     space:         'Espace',
     program:       'Programme',
     event:         'Événement',
@@ -434,9 +439,10 @@ function kindLabel(kind: BookingRecord['itemKind'], t: Record<LangKey, string>):
 
 function unitLabel(unit: BookingRecord['unit'], t: Record<LangKey, string>): string {
   switch (unit) {
-    case 'HOUR':  return t.hourly;
-    case 'DAY':   return t.daily;
-    case 'MONTH': return t.monthly;
+    case 'HOUR':     return t.hourly;
+    case 'HALF_DAY': return t.halfDaily;
+    case 'DAY':      return t.daily;
+    case 'MONTH':    return t.monthly;
   }
 }
 
@@ -578,7 +584,7 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
   drawRow(doc, t.to,   fmtDate(booking.endsAt,   lang));
   if (booking.itemKind === 'SPACE') {
     drawRow(doc, t.unit,     unitLabel(booking.unit, t));
-    drawRow(doc, t.quantity, `${booking.quantity} ${t[booking.unit.toLowerCase() as 'hour' | 'day' | 'month']}`);
+    drawRow(doc, t.quantity, `${booking.quantity} ${t[booking.unit.toLowerCase() as 'hour' | 'half_day' | 'day' | 'month']}`);
   }
   drawDivider(doc);
 

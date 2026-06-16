@@ -58,12 +58,14 @@ import { getEffectiveSubscriptionCode } from '@/server/incubator/service';
 import {
   computeQuantity,
   validateWorkingHours,
-  overlapsBlockedDates,
   unitPrice,
   availableUnits,
-  findSpaceOverlapConflict,
-  countSpaceConcurrent,
 } from './service';
+import {
+  checkSpaceAvailability,
+  bestDurationDiscountPercent,
+  applyDiscountPercent,
+} from './availability';
 import {
   validatePromoCodeSync,
   consumePromoCodeSync,
@@ -234,10 +236,24 @@ function resolveTarget(
       return { ok: false, reason: 'OUTSIDE_WORKING_HOURS', detail: { openingTime: rec.openingTime, closingTime: rec.closingTime } };
     }
     const quantity = computeQuantity(t.startsAt, t.endsAt, t.unit);
-    if (rec.unavailableDates?.length && overlapsBlockedDates(rec.unavailableDates, t.startsAt, t.endsAt, t.unit, quantity)) {
-      return { ok: false, reason: 'DATE_UNAVAILABLE', detail: { blockedDates: rec.unavailableDates } };
+    // Shared availability gate (blackouts + capacity-aware occupancy). Snapshot
+    // courtesy check — the binding one runs in the intent lock & at settlement.
+    const avail = checkSpaceAvailability({
+      space: rec,
+      bookings: data.bookings ?? [],
+      spaceId: rec.id,
+      unit: t.unit,
+      startsAt: t.startsAt,
+      endsAt: t.endsAt,
+    });
+    if (!avail.ok) {
+      if (avail.reason === 'DATE_UNAVAILABLE') return { ok: false, reason: 'DATE_UNAVAILABLE', detail: { blockedDates: avail.blockedDates } };
+      if (avail.reason === 'OVERLAP_CONFLICT') return { ok: false, reason: 'OVERLAP_CONFLICT', detail: { conflictingBookingId: avail.conflictingBookingId } };
+      return { ok: false, reason: 'CAPACITY_EXCEEDED', detail: { capacity: avail.capacity, taken: avail.taken } };
     }
-    const raw = price * quantity;
+    // Server-side duration discount applied to the price before membership.
+    const durationPercent = bestDurationDiscountPercent(rec.durationDiscounts, t.unit, quantity);
+    const raw = applyDiscountPercent(price * quantity, durationPercent);
     const total = fraction > 0 ? Math.round(raw * (1 - fraction)) : raw;
     return {
       ok: true,
@@ -379,14 +395,23 @@ export async function createCardBookingIntent(
       if (active) return { ok: false, reason: 'ALREADY_BOOKED', detail: { existingBookingId: active.id } };
     }
 
-    // Courtesy capacity / overlap check (binding one runs at settlement).
+    // Courtesy availability check (binding one runs at settlement).
     if (item.promoKind === 'SPACE') {
-      const conflictId = findSpaceOverlapConflict(d.bookings, item.itemId, item.startsAt, item.endsAt);
-      if (conflictId) return { ok: false, reason: 'OVERLAP_CONFLICT', detail: { conflictingBookingId: conflictId } };
       const space = d.spaces?.find((s) => s.id === item.itemId);
-      const taken = countSpaceConcurrent(d.bookings, item.itemId, item.startsAt, item.endsAt);
-      if (space && taken >= space.capacity) {
-        return { ok: false, reason: 'CAPACITY_EXCEEDED', detail: { capacity: space.capacity, taken } };
+      if (space) {
+        const avail = checkSpaceAvailability({
+          space,
+          bookings: d.bookings,
+          spaceId: item.itemId,
+          unit: item.unit,
+          startsAt: item.startsAt,
+          endsAt: item.endsAt,
+        });
+        if (!avail.ok) {
+          if (avail.reason === 'DATE_UNAVAILABLE') return { ok: false, reason: 'DATE_UNAVAILABLE', detail: { blockedDates: avail.blockedDates } };
+          if (avail.reason === 'OVERLAP_CONFLICT') return { ok: false, reason: 'OVERLAP_CONFLICT', detail: { conflictingBookingId: avail.conflictingBookingId } };
+          return { ok: false, reason: 'CAPACITY_EXCEEDED', detail: { capacity: avail.capacity, taken: avail.taken } };
+        }
       }
     } else {
       const cap = item.promoKind === 'PROGRAM'
@@ -558,10 +583,21 @@ async function applyCardSettlement(bookingId: string, providerRef: string | null
     // The intent held no seat; another booking may have filled it meanwhile.
     let oversold = false;
     if (booking.itemKind === 'SPACE') {
-      const conflictId = findSpaceOverlapConflict(d.bookings, booking.itemId, booking.startsAt, booking.endsAt);
       const space = d.spaces?.find((s) => s.id === booking.itemId);
-      const taken = countSpaceConcurrent(d.bookings, booking.itemId, booking.startsAt, booking.endsAt);
-      oversold = !!conflictId || (!!space && taken >= space.capacity);
+      // Re-run the shared gate: a date blocked, or the slot/capacity filled,
+      // AFTER the intent was created voids this paid booking (manual refund).
+      const avail = space
+        ? checkSpaceAvailability({
+            space,
+            bookings: d.bookings,
+            spaceId: booking.itemId,
+            unit: booking.unit,
+            startsAt: booking.startsAt,
+            endsAt: booking.endsAt,
+            ignoreBookingId: booking.id,
+          })
+        : ({ ok: true } as const);
+      oversold = !avail.ok;
     } else {
       const cap = booking.itemKind === 'PROGRAM'
         ? d.programs?.find((p) => p.id === booking.itemId)?.seatsTotal ?? 0

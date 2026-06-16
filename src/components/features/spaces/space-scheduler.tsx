@@ -83,6 +83,9 @@ export function SpaceScheduler({
 }: SpaceSchedulerProps) {
   const t = useTranslations('spaces.scheduler');
   const isHour = unit === 'HOUR';
+  const isHalfDay = unit === 'HALF_DAY';
+  // Both HOUR and HALF_DAY are single-day picks (no date range).
+  const isSingleDay = isHour || isHalfDay;
 
   const [month, setMonth] = useState<string>(() => (startDate || todayISO()).slice(0, 7));
   const [availableDates, setAvailableDates] = useState<string[]>([]);
@@ -163,18 +166,20 @@ export function SpaceScheduler({
   }, [spaceId, startDate, isHour]);
 
   /* ── Pin times to opening/closing while in DAY/MONTH mode ── */
+  // HALF_DAY is excluded: its times are owned by the booking form (the
+  // incubator-configured half-day window), so the scheduler must not touch them.
   useEffect(() => {
-    if (isHour) return;
+    if (isHour || isHalfDay) return;
     if (startTime !== openingTime || endTime !== closingTime) {
       onChange({ startTime: openingTime, endTime: closingTime });
     }
-  }, [isHour, startTime, endTime, openingTime, closingTime, onChange]);
+  }, [isHour, isHalfDay, startTime, endTime, openingTime, closingTime, onChange]);
 
   /* ── Date selection ── */
   const handleSelectDate = useCallback(
     (date: string) => {
-      if (isHour) {
-        // Hourly bookings are single-day.
+      if (isSingleDay) {
+        // Hourly and half-day bookings are single-day.
         onChange({ startDate: date, endDate: date });
         return;
       }
@@ -190,7 +195,7 @@ export function SpaceScheduler({
         onChange({ startDate: date, endDate: date });
       }
     },
-    [isHour, pickingEnd, startDate, onChange],
+    [isSingleDay, pickingEnd, startDate, onChange],
   );
 
   /* ── Hourly start/end pills ── */
@@ -232,7 +237,7 @@ export function SpaceScheduler({
   );
 
   const noAvailability = !loadingDates && availableDates.length === 0 && unavailableDates.length === 0;
-  const rangeEnd = !isHour && endDate && endDate !== startDate ? endDate : null;
+  const rangeEnd = !isSingleDay && endDate && endDate !== startDate ? endDate : null;
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -261,7 +266,7 @@ export function SpaceScheduler({
       </div>
 
       {/* Range hint for multi-day bookings */}
-      {!isHour && (
+      {!isSingleDay && (
         <p className="text-center text-xs text-muted-foreground">
           {pickingEnd ? t('pickEndDate') : t('rangeHint')}
         </p>

@@ -28,8 +28,13 @@ const createSpaceSchema = z.object({
   pricePerHour:  z.number().int().min(0).optional().nullable(),
   pricePerDay:   z.number().int().min(0).optional().nullable(),
   pricePerMonth: z.number().int().min(0).optional().nullable(),
+  /** Optional flat half-day price + incubator-configured window ("HH:MM"). */
+  pricePerHalfDay: z.number().int().min(0).optional().nullable(),
+  halfDayStart:    z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  halfDayEnd:      z.string().regex(/^\d{2}:\d{2}$/).optional(),
   /** Optional CASH-booking per-unit prices — fall back to pricePer* when omitted. */
   cashPricePerHour:  z.number().int().min(0).optional().nullable(),
+  cashPricePerHalfDay: z.number().int().min(0).optional().nullable(),
   cashPricePerDay:   z.number().int().min(0).optional().nullable(),
   cashPricePerMonth: z.number().int().min(0).optional().nullable(),
   capacity:     z.number().int().min(1).max(10_000),
@@ -43,12 +48,18 @@ const createSpaceSchema = z.object({
   /** "HH:MM" 24h. */
   openingTime:  z.string().regex(/^\d{2}:\d{2}$/).default('09:00'),
   closingTime:  z.string().regex(/^\d{2}:\d{2}$/).default('18:00'),
+  /** Per-space duration discounts (0 < percent < 100, minQty > 0). */
+  durationDiscounts: z.array(z.object({
+    unit:    z.enum(['HOUR', 'DAY']),
+    minQty:  z.number().int().positive(),
+    percent: z.number().int().min(1).max(99),
+  })).max(20).default([]),
 }).refine(
   // A space with no price for any unit is unbookable (availableUnits() would
   // be empty). Require at least one pricing unit, mirroring the program/event
   // price requirement.
-  (d) => d.pricePerHour != null || d.pricePerDay != null || d.pricePerMonth != null,
-  { message: 'At least one price (per hour, day, or month) is required', path: ['pricePerHour'] },
+  (d) => d.pricePerHour != null || d.pricePerHalfDay != null || d.pricePerDay != null || d.pricePerMonth != null,
+  { message: 'At least one price (per hour, half-day, day, or month) is required', path: ['pricePerHour'] },
 );
 
 export async function GET() {
@@ -109,7 +120,11 @@ export async function POST(req: NextRequest) {
       pricePerHour:           input.pricePerHour ?? null,
       pricePerDay:            input.pricePerDay ?? null,
       pricePerMonth:          input.pricePerMonth ?? null,
+      pricePerHalfDay:        input.pricePerHalfDay ?? null,
+      halfDayStart:           input.halfDayStart,
+      halfDayEnd:             input.halfDayEnd,
       cashPricePerHour:       input.cashPricePerHour ?? null,
+      cashPricePerHalfDay:    input.cashPricePerHalfDay ?? null,
       cashPricePerDay:        input.cashPricePerDay ?? null,
       cashPricePerMonth:      input.cashPricePerMonth ?? null,
       capacity:               input.capacity,
@@ -119,6 +134,7 @@ export async function POST(req: NextRequest) {
       workingDays:            input.workingDays,
       openingTime:            input.openingTime,
       closingTime:            input.closingTime,
+      durationDiscounts:      input.durationDiscounts,
       isActive:               true,
       createdAt:              now,
       updatedAt:              now,

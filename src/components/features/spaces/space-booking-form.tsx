@@ -58,6 +58,7 @@ interface SpaceBookingFormProps {
 function availableUnits(space: Space): { unit: BookingUnit; price: number }[] {
   const out: { unit: BookingUnit; price: number }[] = [];
   if (space.pricePerHour != null) out.push({ unit: 'HOUR', price: space.pricePerHour });
+  if (space.pricePerHalfDay != null) out.push({ unit: 'HALF_DAY', price: space.pricePerHalfDay });
   if (space.pricePerDay  != null) out.push({ unit: 'DAY',  price: space.pricePerDay  });
   if (space.pricePerMonth != null) out.push({ unit: 'MONTH', price: space.pricePerMonth });
   return out;
@@ -82,6 +83,7 @@ function quantity(startsAt: string, endsAt: string, unit: BookingUnit): number {
   const diffMs = new Date(endsAt).getTime() - new Date(startsAt).getTime();
   switch (unit) {
     case 'HOUR':  return Math.max(1, Math.ceil(diffMs / 3_600_000));
+    case 'HALF_DAY': return 1;
     case 'DAY':   return Math.max(1, Math.ceil(diffMs / 86_400_000));
     case 'MONTH': {
       const s = new Date(startsAt);
@@ -273,6 +275,9 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const openingTime      = space.openingTime ?? '09:00';
   const closingTime      = space.closingTime ?? '18:00';
   const hasDayUnit       = units.some((u) => u.unit === 'DAY');
+  // Incubator-configured half-day window (fixed; the customer can't change it).
+  const halfDayStart     = space.halfDayStart ?? openingTime;
+  const halfDayEnd       = space.halfDayEnd ?? closingTime;
 
   // Explicit "7 hours or more is billed as a full day" rule. Replaces the old
   // silent HOUR→DAY auto-convert (which made Hourly impossible to keep selected).
@@ -289,6 +294,20 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   );
   const qty   = validRange ? quantity(startIso, endIso, effectiveUnit) : 0;
   const total = unitPrice * qty;
+  // Server-side duration discount preview (mirrors bestDurationDiscountPercent).
+  // HOUR bookings match HOUR rules; DAY/MONTH match DAY rules. Highest wins.
+  const durationPercent = useMemo(() => {
+    const rules = space.durationDiscounts ?? [];
+    const ruleUnit = effectiveUnit === 'HOUR' || effectiveUnit === 'HALF_DAY' ? 'HOUR' : 'DAY';
+    let best = 0;
+    for (const r of rules) {
+      if (r.unit !== ruleUnit) continue;
+      if (r.minQty > 0 && r.percent > 0 && r.percent < 100 && qty >= r.minQty && r.percent > best) best = r.percent;
+    }
+    return best;
+  }, [space.durationDiscounts, effectiveUnit, qty]);
+  const durationDiscountAmount = durationPercent > 0 ? total - Math.round(total * (1 - durationPercent / 100)) : 0;
+  const afterDuration = total - durationDiscountAmount;
   // Membership-tier space discount (mirrors SPACE_DISCOUNT on the server):
   //   BUILDER  (ENTREPRENEUR membershipCode) → 15 % off
   //   FOUNDER  (STARTUP      membershipCode) → 20 % off
@@ -301,8 +320,8 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
     ? 0.15
     : 0;
   const membershipDiscountPercent  = Math.round(membershipDiscountFraction * 100);
-  const membershipDiscountAmount   = membershipDiscountFraction > 0 ? total - Math.round(total * (1 - membershipDiscountFraction)) : 0;
-  const afterMembershipDiscount    = total - membershipDiscountAmount;
+  const membershipDiscountAmount   = membershipDiscountFraction > 0 ? afterDuration - Math.round(afterDuration * (1 - membershipDiscountFraction)) : 0;
+  const afterMembershipDiscount    = afterDuration - membershipDiscountAmount;
   const finalTotal = promoResult?.finalAmount ?? afterMembershipDiscount;
   // Goes through the hosted card checkout: any guest, or a registered CASH
   // deposit. Registered ONLINE stays on the wallet; the Network Pass and a
@@ -315,10 +334,17 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const cashBalance = cashDeposit != null ? Math.max(0, finalTotal - cashDeposit) : null;
   const insufficient = !useCard && !isCash && !useNetworkPass && isAuthed && balance != null && finalTotal > 0 && balance < finalTotal;
 
-  // Hourly bookings are single-day — keep the end date pinned to the start date.
+  // Hourly + half-day bookings are single-day — keep end date pinned to start.
   useEffect(() => {
-    if (unit === 'HOUR' && endDate !== startDate) setEndDate(startDate);
+    if ((unit === 'HOUR' || unit === 'HALF_DAY') && endDate !== startDate) setEndDate(startDate);
   }, [unit, startDate, endDate]);
+
+  // Half-day uses the incubator-configured window — keep the times pinned to it.
+  useEffect(() => {
+    if (unit !== 'HALF_DAY') return;
+    if (startTime !== halfDayStart) setStartTime(halfDayStart);
+    if (endTime !== halfDayEnd) setEndTime(halfDayEnd);
+  }, [unit, halfDayStart, halfDayEnd, startTime, endTime]);
 
   // Switch booking mode and seed a valid default window for it: Hourly → a
   // 1-hour slot from opening; Full day / Monthly → the full opening–closing span
@@ -333,12 +359,17 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         setStartTime(openingTime);
         setEndTime(minutesToTime(Math.min(open + 60, close)));
         setEndDate(startDate);
+      } else if (next === 'HALF_DAY') {
+        // Fixed window set by the incubator; single day.
+        setStartTime(halfDayStart);
+        setEndTime(halfDayEnd);
+        setEndDate(startDate);
       } else {
         setStartTime(openingTime);
         setEndTime(closingTime);
       }
     },
-    [openingTime, closingTime, startDate],
+    [openingTime, closingTime, startDate, halfDayStart, halfDayEnd],
   );
 
   // Single sink for the scheduler — maps its changes onto the existing booking
@@ -504,9 +535,12 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
           <span className="text-sm font-medium">{t('bookingType')}</span>
           <div className={cn('mt-1.5 grid gap-2', units.length === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
             {units.map((u) => {
-              const Icon = u.unit === 'HOUR' ? Clock : CalendarDays;
+              const Icon = u.unit === 'HOUR' || u.unit === 'HALF_DAY' ? Clock : CalendarDays;
               const label =
-                u.unit === 'HOUR' ? t('modeHourly') : u.unit === 'DAY' ? t('modeFullDay') : t('modeMonthly');
+                u.unit === 'HOUR' ? t('modeHourly')
+                : u.unit === 'HALF_DAY' ? t('modeHalfDay')
+                : u.unit === 'DAY' ? t('modeFullDay')
+                : t('modeMonthly');
               const active = unit === u.unit;
               return (
                 <button
@@ -525,7 +559,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
                   <span>{label}</span>
                   <span className="text-xs tabular-nums opacity-80">
                     {formatCurrency(u.price, locale)}/
-                    {u.unit === 'HOUR' ? t('hourShort') : u.unit === 'DAY' ? t('dayShort') : t('monthShort')}
+                    {u.unit === 'HOUR' ? t('hourShort') : u.unit === 'HALF_DAY' ? t('halfDayShort') : u.unit === 'DAY' ? t('dayShort') : t('monthShort')}
                   </span>
                 </button>
               );
@@ -545,6 +579,12 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         <div className="flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
           <CalendarDays className="size-3.5 shrink-0" />
           <span>{t('fullDayHint', { open: openingTime, close: closingTime })}</span>
+        </div>
+      )}
+      {unit === 'HALF_DAY' && (
+        <div className="flex items-center gap-1.5 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-700 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300">
+          <Clock className="size-3.5 shrink-0" />
+          <span>{t('halfDayHint', { start: halfDayStart, end: halfDayEnd })}</span>
         </div>
       )}
 
@@ -567,7 +607,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         <div className="flex items-center justify-center gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-foreground">
           <CalendarDays className="size-3.5 shrink-0 text-muted-foreground" />
           <span className="font-medium">
-            {unit === 'HOUR'
+            {unit === 'HOUR' || unit === 'HALF_DAY'
               ? `${formatDate(startIso, locale, { dateStyle: 'medium' })} · ${startTime}–${endTime}`
               : `${formatDate(startIso, locale, { dateStyle: 'medium' })} → ${formatDate(endIso, locale, { dateStyle: 'medium' })}`}
           </span>
@@ -680,12 +720,18 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
           <div className="flex items-center justify-between text-muted-foreground">
             <span>
               {formatCurrency(unitPrice, locale)} × {qty}{' '}
-              {effectiveUnit === 'HOUR' ? (qty === 1 ? t('hourShort') : t('hours')) : effectiveUnit === 'DAY' ? (qty === 1 ? t('dayShort') : t('days')) : (qty === 1 ? t('monthShort') : t('months'))}
+              {effectiveUnit === 'HOUR' ? (qty === 1 ? t('hourShort') : t('hours')) : effectiveUnit === 'HALF_DAY' ? t('halfDayShort') : effectiveUnit === 'DAY' ? (qty === 1 ? t('dayShort') : t('days')) : (qty === 1 ? t('monthShort') : t('months'))}
             </span>
             <span className="tabular-nums">{formatCurrency(total, locale)}</span>
           </div>
           {billedAsDay && (
             <p className="mt-1 text-xs text-sky-700 dark:text-sky-300">{t('hourlyBilledAsDay')}</p>
+          )}
+          {durationDiscountAmount > 0 && (
+            <div className="mt-1 flex items-center justify-between text-emerald-700 dark:text-emerald-400">
+              <span>{t('durationDiscount', { percent: durationPercent })}</span>
+              <span className="tabular-nums">−{formatCurrency(durationDiscountAmount, locale)}</span>
+            </div>
           )}
           {membershipDiscountAmount > 0 && (
             <div className="mt-1 flex items-center justify-between text-emerald-700 dark:text-emerald-400">

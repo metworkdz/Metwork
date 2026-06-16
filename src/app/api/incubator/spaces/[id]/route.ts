@@ -22,7 +22,11 @@ const patchSchema = z.object({
   pricePerHour: z.number().int().nonnegative().nullable().optional(),
   pricePerDay: z.number().int().nonnegative().nullable().optional(),
   pricePerMonth: z.number().int().nonnegative().nullable().optional(),
+  pricePerHalfDay: z.number().int().nonnegative().nullable().optional(),
+  halfDayStart: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+  halfDayEnd: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
   cashPricePerHour: z.number().int().nonnegative().nullable().optional(),
+  cashPricePerHalfDay: z.number().int().nonnegative().nullable().optional(),
   cashPricePerDay: z.number().int().nonnegative().nullable().optional(),
   cashPricePerMonth: z.number().int().nonnegative().nullable().optional(),
   capacity: z.number().int().positive().optional(),
@@ -30,6 +34,11 @@ const patchSchema = z.object({
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).optional(),
   cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
   cashDepositValue: z.number().int().positive().optional().nullable(),
+  durationDiscounts: z.array(z.object({
+    unit:    z.enum(['HOUR', 'DAY']),
+    minQty:  z.number().int().positive(),
+    percent: z.number().int().min(1).max(99),
+  })).max(20).optional(),
   status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
 });
 
@@ -60,10 +69,11 @@ export async function PATCH(
     if (!incubator || incubator.managerId !== guard.user.id) return 'FORBIDDEN';
     // Reject (before mutating) any edit that would leave the space with no
     // price for any unit — that makes it unbookable. Mirrors the create guard.
-    const nextHour  = input.pricePerHour  !== undefined ? input.pricePerHour  : s.pricePerHour;
-    const nextDay   = input.pricePerDay   !== undefined ? input.pricePerDay   : s.pricePerDay;
-    const nextMonth = input.pricePerMonth !== undefined ? input.pricePerMonth : s.pricePerMonth;
-    if (nextHour == null && nextDay == null && nextMonth == null) return 'NO_PRICE';
+    const nextHour    = input.pricePerHour    !== undefined ? input.pricePerHour    : s.pricePerHour;
+    const nextHalfDay = input.pricePerHalfDay !== undefined ? input.pricePerHalfDay : s.pricePerHalfDay;
+    const nextDay     = input.pricePerDay     !== undefined ? input.pricePerDay     : s.pricePerDay;
+    const nextMonth   = input.pricePerMonth   !== undefined ? input.pricePerMonth   : s.pricePerMonth;
+    if (nextHour == null && nextHalfDay == null && nextDay == null && nextMonth == null) return 'NO_PRICE';
 
     // Payment config: validate against the merged (existing + patched) state so
     // turning CASH on always carries a valid deposit, and turning it off clears
@@ -97,11 +107,16 @@ export async function PATCH(
     if (input.pricePerHour !== undefined) s.pricePerHour = input.pricePerHour ?? null;
     if (input.pricePerDay !== undefined) s.pricePerDay = input.pricePerDay ?? null;
     if (input.pricePerMonth !== undefined) s.pricePerMonth = input.pricePerMonth ?? null;
+    if (input.pricePerHalfDay !== undefined) s.pricePerHalfDay = input.pricePerHalfDay ?? null;
+    if (input.halfDayStart !== undefined) s.halfDayStart = input.halfDayStart ?? undefined;
+    if (input.halfDayEnd !== undefined) s.halfDayEnd = input.halfDayEnd ?? undefined;
     if (input.cashPricePerHour !== undefined) s.cashPricePerHour = input.cashPricePerHour ?? null;
+    if (input.cashPricePerHalfDay !== undefined) s.cashPricePerHalfDay = input.cashPricePerHalfDay ?? null;
     if (input.cashPricePerDay !== undefined) s.cashPricePerDay = input.cashPricePerDay ?? null;
     if (input.cashPricePerMonth !== undefined) s.cashPricePerMonth = input.cashPricePerMonth ?? null;
     if (input.capacity !== undefined) s.capacity = input.capacity;
     if (input.amenities !== undefined) s.amenities = input.amenities;
+    if (input.durationDiscounts !== undefined) s.durationDiscounts = input.durationDiscounts;
     if (input.status !== undefined) s.isActive = input.status === 'ACTIVE';
     s.updatedAt = new Date().toISOString();
     return s;

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Building2, Pencil, Trash2 } from 'lucide-react';
+import { Building2, CalendarClock, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
@@ -16,6 +16,7 @@ interface SpacesMobileListProps {
   createSlot: ReactNode;
   onEdit: (space: Space) => void;
   onDelete: (id: string) => void;
+  onManageAvailability: (space: Space) => void;
 }
 
 /**
@@ -30,6 +31,7 @@ export function SpacesMobileList({
   createSlot,
   onEdit,
   onDelete,
+  onManageAvailability,
 }: SpacesMobileListProps) {
   const t = useTranslations('incubator.spaces');
   const locale = useLocale() as Locale;
@@ -89,6 +91,15 @@ export function SpacesMobileList({
                   <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => onEdit(s)}>
                     <Pencil className="size-4" />
                     {t('actionEdit')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => onManageAvailability(s)}
+                    aria-label={t('actionAvailability')}
+                  >
+                    <CalendarClock className="size-4" />
                   </Button>
                   <Button
                     variant="ghost"

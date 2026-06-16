@@ -27,7 +27,11 @@ function fromRecord(r: import('@/server/db/store').SpaceRecord): Space {
     pricePerHour:           r.pricePerHour,
     pricePerDay:            r.pricePerDay,
     pricePerMonth:          r.pricePerMonth,
+    pricePerHalfDay:        r.pricePerHalfDay ?? null,
+    halfDayStart:           r.halfDayStart,
+    halfDayEnd:             r.halfDayEnd,
     cashPricePerHour:       r.cashPricePerHour ?? null,
+    cashPricePerHalfDay:    r.cashPricePerHalfDay ?? null,
     cashPricePerDay:        r.cashPricePerDay ?? null,
     cashPricePerMonth:      r.cashPricePerMonth ?? null,
     capacity:               r.capacity,
@@ -40,6 +44,7 @@ function fromRecord(r: import('@/server/db/store').SpaceRecord): Space {
     workingDays:  r.workingDays  ?? DEFAULT_WORKING_DAYS,
     openingTime:  r.openingTime  ?? DEFAULT_OPENING_TIME,
     closingTime:  r.closingTime  ?? DEFAULT_CLOSING_TIME,
+    durationDiscounts: r.durationDiscounts ?? [],
   };
 }
 

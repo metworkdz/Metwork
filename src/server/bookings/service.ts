@@ -16,6 +16,11 @@ import {
   type WalletRecord,
 } from '@/server/db/store';
 import { findSpaceById } from './space-catalog';
+import {
+  checkSpaceAvailability,
+  bestDurationDiscountPercent,
+  applyDiscountPercent,
+} from './availability';
 import { findProgramById } from './program-catalog';
 import { findEventById } from './event-catalog';
 import { countAttendance } from '@/server/attendance';
@@ -128,10 +133,12 @@ export interface CreateSpaceBookingArgs {
 /** Minimal price shape — satisfied by both the domain `Space` and the raw `SpaceRecord`. */
 export type SpacePricing = {
   pricePerHour: number | null;
+  pricePerHalfDay?: number | null;
   pricePerDay: number | null;
   pricePerMonth: number | null;
   /** Optional CASH-booking per-unit prices; fall back to pricePer* when absent. */
   cashPricePerHour?: number | null;
+  cashPricePerHalfDay?: number | null;
   cashPricePerDay?: number | null;
   cashPricePerMonth?: number | null;
 };
@@ -152,12 +159,14 @@ export function unitPrice(
 ): number | null {
   const base =
     unit === 'HOUR' ? space.pricePerHour
+    : unit === 'HALF_DAY' ? (space.pricePerHalfDay ?? null)
     : unit === 'DAY' ? space.pricePerDay
     : space.pricePerMonth;
   if (base == null) return null;
   if (mode !== 'CASH_DEPOSIT') return base;
   const cash =
     unit === 'HOUR' ? space.cashPricePerHour
+    : unit === 'HALF_DAY' ? space.cashPricePerHalfDay
     : unit === 'DAY' ? space.cashPricePerDay
     : space.cashPricePerMonth;
   return cash != null ? cash : base;
@@ -166,6 +175,7 @@ export function unitPrice(
 export function availableUnits(space: SpacePricing): BookingUnit[] {
   const out: BookingUnit[] = [];
   if (space.pricePerHour != null) out.push('HOUR');
+  if (space.pricePerHalfDay != null) out.push('HALF_DAY');
   if (space.pricePerDay != null) out.push('DAY');
   if (space.pricePerMonth != null) out.push('MONTH');
   return out;
@@ -176,6 +186,7 @@ export function computeQuantity(startsAt: string, endsAt: string, unit: BookingU
   const diffMs = new Date(endsAt).getTime() - new Date(startsAt).getTime();
   switch (unit) {
     case 'HOUR':  return Math.max(1, Math.ceil(diffMs / 3_600_000));
+    case 'HALF_DAY': return 1; // a half-day is one flat-priced block
     case 'DAY':   return Math.max(1, Math.ceil(diffMs / 86_400_000));
     case 'MONTH': {
       const s = new Date(startsAt);
@@ -281,12 +292,15 @@ export async function createSpaceBooking(
 
   const quantity  = computeQuantity(args.startsAt, args.endsAt, args.unit);
   const { endsAt } = args;
-  const rawBaseTotal = price * quantity;
+  // Server-side duration discount (e.g. 3+ days → 10 % off), applied to the
+  // computed price first. The client never supplies the percentage.
+  const durationPercent = bestDurationDiscountPercent(space.durationDiscounts, args.unit, quantity);
+  const afterDuration   = applyDiscountPercent(price * quantity, durationPercent);
   // Apply membership discount (e.g. STARTUP tier 20 % off) before promo codes
   const membershipFraction = Math.min(1, Math.max(0, args.membershipDiscount ?? 0));
   const baseTotal = membershipFraction > 0
-    ? Math.round(rawBaseTotal * (1 - membershipFraction))
-    : rawBaseTotal;
+    ? Math.round(afterDuration * (1 - membershipFraction))
+    : afterDuration;
 
   // Ensure promo codes are seeded before entering the critical section.
   if (args.promoCode) await ensurePromoCodesSeeded();
@@ -294,11 +308,25 @@ export async function createSpaceBooking(
   const isCash = args.paymentMethod === 'manual';
   const isNetworkPass = args.paymentMethod === 'NETWORK_PASS';
 
-  // Pre-check: blocked dates (outside the DB lock for speed)
-  const rawSpace = (await db.read()).spaces?.find((s) => s.id === args.spaceId);
-  if (rawSpace?.unavailableDates?.length) {
-    if (overlapsBlockedDates(rawSpace.unavailableDates, args.startsAt, endsAt, args.unit, quantity)) {
-      return { ok: false, reason: 'DATE_UNAVAILABLE', blockedDates: rawSpace.unavailableDates };
+  // Pre-check: blackouts + capacity-aware occupancy (outside the DB lock for a
+  // fast reject; the binding re-check runs inside the lock below).
+  {
+    const snap = await db.read();
+    const rawSpace = snap.spaces?.find((s) => s.id === args.spaceId);
+    if (rawSpace) {
+      const pre = checkSpaceAvailability({
+        space: rawSpace,
+        bookings: snap.bookings,
+        spaceId: rawSpace.id,
+        unit: args.unit,
+        startsAt: args.startsAt,
+        endsAt,
+      });
+      if (!pre.ok) {
+        if (pre.reason === 'DATE_UNAVAILABLE') return { ok: false, reason: 'DATE_UNAVAILABLE', blockedDates: pre.blockedDates };
+        if (pre.reason === 'OVERLAP_CONFLICT') return { ok: false, reason: 'OVERLAP_CONFLICT', conflictingBookingId: pre.conflictingBookingId };
+        return { ok: false, reason: 'CAPACITY_EXCEEDED', capacity: pre.capacity, taken: pre.taken };
+      }
     }
   }
 
@@ -315,10 +343,24 @@ export async function createSpaceBooking(
       if (tx) return { ok: true, replayed: true, booking: existing, transaction: tx, wallet: w };
     }
 
-    // ── Overlap check: reject if an active booking occupies part of the window ──
-    const conflictId = findSpaceOverlapConflict(d.bookings, space.id, args.startsAt, args.endsAt);
-    if (conflictId) {
-      return { ok: false, reason: 'OVERLAP_CONFLICT', conflictingBookingId: conflictId };
+    // ── Shared availability gate: blackouts + capacity-aware occupancy ──
+    // Authoritative re-check inside the lock (state may have changed since the
+    // pre-check). Same function every booking path calls so rules never diverge.
+    const spaceRec = d.spaces?.find((s) => s.id === space.id);
+    if (spaceRec) {
+      const avail = checkSpaceAvailability({
+        space: spaceRec,
+        bookings: d.bookings,
+        spaceId: space.id,
+        unit: args.unit,
+        startsAt: args.startsAt,
+        endsAt,
+      });
+      if (!avail.ok) {
+        if (avail.reason === 'DATE_UNAVAILABLE') return { ok: false, reason: 'DATE_UNAVAILABLE', blockedDates: avail.blockedDates };
+        if (avail.reason === 'OVERLAP_CONFLICT') return { ok: false, reason: 'OVERLAP_CONFLICT', conflictingBookingId: avail.conflictingBookingId };
+        return { ok: false, reason: 'CAPACITY_EXCEEDED', capacity: avail.capacity, taken: avail.taken };
+      }
     }
 
     // Apply promo code discount (only for online payment)
@@ -332,21 +374,6 @@ export async function createSpaceBooking(
       }
     }
 
-    // Inside the lock: also re-check blocked dates (state may have changed).
-    const spaceRec = d.spaces?.find((s) => s.id === space.id);
-    if (spaceRec?.unavailableDates?.length) {
-      if (overlapsBlockedDates(spaceRec.unavailableDates, args.startsAt, endsAt, args.unit, quantity)) {
-        return { ok: false, reason: 'DATE_UNAVAILABLE', blockedDates: spaceRec.unavailableDates };
-      }
-    }
-
-    // Concurrent-occupancy capacity check: count active bookings for this
-    // space whose time window overlaps with the requested [startsAt, endsAt).
-    const overlapping = countSpaceConcurrent(d.bookings, space.id, args.startsAt, endsAt);
-    if (overlapping >= space.capacity) {
-      return { ok: false, reason: 'CAPACITY_EXCEEDED', capacity: space.capacity, taken: overlapping };
-    }
-
     // Wallet — auto-create on first access.
     let wallet = d.wallets.find((w) => w.userId === args.userId);
     if (!wallet) {
@@ -356,7 +383,6 @@ export async function createSpaceBooking(
 
     // ── Network Pass path: redeem a monthly credit, no wallet charge ───
     if (isNetworkPass) {
-      const spaceRec = d.spaces?.find((s) => s.id === space.id);
       if (!spaceRec?.isPartnerInNetwork) {
         return { ok: false, reason: 'NOT_PARTNER_SPACE' };
       }

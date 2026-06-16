@@ -7,7 +7,7 @@
  */
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,16 +42,20 @@ interface SpaceFormDialogProps {
     name?: string; description?: string; category?: SpaceCategory;
     city?: string; pricePerHour?: number | null; pricePerDay?: number | null;
     pricePerMonth?: number | null;
-    cashPricePerHour?: number | null; cashPricePerDay?: number | null; cashPricePerMonth?: number | null;
+    pricePerHalfDay?: number | null; halfDayStart?: string; halfDayEnd?: string;
+    cashPricePerHour?: number | null; cashPricePerHalfDay?: number | null; cashPricePerDay?: number | null; cashPricePerMonth?: number | null;
     capacity?: number; amenities?: string[];
     acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
     imageUrls?: string[] | null;
     cashDepositType?: 'FIXED' | 'PERCENT'; cashDepositValue?: number;
     workingDays?: number[]; openingTime?: string; closingTime?: string;
+    durationDiscounts?: DurationDiscount[];
   };
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
 }
+
+type DurationDiscount = { unit: 'HOUR' | 'DAY'; minQty: number; percent: number };
 
 export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange }: SpaceFormDialogProps) {
   const t = useTranslations('incubator.spaceForm');
@@ -69,7 +73,11 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
   const [pricePerHour, setPricePerHour] = useState('');
   const [pricePerDay, setPricePerDay] = useState('');
   const [pricePerMonth, setPricePerMonth] = useState('');
+  const [pricePerHalfDay, setPricePerHalfDay] = useState('');
+  const [halfDayStart, setHalfDayStart] = useState('09:00');
+  const [halfDayEnd, setHalfDayEnd] = useState('13:00');
   const [cashPricePerHour, setCashPricePerHour] = useState('');
+  const [cashPricePerHalfDay, setCashPricePerHalfDay] = useState('');
   const [cashPricePerDay, setCashPricePerDay] = useState('');
   const [cashPricePerMonth, setCashPricePerMonth] = useState('');
   const [capacity, setCapacity] = useState('10');
@@ -82,6 +90,8 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [openingTime, setOpeningTime] = useState('09:00');
   const [closingTime, setClosingTime] = useState('18:00');
+  // Duration discounts (e.g. 3+ days → 10% off)
+  const [discounts, setDiscounts] = useState<DurationDiscount[]>([]);
 
   // FIX: BUG-2 — pre-fill form when in edit mode
   useEffect(() => {
@@ -93,7 +103,11 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
       setPricePerHour(initialData.pricePerHour != null ? String(initialData.pricePerHour) : '');
       setPricePerDay(initialData.pricePerDay != null ? String(initialData.pricePerDay) : '');
       setPricePerMonth(initialData.pricePerMonth != null ? String(initialData.pricePerMonth) : '');
+      setPricePerHalfDay(initialData.pricePerHalfDay != null ? String(initialData.pricePerHalfDay) : '');
+      setHalfDayStart(initialData.halfDayStart ?? '09:00');
+      setHalfDayEnd(initialData.halfDayEnd ?? '13:00');
       setCashPricePerHour(initialData.cashPricePerHour != null ? String(initialData.cashPricePerHour) : '');
+      setCashPricePerHalfDay(initialData.cashPricePerHalfDay != null ? String(initialData.cashPricePerHalfDay) : '');
       setCashPricePerDay(initialData.cashPricePerDay != null ? String(initialData.cashPricePerDay) : '');
       setCashPricePerMonth(initialData.cashPricePerMonth != null ? String(initialData.cashPricePerMonth) : '');
       setCapacity(initialData.capacity != null ? String(initialData.capacity) : '10');
@@ -109,6 +123,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
       setWorkingDays(initialData.workingDays ?? [1, 2, 3, 4, 5]);
       setOpeningTime(initialData.openingTime ?? '09:00');
       setClosingTime(initialData.closingTime ?? '18:00');
+      setDiscounts(initialData.durationDiscounts ?? []);
       setError(null);
     }
   }, [editId, initialData]);
@@ -126,13 +141,25 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
   function reset() {
     setName(''); setDescription(''); setCategory('COWORKING'); setCity('');
     setPricePerHour(''); setPricePerDay(''); setPricePerMonth('');
-    setCashPricePerHour(''); setCashPricePerDay(''); setCashPricePerMonth('');
+    setPricePerHalfDay(''); setHalfDayStart('09:00'); setHalfDayEnd('13:00');
+    setCashPricePerHour(''); setCashPricePerHalfDay(''); setCashPricePerDay(''); setCashPricePerMonth('');
     setCapacity('10'); setAmenities('');
     setAcceptedMethods(['ONLINE', 'CASH']);
     setDepositType('PERCENT'); setDepositValue('10');
     setImageUrls([]);
     setWorkingDays([1, 2, 3, 4, 5]); setOpeningTime('09:00'); setClosingTime('18:00');
+    setDiscounts([]);
     setError(null);
+  }
+
+  function addDiscount() {
+    setDiscounts((prev) => [...prev, { unit: 'DAY', minQty: 3, percent: 10 }]);
+  }
+  function updateDiscount(i: number, patch: Partial<DurationDiscount>) {
+    setDiscounts((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  }
+  function removeDiscount(i: number) {
+    setDiscounts((prev) => prev.filter((_, idx) => idx !== i));
   }
 
   function toggleDay(d: number) {
@@ -149,12 +176,18 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
     e.preventDefault();
     setError(null);
 
-    const hourVal  = pricePerHour  ? Number(pricePerHour)  : null;
-    const dayVal   = pricePerDay   ? Number(pricePerDay)   : null;
-    const monthVal = pricePerMonth ? Number(pricePerMonth) : null;
+    const hourVal    = pricePerHour    ? Number(pricePerHour)    : null;
+    const halfDayVal = pricePerHalfDay ? Number(pricePerHalfDay) : null;
+    const dayVal     = pricePerDay     ? Number(pricePerDay)     : null;
+    const monthVal   = pricePerMonth   ? Number(pricePerMonth)   : null;
 
-    if (hourVal == null && dayVal == null && monthVal == null) {
+    if (hourVal == null && halfDayVal == null && dayVal == null && monthVal == null) {
       setError(t('errorPricing'));
+      return;
+    }
+    // A half-day price needs a valid window (start before end).
+    if (halfDayVal != null && halfDayStart >= halfDayEnd) {
+      setError(t('errorHalfDayHours'));
       return;
     }
 
@@ -174,9 +207,12 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
           pricePerHour:  hourVal,
           pricePerDay:   dayVal,
           pricePerMonth: monthVal,
-          cashPricePerHour:  cashPricePerHour  ? Number(cashPricePerHour)  : null,
-          cashPricePerDay:   cashPricePerDay   ? Number(cashPricePerDay)   : null,
-          cashPricePerMonth: cashPricePerMonth ? Number(cashPricePerMonth) : null,
+          pricePerHalfDay: halfDayVal,
+          ...(halfDayVal != null ? { halfDayStart, halfDayEnd } : {}),
+          cashPricePerHour:    cashPricePerHour    ? Number(cashPricePerHour)    : null,
+          cashPricePerHalfDay: cashPricePerHalfDay ? Number(cashPricePerHalfDay) : null,
+          cashPricePerDay:     cashPricePerDay     ? Number(cashPricePerDay)     : null,
+          cashPricePerMonth:   cashPricePerMonth   ? Number(cashPricePerMonth)   : null,
           capacity:      Number(capacity),
           amenities:     amenities.split(',').map((s) => s.trim()).filter(Boolean),
           acceptedPaymentMethods: acceptedMethods,
@@ -187,6 +223,9 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
           workingDays,
           openingTime,
           closingTime,
+          durationDiscounts: discounts.filter(
+            (d) => d.minQty > 0 && d.percent > 0 && d.percent < 100,
+          ),
         }),
       });
       if (!res.ok) {
@@ -273,10 +312,14 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
 
           <div>
             <p className="text-sm font-medium">{t('pricingLabel')}</p>
-            <div className="mt-1.5 grid gap-2 sm:grid-cols-3">
+            <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
               <div>
                 <Label htmlFor="s-hour" className="text-xs text-muted-foreground">{t('perHour')}</Label>
                 <Input id="s-hour" type="number" min="0" className="mt-1" value={pricePerHour} onChange={(e) => setPricePerHour(e.target.value)} placeholder="0" />
+              </div>
+              <div>
+                <Label htmlFor="s-halfday" className="text-xs text-muted-foreground">{t('perHalfDay')}</Label>
+                <Input id="s-halfday" type="number" min="0" className="mt-1" value={pricePerHalfDay} onChange={(e) => setPricePerHalfDay(e.target.value)} placeholder="0" />
               </div>
               <div>
                 <Label htmlFor="s-day" className="text-xs text-muted-foreground">{t('perDay')}</Label>
@@ -287,6 +330,23 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
                 <Input id="s-month" type="number" min="0" className="mt-1" value={pricePerMonth} onChange={(e) => setPricePerMonth(e.target.value)} placeholder="0" />
               </div>
             </div>
+            {/* Half-day window — shown only when a half-day price is set. */}
+            {pricePerHalfDay.trim() !== '' && Number(pricePerHalfDay) > 0 && (
+              <div className="mt-2 rounded-lg border border-border bg-muted/30 p-3">
+                <p className="text-xs font-medium">{t('halfDayHoursLabel')}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{t('halfDayHoursHint')}</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="s-hd-start" className="text-xs text-muted-foreground">{t('halfDayStart')}</Label>
+                    <Input id="s-hd-start" type="time" className="mt-1" value={halfDayStart} onChange={(e) => setHalfDayStart(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="s-hd-end" className="text-xs text-muted-foreground">{t('halfDayEnd')}</Label>
+                    <Input id="s-hd-end" type="time" className="mt-1" value={halfDayEnd} onChange={(e) => setHalfDayEnd(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -361,6 +421,51 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
             </div>
           </div>
 
+          {/* Duration discounts */}
+          <div>
+            <p className="text-sm font-medium">{t('durationDiscountsLabel')}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t('durationDiscountsHint')}</p>
+            <div className="mt-2 space-y-2">
+              {discounts.map((d, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Select value={d.unit} onValueChange={(v) => updateDiscount(i, { unit: v as 'HOUR' | 'DAY' })}>
+                    <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DAY">{t('discountUnitDay')}</SelectItem>
+                      <SelectItem value="HOUR">{t('discountUnitHour')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number" min="1" className="w-20"
+                    aria-label={t('discountMinQty')}
+                    value={d.minQty}
+                    onChange={(e) => updateDiscount(i, { minQty: Math.max(1, parseInt(e.target.value, 10) || 0) })}
+                  />
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">→</span>
+                  <Input
+                    type="number" min="1" max="99" className="w-20"
+                    aria-label={t('discountPercent')}
+                    value={d.percent}
+                    onChange={(e) => updateDiscount(i, { percent: Math.max(0, Math.min(99, parseInt(e.target.value, 10) || 0)) })}
+                  />
+                  <span className="text-xs text-muted-foreground">% {t('discountOff')}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeDiscount(i)}
+                    className="ms-auto rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive"
+                    aria-label={t('removeDiscount')}
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" onClick={addDiscount} className="gap-1.5">
+                <Plus className="size-4" />
+                {t('addDiscount')}
+              </Button>
+            </div>
+          </div>
+
           <div>
             <p className="text-sm font-medium">{t('labelPaymentMethods')}</p>
             <div className="mt-1.5 flex gap-3">
@@ -388,10 +493,14 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
             <div className="rounded-lg border border-border bg-muted/30 p-3">
               <p className="text-sm font-medium">{t('labelCashPricing')}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">{t('cashPricingHint')}</p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="s-cash-hour" className="text-xs text-muted-foreground">{t('perHour')}</Label>
                   <Input id="s-cash-hour" type="number" min="0" className="mt-1" placeholder={pricePerHour || '0'} value={cashPricePerHour} onChange={(e) => setCashPricePerHour(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="s-cash-halfday" className="text-xs text-muted-foreground">{t('perHalfDay')}</Label>
+                  <Input id="s-cash-halfday" type="number" min="0" className="mt-1" placeholder={pricePerHalfDay || '0'} value={cashPricePerHalfDay} onChange={(e) => setCashPricePerHalfDay(e.target.value)} />
                 </div>
                 <div>
                   <Label htmlFor="s-cash-day" className="text-xs text-muted-foreground">{t('perDay')}</Label>

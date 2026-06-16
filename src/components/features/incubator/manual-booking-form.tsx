@@ -36,7 +36,7 @@ const EMPTY = {
   clientIdNumber: '',
   startsAt: '',
   endsAt: '',
-  unit: 'DAY' as 'HOUR' | 'DAY' | 'MONTH',
+  unit: 'DAY' as 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH',
   quantity: 1,
   totalAmount: 0,
 };
@@ -173,10 +173,11 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label>{t('labelUnit')}</Label>
-                <Select value={form.unit} onValueChange={(v) => field('unit', v as 'HOUR' | 'DAY' | 'MONTH')}>
+                <Select value={form.unit} onValueChange={(v) => field('unit', v as 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH')}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="HOUR">{t('unitHour')}</SelectItem>
+                    <SelectItem value="HALF_DAY">{t('unitHalfDay')}</SelectItem>
                     <SelectItem value="DAY">{t('unitDay')}</SelectItem>
                     <SelectItem value="MONTH">{t('unitMonth')}</SelectItem>
                   </SelectContent>

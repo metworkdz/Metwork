@@ -6,7 +6,7 @@ import type { Wallet, Transaction } from './wallet';
 import type { PaymentMethod } from './domain';
 
 export type BookingItemKind = 'SPACE' | 'PROGRAM' | 'EVENT';
-export type BookingUnit = 'HOUR' | 'DAY' | 'MONTH';
+export type BookingUnit = 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH';
 export type BookingDtoStatus = 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'REFUNDED';
 
 export interface BookingDto {

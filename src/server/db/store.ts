@@ -245,7 +245,7 @@ export interface TopUpIntentRecord {
 
 export type BookingStatus = 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'REFUNDED';
 export type BookingItemKind = 'SPACE' | 'PROGRAM' | 'EVENT';
-export type BookingUnit = 'HOUR' | 'DAY' | 'MONTH';
+export type BookingUnit = 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH';
 /**
  * How a booking was paid for. Legacy values 'wallet' / 'manual' are kept
  * for backward compatibility; uppercase values are introduced alongside the
@@ -604,6 +604,15 @@ export interface SpaceRecord {
   pricePerDay: number | null;
   pricePerMonth: number | null;
   /**
+   * Optional flat HALF-DAY price (integer DZD) + the incubator-configured
+   * half-day window ("HH:MM"). Additive & nullable: when pricePerHalfDay is set
+   * the listing offers a "Half day" booking for the [halfDayStart, halfDayEnd)
+   * window at this flat price. Legacy records lack these and offer no half-day.
+   */
+  pricePerHalfDay?: number | null;
+  halfDayStart?: string;
+  halfDayEnd?: string;
+  /**
    * Optional CASH-booking per-unit prices (integer DZD). Additive & nullable:
    * when set, a CASH (deposit + cash-on-site) booking is priced from these;
    * when absent, it falls back to the matching pricePer* above — so legacy
@@ -611,6 +620,7 @@ export interface SpaceRecord {
    * (ONLINE_FULL) booking always uses pricePer* above.
    */
   cashPricePerHour?: number | null;
+  cashPricePerHalfDay?: number | null;
   cashPricePerDay?: number | null;
   cashPricePerMonth?: number | null;
   capacity: number;
@@ -635,8 +645,25 @@ export interface SpaceRecord {
   openingTime: string;
   /** Closing time in "HH:MM" 24-hour format. Defaults to "18:00". */
   closingTime: string;
-  /** ISO date strings (YYYY-MM-DD) when this space is unavailable. */
+  /** ISO date strings (YYYY-MM-DD) when this space is unavailable (full-day blocks). */
   unavailableDates?: string[];
+  /**
+   * Airbnb-style blackouts. Each entry blocks one date for EVERYONE (public,
+   * guest, and the incubator's own manual bookings) until removed. When `from`
+   * and `to` (both "HH:MM") are present the block covers only that time range on
+   * that date; otherwise the whole day is blocked. Additive & nullable — legacy
+   * records lack this and keep using `unavailableDates` for full-day blocks.
+   */
+  blackouts?: { date: string; from?: string; to?: string }[];
+  /**
+   * Per-space duration discounts, configured by the incubator. Each rule grants
+   * `percent`% off once the booking reaches `minQty` units of `unit`
+   * (e.g. { unit:'DAY', minQty:3, percent:10 } = "3+ days → 10% off";
+   *        { unit:'HOUR', minQty:20, percent:15 } = "20+ hours → 15% off").
+   * Applied SERVER-SIDE to the online/card price (never the operator-entered
+   * manual-booking amount). Additive & nullable — defaults to no discount.
+   */
+  durationDiscounts?: { unit: 'HOUR' | 'DAY'; minQty: number; percent: number }[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

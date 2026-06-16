@@ -39,7 +39,7 @@ const nonPassPaymentMethodField = z
 
 export const createSpaceBookingSchema = z.object({
   spaceId: z.string().min(1),
-  unit: z.enum(['HOUR', 'DAY', 'MONTH']),
+  unit: z.enum(['HOUR', 'HALF_DAY', 'DAY', 'MONTH']),
   /** ISO 8601 datetime string — explicit booking start. */
   startsAt: z.string().datetime(),
   /** ISO 8601 datetime string — explicit booking end. Must be after startsAt. */
@@ -91,7 +91,7 @@ export const createCardBookingSchema = z
       z.object({
         itemKind: z.literal('SPACE'),
         spaceId: z.string().min(1),
-        unit: z.enum(['HOUR', 'DAY', 'MONTH']),
+        unit: z.enum(['HOUR', 'HALF_DAY', 'DAY', 'MONTH']),
         startsAt: z.string().datetime(),
         endsAt: z.string().datetime(),
       }),

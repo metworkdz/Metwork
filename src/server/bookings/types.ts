@@ -2,7 +2,7 @@
  * Service result types for bookings. Kept separate so the route handler
  * can `switch` on the discriminator without needing the implementation.
  */
-import type { BookingRecord, TransactionRecord, WalletRecord } from '@/server/db/store';
+import type { BookingRecord, BookingUnit, TransactionRecord, WalletRecord } from '@/server/db/store';
 
 export type CreateSpaceBookingResult =
   | {
@@ -13,7 +13,7 @@ export type CreateSpaceBookingResult =
       wallet: WalletRecord;
     }
   | { ok: false; reason: 'SPACE_NOT_FOUND' }
-  | { ok: false; reason: 'UNIT_NOT_AVAILABLE'; available: ('HOUR' | 'DAY' | 'MONTH')[] }
+  | { ok: false; reason: 'UNIT_NOT_AVAILABLE'; available: BookingUnit[] }
   | { ok: false; reason: 'DATE_UNAVAILABLE'; blockedDates: string[] }
   | { ok: false; reason: 'CAPACITY_EXCEEDED'; capacity: number; taken: number }
   | { ok: false; reason: 'WALLET_FROZEN' }
