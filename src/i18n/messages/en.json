@@ -3350,6 +3350,31 @@
       "fullName": "Full name",
       "email": "Email",
       "phone": "Phone"
+    },
+    "createAccount": {
+      "guestButton": "Book as a guest",
+      "createButton": "Book & create an account",
+      "guestInstead": "Continue as a guest instead",
+      "panelTitle": "Create your account",
+      "panelSubtitle": "Set a password and verify your email to continue. You'll then manage this booking from your dashboard.",
+      "password": "Password",
+      "passwordHint": "Use 8+ characters with at least one letter and one number",
+      "confirmPassword": "Confirm password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "city": "City",
+      "cityPlaceholder": "Select your city",
+      "terms": "I accept Metwork's <termsLink>Terms of Use</termsLink> and <privacyLink>Privacy Policy</privacyLink>",
+      "privacy": "I consent to the processing of my personal data in accordance with Algerian Law 18-07, as described in the <privacyLink>Privacy Policy</privacyLink>",
+      "submit": "Create account & continue",
+      "submitting": "Creating account…",
+      "errorMismatch": "Passwords do not match",
+      "errorWeakPassword": "Password must be at least 8 characters and include a letter and a number",
+      "errorConsent": "Please accept the Terms and Privacy Policy to continue",
+      "errorCity": "Please select your city",
+      "errorEmailExists": "An account with this email already exists — please log in instead.",
+      "errorPhoneExists": "An account with this phone number already exists — please log in instead.",
+      "errorGeneric": "We couldn't create your account. Please try again."
     }
   }
 }

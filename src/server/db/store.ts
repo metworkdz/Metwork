@@ -152,6 +152,14 @@ export interface PendingUserRecord {
   incubatorName?: string;
   /** Biological sex provided at signup. Optional. */
   sex?: 'MALE' | 'FEMALE';
+  /**
+   * "Book & create an account": a pointer to the booking this pending account
+   * was created from. On OTP verify the booking is re-assigned to the new user
+   * and the OTP form is redirected to the pay page (CARD → booking pay token)
+   * or the dashboard (CONSULTATION → mentorBooking id, pay-after-approval).
+   * Nullable / optional — normal signups never set it.
+   */
+  pendingBooking?: { kind: 'CARD' | 'CONSULTATION'; ref: string } | null;
 }
 
 /* ─────────────────────────── Wallet ─────────────────────────── */

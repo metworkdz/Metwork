@@ -81,6 +81,13 @@ export function OtpForm() {
       try {
         const session = await authService.verifyOtp({ userId, code });
         await refresh();
+        // "Book & create an account": the server returns a booking-specific
+        // destination (pay page for spaces/programs, pending-approval page for
+        // consultations). Full navigation — the pay page lives outside the SPA.
+        if (session.redirect) {
+          window.location.assign(session.redirect);
+          return;
+        }
         router.push(dashboardPathForRole(session.user.role));
         router.refresh();
       } catch (err) {

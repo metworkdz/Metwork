@@ -32,6 +32,8 @@ export interface PendingUserInput {
   locale: 'en' | 'fr' | 'ar';
   incubatorName?: string;
   sex?: 'MALE' | 'FEMALE';
+  /** "Book & create an account": booking carried through OTP. See PendingUserRecord. */
+  pendingBooking?: { kind: 'CARD' | 'CONSULTATION'; ref: string } | null;
 }
 
 export interface IssuePendingResult {
@@ -76,6 +78,7 @@ export async function issuePendingUser(input: PendingUserInput): Promise<IssuePe
       locale: input.locale,
       incubatorName: input.incubatorName,
       sex: input.sex,
+      pendingBooking: input.pendingBooking ?? null,
       otpHash: hashOtp(code),
       otpAttempts: 0,
       expiresAt,

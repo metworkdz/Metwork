@@ -3350,6 +3350,31 @@
       "fullName": "Nom complet",
       "email": "E-mail",
       "phone": "Téléphone"
+    },
+    "createAccount": {
+      "guestButton": "Réserver en tant qu'invité",
+      "createButton": "Réserver et créer un compte",
+      "guestInstead": "Continuer en tant qu'invité",
+      "panelTitle": "Créez votre compte",
+      "panelSubtitle": "Définissez un mot de passe et vérifiez votre e-mail pour continuer. Vous gérerez ensuite cette réservation depuis votre tableau de bord.",
+      "password": "Mot de passe",
+      "passwordHint": "Au moins 8 caractères, avec une lettre et un chiffre",
+      "confirmPassword": "Confirmer le mot de passe",
+      "showPassword": "Afficher le mot de passe",
+      "hidePassword": "Masquer le mot de passe",
+      "city": "Ville",
+      "cityPlaceholder": "Sélectionnez votre ville",
+      "terms": "J'accepte les <termsLink>Conditions d'utilisation</termsLink> et la <privacyLink>Politique de confidentialité</privacyLink> de Metwork",
+      "privacy": "Je consens au traitement de mes données personnelles conformément à la loi algérienne 18-07, comme décrit dans la <privacyLink>Politique de confidentialité</privacyLink>",
+      "submit": "Créer le compte et continuer",
+      "submitting": "Création du compte…",
+      "errorMismatch": "Les mots de passe ne correspondent pas",
+      "errorWeakPassword": "Le mot de passe doit comporter au moins 8 caractères et inclure une lettre et un chiffre",
+      "errorConsent": "Veuillez accepter les conditions et la politique de confidentialité pour continuer",
+      "errorCity": "Veuillez sélectionner votre ville",
+      "errorEmailExists": "Un compte avec cet e-mail existe déjà — veuillez vous connecter.",
+      "errorPhoneExists": "Un compte avec ce numéro de téléphone existe déjà — veuillez vous connecter.",
+      "errorGeneric": "Nous n'avons pas pu créer votre compte. Veuillez réessayer."
     }
   }
 }

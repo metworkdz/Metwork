@@ -13,10 +13,18 @@
  * Success panel clearly says "pending approval" (not "confirmed").
  */
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Clock, Calendar, Timer, Tag, Check, AlertCircle, DollarSign, Gift, ChevronLeft, ChevronRight, Pencil, UserPlus, LogIn, ArrowRight, Mail } from 'lucide-react';
+import { Clock, Calendar, Timer, Tag, Check, AlertCircle, DollarSign, Gift, ChevronLeft, ChevronRight, Pencil, UserPlus, ArrowRight, Mail } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/components/providers/auth-provider';
-import { Link, usePathname } from '@/i18n/routing';
+import { Link, usePathname, useRouter } from '@/i18n/routing';
+import { authService } from '@/services/auth.service';
+import { ApiClientError } from '@/lib/api-client';
+import {
+  BookingCreateAccountFields,
+  emptyBookingAccount,
+  bookingAccountError,
+  type BookingAccountDraft,
+} from '@/components/features/booking/booking-create-account-fields';
 import { MentorScheduler } from './mentor-scheduler';
 import type { DaySlot } from '@/types/mentor';
 import { resolveTier } from '@/lib/tier-utils';
@@ -100,15 +108,22 @@ export function BookConsultationDialog({
   // assume `t` is in scope — a previous refactor dropped this call and
   // left the entire dialog throwing ReferenceError on every render.
   const t = useTranslations('mentors.bookConsultation');
+  const tAcc = useTranslations('booking.createAccount');
   const locale = useLocale();
   const schedulerLocale = toSchedulerLocale(locale);
   const pathname = usePathname();
+  const router = useRouter();
 
   // Anonymous visitors choose between booking as a guest (pay-after-approval)
   // or signing in (wallet / free credits / member discounts). Logged-in users
   // skip the choice entirely and use the existing registered flow.
   const isGuest = !user;
   const [guestChosen, setGuestChosen] = useState(false);
+  // "Book & create an account": the guest registers (email OTP) and the request
+  // is tied to the new account; after verification they land on the
+  // pending-approval page in their dashboard.
+  const [createAccount, setCreateAccount] = useState(false);
+  const [account, setAccount] = useState<BookingAccountDraft>(emptyBookingAccount);
   // Stable idempotency key for the guest booking — reused across retries so a
   // double-submit can't create two pending requests.
   const clientRef = useRef<string | null>(null);
@@ -191,6 +206,8 @@ export function BookConsultationDialog({
     setUseFreeCredit(false);
     setHasAvailability(null);
     setGuestChosen(false);
+    setCreateAccount(false);
+    setAccount(emptyBookingAccount);
     clientRef.current = null;
     setFormState('idle'); setErrorMsg(null);
   }
@@ -278,6 +295,16 @@ export function BookConsultationDialog({
       }
     }
 
+    // Validate the account fields up-front when registering.
+    if (createAccount) {
+      const accErr = bookingAccountError(account, tAcc);
+      if (accErr) {
+        setErrorMsg(accErr);
+        setFormState('error');
+        return;
+      }
+    }
+
     setFormState('submitting');
     setErrorMsg(null);
 
@@ -340,8 +367,44 @@ export function BookConsultationDialog({
         setFormState('error');
         return;
       }
+
+      // "Book & create an account": link the just-created guest request to a
+      // new pending account, then go to the OTP step. The carry pointer lives
+      // server-side; after verification the user lands on their dashboard
+      // (request still pending admin approval — pay link emailed once approved).
+      if (createAccount && isGuest) {
+        const created = (await res.json().catch(() => ({}))) as { id?: string };
+        if (!created.id) {
+          setErrorMsg(t('errorGeneric'));
+          setFormState('error');
+          return;
+        }
+        const signup = await authService.signupPending({
+          fullName: name,
+          email,
+          phone,
+          password: account.password,
+          confirmPassword: account.confirmPassword,
+          city: account.city,
+          locale: locale === 'en' || locale === 'fr' || locale === 'ar' ? locale : undefined,
+          intent: { kind: 'CONSULTATION', mentorBookingId: created.id },
+        });
+        const params = new URLSearchParams({
+          userId: signup.userId,
+          email: signup.maskedEmail,
+          phone: signup.maskedPhone,
+        });
+        router.push(`/verify-otp?${params.toString()}`);
+        return;
+      }
+
       setFormState('success');
-    } catch {
+    } catch (err) {
+      if (createAccount && err instanceof ApiClientError) {
+        if (err.code === 'EMAIL_EXISTS') { setErrorMsg(tAcc('errorEmailExists')); setFormState('error'); return; }
+        if (err.code === 'PHONE_EXISTS') { setErrorMsg(tAcc('errorPhoneExists')); setFormState('error'); return; }
+        setErrorMsg(tAcc('errorGeneric')); setFormState('error'); return;
+      }
       setErrorMsg(t('errorNetwork'));
       setFormState('error');
     }
@@ -409,11 +472,11 @@ export function BookConsultationDialog({
               {/* Continue as guest */}
               <button
                 type="button"
-                onClick={() => { setGuestChosen(true); setStep('schedule'); }}
+                onClick={() => { setGuestChosen(true); setCreateAccount(false); setStep('schedule'); }}
                 className="flex w-full items-start gap-3 rounded-lg border border-border/60 bg-background px-4 py-3.5 text-start transition-colors hover:border-primary/50 hover:bg-accent"
               >
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary-600">
-                  <UserPlus className="size-4" />
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground">
+                  <Calendar className="size-4" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold">{t('guestOptionTitle')}</p>
@@ -422,28 +485,28 @@ export function BookConsultationDialog({
                 <ArrowRight className="size-4 shrink-0 self-center text-muted-foreground rtl:rotate-180" />
               </button>
 
-              {/* Log in / create account */}
-              <Link
-                href={{ pathname: '/login', query: { next: pathname } }}
-                className="flex w-full items-start gap-3 rounded-lg border border-border/60 bg-background px-4 py-3.5 text-start transition-colors hover:border-primary/50 hover:bg-accent"
+              {/* Book & create an account (inline registration → email OTP) */}
+              <button
+                type="button"
+                onClick={() => { setGuestChosen(true); setCreateAccount(true); setStep('schedule'); }}
+                className="flex w-full items-start gap-3 rounded-lg border border-primary/40 bg-primary/5 px-4 py-3.5 text-start transition-colors hover:border-primary/60 hover:bg-primary/10"
               >
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground">
-                  <LogIn className="size-4" />
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary-600">
+                  <UserPlus className="size-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold">{t('accountOptionTitle')}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{t('accountOptionDesc')}</p>
+                  <p className="text-sm font-semibold">{tAcc('createButton')}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{tAcc('panelSubtitle')}</p>
                 </div>
                 <ArrowRight className="size-4 shrink-0 self-center text-muted-foreground rtl:rotate-180" />
-              </Link>
+              </button>
 
               <p className="text-center text-xs text-muted-foreground">
-                {t('noAccountPrompt')}{' '}
                 <Link
-                  href={{ pathname: '/signup', query: { next: pathname } }}
+                  href={{ pathname: '/login', query: { next: pathname } }}
                   className="font-medium text-primary hover:underline"
                 >
-                  {t('signUpLink')}
+                  {t('accountOptionTitle')}
                 </Link>
               </p>
             </div>
@@ -793,6 +856,16 @@ export function BookConsultationDialog({
                 )}
               </div>
 
+              {/* Account fields — when the guest chose "Book & create an account" */}
+              {createAccount && (
+                <BookingCreateAccountFields
+                  value={account}
+                  onChange={setAccount}
+                  disabled={formState === 'submitting'}
+                  idPrefix="consult"
+                />
+              )}
+
               {/* Pending-review notice — guests are told a pay link follows approval */}
               <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
                 <Clock className="size-3.5 mt-0.5 shrink-0" />
@@ -822,7 +895,9 @@ export function BookConsultationDialog({
                 </Button>
                 <Button type="submit" loading={formState === 'submitting'}>
                   <Calendar className="size-4" />
-                  {feePerHour > 0
+                  {createAccount
+                    ? tAcc('submit')
+                    : feePerHour > 0
                     ? `${t('sendRequest')} · ${finalPrice === 0 ? t('free') : formatDZD(finalPrice)}`
                     : t('sendRequest')}
                 </Button>

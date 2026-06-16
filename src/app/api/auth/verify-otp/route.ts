@@ -43,6 +43,49 @@ function getClientIp(req: NextRequest): string {
   );
 }
 
+/**
+ * "Book & create an account": claim the booking carried through OTP for the
+ * freshly-promoted user, and return where the OTP form should navigate next.
+ *  - CARD         → the hosted-checkout pay page for the booking's pay token.
+ *  - CONSULTATION → the dashboard consultations view (the request is still
+ *                   pending admin approval; the pay link is emailed once
+ *                   approved).
+ * Re-assignment is guarded: only an unclaimed (userId == null), unsettled GUEST
+ * booking is attached — never a settled or already-owned one. The amount is
+ * never recomputed from the client; the pay page re-verifies it server-side.
+ */
+async function attachCarriedBooking(
+  carry: { kind: 'CARD' | 'CONSULTATION'; ref: string },
+  userId: string,
+  fallbackLocale: Locale,
+): Promise<string> {
+  const now = new Date().toISOString();
+  if (carry.kind === 'CARD') {
+    const seg = await db.update<string>((d) => {
+      const b = d.bookings.find((x) => x.payToken === carry.ref);
+      if (!b) return fallbackLocale;
+      const claimable =
+        !b.userId && !b.settledAt &&
+        b.status !== 'CONFIRMED' && b.status !== 'COMPLETED' &&
+        b.status !== 'CANCELLED' && b.status !== 'REFUNDED';
+      if (claimable) {
+        b.userId = userId;
+        b.updatedAt = now;
+      }
+      return (b.bookingLocale ?? fallbackLocale) as Locale;
+    });
+    return `/${seg}/booking/pay/${carry.ref}`;
+  }
+  await db.update((d) => {
+    const mb = (d.mentorBookings ?? []).find((x) => x.id === carry.ref);
+    if (mb && !mb.userId && mb.source === 'guest') {
+      mb.userId = userId;
+      mb.updatedAt = now;
+    }
+  });
+  return `/${fallbackLocale}/dashboard/entrepreneur/consultations`;
+}
+
 export async function POST(req: NextRequest) {
   // Rate limit: 30 attempts per IP per 15 minutes is generous enough to
   // accommodate legitimate typos/retries while making brute-force of a
@@ -137,7 +180,22 @@ export async function POST(req: NextRequest) {
       props: { role: user.role },
     });
 
-    return json({ user: toSessionUser(user), expiresAt: issued.expiresAt });
+    // "Book & create an account": re-assign the carried booking to the new
+    // user and tell the OTP form where to go next (pay page / dashboard).
+    let redirect: string | undefined;
+    if (pendingResult.pending.pendingBooking) {
+      redirect = await attachCarriedBooking(
+        pendingResult.pending.pendingBooking,
+        user.id,
+        user.locale as Locale,
+      );
+    }
+
+    return json({
+      user: toSessionUser(user),
+      expiresAt: issued.expiresAt,
+      ...(redirect ? { redirect } : {}),
+    });
   }
 
   // ── Legacy fallback: real user still in PENDING_VERIFICATION state ──────

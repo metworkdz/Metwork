@@ -10,7 +10,7 @@
  *   4. Wallet has insufficient funds for a paid program → "Top up" CTA
  *   5. Otherwise → "Apply — N DZD" / "Apply for free"
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Banknote, CheckCircle2, CreditCard, Wallet as WalletIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,13 @@ import {
   isGuestContactValid,
   type GuestContact,
 } from '@/components/features/booking/guest-contact-fields';
+import {
+  BookingCreateAccountFields,
+  emptyBookingAccount,
+  bookingAccountError,
+  type BookingAccountDraft,
+} from '@/components/features/booking/booking-create-account-fields';
+import { authService } from '@/services/auth.service';
 import type { Locale } from '@/i18n/config';
 import type { PaymentMethod, Program } from '@/types/domain';
 import type { BookingDto, ItemAttendanceStatus } from '@/types/booking';
@@ -43,6 +50,7 @@ interface ProgramApplyFormProps {
 
 export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFormProps) {
   const t = useTranslations('programs.apply');
+  const tAcc = useTranslations('booking.createAccount');
   const locale = useLocale() as Locale;
   const router = useRouter();
   const { user, refresh } = useAuth();
@@ -76,6 +84,11 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
 
   // Guests pay by card; collect contact details for the receipt / checkout.
   const [contact, setContact] = useState<GuestContact>(emptyGuestContact);
+  // "Book & create an account" — guest opts to register before paying.
+  const [createAccount, setCreateAccount] = useState(false);
+  const [account, setAccount] = useState<BookingAccountDraft>(emptyBookingAccount);
+  // Stable idempotency key for the signup-intent booking.
+  const accountRef = useRef<string | null>(null);
   // Listing is bookable by a guest only if there's a card-chargeable amount.
   const guestCanCard = !isFree && (onlineOffered || (acceptedMethods.includes('CASH') && hasDeposit));
 
@@ -151,9 +164,70 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
     return { code: 'UNKNOWN', message: t('errorGeneric') };
   }
 
+  function mapAccountError(err: unknown): { code: string; message: string } {
+    if (err instanceof ApiClientError) {
+      if (err.code === 'EMAIL_EXISTS') return { code: err.code, message: tAcc('errorEmailExists') };
+      if (err.code === 'PHONE_EXISTS') return { code: err.code, message: tAcc('errorPhoneExists') };
+      const mapped = mapCardError(err);
+      if (mapped.code !== 'UNKNOWN') return mapped;
+    }
+    return { code: 'ACCOUNT_FAILED', message: tAcc('errorGeneric') };
+  }
+
+  // "Book & create an account": register a pending account tied to THIS
+  // program application, then go to the OTP step. The server creates the
+  // (guest) card intent and re-prices it server-side.
+  async function onSubmitCreateAccount() {
+    if (!isGuestContactValid(contact)) {
+      setError({ code: 'INVALID_CONTACT', message: t('errorContact') });
+      return;
+    }
+    const accErr = bookingAccountError(account, tAcc);
+    if (accErr) {
+      setError({ code: 'INVALID_ACCOUNT', message: accErr });
+      return;
+    }
+    if (!accountRef.current) accountRef.current = crypto.randomUUID();
+    setSubmitting(true);
+    try {
+      const res = await authService.signupPending({
+        fullName: contact.fullName,
+        email: contact.email,
+        phone: contact.phone,
+        password: account.password,
+        confirmPassword: account.confirmPassword,
+        city: account.city,
+        locale,
+        intent: {
+          kind: 'CARD',
+          target: { itemKind: 'PROGRAM', programId: program.id },
+          paymentMode: isCash ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
+          promoCode: promoResult?.code,
+          clientReference: accountRef.current,
+        },
+      });
+      const params = new URLSearchParams({
+        userId: res.userId,
+        email: res.maskedEmail,
+        phone: res.maskedPhone,
+      });
+      router.push(`/verify-otp?${params.toString()}`);
+      return;
+    } catch (err) {
+      setError(mapAccountError(err));
+      setSubmitting(false);
+    }
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    // ── Guest opted to register first ──────────────────────────────────────
+    if (!isAuthed && createAccount) {
+      await onSubmitCreateAccount();
+      return;
+    }
 
     // ── Card checkout: guests, or a registered CASH deposit ────────────────
     if (useCard) {
@@ -269,6 +343,16 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
         />
       )}
 
+      {/* Account fields — only when the guest chose "create an account" */}
+      {!isAuthed && guestCanCard && createAccount && (
+        <BookingCreateAccountFields
+          value={account}
+          onChange={setAccount}
+          disabled={submitting}
+          idPrefix="program"
+        />
+      )}
+
       <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
         <div className="flex items-center justify-between text-muted-foreground">
           <span>{t('applicationFee')}</span>
@@ -338,7 +422,41 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
         </div>
       )}
 
-      {!isAuthed && (isFree || !guestCanCard) ? (
+      {!isAuthed && guestCanCard ? (
+        <div className="space-y-2">
+          {!createAccount ? (
+            <>
+              <Button type="submit" size="lg" className="w-full" loading={submitting}>
+                {submitting ? t('submitting') : tAcc('guestButton')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="w-full"
+                disabled={submitting}
+                onClick={() => { setError(null); setCreateAccount(true); }}
+              >
+                {tAcc('createButton')}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button type="submit" size="lg" className="w-full" loading={submitting}>
+                {submitting ? tAcc('submitting') : tAcc('submit')}
+              </Button>
+              <button
+                type="button"
+                onClick={() => { setError(null); setCreateAccount(false); }}
+                disabled={submitting}
+                className="block w-full text-center text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+              >
+                {tAcc('guestInstead')}
+              </button>
+            </>
+          )}
+        </div>
+      ) : !isAuthed && (isFree || !guestCanCard) ? (
         <Button asChild className="w-full" size="lg">
           <Link href={`/login?next=${encodeURIComponent('/programs')}`}>{t('signIn')}</Link>
         </Button>
