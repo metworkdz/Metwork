@@ -46,11 +46,18 @@ export interface BookingRow {
 type BadgeVariant = 'warning' | 'success' | 'danger' | 'info' | 'primary';
 
 const STATUS_BADGE: Record<MentorBookingStatus, { variant: BadgeVariant; labelKey: string }> = {
+  // Legacy (admin-approval era)
   PENDING:          { variant: 'warning', labelKey: 'statusPending' },
   APPROVED:         { variant: 'success', labelKey: 'statusApproved' },
   REJECTED:         { variant: 'danger',  labelKey: 'statusRejected' },
   AWAITING_PAYMENT: { variant: 'info',    labelKey: 'statusAwaitingPayment' },
   CONFIRMED:        { variant: 'primary', labelKey: 'statusConfirmed' },
+  // Target (instant-book, pay-first)
+  PENDING_PAYMENT:  { variant: 'warning', labelKey: 'statusPendingPayment' },
+  AWAITING_LINK:    { variant: 'info',    labelKey: 'statusAwaitingLink' },
+  READY:            { variant: 'success', labelKey: 'statusReady' },
+  COMPLETED:        { variant: 'primary', labelKey: 'statusCompleted' },
+  CANCELLED:        { variant: 'danger',  labelKey: 'statusCancelled' },
 };
 
 interface ReviewDialogProps {
@@ -245,10 +252,15 @@ export function MentorBookingsTable({ initial }: MentorBookingsTableProps) {
   const filters: Array<{ value: MentorBookingStatus | 'ALL'; label: string }> = [
     { value: 'ALL',              label: t('filterAll') },
     { value: 'PENDING',          label: t('filterPending') },
+    { value: 'PENDING_PAYMENT',  label: t('filterPendingPayment') },
     { value: 'AWAITING_PAYMENT', label: t('filterAwaitingPayment') },
+    { value: 'AWAITING_LINK',    label: t('filterAwaitingLink') },
+    { value: 'READY',            label: t('filterReady') },
     { value: 'CONFIRMED',        label: t('filterConfirmed') },
+    { value: 'COMPLETED',        label: t('filterCompleted') },
     { value: 'APPROVED',         label: t('filterApproved') },
     { value: 'REJECTED',         label: t('filterRejected') },
+    { value: 'CANCELLED',        label: t('filterCancelled') },
   ];
 
   const visible = statusFilter === 'ALL'

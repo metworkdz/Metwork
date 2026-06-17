@@ -9,7 +9,8 @@
 
 // Set env BEFORE any imports so env.ts validation passes.
 process.env.USE_LOCAL_DB = 'true';
-process.env.NODE_ENV ??= 'development';
+// NODE_ENV is typed read-only by @types/node; cast to a writable view to default it.
+(process.env as Record<string, string | undefined>).NODE_ENV ??= 'development';
 process.env.SUPABASE_URL ??= 'https://placeholder.supabase.co';
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'placeholder-not-used-in-local-mode';
 process.env.AUTH_SECRET ??= 'local-dev-secret-at-least-32-characters-long-padding-here';
@@ -94,7 +95,7 @@ async function seed() {
     d.users = d.users.filter((u) => !qaIds.has(u.id));
 
     for (let i = 0; i < TEST_USERS.length; i++) {
-      const u = TEST_USERS[i];
+      const u = TEST_USERS[i]!;
       d.users.push({
         id: u.id,
         email: u.email,

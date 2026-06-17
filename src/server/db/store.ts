@@ -1074,12 +1074,34 @@ export interface NetworkCheckInAuditRecord {
  * or PENDING → REJECTED. AWAITING_PAYMENT/CONFIRMED are additive and only
  * ever apply to guest bookings — the registered path is unchanged.
  */
+/**
+ * Consultation booking status.
+ *
+ * Legacy (admin-approval era — retained so existing rows & reports keep working):
+ *   PENDING | APPROVED | REJECTED | AWAITING_PAYMENT | CONFIRMED
+ *
+ * Target (instant-book, pay-first lifecycle — emitted by the new flow in later
+ * prompts; defined here so the type system and UI maps are ready):
+ *   PENDING_PAYMENT — booking created, awaiting the pay-first charge to settle.
+ *   AWAITING_LINK   — paid & confirmed, but the consultant has not provided a
+ *                     meeting link yet (no profile default).
+ *   READY           — paid + a meeting link/format is set; the session can happen.
+ *   COMPLETED       — the session took place (releases the held mentor earning).
+ *   CANCELLED       — cancelled before completion (refund per policy).
+ */
 export type MentorBookingStatus =
+  // ── Legacy ──
   | 'PENDING'
   | 'APPROVED'
   | 'REJECTED'
   | 'AWAITING_PAYMENT'
-  | 'CONFIRMED';
+  | 'CONFIRMED'
+  // ── Target (instant-book, pay-first) ──
+  | 'PENDING_PAYMENT'
+  | 'AWAITING_LINK'
+  | 'READY'
+  | 'COMPLETED'
+  | 'CANCELLED';
 
 export interface MentorBookingRecord {
   id: string;
@@ -1462,6 +1484,94 @@ export interface WithdrawalRequestRecord {
   updatedAt: string;
 }
 
+/* ─────────────────────────── Mentor (consultant) ledger ───────────────────────────
+ * A PARALLEL, mentorId-keyed earnings ledger. Deliberately separate from the
+ * user `WalletRecord`/`TransactionRecord` system: consultants are not platform
+ * users, so they have no `userId` to key a wallet against. The mechanics
+ * (escrow hold → admin marks paid → refund-on-reject) mirror the user
+ * withdrawal flow so the admin UX and audit trail stay consistent.
+ *
+ * Money model: at consultation settlement the mentor is credited
+ * `net = gross − platformCommission` into `pendingBalance`; the funds are
+ * released to `availableBalance` only once the session is COMPLETED (held until
+ * then to cover no-shows / refunds). Only `availableBalance` is withdrawable.
+ * Every amount is integer DZD. All of this is dormant until later prompts wire
+ * it into the booking/settlement path. */
+
+export type MentorWalletStatus = 'ACTIVE' | 'FROZEN';
+
+export interface MentorWalletRecord {
+  id: string;
+  /** The owning mentor (MentorRecord.id). One wallet per mentor. */
+  mentorId: string;
+  /** Credited-but-not-yet-released earnings (held until the session COMPLETES). Integer DZD. */
+  pendingBalance: number;
+  /** Released, withdrawable balance. Integer DZD. */
+  availableBalance: number;
+  currency: 'DZD';
+  status: MentorWalletStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Ledger entry types:
+ *   EARNING    — net consultation earning credited to PENDING at settlement.
+ *   COMMISSION — the platform cut recorded against the same booking (audit; not added to the mentor wallet).
+ *   RELEASE    — moves a prior EARNING from PENDING → AVAILABLE once COMPLETED.
+ *   REVERSAL   — voids a prior entry: a not-yet-released EARNING (cancellation
+ *                before completion) or a rejected withdrawal hold (refund to AVAILABLE).
+ *   PAYOUT     — escrow hold deducted from AVAILABLE on withdrawal request;
+ *                PENDING until the admin marks the external transfer COMPLETED
+ *                (or REVERSED on rejection). Mirrors the user-wallet PAYOUT.
+ */
+export type MentorLedgerTxnType =
+  | 'EARNING'
+  | 'COMMISSION'
+  | 'RELEASE'
+  | 'REVERSAL'
+  | 'PAYOUT';
+
+export type MentorLedgerTxnStatus = 'PENDING' | 'COMPLETED' | 'REVERSED';
+
+/** Which balance bucket an entry acts on. */
+export type MentorLedgerBucket = 'PENDING' | 'AVAILABLE';
+
+export interface MentorLedgerTxnRecord {
+  id: string;
+  mentorId: string;
+  /** Originating consultation booking (MentorBookingRecord.id). Null for withdrawals. */
+  bookingId: string | null;
+  type: MentorLedgerTxnType;
+  /** Signed integer DZD: positive = credit, negative = debit. */
+  amount: number;
+  bucket: MentorLedgerBucket;
+  status: MentorLedgerTxnStatus;
+  /** Idempotency key, unique per mentor (e.g. `mentor-earning-${bookingId}`). */
+  reference: string;
+  description: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface MentorWithdrawalRecord {
+  id: string;
+  mentorId: string;
+  /** Integer DZD. */
+  amount: number;
+  /** Free-text payment details (CCP / BaridiMob / bank account). */
+  accountDetails: string;
+  status: WithdrawalStatus;
+  /** Ledger entry id for the escrow hold deducted from `availableBalance`. */
+  holdTxnId: string;
+  /** Ledger entry id for the refund issued on rejection. */
+  refundTxnId?: string | null;
+  adminNote?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /* ─────────────────────────── Mentor consultations ─────────────────────────── */
 
 export type MentorConsultationStatus =
@@ -1565,6 +1675,12 @@ interface DbShape {
   withdrawalRequests: WithdrawalRequestRecord[];
   /** Mentor consultation bookings (separate from mentor inquiry requests). */
   mentorConsultations: MentorConsultationRecord[];
+  /** Parallel, mentorId-keyed consultant earnings wallets (pending/available). */
+  mentorWallets: MentorWalletRecord[];
+  /** Append-only ledger backing the mentor wallets. */
+  mentorLedgerTxns: MentorLedgerTxnRecord[];
+  /** Withdrawal requests submitted by consultants against their mentor wallet. */
+  mentorWithdrawals: MentorWithdrawalRecord[];
 
   // ─── Network Pass & Partner Program ──────────────────────────────────
   /** Per-visit ledger backing the monthly partner payout batch run. */
@@ -1634,6 +1750,9 @@ const empty: DbShape = {
   investments: [],
   withdrawalRequests: [],
   mentorConsultations: [],
+  mentorWallets: [],
+  mentorLedgerTxns: [],
+  mentorWithdrawals: [],
   networkVisits: [],
   partnerMemberships: [],
   partnerPromoCodes: [],

@@ -19,7 +19,8 @@ import { __resetCacheForTests } from '@/server/db/store';
 // or it throws at construction time. Fake values are fine because the
 // client itself is mocked below.
 // ────────────────────────────────────────────────────────────────────────
-process.env.NODE_ENV ??= 'test';
+// NODE_ENV is typed read-only by @types/node; cast to a writable view to default it.
+(process.env as Record<string, string | undefined>).NODE_ENV ??= 'test';
 process.env.SUPABASE_URL ??= 'https://test.supabase.co';
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'test-service-role-key-with-enough-chars';
 process.env.AUTH_SECRET ??= 'test-auth-secret-at-least-32-characters-long-padding';

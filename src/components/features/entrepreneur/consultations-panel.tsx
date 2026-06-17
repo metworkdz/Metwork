@@ -39,7 +39,7 @@ import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import type { MentorBookingRecord, MentorRecord } from '@/server/db/store';
+import type { MentorBookingRecord, MentorBookingStatus, MentorRecord } from '@/server/db/store';
 import type { Locale } from '@/i18n/config';
 
 /* ─── Duration options (mirrors BookConsultationDialog) ─── */
@@ -85,13 +85,22 @@ interface Props {
   userPhone:      string;
 }
 
-type BookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
-
-function StatusBadge({ status }: { status: BookingStatus }) {
+function StatusBadge({ status }: { status: MentorBookingStatus }) {
   const tMB = useTranslations('admin.mentorBookings');
   const tAB = useTranslations('admin.bookings');
-  if (status === 'APPROVED') return <Badge variant="success">{tMB('filterApproved')}</Badge>;
-  if (status === 'REJECTED') return <Badge variant="danger">{tMB('filterRejected')}</Badge>;
+  // Positive / completed
+  if (status === 'APPROVED')  return <Badge variant="success">{tMB('filterApproved')}</Badge>;
+  if (status === 'READY')     return <Badge variant="success">{tMB('statusReady')}</Badge>;
+  if (status === 'CONFIRMED') return <Badge variant="primary">{tMB('statusConfirmed')}</Badge>;
+  if (status === 'COMPLETED') return <Badge variant="primary">{tMB('statusCompleted')}</Badge>;
+  // Negative
+  if (status === 'REJECTED')  return <Badge variant="danger">{tMB('filterRejected')}</Badge>;
+  if (status === 'CANCELLED') return <Badge variant="danger">{tMB('statusCancelled')}</Badge>;
+  // Awaiting payment / meeting link
+  if (status === 'AWAITING_PAYMENT') return <Badge variant="info">{tMB('statusAwaitingPayment')}</Badge>;
+  if (status === 'PENDING_PAYMENT')  return <Badge variant="info">{tMB('statusPendingPayment')}</Badge>;
+  if (status === 'AWAITING_LINK')    return <Badge variant="info">{tMB('statusAwaitingLink')}</Badge>;
+  // PENDING (default — unchanged label)
   return <Badge variant="warning">{tAB('pendingReview')}</Badge>;
 }
 
@@ -358,7 +367,7 @@ export function ConsultationsPanel({
                           {mentor?.fullName ?? b.userName}
                         </TableCell>
                         <TableCell>
-                          <StatusBadge status={b.status as BookingStatus} />
+                          <StatusBadge status={b.status} />
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {b.durationMinutes ? `${b.durationMinutes} min` : '—'}

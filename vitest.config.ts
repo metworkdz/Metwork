@@ -26,11 +26,11 @@ export default defineConfig({
     // (notably the Supabase client) before any real code imports it.
     setupFiles: ['./src/__tests__/setup.ts'],
     // Tests touch shared module state (the in-memory DB fixture) — run them
-    // serially in one process to avoid flaky interleaving. The `pool` and
-    // `singleFork` top-level options replace the deprecated `poolOptions`
-    // shape from Vitest 3.
+    // serially in one fork to avoid flaky interleaving. Vitest 4 removed
+    // `poolOptions.forks.singleFork`; `fileParallelism: false` is the
+    // replacement — it forces maxWorkers to 1, so all files run sequentially.
     pool: 'forks',
-    singleFork: true,
+    fileParallelism: false,
   },
   resolve: {
     alias: {
