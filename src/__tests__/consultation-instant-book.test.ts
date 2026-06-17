@@ -22,6 +22,12 @@ import {
 import { computeConsultationCharge } from '@/server/consultations/pricing';
 import { confirmTopUp } from '@/server/wallet/service';
 import { initGuestPayment } from '@/server/consultations/guest-payment';
+import { getMentorWallet } from '@/server/mentors/ledger';
+import {
+  setBookingMeetingLink,
+  completeConsultation,
+  resolveSettledStatus,
+} from '@/server/consultations/lifecycle';
 
 const MENTOR: MentorRecord = {
   id: 'm-instant-1',
@@ -54,8 +60,10 @@ const USER: UserRecord = {
 
 async function seed(balance: number | null): Promise<void> {
   await db.update((d) => {
-    d.mentors = [MENTOR];
-    d.users = [USER];
+    // Fresh clones so a test mutating the mentor (e.g. meeting defaults) can't
+    // leak into the next test via the shared module-level fixture reference.
+    d.mentors = [{ ...MENTOR }];
+    d.users = [{ ...USER }];
     if (balance !== null) {
       const wallet: WalletRecord = {
         id: 'w-instant-1',
@@ -112,7 +120,8 @@ describe('member — wallet funded', () => {
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     expect(res.mode).toBe('confirmed');
-    expect(res.booking.status).toBe('CONFIRMED');
+    expect(res.booking.paymentStatus).toBe('PAID'); // settled marker
+    expect(res.booking.status).toBe('AWAITING_LINK'); // no default link on the fixture
     expect(res.booking.transactionId).toBeTruthy();
 
     const data = await db.read();
@@ -182,8 +191,8 @@ describe('guest — PENDING_PAYMENT settled by the existing guest pay flow', () 
 
     const data = await db.read();
     const booking = data.mentorBookings.find((b) => b.id === res.booking.id);
-    expect(booking?.status).toBe('CONFIRMED');
-    expect(booking?.paymentStatus).toBe('PAID');
+    expect(booking?.paymentStatus).toBe('PAID'); // settled
+    expect(booking?.status).toBe('AWAITING_LINK'); // no default link on the fixture
   });
 });
 
@@ -199,7 +208,7 @@ describe('member — wallet-first → SlickPay top-up', () => {
     const data = await db.read();
     // 3 000 + 7 000 top-up − 10 000 charge = 0
     expect(data.wallets[0]!.balance).toBe(0);
-    expect(data.mentorBookings[0]!.status).toBe('CONFIRMED');
+    expect(data.mentorBookings[0]!.paymentStatus).toBe('PAID');
   });
 
   it('async top-up waits, then settles on verify after the top-up completes', async () => {
@@ -225,7 +234,7 @@ describe('member — wallet-first → SlickPay top-up', () => {
 
     const after = await db.read();
     expect(after.wallets[0]!.balance).toBe(0);
-    expect(after.mentorBookings[0]!.status).toBe('CONFIRMED');
+    expect(after.mentorBookings[0]!.paymentStatus).toBe('PAID');
   });
 
   it('settleMemberTopUp is idempotent (no double debit)', async () => {
@@ -240,6 +249,161 @@ describe('member — wallet-first → SlickPay top-up', () => {
     await settleMemberTopUp(res.payToken); // replay
     const after = await db.read();
     expect(after.wallets[0]!.balance).toBe(0); // debited once, not negative
+  });
+});
+
+describe('mentor earnings credit (P4)', () => {
+  it('credits the consultant PENDING balance (net of 30% commission) on a funded confirm', async () => {
+    await seed(20_000);
+    const res = await createInstantBooking(baseInput());
+    expect(res.ok).toBe(true);
+    const wallet = await getMentorWallet(MENTOR.id);
+    expect(wallet?.pendingBalance).toBe(7_000); // 10 000 − 30%
+    expect(wallet?.availableBalance).toBe(0); // held until COMPLETED (P5)
+  });
+
+  it('does not credit a zero-amount (free-credit) booking', async () => {
+    await seed(0);
+    await createInstantBooking(baseInput({ useFreeCredit: true, freeQuotaMonth: '2026-06' }));
+    const wallet = await getMentorWallet(MENTOR.id);
+    expect(wallet?.pendingBalance ?? 0).toBe(0);
+  });
+
+  it('credits once on the member top-up path, even across replays', async () => {
+    process.env.MOCK_PAYMENT_MODE = 'async';
+    await seed(3_000);
+    const res = await createInstantBooking(baseInput());
+    if (!res.ok || res.mode !== 'awaiting_payment') throw new Error('setup failed');
+    const data = await db.read();
+    await confirmTopUp({ topUpId: data.mentorBookings[0]!.topUpIntentId!, providerRef: 'r', status: 'COMPLETED' });
+    await settleMemberTopUp(res.payToken);
+    await settleMemberTopUp(res.payToken); // replay
+    const wallet = await getMentorWallet(MENTOR.id);
+    expect(wallet?.pendingBalance).toBe(7_000); // credited once, not 14 000
+  });
+
+  it('credits the consultant when a guest pay-first booking settles', async () => {
+    process.env.MOCK_PAYMENT_MODE = 'sync';
+    await seed(null);
+    const res = await createInstantBooking(baseInput({ actor: null }));
+    if (!res.ok || res.mode !== 'awaiting_payment') throw new Error('setup failed');
+    await initGuestPayment(res.payToken, 'http://localhost:3000');
+    const wallet = await getMentorWallet(MENTOR.id);
+    expect(wallet?.pendingBalance).toBe(7_000);
+  });
+
+  it('does NOT credit a legacy guest booking (no instantBook flag)', async () => {
+    process.env.MOCK_PAYMENT_MODE = 'sync';
+    await seed(null);
+    // A legacy admin-approval guest booking: AWAITING_PAYMENT, no instantBook.
+    const token = 'legacy-token-abc123';
+    await db.update((d) => {
+      d.mentorBookings = [{
+        id: 'legacy-1', mentorId: MENTOR.id, userId: null,
+        userName: 'G', userEmail: 'g@example.com', userPhone: '+213500000000',
+        message: 'legacy consultation request here',
+        status: 'AWAITING_PAYMENT', adminNote: null,
+        source: 'guest', paymentStatus: 'AWAITING_PAYMENT',
+        payToken: token, payTokenExpiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+        guestAmountDue: 10_000, amountCharged: 10_000, guestLocale: 'fr',
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      }];
+    });
+    await initGuestPayment(token, 'http://localhost:3000');
+    const settled = (await db.read()).mentorBookings.find((b) => b.id === 'legacy-1');
+    expect(settled?.status).toBe('CONFIRMED'); // legacy flow still settles
+    const wallet = await getMentorWallet(MENTOR.id);
+    expect(wallet).toBeNull(); // ...but no mentor credit
+  });
+});
+
+describe('meeting-link lifecycle (P5a)', () => {
+  async function setMentorDefault(mode: 'ONLINE' | 'OFFLINE', link?: string) {
+    await db.update((d) => {
+      const m = d.mentors.find((x) => x.id === MENTOR.id)!;
+      m.defaultMeetingMode = mode;
+      m.defaultMeetingLink = link ?? null;
+    });
+  }
+
+  it('resolveSettledStatus: READY with a default link/format, else AWAITING_LINK', () => {
+    expect(resolveSettledStatus({}).status).toBe('AWAITING_LINK');
+    expect(resolveSettledStatus({ defaultMeetingMode: 'OFFLINE' }).status).toBe('READY');
+    expect(resolveSettledStatus({ defaultMeetingMode: 'ONLINE', defaultMeetingLink: 'https://m.co/x' }).status).toBe('READY');
+    expect(resolveSettledStatus({ defaultMeetingMode: 'ONLINE', defaultMeetingLink: '' }).status).toBe('AWAITING_LINK');
+  });
+
+  it('settles to READY with the consultant default online link', async () => {
+    await seed(20_000);
+    await setMentorDefault('ONLINE', 'https://meet.example/room');
+    const res = await createInstantBooking(baseInput());
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.booking.status).toBe('READY');
+    expect(res.booking.meetingMode).toBe('ONLINE');
+    expect(res.booking.meetingLink).toBe('https://meet.example/room');
+  });
+
+  it('setBookingMeetingLink moves AWAITING_LINK → READY', async () => {
+    await seed(20_000);
+    const res = await createInstantBooking(baseInput());
+    if (!res.ok) throw new Error('setup failed');
+    expect(res.booking.status).toBe('AWAITING_LINK');
+
+    const linked = await setBookingMeetingLink({ bookingId: res.booking.id, mode: 'ONLINE', link: 'https://meet.example/abc' });
+    expect(linked.ok).toBe(true);
+    if (linked.ok) {
+      expect(linked.booking.status).toBe('READY');
+      expect(linked.booking.meetingLink).toBe('https://meet.example/abc');
+    }
+
+    const noLink = await setBookingMeetingLink({ bookingId: res.booking.id, mode: 'ONLINE' });
+    expect(noLink.ok).toBe(false);
+    if (!noLink.ok) expect(noLink.reason).toBe('LINK_REQUIRED');
+  });
+
+  it('completeConsultation releases PENDING → AVAILABLE and is idempotent', async () => {
+    await seed(20_000);
+    const res = await createInstantBooking(baseInput());
+    if (!res.ok) throw new Error('setup failed');
+
+    // Credited to pending at settlement (10 000 − 30%).
+    let wallet = await getMentorWallet(MENTOR.id);
+    expect(wallet?.pendingBalance).toBe(7_000);
+    expect(wallet?.availableBalance).toBe(0);
+
+    const done = await completeConsultation(res.booking.id);
+    expect(done.ok).toBe(true);
+    if (done.ok) {
+      expect(done.booking.status).toBe('COMPLETED');
+      expect(done.booking.completedAt).toBeTruthy();
+      expect(done.released).toBe(7_000);
+    }
+    wallet = await getMentorWallet(MENTOR.id);
+    expect(wallet?.pendingBalance).toBe(0);
+    expect(wallet?.availableBalance).toBe(7_000);
+
+    // Replay → no double release.
+    const again = await completeConsultation(res.booking.id);
+    expect(again.ok).toBe(true);
+    if (again.ok) expect(again.replayed).toBe(true);
+    wallet = await getMentorWallet(MENTOR.id);
+    expect(wallet?.availableBalance).toBe(7_000);
+  });
+
+  it('completeConsultation refuses a non-instant-book booking', async () => {
+    await seed(20_000);
+    await db.update((d) => {
+      d.mentorBookings = [{
+        id: 'legacy-c', mentorId: MENTOR.id, userId: 'u-x',
+        userName: 'X', userEmail: 'x@example.com', userPhone: '+213500000000',
+        message: 'legacy consultation here', status: 'APPROVED', adminNote: null,
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      }];
+    });
+    const res = await completeConsultation('legacy-c');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe('NOT_INSTANT_BOOK');
   });
 });
 

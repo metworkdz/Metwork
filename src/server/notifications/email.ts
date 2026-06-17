@@ -247,6 +247,26 @@ export function passwordResetEmailHtml(link: string): string {
   `);
 }
 
+/** Consultant portal sign-in link (magic link). Single-use, 30-minute expiry. */
+export function consultantMagicLinkEmailHtml(link: string, lang: 'en' | 'fr' = 'fr'): string {
+  if (lang === 'en') {
+    return layout(`
+      ${h1('Sign in to your consultant portal')}
+      ${p('Click the button below to access your Metwork consultant dashboard — manage your sessions, meeting links, and earnings.')}
+      ${button(link, 'Open my portal')}
+      ${p(`<span style="color:#71717a;font-size:13px;">Or copy this link into your browser:<br /><span style="word-break:break-all;">${link}</span></span>`)}
+      ${p('<span style="color:#71717a;font-size:13px;">This link expires in 30 minutes and can be used once. If you did not request it, you can safely ignore this email.</span>')}
+    `);
+  }
+  return layout(`
+    ${h1('Connexion à votre espace consultant')}
+    ${p('Cliquez sur le bouton ci-dessous pour accéder à votre tableau de bord consultant Metwork — gérez vos sessions, vos liens de réunion et vos revenus.')}
+    ${button(link, 'Ouvrir mon espace')}
+    ${p(`<span style="color:#71717a;font-size:13px;">Ou copiez ce lien dans votre navigateur :<br /><span style="word-break:break-all;">${link}</span></span>`)}
+    ${p('<span style="color:#71717a;font-size:13px;">Ce lien expire dans 30 minutes et est à usage unique. Si vous n\'êtes pas à l\'origine de cette demande, ignorez cet e-mail.</span>')}
+  `);
+}
+
 /** Sent to the user when their booking is created (awaiting incubator approval). */
 export function bookingPendingEmailHtml(opts: {
   customerName: string;

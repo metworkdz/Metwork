@@ -107,6 +107,24 @@ export async function updateMentor(
 }
 
 /**
+ * Set the consultant's instant-book meeting defaults (self-service). When a
+ * usable default exists, paid bookings land READY immediately; otherwise
+ * AWAITING_LINK until a link is supplied.
+ */
+export async function updateMentorMeetingDefaults(
+  id: string,
+  patch: { defaultMeetingMode?: 'ONLINE' | 'OFFLINE'; defaultMeetingLink?: string | null },
+): Promise<UpdateMentorResult> {
+  return db.update<UpdateMentorResult>((d) => {
+    const m = d.mentors.find((x) => x.id === id);
+    if (!m) return { ok: false, reason: 'NOT_FOUND' };
+    if (patch.defaultMeetingMode !== undefined) m.defaultMeetingMode = patch.defaultMeetingMode;
+    if (patch.defaultMeetingLink !== undefined) m.defaultMeetingLink = patch.defaultMeetingLink?.trim() || null;
+    return { ok: true, mentor: m };
+  });
+}
+
+/**
  * Replace a mentor's availability (weekly template + blocked dates + timezone).
  * Normalizes the payload: drops weekday entries with no slots, de-dupes and
  * sorts blocked dates, and defaults the timezone. Validation (end > start,

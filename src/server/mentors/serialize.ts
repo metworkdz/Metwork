@@ -22,5 +22,7 @@ export function toMentorDto(m: MentorRecord): Mentor {
     weeklyAvailability: m.weeklyAvailability ?? [],
     blockedDates: m.blockedDates ?? [],
     availabilityTimezone: m.availabilityTimezone ?? 'Africa/Algiers',
+    defaultMeetingMode: m.defaultMeetingMode,
+    defaultMeetingLink: m.defaultMeetingLink ?? null,
   };
 }

@@ -33,6 +33,8 @@ import { findMentorById } from '@/server/mentors/service';
 import { computeConsultationCharge } from './pricing';
 import { getTopUp, initiateTopUp } from '@/server/wallet/service';
 import { consumePromoCode } from '@/server/promo-codes/service';
+import { creditPendingEarning } from '@/server/mentors/ledger';
+import { resolveSettledStatus } from './lifecycle';
 
 /** Pay tokens live for 7 days — long enough to finish a hosted checkout. */
 const PAY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -140,10 +142,34 @@ function baseBooking(
     clientReference: input.clientReference,
     source: isGuest ? 'guest' : 'registered',
     guestLocale: input.locale ?? 'fr',
+    instantBook: true,
     createdAt: now,
     updatedAt: now,
     ...extra,
   };
+}
+
+/**
+ * Credit the consultant's PENDING balance for a settled consultation, recording
+ * the platform commission. Non-blocking: the booking is already CONFIRMED, so a
+ * ledger error must never roll it back — it is logged and reconcilable later
+ * (the credit is idempotent per booking). No-op for zero-amount bookings.
+ */
+export async function creditMentorForSettledBooking(
+  mentorId: string,
+  bookingId: string,
+  grossAmount: number,
+): Promise<void> {
+  if (grossAmount <= 0) return;
+  try {
+    await creditPendingEarning({ mentorId, bookingId, grossAmount });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `[instant-book] mentor credit failed for booking ${bookingId} (settled OK, reconcilable):`,
+      err instanceof Error ? err.message : err,
+    );
+  }
 }
 
 /** Write the FREE_QUOTA consultation row (consumes the monthly credit). */
@@ -193,6 +219,10 @@ export async function createInstantBooking(
   const now = new Date().toISOString();
   const payToken = randomUUID();
   const payTokenExpiresAt = new Date(Date.now() + PAY_TOKEN_TTL_MS).toISOString();
+  // Post-settlement lifecycle state (READY vs AWAITING_LINK) from the
+  // consultant's meeting defaults. `paymentStatus: 'PAID'` remains the settled
+  // marker, so the status value is free to be READY / AWAITING_LINK.
+  const settled = resolveSettledStatus(mentor);
 
   // ── Zero amount → confirm immediately, no payment ──────────────────────────
   if (gross <= 0) {
@@ -201,8 +231,10 @@ export async function createInstantBooking(
       const existing = findReplay(d, input);
       if (existing) return { booking: existing, replayed: true };
       const booking = baseBooking(input, now, {
-        status: 'CONFIRMED',
+        status: settled.status,
         paymentStatus: 'PAID',
+        meetingMode: settled.meetingMode,
+        meetingLink: settled.meetingLink,
         amountCharged: 0,
         guestAmountDue: 0,
       });
@@ -263,8 +295,10 @@ export async function createInstantBooking(
       wallet.updatedAt = now;
       const tx = pushPaymentTx(d, wallet, userId, gross, input.clientReference, mentor.fullName, input.mentorId, now);
       const booking = baseBooking(input, now, {
-        status: 'CONFIRMED',
+        status: settled.status,
         paymentStatus: 'PAID',
+        meetingMode: settled.meetingMode,
+        meetingLink: settled.meetingLink,
         amountCharged: gross,
         guestAmountDue: gross,
         transactionId: tx.id,
@@ -290,7 +324,7 @@ export async function createInstantBooking(
   }
   if (created.kind === 'confirmed') {
     if (input.appliedPromoCode) await consumePromoCode(input.appliedPromoCode);
-    // P4: creditPendingEarning({ mentorId, bookingId, grossAmount: gross }) here.
+    await creditMentorForSettledBooking(created.booking.mentorId, created.booking.id, gross);
     return { ok: true, mode: 'confirmed', booking: created.booking, replayed: false };
   }
 
@@ -355,7 +389,8 @@ export async function settleMemberTopUp(token: string): Promise<SettleMemberResu
     (b) => b.source !== 'guest' && b.payToken === token,
   );
   if (!booking) return { state: 'INVALID' };
-  if (booking.status === 'CONFIRMED' || booking.paymentStatus === 'PAID') {
+  // 'PAID' is the settled marker; the lifecycle status is READY / AWAITING_LINK.
+  if (booking.paymentStatus === 'PAID') {
     return { state: 'CONFIRMED', booking };
   }
   if (
@@ -370,11 +405,15 @@ export async function settleMemberTopUp(token: string): Promise<SettleMemberResu
   if (!topUp || topUp.status !== 'COMPLETED') return { state: 'AWAITING_PAYMENT', booking };
 
   const gross = booking.amountCharged ?? booking.guestAmountDue ?? 0;
+  const mentor = await findMentorById(booking.mentorId);
+  const settled = mentor
+    ? resolveSettledStatus(mentor)
+    : ({ status: 'AWAITING_LINK', meetingMode: null, meetingLink: null } as const);
 
   const claim = await db.update<{ booking: MentorBookingRecord; claimed: boolean } | null>((d) => {
     const b = (d.mentorBookings ?? []).find((x) => x.id === booking.id);
     if (!b) return null;
-    if (b.status === 'CONFIRMED' || b.paymentStatus === 'PAID') return { booking: b, claimed: false };
+    if (b.paymentStatus === 'PAID') return { booking: b, claimed: false };
 
     const wallet = (d.wallets ?? []).find((w) => w.userId === b.userId);
     if (!wallet || wallet.status === 'FROZEN' || wallet.balance < gross) {
@@ -385,8 +424,10 @@ export async function settleMemberTopUp(token: string): Promise<SettleMemberResu
     wallet.balance -= gross;
     wallet.updatedAt = now;
     const tx = pushPaymentTx(d, wallet, b.userId ?? '', gross, `instant-consult-${b.id}`, '', b.mentorId, now);
-    b.status = 'CONFIRMED';
+    b.status = settled.status;
     b.paymentStatus = 'PAID';
+    b.meetingMode = settled.meetingMode;
+    b.meetingLink = settled.meetingLink;
     b.transactionId = tx.id;
     b.updatedAt = now;
     return { booking: b, claimed: true };
@@ -395,9 +436,9 @@ export async function settleMemberTopUp(token: string): Promise<SettleMemberResu
   if (!claim) return { state: 'INVALID' };
   if (claim.claimed) {
     if (claim.booking.appliedPromoCode) await consumePromoCode(claim.booking.appliedPromoCode);
-    // P4: creditPendingEarning({ mentorId, bookingId, grossAmount: gross }) here.
+    await creditMentorForSettledBooking(claim.booking.mentorId, claim.booking.id, gross);
   }
-  return { state: claim.booking.status === 'CONFIRMED' ? 'CONFIRMED' : 'AWAITING_PAYMENT', booking: claim.booking };
+  return { state: claim.booking.paymentStatus === 'PAID' ? 'CONFIRMED' : 'AWAITING_PAYMENT', booking: claim.booking };
 }
 
 /* ───────────────────────────── Small shared writers ───────────────────────────── */

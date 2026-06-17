@@ -22,6 +22,8 @@ import { getSlickPayTransferStatus } from '@/server/payments/slickpay-provider';
 import { ProviderNotConfiguredError } from '@/server/payments/errors';
 import { consumePromoCode } from '@/server/promo-codes/service';
 import { sendGuestConfirmationOnce } from '@/server/notifications/guest-confirm';
+import { creditPendingEarning } from '@/server/mentors/ledger';
+import { resolveSettledStatus } from './lifecycle';
 
 export type GuestPayState =
   | 'INVALID'
@@ -82,12 +84,28 @@ async function markPaidAndConfirm(
   bookingId: string,
   providerRef: string | null,
 ): Promise<boolean> {
+  // Instant-book bookings settle into the lifecycle state (READY / AWAITING_LINK)
+  // resolved from the consultant's meeting defaults; legacy admin-approval guest
+  // bookings simply become CONFIRMED. Resolve outside the lock (needs the mentor).
+  const snapshot = await db.read();
+  const snap = (snapshot.mentorBookings ?? []).find((b) => b.id === bookingId);
+  const settled =
+    snap?.instantBook === true
+      ? resolveSettledStatus((await findMentorById(snap.mentorId)) ?? {})
+      : null;
+
   const claim = await db.update<{ booking: MentorBookingRecord; claimed: boolean } | null>((d) => {
     const booking = (d.mentorBookings ?? []).find((b) => b.id === bookingId);
     if (!booking) return null;
     if (isSettled(booking)) return { booking, claimed: false };
     booking.paymentStatus = 'PAID';
-    booking.status        = 'CONFIRMED';
+    if (settled) {
+      booking.status       = settled.status;
+      booking.meetingMode  = settled.meetingMode;
+      booking.meetingLink  = settled.meetingLink;
+    } else {
+      booking.status       = 'CONFIRMED';
+    }
     if (providerRef) booking.paymentProviderRef = providerRef;
     booking.updatedAt = new Date().toISOString();
     return { booking, claimed: true };
@@ -98,6 +116,28 @@ async function markPaidAndConfirm(
     // Consume the promo NOW (never at approval) so unpaid links don't burn it.
     if (claim.booking.appliedPromoCode) {
       await consumePromoCode(claim.booking.appliedPromoCode);
+    }
+    // Credit the consultant's PENDING balance — ONLY for instant-book (pay-first)
+    // bookings. Legacy admin-approval guest bookings lack `instantBook` and must
+    // never credit the ledger. Non-blocking + idempotent: a ledger error can't
+    // roll back the already-settled booking.
+    if (claim.booking.instantBook === true) {
+      const gross = claim.booking.guestAmountDue ?? claim.booking.amountCharged ?? 0;
+      if (gross > 0) {
+        try {
+          await creditPendingEarning({
+            mentorId: claim.booking.mentorId,
+            bookingId: claim.booking.id,
+            grossAmount: gross,
+          });
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error(
+            `[guest-payment] mentor credit failed for booking ${claim.booking.id} (settled OK, reconcilable):`,
+            err instanceof Error ? err.message : err,
+          );
+        }
+      }
     }
     // Both-party confirmation emails + PDF receipt — sent exactly once.
     await sendGuestConfirmationOnce(claim.booking.id);

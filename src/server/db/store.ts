@@ -1204,6 +1204,26 @@ export interface MentorBookingRecord {
    */
   topUpIntentId?: string | null;
   /**
+   * True for bookings created by the instant-book, pay-first flow. Gates the
+   * consultant earnings credit at settlement: only instant-book bookings credit
+   * the mentor ledger. Absent on legacy (admin-approval) bookings, which must
+   * never credit it.
+   */
+  instantBook?: boolean;
+  /**
+   * Confirmed session format for an instant-book booking, resolved from the
+   * consultant's defaults at settlement (or set later when they supply a link).
+   * Distinct from the legacy `meetLink`/`isOffline` admin fields.
+   */
+  meetingMode?: 'ONLINE' | 'OFFLINE' | null;
+  /** Online meeting URL for an instant-book booking. Null for OFFLINE / not-yet-set. */
+  meetingLink?: string | null;
+  /**
+   * Set when the session is marked COMPLETED — the transition that releases the
+   * consultant's held (PENDING) earning to AVAILABLE.
+   */
+  completedAt?: string | null;
+  /**
    * Final integer DZD the guest must pay, recomputed server-side at approval
    * (mentor fee × confirmed duration − validated promo). Distinct from
    * amountCharged so the guest amount is auditable independent of any legacy
@@ -1252,6 +1272,17 @@ export interface MentorRecord {
   blockedDates?: string[];
   /** IANA timezone for the weekly template. Defaults to "Africa/Algiers". */
   availabilityTimezone?: string;
+
+  // ─── Instant-book meeting defaults (consultant self-service) ─────────────
+  /**
+   * Default session format for instant-book consultations. 'OFFLINE' (in
+   * person) needs no link; 'ONLINE' uses `defaultMeetingLink`. When a usable
+   * default exists, a paid booking lands READY immediately; otherwise it lands
+   * AWAITING_LINK until the consultant supplies one. Absent ⇒ no default set.
+   */
+  defaultMeetingMode?: 'ONLINE' | 'OFFLINE';
+  /** Default online meeting URL (e.g. a permanent room). Null/absent ⇒ none. */
+  defaultMeetingLink?: string | null;
 }
 
 /* ─────────────────── CRM — Clients ─────────────────── */
@@ -1580,6 +1611,30 @@ export interface MentorWithdrawalRecord {
   updatedAt: string;
 }
 
+/* ─────────────────────────── Consultant (mentor) self-service access ───────────────────────────
+ * Consultants are not platform users, so they cannot use the user session
+ * system. These two tables give them an ISOLATED magic-link + session flow,
+ * mirroring the user `EmailTokenRecord` / `SessionRecord` mechanics (random id,
+ * only the SHA-256 hash persisted). Keyed by mentorId; never resolves a user. */
+
+/** Single-use, hashed magic-link token emailed for consultant portal access. */
+export interface MentorAccessTokenRecord {
+  /** SHA-256 of the random token (plaintext travels only in the email link). */
+  tokenHash: string;
+  mentorId: string;
+  expiresAt: string;
+  consumed: boolean;
+}
+
+/** Consultant portal session — separate cookie/table from user sessions. */
+export interface MentorSessionRecord {
+  /** SHA-256 of the random session id (plaintext lives only in the cookie). */
+  idHash: string;
+  mentorId: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
 /* ─────────────────────────── Mentor consultations ─────────────────────────── */
 
 export type MentorConsultationStatus =
@@ -1689,6 +1744,10 @@ interface DbShape {
   mentorLedgerTxns: MentorLedgerTxnRecord[];
   /** Withdrawal requests submitted by consultants against their mentor wallet. */
   mentorWithdrawals: MentorWithdrawalRecord[];
+  /** Single-use magic-link tokens for consultant portal access. */
+  mentorAccessTokens: MentorAccessTokenRecord[];
+  /** Active consultant portal sessions (mentorId-keyed). */
+  mentorSessions: MentorSessionRecord[];
 
   // ─── Network Pass & Partner Program ──────────────────────────────────
   /** Per-visit ledger backing the monthly partner payout batch run. */
@@ -1761,6 +1820,8 @@ const empty: DbShape = {
   mentorWallets: [],
   mentorLedgerTxns: [],
   mentorWithdrawals: [],
+  mentorAccessTokens: [],
+  mentorSessions: [],
   networkVisits: [],
   partnerMemberships: [],
   partnerPromoCodes: [],

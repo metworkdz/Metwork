@@ -17,6 +17,7 @@ import {
   welcomeEmailHtml,
   verificationEmailHtml,
   passwordResetEmailHtml,
+  consultantMagicLinkEmailHtml,
   contactNotificationHtml,
   bookingReceiptEmailHtml,
   bookingConfirmedWithQrEmailHtml,
@@ -171,6 +172,25 @@ export function sendPasswordResetEmail(email: string, link: string): void {
       if (!sent) {
         // eslint-disable-next-line no-console
         console.log(`${banner} EMAIL → ${email} :: Reset your password → ${link}`);
+      }
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Resend email failed →`, err.message),
+    );
+}
+
+/** Consultant portal magic-link sign-in email. Fire-and-forget. */
+export function sendConsultantMagicLinkEmail(email: string, link: string, lang: 'en' | 'fr' = 'fr'): void {
+  sendResendEmail({
+    to: email,
+    subject: lang === 'en' ? 'Your Metwork consultant sign-in link' : 'Votre lien de connexion consultant Metwork',
+    html: consultantMagicLinkEmailHtml(link, lang),
+  })
+    .then((sent) => {
+      if (!sent) {
+        // eslint-disable-next-line no-console
+        console.log(`${banner} EMAIL → ${email} :: Consultant sign-in link → ${link}`);
       }
     })
     .catch((err: Error) =>

@@ -54,6 +54,11 @@ export interface Mentor {
   blockedDates?: string[];
   /** IANA timezone for the weekly template. Defaults to "Africa/Algiers". */
   availabilityTimezone?: string;
+
+  /** Default session format for instant-book consultations. */
+  defaultMeetingMode?: 'ONLINE' | 'OFFLINE';
+  /** Default online meeting URL. Null/absent ⇒ none. */
+  defaultMeetingLink?: string | null;
 }
 
 export interface MentorInput {
