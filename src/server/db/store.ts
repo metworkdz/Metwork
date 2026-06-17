@@ -1196,6 +1196,14 @@ export interface MentorBookingRecord {
    */
   paymentProviderRef?: string | null;
   /**
+   * Linked wallet TopUpIntentRecord id for the instant-book "wallet-first,
+   * SlickPay top-up" member flow: when a member has insufficient balance, a
+   * top-up is initiated and its id stored here so the return verification can
+   * confirm it and then settle the booking from the (now-funded) wallet.
+   * Null for guest (SlickPay-direct) and fully-funded member bookings.
+   */
+  topUpIntentId?: string | null;
+  /**
    * Final integer DZD the guest must pay, recomputed server-side at approval
    * (mentor fee × confirmed duration − validated promo). Distinct from
    * amountCharged so the guest amount is auditable independent of any legacy
