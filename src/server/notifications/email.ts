@@ -267,6 +267,42 @@ export function consultantMagicLinkEmailHtml(link: string, lang: 'en' | 'fr' = '
   `);
 }
 
+/** Sent to the client once their paid consultation has a confirmed meeting format (READY). */
+export function consultationReadyEmailHtml(params: {
+  clientName: string;
+  mentorName: string;
+  meetingMode: 'ONLINE' | 'OFFLINE' | null;
+  meetingLink: string | null;
+  scheduledAt: string | null;
+  durationMinutes: number | null;
+  lang: 'en' | 'fr';
+}): string {
+  const isFr = params.lang === 'fr';
+  const slot = params.scheduledAt
+    ? new Date(params.scheduledAt).toLocaleString(isFr ? 'fr-DZ' : 'en-GB', { dateStyle: 'long', timeStyle: 'short' })
+    : null;
+  const dur = params.durationMinutes ? `${params.durationMinutes} min` : null;
+  const details = [
+    slot ? `${isFr ? 'Date' : 'Date'} : ${slot}` : null,
+    dur ? `${isFr ? 'Durée' : 'Duration'} : ${dur}` : null,
+    params.meetingMode === 'OFFLINE' ? (isFr ? 'Format : en présentiel' : 'Format: in person') : null,
+  ].filter(Boolean).join('<br />');
+
+  return layout(`
+    ${h1(isFr ? 'Votre consultation est prête' : 'Your consultation is ready')}
+    ${p(isFr
+      ? `Bonjour ${params.clientName}, votre session avec ${params.mentorName} est confirmée.`
+      : `Hi ${params.clientName}, your session with ${params.mentorName} is confirmed.`)}
+    ${details ? p(`<span style="color:#3f3f46;">${details}</span>`) : ''}
+    ${params.meetingMode === 'ONLINE' && params.meetingLink
+      ? button(params.meetingLink, isFr ? 'Rejoindre la réunion' : 'Join the meeting')
+      : ''}
+    ${params.meetingMode === 'ONLINE' && params.meetingLink
+      ? p(`<span style="color:#71717a;font-size:13px;">${isFr ? 'Ou copiez ce lien :' : 'Or copy this link:'}<br /><span style="word-break:break-all;">${params.meetingLink}</span></span>`)
+      : ''}
+  `);
+}
+
 /** Sent to the user when their booking is created (awaiting incubator approval). */
 export function bookingPendingEmailHtml(opts: {
   customerName: string;

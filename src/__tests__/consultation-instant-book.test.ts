@@ -28,6 +28,7 @@ import {
   completeConsultation,
   resolveSettledStatus,
 } from '@/server/consultations/lifecycle';
+import { sendConsultationReadyOnce } from '@/server/notifications/consultation-ready';
 
 const MENTOR: MentorRecord = {
   id: 'm-instant-1',
@@ -404,6 +405,48 @@ describe('meeting-link lifecycle (P5a)', () => {
     const res = await completeConsultation('legacy-c');
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.reason).toBe('NOT_INSTANT_BOOK');
+  });
+});
+
+describe('ready notification dedup (P5b)', () => {
+  async function seedBooking(status: 'READY' | 'AWAITING_LINK'): Promise<string> {
+    const id = 'bk-' + Math.random().toString(36).slice(2, 8);
+    await db.update((d) => {
+      d.mentorBookings = [
+        ...(d.mentorBookings ?? []),
+        {
+          id, mentorId: MENTOR.id, userId: 'u', userName: 'U',
+          userEmail: 'u@example.com', userPhone: '+213500000000',
+          message: 'a consultation message', status, adminNote: null,
+          instantBook: true,
+          meetingMode: status === 'READY' ? 'ONLINE' : null,
+          meetingLink: status === 'READY' ? 'https://meet.example/x' : null,
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+        },
+      ];
+    });
+    return id;
+  }
+
+  it('claims linkSentAt once for a READY booking and never re-sends', async () => {
+    await seed(null);
+    const id = await seedBooking('READY');
+
+    await sendConsultationReadyOnce(id);
+    const first = (await db.read()).mentorBookings.find((b) => b.id === id)!.linkSentAt;
+    expect(first).toBeTruthy();
+
+    await sendConsultationReadyOnce(id); // replay
+    const second = (await db.read()).mentorBookings.find((b) => b.id === id)!.linkSentAt;
+    expect(second).toBe(first); // unchanged — sent exactly once
+  });
+
+  it('does not notify a booking that is not yet READY', async () => {
+    await seed(null);
+    const id = await seedBooking('AWAITING_LINK');
+    await sendConsultationReadyOnce(id);
+    const booking = (await db.read()).mentorBookings.find((b) => b.id === id)!;
+    expect(booking.linkSentAt ?? null).toBeNull();
   });
 });
 

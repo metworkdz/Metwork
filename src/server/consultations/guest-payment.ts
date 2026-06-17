@@ -24,6 +24,7 @@ import { consumePromoCode } from '@/server/promo-codes/service';
 import { sendGuestConfirmationOnce } from '@/server/notifications/guest-confirm';
 import { creditPendingEarning } from '@/server/mentors/ledger';
 import { resolveSettledStatus } from './lifecycle';
+import { sendConsultationReadyOnce } from '@/server/notifications/consultation-ready';
 
 export type GuestPayState =
   | 'INVALID'
@@ -138,6 +139,11 @@ async function markPaidAndConfirm(
           );
         }
       }
+    }
+    // Instant-book bookings that settled into READY: notify the client the
+    // session is ready (deduped via linkSentAt). AWAITING_LINK waits for a link.
+    if (settled && claim.booking.status === 'READY') {
+      void sendConsultationReadyOnce(claim.booking.id);
     }
     // Both-party confirmation emails + PDF receipt — sent exactly once.
     await sendGuestConfirmationOnce(claim.booking.id);

@@ -35,6 +35,7 @@ import { getTopUp, initiateTopUp } from '@/server/wallet/service';
 import { consumePromoCode } from '@/server/promo-codes/service';
 import { creditPendingEarning } from '@/server/mentors/ledger';
 import { resolveSettledStatus } from './lifecycle';
+import { sendConsultationReadyOnce } from '@/server/notifications/consultation-ready';
 
 /** Pay tokens live for 7 days — long enough to finish a hosted checkout. */
 const PAY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -244,6 +245,7 @@ export async function createInstantBooking(
     });
     if (!result.replayed && input.appliedPromoCode) await consumePromoCode(input.appliedPromoCode);
     // P4: creditPendingEarning is a no-op at gross 0; nothing to credit.
+    if (result.booking.status === 'READY') void sendConsultationReadyOnce(result.booking.id);
     return { ok: true, mode: 'confirmed', booking: result.booking, replayed: result.replayed };
   }
 
@@ -325,6 +327,7 @@ export async function createInstantBooking(
   if (created.kind === 'confirmed') {
     if (input.appliedPromoCode) await consumePromoCode(input.appliedPromoCode);
     await creditMentorForSettledBooking(created.booking.mentorId, created.booking.id, gross);
+    if (created.booking.status === 'READY') void sendConsultationReadyOnce(created.booking.id);
     return { ok: true, mode: 'confirmed', booking: created.booking, replayed: false };
   }
 
@@ -437,6 +440,7 @@ export async function settleMemberTopUp(token: string): Promise<SettleMemberResu
   if (claim.claimed) {
     if (claim.booking.appliedPromoCode) await consumePromoCode(claim.booking.appliedPromoCode);
     await creditMentorForSettledBooking(claim.booking.mentorId, claim.booking.id, gross);
+    if (claim.booking.status === 'READY') void sendConsultationReadyOnce(claim.booking.id);
   }
   return { state: claim.booking.paymentStatus === 'PAID' ? 'CONFIRMED' : 'AWAITING_PAYMENT', booking: claim.booking };
 }

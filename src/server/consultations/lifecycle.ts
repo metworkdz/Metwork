@@ -21,6 +21,7 @@ import {
   type MentorRecord,
 } from '@/server/db/store';
 import { releaseToAvailable } from '@/server/mentors/ledger';
+import { sendConsultationReadyOnce } from '@/server/notifications/consultation-ready';
 
 export type SettledStatus = 'READY' | 'AWAITING_LINK';
 
@@ -66,7 +67,7 @@ export async function setBookingMeetingLink(input: {
   if (input.mode === 'ONLINE' && !link) {
     return { ok: false, reason: 'LINK_REQUIRED' };
   }
-  return db.update<SetMeetingLinkResult>((d) => {
+  const result = await db.update<SetMeetingLinkResult>((d) => {
     const booking = (d.mentorBookings ?? []).find((b) => b.id === input.bookingId);
     if (!booking) return { ok: false, reason: 'NOT_FOUND' };
     if (booking.instantBook !== true) return { ok: false, reason: 'NOT_INSTANT_BOOK' };
@@ -79,6 +80,9 @@ export async function setBookingMeetingLink(input: {
     booking.updatedAt = new Date().toISOString();
     return { ok: true, booking };
   });
+  // Notify the client that the session is ready (deduped via linkSentAt).
+  if (result.ok) void sendConsultationReadyOnce(result.booking.id);
+  return result;
 }
 
 export type CompleteConsultationResult =

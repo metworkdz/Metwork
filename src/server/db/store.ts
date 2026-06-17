@@ -1224,6 +1224,12 @@ export interface MentorBookingRecord {
    */
   completedAt?: string | null;
   /**
+   * Dedup stamp: set once the "session ready" notification (meeting details) has
+   * been dispatched to the client, so reaching READY more than once (settle →
+   * link update) never re-notifies.
+   */
+  linkSentAt?: string | null;
+  /**
    * Final integer DZD the guest must pay, recomputed server-side at approval
    * (mentor fee × confirmed duration − validated promo). Distinct from
    * amountCharged so the guest amount is auditable independent of any legacy

@@ -18,6 +18,7 @@ import {
   verificationEmailHtml,
   passwordResetEmailHtml,
   consultantMagicLinkEmailHtml,
+  consultationReadyEmailHtml,
   contactNotificationHtml,
   bookingReceiptEmailHtml,
   bookingConfirmedWithQrEmailHtml,
@@ -197,6 +198,66 @@ export function sendConsultantMagicLinkEmail(email: string, link: string, lang: 
       // eslint-disable-next-line no-console
       console.error(`${banner} Resend email failed →`, err.message),
     );
+}
+
+/**
+ * Tell the client their paid consultation is READY (meeting format confirmed).
+ * Email + WhatsApp, both fire-and-forget. Dedup is handled by the caller
+ * (sendConsultationReadyOnce claims `linkSentAt`).
+ */
+export function sendConsultationReadyEmail(input: MentorConfirmationInput): void {
+  const { booking, mentor, lang } = input;
+  const isFr = lang === 'fr';
+
+  sendResendEmail({
+    to: booking.userEmail,
+    subject: isFr
+      ? `Votre consultation est prête — ${mentor.fullName}`
+      : `Your consultation is ready — ${mentor.fullName}`,
+    html: consultationReadyEmailHtml({
+      clientName: booking.userName,
+      mentorName: mentor.fullName,
+      meetingMode: booking.meetingMode ?? null,
+      meetingLink: booking.meetingLink ?? null,
+      scheduledAt: booking.scheduledAt ?? null,
+      durationMinutes: booking.durationMinutes ?? null,
+      lang,
+    }),
+  })
+    .then((sent) => {
+      if (!sent)
+        // eslint-disable-next-line no-console
+        console.log(`${banner} CONSULT READY (no Resend) → ${booking.userEmail} :: mentor=${mentor.fullName}`);
+      else
+        // eslint-disable-next-line no-console
+        console.log(`${banner} CONSULT READY sent → ${booking.userEmail}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Consultation ready email failed →`, err.message),
+    );
+
+  // WhatsApp nudge — fire-and-forget.
+  if (booking.userPhone) {
+    const linkPart = booking.meetingMode === 'ONLINE' && booking.meetingLink
+      ? `\n${isFr ? 'Lien' : 'Link'}: ${booking.meetingLink}`
+      : booking.meetingMode === 'OFFLINE'
+      ? `\n${isFr ? 'Format : en présentiel' : 'Format: in person'}`
+      : '';
+    const waText =
+      (isFr ? '✅ Metwork — Consultation prête\n' : '✅ Metwork — Consultation ready\n') +
+      `${isFr ? 'Consultant' : 'Consultant'}: ${mentor.fullName}` +
+      linkPart;
+    if (process.env.SMS_PROVIDER === 'infobip') {
+      sendWhatsAppMessage(booking.userPhone, waText).catch((err: Error) =>
+        // eslint-disable-next-line no-console
+        console.error(`${banner} WhatsApp consult ready failed →`, err.message),
+      );
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(`${banner} WHATSAPP (consult-ready) → ${booking.userPhone} :: ${waText.slice(0, 80)}…`);
+    }
+  }
 }
 
 /* ─────────────────────────── Booking lifecycle emails ─────────────────────── */
