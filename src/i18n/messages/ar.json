@@ -1,4 +1,58 @@
 {
+  "consultantPortal": {
+    "title": "بوابة المستشار",
+    "nav": { "signOut": "تسجيل الخروج" },
+    "signin": {
+      "heading": "تسجيل دخول المستشار",
+      "subtitle": "أدخل البريد الإلكتروني المرتبط بملفك كمستشار. سنرسل لك رابط دخول آمن.",
+      "emailLabel": "البريد الإلكتروني",
+      "emailPlaceholder": "you@example.com",
+      "submit": "إرسال رابط الدخول",
+      "sent": "تحقق من بريدك",
+      "sentDesc": "إذا كان هذا البريد مرتبطًا بملف مستشار، فسيصلك رابط دخول. تنتهي صلاحيته خلال 30 دقيقة.",
+      "errorInvalid": "رابط الدخول غير صالح.",
+      "errorExpired": "انتهت صلاحية رابط الدخول. يرجى طلب رابط جديد.",
+      "errorConsumed": "تم استخدام رابط الدخول من قبل. يرجى طلب رابط جديد.",
+      "errorGeneric": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+    },
+    "profile": {
+      "heading": "إعدادات الجلسة الافتراضية",
+      "hint": "عند تعيين قيمة افتراضية، تُؤكَّد الحجوزات المدفوعة وتصبح جاهزة فورًا. وإلا فإنها تنتظر إضافتك للرابط.",
+      "modeLabel": "الصيغة الافتراضية",
+      "modeOnline": "عبر الإنترنت",
+      "modeOffline": "حضوريًا",
+      "linkLabel": "رابط الاجتماع الافتراضي",
+      "linkPlaceholder": "https://meet.example/your-room",
+      "save": "حفظ",
+      "saved": "تم الحفظ",
+      "errorGeneric": "تعذّر الحفظ. يرجى المحاولة مرة أخرى."
+    },
+    "bookings": {
+      "heading": "الاستشارات",
+      "empty": "لا توجد استشارات بعد.",
+      "online": "عبر الإنترنت",
+      "inPerson": "حضوريًا",
+      "setLinkHeading": "أضف صيغة الاجتماع",
+      "setLinkCta": "حفظ الرابط",
+      "completeCta": "وضع علامة مكتملة"
+    },
+    "earnings": {
+      "pending": "معلّق",
+      "available": "متاح"
+    },
+    "withdrawals": {
+      "heading": "السحوبات",
+      "amountLabel": "المبلغ (دج)",
+      "accountLabel": "تفاصيل الدفع",
+      "accountPlaceholder": "CCP / BaridiMob / حساب بنكي",
+      "request": "طلب سحب",
+      "availableNote": "المتاح للسحب: {amount}",
+      "errorGeneric": "تعذّر إرسال الطلب.",
+      "statusPending": "قيد الانتظار",
+      "statusApproved": "مدفوع",
+      "statusRejected": "مرفوض"
+    }
+  },
   "common": {
     "appName": "Metwork",
     "tagline": "منظومة الشركات الناشئة في الجزائر، موحّدة.",

@@ -1,4 +1,58 @@
 {
+  "consultantPortal": {
+    "title": "Espace consultant",
+    "nav": { "signOut": "Se déconnecter" },
+    "signin": {
+      "heading": "Connexion consultant",
+      "subtitle": "Saisissez l'e-mail lié à votre profil consultant. Nous vous enverrons un lien de connexion sécurisé.",
+      "emailLabel": "E-mail",
+      "emailPlaceholder": "vous@exemple.com",
+      "submit": "Envoyer le lien",
+      "sent": "Vérifiez votre boîte mail",
+      "sentDesc": "Si cet e-mail correspond à un profil consultant, un lien de connexion arrive. Il expire dans 30 minutes.",
+      "errorInvalid": "Ce lien de connexion est invalide.",
+      "errorExpired": "Ce lien de connexion a expiré. Veuillez en demander un nouveau.",
+      "errorConsumed": "Ce lien de connexion a déjà été utilisé. Veuillez en demander un nouveau.",
+      "errorGeneric": "Une erreur s'est produite. Veuillez réessayer."
+    },
+    "profile": {
+      "heading": "Paramètres de réunion",
+      "hint": "Lorsqu'un paramètre par défaut est défini, les réservations payées sont confirmées et prêtes immédiatement. Sinon, elles attendent que vous ajoutiez un lien.",
+      "modeLabel": "Format par défaut",
+      "modeOnline": "En ligne",
+      "modeOffline": "En présentiel",
+      "linkLabel": "Lien de réunion par défaut",
+      "linkPlaceholder": "https://meet.exemple/votre-salle",
+      "save": "Enregistrer",
+      "saved": "Enregistré",
+      "errorGeneric": "Impossible d'enregistrer. Veuillez réessayer."
+    },
+    "bookings": {
+      "heading": "Consultations",
+      "empty": "Aucune consultation pour le moment.",
+      "online": "En ligne",
+      "inPerson": "En présentiel",
+      "setLinkHeading": "Ajouter un format de réunion",
+      "setLinkCta": "Enregistrer le lien",
+      "completeCta": "Marquer comme terminée"
+    },
+    "earnings": {
+      "pending": "En attente",
+      "available": "Disponible"
+    },
+    "withdrawals": {
+      "heading": "Retraits",
+      "amountLabel": "Montant (DZD)",
+      "accountLabel": "Coordonnées de paiement",
+      "accountPlaceholder": "CCP / BaridiMob / compte bancaire",
+      "request": "Demander un retrait",
+      "availableNote": "Disponible au retrait : {amount}",
+      "errorGeneric": "Impossible d'envoyer la demande.",
+      "statusPending": "En attente",
+      "statusApproved": "Payé",
+      "statusRejected": "Rejeté"
+    }
+  },
   "common": {
     "appName": "Metwork",
     "tagline": "L'écosystème startup d'Algérie, unifié.",

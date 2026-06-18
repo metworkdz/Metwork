@@ -1,4 +1,58 @@
 {
+  "consultantPortal": {
+    "title": "Consultant portal",
+    "nav": { "signOut": "Sign out" },
+    "signin": {
+      "heading": "Consultant sign-in",
+      "subtitle": "Enter the email linked to your consultant profile. We'll send you a secure sign-in link.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "submit": "Send sign-in link",
+      "sent": "Check your inbox",
+      "sentDesc": "If that email matches a consultant profile, a sign-in link is on its way. It expires in 30 minutes.",
+      "errorInvalid": "That sign-in link is invalid.",
+      "errorExpired": "That sign-in link has expired. Please request a new one.",
+      "errorConsumed": "That sign-in link has already been used. Please request a new one.",
+      "errorGeneric": "Something went wrong. Please try again."
+    },
+    "profile": {
+      "heading": "Meeting defaults",
+      "hint": "When a default is set, paid bookings are confirmed and ready immediately. Otherwise they wait for you to add a link.",
+      "modeLabel": "Default format",
+      "modeOnline": "Online",
+      "modeOffline": "In person",
+      "linkLabel": "Default meeting link",
+      "linkPlaceholder": "https://meet.example/your-room",
+      "save": "Save",
+      "saved": "Saved",
+      "errorGeneric": "Could not save. Please try again."
+    },
+    "bookings": {
+      "heading": "Consultations",
+      "empty": "No consultations yet.",
+      "online": "Online",
+      "inPerson": "In person",
+      "setLinkHeading": "Add a meeting format",
+      "setLinkCta": "Save link",
+      "completeCta": "Mark completed"
+    },
+    "earnings": {
+      "pending": "Pending",
+      "available": "Available"
+    },
+    "withdrawals": {
+      "heading": "Withdrawals",
+      "amountLabel": "Amount (DZD)",
+      "accountLabel": "Payment details",
+      "accountPlaceholder": "CCP / BaridiMob / bank account",
+      "request": "Request payout",
+      "availableNote": "Available to withdraw: {amount}",
+      "errorGeneric": "Could not submit the request.",
+      "statusPending": "Pending",
+      "statusApproved": "Paid",
+      "statusRejected": "Rejected"
+    }
+  },
   "common": {
     "appName": "Metwork",
     "tagline": "Algeria's startup ecosystem, unified.",
