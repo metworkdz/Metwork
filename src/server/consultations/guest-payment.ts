@@ -22,7 +22,8 @@ import { getSlickPayTransferStatus } from '@/server/payments/slickpay-provider';
 import { ProviderNotConfiguredError } from '@/server/payments/errors';
 import { consumePromoCode } from '@/server/promo-codes/service';
 import { sendGuestConfirmationOnce } from '@/server/notifications/guest-confirm';
-import { creditPendingEarning } from '@/server/mentors/ledger';
+import { creditMentorForSettledBooking } from './instant-book';
+import { releaseSlot } from '@/server/mentors/slot-lock';
 import { resolveSettledStatus } from './lifecycle';
 import { sendConsultationReadyOnce } from '@/server/notifications/consultation-ready';
 
@@ -120,26 +121,14 @@ async function markPaidAndConfirm(
     }
     // Credit the consultant's PENDING balance — ONLY for instant-book (pay-first)
     // bookings. Legacy admin-approval guest bookings lack `instantBook` and must
-    // never credit the ledger. Non-blocking + idempotent: a ledger error can't
-    // roll back the already-settled booking.
+    // never credit the ledger. The helper applies the promo-split (consultant
+    // paid on the full base, platform absorbs the discount), is non-blocking +
+    // idempotent: a ledger error can't roll back the already-settled booking.
     if (claim.booking.instantBook === true) {
-      const gross = claim.booking.guestAmountDue ?? claim.booking.amountCharged ?? 0;
-      if (gross > 0) {
-        try {
-          await creditPendingEarning({
-            mentorId: claim.booking.mentorId,
-            bookingId: claim.booking.id,
-            grossAmount: gross,
-          });
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.error(
-            `[guest-payment] mentor credit failed for booking ${claim.booking.id} (settled OK, reconcilable):`,
-            err instanceof Error ? err.message : err,
-          );
-        }
-      }
+      await creditMentorForSettledBooking(claim.booking);
     }
+    // Settled booking now occupies the slot — drop any transient payment hold.
+    await releaseSlot(claim.booking.id);
     // Instant-book bookings that settled into READY: notify the client the
     // session is ready (deduped via linkSentAt). AWAITING_LINK waits for a link.
     if (settled && claim.booking.status === 'READY') {

@@ -572,12 +572,12 @@
       "id": "qa-mentor-id",
       "fullName": "QA Mentor Expert",
       "title": "Expert Test",
-      "bio": "Mentor de test pour les agents QA automatisés.",
+      "bio": "Ex-operator helping early founders nail GTM, pricing, and fundraising.",
       "expertise": [
         "Startup",
         "Tech"
       ],
-      "consultationFee": 5000,
+      "consultationFee": 8000,
       "consultationAvailable": true,
       "email": "qa.mentor@metwork.test",
       "phone": null,
@@ -586,7 +586,43 @@
       "city": "Alger",
       "isActive": true,
       "createdAt": "2026-05-21T21:55:59.726Z",
-      "updatedAt": "2026-05-21T21:55:59.726Z"
+      "updatedAt": "2026-05-21T21:55:59.726Z",
+      "position": "Startup Growth Advisor",
+      "topics": [
+        "Fundraising",
+        "Go-to-market",
+        "Pricing"
+      ],
+      "ratePer30": 2500,
+      "ratePer60": 4500,
+      "freeIntroEnabled": true,
+      "minNoticeHours": 24,
+      "bufferMinutes": 15,
+      "availabilityTimezone": "Africa/Algiers",
+      "weeklyAvailability": [
+        {
+          "weekday": 1,
+          "slots": [
+            {
+              "start": "09:00",
+              "end": "12:00"
+            }
+          ]
+        },
+        {
+          "weekday": 3,
+          "slots": [
+            {
+              "start": "10:00",
+              "end": "13:00"
+            }
+          ]
+        }
+      ],
+      "blockedDates": [],
+      "defaultMeetingMode": "ONLINE",
+      "defaultMeetingLink": "https://meet.metwork.dz/x",
+      "slug": "qa-mentor-expert"
     },
     {
       "id": "edf8294d-06bb-4ab0-9a96-582e79a3216d",
@@ -597,7 +633,8 @@
       "position": "Consultante en management & entrepreneuriat I Fondatrice JUREX ITEK",
       "createdAt": "2026-05-05T12:57:20.785Z",
       "linkedinUrl": "https://www.linkedin.com/in/amira-hamdad-2a2b2022/",
-      "consultationFee": 4000
+      "consultationFee": 4000,
+      "slug": "amira-hamdad"
     },
     {
       "id": "f648bdbd-f9a6-433c-8a34-6a85b2447ebb",
@@ -608,7 +645,8 @@
       "position": "Consultant en management et Communication",
       "createdAt": "2026-05-05T12:58:07.150Z",
       "linkedinUrl": "https://www.linkedin.com/in/yacine-kheddaoui-b02443a0/",
-      "consultationFee": 1000
+      "consultationFee": 1000,
+      "slug": "yacine-kheddaoui"
     },
     {
       "id": "e40bfcbc-153b-4bca-bbd1-009befa282df",
@@ -619,7 +657,8 @@
       "position": "Consultante en Vente & Marketing",
       "createdAt": "2026-05-05T12:59:41.144Z",
       "linkedinUrl": "https://www.linkedin.com/in/majda-chekkal-89446678/",
-      "consultationFee": 3000
+      "consultationFee": 3000,
+      "slug": "mejda-chekkal"
     },
     {
       "id": "a1432e61-99ba-4e8c-963a-647abaa4d2cd",
@@ -630,7 +669,8 @@
       "position": "Expert comptable I Consultant en Finance & comptabilité",
       "createdAt": "2026-05-05T13:00:58.867Z",
       "linkedinUrl": "https://www.linkedin.com/in/kada-bahiri-a1a15946/",
-      "consultationFee": 3000
+      "consultationFee": 3000,
+      "slug": "dr-bahiri-kada"
     },
     {
       "id": "2ef28806-cc4e-401b-bfa9-dcb734f9fc08",
@@ -641,7 +681,8 @@
       "position": "Consultant en Business development",
       "createdAt": "2026-05-05T13:01:53.999Z",
       "linkedinUrl": "https://www.linkedin.com/in/moncef-haba-306577117/",
-      "consultationFee": 3000
+      "consultationFee": 3000,
+      "slug": "moncef-haba"
     },
     {
       "id": "f27d99e8-419b-4248-a436-2aae565d6a3a",
@@ -652,7 +693,8 @@
       "position": "Formateur I Consultant en Project management",
       "createdAt": "2026-05-05T13:02:59.324Z",
       "linkedinUrl": "https://www.linkedin.com/in/confluences-p%C3%A9dagogiques-001649326/",
-      "consultationFee": 3000
+      "consultationFee": 3000,
+      "slug": "ali-hassani"
     },
     {
       "id": "90e5f5fe-d30e-4418-837b-51f4bd3978d9",
@@ -663,10 +705,52 @@
       "position": "Consultant en IT & Cyber security",
       "createdAt": "2026-05-05T13:04:24.798Z",
       "linkedinUrl": "https://www.linkedin.com/in/cherif-haddad-3589b358/",
-      "consultationFee": 3000
+      "consultationFee": 3000,
+      "slug": "cherif-haddad"
     }
   ],
-  "mentorBookings": [],
+  "mentorBookings": [
+    {
+      "id": "cb-1",
+      "mentorId": "qa-mentor-id",
+      "userId": null,
+      "adminNote": null,
+      "instantBook": true,
+      "createdAt": "2026-06-19T02:22:44.318Z",
+      "updatedAt": "2026-06-19T02:22:44.318Z",
+      "source": "registered",
+      "userName": "Yacine Boudiaf",
+      "userEmail": "yacine@startup.dz",
+      "userPhone": "+213661234567",
+      "message": "Seed round help.",
+      "status": "READY",
+      "scheduledAt": "2026-07-19T02:22:44.319Z",
+      "durationMinutes": 60,
+      "meetingMode": "ONLINE",
+      "meetingLink": "https://x",
+      "amountCharged": 4500,
+      "rescheduleCount": 1
+    },
+    {
+      "id": "cb-2",
+      "mentorId": "qa-mentor-id",
+      "userId": null,
+      "adminNote": null,
+      "instantBook": true,
+      "createdAt": "2026-06-19T02:22:44.318Z",
+      "updatedAt": "2026-06-19T02:22:44.318Z",
+      "source": "registered",
+      "userName": "Lina Cherif",
+      "userEmail": "lina@craftly.io",
+      "userPhone": "+213770112233",
+      "message": "Pricing review.",
+      "status": "AWAITING_LINK",
+      "durationMinutes": 30,
+      "meetingMode": null,
+      "meetingLink": null,
+      "amountCharged": 2500
+    }
+  ],
   "incubators": [
     {
       "id": "qa-incubator-profile-id",
@@ -879,6 +963,30 @@
   "investments": [],
   "withdrawalRequests": [],
   "mentorConsultations": [],
+  "mentorWallets": [
+    {
+      "mentorId": "qa-mentor-id",
+      "pendingBalance": 3150,
+      "availableBalance": 1750,
+      "currency": "DZD",
+      "status": "ACTIVE",
+      "createdAt": "2026-06-19T02:22:44.318Z",
+      "updatedAt": "2026-06-19T02:22:44.318Z"
+    }
+  ],
+  "mentorLedgerTxns": [],
+  "mentorWithdrawals": [],
+  "mentorAccessTokens": [],
+  "mentorSessions": [
+    {
+      "idHash": "eb870ca8ea81e126b218e0eb084cf491f65c1d449393ee6476801e24b8e28b4a",
+      "mentorId": "qa-mentor-id",
+      "expiresAt": "2026-07-19T02:22:44.319Z",
+      "createdAt": "2026-06-19T02:22:44.318Z"
+    }
+  ],
+  "mentorDeviceTokens": [],
+  "mentorSlotLocks": [],
   "networkVisits": [],
   "partnerMemberships": [],
   "partnerPromoCodes": [],

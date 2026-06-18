@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { db } from '@/server/db/store';
 import { DEFAULT_COMMISSION_RULES } from '@/server/admin/settings-defaults';
+import { getConsultationRevenueSummary } from '@/server/mentors/revenue';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -20,6 +21,11 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
   await requireRole(['ADMIN']);
 
   const data = await db.read();
+
+  // Authoritative settled-money P&L from the consultant ledger (one COMMISSION
+  // row per settled booking froze the full promo split + absorbed discounts).
+  const revenue = await getConsultationRevenueSummary();
+  const subsidyByMentor = new Map(revenue.perMentor.map((m) => [m.mentorId, m]));
 
   // Find the mentor consultation commission rate
   const consultationRule =
@@ -110,6 +116,45 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
         <SummaryCard icon={<DollarSign className="size-4" />} label="Total mentor earnings" value={fmt(totalMentor)} />
       </div>
 
+      {/* Settled-money P&L (authoritative, from the consultant ledger) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t('admin.mentorRevenue.revenueTitle')}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t('admin.mentorRevenue.revenueSubtitle')}</p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <SummaryCard
+              icon={<DollarSign className="size-4" />}
+              label={t('admin.mentorRevenue.grossCommission')}
+              value={fmt(revenue.grossCommission)}
+            />
+            <SummaryCard
+              icon={<DollarSign className="size-4" />}
+              label={t('admin.mentorRevenue.promoSubsidy')}
+              value={`− ${fmt(revenue.promoSubsidy)}`}
+            />
+            <SummaryCard
+              icon={<DollarSign className="size-4" />}
+              label={t('admin.mentorRevenue.tierSubsidy')}
+              value={`− ${fmt(revenue.tierSubsidy)}`}
+            />
+            <SummaryCard
+              icon={<TrendingUp className="size-4" />}
+              label={t('admin.mentorRevenue.netPlatformRevenue')}
+              value={fmt(revenue.netPlatformRevenue)}
+            />
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {t('admin.mentorRevenue.subsidyNote', {
+              collected: fmt(revenue.totalCollected),
+              consultant: fmt(revenue.totalConsultantEarnings),
+              count: revenue.settledCount,
+            })}
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Per-mentor table */}
       <Card>
         <CardHeader>
@@ -131,6 +176,7 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
                     <th className="px-4 py-3 text-right font-medium text-muted-foreground">Gross revenue</th>
                     <th className="px-4 py-3 text-right font-medium text-muted-foreground">Platform ({Math.round(platformRate * 100)}%)</th>
                     <th className="px-4 py-3 text-right font-medium text-muted-foreground">Mentor ({Math.round(mentorRate * 100)}%)</th>
+                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">{t('admin.mentorRevenue.promoSubsidyShort')}</th>
                     <th className="px-4 py-3 text-center font-medium text-muted-foreground">Status</th>
                   </tr>
                 </thead>
@@ -152,6 +198,11 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
                       <td className="px-4 py-3 text-right tabular-nums font-medium text-emerald-700">
                         {m.mentorEarnings > 0 ? fmt(m.mentorEarnings) : '—'}
                       </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-amber-600">
+                        {(subsidyByMentor.get(m.id)?.promoSubsidy ?? 0) > 0
+                          ? `− ${fmt(subsidyByMentor.get(m.id)!.promoSubsidy)}`
+                          : '—'}
+                      </td>
                       <td className="px-4 py-3 text-center">
                         {m.total === 0 ? (
                           <Badge variant="outline" className="text-xs">No bookings</Badge>
@@ -171,6 +222,9 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
                       <td className="px-4 py-3 text-right tabular-nums">{fmt(totalGross)}</td>
                       <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{fmt(totalPlatform)}</td>
                       <td className="px-4 py-3 text-right tabular-nums text-emerald-700">{fmt(totalMentor)}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-amber-600">
+                        {revenue.promoSubsidy > 0 ? `− ${fmt(revenue.promoSubsidy)}` : '—'}
+                      </td>
                       <td />
                     </tr>
                   </tfoot>

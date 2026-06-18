@@ -30,7 +30,9 @@ import {
   type WalletRecord,
 } from '@/server/db/store';
 import { findMentorById } from '@/server/mentors/service';
-import { computeConsultationCharge } from './pricing';
+import { computeConsultationCharge, type ConsultationChargeBreakdown } from './pricing';
+import { computeBookableSlots } from '@/server/mentors/availability';
+import { lockSlot, releaseSlot } from '@/server/mentors/slot-lock';
 import { getTopUp, initiateTopUp } from '@/server/wallet/service';
 import { consumePromoCode } from '@/server/promo-codes/service';
 import { creditPendingEarning } from '@/server/mentors/ledger';
@@ -95,7 +97,11 @@ export type CreateInstantBookingResult =
       redirectUrl?: string | null;
       amount: number;
     }
-  | { ok: false; reason: 'MENTOR_NOT_FOUND' | 'WALLET_FROZEN' | 'PROVIDER_FAILED'; message?: string };
+  | {
+      ok: false;
+      reason: 'MENTOR_NOT_FOUND' | 'WALLET_FROZEN' | 'PROVIDER_FAILED' | 'SLOT_NOT_BOOKABLE';
+      message?: string;
+    };
 
 /* ───────────────────────────── Internal helpers ───────────────────────────── */
 
@@ -122,10 +128,12 @@ function baseBooking(
   input: CreateInstantBookingInput,
   now: string,
   extra: Partial<MentorBookingRecord>,
+  charge?: ConsultationChargeBreakdown,
+  id?: string,
 ): MentorBookingRecord {
   const isGuest = !input.actor;
   return {
-    id: randomUUID(),
+    id: id ?? randomUUID(),
     mentorId: input.mentorId,
     userId: input.actor?.id ?? null,
     userName: input.name,
@@ -148,6 +156,12 @@ function baseBooking(
     source: isGuest ? 'guest' : 'registered',
     guestLocale: input.locale ?? 'fr',
     instantBook: true,
+    // Frozen promo-split breakdown (P3): the consultant is paid on the full
+    // base price, the platform absorbs every discount. Persisted so settlement
+    // and the admin P&L read one source of truth.
+    consultantShareBase: charge?.basePrice ?? null,
+    tierDiscountAmount: charge?.tierDiscountAmount ?? null,
+    promoDiscountAmount: charge?.promoDiscountAmount ?? null,
     createdAt: now,
     updatedAt: now,
     ...extra,
@@ -155,23 +169,51 @@ function baseBooking(
 }
 
 /**
- * Credit the consultant's PENDING balance for a settled consultation, recording
- * the platform commission. Non-blocking: the booking is already CONFIRMED, so a
- * ledger error must never roll it back — it is logged and reconcilable later
- * (the credit is idempotent per booking). No-op for zero-amount bookings.
+ * Credit the consultant's PENDING balance for a settled consultation and record
+ * the platform's share / discount subsidy. Non-blocking: the booking is already
+ * CONFIRMED, so a ledger error must never roll it back — it is logged and
+ * reconcilable later (the credit is idempotent per booking).
+ *
+ * Owner-locked split (2026-06-18): the consultant is paid on the FULL base price
+ * (`consultantShareBase`), the platform absorbs every discount — so a fully
+ * promo'd (gross 0) PAID booking still pays the consultant, with the platform
+ * subsidising it. FREE_QUOTA (monthly free credit) sessions never pay the
+ * consultant. A free mentor (no base) is a no-op.
  */
 export async function creditMentorForSettledBooking(
-  mentorId: string,
-  bookingId: string,
-  grossAmount: number,
+  booking: Pick<
+    MentorBookingRecord,
+    | 'id'
+    | 'mentorId'
+    | 'chargeType'
+    | 'amountCharged'
+    | 'guestAmountDue'
+    | 'consultantShareBase'
+    | 'tierDiscountAmount'
+    | 'promoDiscountAmount'
+    | 'appliedPromoCode'
+  >,
 ): Promise<void> {
-  if (grossAmount <= 0) return;
+  // Free monthly-credit sessions never credit the consultant.
+  if (booking.chargeType === 'FREE_QUOTA') return;
+  const collected = booking.amountCharged ?? booking.guestAmountDue ?? 0;
+  const base = booking.consultantShareBase ?? collected;
+  // Nothing to pay when there is no base (free mentor).
+  if (!base || base <= 0) return;
   try {
-    await creditPendingEarning({ mentorId, bookingId, grossAmount });
+    await creditPendingEarning({
+      mentorId: booking.mentorId,
+      bookingId: booking.id,
+      grossAmount: collected,
+      consultantShareBase: booking.consultantShareBase ?? null,
+      tierDiscountAmount: booking.tierDiscountAmount ?? null,
+      promoDiscountAmount: booking.promoDiscountAmount ?? null,
+      appliedPromoCode: booking.appliedPromoCode ?? null,
+    });
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error(
-      `[instant-book] mentor credit failed for booking ${bookingId} (settled OK, reconcilable):`,
+      `[instant-book] mentor credit failed for booking ${booking.id} (settled OK, reconcilable):`,
       err instanceof Error ? err.message : err,
     );
   }
@@ -213,21 +255,67 @@ export async function createInstantBooking(
   if (!mentor) return { ok: false, reason: 'MENTOR_NOT_FOUND' };
 
   const isGuest = !input.actor;
-  const { gross } = computeConsultationCharge({
+  const charge = computeConsultationCharge({
     feePerHour: mentor.consultationFee ?? 0,
     durationMinutes: input.durationMinutes,
     membershipDiscountFraction: isGuest ? 0 : input.actor?.membershipDiscountFraction,
     promoDiscountPercent: input.promoDiscountPercent ?? 0,
     useFreeCredit: input.useFreeCredit,
   });
+  const { gross } = charge;
 
   const now = new Date().toISOString();
+  const bookingId = randomUUID();
   const payToken = randomUUID();
   const payTokenExpiresAt = new Date(Date.now() + PAY_TOKEN_TTL_MS).toISOString();
   // Post-settlement lifecycle state (READY vs AWAITING_LINK) from the
   // consultant's meeting defaults. `paymentStatus: 'PAID'` remains the settled
   // marker, so the status value is free to be READY / AWAITING_LINK.
   const settled = resolveSettledStatus(mentor);
+
+  // ── Slot validation + concurrency lock ─────────────────────────────────────
+  // When a concrete slot was chosen, gate it through the shared bookable-slots
+  // validator (single source of truth) and take an atomic hold so two concurrent
+  // payers can't claim the same time. Skipped for a REPLAY (same clientReference)
+  // — re-validating would trip over the caller's own already-occupying booking
+  // and break retry-safety. The lock is keyed to this booking id and released on
+  // settlement / provider failure (and self-expires after its TTL).
+  let slotLocked = false;
+  if (input.consultationDate && input.consultationTime) {
+    const snap = await db.read();
+    const replay = (snap.mentorBookings ?? []).find((b) =>
+      isGuest
+        ? b.source === 'guest' && b.clientReference === input.clientReference
+        : b.userId === input.actor!.id && b.clientReference === input.clientReference,
+    );
+    if (!replay) {
+      const mentorBookings = (snap.mentorBookings ?? []).filter((b) => b.mentorId === mentor.id);
+      const slots = computeBookableSlots(
+        mentor,
+        input.consultationDate,
+        input.consultationDate,
+        mentorBookings,
+        { slotLocks: snap.mentorSlotLocks ?? [] },
+      );
+      const bookable = slots.some(
+        (s) =>
+          s.date === input.consultationDate &&
+          s.start === input.consultationTime &&
+          s.available,
+      );
+      if (!bookable) return { ok: false, reason: 'SLOT_NOT_BOOKABLE' };
+
+      const lock = await lockSlot({
+        bookingId,
+        mentorId: mentor.id,
+        date: input.consultationDate,
+        startTime: input.consultationTime,
+        durationMinutes: input.durationMinutes,
+      });
+      if (!lock.ok) return { ok: false, reason: 'SLOT_NOT_BOOKABLE' };
+      slotLocked = true;
+    }
+  }
 
   // ── Zero amount → confirm immediately, no payment ──────────────────────────
   if (gross <= 0) {
@@ -242,13 +330,18 @@ export async function createInstantBooking(
         meetingLink: settled.meetingLink,
         amountCharged: 0,
         guestAmountDue: 0,
-      });
+      }, charge, bookingId);
       d.mentorBookings.push(booking);
       if (input.useFreeCredit) writeFreeQuotaConsultation(d, booking, mentor.fullName, now);
       return { booking, replayed: false };
     });
     if (!result.replayed && input.appliedPromoCode) await consumePromoCode(input.appliedPromoCode);
-    // P4: creditPendingEarning is a no-op at gross 0; nothing to credit.
+    // Gross is 0 here, but a FULL-PROMO (PAID) booking still pays the consultant
+    // on the full base price — the platform absorbs the whole discount. The
+    // helper no-ops for FREE_QUOTA / free-mentor bookings.
+    if (!result.replayed) await creditMentorForSettledBooking(result.booking);
+    // Settled booking now occupies the slot — the transient hold can go.
+    if (slotLocked) await releaseSlot(bookingId);
     if (result.booking.status === 'READY') void sendConsultationReadyOnce(result.booking.id);
     return { ok: true, mode: 'confirmed', booking: result.booking, replayed: result.replayed };
   }
@@ -266,7 +359,7 @@ export async function createInstantBooking(
         payToken,
         payTokenExpiresAt,
         paymentProviderRef: null,
-      });
+      }, charge, bookingId);
       d.mentorBookings.push(booking);
       return { booking, replayed: false };
     });
@@ -308,7 +401,7 @@ export async function createInstantBooking(
         amountCharged: gross,
         guestAmountDue: gross,
         transactionId: tx.id,
-      });
+      }, charge, bookingId);
       d.mentorBookings.push(booking);
       return { kind: 'confirmed', booking };
     }
@@ -319,7 +412,7 @@ export async function createInstantBooking(
       guestAmountDue: gross,
       payToken,
       payTokenExpiresAt,
-    });
+    }, charge);
     d.mentorBookings.push(booking);
     return { kind: 'needs_topup', booking, shortfall: gross - wallet.balance };
   });
@@ -330,7 +423,9 @@ export async function createInstantBooking(
   }
   if (created.kind === 'confirmed') {
     if (input.appliedPromoCode) await consumePromoCode(input.appliedPromoCode);
-    await creditMentorForSettledBooking(created.booking.mentorId, created.booking.id, gross);
+    await creditMentorForSettledBooking(created.booking);
+    // Settled booking now occupies the slot — the transient hold can go.
+    if (slotLocked) await releaseSlot(bookingId);
     if (created.booking.status === 'READY') void sendConsultationReadyOnce(created.booking.id);
     return { ok: true, mode: 'confirmed', booking: created.booking, replayed: false };
   }
@@ -347,6 +442,8 @@ export async function createInstantBooking(
     customer: { fullName: input.name, email: input.email, phone: input.phone },
   });
   if (!top.ok) {
+    // Payment couldn't start — release the hold so the slot frees up immediately.
+    if (slotLocked) await releaseSlot(created.booking.id);
     return { ok: false, reason: 'PROVIDER_FAILED', message: 'message' in top ? top.message : undefined };
   }
 
@@ -443,7 +540,9 @@ export async function settleMemberTopUp(token: string): Promise<SettleMemberResu
   if (!claim) return { state: 'INVALID' };
   if (claim.claimed) {
     if (claim.booking.appliedPromoCode) await consumePromoCode(claim.booking.appliedPromoCode);
-    await creditMentorForSettledBooking(claim.booking.mentorId, claim.booking.id, gross);
+    await creditMentorForSettledBooking(claim.booking);
+    // Settled booking now occupies the slot — drop the transient hold.
+    await releaseSlot(claim.booking.id);
     if (claim.booking.status === 'READY') void sendConsultationReadyOnce(claim.booking.id);
   }
   return { state: claim.booking.paymentStatus === 'PAID' ? 'CONFIRMED' : 'AWAITING_PAYMENT', booking: claim.booking };

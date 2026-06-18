@@ -9,6 +9,20 @@ import { slugify, uniqueSlug } from '@/lib/slugify';
  * with any slug already taken by another mentor. Falls back to the id when the
  * name slugifies to an empty string (e.g. a name with no transliterable chars).
  */
+/** Trim, drop empties, and de-dupe expertise tags. Undefined ⇒ []. */
+function normalizeTopics(topics: string[] | undefined): string[] {
+  if (!topics) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of topics) {
+    const t = raw.trim();
+    if (!t || seen.has(t.toLowerCase())) continue;
+    seen.add(t.toLowerCase());
+    out.push(t);
+  }
+  return out;
+}
+
 function deriveMentorSlug(
   fullName: string,
   selfId: string,
@@ -75,6 +89,12 @@ export async function createMentor(input: CreateMentorInput): Promise<MentorReco
       email: input.email?.trim() || null,
       consultationFee: input.consultationFee ?? 0,
       createdAt: now,
+      minNoticeHours: input.minNoticeHours ?? null,
+      bufferMinutes: input.bufferMinutes ?? null,
+      topics: normalizeTopics(input.topics),
+      ratePer30: input.ratePer30 ?? null,
+      ratePer60: input.ratePer60 ?? null,
+      freeIntroEnabled: input.freeIntroEnabled ?? null,
     };
     d.mentors.push(record);
     return record;
@@ -102,6 +122,12 @@ export async function updateMentor(
     if (patch.linkedinUrl !== undefined) m.linkedinUrl = patch.linkedinUrl?.trim() || null;
     if (patch.email !== undefined) m.email = patch.email?.trim() || null;
     if (patch.consultationFee !== undefined) m.consultationFee = patch.consultationFee;
+    if (patch.minNoticeHours !== undefined) m.minNoticeHours = patch.minNoticeHours;
+    if (patch.bufferMinutes !== undefined) m.bufferMinutes = patch.bufferMinutes;
+    if (patch.topics !== undefined) m.topics = normalizeTopics(patch.topics);
+    if (patch.ratePer30 !== undefined) m.ratePer30 = patch.ratePer30;
+    if (patch.ratePer60 !== undefined) m.ratePer60 = patch.ratePer60;
+    if (patch.freeIntroEnabled !== undefined) m.freeIntroEnabled = patch.freeIntroEnabled;
     return { ok: true, mentor: m };
   });
 }

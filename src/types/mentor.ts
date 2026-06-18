@@ -21,6 +21,23 @@ export interface DaySlot {
   available: boolean;
 }
 
+/**
+ * A bookable slot produced by the shared `computeBookableSlots` validator —
+ * the weekly template minus existing bookings, buffer padding, the
+ * min-notice window, and any active slot-lock. Carries the concrete date so a
+ * caller (public booking route, consultant view, reschedule) can act on it
+ * directly. Only `available` slots are safe to offer.
+ */
+export interface BookableSlot {
+  /** "YYYY-MM-DD" in the mentor's local time. */
+  date: string;
+  /** "HH:MM" start (mentor local time). */
+  start: string;
+  /** "HH:MM" end (mentor local time). */
+  end: string;
+  available: boolean;
+}
+
 /** Payload accepted by the admin availability PATCH endpoint. */
 export interface MentorAvailabilityInput {
   weeklyAvailability: WeeklyAvailabilityDay[];
@@ -59,6 +76,20 @@ export interface Mentor {
   defaultMeetingMode?: 'ONLINE' | 'OFFLINE';
   /** Default online meeting URL. Null/absent ⇒ none. */
   defaultMeetingLink?: string | null;
+
+  // ─── Booking policy (public-safe, all optional for back-compat) ───────────
+  /** Minimum lead time (hours) before a session. Absent ⇒ validator default. */
+  minNoticeHours?: number | null;
+  /** Buffer padding (minutes) around each booking. Absent ⇒ validator default. */
+  bufferMinutes?: number | null;
+  /** Expertise tags shown on the public profile. */
+  topics?: string[];
+  /** Explicit 30-minute session price (DZD). Absent ⇒ prorated from per-hour. */
+  ratePer30?: number | null;
+  /** Explicit 60-minute session price (DZD). Absent ⇒ prorated from per-hour. */
+  ratePer60?: number | null;
+  /** True if a free introductory session is offered. */
+  freeIntroEnabled?: boolean | null;
 }
 
 export interface MentorInput {
@@ -69,6 +100,12 @@ export interface MentorInput {
   linkedinUrl?: string | null;
   email?: string | null;
   consultationFee?: number;
+  minNoticeHours?: number | null;
+  bufferMinutes?: number | null;
+  topics?: string[];
+  ratePer30?: number | null;
+  ratePer60?: number | null;
+  freeIntroEnabled?: boolean | null;
 }
 
 export interface UploadedFile {

@@ -4,14 +4,32 @@
     {
       "name": "metwork",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["next", "dev"],
+      "runtimeArgs": [
+        "next",
+        "dev"
+      ],
       "port": 3000
     },
     {
       "name": "metwork-local",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev"],
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "dev"
+      ],
       "port": 3000
+    },
+    {
+      "name": "metwork-localdb",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "dev"
+      ],
+      "port": 3000,
+      "env": {
+        "USE_LOCAL_DB": "true"
+      }
     }
   ]
 }

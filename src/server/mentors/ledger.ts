@@ -29,7 +29,7 @@ import {
   type MentorWalletRecord,
   type MentorWithdrawalRecord,
 } from '@/server/db/store';
-import { computeMentorEarningSplit, type MentorEarningSplit } from '@/server/payments/mentor-commission';
+import { computeMentorPromoSplit, type MentorEarningSplit } from '@/server/payments/mentor-commission';
 
 /** Smallest withdrawal a consultant may request (mirrors the user wallet floor). */
 export const MIN_MENTOR_WITHDRAWAL = 500;
@@ -116,21 +116,56 @@ export interface CreditPendingEarningResult {
 
 /**
  * Credit a consultation's net earning to the mentor's PENDING balance and record
- * the platform commission for audit. Idempotent per booking: a replay returns
- * the original split without crediting twice. A zero/negative gross is a no-op
- * credit (still recorded so callers can branch uniformly).
+ * the platform's share (or subsidy) for audit. Idempotent per booking: a replay
+ * returns the original split without crediting twice.
+ *
+ * Owner-locked split (2026-06-18): the consultant is paid on the FULL undiscounted
+ * base price `consultantShareBase` (= fee × duration before tier+promo); the
+ * platform absorbs every discount. `platformShare = collected − consultantShare`
+ * and MAY be negative (platform pays out of pocket). When `consultantShareBase`
+ * is omitted it defaults to `grossAmount`, reproducing the legacy 30/70-on-gross
+ * behaviour exactly (back-compat for existing callers/tests). A zero base is a
+ * no-op credit. The discount components are frozen here so the admin revenue P&L
+ * never has to recompute them.
  */
 export async function creditPendingEarning(input: {
   mentorId: string;
   bookingId: string;
+  /** What the user actually paid (after tier + promo). Integer DZD. */
   grossAmount: number;
+  /** Absolute base price B (before discounts). Defaults to grossAmount. */
+  consultantShareBase?: number | null;
+  /** DZD the platform absorbed from the membership tier (audit). */
+  tierDiscountAmount?: number | null;
+  /** DZD the platform absorbed from the promo code (audit). */
+  promoDiscountAmount?: number | null;
+  /** Promo code applied, for the subsidy audit trail. */
+  appliedPromoCode?: string | null;
 }): Promise<CreditPendingEarningResult> {
   const { mentorId, bookingId, grossAmount } = input;
+  const basePrice =
+    input.consultantShareBase != null && input.consultantShareBase > 0
+      ? input.consultantShareBase
+      : grossAmount;
+  const tierDiscountAmount = Math.max(0, Math.round(input.tierDiscountAmount ?? 0));
+  const promoDiscountAmount = Math.max(0, Math.round(input.promoDiscountAmount ?? 0));
   const earningRef = `mentor-earning-${bookingId}`;
 
   return db.update<CreditPendingEarningResult>((d) => {
     const wallet = ensureMentorWallet(d, mentorId);
-    const split = computeMentorEarningSplit(grossAmount, d.commissionRules);
+    const promo = computeMentorPromoSplit(
+      { basePrice, collectedAmount: grossAmount },
+      d.commissionRules,
+    );
+    // Shape kept MentorEarningSplit-compatible for existing consumers: gross =
+    // what was collected, platformCommission = the (signed) platform share.
+    const split: MentorEarningSplit = {
+      gross: promo.collectedAmount,
+      platformCommission: promo.platformShare,
+      mentorNet: promo.consultantShare,
+      platformRate: promo.platformRate,
+      mentorRate: promo.mentorRate,
+    };
 
     // Idempotency: a prior earning for this booking replays unchanged.
     if (findByReference(d, mentorId, earningRef)) {
@@ -156,6 +191,9 @@ export async function creditPendingEarning(input: {
       description: 'Consultation earning (held until completed)',
       metadata: {
         gross: split.gross,
+        basePrice: promo.basePrice,
+        consultantShare: promo.consultantShare,
+        platformShare: promo.platformShare,
         platformCommission: split.platformCommission,
         platformRate: split.platformRate,
         mentorRate: split.mentorRate,
@@ -164,20 +202,37 @@ export async function creditPendingEarning(input: {
       completedAt: now,
     });
 
-    // Audit-only: the platform cut. Recorded against the booking but never added
-    // to the mentor wallet.
-    if (split.platformCommission > 0) {
+    // Audit-only: the platform's net + the discounts it absorbed. Recorded
+    // against the booking, never added to the mentor wallet. Always written when
+    // there is a real base so the admin P&L can see subsidies (platformShare can
+    // be ≤ 0 under the subsidize model).
+    if (promo.basePrice > 0) {
+      const totalDiscountAbsorbed = tierDiscountAmount + promoDiscountAmount;
       pushTxn(d, {
         id: randomUUID(),
         mentorId,
         bookingId,
         type: 'COMMISSION',
-        amount: -split.platformCommission,
+        amount: -promo.platformShare,
         bucket: 'PENDING',
         status: 'COMPLETED',
         reference: `mentor-commission-${bookingId}`,
-        description: 'Platform commission on consultation',
-        metadata: { gross: split.gross, platformRate: split.platformRate },
+        description:
+          promo.platformShare >= 0
+            ? 'Platform share on consultation'
+            : 'Platform subsidy on consultation (discount absorbed)',
+        metadata: {
+          gross: promo.collectedAmount,
+          basePrice: promo.basePrice,
+          consultantShare: promo.consultantShare,
+          platformShare: promo.platformShare,
+          tierDiscountAmount,
+          promoDiscountAmount,
+          totalDiscountAbsorbed,
+          platformRate: promo.platformRate,
+          mentorRate: promo.mentorRate,
+          appliedPromoCode: input.appliedPromoCode ?? null,
+        },
         createdAt: now,
         completedAt: now,
       });

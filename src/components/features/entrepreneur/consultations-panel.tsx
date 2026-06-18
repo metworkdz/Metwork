@@ -17,7 +17,7 @@
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Clock, UserCheck, Timer, DollarSign, Sparkles } from 'lucide-react';
+import { Clock, UserCheck, Timer, DollarSign, Sparkles, CalendarClock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,9 +37,11 @@ import {
 } from '@/components/ui/table';
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
+import { MentorScheduler } from '@/components/features/mentors/mentor-scheduler';
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { MentorBookingRecord, MentorBookingStatus, MentorRecord } from '@/server/db/store';
+import type { DaySlot } from '@/types/mentor';
 import type { Locale } from '@/i18n/config';
 
 /* ─── Duration options (mirrors BookConsultationDialog) ─── */
@@ -130,6 +132,53 @@ export function ConsultationsPanel({
   const tAdminBookings  = useTranslations('admin.bookings');
   const [bookings, setBookings]     = useState(initial);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  const tConsult = useTranslations('consultantPortal.bookings');
+  const schedulerLocale: 'en' | 'fr' | 'ar' =
+    locale === 'fr' || locale === 'ar' ? locale : 'en';
+
+  /* Reschedule state (member-initiated). */
+  const [resBooking, setResBooking] = useState<MentorBookingRecord | null>(null);
+  const [resDate, setResDate] = useState<string | null>(null);
+  const [resTime, setResTime] = useState<string | null>(null);
+  const [resBusy, setResBusy] = useState(false);
+  const [resError, setResError] = useState<string | null>(null);
+
+  /** Member can reschedule a settled, not-yet-completed session. */
+  const RESCHEDULABLE_STATUSES: MentorBookingStatus[] = ['READY', 'AWAITING_LINK', 'CONFIRMED'];
+
+  async function submitMemberReschedule() {
+    if (!resBooking || !resDate || !resTime) return;
+    setResBusy(true);
+    setResError(null);
+    try {
+      const res = await fetch(`/api/consultations/${resBooking.id}/reschedule`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: resDate, time: resTime }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
+        throw new Error(d.error?.message ?? 'Reschedule failed');
+      }
+      const data = await res.json() as { scheduledAt: string | null };
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === resBooking.id
+            ? { ...b, scheduledAt: data.scheduledAt, consultationDate: resDate, consultationTime: resTime }
+            : b,
+        ),
+      );
+      setResBooking(null);
+      setResDate(null);
+      setResTime(null);
+    } catch (err) {
+      setResError(err instanceof Error ? err.message : 'Reschedule failed');
+    } finally {
+      setResBusy(false);
+    }
+  }
 
   // Compute remaining if not explicitly provided.
   const remaining = typeof freeSessionsRemaining === 'number'
@@ -410,11 +459,13 @@ export function ConsultationsPanel({
                     <TableHead>{tCommon('status')}</TableHead>
                     <TableHead>{t('colDuration')}</TableHead>
                     <TableHead>{t('colSubmitted')}</TableHead>
+                    <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {bookings.map((b) => {
                     const mentor = mentors.find((m) => m.id === b.mentorId);
+                    const canReschedule = RESCHEDULABLE_STATUSES.includes(b.status);
                     return (
                       <TableRow key={b.id}>
                         <TableCell className="font-medium">
@@ -429,6 +480,19 @@ export function ConsultationsPanel({
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                           {formatDate(b.createdAt, locale, { dateStyle: 'medium' })}
                         </TableCell>
+                        <TableCell className="text-end">
+                          {canReschedule && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => { setResBooking(b); setResDate(null); setResTime(null); setResError(null); }}
+                              title={tConsult('rescheduleCta')}
+                            >
+                              <CalendarClock className="size-4" />
+                              <span className="sr-only">{tConsult('rescheduleCta')}</span>
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -438,6 +502,35 @@ export function ConsultationsPanel({
           )}
         </CardContent>
       </Card>
+
+      {/* Member reschedule dialog */}
+      <Dialog open={resBooking !== null} onOpenChange={(o) => { if (!o) { setResBooking(null); setResDate(null); setResTime(null); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{tConsult('rescheduleTitle')}</DialogTitle>
+            <DialogDescription>{tConsult('rescheduleHelp')}</DialogDescription>
+          </DialogHeader>
+          {resBooking && (
+            <MentorScheduler
+              mentorId={resBooking.mentorId}
+              selectedDate={resDate}
+              onSelectDate={(d) => { setResDate(d); setResTime(null); }}
+              selectedTime={resTime}
+              onSelectTime={(slot: DaySlot) => setResTime(slot.start)}
+              locale={schedulerLocale}
+            />
+          )}
+          {resError && <p className="text-xs text-destructive">{resError}</p>}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResBooking(null)} disabled={resBusy}>
+              {tConsult('dialogCancel')}
+            </Button>
+            <Button onClick={submitMemberReschedule} loading={resBusy} disabled={!resDate || !resTime}>
+              {tConsult('rescheduleConfirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Booking dialog */}
       <Dialog

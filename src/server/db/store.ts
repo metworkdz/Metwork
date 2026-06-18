@@ -1230,6 +1230,12 @@ export interface MentorBookingRecord {
    */
   linkSentAt?: string | null;
   /**
+   * Dedup stamp: set once the "booking received" notification has been
+   * dispatched (consultant + client), so re-processing a booking never
+   * re-notifies. Distinct from `linkSentAt` (the session-ready notice).
+   */
+  bookingNotifiedAt?: string | null;
+  /**
    * Final integer DZD the guest must pay, recomputed server-side at approval
    * (mentor fee × confirmed duration − validated promo). Distinct from
    * amountCharged so the guest amount is auditable independent of any legacy
@@ -1247,6 +1253,44 @@ export interface MentorBookingRecord {
    * registered bookings (their language comes from the user record).
    */
   guestLocale?: 'en' | 'fr' | 'ar';
+
+  /* ── Promo-split / platform-subsidy accounting (P3). All additive & nullable. ──
+   * The consultant's earning is computed on the FULL, undiscounted base price B
+   * (fee × duration, before tier AND promo); the platform absorbs every
+   * discount (subsidize model). These fields freeze the breakdown at booking
+   * time so settlement + admin P&L read one source of truth and never recompute. */
+
+  /**
+   * Absolute base price B in DZD = `computePrice(fee, duration)` BEFORE the
+   * membership-tier and promo discounts. The consultant's share is
+   * `round(B × mentorRate)`. Null on legacy bookings / free sessions ⇒ the
+   * ledger falls back to the collected gross (old behaviour).
+   */
+  consultantShareBase?: number | null;
+  /** DZD removed by the membership tier — absorbed by the platform. Audit only. */
+  tierDiscountAmount?: number | null;
+  /** DZD removed by the promo code — absorbed by the platform. Audit only. */
+  promoDiscountAmount?: number | null;
+
+  /* ── Reschedule / cancel (P3). All additive & nullable. ─────────────────── */
+
+  /** Times this booking has been rescheduled (cap enforced by the validator). */
+  rescheduleCount?: number | null;
+  /** ISO timestamp of the most recent reschedule. */
+  rescheduledAt?: string | null;
+  /** Append-only audit of every reschedule (oldest → newest). */
+  rescheduleHistory?: Array<{
+    from: { date: string | null; time: string | null; scheduledAt: string | null };
+    to: { date: string | null; time: string | null; scheduledAt: string | null };
+    by: 'consultant' | 'user' | 'admin';
+    at: string;
+  }> | null;
+  /** ISO timestamp the booking was CANCELLED. */
+  cancelledAt?: string | null;
+  /** Who initiated the cancellation. */
+  cancelledBy?: 'consultant' | 'user' | 'admin' | null;
+  /** Optional free-text reason captured at cancellation. */
+  cancelReason?: string | null;
 
   createdAt: string;
   updatedAt: string;
@@ -1289,6 +1333,55 @@ export interface MentorRecord {
   defaultMeetingMode?: 'ONLINE' | 'OFFLINE';
   /** Default online meeting URL (e.g. a permanent room). Null/absent ⇒ none. */
   defaultMeetingLink?: string | null;
+
+  // ─── Booking policy (consultant-configurable) ────────────────────────────
+  // All optional & additive: absent ⇒ engine defaults applied by the shared
+  // bookable-slots validator. Existing mentors keep working unchanged.
+
+  /**
+   * Minimum lead time (hours) a client must book ahead of the session start.
+   * Slots starting sooner than `now + minNoticeHours` are not bookable.
+   * Expected values 24 or 48; absent ⇒ validator default (24).
+   */
+  minNoticeHours?: number | null;
+  /**
+   * Padding (minutes) reserved before AND after every booking, so back-to-back
+   * sessions never touch. Subtracted by the bookable-slots validator. Absent ⇒
+   * validator default (0).
+   */
+  bufferMinutes?: number | null;
+  /** Free-text expertise tags shown on the public profile. Absent ⇒ none. */
+  topics?: string[];
+  /**
+   * Explicit price (DZD) for a 30-minute session. Optional override — when
+   * absent, price is prorated from `consultationFee` (per-hour). STORED ONLY in
+   * this round; `computePrice` still uses the per-hour rate (no money change).
+   */
+  ratePer30?: number | null;
+  /** Explicit price (DZD) for a 60-minute session. Same semantics as ratePer30. */
+  ratePer60?: number | null;
+  /** True if the consultant offers a free introductory session. Absent ⇒ false. */
+  freeIntroEnabled?: boolean | null;
+
+  // ─── Durable self-service access (token + PIN) ───────────────────────────
+  // Parallel to the email magic-link flow (which stays as a fallback). A DB
+  // leak can't impersonate: only hashes are stored. All optional & additive.
+
+  /**
+   * SHA-256 of the durable per-mentor access token. The plaintext travels only
+   * in the link the admin shares out-of-band; rotating replaces this hash.
+   * Absent ⇒ no durable token issued yet.
+   */
+  accessTokenHash?: string | null;
+  /** ISO timestamp the access token was last (re)generated. */
+  accessTokenRotatedAt?: string | null;
+  /**
+   * scrypt hash of the consultant's PIN (set on first durable-token access).
+   * Reuses the user password hashing util. Absent ⇒ PIN not set yet.
+   */
+  pinHash?: string | null;
+  /** ISO timestamp the PIN was last set/changed. */
+  pinSetAt?: string | null;
 }
 
 /* ─────────────────── CRM — Clients ─────────────────── */
@@ -1641,6 +1734,43 @@ export interface MentorSessionRecord {
   createdAt: string;
 }
 
+/**
+ * "Remember this device" token for durable-token + PIN access. Lets a
+ * consultant skip the PIN on a trusted device until expiry. Revocable
+ * (admin rotate / PIN change clears them). Only the hash is persisted.
+ */
+export interface MentorDeviceTokenRecord {
+  /** SHA-256 of the random device token (plaintext lives only in the cookie). */
+  tokenHash: string;
+  mentorId: string;
+  expiresAt: string;
+  createdAt: string;
+  /** Optional UA/label for the admin/consultant to recognise the device. */
+  label?: string | null;
+}
+
+/**
+ * Short-lived hold placed on a mentor time-slot at payment INITIATION (not
+ * settlement), so two clients can't pay for the same slot concurrently. The
+ * shared bookable-slots validator treats an unexpired lock as occupied.
+ * Released explicitly on payment failure, or implicitly when `expiresAt`
+ * passes. Keyed by the originating booking id for idempotent release.
+ */
+export interface MentorSlotLockRecord {
+  /** Originating MentorBookingRecord.id — the idempotent release key. */
+  bookingId: string;
+  mentorId: string;
+  /** "YYYY-MM-DD" of the held slot. */
+  date: string;
+  /** "HH:MM" start of the held slot (mentor local time). */
+  startTime: string;
+  /** Held duration in minutes. */
+  durationMinutes: number;
+  /** ISO expiry — after this the lock is ignored (and may be swept). */
+  expiresAt: string;
+  createdAt: string;
+}
+
 /* ─────────────────────────── Mentor consultations ─────────────────────────── */
 
 export type MentorConsultationStatus =
@@ -1754,6 +1884,10 @@ interface DbShape {
   mentorAccessTokens: MentorAccessTokenRecord[];
   /** Active consultant portal sessions (mentorId-keyed). */
   mentorSessions: MentorSessionRecord[];
+  /** "Remember this device" tokens for durable-token + PIN access. */
+  mentorDeviceTokens: MentorDeviceTokenRecord[];
+  /** Short-lived slot holds taken at payment initiation. */
+  mentorSlotLocks: MentorSlotLockRecord[];
 
   // ─── Network Pass & Partner Program ──────────────────────────────────
   /** Per-visit ledger backing the monthly partner payout batch run. */
@@ -1828,6 +1962,8 @@ const empty: DbShape = {
   mentorWithdrawals: [],
   mentorAccessTokens: [],
   mentorSessions: [],
+  mentorDeviceTokens: [],
+  mentorSlotLocks: [],
   networkVisits: [],
   partnerMemberships: [],
   partnerPromoCodes: [],

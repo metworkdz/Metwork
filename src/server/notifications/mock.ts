@@ -260,6 +260,139 @@ export function sendConsultationReadyEmail(input: MentorConfirmationInput): void
   }
 }
 
+/** Minimal branded HTML wrapper for the lightweight P3 lifecycle notices. */
+function simpleNoticeHtml(title: string, lines: string[]): string {
+  const body = lines.map((l) => `<p style="margin:0 0 10px;color:#3f3f46;font-size:14px;">${l}</p>`).join('');
+  return `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;margin:0 auto;padding:24px;">
+    <h2 style="margin:0 0 16px;color:#18181b;font-size:18px;">${title}</h2>${body}
+    <p style="margin:18px 0 0;color:#a1a1aa;font-size:12px;">Metwork</p></div>`;
+}
+
+/** Human "when" string from a booking's scheduled time / date+time. */
+function bookingWhen(booking: MentorConfirmationInput['booking']): string {
+  if (booking.scheduledAt) {
+    const d = new Date(booking.scheduledAt);
+    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 16).replace('T', ' ');
+  }
+  if (booking.consultationDate) {
+    return `${booking.consultationDate}${booking.consultationTime ? ` ${booking.consultationTime}` : ''}`;
+  }
+  return '';
+}
+
+/**
+ * Notify the OTHER party that a consultation was rescheduled. `to` is the
+ * recipient side ('user' when the consultant moved it, 'consultant' when the
+ * user did). Fire-and-forget; never throws into the caller.
+ */
+export function sendConsultationRescheduledEmail(
+  input: MentorConfirmationInput & { to: 'user' | 'consultant' },
+): void {
+  const { booking, mentor, lang, to } = input;
+  const isFr = lang === 'fr';
+  const recipientEmail = to === 'consultant' ? (mentor.email ?? '') : booking.userEmail;
+  const recipientName = to === 'consultant' ? mentor.fullName : booking.userName;
+  if (!recipientEmail) return;
+  const when = bookingWhen(booking);
+
+  const subject = isFr
+    ? `Consultation reprogrammée — ${mentor.fullName}`
+    : `Consultation rescheduled — ${mentor.fullName}`;
+  const html = simpleNoticeHtml(subject, [
+    isFr ? `Bonjour ${recipientName},` : `Hello ${recipientName},`,
+    isFr
+      ? `La consultation avec ${to === 'consultant' ? booking.userName : mentor.fullName} a été reprogrammée${when ? ` au <strong>${when}</strong>` : ''}.`
+      : `Your consultation with ${to === 'consultant' ? booking.userName : mentor.fullName} has been rescheduled${when ? ` to <strong>${when}</strong>` : ''}.`,
+  ]);
+
+  sendResendEmail({ to: recipientEmail, subject, html })
+    .then((sent) => {
+      if (!sent)
+        // eslint-disable-next-line no-console
+        console.log(`${banner} CONSULT RESCHEDULED (no Resend) → ${recipientEmail} :: when=${when}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Consultation rescheduled email failed →`, err.message),
+    );
+
+  // WhatsApp nudge to the client only.
+  if (to === 'user' && booking.userPhone) {
+    const waText =
+      (isFr ? '🔁 Metwork — Consultation reprogrammée\n' : '🔁 Metwork — Consultation rescheduled\n') +
+      `${mentor.fullName}${when ? ` — ${when}` : ''}`;
+    if (process.env.SMS_PROVIDER === 'infobip') {
+      sendWhatsAppMessage(booking.userPhone, waText).catch((err: Error) =>
+        // eslint-disable-next-line no-console
+        console.error(`${banner} WhatsApp reschedule failed →`, err.message),
+      );
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(`${banner} WHATSAPP (reschedule) → ${booking.userPhone} :: ${waText.slice(0, 80)}…`);
+    }
+  }
+}
+
+/**
+ * Notify the client that the consultant CANCELLED their consultation and the
+ * full amount was refunded to their Metwork wallet. Fire-and-forget.
+ */
+export function sendConsultationCancelledEmail(
+  input: MentorConfirmationInput & { refundedAmount: number },
+): void {
+  const { booking, mentor, lang, refundedAmount } = input;
+  const isFr = lang === 'fr';
+  if (!booking.userEmail) return;
+
+  const subject = isFr
+    ? `Consultation annulée — ${mentor.fullName}`
+    : `Consultation cancelled — ${mentor.fullName}`;
+  const refundLine =
+    refundedAmount > 0
+      ? isFr
+        ? `Un remboursement de <strong>${refundedAmount.toLocaleString()} DZD</strong> a été crédité sur votre portefeuille Metwork.`
+        : `A refund of <strong>${refundedAmount.toLocaleString()} DZD</strong> has been credited to your Metwork wallet.`
+      : isFr
+        ? `Aucun paiement n'était dû pour cette consultation.`
+        : `No payment was due for this consultation.`;
+  const html = simpleNoticeHtml(subject, [
+    isFr ? `Bonjour ${booking.userName},` : `Hello ${booking.userName},`,
+    isFr
+      ? `Votre consultation avec ${mentor.fullName} a été annulée par le consultant.`
+      : `Your consultation with ${mentor.fullName} was cancelled by the consultant.`,
+    refundLine,
+  ]);
+
+  sendResendEmail({ to: booking.userEmail, subject, html })
+    .then((sent) => {
+      if (!sent)
+        // eslint-disable-next-line no-console
+        console.log(`${banner} CONSULT CANCELLED (no Resend) → ${booking.userEmail} :: refund=${refundedAmount}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Consultation cancelled email failed →`, err.message),
+    );
+
+  if (booking.userPhone) {
+    const waText =
+      (isFr ? '❌ Metwork — Consultation annulée\n' : '❌ Metwork — Consultation cancelled\n') +
+      `${mentor.fullName}` +
+      (refundedAmount > 0
+        ? `\n${isFr ? 'Remboursé' : 'Refunded'}: ${refundedAmount.toLocaleString()} DZD`
+        : '');
+    if (process.env.SMS_PROVIDER === 'infobip') {
+      sendWhatsAppMessage(booking.userPhone, waText).catch((err: Error) =>
+        // eslint-disable-next-line no-console
+        console.error(`${banner} WhatsApp cancel failed →`, err.message),
+      );
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(`${banner} WHATSAPP (cancel) → ${booking.userPhone} :: ${waText.slice(0, 80)}…`);
+    }
+  }
+}
+
 /* ─────────────────────────── Booking lifecycle emails ─────────────────────── */
 
 export function sendBookingConfirmedWithQrEmail(

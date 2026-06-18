@@ -24,5 +24,13 @@ export function toMentorDto(m: MentorRecord): Mentor {
     availabilityTimezone: m.availabilityTimezone ?? 'Africa/Algiers',
     defaultMeetingMode: m.defaultMeetingMode,
     defaultMeetingLink: m.defaultMeetingLink ?? null,
+    // Booking policy — public-safe. PII (accessTokenHash/pinHash) is NEVER
+    // serialized here.
+    minNoticeHours: m.minNoticeHours ?? null,
+    bufferMinutes: m.bufferMinutes ?? null,
+    topics: m.topics ?? [],
+    ratePer30: m.ratePer30 ?? null,
+    ratePer60: m.ratePer60 ?? null,
+    freeIntroEnabled: m.freeIntroEnabled ?? false,
   };
 }

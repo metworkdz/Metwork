@@ -76,3 +76,47 @@ export function computeMentorEarningSplit(
   const mentorNet = Math.max(0, base - platformCommission);
   return { gross: base, platformCommission, mentorNet, platformRate, mentorRate };
 }
+
+export interface MentorPromoSplit {
+  /** Absolute base price B the consultant share is computed on (before tier+promo). */
+  basePrice: number;
+  /** What the user actually paid (after tier + promo). Integer DZD. */
+  collectedAmount: number;
+  /** Net credited to the mentor = round(basePrice × mentorRate). Never negative. */
+  consultantShare: number;
+  /**
+   * Platform's net on this consultation = collectedAmount − consultantShare.
+   * SIGNED: negative means the platform subsidised the consultant out of pocket
+   * (the locked "subsidize, no cap" model — discounts are the platform's expense).
+   */
+  platformShare: number;
+  platformRate: number;
+  mentorRate: number;
+}
+
+/**
+ * Promo/subsidy-aware split (P3, owner-locked 2026-06-18).
+ *
+ * The consultant is ALWAYS paid `round(basePrice × mentorRate)` on the FULL,
+ * undiscounted price — every tier/promo discount is absorbed by the PLATFORM.
+ * The platform's share is therefore whatever is left of what the user actually
+ * paid, and MAY be negative (platform pays the consultant from its own funds).
+ * No cap, no rejection — the gap is an expense the admin dashboard reports.
+ *
+ * Pure: pass the rules in. `basePrice`/`collectedAmount` are integer DZD.
+ */
+export function computeMentorPromoSplit(
+  input: { basePrice: number; collectedAmount: number },
+  rules?: readonly CommissionRuleRecord[] | null,
+): MentorPromoSplit {
+  const basePrice =
+    Number.isFinite(input.basePrice) && input.basePrice > 0 ? Math.round(input.basePrice) : 0;
+  const collectedAmount =
+    Number.isFinite(input.collectedAmount) && input.collectedAmount > 0
+      ? Math.round(input.collectedAmount)
+      : 0;
+  const { platformRate, mentorRate } = resolveMentorCommissionRates(rules);
+  const consultantShare = Math.max(0, Math.round(basePrice * mentorRate));
+  const platformShare = collectedAmount - consultantShare;
+  return { basePrice, collectedAmount, consultantShare, platformShare, platformRate, mentorRate };
+}
