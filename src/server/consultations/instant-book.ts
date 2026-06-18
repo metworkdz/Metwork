@@ -42,9 +42,13 @@ const PAY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 /** Wallet top-up floor (mirrors the wallet service). */
 const MIN_TOPUP = 100;
 
-/** Feature flag, read at call-time so tests can toggle per-case. */
+/**
+ * Instant-book is now the only consultation flow (the legacy admin-approval
+ * path was retired in P7b). Retained as an always-true shim so the existing
+ * call-sites/guards keep compiling; it no longer reads any env flag.
+ */
 export function isInstantBookEnabled(): boolean {
-  return process.env.CONSULTATION_INSTANT_BOOK === 'true';
+  return true;
 }
 
 export interface InstantBookActor {

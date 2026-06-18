@@ -74,13 +74,6 @@ const serverSchema = z.object({
   // Mock provider mode: `sync` (default, settles immediately) or `async`
   // (returns PENDING + redirectUrl, exercises the webhook path locally).
   MOCK_PAYMENT_MODE: z.enum(['sync', 'async']).default('sync'),
-  /**
-   * Feature flag: enable the instant-book, pay-first consultation flow. When
-   * 'false' (default) the legacy admin-approval flow is the only path and the
-   * new /instant-book routes 404. Read at call-time (see isInstantBookEnabled)
-   * so tests can toggle it per-case.
-   */
-  CONSULTATION_INSTANT_BOOK: z.enum(['true', 'false']).default('false'),
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),

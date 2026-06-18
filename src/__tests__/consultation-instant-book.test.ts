@@ -450,12 +450,8 @@ describe('ready notification dedup (P5b)', () => {
   });
 });
 
-describe('feature flag', () => {
-  afterEach(() => { delete process.env.CONSULTATION_INSTANT_BOOK; });
-  it('reflects CONSULTATION_INSTANT_BOOK', () => {
-    delete process.env.CONSULTATION_INSTANT_BOOK;
-    expect(isInstantBookEnabled()).toBe(false);
-    process.env.CONSULTATION_INSTANT_BOOK = 'true';
+describe('instant-book is the only flow (P7b)', () => {
+  it('isInstantBookEnabled always returns true (flag retired)', () => {
     expect(isInstantBookEnabled()).toBe(true);
   });
 });
