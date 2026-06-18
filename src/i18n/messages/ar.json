@@ -3074,6 +3074,12 @@
   },
   "mentors": {
     "bookConsultation": {
+      "instantConfirmedTitle": "تم تأكيد الحجز!",
+      "instantConfirmedBadge": "مؤكَّد",
+      "instantConfirmedMessage": "تم حجز جلستك مع {mentorName} ودفعها. ستصلك تفاصيل الاجتماع عبر البريد الإلكتروني.",
+      "instantPayNote": "تدفع الآن للتأكيد الفوري — دون انتظار الموافقة.",
+      "instantBookCta": "احجز وادفع",
+      "instantConfirmCta": "تأكيد الحجز",
       "dialogTitle": "حجز استشارة",
       "dialogWith": "مع {name} · {position}",
       "successTitle": "تم إرسال الطلب!",

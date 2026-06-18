@@ -83,6 +83,8 @@ interface Props {
   userName:       string;
   userEmail:      string;
   userPhone:      string;
+  /** When true, book through the instant-book, pay-first flow. */
+  instantBookEnabled?: boolean;
 }
 
 function StatusBadge({ status }: { status: MentorBookingStatus }) {
@@ -118,6 +120,7 @@ export function ConsultationsPanel({
   userName,
   userEmail,
   userPhone,
+  instantBookEnabled = false,
 }: Props) {
   const t = useTranslations('pages.dashboard.entrepreneur.consultations.quotaCard');
   // Additional namespaces used inside the render tree below. Previously
@@ -200,6 +203,57 @@ export function ConsultationsPanel({
 
     setSaving(true);
     setError(null);
+
+    // ── Instant-book, pay-first path ──────────────────────────────────────
+    if (instantBookEnabled) {
+      try {
+        const res = await fetch(`/api/mentors/${selectedMentorId}/instant-book`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            name:    userName,
+            email:   userEmail,
+            phone:   phone.trim(),
+            message: message.trim(),
+            durationMinutes: duration,
+            promoCode: promoResult?.code ?? null,
+            useFreeCredit: false,
+            locale,
+          }),
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
+          throw new Error(d.error?.message ?? t('errorBookingFailed'));
+        }
+        const data = await res.json() as { id: string; status: string; mode: 'confirmed' | 'awaiting_payment'; payToken?: string; redirectUrl?: string | null };
+        if (data.mode === 'awaiting_payment') {
+          if (data.redirectUrl) { window.location.href = data.redirectUrl; return; }
+          if (data.payToken) { window.location.href = `/${locale}/consultation/pay/${data.payToken}`; return; }
+        }
+        const mentor = mentors.find((m) => m.id === selectedMentorId);
+        setSuccess({ mentorName: mentor?.fullName ?? 'the mentor', finalPrice, isFree });
+        const now = new Date().toISOString();
+        setBookings((prev) => [
+          {
+            id: data.id, mentorId: selectedMentorId, userId: null,
+            userName, userEmail, userPhone: phone.trim(), message: message.trim(),
+            status: (data.status as MentorBookingRecord['status']) ?? 'READY', adminNote: null,
+            consultationDate: null, consultationTime: null, durationMinutes: duration,
+            appliedPromoCode: promoResult?.code ?? null,
+            promoDiscountPercent: promoResult ? promoResult.discountValue : null,
+            createdAt: now, updatedAt: now,
+          },
+          ...prev,
+        ]);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('errorGeneric'));
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     try {
       const res = await fetch(`/api/mentors/${selectedMentorId}/book`, {
         method:  'POST',

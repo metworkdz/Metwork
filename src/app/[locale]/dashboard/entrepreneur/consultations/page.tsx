@@ -5,6 +5,7 @@ import { ConsultationsPanel } from '@/components/features/entrepreneur/consultat
 import { listMentors } from '@/server/mentors/service';
 import { db } from '@/server/db/store';
 import { getEffectiveMembershipCode, CONSULTATION_QUOTA } from '@/server/memberships/service';
+import { isInstantBookEnabled } from '@/server/consultations/instant-book';
 import type { Locale } from '@/i18n/config';
 
 interface PageProps {
@@ -73,6 +74,7 @@ export default async function EntrepreneurConsultationsPage({ params }: PageProp
         userName={user.fullName}
         userEmail={user.email}
         userPhone={user.phone ?? ''}
+        instantBookEnabled={isInstantBookEnabled()}
       />
     </div>
   );

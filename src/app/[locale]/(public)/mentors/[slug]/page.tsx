@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MentorProfileBooking } from '@/components/features/mentors/mentor-profile-booking';
 import { findMentorBySlugOrId } from '@/server/mentors/service';
+import { isInstantBookEnabled } from '@/server/consultations/instant-book';
 import { toMentorDto } from '@/server/mentors/serialize';
 import { safeLinkedinUrl } from '@/lib/linkedin';
 import { DURATION_OPTIONS, computePrice } from '@/lib/consultation-pricing';
@@ -180,7 +181,7 @@ export default async function MentorProfilePage({ params }: PageProps) {
               <p className="mt-1 text-sm text-muted-foreground">{t('bookSubtitle')}</p>
             </div>
 
-            <MentorProfileBooking mentor={mentor} />
+            <MentorProfileBooking mentor={mentor} instantBookEnabled={isInstantBookEnabled()} />
           </div>
         </div>
       </div>

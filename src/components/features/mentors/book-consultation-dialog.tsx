@@ -62,6 +62,12 @@ interface BookConsultationDialogProps {
   initialDate?: string | null;
   /** Pre-seed the start time ("HH:MM") when opened from the profile scheduler (additive). */
   initialTime?: string | null;
+  /**
+   * When true, submit through the instant-book, pay-first flow (no admin
+   * approval): members pay from wallet (or SlickPay top-up), guests pay online.
+   * Off ⇒ the legacy request-then-approve flow.
+   */
+  instantBookEnabled?: boolean;
 }
 
 type FormState = 'idle' | 'submitting' | 'success' | 'error';
@@ -101,6 +107,7 @@ export function BookConsultationDialog({
   onOpenChange,
   initialDate = null,
   initialTime = null,
+  instantBookEnabled = false,
 }: BookConsultationDialogProps) {
   const { user } = useAuth();
   const userTier = user ? resolveTier(user) : 'EXPLORER';
@@ -310,6 +317,53 @@ export function BookConsultationDialog({
 
     const scheduledAt = consultDate && consultTime ? buildLocalIso(consultDate, consultTime) : null;
 
+    // ── Instant-book, pay-first path ──────────────────────────────────────
+    // One endpoint for members (wallet-first → SlickPay top-up) and guests
+    // (SlickPay direct). No admin approval. The create-account sub-flow is not
+    // offered here (it's hidden when instant-book is on).
+    if (instantBookEnabled) {
+      try {
+        if (!clientRef.current) clientRef.current = crypto.randomUUID();
+        const res = await fetch(`/api/mentors/${mentor.id}/instant-book`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            name, email, phone, message,
+            consultationDate: consultDate || null,
+            consultationTime: consultDate && consultTime ? consultTime : null,
+            scheduledAt,
+            durationMinutes: duration,
+            promoCode: promoState === 'valid' ? promoCode.trim() : null,
+            useFreeCredit: applyFreeCredit,
+            locale: locale === 'en' || locale === 'fr' || locale === 'ar' ? locale : undefined,
+            clientReference: clientRef.current,
+          }),
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
+          setErrorMsg(d.error?.message ?? t('errorGeneric'));
+          setFormState('error');
+          return;
+        }
+        const data = await res.json() as {
+          mode: 'confirmed' | 'awaiting_payment';
+          payToken?: string;
+          redirectUrl?: string | null;
+        };
+        if (data.mode === 'awaiting_payment') {
+          // Member top-up → provider checkout; guest → hosted pay page.
+          if (data.redirectUrl) { window.location.href = data.redirectUrl; return; }
+          if (data.payToken) { router.push(`/consultation/pay/${data.payToken}`); return; }
+        }
+        setFormState('success'); // confirmed (paid from wallet / free credit)
+      } catch {
+        setErrorMsg(t('errorNetwork'));
+        setFormState('error');
+      }
+      return;
+    }
+
     try {
       let res: Response;
       if (isGuest) {
@@ -420,20 +474,25 @@ export function BookConsultationDialog({
           <div className="flex flex-col items-center py-6 text-center">
             <div className={cn(
               'flex size-14 items-center justify-center rounded-full',
-              isGuest ? 'bg-sky-50 dark:bg-sky-950' : 'bg-amber-50 dark:bg-amber-950',
+              instantBookEnabled ? 'bg-emerald-50 dark:bg-emerald-950'
+                : isGuest ? 'bg-sky-50 dark:bg-sky-950' : 'bg-amber-50 dark:bg-amber-950',
             )}>
-              {isGuest
+              {instantBookEnabled
+                ? <Check className="size-7 text-emerald-600 dark:text-emerald-400" />
+                : isGuest
                 ? <Mail className="size-7 text-sky-600 dark:text-sky-400" />
                 : <Clock className="size-7 text-amber-600 dark:text-amber-400" />}
             </div>
             <h2 className="mt-4 text-lg font-semibold">
-              {isGuest ? t('guestSuccessTitle') : t('successTitle')}
+              {instantBookEnabled ? t('instantConfirmedTitle') : isGuest ? t('guestSuccessTitle') : t('successTitle')}
             </h2>
-            <Badge variant={isGuest ? 'info' : 'warning'} className="mt-2">
-              {isGuest ? t('guestPendingBadge') : t('pendingReview')}
+            <Badge variant={instantBookEnabled ? 'success' : isGuest ? 'info' : 'warning'} className="mt-2">
+              {instantBookEnabled ? t('instantConfirmedBadge') : isGuest ? t('guestPendingBadge') : t('pendingReview')}
             </Badge>
             <p className="mt-3 text-sm text-muted-foreground max-w-xs">
-              {isGuest
+              {instantBookEnabled
+                ? t('instantConfirmedMessage', { mentorName: mentor.fullName })
+                : isGuest
                 ? t('guestSuccessMessage', { mentorName: mentor.fullName })
                 : t('successMessage', { mentorName: mentor.fullName })}
             </p>
@@ -460,7 +519,7 @@ export function BookConsultationDialog({
               {t('done')}
             </Button>
           </div>
-        ) : isGuest && !guestChosen ? (
+        ) : isGuest && !guestChosen && !instantBookEnabled ? (
           /* ── Anonymous visitor: choose guest vs account ── */
           <div className="space-y-5">
             <DialogHeader>
@@ -866,13 +925,18 @@ export function BookConsultationDialog({
                 />
               )}
 
-              {/* Pending-review notice — guests are told a pay link follows approval */}
-              <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-                <Clock className="size-3.5 mt-0.5 shrink-0" />
-                <span>
-                  {isGuest ? t('guestReviewNotice') : t('reviewNotice')}
-                </span>
-              </div>
+              {/* Notice: instant pay-first vs legacy pending-review */}
+              {instantBookEnabled ? (
+                <div className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+                  <Check className="size-3.5 mt-0.5 shrink-0" />
+                  <span>{t('instantPayNote')}</span>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                  <Clock className="size-3.5 mt-0.5 shrink-0" />
+                  <span>{isGuest ? t('guestReviewNotice') : t('reviewNotice')}</span>
+                </div>
+              )}
 
               {errorMsg && (
                 <p
@@ -895,7 +959,11 @@ export function BookConsultationDialog({
                 </Button>
                 <Button type="submit" loading={formState === 'submitting'}>
                   <Calendar className="size-4" />
-                  {createAccount
+                  {instantBookEnabled
+                    ? (feePerHour > 0 && finalPrice > 0
+                        ? `${t('instantBookCta')} · ${formatDZD(finalPrice)}`
+                        : t('instantConfirmCta'))
+                    : createAccount
                     ? tAcc('submit')
                     : feePerHour > 0
                     ? `${t('sendRequest')} · ${finalPrice === 0 ? t('free') : formatDZD(finalPrice)}`

@@ -3074,6 +3074,12 @@
   },
   "mentors": {
     "bookConsultation": {
+      "instantConfirmedTitle": "Réservation confirmée !",
+      "instantConfirmedBadge": "Confirmée",
+      "instantConfirmedMessage": "Votre session avec {mentorName} est réservée et payée. Vous recevrez les détails de la réunion par e-mail.",
+      "instantPayNote": "Vous payez maintenant pour confirmer instantanément — sans attendre de validation.",
+      "instantBookCta": "Réserver et payer",
+      "instantConfirmCta": "Confirmer la réservation",
       "dialogTitle": "Réserver une consultation",
       "dialogWith": "avec {name} · {position}",
       "successTitle": "Demande soumise !",

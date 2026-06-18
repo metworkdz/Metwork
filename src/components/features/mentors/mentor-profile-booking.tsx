@@ -21,9 +21,11 @@ import type { DaySlot, Mentor } from '@/types/mentor';
 
 interface MentorProfileBookingProps {
   mentor: Mentor;
+  /** When true, booking uses the instant-book, pay-first flow. */
+  instantBookEnabled?: boolean;
 }
 
-export function MentorProfileBooking({ mentor }: MentorProfileBookingProps) {
+export function MentorProfileBooking({ mentor, instantBookEnabled = false }: MentorProfileBookingProps) {
   const t = useTranslations('mentors.profile');
   const loc = useLocale();
   const schedulerLocale = loc === 'fr' || loc === 'ar' ? loc : 'en';
@@ -66,6 +68,7 @@ export function MentorProfileBooking({ mentor }: MentorProfileBookingProps) {
         onOpenChange={setOpen}
         initialDate={date}
         initialTime={time}
+        instantBookEnabled={instantBookEnabled}
       />
     </div>
   );

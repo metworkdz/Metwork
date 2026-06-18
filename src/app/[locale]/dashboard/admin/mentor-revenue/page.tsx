@@ -62,16 +62,24 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
     });
   }
 
+  // "Earned" = a paid/active consultation: legacy APPROVED + the instant-book
+  // lifecycle states (CONFIRMED/READY/COMPLETED). Gross uses the real
+  // amountCharged when present (instant-book), falling back to the hourly fee
+  // for legacy rows. "Pending" = not yet settled; everything else (REJECTED /
+  // CANCELLED) counts as dropped.
+  const EARNED = new Set(['APPROVED', 'CONFIRMED', 'READY', 'COMPLETED']);
+  const PENDING = new Set(['PENDING', 'PENDING_PAYMENT', 'AWAITING_PAYMENT', 'AWAITING_LINK']);
   for (const b of bookings) {
     const stat = statMap.get(b.mentorId);
     if (!stat) continue;
     stat.total++;
-    if (b.status === 'APPROVED') {
+    if (EARNED.has(b.status)) {
       stat.approved++;
-      stat.grossRevenue   += stat.fee;
-      stat.platformCut    += Math.round(stat.fee * platformRate);
-      stat.mentorEarnings += Math.round(stat.fee * mentorRate);
-    } else if (b.status === 'PENDING') {
+      const gross = b.amountCharged ?? stat.fee;
+      stat.grossRevenue   += gross;
+      stat.platformCut    += Math.round(gross * platformRate);
+      stat.mentorEarnings += Math.round(gross * mentorRate);
+    } else if (PENDING.has(b.status)) {
       stat.pending++;
     } else {
       stat.rejected++;
