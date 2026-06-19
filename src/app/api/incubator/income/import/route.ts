@@ -16,6 +16,7 @@ import { requireApiRole } from '@/server/auth/api-guards';
 import { db, type ClientRecord, type ServiceRecord } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -39,6 +40,13 @@ export async function POST(req: NextRequest) {
 
   const inc = await findIncubatorByUserEmail(guard.user.email);
   if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile linked to this account');
+
+  // Rate limit: a bulk import is a heavy single-document write (up to 5000 rows).
+  // 30/hour per incubator is generous for legitimate batch imports while
+  // capping a compromised/runaway client from flooding the books.
+  if (!(await checkRateLimitDistributed(`income-import:inc:${inc.id}`, 30, 60 * 60_000))) {
+    return jsonError(429, 'RATE_LIMITED', 'Too many imports in a short period. Please wait a few minutes.');
+  }
 
   let body: unknown;
   try { body = await req.json(); }
