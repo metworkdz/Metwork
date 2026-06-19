@@ -9,6 +9,15 @@ const urlOrPath = z.string().min(1).refine(
   { message: 'mustBeUrlOrAbsolutePath' },
 );
 
+/** Consultant phone: digits with optional +, spaces, dashes, parens. Empty ⇒ cleared. */
+const phoneField = z
+  .string()
+  .max(30)
+  .refine((v) => v === '' || /^\+?[0-9\s().-]{6,30}$/.test(v), { message: 'invalidPhone' })
+  .optional()
+  .nullable();
+const cityField = z.string().max(120).optional().nullable();
+
 export const createMentorSchema = z.object({
   fullName: z.string().min(2).max(120),
   position: z.string().min(2).max(160),
@@ -16,6 +25,8 @@ export const createMentorSchema = z.object({
   bio: z.string().max(2000).optional().nullable(),
   linkedinUrl: z.string().url().max(300).optional().nullable(),
   email: z.string().email().max(200).optional().nullable(),
+  phone: phoneField,
+  city: cityField,
   consultationFee: z.number().int().min(0).max(1_000_000).optional(),
   // ─── Booking policy (additive, all optional/nullable) ──────────────────
   minNoticeHours: z.number().int().min(0).max(720).optional().nullable(),
@@ -149,7 +160,15 @@ export const consultantProfileSchema = z.object({
   ratePer30: z.number().int().min(0).max(1_000_000).nullable().optional(),
   ratePer60: z.number().int().min(0).max(1_000_000).nullable().optional(),
   freeIntroEnabled: z.boolean().nullable().optional(),
+  // Contact phone (the consultant's WhatsApp recipient) + public city. The
+  // portal enforces phone as required client-side; the schema stays lenient so
+  // partial profile saves never 422 on an unrelated field.
+  phone: phoneField,
+  city: cityField,
   defaultMeetingMode: z.enum(['ONLINE', 'OFFLINE']).optional(),
   defaultMeetingLink: z.string().url().max(500).nullable().optional(),
+  // In-person defaults: free-text address + Google Maps link.
+  defaultMeetingAddress: z.string().max(500).nullable().optional(),
+  defaultMeetingMapsLink: z.string().url().max(500).nullable().optional(),
 });
 export type ConsultantProfilePatch = z.infer<typeof consultantProfileSchema>;

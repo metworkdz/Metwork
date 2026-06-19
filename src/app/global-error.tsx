@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { Container } from '@/components/ui/container';
 import { Button } from '@/components/ui/button';
+import { recoverFromChunkError } from '@/lib/chunk-recovery';
 
 export default function GlobalError({
   error,
@@ -12,6 +13,9 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
+    // Loop-guarded reload for a stale chunk; otherwise render the fallback.
+    if (recoverFromChunkError(error)) return;
+
     import('@sentry/nextjs')
       .then((Sentry) => Sentry.captureException(error))
       .catch(() => undefined);

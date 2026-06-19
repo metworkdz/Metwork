@@ -11,9 +11,16 @@ export interface ConsultantMentor {
   fullName: string;
   position: string;
   email: string | null;
+  /** Consultant WhatsApp/contact phone (private — consultant-self DTO only). */
+  phone?: string | null;
+  /** Consultant's city (public). */
+  city?: string | null;
   consultationFee?: number;
   defaultMeetingMode?: 'ONLINE' | 'OFFLINE';
   defaultMeetingLink?: string | null;
+  /** In-person defaults (private). */
+  defaultMeetingAddress?: string | null;
+  defaultMeetingMapsLink?: string | null;
   // Profile (self-editable)
   bio?: string | null;
   topics?: string[];
@@ -56,6 +63,8 @@ export interface ConsultantBooking {
   durationMinutes: number | null;
   meetingMode: 'ONLINE' | 'OFFLINE' | null;
   meetingLink: string | null;
+  meetingAddress?: string | null;
+  meetingMapsLink?: string | null;
   amountCharged: number;
   completedAt: string | null;
   /** 'guest' | 'registered' — consultant cancel/refund is members-only. */
@@ -117,6 +126,10 @@ export const consultantService = {
   updateProfile: (body: {
     defaultMeetingMode?: 'ONLINE' | 'OFFLINE';
     defaultMeetingLink?: string | null;
+    defaultMeetingAddress?: string | null;
+    defaultMeetingMapsLink?: string | null;
+    phone?: string | null;
+    city?: string | null;
     bio?: string | null;
     topics?: string[];
     ratePer30?: number | null;
@@ -141,7 +154,10 @@ export const consultantService = {
     apiClient.patch<{ ok: true }>('/consultant/pin/change', body),
 
   bookings: () => apiClient.get<{ items: ConsultantBooking[]; total: number }>('/consultant/bookings'),
-  setBookingLink: (id: string, body: { mode: 'ONLINE' | 'OFFLINE'; link?: string | null }) =>
+  setBookingLink: (
+    id: string,
+    body: { mode: 'ONLINE' | 'OFFLINE'; link?: string | null; address?: string | null; mapsLink?: string | null },
+  ) =>
     apiClient.post<ConsultantBooking>(`/consultant/bookings/${encodeURIComponent(id)}/link`, body),
   completeBooking: (id: string) =>
     apiClient.post<{ id: string; status: string; released: number }>(

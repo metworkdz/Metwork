@@ -38,6 +38,7 @@ import { consumePromoCode } from '@/server/promo-codes/service';
 import { creditPendingEarning } from '@/server/mentors/ledger';
 import { resolveSettledStatus } from './lifecycle';
 import { sendConsultationReadyOnce } from '@/server/notifications/consultation-ready';
+import { sendBookingNotificationOnce } from '@/server/notifications/booking-notification';
 
 /** Pay tokens live for 7 days — long enough to finish a hosted checkout. */
 const PAY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -328,6 +329,8 @@ export async function createInstantBooking(
         paymentStatus: 'PAID',
         meetingMode: settled.meetingMode,
         meetingLink: settled.meetingLink,
+        meetingAddress: settled.meetingAddress,
+        meetingMapsLink: settled.meetingMapsLink,
         amountCharged: 0,
         guestAmountDue: 0,
       }, charge, bookingId);
@@ -342,6 +345,8 @@ export async function createInstantBooking(
     if (!result.replayed) await creditMentorForSettledBooking(result.booking);
     // Settled booking now occupies the slot — the transient hold can go.
     if (slotLocked) await releaseSlot(bookingId);
+    // Notify the consultant of the new booking (once), and the client if READY.
+    if (!result.replayed) void sendBookingNotificationOnce(result.booking.id);
     if (result.booking.status === 'READY') void sendConsultationReadyOnce(result.booking.id);
     return { ok: true, mode: 'confirmed', booking: result.booking, replayed: result.replayed };
   }
@@ -398,6 +403,8 @@ export async function createInstantBooking(
         paymentStatus: 'PAID',
         meetingMode: settled.meetingMode,
         meetingLink: settled.meetingLink,
+        meetingAddress: settled.meetingAddress,
+        meetingMapsLink: settled.meetingMapsLink,
         amountCharged: gross,
         guestAmountDue: gross,
         transactionId: tx.id,
@@ -412,7 +419,10 @@ export async function createInstantBooking(
       guestAmountDue: gross,
       payToken,
       payTokenExpiresAt,
-    }, charge);
+      // Reuse the pre-generated id so it matches the slot-lock's bookingId —
+      // otherwise releaseSlot(booking.id) on failure/settlement can't find the
+      // hold and it lingers until its TTL (orphaned lock).
+    }, charge, bookingId);
     d.mentorBookings.push(booking);
     return { kind: 'needs_topup', booking, shortfall: gross - wallet.balance };
   });
@@ -426,6 +436,7 @@ export async function createInstantBooking(
     await creditMentorForSettledBooking(created.booking);
     // Settled booking now occupies the slot — the transient hold can go.
     if (slotLocked) await releaseSlot(bookingId);
+    void sendBookingNotificationOnce(created.booking.id);
     if (created.booking.status === 'READY') void sendConsultationReadyOnce(created.booking.id);
     return { ok: true, mode: 'confirmed', booking: created.booking, replayed: false };
   }
@@ -512,7 +523,7 @@ export async function settleMemberTopUp(token: string): Promise<SettleMemberResu
   const mentor = await findMentorById(booking.mentorId);
   const settled = mentor
     ? resolveSettledStatus(mentor)
-    : ({ status: 'AWAITING_LINK', meetingMode: null, meetingLink: null } as const);
+    : ({ status: 'AWAITING_LINK', meetingMode: null, meetingLink: null, meetingAddress: null, meetingMapsLink: null } as const);
 
   const claim = await db.update<{ booking: MentorBookingRecord; claimed: boolean } | null>((d) => {
     const b = (d.mentorBookings ?? []).find((x) => x.id === booking.id);
@@ -532,6 +543,8 @@ export async function settleMemberTopUp(token: string): Promise<SettleMemberResu
     b.paymentStatus = 'PAID';
     b.meetingMode = settled.meetingMode;
     b.meetingLink = settled.meetingLink;
+    b.meetingAddress = settled.meetingAddress;
+    b.meetingMapsLink = settled.meetingMapsLink;
     b.transactionId = tx.id;
     b.updatedAt = now;
     return { booking: b, claimed: true };
@@ -543,6 +556,7 @@ export async function settleMemberTopUp(token: string): Promise<SettleMemberResu
     await creditMentorForSettledBooking(claim.booking);
     // Settled booking now occupies the slot — drop the transient hold.
     await releaseSlot(claim.booking.id);
+    void sendBookingNotificationOnce(claim.booking.id);
     if (claim.booking.status === 'READY') void sendConsultationReadyOnce(claim.booking.id);
   }
   return { state: claim.booking.paymentStatus === 'PAID' ? 'CONFIRMED' : 'AWAITING_PAYMENT', booking: claim.booking };

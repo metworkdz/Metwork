@@ -53,7 +53,19 @@
       "freeIntroHint": "Affiche un badge « premier appel gratuit » sur votre profil.",
       "meetingHeading": "Paramètres de réunion",
       "saveProfile": "Enregistrer le profil",
-      "savedProfile": "Profil enregistré"
+      "savedProfile": "Profil enregistré",
+      "phoneLabel": "Numéro WhatsApp",
+      "phoneHint": "Obligatoire — nous vous notifions ici lors d’une réservation.",
+      "phonePlaceholder": "+213 …",
+      "phoneRequired": "Veuillez ajouter votre numéro WhatsApp.",
+      "cityLabel": "Ville",
+      "cityHint": "Affichée sur votre profil public pour les sessions en présentiel.",
+      "cityPlaceholder": "ex. Alger",
+      "addressLabel": "Adresse (en présentiel)",
+      "addressHint": "Envoyée au client une fois la session confirmée.",
+      "addressPlaceholder": "Rue, immeuble, étage…",
+      "mapsLabel": "Lien Google Maps",
+      "mapsPlaceholder": "https://maps.google.com/…"
     },
     "bookings": {
       "heading": "Consultations",
@@ -90,7 +102,11 @@
       "loadFailed": "Impossible de charger les consultations.",
       "close": "Fermer",
       "upcoming": "À venir",
-      "past": "Passées"
+      "past": "Passées",
+      "addressLabel": "Adresse",
+      "addressPlaceholder": "Rue, immeuble, étage…",
+      "mapsLabel": "Lien Google Maps",
+      "mapsPlaceholder": "https://maps.google.com/…"
     },
     "earnings": {
       "pending": "En attente",
@@ -2727,7 +2743,8 @@
       "reviewButton": "Review",
       "submittedAt": "Submitted {date}",
       "notePrefix": "Note: ",
-      "durationMin": "{min} min"
+      "durationMin": "{min} min",
+      "empty": "Aucune réservation pour le moment."
     },
     "commissions": {
       "description": "Commission rates are applied automatically to matching transaction types. Changes take effect immediately on new transactions.",
@@ -2930,7 +2947,13 @@
       "saveFailed": "Échec de la sauvegarde.",
       "errorFullNameShort": "Le nom complet est trop court.",
       "errorPositionShort": "Le poste est trop court.",
-      "errorImageRequired": "Une URL d'image est requise."
+      "errorImageRequired": "Une URL d'image est requise.",
+      "fieldPhone": "Numéro WhatsApp",
+      "phoneHint": "Optionnel. Le consultant est notifié ici lors d’une nouvelle réservation (il peut le modifier).",
+      "phonePlaceholder": "+213 …",
+      "fieldCity": "Ville",
+      "cityHint": "Affichée sur le profil public pour les sessions en présentiel.",
+      "cityPlaceholder": "ex. Alger"
     },
     "mentorsManager": {
       "rosterCount": "{count} mentor{count, plural, one {} other {s}} dans le registre",

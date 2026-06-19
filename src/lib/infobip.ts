@@ -131,6 +131,94 @@ export async function sendWhatsAppOTP(phone: string, code: string): Promise<void
 }
 
 /**
+ * Notify a consultant of a NEW confirmed booking via an approved Meta UTILITY
+ * template (business-initiated, so a template is mandatory — free-form text
+ * only delivers inside the 24-hour service window).
+ *
+ * Approved template `consultation_new_booking` (French) body placeholders, in
+ * order:
+ *   {{1}} consultant first name
+ *   {{2}} Date
+ *   {{3}} Heure (time)
+ *   {{4}} Durée (duration)
+ *   {{5}} Type (format — "En ligne" / "En présentiel")
+ *
+ * The template ALSO has a dynamic URL button (`https://metwork.dz/c/{{1}}`); its
+ * parameter (`bookingRef`) is REQUIRED — Meta rejects the whole message with
+ * EC_INVALID_TEMPLATE_ARGS if any template variable (body OR button) is missing.
+ *
+ * Carries NO client PII (name/phone/email) — that stays behind the PIN-gated
+ * profile. Template name + language are env-overridable so they can change
+ * without a redeploy:
+ *   INFOBIP_WHATSAPP_NEW_BOOKING_TEMPLATE  default 'consultation_new_booking'
+ *   INFOBIP_WHATSAPP_NEW_BOOKING_LANG      default 'fr'
+ *
+ * Throws on API error so the caller can swallow it (best-effort; email still sends).
+ */
+export async function sendWhatsAppNewBookingTemplate(
+  phone: string,
+  placeholders: {
+    firstName: string;
+    date: string;
+    time: string;
+    duration: string;
+    type: string;
+    /** Fills the URL-button placeholder → https://metwork.dz/c/{bookingRef}. Required. */
+    bookingRef: string;
+  },
+): Promise<void> {
+  const cfg = getConfig();
+  if (!cfg) throw new Error('Infobip not configured: INFOBIP_BASE_URL, INFOBIP_API_KEY, INFOBIP_SENDER, INFOBIP_WHATSAPP_SENDER required');
+
+  const templateName = process.env.INFOBIP_WHATSAPP_NEW_BOOKING_TEMPLATE?.trim() || 'consultation_new_booking';
+  const language = process.env.INFOBIP_WHATSAPP_NEW_BOOKING_LANG?.trim() || 'fr';
+
+  // The recipient phone is free-text (admin/consultant forms accept '+', spaces,
+  // dashes). Infobip's WhatsApp `to` wants international digits only — normalize
+  // so a stored "+213 549 …" still delivers.
+  const recipient = phone.replace(/\D/g, '');
+
+  const res = await fetch(`${cfg.baseUrl}/whatsapp/1/message/template`, {
+    method: 'POST',
+    headers: {
+      Authorization: `App ${cfg.apiKey}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      messages: [
+        {
+          from: cfg.waSender,
+          to: recipient,
+          content: {
+            templateName,
+            templateData: {
+              body: {
+                placeholders: [
+                  placeholders.firstName,
+                  placeholders.date,
+                  placeholders.time,
+                  placeholders.duration,
+                  placeholders.type,
+                ],
+              },
+              // Dynamic URL button — its parameter is mandatory for this template.
+              buttons: [{ type: 'URL', parameter: placeholders.bookingRef }],
+            },
+            language,
+          },
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Infobip WhatsApp error ${res.status}: ${body}`);
+  }
+}
+
+/**
  * Send OTP via SMS using the Infobip SMS text/advanced API.
  * Throws on API error so the caller can fall back to another channel.
  */

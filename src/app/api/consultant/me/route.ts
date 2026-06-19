@@ -4,7 +4,7 @@
 import { json, jsonError } from '@/server/http/json';
 import { requireConsultant } from '@/server/mentors/access';
 import { findMentorById } from '@/server/mentors/service';
-import { toMentorDto } from '@/server/mentors/serialize';
+import { toMentorPrivateDto } from '@/server/mentors/serialize';
 import { getOrCreateMentorWallet } from '@/server/mentors/ledger';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
 
@@ -21,7 +21,7 @@ export async function GET() {
 
   const wallet = await getOrCreateMentorWallet(guard.mentorId);
   return json({
-    mentor: toMentorDto(mentor),
+    mentor: toMentorPrivateDto(mentor),
     wallet: {
       pendingBalance: wallet.pendingBalance,
       availableBalance: wallet.availableBalance,

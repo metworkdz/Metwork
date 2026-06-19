@@ -273,6 +273,10 @@ export function consultationReadyEmailHtml(params: {
   mentorName: string;
   meetingMode: 'ONLINE' | 'OFFLINE' | null;
   meetingLink: string | null;
+  /** In-person address (OFFLINE). */
+  meetingAddress?: string | null;
+  /** Google Maps link for the in-person address (OFFLINE). */
+  meetingMapsLink?: string | null;
   scheduledAt: string | null;
   durationMinutes: number | null;
   lang: 'en' | 'fr';
@@ -300,6 +304,49 @@ export function consultationReadyEmailHtml(params: {
     ${params.meetingMode === 'ONLINE' && params.meetingLink
       ? p(`<span style="color:#71717a;font-size:13px;">${isFr ? 'Ou copiez ce lien :' : 'Or copy this link:'}<br /><span style="word-break:break-all;">${params.meetingLink}</span></span>`)
       : ''}
+    ${params.meetingMode === 'OFFLINE' && params.meetingAddress
+      ? p(`<span style="color:#3f3f46;">${isFr ? 'Adresse' : 'Address'} : ${params.meetingAddress}</span>`)
+      : ''}
+    ${params.meetingMode === 'OFFLINE' && params.meetingMapsLink
+      ? button(params.meetingMapsLink, isFr ? 'Ouvrir dans Google Maps' : 'Open in Google Maps')
+      : ''}
+  `);
+}
+
+/**
+ * Sent to the CONSULTANT when a new consultation is booked & confirmed. Carries
+ * only a NON-PII summary (date / duration / format) — the client's contact
+ * details live behind the PIN-gated consultant portal, linked via the button.
+ */
+export function consultantNewBookingEmailHtml(params: {
+  consultantName: string;
+  when: string | null;
+  durationMinutes: number | null;
+  meetingMode: 'ONLINE' | 'OFFLINE' | null;
+  portalUrl: string;
+  lang: 'en' | 'fr';
+}): string {
+  const isFr = params.lang === 'fr';
+  const typeLabel =
+    params.meetingMode === 'ONLINE' ? (isFr ? 'En ligne' : 'Online')
+    : params.meetingMode === 'OFFLINE' ? (isFr ? 'En présentiel' : 'In person')
+    : null;
+  const details = [
+    params.when ? `${isFr ? 'Date' : 'Date'} : ${params.when}` : null,
+    params.durationMinutes ? `${isFr ? 'Durée' : 'Duration'} : ${params.durationMinutes} min` : null,
+    typeLabel ? `${isFr ? 'Type' : 'Type'} : ${typeLabel}` : null,
+  ].filter(Boolean).join('<br />');
+
+  return layout(`
+    ${h1(isFr ? 'Nouvelle consultation réservée' : 'New consultation booked')}
+    ${p(isFr
+      ? `Bonjour ${params.consultantName}, une nouvelle consultation vient d'être réservée et confirmée.`
+      : `Hello ${params.consultantName}, a new consultation has just been booked and confirmed.`)}
+    ${details ? p(`<span style="color:#3f3f46;">${details}</span>`) : ''}
+    ${button(params.portalUrl, isFr ? 'Voir la réservation' : 'View the booking')}
+    ${p(`<span style="color:#71717a;font-size:13px;">${isFr
+      ? 'Les coordonnées du client sont disponibles dans votre espace consultant, protégé par votre code PIN.'
+      : 'The client’s contact details are available in your consultant portal, protected by your PIN.'}</span>`)}
   `);
 }
 

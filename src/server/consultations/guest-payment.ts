@@ -26,6 +26,7 @@ import { creditMentorForSettledBooking } from './instant-book';
 import { releaseSlot } from '@/server/mentors/slot-lock';
 import { resolveSettledStatus } from './lifecycle';
 import { sendConsultationReadyOnce } from '@/server/notifications/consultation-ready';
+import { sendBookingNotificationOnce } from '@/server/notifications/booking-notification';
 
 export type GuestPayState =
   | 'INVALID'
@@ -102,9 +103,11 @@ async function markPaidAndConfirm(
     if (isSettled(booking)) return { booking, claimed: false };
     booking.paymentStatus = 'PAID';
     if (settled) {
-      booking.status       = settled.status;
-      booking.meetingMode  = settled.meetingMode;
-      booking.meetingLink  = settled.meetingLink;
+      booking.status          = settled.status;
+      booking.meetingMode     = settled.meetingMode;
+      booking.meetingLink     = settled.meetingLink;
+      booking.meetingAddress  = settled.meetingAddress;
+      booking.meetingMapsLink = settled.meetingMapsLink;
     } else {
       booking.status       = 'CONFIRMED';
     }
@@ -133,6 +136,10 @@ async function markPaidAndConfirm(
     // session is ready (deduped via linkSentAt). AWAITING_LINK waits for a link.
     if (settled && claim.booking.status === 'READY') {
       void sendConsultationReadyOnce(claim.booking.id);
+    }
+    // Notify the consultant of the new booking — once (instant-book only).
+    if (claim.booking.instantBook === true) {
+      void sendBookingNotificationOnce(claim.booking.id);
     }
     // Both-party confirmation emails + PDF receipt — sent exactly once.
     await sendGuestConfirmationOnce(claim.booking.id);

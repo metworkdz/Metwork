@@ -60,6 +60,13 @@ export interface Mentor {
   linkedinUrl: string | null;
   /** Contact email for consultation notifications. */
   email?: string | null;
+  /**
+   * Consultant WhatsApp/contact phone. PRIVATE — only populated by the
+   * consultant-self / admin DTO, never the public mentor list/profile.
+   */
+  phone?: string | null;
+  /** Consultant's city — PUBLIC (shown pre-booking for in-person sessions). */
+  city?: string | null;
   /** Per-session fee in DZD. 0 or absent = free. */
   consultationFee?: number;
   createdAt: string;
@@ -76,6 +83,10 @@ export interface Mentor {
   defaultMeetingMode?: 'ONLINE' | 'OFFLINE';
   /** Default online meeting URL. Null/absent ⇒ none. */
   defaultMeetingLink?: string | null;
+  /** Default in-person address (PRIVATE — consultant-self / admin DTO only). */
+  defaultMeetingAddress?: string | null;
+  /** Default Google Maps link for the in-person address (PRIVATE). */
+  defaultMeetingMapsLink?: string | null;
 
   // ─── Booking policy (public-safe, all optional for back-compat) ───────────
   /** Minimum lead time (hours) before a session. Absent ⇒ validator default. */
@@ -99,6 +110,10 @@ export interface MentorInput {
   bio?: string | null;
   linkedinUrl?: string | null;
   email?: string | null;
+  /** Consultant WhatsApp/contact phone. Optional in the admin form. */
+  phone?: string | null;
+  /** Consultant's city (public). */
+  city?: string | null;
   consultationFee?: number;
   minNoticeHours?: number | null;
   bufferMinutes?: number | null;

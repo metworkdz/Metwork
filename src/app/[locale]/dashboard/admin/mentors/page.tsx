@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { MentorsManager } from '@/components/features/admin/mentors-manager';
 import { requireRole } from '@/lib/auth-guards';
 import { listMentors } from '@/server/mentors/service';
-import { toMentorDto } from '@/server/mentors/serialize';
+import { toMentorPrivateDto } from '@/server/mentors/serialize';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -18,7 +18,8 @@ export default async function AdminMentorsPage({ params }: PageProps) {
   await requireRole(['ADMIN']);
 
   // Server-render with the live roster — instant first paint, no flash.
-  const mentors = (await listMentors()).map(toMentorDto);
+  // Admin view → private DTO so the edit form sees the consultant phone.
+  const mentors = (await listMentors()).map(toMentorPrivateDto);
 
   return (
     <div className="space-y-6">

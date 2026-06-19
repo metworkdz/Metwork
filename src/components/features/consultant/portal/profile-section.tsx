@@ -19,6 +19,8 @@ import {
 export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; onSaved: (m: ConsultantMentor) => void }) {
   const t = useTranslations('consultantPortal.profile');
 
+  const [phone, setPhone] = useState(mentor.phone ?? '');
+  const [city, setCity] = useState(mentor.city ?? '');
   const [bio, setBio] = useState(mentor.bio ?? '');
   const [topics, setTopics] = useState<string[]>(mentor.topics ?? []);
   const [topicDraft, setTopicDraft] = useState('');
@@ -27,6 +29,8 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
   const [freeIntro, setFreeIntro] = useState(Boolean(mentor.freeIntroEnabled));
   const [mode, setMode] = useState<'ONLINE' | 'OFFLINE'>(mentor.defaultMeetingMode ?? 'ONLINE');
   const [link, setLink] = useState(mentor.defaultMeetingLink ?? '');
+  const [address, setAddress] = useState(mentor.defaultMeetingAddress ?? '');
+  const [mapsLink, setMapsLink] = useState(mentor.defaultMeetingMapsLink ?? '');
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -42,9 +46,13 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
   }
 
   async function save() {
+    // Phone is mandatory for the consultant — it's the WhatsApp recipient.
+    if (!phone.trim()) { setError(t('phoneRequired')); return; }
     setSaving(true); setSaved(false); setError(null);
     try {
       const { mentor: updated } = await consultantService.updateProfile({
+        phone: phone.trim(),
+        city: city.trim() || null,
         bio: bio.trim() || null,
         topics,
         ratePer30: rate30 === '' ? null : Math.max(0, Math.round(Number(rate30))),
@@ -52,6 +60,8 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
         freeIntroEnabled: freeIntro,
         defaultMeetingMode: mode,
         defaultMeetingLink: mode === 'ONLINE' ? (link.trim() || null) : null,
+        defaultMeetingAddress: mode === 'OFFLINE' ? (address.trim() || null) : null,
+        defaultMeetingMapsLink: mode === 'OFFLINE' ? (mapsLink.trim() || null) : null,
       });
       onSaved(updated);
       setSaved(true);
@@ -66,6 +76,22 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
     <section>
       <SectionHeading title={t('aboutHeading')} />
       <SectionCard className="space-y-5">
+        {/* Contact — phone is mandatory (WhatsApp recipient) + public city */}
+        <Field label={t('phoneLabel')} hint={t('phoneHint')} htmlFor="cp-phone">
+          <input
+            id="cp-phone" type="tel" inputMode="tel" value={phone} dir="ltr"
+            onChange={(e) => setPhone(e.target.value)} placeholder={t('phonePlaceholder')} disabled={saving}
+            className={cpInputClass}
+          />
+        </Field>
+        <Field label={t('cityLabel')} hint={t('cityHint')} htmlFor="cp-city">
+          <input
+            id="cp-city" type="text" value={city} maxLength={120}
+            onChange={(e) => setCity(e.target.value)} placeholder={t('cityPlaceholder')} disabled={saving}
+            className={cpInputClass}
+          />
+        </Field>
+
         {/* Bio */}
         <Field label={t('bioLabel')} hint={t('bioHint')} htmlFor="cp-bio">
           <textarea
@@ -154,12 +180,25 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
               </button>
             ))}
           </div>
-          {mode === 'ONLINE' && (
+          {mode === 'ONLINE' ? (
             <Field label={t('linkLabel')} htmlFor="cp-def-link">
               <input id="cp-def-link" type="url" value={link} dir="ltr"
                 onChange={(e) => setLink(e.target.value)} placeholder={t('linkPlaceholder')} disabled={saving}
                 className={cpInputClass} />
             </Field>
+          ) : (
+            <>
+              <Field label={t('addressLabel')} hint={t('addressHint')} htmlFor="cp-def-address">
+                <input id="cp-def-address" type="text" value={address} maxLength={500}
+                  onChange={(e) => setAddress(e.target.value)} placeholder={t('addressPlaceholder')} disabled={saving}
+                  className={cpInputClass} />
+              </Field>
+              <Field label={t('mapsLabel')} htmlFor="cp-def-maps">
+                <input id="cp-def-maps" type="url" value={mapsLink} dir="ltr"
+                  onChange={(e) => setMapsLink(e.target.value)} placeholder={t('mapsPlaceholder')} disabled={saving}
+                  className={cpInputClass} />
+              </Field>
+            </>
           )}
         </div>
 

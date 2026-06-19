@@ -18,6 +18,9 @@ export const dynamic = 'force-dynamic';
 const schema = z.object({
   mode: z.enum(['ONLINE', 'OFFLINE']),
   link: z.string().url().max(500).optional().nullable(),
+  /** In-person (OFFLINE) details. */
+  address: z.string().max(500).optional().nullable(),
+  mapsLink: z.string().url().max(500).optional().nullable(),
 });
 
 export async function POST(
@@ -48,11 +51,25 @@ export async function POST(
     return jsonError(404, 'NOT_FOUND', 'Booking not found');
   }
 
-  const result = await setBookingMeetingLink({ bookingId: id, mode: input.mode, link: input.link ?? null });
+  const result = await setBookingMeetingLink({
+    bookingId: id,
+    mode: input.mode,
+    link: input.link ?? null,
+    address: input.address ?? null,
+    mapsLink: input.mapsLink ?? null,
+  });
   if (!result.ok) {
     if (result.reason === 'LINK_REQUIRED') return jsonError(422, 'LINK_REQUIRED', 'A meeting link is required for an online session');
-    if (result.reason === 'WRONG_STATE') return jsonError(409, 'WRONG_STATE', 'This booking cannot accept a meeting link in its current state');
+    if (result.reason === 'ADDRESS_REQUIRED') return jsonError(422, 'ADDRESS_REQUIRED', 'An address is required for an in-person session');
+    if (result.reason === 'WRONG_STATE') return jsonError(409, 'WRONG_STATE', 'This booking cannot accept meeting details in its current state');
     return jsonError(404, 'NOT_FOUND', 'Booking not found');
   }
-  return json({ id: result.booking.id, status: result.booking.status, meetingMode: result.booking.meetingMode, meetingLink: result.booking.meetingLink });
+  return json({
+    id: result.booking.id,
+    status: result.booking.status,
+    meetingMode: result.booking.meetingMode,
+    meetingLink: result.booking.meetingLink,
+    meetingAddress: result.booking.meetingAddress ?? null,
+    meetingMapsLink: result.booking.meetingMapsLink ?? null,
+  });
 }

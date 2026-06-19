@@ -29,43 +29,63 @@ export interface ResolvedSettledStatus {
   status: SettledStatus;
   meetingMode: 'ONLINE' | 'OFFLINE' | null;
   meetingLink: string | null;
+  meetingAddress: string | null;
+  meetingMapsLink: string | null;
 }
 
 /**
  * Resolve the post-settlement status + meeting fields from the consultant's
- * profile defaults. READY when there is a usable default (in-person, or an
- * online link); otherwise AWAITING_LINK. Pure.
+ * profile defaults. READY when there is a usable default (an online link, OR an
+ * in-person address); otherwise AWAITING_LINK so the consultant supplies the
+ * details per booking. Pure.
  */
 export function resolveSettledStatus(
-  mentor: Pick<MentorRecord, 'defaultMeetingMode' | 'defaultMeetingLink'>,
+  mentor: Pick<
+    MentorRecord,
+    'defaultMeetingMode' | 'defaultMeetingLink' | 'defaultMeetingAddress' | 'defaultMeetingMapsLink'
+  >,
 ): ResolvedSettledStatus {
   const link = mentor.defaultMeetingLink?.trim();
+  const address = mentor.defaultMeetingAddress?.trim();
+  const mapsLink = mentor.defaultMeetingMapsLink?.trim() || null;
   if (mentor.defaultMeetingMode === 'OFFLINE') {
-    return { status: 'READY', meetingMode: 'OFFLINE', meetingLink: null };
+    // In-person needs an address to be deliverable; without one, wait for it.
+    if (address) {
+      return { status: 'READY', meetingMode: 'OFFLINE', meetingLink: null, meetingAddress: address, meetingMapsLink: mapsLink };
+    }
+    return { status: 'AWAITING_LINK', meetingMode: null, meetingLink: null, meetingAddress: null, meetingMapsLink: null };
   }
   if (link) {
-    return { status: 'READY', meetingMode: 'ONLINE', meetingLink: link };
+    return { status: 'READY', meetingMode: 'ONLINE', meetingLink: link, meetingAddress: null, meetingMapsLink: null };
   }
-  return { status: 'AWAITING_LINK', meetingMode: null, meetingLink: null };
+  return { status: 'AWAITING_LINK', meetingMode: null, meetingLink: null, meetingAddress: null, meetingMapsLink: null };
 }
 
 export type SetMeetingLinkResult =
   | { ok: true; booking: MentorBookingRecord }
-  | { ok: false; reason: 'NOT_FOUND' | 'NOT_INSTANT_BOOK' | 'WRONG_STATE' | 'LINK_REQUIRED' };
+  | { ok: false; reason: 'NOT_FOUND' | 'NOT_INSTANT_BOOK' | 'WRONG_STATE' | 'LINK_REQUIRED' | 'ADDRESS_REQUIRED' };
 
 /**
  * Supply (or update) a booking's meeting format. Moves AWAITING_LINK → READY.
  * Only valid for an instant-book booking that is AWAITING_LINK or already READY
- * (re-issuing a link). An ONLINE format requires a non-empty link.
+ * (re-issuing details). An ONLINE format requires a non-empty link; an OFFLINE
+ * format requires a non-empty address (the Google Maps link is optional).
  */
 export async function setBookingMeetingLink(input: {
   bookingId: string;
   mode: 'ONLINE' | 'OFFLINE';
   link?: string | null;
+  address?: string | null;
+  mapsLink?: string | null;
 }): Promise<SetMeetingLinkResult> {
   const link = input.link?.trim() || null;
+  const address = input.address?.trim() || null;
+  const mapsLink = input.mapsLink?.trim() || null;
   if (input.mode === 'ONLINE' && !link) {
     return { ok: false, reason: 'LINK_REQUIRED' };
+  }
+  if (input.mode === 'OFFLINE' && !address) {
+    return { ok: false, reason: 'ADDRESS_REQUIRED' };
   }
   const result = await db.update<SetMeetingLinkResult>((d) => {
     const booking = (d.mentorBookings ?? []).find((b) => b.id === input.bookingId);
@@ -76,6 +96,8 @@ export async function setBookingMeetingLink(input: {
     }
     booking.meetingMode = input.mode;
     booking.meetingLink = input.mode === 'ONLINE' ? link : null;
+    booking.meetingAddress = input.mode === 'OFFLINE' ? address : null;
+    booking.meetingMapsLink = input.mode === 'OFFLINE' ? mapsLink : null;
     booking.status = 'READY';
     booking.updatedAt = new Date().toISOString();
     return { ok: true, booking };

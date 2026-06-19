@@ -53,7 +53,19 @@
       "freeIntroHint": "تُظهر شارة «أول مكالمة مجانية» في ملفك.",
       "meetingHeading": "إعدادات الاجتماع الافتراضية",
       "saveProfile": "حفظ الملف",
-      "savedProfile": "تم حفظ الملف"
+      "savedProfile": "تم حفظ الملف",
+      "phoneLabel": "رقم واتساب",
+      "phoneHint": "مطلوب — نُعلمك هنا عند حجز جلسة.",
+      "phonePlaceholder": "+213 …",
+      "phoneRequired": "يرجى إضافة رقم واتساب.",
+      "cityLabel": "المدينة",
+      "cityHint": "تظهر في ملفك العام للجلسات الحضورية.",
+      "cityPlaceholder": "مثال: الجزائر",
+      "addressLabel": "العنوان (حضوري)",
+      "addressHint": "يُرسل إلى العميل بعد تأكيد الجلسة.",
+      "addressPlaceholder": "الشارع، المبنى، الطابق…",
+      "mapsLabel": "رابط خرائط Google",
+      "mapsPlaceholder": "https://maps.google.com/…"
     },
     "bookings": {
       "heading": "الاستشارات",
@@ -90,7 +102,11 @@
       "loadFailed": "تعذّر تحميل الاستشارات.",
       "close": "إغلاق",
       "upcoming": "القادمة",
-      "past": "السابقة"
+      "past": "السابقة",
+      "addressLabel": "العنوان",
+      "addressPlaceholder": "الشارع، المبنى، الطابق…",
+      "mapsLabel": "رابط خرائط Google",
+      "mapsPlaceholder": "https://maps.google.com/…"
     },
     "earnings": {
       "pending": "معلّق",
@@ -2727,7 +2743,8 @@
       "reviewButton": "Review",
       "submittedAt": "Submitted {date}",
       "notePrefix": "Note: ",
-      "durationMin": "{min} min"
+      "durationMin": "{min} min",
+      "empty": "لا توجد حجوزات بعد."
     },
     "commissions": {
       "description": "Commission rates are applied automatically to matching transaction types. Changes take effect immediately on new transactions.",
@@ -2930,7 +2947,13 @@
       "saveFailed": "فشل الحفظ.",
       "errorFullNameShort": "الاسم الكامل قصير جداً.",
       "errorPositionShort": "المنصب قصير جداً.",
-      "errorImageRequired": "رابط الصورة مطلوب."
+      "errorImageRequired": "رابط الصورة مطلوب.",
+      "fieldPhone": "رقم واتساب",
+      "phoneHint": "اختياري. يتم إشعار المستشار هنا عند حجز جديد (يمكنه تغييره).",
+      "phonePlaceholder": "+213 …",
+      "fieldCity": "المدينة",
+      "cityHint": "تظهر في الملف العام للجلسات الحضورية.",
+      "cityPlaceholder": "مثال: الجزائر"
     },
     "mentorsManager": {
       "rosterCount": "{count} مرشد في القائمة",

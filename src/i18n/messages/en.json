@@ -53,7 +53,19 @@
       "freeIntroHint": "Shows a “free first call” badge on your profile.",
       "meetingHeading": "Meeting defaults",
       "saveProfile": "Save profile",
-      "savedProfile": "Profile saved"
+      "savedProfile": "Profile saved",
+      "phoneLabel": "WhatsApp number",
+      "phoneHint": "Required — we notify you here when a session is booked.",
+      "phonePlaceholder": "+213 …",
+      "phoneRequired": "Please add your WhatsApp number.",
+      "cityLabel": "City",
+      "cityHint": "Shown on your public profile for in-person sessions.",
+      "cityPlaceholder": "e.g. Algiers",
+      "addressLabel": "Address (in person)",
+      "addressHint": "Sent to the client once the session is confirmed.",
+      "addressPlaceholder": "Street, building, floor…",
+      "mapsLabel": "Google Maps link",
+      "mapsPlaceholder": "https://maps.google.com/…"
     },
     "bookings": {
       "heading": "Consultations",
@@ -90,7 +102,11 @@
       "loadFailed": "Could not load consultations.",
       "close": "Close",
       "upcoming": "Upcoming",
-      "past": "Past"
+      "past": "Past",
+      "addressLabel": "Address",
+      "addressPlaceholder": "Street, building, floor…",
+      "mapsLabel": "Google Maps link",
+      "mapsPlaceholder": "https://maps.google.com/…"
     },
     "earnings": {
       "pending": "Pending",
@@ -2727,7 +2743,8 @@
       "reviewButton": "Review",
       "submittedAt": "Submitted {date}",
       "notePrefix": "Note: ",
-      "durationMin": "{min} min"
+      "durationMin": "{min} min",
+      "empty": "No bookings yet."
     },
     "commissions": {
       "description": "Commission rates are applied automatically to matching transaction types. Changes take effect immediately on new transactions.",
@@ -2930,7 +2947,13 @@
       "saveFailed": "Save failed.",
       "errorFullNameShort": "Full name is too short.",
       "errorPositionShort": "Position is too short.",
-      "errorImageRequired": "An image URL is required."
+      "errorImageRequired": "An image URL is required.",
+      "fieldPhone": "WhatsApp number",
+      "phoneHint": "Optional. The consultant is notified here on a new booking (they can change it).",
+      "phonePlaceholder": "+213 …",
+      "fieldCity": "City",
+      "cityHint": "Shown on the public profile for in-person sessions.",
+      "cityPlaceholder": "e.g. Algiers"
     },
     "mentorsManager": {
       "rosterCount": "{count} mentor{count, plural, one {} other {s}} in the roster",
