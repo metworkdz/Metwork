@@ -107,6 +107,28 @@ export function nextUniqueSlot(): { date: string; time: string } {
   return { date: dateAhead(day), time };
 }
 
+/**
+ * Run-unique base day for NEAR slots: 2–8 days out. Strictly BELOW
+ * SLOT_BASE_DAY's 12-day floor, so a near slot can never collide with a far
+ * `nextUniqueSlot` slot, and clearly outside any prior run's far-future bookings.
+ */
+const NEAR_BASE_DAY = 2 + (Math.floor(Date.now() / 1000) % 7);
+let nearSeq = 0;
+
+/**
+ * Dispense a globally-unique NEAR-future (date, time) slot — a few days out, so
+ * it is INSIDE any allowed consultant notice window (`minNoticeHours` is capped
+ * at 720h = 30 days) yet still past the 24h booking-advance guard. Used by the
+ * reschedule "notice window" (TOO_LATE) test, where a far-future slot from
+ * `nextUniqueSlot` could land beyond 30 days and never trip the window.
+ */
+export function nearUniqueSlot(): { date: string; time: string } {
+  const i = nearSeq++;
+  const day = NEAR_BASE_DAY + Math.floor(i / SLOT_STARTS.length);
+  const time = SLOT_STARTS[i % SLOT_STARTS.length]!;
+  return { date: dateAhead(day), time };
+}
+
 /* ───────────────────────────── Mentor setup ───────────────────────────── */
 
 /**

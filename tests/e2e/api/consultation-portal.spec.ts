@@ -15,6 +15,7 @@ import {
   setupMentorAvailability,
   setMinNotice,
   nextUniqueSlot,
+  nearUniqueSlot,
   instantBook,
   consultantWallet,
   consultantBooking,
@@ -234,7 +235,19 @@ test.describe.serial('Consultation portal — access, lifecycle, payouts, resche
   });
 
   test('11b — reschedule is blocked inside the notice window (422 TOO_LATE)', async () => {
-    const { id } = await bookMember(founder, slots());
+    // Book a NEAR slot (a few days out) so that after widening the notice window
+    // to its 720h (30-day) maximum the session is GUARANTEED inside it — a
+    // far-future nextUniqueSlot can land >30 days out and never trip the window.
+    // Walk past any near slot a prior run already booked (the local DB persists).
+    let id = '';
+    for (let attempt = 0; attempt < 14 && !id; attempt++) {
+      const slot = nearUniqueSlot();
+      const res = await instantBook(founder, { ...slot, durationMinutes: 60 });
+      if (res.status() === 201) { id = (await res.json()).id as string; break; }
+      expect(await errCode(res), `unexpected book error → ${await dump(res)}`).toBe('SLOT_NOT_BOOKABLE');
+    }
+    expect(id, 'booked a near slot inside the notice window').toBeTruthy();
+
     // Widen the notice window so the (future) session is now "inside" it.
     await setMinNotice(consultant, 720);
     try {
@@ -244,6 +257,9 @@ test.describe.serial('Consultation portal — access, lifecycle, payouts, resche
       expect(await errCode(res)).toBe('TOO_LATE');
     } finally {
       await setMinNotice(consultant, 1);
+      // Cancel so the near slot is freed for future runs (computeBookableSlots
+      // excludes CANCELLED bookings), keeping nearUniqueSlot collision-free.
+      await consultant.post(`/api/consultant/bookings/${id}/cancel`, { data: {} }).catch(() => {});
     }
   });
 });

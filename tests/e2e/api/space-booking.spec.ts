@@ -114,13 +114,19 @@ test.describe('Space booking + price guard', () => {
   });
 
   test('OVERLAP_CONFLICT when a second booking overlaps the first', async () => {
-    const space = await createSpace(inc);
+    // Book a FREE space (price 0) ONLINE → status PENDING, which HOLDS a seat in
+    // the availability gate. A CASH booking is PENDING_PAYMENT and holds NO seat
+    // (see seatHolding in availability.ts), so two CASH bookings would never
+    // conflict — the overlap gate is exercised only by seat-holding bookings.
+    // capacity 1 → any overlap is OVERLAP_CONFLICT (capacity > 1 would be the
+    // partial-capacity CAPACITY_EXCEEDED path instead).
+    const space = await createSpace(inc, { pricePerHour: 0, capacity: 1 });
     const base = futureWeekdayUtc();
 
-    const first = await bookSpace(builder, space.id, 'HOUR', ...windowTuple(base, 10, 12));
+    const first = await bookSpace(builder, space.id, 'HOUR', ...windowTuple(base, 10, 12), 'ONLINE');
     expect(first.status(), `first booking expected 201, got ${await dump(first)}`).toBe(201);
 
-    const second = await bookSpace(builder, space.id, 'HOUR', ...windowTuple(base, 11, 13));
+    const second = await bookSpace(builder, space.id, 'HOUR', ...windowTuple(base, 11, 13), 'ONLINE');
     expect(second.status(), `second booking expected 409, got ${await dump(second)}`).toBe(409);
     expect(await errCode(second), `expected OVERLAP_CONFLICT, got ${await dump(second)}`).toBe(
       'OVERLAP_CONFLICT',

@@ -23,6 +23,7 @@
  *     (unique programs/events) so assertions never depend on global counts.
  */
 import { request as pwRequest, expect, type APIRequestContext } from '@playwright/test';
+import * as fs from 'node:fs';
 import { authStatePath } from '../global-setup';
 
 export const BASE = 'http://localhost:3000';
@@ -176,13 +177,17 @@ export interface SpaceOpts {
   openingTime?: string;
   closingTime?: string;
   name?: string;
+  /** Space category. Defaults to COWORKING. */
+  category?: 'COWORKING' | 'PRIVATE_OFFICE' | 'TRAINING_ROOM' | 'DOMICILIATION';
+  /** Per-space duration discounts (0 < percent < 100, minQty > 0). */
+  durationDiscounts?: { unit: 'HOUR' | 'DAY'; minQty: number; percent: number }[];
 }
 
 /** Create a space fixture as the incubator. Returns the full SpaceRecord (has `id` UUID). */
 export async function createSpace(
   inc: APIRequestContext,
   opts: SpaceOpts = {},
-): Promise<{ id: string; [k: string]: unknown }> {
+): Promise<{ id: string; capacity: number; durationDiscounts?: unknown[]; [k: string]: unknown }> {
   // Distinguish an explicit `null` (no price for that unit) from `undefined`
   // (use the default). `??` would wrongly coerce an intentional null to the
   // default, breaking the UNIT_NOT_AVAILABLE fixture.
@@ -193,7 +198,7 @@ export async function createSpace(
     data: {
       name: opts.name ?? `QA Space ${uniq()}`,
       description: 'Automated e2e space-booking fixture. Safe to delete.',
-      category: 'COWORKING',
+      category: opts.category ?? 'COWORKING',
       city: 'Alger',
       pricePerHour,
       pricePerDay,
@@ -204,10 +209,73 @@ export async function createSpace(
       workingDays: opts.workingDays ?? [1, 2, 3, 4, 5],
       openingTime: opts.openingTime ?? '09:00',
       closingTime: opts.closingTime ?? '18:00',
+      ...(opts.durationDiscounts ? { durationDiscounts: opts.durationDiscounts } : {}),
     },
   });
   expect(res.status(), `createSpace failed → ${res.status()} ${await res.text()}`).toBe(201);
   return res.json();
+}
+
+/**
+ * Replace a space's blocked dates / time-range blackouts (PUT availability).
+ * Send `unavailableDates: []` to clear all full-day blocks. As the incubator.
+ */
+export async function setSpaceBlackouts(
+  inc: APIRequestContext,
+  spaceId: string,
+  body: { unavailableDates: string[]; blackouts?: { date: string; from?: string; to?: string }[] },
+): Promise<void> {
+  const res = await inc.put(`/api/incubator/spaces/${spaceId}/availability`, { data: body });
+  expect(res.status(), `setSpaceBlackouts → ${res.status()} ${await res.text()}`).toBe(200);
+}
+
+/**
+ * Create an offline/manual booking as the incubator (auto-CONFIRMED,
+ * paymentMethod 'manual', holds a seat in the availability gate).
+ */
+export async function manualBooking(
+  inc: APIRequestContext,
+  body: {
+    itemKind: 'SPACE' | 'PROGRAM';
+    itemId: string;
+    unit: 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH';
+    startsAt: string;
+    endsAt: string;
+    quantity?: number;
+    totalAmount?: number;
+    clientName?: string;
+    clientPhone?: string;
+  },
+) {
+  return inc.post('/api/incubator/manual-bookings', {
+    data: {
+      itemKind: body.itemKind,
+      itemId: body.itemId,
+      clientName: body.clientName ?? `QA Walk-in ${uniq()}`,
+      clientPhone: body.clientPhone ?? '+213700112233',
+      unit: body.unit,
+      startsAt: body.startsAt,
+      endsAt: body.endsAt,
+      quantity: body.quantity ?? 1,
+      totalAmount: body.totalAmount ?? 0,
+    },
+  });
+}
+
+/**
+ * Top up the caller's wallet via the mock provider (sync mode → settles in
+ * the request). Returns the new balance. Throws if the top-up didn't complete.
+ */
+export async function topUp(ctx: APIRequestContext, amount: number): Promise<number> {
+  const res = await ctx.post('/api/wallet/topup', {
+    data: { amount, returnUrl: `${BASE}/fr/dashboard/entrepreneur/wallet` },
+  });
+  expect(res.status(), `topUp → ${res.status()} ${await res.text()}`).toBe(201);
+  const body = await res.json();
+  expect(body.status, `top-up should settle synchronously (mock sync) → ${JSON.stringify(body)}`).toBe(
+    'COMPLETED',
+  );
+  return typeof body.balance === 'number' ? body.balance : Number(body.balance ?? 0);
 }
 
 /* ───────────────────────────── Action helpers ───────────────────────────── */
@@ -280,6 +348,59 @@ export async function eventStatus(ctx: APIRequestContext, eventId: string) {
   }>;
 }
 
+/* ───────────────────────────── Server-state reads (local DB) ───────────────────────────── */
+/*
+ * The e2e server runs with USE_LOCAL_DB=true and flushes every write
+ * synchronously to `.local-db.json`. These helpers read that file so a spec can
+ * assert against the AUTHORITATIVE server state (booking lifecycle, refunds,
+ * promo counters) — not just whatever a response DTO happened to surface. Safe
+ * because the server is the only writer; the test process only ever reads.
+ */
+
+export interface BookingView {
+  id: string;
+  userId: string | null;
+  status: string;
+  paymentMethod?: string;
+  paymentMode?: string;
+  paymentStatus?: string;
+  source?: string;
+  clientReference?: string;
+  payToken?: string | null;
+  totalAmount?: number;
+  onlinePaidAmount?: number;
+  cashRemainingAmount?: number;
+  itemId?: string;
+  itemKind?: string;
+  settledAt?: string | null;
+}
+
+export interface LocalDbView {
+  users: Array<{ id: string; email: string; role: string }>;
+  bookings: BookingView[];
+  mentorBookings: Array<Record<string, unknown>>;
+  wallets: Array<{ id: string; userId: string; balance: number }>;
+  transactions: Array<Record<string, unknown>>;
+  promoCodes: Array<{ id: string; code: string; isActive: boolean; usedCount: number; discountPercent: number }>;
+  withdrawalRequests: Array<Record<string, unknown>>;
+}
+
+/** Parse the local DB document (the server's source of truth in e2e mode). */
+export function readLocalDb(): LocalDbView {
+  const p = process.env.LOCAL_DB_PATH ?? '.local-db.json';
+  return JSON.parse(fs.readFileSync(p, 'utf8')) as LocalDbView;
+}
+
+/** Find a SPACE/PROGRAM/EVENT booking by its clientReference (or undefined). */
+export function findBookingByRef(ref: string): BookingView | undefined {
+  return readLocalDb().bookings.find((b) => b.clientReference === ref);
+}
+
+/** Find a booking by its pay token (card/guest hosted-checkout intent). */
+export function findBookingByPayToken(token: string): BookingView | undefined {
+  return readLocalDb().bookings.find((b) => b.payToken === token);
+}
+
 /** Read the caller's wallet balance (in DZD). */
 export async function walletBalance(ctx: APIRequestContext): Promise<number> {
   const res = await ctx.get('/api/wallet/me');
@@ -338,8 +459,10 @@ export async function bookSpace(
   startsAt: string,
   endsAt: string,
   paymentMethod: 'ONLINE' | 'CASH' = 'CASH',
+  /** Pass an explicit idempotency key to exercise the replay path; defaults to a fresh one. */
+  clientReference: string = clientRef('book'),
 ) {
   return ctx.post('/api/bookings', {
-    data: { spaceId, unit, startsAt, endsAt, clientReference: clientRef('book'), paymentMethod },
+    data: { spaceId, unit, startsAt, endsAt, clientReference, paymentMethod },
   });
 }
