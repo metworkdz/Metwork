@@ -123,6 +123,10 @@ export function CsvImportDialog({
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Idempotency key for the current upload — stable across retries so a re-POST
+  // after a network timeout replays the original batch instead of duplicating
+  // rows. Minted per parsed file (see handleFile) and cleared on reset.
+  const importRef = useRef<string>('');
 
   function reset() {
     setStage('idle');
@@ -130,6 +134,7 @@ export function CsvImportDialog({
     setPreviewRows([]);
     setSummary(null);
     setApiError(null);
+    importRef.current = '';
     if (fileRef.current) fileRef.current.value = '';
   }
 
@@ -144,6 +149,8 @@ export function CsvImportDialog({
         setStage('idle');
         return;
       }
+      // Fresh file → fresh idempotency key for this batch.
+      importRef.current = crypto.randomUUID();
       setPreviewRows(rows);
       setStage('preview');
     };
@@ -157,7 +164,7 @@ export function CsvImportDialog({
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows: previewRows }),
+        body: JSON.stringify({ rows: previewRows, clientReference: importRef.current }),
       });
       const data = await res.json() as ImportSummary & { message?: string };
       if (!res.ok) {

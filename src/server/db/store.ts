@@ -1464,6 +1464,13 @@ export interface ExpenseRecord {
   description: string | null;
   amount: number;
   category: string | null;
+  /**
+   * UUID shared by all rows from the same CSV upload batch. Doubles as the
+   * import idempotency key (= the client's clientReference) so a retried upload
+   * replays instead of duplicating rows. Optional/nullable for back-compat with
+   * rows created before imports were keyed and with manually-added expenses.
+   */
+  importBatchId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -118,3 +118,33 @@ duplicate check matched the booking-time row by `bookingId`).
 (`createSpaceBooking` → `generateCheckInCode` → `validateCheckInManual` → `recordCheckIn`): exactly one
 visit row before and after check-in (same id, now stamped), and `getPartnerStats.pendingPayout` ==
 one payout rate (300, not 600) — including on replay. tsc 0, full suite **189/189**, ESLint clean.
+
+## Phase 2 · Audit of import endpoints + Calendar sync
+- **Google Calendar sync (prompt 4):** confirmed **not present in this repo** — no `googleapis`/`ical`/
+  `oauth` deps, env vars, or code (only the lucide `Calendar` icon). Lives in the separate backend or
+  is unbuilt. No action.
+- **Import endpoints rate-limit:** added a 30/hour-per-incubator distributed limit to
+  `income/import` and `expenses/import` (every other write route is throttled; these were not).
+
+## Follow-up · Incubator CSV import idempotency — FIXED (`task_b9f56741`)
+**Why:** the shared CSV dialog re-POSTs on a network error, so a timeout where the server actually
+succeeded re-imported the file — duplicating income/expense rows and distorting the incubator's P&L.
+The endpoints had no idempotency key.
+
+**Changed (mirrors the `createSpaceBooking` clientReference replay):**
+- `src/server/db/store.ts` — added nullable `importBatchId?` to `ExpenseRecord` (income already had it).
+  Additive/back-compat; the `{ ...empty, ...parsed }` load merge is unaffected.
+- New `src/server/incubator/import-service.ts` — `importIncomeRows` / `importExpenseRows`. When a
+  `clientReference` is supplied it becomes the batch `importBatchId`; the dedup check + insert run in
+  ONE `db.update`, so a prior batch replays (`imported: <prior count>, replayed: true`) inserting
+  nothing. No reference → fresh batch (legacy). Per-row `safeParse` preserved (bad rows skipped).
+- `income/import` + `expenses/import` routes — thinned to auth + rate-limit + body parse (now accepts
+  optional `clientReference`, `z.string().min(8).max(128)`) + delegate to the service.
+- `src/components/features/incubator/csv-import-dialog.tsx` — mints a stable `clientReference` per
+  parsed file (cleared on reset), sent in the POST and reused across retries so a re-submit replays.
+
+**Verify:** `src/__tests__/incubator-import.test.ts` (6 tests) — same reference twice inserts once (no
+duplicate rows, no duplicate client/service), distinct references both insert, no reference is always a
+fresh batch, invalid rows skipped/reported, `importBatchId` persisted on expense rows. tsc 0, full
+suite **195/195**, ESLint clean on changed files (pre-existing `require('fs')` / unused-`Loader2`
+warnings are unrelated and outside the diff).

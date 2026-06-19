@@ -1,33 +1,27 @@
 /**
  * POST /api/incubator/expenses/import
  *
- * Body: { rows: { date, title, description, amount }[] }
+ * Body: { rows: { date, title, description?, amount, category? }[], clientReference? }
  *
- * Validates and bulk-inserts expense rows. Returns an import summary.
- * Rows with invalid data are skipped, not rejected.
+ * Validates and bulk-inserts expense rows. Invalid rows are skipped, not
+ * rejected. Idempotent on `clientReference`: a retried upload (same key) replays
+ * the original batch instead of duplicating rows. See `import-service.ts`.
  */
-import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
-import { db } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
+import { importExpenseRows } from '@/server/incubator/import-service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const rowSchema = z.object({
-  date:        z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  title:       z.string().min(1).max(200),
-  description: z.string().max(1000).optional().nullable(),
-  amount:      z.number().int().min(1),
-  category:    z.string().max(80).optional().nullable(),
-});
-
 const bodySchema = z.object({
   rows: z.array(z.unknown()).max(5000),
+  /** Idempotency key — the same upload replays instead of double-importing. */
+  clientReference: z.string().min(8).max(128).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -55,38 +49,6 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
-  const batchId = randomUUID();
-  const now = new Date().toISOString();
-
-  let imported = 0;
-  let skipped  = 0;
-  const errors: { row: number; reason: string }[] = [];
-
-  await db.update((d) => {
-    if (!Array.isArray(d.expenses)) d.expenses = [];
-
-    input.rows.forEach((raw, idx) => {
-      const parsed = rowSchema.safeParse(raw);
-      if (!parsed.success) {
-        skipped++;
-        errors.push({ row: idx + 1, reason: parsed.error.issues[0]?.message ?? 'Invalid row' });
-        return;
-      }
-      const r = parsed.data;
-      d.expenses.push({
-        id:          randomUUID(),
-        incubatorId: inc.id,
-        date:        r.date,
-        title:       r.title.trim(),
-        description: r.description ?? null,
-        amount:      r.amount,
-        category:    r.category ?? null,
-        createdAt:   now,
-        updatedAt:   now,
-      });
-      imported++;
-    });
-  });
-
-  return json({ imported, skipped, errors, batchId });
+  const summary = await importExpenseRows(inc.id, input.rows, input.clientReference);
+  return json(summary);
 }
