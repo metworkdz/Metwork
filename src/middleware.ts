@@ -23,11 +23,31 @@ function stripLocale(pathname: string): { locale: string | null; path: string } 
   return { locale: null, path: pathname };
 }
 
+/**
+ * Cookie that records the consultant's explicit language choice in the portal.
+ * Kept in sync with CONSULTANT_LOCALE_COOKIE in
+ * `components/features/consultant/portal/language-switcher.tsx` (hard-coded here
+ * to avoid pulling a client component into the Edge runtime).
+ */
+const CONSULTANT_LOCALE_COOKIE = 'metwork_consultant_locale';
+
 export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const { locale, path } = stripLocale(pathname);
   const session = req.cookies.get(AUTH_COOKIE)?.value;
   const localePrefix = locale ? `/${locale}` : '';
+
+  // Consultant portal defaults to French (most consultants are French speakers).
+  // On a first visit — before the consultant picks a language with the in-app
+  // switcher (which sets the cookie) — any non-French locale is redirected to
+  // the French equivalent, preserving the path and query (e.g. a PIN ?token=…).
+  if (locale && locale !== 'fr' && (path === '/consultant' || path.startsWith('/consultant/'))) {
+    if (!req.cookies.get(CONSULTANT_LOCALE_COOKIE)?.value) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/fr${path}`;
+      return NextResponse.redirect(url);
+    }
+  }
 
   // Auth guard: protected routes
   if (PROTECTED_PREFIXES.some((p) => path.startsWith(p)) && !session) {

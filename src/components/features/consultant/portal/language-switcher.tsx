@@ -23,6 +23,7 @@ export const CONSULTANT_LOCALE_COOKIE = 'metwork_consultant_locale';
 export function LanguageSwitcher({ className }: { className?: string }) {
   const locale = useLocale();
   const t = useTranslations('consultantPortal.nav');
+  // next-intl usePathname() returns the path WITHOUT the locale prefix (e.g. "/consultant").
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -31,9 +32,13 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   function pick(next: string) {
     setOpen(false);
     if (next === locale) return;
+    // Record the explicit choice so the portal stops forcing the French default.
     document.cookie = `${CONSULTANT_LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
+    // Use next-intl's router so it updates its own locale preference (NEXT_LOCALE)
+    // atomically with the navigation — a plain location change gets pulled back to
+    // the previous locale by the intl middleware. Query params (e.g. a PIN ?token=…)
+    // are preserved.
     const query = Object.fromEntries(searchParams.entries());
-    // next-intl navigation: same path, new locale, keep the query string.
     router.replace({ pathname, query }, { locale: next });
   }
 
