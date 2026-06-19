@@ -50,6 +50,19 @@ function authHeaders(cfg: SlickPayConfig): Record<string, string> {
   };
 }
 
+/** Supported UI locales — used to keep the cancel page in the payer's language. */
+const LOCALES = new Set(['en', 'fr', 'ar']);
+
+/** Extract the locale segment from the return URL so the cancel page matches it. */
+function localeFromReturnUrl(returnUrl: string): string {
+  try {
+    const seg = new URL(returnUrl).pathname.split('/').filter(Boolean)[0];
+    return seg && LOCALES.has(seg) ? seg : 'fr';
+  } catch {
+    return 'fr';
+  }
+}
+
 function constantTimeEqualHex(a: string, b: string): boolean {
   try {
     const ba = Buffer.from(a, 'hex');
@@ -71,6 +84,7 @@ export const slickpayProvider: PaymentProvider = {
     if (!cfg) throw new ProviderNotConfiguredError('slickpay');
 
     const base = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'http://localhost:3000';
+    const locale = localeFromReturnUrl(input.returnUrl);
 
     let res: Response;
     try {
@@ -80,7 +94,14 @@ export const slickpayProvider: PaymentProvider = {
         body: JSON.stringify({
           amount: input.amount,
           url: input.returnUrl,
-          cancel_url: `${base}/en/payment/cancel`,
+          cancel_url: `${base}/${locale}/payment/cancel`,
+          // Echo our internal id back on the webhook so settlement can map the
+          // callback to the originating top-up intent / booking. Without this the
+          // signed webhook has no `external_id` and can never settle (the return-
+          // page poll was the only working path). Sent under several key names
+          // for resilience across SlickPay payload variants.
+          external_id: input.topUpId,
+          metadata: { external_id: input.topUpId },
         }),
       });
     } catch (err) {
@@ -148,12 +169,15 @@ export const slickpayProvider: PaymentProvider = {
 
     const body = parsed as {
       external_id?: string;
+      externalId?: string;
+      metadata?: { external_id?: string } | null;
       id?: string | number;
       completed?: number;
       status?: string;
     };
 
-    const topUpId = body.external_id;
+    // Our internal id (top-up intent id or booking id), echoed back from init.
+    const topUpId = body.external_id ?? body.externalId ?? body.metadata?.external_id;
     if (!topUpId) return null;
 
     const isCompleted =

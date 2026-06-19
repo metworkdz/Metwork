@@ -331,16 +331,42 @@ export async function createSpaceBooking(
   }
 
   return db.update<CreateSpaceBookingResult>((d) => {
-    // Idempotency: same clientReference for the same user → return existing.
+    // Idempotency: same clientReference for the same user → return the existing
+    // booking and NEVER create a second one / touch the wallet or credits again.
+    // Cash (`manual`) and NETWORK_PASS bookings carry no stored transaction
+    // (transactionId is null and their placeholder tx is ephemeral), so we must
+    // NOT gate the early-return on a transaction existing — doing so let the
+    // replay fall through and duplicate the booking, double-burning a network
+    // credit and double-booking a cash reservation. Synthesise a placeholder tx
+    // mirroring the original response shape when none was stored.
     const existing = d.bookings.find(
       (b) => b.userId === args.userId && b.clientReference === args.clientReference,
     );
     if (existing) {
-      const tx = existing.transactionId
+      const w = d.wallets.find((x) => x.userId === args.userId) ?? newWallet(args.userId);
+      const storedTx = existing.transactionId
         ? d.transactions.find((t) => t.id === existing.transactionId) ?? null
         : null;
-      const w = d.wallets.find((x) => x.userId === args.userId) ?? newWallet(args.userId);
-      if (tx) return { ok: true, replayed: true, booking: existing, transaction: tx, wallet: w };
+      const tx: TransactionRecord = storedTx ?? {
+        id: randomUUID(),
+        walletId: w.id,
+        userId: args.userId,
+        type: 'PAYMENT',
+        amount: 0,
+        balanceAfter: w.balance,
+        status: existing.paymentMethod === 'manual' ? 'PENDING' : 'COMPLETED',
+        description: `Booking — ${existing.itemName}`,
+        reference: args.clientReference,
+        provider:
+          existing.paymentMethod === 'NETWORK_PASS' ? 'network_pass'
+          : existing.paymentMethod === 'manual' ? 'cash'
+          : 'internal',
+        providerTxnId: null,
+        metadata: { bookingItemKind: 'SPACE', bookingItemId: existing.itemId, replayed: true },
+        createdAt: existing.createdAt,
+        completedAt: existing.paymentMethod === 'manual' ? null : existing.createdAt,
+      };
+      return { ok: true, replayed: true, booking: existing, transaction: tx, wallet: w };
     }
 
     // ── Shared availability gate: blackouts + capacity-aware occupancy ──

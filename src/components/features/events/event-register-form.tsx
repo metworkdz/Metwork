@@ -5,7 +5,7 @@
  * same wallet/auth/insufficient/already-registered branching, just with
  * "Register" copy and event-specific error codes.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Banknote, CheckCircle2, CreditCard, Wallet as WalletIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -72,6 +72,17 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
 
   // Guests pay by card; collect contact details for the receipt / checkout.
   const [contact, setContact] = useState<GuestContact>(emptyGuestContact);
+  // Stable idempotency key for the registration — reused across retries (a
+  // dropped response replays instead of double-charging) and regenerated when
+  // the payment method / promo changes (effect below).
+  const bookingRef = useRef<string>('');
+  const ensureBookingRef = (): string => {
+    if (!bookingRef.current) bookingRef.current = crypto.randomUUID();
+    return bookingRef.current;
+  };
+  useEffect(() => {
+    bookingRef.current = '';
+  }, [isCash, method, promoResult?.code]);
   // Listing is bookable by a guest only if there's a card-chargeable amount.
   const guestCanCard = !isFree && (onlineOffered || (acceptedMethods.includes('CASH') && hasDeposit));
 
@@ -179,7 +190,7 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
           target: { itemKind: 'EVENT', eventId: event.id },
           paymentMode: isCash ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
           customer,
-          clientReference: crypto.randomUUID(),
+          clientReference: ensureBookingRef(),
           promoCode: promoResult?.code,
           locale,
         });
@@ -201,11 +212,12 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
     setSubmitting(true);
     try {
       const res = await bookingService.registerForEvent(event.id, {
-        clientReference: crypto.randomUUID(),
+        clientReference: ensureBookingRef(),
         promoCode: promoResult?.code,
         paymentMethod: method,
       });
       setBalance(res.wallet.balance);
+      bookingRef.current = '';
       void refresh();
       onSuccess(res.booking, res.wallet.balance);
     } catch (err) {

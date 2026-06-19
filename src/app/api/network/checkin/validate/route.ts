@@ -11,10 +11,11 @@
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiSession } from '@/server/auth/api-guards';
+import { requireApiRole } from '@/server/auth/api-guards';
 import {
   validateCheckInQRCode,
   validateCheckInManual,
+  authorizeSpaceCheckIn,
 } from '@/server/network/checkin-service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -37,8 +38,9 @@ const schema = z.discriminatedUnion('method', [
 ]);
 
 export async function POST(req: NextRequest) {
-  // Reception staff must be authenticated — no anonymous scanning
-  const guard = await requireApiSession();
+  // Reception is run by the partner space's owning incubator (or an admin) —
+  // not just any authenticated user (the response carries the member's PII).
+  const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
   if (!guard.ok) return guard.response;
 
   let body: unknown;
@@ -52,7 +54,14 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
-  const staffUserId = input.staffUserId ?? guard.user.id;
+  // The caller must own (or admin) the space being scanned.
+  if (!(await authorizeSpaceCheckIn(guard.user, input.spaceId))) {
+    return jsonError(403, 'FORBIDDEN', 'You are not authorised to scan check-ins for this space');
+  }
+
+  // Attribution is the authenticated reception user — never trusted from the
+  // body (prevents audit-trail spoofing).
+  const staffUserId = guard.user.id;
 
   const result =
     input.method === 'QR'

@@ -826,6 +826,28 @@ export async function verifyAndSettleCardBooking(token: string): Promise<CardPay
   return viewFor(after, 'CONFIRMED');
 }
 
+/**
+ * Settle a card booking from a SIGNATURE-VERIFIED provider webhook. Unlike the
+ * return-page path it does not re-poll the provider — the webhook is already
+ * authenticated. `bookingId` is the provider `external_id` we set at intent
+ * (= booking.id). Idempotent (delegates to applyCardSettlement); safe to replay.
+ */
+export async function settleCardBookingFromWebhook(
+  bookingId: string,
+  providerRef: string | null,
+  status: 'COMPLETED' | 'FAILED',
+): Promise<'SETTLED' | 'ALREADY' | 'NOT_FOUND' | 'IGNORED'> {
+  const data = await db.read();
+  const booking = data.bookings.find((b) => b.id === bookingId && b.paymentMethod === 'card');
+  if (!booking) return 'NOT_FOUND';
+  if (status !== 'COMPLETED') return 'IGNORED';
+  if (isSettled(booking)) return 'ALREADY';
+  const outcome = await applyCardSettlement(bookingId, providerRef);
+  if (outcome.kind === 'NOT_FOUND') return 'NOT_FOUND';
+  void dispatchCardReceiptIfDue(bookingId);
+  return 'SETTLED';
+}
+
 /* ──────────────────────────── Checkout init ──────────────────────────── */
 
 export type InitCardBookingResult =
@@ -903,4 +925,36 @@ export async function initCardBookingPayment(
   }
 
   return { ok: true, redirectUrl: result.redirectUrl };
+}
+
+/**
+ * Reconcile card-booking intents that were paid online but never settled (payer
+ * closed the tab after paying; no webhook). Re-verifies each via the provider
+ * (poll) and settles idempotently. Only touches intents idle ≥ `olderThanMs`.
+ */
+export async function reconcilePendingCardBookings(
+  opts: { olderThanMs?: number; limit?: number } = {},
+): Promise<{ checked: number; settled: number }> {
+  const olderThanMs = opts.olderThanMs ?? 5 * 60_000;
+  const limit = opts.limit ?? 200;
+  const cutoff = Date.now() - olderThanMs;
+  const data = await db.read();
+  const candidates = data.bookings
+    .filter(
+      (b) =>
+        b.paymentMethod === 'card' &&
+        b.status === 'PENDING_PAYMENT' &&
+        !b.settledAt &&
+        !!b.paymentProviderRef &&
+        typeof b.payToken === 'string' &&
+        Date.parse(b.updatedAt) <= cutoff,
+    )
+    .slice(0, limit);
+
+  let settled = 0;
+  for (const b of candidates) {
+    const view = await verifyAndSettleCardBooking(b.payToken!);
+    if (view.state === 'CONFIRMED' || view.state === 'SLOT_TAKEN') settled += 1;
+  }
+  return { checked: candidates.length, settled };
 }

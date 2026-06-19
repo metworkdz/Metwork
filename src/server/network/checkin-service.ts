@@ -42,6 +42,33 @@ import {
   safeHashEquals,
 } from './qr-utils';
 import { appendCheckInAudit } from './checkin-audit';
+import { findIncubatorByUserEmail } from '@/server/incubator/service';
+
+// ---------------------------------------------------------------------------
+// Authorization
+// ---------------------------------------------------------------------------
+
+/**
+ * Authorize a check-in action (validate or record) for `spaceId`.
+ *
+ * Network-Pass reception is run by the incubator that OWNS the partner space,
+ * so only that incubator's manager — or a platform ADMIN — may scan or commit a
+ * check-in. Without this, any authenticated user could validate codes (leaking
+ * the bound member's PII) or commit a visit (consuming the code and creating a
+ * premature partner-payout liability). Returns true when the caller is allowed.
+ */
+export async function authorizeSpaceCheckIn(
+  user: { id: string; email: string; role: string },
+  spaceId: string,
+): Promise<boolean> {
+  if (user.role === 'ADMIN') return true;
+  if (user.role !== 'INCUBATOR') return false;
+  const inc = await findIncubatorByUserEmail(user.email);
+  if (!inc) return false;
+  const data = await db.read();
+  const space = (data.spaces ?? []).find((s) => s.id === spaceId);
+  return !!space && space.incubatorId === inc.id;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -480,7 +507,11 @@ async function runValidation(input: RunValidationInput): Promise<ValidationResul
     );
   }
 
-  const visitId = randomUUID();
+  // Round-trip the booking's EXISTING visit row id (created at booking time) so
+  // recordCheckIn stamps that single row rather than inserting a second one. A
+  // legacy booking with no booking-time visit falls back to a fresh id, which
+  // recordCheckIn then creates.
+  const visitId = booking.networkVisitId ?? randomUUID();
   // Note: we DO NOT write the audit log here — recordCheckIn will append
   // the SUCCESS entry on commit. We append a "validated but not yet
   // recorded" intent at this stage only via the staff-side audit trail.
@@ -530,9 +561,13 @@ export async function recordCheckIn(
 ): Promise<RecordCheckInResult> {
   try {
     return await db.update((d) => {
-      // Idempotency: if a visit already has this id, return it.
-      const existing = d.networkVisits?.find((v) => v.id === visitId);
-      if (existing) return { success: true, visit: existing };
+      if (!Array.isArray(d.networkVisits)) d.networkVisits = [];
+
+      // Idempotency: a visit with this id that is ALREADY checked in is a replay.
+      // (A booking-time row that exists but isn't checked in yet is NOT a replay —
+      // it is exactly the row we are about to stamp below.)
+      const sameId = d.networkVisits.find((v) => v.id === visitId);
+      if (sameId?.checkedInAt) return { success: true, visit: sameId };
 
       // Find the code row — must be unconsumed for this space + user
       const code = d.networkCheckInCodes?.find(
@@ -542,9 +577,27 @@ export async function recordCheckIn(
         return { success: false, error: 'No active check-in code for this user/space' };
       }
 
+      // Defence in depth: re-run the security gates at COMMIT time rather than
+      // trusting that the caller actually ran validate() first. A stale/expired
+      // code, or one whose booking is not an approved NETWORK_PASS space booking
+      // for today, is refused here (mirrors runValidation's WRONG_DATE / EXPIRED
+      // / WRONG_PAYMENT_METHOD / BOOKING_NOT_CONFIRMED checks).
+      if (Date.parse(code.expiresAt) < Date.now()) {
+        return { success: false, error: 'Check-in code has expired' };
+      }
+
       // Find the booking and partner-membership for payout rate
       const booking = d.bookings.find((b) => b.id === code.bookingId);
       if (!booking) return { success: false, error: 'Booking disappeared' };
+      if (
+        booking.itemKind !== 'SPACE' ||
+        booking.itemId !== spaceId ||
+        booking.paymentMethod !== 'NETWORK_PASS' ||
+        !APPROVED_STATUSES.has(booking.status) ||
+        utcDate(booking.startsAt) !== todayUtc()
+      ) {
+        return { success: false, error: 'Booking is not eligible for check-in' };
+      }
 
       const space = d.spaces.find((s) => s.id === spaceId);
       const partner = space?.partnerMembershipId
@@ -554,33 +607,56 @@ export async function recordCheckIn(
 
       const now = new Date().toISOString();
 
-      const visit: NetworkVisitRecord = {
-        id: visitId,
-        userId,
-        spaceId,
-        bookingId: code.bookingId,
-        checkedInAt: now,
-        checkedInBy: checkedInBy ?? null,
-        checkedInMethod: method,
-        payoutStatus: 'PENDING',
-        payoutAmount,
-        payoutBatchId: null,
-        paidOutDate: null,
-        createdAt: now,
-        updatedAt: now,
-      };
+      // Resolve the SINGLE visit row for this booking. A NETWORK_PASS booking
+      // already created a row at booking time (booking.networkVisitId) — we
+      // STAMP that row rather than inserting a second one, so the payout batch
+      // never sees two PENDING rows for one check-in. Fall back to any row for
+      // this booking, then to creating one (legacy bookings predating
+      // booking-time visits).
+      let visit =
+        (booking.networkVisitId
+          ? d.networkVisits.find((v) => v.id === booking.networkVisitId)
+          : undefined) ?? d.networkVisits.find((v) => v.bookingId === booking.id);
 
-      if (!Array.isArray(d.networkVisits)) d.networkVisits = [];
-      d.networkVisits.push(visit);
+      // Already stamped (e.g. a concurrent commit won) → idempotent replay.
+      if (visit?.checkedInAt) return { success: true, visit };
 
-      // Consume the code
+      if (visit) {
+        // Update the existing booking-time row in place.
+        visit.checkedInAt = now;
+        visit.checkedInBy = checkedInBy ?? null;
+        visit.checkedInMethod = method;
+        // Refresh the rate against the current partner enrolment.
+        visit.payoutAmount = payoutAmount;
+        visit.payoutStatus = visit.payoutStatus ?? 'PENDING';
+        visit.updatedAt = now;
+      } else {
+        // Legacy fallback: no booking-time row exists — create one.
+        visit = {
+          id: visitId,
+          userId,
+          spaceId,
+          bookingId: code.bookingId,
+          checkedInAt: now,
+          checkedInBy: checkedInBy ?? null,
+          checkedInMethod: method,
+          payoutStatus: 'PENDING',
+          payoutAmount,
+          payoutBatchId: null,
+          paidOutDate: null,
+          createdAt: now,
+          updatedAt: now,
+        };
+        d.networkVisits.push(visit);
+      }
+
+      // Consume the code, linking it to the single visit row.
       code.consumed = true;
       code.consumedAt = now;
-      code.visitId = visitId;
+      code.visitId = visit.id;
 
-      // Link visit to booking (existing field) and bump booking status
-      booking.networkVisitId = visitId;
-      // We don't add new booking fields; the visit row carries checkedInAt.
+      // Link visit to booking (existing field).
+      booking.networkVisitId = visit.id;
 
       // Update user metadata
       const user = d.users.find((u) => u.id === userId);
@@ -639,8 +715,13 @@ export async function detectFraudulentCheckIn(
     return { isFraudulent: false, allowAnyway: true };
   }
 
-  // 1. Duplicate: already a visit for this booking?
-  const dup = (data.networkVisits ?? []).find((v) => v.bookingId === bookingId);
+  // 1. Duplicate: already CHECKED IN for this booking? Every NETWORK_PASS
+  // booking has a booking-time visit row (checkedInAt null) — that is the row a
+  // first check-in will stamp, NOT a duplicate, so we only flag a row that has
+  // already been checked in.
+  const dup = (data.networkVisits ?? []).find(
+    (v) => v.bookingId === bookingId && v.checkedInAt,
+  );
   if (dup) {
     return { isFraudulent: true, reason: 'Duplicate check-in', allowAnyway: false };
   }

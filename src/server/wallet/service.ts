@@ -11,6 +11,8 @@ import {
   type WalletRecord,
 } from '@/server/db/store';
 import { getActiveProvider } from '@/server/payments/registry';
+import { getSlickPayTransferStatus } from '@/server/payments/slickpay-provider';
+import { ProviderNotConfiguredError } from '@/server/payments/errors';
 import type { InitTopUpInput } from '@/server/payments/provider';
 import { clientEnvVars } from '@/lib/env';
 import {
@@ -310,6 +312,54 @@ export async function initiateTopUp(input: InitiateTopUpInput): Promise<Initiate
 export async function getTopUp(topUpId: string): Promise<TopUpIntentRecord | null> {
   const data = await db.read();
   return data.topUpIntents.find((t) => t.id === topUpId) ?? null;
+}
+
+/**
+ * Reconcile still-PENDING top-up intents by polling the provider directly.
+ *
+ * Safety net for the case where the payer completed the hosted checkout but the
+ * webhook never arrived AND they never returned to the success page — without
+ * this the money is taken by the provider but never credited. Only touches
+ * intents idle for at least `olderThanMs` so an in-flight checkout isn't polled
+ * prematurely. Idempotent: settlement goes through `confirmTopUp`. No-ops when
+ * the provider isn't configured (mock/dev).
+ */
+export async function reconcilePendingTopUps(
+  opts: { olderThanMs?: number; limit?: number } = {},
+): Promise<{ checked: number; settled: number; failed: number }> {
+  const olderThanMs = opts.olderThanMs ?? 5 * 60_000;
+  const limit = opts.limit ?? 200;
+  const cutoff = Date.now() - olderThanMs;
+  const data = await db.read();
+  const pending = (data.topUpIntents ?? [])
+    .filter(
+      (t) =>
+        t.status === 'PENDING' &&
+        !!t.providerRef &&
+        Date.parse(t.createdAt) <= cutoff,
+    )
+    .slice(0, limit);
+
+  let settled = 0;
+  let failed = 0;
+  for (const intent of pending) {
+    let status: { completed: 0 | 1 };
+    try {
+      status = await getSlickPayTransferStatus(intent.providerRef!);
+    } catch (err) {
+      if (err instanceof ProviderNotConfiguredError) break; // mock/dev — nothing to reconcile
+      failed += 1;
+      continue;
+    }
+    if (status.completed !== 1) continue;
+    const res = await confirmTopUp({
+      topUpId: intent.id,
+      providerRef: intent.providerRef!,
+      status: 'COMPLETED',
+    });
+    if (res.ok && res.finalStatus === 'COMPLETED') settled += 1;
+  }
+  return { checked: pending.length, settled, failed };
 }
 
 /**

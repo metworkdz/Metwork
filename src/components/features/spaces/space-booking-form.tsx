@@ -258,6 +258,14 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   // Stable idempotency key for the signup-intent booking — reused across
   // retries so a double-submit can't create two bookings / pending users.
   const accountRef = useRef<string | null>(null);
+  // Stable idempotency key for the booking itself — reused across retries so a
+  // dropped response / network retry replays instead of double-booking. It is
+  // regenerated whenever the booking parameters change (effect further below).
+  const bookingRef = useRef<string>('');
+  const ensureBookingRef = useCallback(() => {
+    if (!bookingRef.current) bookingRef.current = crypto.randomUUID();
+    return bookingRef.current;
+  }, []);
   // Listing is bookable by a guest only if there's a card-chargeable amount.
   const guestCanCard = onlineOffered || (acceptedMethods.includes('CASH') && hasDeposit);
 
@@ -301,6 +309,13 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const hourlyMinutes = unit === 'HOUR' && validRange ? parseTime(endTime) - parseTime(startTime) : 0;
   const billedAsDay   = unit === 'HOUR' && hasDayUnit && hourlyMinutes >= MAX_HOURLY_MINUTES;
   const effectiveUnit: BookingUnit = billedAsDay ? 'DAY' : unit;
+
+  // A change to the booking parameters starts a fresh idempotency key, so a
+  // resubmit after editing the date/unit/payment method is a NEW booking — not
+  // a replay of the previous (now-stale) one.
+  useEffect(() => {
+    bookingRef.current = '';
+  }, [effectiveUnit, startIso, endIso, method, useNetworkPass]);
 
   const unitPrice = useMemo(
     () => units.find((u) => u.unit === effectiveUnit)?.price ?? 0,
@@ -520,7 +535,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
           target: { itemKind: 'SPACE', spaceId: space.id, unit: effectiveUnit, startsAt: startIso, endsAt: endIso },
           paymentMode: isCash ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
           customer,
-          clientReference: crypto.randomUUID(),
+          clientReference: ensureBookingRef(),
           promoCode: promoResult?.code,
           locale,
         });
@@ -546,11 +561,14 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         unit: effectiveUnit,
         startsAt: startIso,
         endsAt:   endIso,
-        clientReference: crypto.randomUUID(),
+        clientReference: ensureBookingRef(),
         promoCode: promoResult?.code,
         paymentMethod: useNetworkPass ? ('NETWORK_PASS' as PaymentMethod) : method,
       });
       setBalance(res.wallet.balance);
+      // Booking landed — start a fresh key so a later booking on this form isn't
+      // treated as a replay of this one.
+      bookingRef.current = '';
       void refresh();
       onSuccess(res.booking, res.wallet.balance);
     } catch (err) {

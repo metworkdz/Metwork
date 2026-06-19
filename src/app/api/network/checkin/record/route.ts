@@ -8,8 +8,8 @@
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiSession } from '@/server/auth/api-guards';
-import { recordCheckIn } from '@/server/network/checkin-service';
+import { requireApiRole } from '@/server/auth/api-guards';
+import { recordCheckIn, authorizeSpaceCheckIn } from '@/server/network/checkin-service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -24,7 +24,8 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApiSession();
+  // Reception is run by the partner space's owning incubator (or an admin).
+  const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
   if (!guard.ok) return guard.response;
 
   let body: unknown;
@@ -38,12 +39,19 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
+  // The caller must own (or admin) the space being checked in.
+  if (!(await authorizeSpaceCheckIn(guard.user, input.spaceId))) {
+    return jsonError(403, 'FORBIDDEN', 'You are not authorised to record check-ins for this space');
+  }
+
+  // Attribution is the authenticated reception user — never trusted from the
+  // body (prevents audit-trail spoofing).
   const result = await recordCheckIn(
     input.visitId,
     input.spaceId,
     input.userId,
     input.method,
-    input.checkedInBy ?? guard.user.id,
+    guard.user.id,
   );
 
   if (!result.success) {

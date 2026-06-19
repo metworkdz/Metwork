@@ -89,6 +89,17 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
   const [account, setAccount] = useState<BookingAccountDraft>(emptyBookingAccount);
   // Stable idempotency key for the signup-intent booking.
   const accountRef = useRef<string | null>(null);
+  // Stable idempotency key for the application itself — reused across retries
+  // (a dropped response replays instead of double-charging) and regenerated
+  // whenever the payment method / promo changes (effect below).
+  const bookingRef = useRef<string>('');
+  const ensureBookingRef = (): string => {
+    if (!bookingRef.current) bookingRef.current = crypto.randomUUID();
+    return bookingRef.current;
+  };
+  useEffect(() => {
+    bookingRef.current = '';
+  }, [isCash, method, promoResult?.code]);
   // Listing is bookable by a guest only if there's a card-chargeable amount.
   const guestCanCard = !isFree && (onlineOffered || (acceptedMethods.includes('CASH') && hasDeposit));
 
@@ -244,7 +255,7 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
           target: { itemKind: 'PROGRAM', programId: program.id },
           paymentMode: isCash ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
           customer,
-          clientReference: crypto.randomUUID(),
+          clientReference: ensureBookingRef(),
           promoCode: promoResult?.code,
           locale,
         });
@@ -266,11 +277,12 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
     setSubmitting(true);
     try {
       const res = await bookingService.applyToProgram(program.id, {
-        clientReference: crypto.randomUUID(),
+        clientReference: ensureBookingRef(),
         promoCode: promoResult?.code,
         paymentMethod: method,
       });
       setBalance(res.wallet.balance);
+      bookingRef.current = '';
       void refresh();
       onSuccess(res.booking, res.wallet.balance);
     } catch (err) {
