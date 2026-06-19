@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/ui/container';
+import { recoverFromChunkError } from '@/lib/chunk-recovery';
 
 export default function LocaleError({
   error,
@@ -15,6 +16,11 @@ export default function LocaleError({
   const t = useTranslations('pages.error');
 
   useEffect(() => {
+    // Recover a stale-chunk error (post-deploy) with a loop-guarded reload
+    // instead of dead-ending on `reset()`. Suppressed reloads fall through to
+    // the fallback UI below.
+    if (recoverFromChunkError(error)) return;
+
     // Lazily import Sentry so a missing/unconfigured DSN never crashes the error page itself.
     import('@sentry/nextjs')
       .then((Sentry) => Sentry.captureException(error))

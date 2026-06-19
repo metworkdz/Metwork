@@ -17,6 +17,7 @@ import { useEffect } from 'react';
 import { AlertCircle, RotateCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
+import { recoverFromChunkError } from '@/lib/chunk-recovery';
 
 interface DashboardErrorProps {
   error: Error & { digest?: string };
@@ -25,6 +26,12 @@ interface DashboardErrorProps {
 
 export default function DashboardError({ error, reset }: DashboardErrorProps) {
   useEffect(() => {
+    // A stale chunk after a deploy (common in the long-lived standalone PWA)
+    // can't be fixed by `reset()` — only a fresh document recovers it. Try a
+    // loop-guarded hard reload first; if it's suppressed (cooldown) we fall
+    // through and render the fallback UI below so the user isn't stuck.
+    if (recoverFromChunkError(error)) return;
+
     // Lazy-import Sentry so a missing/unconfigured DSN never crashes the
     // error UI itself — the recovery path must always render.
     import('@sentry/nextjs')

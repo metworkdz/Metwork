@@ -7,7 +7,10 @@
  *     authenticated HTML is never written to the cache.
  *   • Static build assets / icons: cache-first.
  */
-const CACHE = 'metwork-shell-v1';
+// Bump this on any change to caching behaviour: `activate` deletes every cache
+// whose name isn't the current one, so a version bump purges the prior shell in
+// one pass (clears any stale asset graph a long-lived standalone client pinned).
+const CACHE = 'metwork-shell-v2';
 const OFFLINE_URL = '/offline.html';
 const PRECACHE = [
   OFFLINE_URL,
@@ -61,17 +64,22 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/assets/')
   ) {
     event.respondWith(
-      caches.match(request).then(
-        (cached) =>
-          cached ||
-          fetch(request)
-            .then((res) => {
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request)
+          .then((res) => {
+            // Only cache real successes. Caching a 404/redirect for a purged
+            // chunk would pin a broken asset; instead we let the failure
+            // surface so the client's chunk-load recovery can hard-reload.
+            if (res.ok) {
               const copy = res.clone();
               caches.open(CACHE).then((cache) => cache.put(request, copy));
-              return res;
-            })
-            .catch(() => cached),
-      ),
+            }
+            return res;
+          })
+          // Never resolve `respondWith` with undefined — it must be a Response.
+          .catch(() => cached || Response.error());
+      }),
     );
   }
 });

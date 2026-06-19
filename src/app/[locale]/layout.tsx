@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { Providers } from '@/components/providers';
 import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register';
+import { ChunkErrorRecovery } from '@/components/pwa/chunk-error-recovery';
 import { getServerSession } from '@/lib/session';
 import { siteConfig } from '@/config/site';
 import { locales, getDirection, type Locale } from '@/i18n/config';
@@ -140,6 +141,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         <Providers locale={locale} messages={messages} initialUser={sessionUser}>
           {children}
         </Providers>
+        <ChunkErrorRecovery />
         <ServiceWorkerRegister />
       </body>
     </html>
