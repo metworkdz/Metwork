@@ -119,6 +119,8 @@ function BookingDetail({
   // Add-link / confirm-offline.
   const [mode, setMode] = useState<'ONLINE' | 'OFFLINE'>('ONLINE');
   const [link, setLink] = useState('');
+  const [address, setAddress] = useState('');
+  const [mapsLink, setMapsLink] = useState('');
   // Reschedule.
   const [resDate, setResDate] = useState<string | null>(null);
   const [resTime, setResTime] = useState<string | null>(null);
@@ -138,7 +140,12 @@ function BookingDetail({
   }
 
   const saveLink = () => run(() =>
-    consultantService.setBookingLink(booking.id, { mode, link: mode === 'ONLINE' ? link.trim() : null }));
+    consultantService.setBookingLink(booking.id, {
+      mode,
+      link: mode === 'ONLINE' ? link.trim() : null,
+      address: mode === 'OFFLINE' ? address.trim() : null,
+      mapsLink: mode === 'OFFLINE' ? (mapsLink.trim() || null) : null,
+    }));
   const complete = () => run(() => consultantService.completeBooking(booking.id));
   const submitReschedule = () => {
     if (!resDate || !resTime) return;
@@ -180,7 +187,11 @@ function BookingDetail({
           </div>
         ) : view === 'link' ? (
           <div className="flex justify-end">
-            <BrandButton onClick={saveLink} loading={busy} disabled={mode === 'ONLINE' && link.trim().length < 4}>
+            <BrandButton
+              onClick={saveLink}
+              loading={busy}
+              disabled={mode === 'ONLINE' ? link.trim().length < 4 : address.trim().length < 3}
+            >
               {mode === 'ONLINE' ? t('setLinkCta') : t('confirmOfflineCta')}
             </BrandButton>
           </div>
@@ -222,6 +233,20 @@ function BookingDetail({
               <Fact icon={<MapPin className="size-4" />} value={t('inPerson')} />
             )}
           </div>
+
+          {/* In-person address (delivered to the client) */}
+          {booking.meetingMode === 'OFFLINE' && booking.meetingAddress && (
+            <div className="space-y-1 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-white/45">{t('addressLabel')}</p>
+              <p className="text-sm text-white/85">{booking.meetingAddress}</p>
+              {booking.meetingMapsLink && (
+                <a href={booking.meetingMapsLink} target="_blank" rel="noopener noreferrer"
+                  dir="ltr" className="inline-block text-xs underline" style={{ color: CP_GREEN }}>
+                  Google Maps
+                </a>
+              )}
+            </div>
+          )}
 
           {/* Client PII */}
           <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
@@ -280,9 +305,19 @@ function BookingDetail({
                 className={cpInputClass} />
             </Field>
           ) : (
-            <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-white/60">
-              {t('confirmOfflineHeading')}
-            </p>
+            <div className="space-y-3">
+              <p className="text-xs text-white/45">{t('confirmOfflineHeading')}</p>
+              <Field label={t('addressLabel')} htmlFor="cp-meet-address">
+                <input id="cp-meet-address" type="text" value={address} maxLength={500}
+                  onChange={(e) => setAddress(e.target.value)} placeholder={t('addressPlaceholder')} disabled={busy}
+                  className={cpInputClass} />
+              </Field>
+              <Field label={t('mapsLabel')} htmlFor="cp-meet-maps">
+                <input id="cp-meet-maps" type="url" value={mapsLink} dir="ltr"
+                  onChange={(e) => setMapsLink(e.target.value)} placeholder={t('mapsPlaceholder')} disabled={busy}
+                  className={cpInputClass} />
+              </Field>
+            </div>
           )}
           {error && <ErrorBanner message={error} />}
         </div>

@@ -15,7 +15,7 @@ import { fromZod, json, jsonError } from '@/server/http/json';
 import { requireConsultant } from '@/server/mentors/access';
 import { consultantProfileSchema } from '@/server/mentors/schemas';
 import { findMentorById, updateMentor, updateMentorMeetingDefaults } from '@/server/mentors/service';
-import { toMentorDto } from '@/server/mentors/serialize';
+import { toMentorPrivateDto } from '@/server/mentors/serialize';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
 
 export const runtime = 'nodejs';
@@ -37,25 +37,38 @@ export async function PATCH(req: NextRequest) {
     throw err;
   }
 
-  const { defaultMeetingMode, defaultMeetingLink, ...profile } = input;
+  const {
+    defaultMeetingMode,
+    defaultMeetingLink,
+    defaultMeetingAddress,
+    defaultMeetingMapsLink,
+    ...profile
+  } = input;
 
-  // Profile fields (bio/topics/rates/free-intro) — only when at least one is
-  // present, to avoid a no-op write.
+  // Profile fields (bio/topics/rates/free-intro/phone/city) — only when at
+  // least one is present, to avoid a no-op write.
   if (Object.keys(profile).length > 0) {
     const result = await updateMentor(guard.mentorId, profile);
     if (!result.ok) return jsonError(404, 'NOT_FOUND', 'Consultant not found');
   }
 
-  // Meeting defaults — only when present.
-  if (defaultMeetingMode !== undefined || defaultMeetingLink !== undefined) {
+  // Meeting defaults (online link + in-person address/maps) — only when present.
+  if (
+    defaultMeetingMode !== undefined ||
+    defaultMeetingLink !== undefined ||
+    defaultMeetingAddress !== undefined ||
+    defaultMeetingMapsLink !== undefined
+  ) {
     const result = await updateMentorMeetingDefaults(guard.mentorId, {
       defaultMeetingMode,
       defaultMeetingLink,
+      defaultMeetingAddress,
+      defaultMeetingMapsLink,
     });
     if (!result.ok) return jsonError(404, 'NOT_FOUND', 'Consultant not found');
   }
 
   const mentor = await findMentorById(guard.mentorId);
   if (!mentor) return jsonError(404, 'NOT_FOUND', 'Consultant not found');
-  return json({ mentor: toMentorDto(mentor) });
+  return json({ mentor: toMentorPrivateDto(mentor) });
 }

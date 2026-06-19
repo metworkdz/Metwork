@@ -12,7 +12,7 @@ import {
   findMentorById,
   updateMentor,
 } from '@/server/mentors/service';
-import { toMentorDto } from '@/server/mentors/serialize';
+import { toMentorDto, toMentorPrivateDto } from '@/server/mentors/serialize';
 import { fromZod, json, jsonError, noContent } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -54,7 +54,8 @@ export async function PUT(
 
   const result = await updateMentor(id, patch);
   if (!result.ok) return jsonError(404, 'MENTOR_NOT_FOUND', 'Mentor not found');
-  return json(toMentorDto(result.mentor));
+  // Admin-only response → include the private fields (phone) so the form round-trips.
+  return json(toMentorPrivateDto(result.mentor));
 }
 
 export async function DELETE(

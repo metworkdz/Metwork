@@ -87,6 +87,8 @@ export async function createMentor(input: CreateMentorInput): Promise<MentorReco
       bio: input.bio?.trim() || null,
       linkedinUrl: input.linkedinUrl?.trim() || null,
       email: input.email?.trim() || null,
+      phone: input.phone?.trim() || null,
+      city: input.city?.trim() || null,
       consultationFee: input.consultationFee ?? 0,
       createdAt: now,
       minNoticeHours: input.minNoticeHours ?? null,
@@ -121,6 +123,8 @@ export async function updateMentor(
     if (patch.bio !== undefined) m.bio = patch.bio?.trim() || null;
     if (patch.linkedinUrl !== undefined) m.linkedinUrl = patch.linkedinUrl?.trim() || null;
     if (patch.email !== undefined) m.email = patch.email?.trim() || null;
+    if (patch.phone !== undefined) m.phone = patch.phone?.trim() || null;
+    if (patch.city !== undefined) m.city = patch.city?.trim() || null;
     if (patch.consultationFee !== undefined) m.consultationFee = patch.consultationFee;
     if (patch.minNoticeHours !== undefined) m.minNoticeHours = patch.minNoticeHours;
     if (patch.bufferMinutes !== undefined) m.bufferMinutes = patch.bufferMinutes;
@@ -139,13 +143,20 @@ export async function updateMentor(
  */
 export async function updateMentorMeetingDefaults(
   id: string,
-  patch: { defaultMeetingMode?: 'ONLINE' | 'OFFLINE'; defaultMeetingLink?: string | null },
+  patch: {
+    defaultMeetingMode?: 'ONLINE' | 'OFFLINE';
+    defaultMeetingLink?: string | null;
+    defaultMeetingAddress?: string | null;
+    defaultMeetingMapsLink?: string | null;
+  },
 ): Promise<UpdateMentorResult> {
   return db.update<UpdateMentorResult>((d) => {
     const m = d.mentors.find((x) => x.id === id);
     if (!m) return { ok: false, reason: 'NOT_FOUND' };
     if (patch.defaultMeetingMode !== undefined) m.defaultMeetingMode = patch.defaultMeetingMode;
     if (patch.defaultMeetingLink !== undefined) m.defaultMeetingLink = patch.defaultMeetingLink?.trim() || null;
+    if (patch.defaultMeetingAddress !== undefined) m.defaultMeetingAddress = patch.defaultMeetingAddress?.trim() || null;
+    if (patch.defaultMeetingMapsLink !== undefined) m.defaultMeetingMapsLink = patch.defaultMeetingMapsLink?.trim() || null;
     return { ok: true, mentor: m };
   });
 }

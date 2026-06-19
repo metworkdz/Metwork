@@ -48,6 +48,8 @@ interface FormState {
   bio: string;
   linkedinUrl: string;
   email: string;
+  phone: string;
+  city: string;
   consultationFeeStr: string;
 }
 
@@ -58,6 +60,8 @@ const empty: FormState = {
   bio: '',
   linkedinUrl: '',
   email: '',
+  phone: '',
+  city: '',
   consultationFeeStr: '',
 };
 
@@ -69,6 +73,8 @@ function fromMentor(m: Mentor): FormState {
     bio: m.bio ?? '',
     linkedinUrl: m.linkedinUrl ?? '',
     email: m.email ?? '',
+    phone: m.phone ?? '',
+    city: m.city ?? '',
     consultationFeeStr: m.consultationFee ? String(m.consultationFee) : '',
   };
 }
@@ -133,6 +139,8 @@ export function MentorFormDialog({
         bio: values.bio.trim() || null,
         linkedinUrl: values.linkedinUrl.trim() || null,
         email: values.email.trim() || null,
+        phone: values.phone.trim() || null,
+        city: values.city.trim() || null,
         consultationFee: !isNaN(fee) && fee > 0 ? fee : 0,
       };
       const saved = isEdit
@@ -259,6 +267,26 @@ export function MentorFormDialog({
                 onChange={(e) => update('email', e.target.value)}
                 placeholder={t('emailPlaceholder')}
                 maxLength={200}
+              />
+            </Field>
+
+            <Field label={t('fieldPhone')} hint={t('phoneHint')}>
+              <Input
+                type="tel"
+                value={values.phone}
+                onChange={(e) => update('phone', e.target.value)}
+                placeholder={t('phonePlaceholder')}
+                maxLength={30}
+              />
+            </Field>
+
+            <Field label={t('fieldCity')} hint={t('cityHint')}>
+              <Input
+                type="text"
+                value={values.city}
+                onChange={(e) => update('city', e.target.value)}
+                placeholder={t('cityPlaceholder')}
+                maxLength={120}
               />
             </Field>
 

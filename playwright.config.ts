@@ -62,5 +62,19 @@ export default defineConfig({
         storageState: authStatePath('explorer'),
       },
     },
+    {
+      // Instant-book consultation suite (P1–P7). API-driven specs build their own
+      // role contexts via the saved storage states, so this project needs no
+      // storageState of its own. The UI i18n smoke runs here too. SERIAL by
+      // intent: every spec reconfigures the shared seeded mentor — run with
+      // `--workers=1`. Retries disabled so a flake never re-spends the per-mentor
+      // PIN rate-limit budget.
+      name: 'consultation',
+      testMatch: ['**/api/consultation*.spec.ts', '**/consultation-i18n.spec.ts'],
+      retries: 0,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
   ],
 });

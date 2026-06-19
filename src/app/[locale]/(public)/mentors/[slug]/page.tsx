@@ -8,7 +8,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { ArrowLeft, Linkedin, Clock, Sparkles } from 'lucide-react';
+import { ArrowLeft, Linkedin, Clock, Sparkles, MapPin } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/container';
 import { Badge } from '@/components/ui/badge';
@@ -106,6 +106,12 @@ export default async function MentorProfilePage({ params }: PageProps) {
                 {mentor.fullName}
               </h1>
               <p className="mt-1.5 text-base text-muted-foreground">{mentor.position}</p>
+              {mentor.city && (
+                <p className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <MapPin className="size-4 shrink-0" />
+                  {mentor.city}
+                </p>
+              )}
               {linkedinHref && (
                 <Button asChild variant="outline" size="sm" className="mt-4">
                   <a href={linkedinHref} target="_blank" rel="noopener noreferrer">

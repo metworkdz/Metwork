@@ -327,9 +327,15 @@ describe('meeting-link lifecycle (P5a)', () => {
     });
   }
 
-  it('resolveSettledStatus: READY with a default link/format, else AWAITING_LINK', () => {
+  it('resolveSettledStatus: READY with a default link/address, else AWAITING_LINK', () => {
     expect(resolveSettledStatus({}).status).toBe('AWAITING_LINK');
-    expect(resolveSettledStatus({ defaultMeetingMode: 'OFFLINE' }).status).toBe('READY');
+    // OFFLINE now needs a default address to be deliverable; without one it waits.
+    expect(resolveSettledStatus({ defaultMeetingMode: 'OFFLINE' }).status).toBe('AWAITING_LINK');
+    const offline = resolveSettledStatus({ defaultMeetingMode: 'OFFLINE', defaultMeetingAddress: '12 Rue Didouche, Alger', defaultMeetingMapsLink: 'https://maps.google.com/x' });
+    expect(offline.status).toBe('READY');
+    expect(offline.meetingMode).toBe('OFFLINE');
+    expect(offline.meetingAddress).toBe('12 Rue Didouche, Alger');
+    expect(offline.meetingMapsLink).toBe('https://maps.google.com/x');
     expect(resolveSettledStatus({ defaultMeetingMode: 'ONLINE', defaultMeetingLink: 'https://m.co/x' }).status).toBe('READY');
     expect(resolveSettledStatus({ defaultMeetingMode: 'ONLINE', defaultMeetingLink: '' }).status).toBe('AWAITING_LINK');
   });

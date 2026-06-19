@@ -7,7 +7,7 @@ import { ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { createMentorSchema } from '@/server/mentors/schemas';
 import { createMentor, listMentors } from '@/server/mentors/service';
-import { toMentorDto } from '@/server/mentors/serialize';
+import { toMentorDto, toMentorPrivateDto } from '@/server/mentors/serialize';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -41,5 +41,6 @@ export async function POST(req: NextRequest) {
   }
 
   const mentor = await createMentor(input);
-  return json(toMentorDto(mentor), { status: 201 });
+  // Admin-only response → include the private fields (phone) so the form round-trips.
+  return json(toMentorPrivateDto(mentor), { status: 201 });
 }

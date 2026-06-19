@@ -1219,6 +1219,14 @@ export interface MentorBookingRecord {
   /** Online meeting URL for an instant-book booking. Null for OFFLINE / not-yet-set. */
   meetingLink?: string | null;
   /**
+   * In-person address for an OFFLINE instant-book booking, supplied by the
+   * consultant (or from their default). Delivered to the client in the
+   * "session ready" notification. Null for ONLINE / not-yet-set.
+   */
+  meetingAddress?: string | null;
+  /** Google Maps link for the in-person address. Null for ONLINE / not-yet-set. */
+  meetingMapsLink?: string | null;
+  /**
    * Set when the session is marked COMPLETED — the transition that releases the
    * consultant's held (PENDING) earning to AVAILABLE.
    */
@@ -1307,6 +1315,21 @@ export interface MentorRecord {
   linkedinUrl: string | null;
   /** Contact email for consultation notifications. */
   email?: string | null;
+  /**
+   * Consultant WhatsApp/contact phone (digits, optional leading +). PRIVATE —
+   * the recipient for the "new booking" WhatsApp notification. Never serialized
+   * to the public mentor DTO; only the consultant-self / admin DTO. Set by the
+   * admin (optional) and editable by the consultant (required in the portal).
+   * Absent ⇒ no consultant WhatsApp is sent (email still goes out).
+   */
+  phone?: string | null;
+  /**
+   * Consultant's city — PUBLIC. Shown on the profile so a client knows where an
+   * in-person session would take place before booking. The exact address +
+   * Google Maps link is delivered privately per booking (see meeting address
+   * fields on MentorBookingRecord). Absent ⇒ not set.
+   */
+  city?: string | null;
   /** Optional per-session fee in DZD. 0 or absent = free. */
   consultationFee?: number;
   createdAt: string;
@@ -1333,6 +1356,15 @@ export interface MentorRecord {
   defaultMeetingMode?: 'ONLINE' | 'OFFLINE';
   /** Default online meeting URL (e.g. a permanent room). Null/absent ⇒ none. */
   defaultMeetingLink?: string | null;
+  /**
+   * Default in-person address for OFFLINE consultations (PRIVATE — delivered to
+   * the client only after booking, never on the public profile). When set, an
+   * OFFLINE-default booking lands READY immediately; otherwise it lands
+   * AWAITING_LINK until the consultant supplies an address per booking.
+   */
+  defaultMeetingAddress?: string | null;
+  /** Default Google Maps link for the in-person address. PRIVATE. Null/absent ⇒ none. */
+  defaultMeetingMapsLink?: string | null;
 
   // ─── Booking policy (consultant-configurable) ────────────────────────────
   // All optional & additive: absent ⇒ engine defaults applied by the shared

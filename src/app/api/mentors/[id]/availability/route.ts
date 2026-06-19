@@ -8,14 +8,17 @@
  *   ?date=YYYY-MM-DD                → { slots: DaySlot[], timezone }
  *       The concrete bookable slots for one day.
  *
- * Everything is derived from existing records via the pure helpers in
- * `@/server/mentors/availability` — no writes, no side effects.
+ * Everything is derived from existing records via the shared, pure
+ * `computeBookableSlots` validator in `@/server/mentors/availability` — the SAME
+ * authority the booking write-gate and reschedule use. So the public display
+ * subtracts active slot-locks, the min-notice window and the buffer, and never
+ * advertises a slot the booking gate would then refuse. No writes, no side effects.
  */
 import type { NextRequest } from 'next/server';
 import { db } from '@/server/db/store';
 import { json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
-import { computeAvailableDates, computeDaySlots } from '@/server/mentors/availability';
+import { computeBookableSlots } from '@/server/mentors/availability';
 import { DEFAULT_AVAILABILITY_TIMEZONE } from '@/types/mentor';
 
 export const runtime = 'nodejs';
@@ -79,7 +82,9 @@ export async function GET(
     if (!ISO_DATE_RE.test(dateParam)) {
       return jsonError(422, 'INVALID_DATE', 'date must be in YYYY-MM-DD format');
     }
-    const slots = computeDaySlots(mentor, dateParam, bookings);
+    const slots = computeBookableSlots(mentor, dateParam, dateParam, bookings, {
+      slotLocks: data.mentorSlotLocks ?? [],
+    }).map((s) => ({ start: s.start, end: s.end, available: s.available }));
     return json({ date: dateParam, slots, timezone });
   }
 
@@ -103,6 +108,9 @@ export async function GET(
   if (to > maxTo) to = maxTo;
   if (to < from) to = from;
 
-  const availableDates = computeAvailableDates(mentor, from, to, bookings);
+  const bookable = computeBookableSlots(mentor, from, to, bookings, {
+    slotLocks: data.mentorSlotLocks ?? [],
+  });
+  const availableDates = [...new Set(bookable.filter((s) => s.available).map((s) => s.date))];
   return json({ availableDates, from, to, timezone });
 }

@@ -33,6 +33,8 @@ export async function GET() {
       durationMinutes: b.durationMinutes ?? null,
       meetingMode: b.meetingMode ?? null,
       meetingLink: b.meetingLink ?? null,
+      meetingAddress: b.meetingAddress ?? null,
+      meetingMapsLink: b.meetingMapsLink ?? null,
       amountCharged: b.amountCharged ?? 0,
       completedAt: b.completedAt ?? null,
       // P3: reschedule / cancel surface.

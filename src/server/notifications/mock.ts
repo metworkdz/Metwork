@@ -10,7 +10,7 @@
  * up and crash the request.
  */
 
-import { sendWhatsAppOTP, sendSMSOTP, sendWhatsAppMessage } from './sms';
+import { sendWhatsAppOTP, sendSMSOTP, sendWhatsAppMessage, sendWhatsAppNewBookingTemplate } from './sms';
 import {
   sendResendEmail,
   otpEmailHtml,
@@ -19,6 +19,7 @@ import {
   passwordResetEmailHtml,
   consultantMagicLinkEmailHtml,
   consultationReadyEmailHtml,
+  consultantNewBookingEmailHtml,
   contactNotificationHtml,
   bookingReceiptEmailHtml,
   bookingConfirmedWithQrEmailHtml,
@@ -219,6 +220,8 @@ export function sendConsultationReadyEmail(input: MentorConfirmationInput): void
       mentorName: mentor.fullName,
       meetingMode: booking.meetingMode ?? null,
       meetingLink: booking.meetingLink ?? null,
+      meetingAddress: booking.meetingAddress ?? null,
+      meetingMapsLink: booking.meetingMapsLink ?? null,
       scheduledAt: booking.scheduledAt ?? null,
       durationMinutes: booking.durationMinutes ?? null,
       lang,
@@ -242,7 +245,9 @@ export function sendConsultationReadyEmail(input: MentorConfirmationInput): void
     const linkPart = booking.meetingMode === 'ONLINE' && booking.meetingLink
       ? `\n${isFr ? 'Lien' : 'Link'}: ${booking.meetingLink}`
       : booking.meetingMode === 'OFFLINE'
-      ? `\n${isFr ? 'Format : en présentiel' : 'Format: in person'}`
+      ? `\n${isFr ? 'Format : en présentiel' : 'Format: in person'}` +
+        (booking.meetingAddress ? `\n${isFr ? 'Adresse' : 'Address'}: ${booking.meetingAddress}` : '') +
+        (booking.meetingMapsLink ? `\nGoogle Maps: ${booking.meetingMapsLink}` : '')
       : '';
     const waText =
       (isFr ? '✅ Metwork — Consultation prête\n' : '✅ Metwork — Consultation ready\n') +
@@ -256,6 +261,93 @@ export function sendConsultationReadyEmail(input: MentorConfirmationInput): void
     } else {
       // eslint-disable-next-line no-console
       console.log(`${banner} WHATSAPP (consult-ready) → ${booking.userPhone} :: ${waText.slice(0, 80)}…`);
+    }
+  }
+}
+
+/** Split a booking's schedule into a localized date + time pair (fallback '—'). */
+function bookingDateParts(
+  booking: MentorConfirmationInput['booking'],
+  isFr: boolean,
+): { date: string; time: string } {
+  const loc = isFr ? 'fr-DZ' : 'en-GB';
+  if (booking.scheduledAt) {
+    const d = new Date(booking.scheduledAt);
+    if (!Number.isNaN(d.getTime())) {
+      return {
+        date: d.toLocaleDateString(loc, { year: 'numeric', month: 'long', day: 'numeric' }),
+        time: d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' }),
+      };
+    }
+  }
+  return { date: booking.consultationDate || '—', time: booking.consultationTime || '—' };
+}
+
+/**
+ * Notify the CONSULTANT of a new confirmed booking — email (always, if the
+ * mentor has an address) + WhatsApp (best-effort, via the approved
+ * `consultation_new_booking` template, only when a phone is on file). NO client
+ * PII in either channel. Both fire-and-forget; dedup is the caller's job
+ * (sendBookingNotificationOnce claims `bookingNotifiedAt`). Defaults to French.
+ */
+export function sendConsultantNewBookingEmail(input: {
+  booking: MentorConfirmationInput['booking'];
+  mentor: MentorConfirmationInput['mentor'];
+  portalUrl: string;
+  lang?: 'en' | 'fr';
+}): void {
+  const { booking, mentor, portalUrl } = input;
+  const lang = input.lang ?? 'fr';
+  const isFr = lang === 'fr';
+  const meetingMode = booking.meetingMode ?? null;
+
+  // ── Email (skipped silently when the mentor has no email on file) ──────────
+  if (mentor.email) {
+    sendResendEmail({
+      to: mentor.email,
+      subject: isFr ? 'Nouvelle consultation réservée — Metwork' : 'New consultation booked — Metwork',
+      html: consultantNewBookingEmailHtml({
+        consultantName: mentor.fullName,
+        when: bookingWhen(booking) || null,
+        durationMinutes: booking.durationMinutes ?? null,
+        meetingMode,
+        portalUrl,
+        lang,
+      }),
+    })
+      .then((sent) => {
+        if (!sent)
+          // eslint-disable-next-line no-console
+          console.log(`${banner} CONSULT NEW BOOKING (no Resend) → ${mentor.email} :: booking=${booking.id.slice(0, 8)}`);
+        else
+          // eslint-disable-next-line no-console
+          console.log(`${banner} CONSULT NEW BOOKING sent → ${mentor.email}`);
+      })
+      .catch((err: Error) =>
+        // eslint-disable-next-line no-console
+        console.error(`${banner} Consultant new-booking email failed →`, err.message),
+      );
+  } else {
+    // eslint-disable-next-line no-console
+    console.log(`${banner} CONSULT NEW BOOKING email skipped — no email on mentor record (id=${mentor.id})`);
+  }
+
+  // ── WhatsApp (best-effort UTILITY template) ────────────────────────────────
+  if (mentor.phone) {
+    const { date, time } = bookingDateParts(booking, true /* template is French */);
+    const firstName = mentor.fullName.trim().split(/\s+/)[0] || mentor.fullName;
+    const duration = booking.durationMinutes ? `${booking.durationMinutes} min` : '—';
+    const type = meetingMode === 'ONLINE' ? 'En ligne' : meetingMode === 'OFFLINE' ? 'En présentiel' : '—';
+    // Fills the template's URL button → https://metwork.dz/c/{bookingRef}. Required.
+    const bookingRef = booking.id;
+    if (process.env.SMS_PROVIDER === 'infobip') {
+      sendWhatsAppNewBookingTemplate(mentor.phone, { firstName, date, time, duration, type, bookingRef }).catch((err: Error) =>
+        // eslint-disable-next-line no-console
+        console.error(`${banner} WhatsApp new-booking template failed →`, err.message),
+      );
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(`${banner} WHATSAPP (new-booking) → ${mentor.phone} :: ${firstName} ${date} ${time} ${duration} ${type} ref=${bookingRef}`);
     }
   }
 }
