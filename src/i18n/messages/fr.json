@@ -2967,7 +2967,19 @@
       "deleteDialogTitle": "Supprimer le mentor ?",
       "deleteDialogDescription": "Cela supprimera {name} du carrousel de la page d'accueil. Cette action est irréversible.",
       "cancel": "Annuler",
-      "deleteFailed": "Échec de la suppression"
+      "deleteFailed": "Échec de la suppression",
+      "consultantLink": "Lien consultant",
+      "linkDialogTitle": "Lien de connexion consultant",
+      "linkDialogDescription": "Vous seul voyez ce lien. Partagez-le en privé avec le consultant — à la première utilisation, il définit un code PIN (modifiable à tout moment) pour accéder à son tableau de bord.",
+      "linkActiveSince": "Un lien est déjà actif (généré le {date}). En générer un nouveau invalide l'ancien lien et tous les appareils mémorisés.",
+      "generate": "Générer le lien",
+      "regenerate": "Générer un nouveau lien",
+      "copy": "Copier",
+      "linkHint": "Ce lien n'est affiché qu'une seule fois — copiez-le maintenant.",
+      "revoke": "Révoquer l'accès",
+      "revoked": "Accès révoqué. L'ancien lien ne fonctionne plus.",
+      "linkError": "Impossible de générer le lien. Veuillez réessayer.",
+      "copyFailed": "Copie automatique impossible — sélectionnez le lien et copiez-le manuellement."
     },
     "mentorAvailability": {
       "title": "Disponibilités",

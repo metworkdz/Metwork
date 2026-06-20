@@ -31,6 +31,24 @@ export const mentorsService = {
   },
 
   /**
+   * Admin-only: (re)generate the consultant's durable sign-in token. Returns the
+   * raw token ONCE — embed it in `…/consultant?token=<token>` and share with the
+   * consultant. Rotating invalidates the previous link and all remembered devices.
+   */
+  async generateAccessToken(id: string): Promise<{ mentorId: string; token: string; rotatedAt: string | null }> {
+    return apiClient.post<{ mentorId: string; token: string; rotatedAt: string | null }>(
+      `/admin/mentors/${encodeURIComponent(id)}/access-token`,
+    );
+  },
+
+  /** Admin-only: revoke the consultant's durable token entirely (clears all remembered devices). */
+  async revokeAccessToken(id: string): Promise<{ mentorId: string; revoked: boolean }> {
+    return apiClient.delete<{ mentorId: string; revoked: boolean }>(
+      `/admin/mentors/${encodeURIComponent(id)}/access-token`,
+    );
+  },
+
+  /**
    * Upload an image. Uses native fetch + FormData (the typed apiClient is
    * JSON-only). Returns the public URL the admin can paste into the
    * mentor record.

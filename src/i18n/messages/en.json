@@ -2967,7 +2967,19 @@
       "deleteDialogTitle": "Delete mentor?",
       "deleteDialogDescription": "This will remove {name} from the landing-page carousel. This action can't be undone.",
       "cancel": "Cancel",
-      "deleteFailed": "Delete failed"
+      "deleteFailed": "Delete failed",
+      "consultantLink": "Consultant link",
+      "linkDialogTitle": "Consultant sign-in link",
+      "linkDialogDescription": "Only you can see this link. Share it privately with the consultant — on first use they set a PIN (and can change it anytime) to access their dashboard.",
+      "linkActiveSince": "A link is already active (generated {date}). Generating a new one invalidates the old link and any remembered devices.",
+      "generate": "Generate link",
+      "regenerate": "Generate a new link",
+      "copy": "Copy",
+      "linkHint": "This link is shown only once — copy it now.",
+      "revoke": "Revoke access",
+      "revoked": "Access revoked. The previous link no longer works.",
+      "linkError": "Couldn't generate the link. Please try again.",
+      "copyFailed": "Couldn't copy automatically — select the link and copy it manually."
     },
     "mentorAvailability": {
       "title": "Availability",

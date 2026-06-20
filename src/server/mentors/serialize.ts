@@ -50,5 +50,9 @@ export function toMentorPrivateDto(m: MentorRecord): Mentor {
     phone: m.phone ?? null,
     defaultMeetingAddress: m.defaultMeetingAddress ?? null,
     defaultMeetingMapsLink: m.defaultMeetingMapsLink ?? null,
+    // When the durable sign-in token was last (re)generated — lets the admin UI
+    // show whether a consultant link is already active. The token hash itself is
+    // NEVER serialized; the plaintext is returned only once at generation time.
+    accessTokenRotatedAt: m.accessTokenRotatedAt ?? null,
   };
 }
