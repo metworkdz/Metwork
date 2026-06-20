@@ -21,12 +21,6 @@ import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
 import { resolveTier } from '@/lib/tier-utils';
 import { computeClientDeposit } from '@/lib/deposit';
-import {
-  GuestContactFields,
-  emptyGuestContact,
-  isGuestContactValid,
-  type GuestContact,
-} from '@/components/features/booking/guest-contact-fields';
 import type { Locale } from '@/i18n/config';
 import type { Event as PlatformEvent, PaymentMethod } from '@/types/domain';
 import type { BookingDto, ItemAttendanceStatus } from '@/types/booking';
@@ -70,8 +64,6 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
     : 'CASH';
   const isCash = method === 'CASH';
 
-  // Guests pay by card; collect contact details for the receipt / checkout.
-  const [contact, setContact] = useState<GuestContact>(emptyGuestContact);
   // Stable idempotency key for the registration — reused across retries (a
   // dropped response replays instead of double-charging) and regenerated when
   // the payment method / promo changes (effect below).
@@ -83,8 +75,6 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
   useEffect(() => {
     bookingRef.current = '';
   }, [isCash, method, promoResult?.code]);
-  // Listing is bookable by a guest only if there's a card-chargeable amount.
-  const guestCanCard = !isFree && (onlineOffered || (acceptedMethods.includes('CASH') && hasDeposit));
 
   const [balance, setBalance] = useState<number | null>(null);
   useEffect(() => {
@@ -115,10 +105,11 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
     : 0;
   const afterMembership = event.price - membershipDiscountAmount;
   const finalTotal = promoResult?.finalAmount ?? afterMembership;
-  // Goes through the hosted card checkout: any guest, or a registered CASH
-  // deposit. Registered ONLINE stays on the wallet; registered CASH on a
+  // Hosted card checkout is REGISTERED-ONLY for events (event checkout is
+  // account-only — guests sign in first). It fires for a registered CASH
+  // deposit; registered ONLINE stays on the wallet and registered CASH on a
   // listing WITHOUT a configured deposit keeps the legacy reserve-on-site flow.
-  const useCard = !isFree && (!isAuthed || (isCash && hasDeposit));
+  const useCard = !isFree && isAuthed && isCash && hasDeposit;
   const cashDeposit = isCash && hasDeposit
     ? computeClientDeposit(finalTotal, event.cashDepositType, event.cashDepositValue)
     : null;
@@ -175,15 +166,13 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
     e.preventDefault();
     setError(null);
 
-    // ── Card checkout: guests, or a registered CASH deposit ────────────────
+    // ── Card checkout: registered CASH deposit (events are account-only) ────
     if (useCard) {
-      if (!isAuthed && !isGuestContactValid(contact)) {
-        setError({ code: 'INVALID_CONTACT', message: t('errorContact') });
+      if (!user) {
+        router.push(`/login?next=${encodeURIComponent('/events')}`);
         return;
       }
-      const customer = isAuthed && user
-        ? { fullName: user.fullName, email: user.email, phone: user.phone }
-        : contact;
+      const customer = { fullName: user.fullName, email: user.email, phone: user.phone };
       setSubmitting(true);
       try {
         const res = await bookingService.createCardBooking({
@@ -280,16 +269,6 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
         </div>
       )}
 
-      {/* Guest contact details — only when a guest is booking by card */}
-      {!isAuthed && guestCanCard && (
-        <GuestContactFields
-          value={contact}
-          onChange={setContact}
-          disabled={submitting}
-          idPrefix="event"
-        />
-      )}
-
       <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
         <div className="flex items-center justify-between text-muted-foreground">
           <span>{t('ticket')}</span>
@@ -369,7 +348,7 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
         </div>
       )}
 
-      {!isAuthed && (isFree || !guestCanCard) ? (
+      {!isAuthed ? (
         <Button asChild className="w-full" size="lg">
           <Link href={`/login?next=${encodeURIComponent('/events')}`}>{t('signIn')}</Link>
         </Button>

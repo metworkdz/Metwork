@@ -727,7 +727,10 @@
       "cashCollected": "Cash collected",
       "balanceDue": "Balance due: {amount}",
       "balanceCollected": "Collected: {amount}",
-      "markCashPaid": "Mark cash paid"
+      "markCashPaid": "Mark cash paid",
+      "awaitingPayment": "Awaiting payment",
+      "filterAwaitingPayment": "Awaiting payment",
+      "cancelUnpaid": "Cancel"
     },
     "clients": {
       "editTitle": "Edit client",
@@ -817,6 +820,40 @@
       "actionEdit": "Edit",
       "actionDelete": "Delete",
       "actionAvailability": "Availability"
+    },
+    "paymentLinks": {
+      "addLink": "New link",
+      "createTitle": "New payment link",
+      "createDescription": "Create a link to invoice a client. They pay by card — no Metwork account needed.",
+      "labelService": "Service name",
+      "labelAmount": "Amount (DZD)",
+      "labelDescription": "Description",
+      "descriptionPlaceholder": "Optional details shown to the payer…",
+      "labelHasExpiry": "Set an expiry date",
+      "labelExpiresAt": "Expires at",
+      "create": "Create link",
+      "copy": "Copy link",
+      "copied": "Copied!",
+      "cancel": "Cancel",
+      "confirmCancel": "Cancel the payment link for \"{service}\"? It can no longer be paid.",
+      "colService": "Service",
+      "colAmount": "Amount",
+      "colStatus": "Status",
+      "colActions": "Actions",
+      "count": "{count, plural, =0 {No payment links} one {# payment link} other {# payment links}}",
+      "loading": "Loading…",
+      "emptyTitle": "No payment links yet",
+      "emptyDescription": "Create a link to invoice a client directly — they pay by card without a Metwork account.",
+      "errorAmount": "Enter a valid amount (at least 50 DZD).",
+      "errorExpiry": "Choose an expiry date.",
+      "errorGeneric": "Could not create the link. Please try again.",
+      "errorNetwork": "Network error — please try again.",
+      "status": {
+        "ACTIVE": "Active",
+        "PAID": "Paid",
+        "EXPIRED": "Expired",
+        "CANCELLED": "Cancelled"
+      }
     },
     "services": {
       "addService": "Add service",
@@ -1202,6 +1239,7 @@
     "events": "Events",
     "revenue": "Revenue",
     "invoices": "Invoices",
+    "paymentLinks": "Payment links",
     "users": "Users",
     "incubators": "Incubators",
     "investors": "Investors",
@@ -1252,6 +1290,36 @@
       "rejectedDesc": "This consultation request was declined, so there is nothing to pay.",
       "invalidTitle": "Link not found",
       "invalidDesc": "This payment link is invalid. Please check the link in your email.",
+      "backHome": "Back to home"
+    },
+    "pay": {
+      "awaitingTitle": "Complete your payment",
+      "awaitingDesc": "Enter your details and pay securely by card.",
+      "service": "Service",
+      "description": "Description",
+      "provider": "Billed by",
+      "amount": "Amount",
+      "platformFee": "Platform fee",
+      "amountDue": "Amount due",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "Your full name",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "emailHint": "Your receipt will be sent to this address.",
+      "payNow": "Pay now",
+      "starting": "Starting…",
+      "secureNote": "Secure payment via CIB / Edahabia. Your card details are never stored.",
+      "payError": "We couldn't start the payment. Please try again.",
+      "errorExpired": "This payment link has expired. Please contact the provider.",
+      "paidTitle": "Payment received",
+      "paidDesc": "Thank you — your payment is confirmed. A receipt is on its way to your email.",
+      "amountPaid": "Amount paid",
+      "expiredTitle": "Link expired",
+      "expiredDesc": "This payment link is no longer valid. Please contact the provider for a new one.",
+      "cancelledTitle": "Link cancelled",
+      "cancelledDesc": "This payment link was cancelled, so there is nothing to pay.",
+      "invalidTitle": "Link not found",
+      "invalidDesc": "This payment link is invalid. Please check the link you were given.",
       "backHome": "Back to home"
     },
     "bookingPay": {
@@ -1634,7 +1702,12 @@
           "kindEvent": "Event",
           "paymentCash": "Cash",
           "paymentOnline": "Online",
-          "free": "Free"
+          "free": "Free",
+          "colActions": "Actions",
+          "cancelUnpaid": "Cancel",
+          "cancelling": "Cancelling…",
+          "confirmCancel": "Confirm",
+          "keep": "Keep"
         },
         "members": {
           "title": "Members",
@@ -1846,6 +1919,10 @@
           "spaces": {
             "title": "Spaces",
             "subtitle": "{count} active — coworking floors, private offices, training rooms."
+          },
+          "paymentLinks": {
+            "title": "Payment links",
+            "subtitle": "Invoice clients directly — they pay by card with no Metwork account."
           },
           "programs": {
             "title": "Programs",

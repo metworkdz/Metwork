@@ -32,6 +32,7 @@
  * store, so callers invoke it inside their own db.update critical section.
  */
 import type { BookingRecord, BookingUnit, SpaceRecord } from '@/server/db/store';
+import { bookingHoldsSeat } from './status';
 
 /** Minimal space shape the check needs. */
 export type AvailabilitySpace = Pick<
@@ -125,9 +126,7 @@ function seatHolding(b: BookingRecord, spaceId: string, ignoreBookingId?: string
     b.itemKind === 'SPACE' &&
     b.itemId === spaceId &&
     b.id !== ignoreBookingId &&
-    b.status !== 'CANCELLED' &&
-    b.status !== 'REFUNDED' &&
-    b.status !== 'PENDING_PAYMENT'
+    bookingHoldsSeat(b)
   );
 }
 

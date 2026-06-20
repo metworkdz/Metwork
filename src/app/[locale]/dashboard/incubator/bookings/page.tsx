@@ -15,9 +15,11 @@ import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { BookingStatusBadge } from '@/components/features/booking/booking-status-badge';
 import { StatCard } from '@/components/shared/stat-card';
 import { ManualBookingDialog } from '@/components/features/incubator/manual-booking-dialog';
+import { CancelUnpaidButton } from '@/components/features/incubator/cancel-unpaid-button';
 import { requireRole } from '@/lib/auth-guards';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
+import { bookingCountsAsRevenue } from '@/server/bookings/status';
 import { db } from '@/server/db/store';
 import type { BookingStatus } from '@/types/domain';
 import type { Locale } from '@/i18n/config';
@@ -101,8 +103,8 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
           startsAt:      b.startsAt,
           endsAt:        b.endsAt,
           createdAt:     b.createdAt,
-          customerName:  customer?.fullName ?? 'Unknown',
-          customerEmail: customer?.email    ?? '',
+          customerName:  customer?.fullName ?? b.clientName ?? 'Unknown',
+          customerEmail: customer?.email    ?? b.clientEmail ?? '',
         };
       });
   }
@@ -110,8 +112,11 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
   const upcoming        = rows.filter((r) => r.status === 'CONFIRMED' || r.status === 'PENDING').length;
   const awaitingPayment = rows.filter((r) => r.status === 'PENDING_PAYMENT').length;
   const thisMonth       = new Date().toISOString().slice(0, 7);
+  // This-month payments: only settled/paid bookings count. Awaiting-payment
+  // (PENDING_PAYMENT) intents are excluded via the shared rule — they're surfaced
+  // separately by the "awaiting payment" stat above.
   const grossThisMonth  = rows
-    .filter((r) => r.createdAt?.startsWith(thisMonth) && r.status !== 'CANCELLED' && r.status !== 'REFUNDED')
+    .filter((r) => r.createdAt?.startsWith(thisMonth) && bookingCountsAsRevenue(r))
     .reduce((s, r) => s + r.totalAmount, 0);
 
   const fmtRange = (startsAt: string, endsAt: string) => {
@@ -173,6 +178,7 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                     <TableHead>{t('colPayment')}</TableHead>
                     <TableHead>{t('colStatus')}</TableHead>
                     <TableHead className="text-end">{t('colAmount')}</TableHead>
+                    <TableHead className="w-36 text-end">{t('colActions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -216,6 +222,11 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                             <span className="text-muted-foreground">{t('free')}</span>
                           ) : (
                             formatCurrency(b.totalAmount, lang)
+                          )}
+                        </TableCell>
+                        <TableCell className="text-end">
+                          {b.status === 'PENDING_PAYMENT' && (
+                            <CancelUnpaidButton bookingId={b.id} />
                           )}
                         </TableCell>
                       </TableRow>

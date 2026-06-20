@@ -12,6 +12,7 @@ import type { NextRequest } from 'next/server';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
+import { bookingCountsAsRevenue } from '@/server/bookings/status';
 import { json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -118,7 +119,10 @@ export async function GET(req: NextRequest) {
   const spaceIds   = new Set((data.spaces   ?? []).filter((s) => s.incubatorId === inc.id).map((s) => s.id));
   const programIds = new Set((data.programs ?? []).filter((p) => p.incubatorId === inc.id).map((p) => p.id));
   const eventIds   = new Set((data.events   ?? []).filter((e) => e.incubatorId === inc.id).map((e) => e.id));
+  // Awaiting-payment intents are excluded from analytics, matching every other
+  // financial surface (shared rule).
   const bookingCount = data.bookings.filter((b) => {
+    if (!bookingCountsAsRevenue(b)) return false;
     if (b.itemKind === 'SPACE'   && spaceIds.has(b.itemId))   return true;
     if (b.itemKind === 'PROGRAM' && programIds.has(b.itemId)) return true;
     if (b.itemKind === 'EVENT'   && eventIds.has(b.itemId))   return true;

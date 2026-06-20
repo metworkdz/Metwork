@@ -4,20 +4,19 @@
  * Instant-book, pay-first consultation (feature-flagged via
  * CONSULTATION_INSTANT_BOOK — returns 404 when disabled). No admin approval.
  *
- * Works for both actors:
- *   • Authenticated member → wallet-first (debit now if funded, else SlickPay
- *     top-up of the shortfall, settled on return).
- *   • Guest (no session)   → PENDING_PAYMENT + payToken; paid via the existing
- *     /consultation/pay/[token] hosted-checkout flow.
+ * ACCOUNT-ONLY: consultations require a Metwork account and pay through Metwork
+ * payments — an anonymous request is rejected with 401. The authenticated
+ * member pays wallet-first (debit now if funded, else a SlickPay top-up of the
+ * shortfall, settled on return). Pre-existing guest bookings created before this
+ * gate still settle via the unchanged /consultation/pay/[token] flow.
  *
  * Server is authoritative on price (mentor fee × duration − tier − promo, or a
- * free credit). The client never supplies an amount. Rate-limited for guests.
+ * free credit). The client never supplies an amount.
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { getServerSession } from '@/lib/session';
 import { fromZod, json, jsonError } from '@/server/http/json';
-import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { validatePromoCode, promoAppliesToType } from '@/server/promo-codes/service';
 import { getEffectiveMembershipCode, getUserConsultationQuota } from '@/server/memberships/service';
 import { createInstantBooking, isInstantBookEnabled } from '@/server/consultations/instant-book';
@@ -54,14 +53,6 @@ function tierDiscountFraction(code: string): number {
   return 0;
 }
 
-function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    'unknown'
-  );
-}
-
 function appBaseUrl(req: NextRequest): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? req.nextUrl.origin ?? 'http://localhost:3000';
 }
@@ -89,12 +80,11 @@ export async function POST(
 
   const user = await getServerSession();
 
-  // Guests are rate-limited per IP (members are implicitly throttled by auth).
+  // Consultations are account-only and must pass through Metwork payments —
+  // guest booking is not permitted. The public booking UIs already bounce
+  // anonymous visitors to /login; this is the authoritative server gate.
   if (!user) {
-    const ip = getClientIp(req);
-    if (!(await checkRateLimitDistributed(`instant-book:ip:${ip}`, 8, 60 * 60_000))) {
-      return jsonError(429, 'RATE_LIMITED', 'Too many requests. Please try again later.');
-    }
+    return jsonError(401, 'LOGIN_REQUIRED', 'Please sign in to book a consultation.');
   }
 
   // 24-hour advance guard — only when a concrete slot was chosen.

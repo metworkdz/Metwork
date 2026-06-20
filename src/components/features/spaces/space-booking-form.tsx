@@ -38,19 +38,6 @@ import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
 import { resolveTier } from '@/lib/tier-utils';
 import { computeClientDeposit } from '@/lib/deposit';
-import {
-  GuestContactFields,
-  emptyGuestContact,
-  isGuestContactValid,
-  type GuestContact,
-} from '@/components/features/booking/guest-contact-fields';
-import {
-  BookingCreateAccountFields,
-  emptyBookingAccount,
-  bookingAccountError,
-  type BookingAccountDraft,
-} from '@/components/features/booking/booking-create-account-fields';
-import { authService } from '@/services/auth.service';
 import type { Locale } from '@/i18n/config';
 import type { PaymentMethod, Space } from '@/types/domain';
 import type { BookingDto, BookingUnit } from '@/types/booking';
@@ -206,7 +193,6 @@ export function BookingSuccessPanel({
 export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const locale   = useLocale() as Locale;
   const t        = useTranslations('spaces.booking');
-  const tAcc     = useTranslations('booking.createAccount');
   const router   = useRouter();
   const { user, refresh } = useAuth();
   const isAuthed = user !== null;
@@ -250,14 +236,6 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
     : 'CASH';
   const isCash         = method === 'CASH' && !useNetworkPass;
 
-  // Guests pay by card; collect contact details for the receipt / checkout.
-  const [contact, setContact] = useState<GuestContact>(emptyGuestContact);
-  // "Book & create an account" — guest opts to register before paying.
-  const [createAccount, setCreateAccount] = useState(false);
-  const [account, setAccount] = useState<BookingAccountDraft>(emptyBookingAccount);
-  // Stable idempotency key for the signup-intent booking — reused across
-  // retries so a double-submit can't create two bookings / pending users.
-  const accountRef = useRef<string | null>(null);
   // Stable idempotency key for the booking itself — reused across retries so a
   // dropped response / network retry replays instead of double-booking. It is
   // regenerated whenever the booking parameters change (effect further below).
@@ -266,8 +244,6 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
     if (!bookingRef.current) bookingRef.current = crypto.randomUUID();
     return bookingRef.current;
   }, []);
-  // Listing is bookable by a guest only if there's a card-chargeable amount.
-  const guestCanCard = onlineOffered || (acceptedMethods.includes('CASH') && hasDeposit);
 
   // Network Pass eligibility
   const userTier = user ? resolveTier(user) : 'EXPLORER';
@@ -352,11 +328,12 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const membershipDiscountAmount   = membershipDiscountFraction > 0 ? afterDuration - Math.round(afterDuration * (1 - membershipDiscountFraction)) : 0;
   const afterMembershipDiscount    = afterDuration - membershipDiscountAmount;
   const finalTotal = promoResult?.finalAmount ?? afterMembershipDiscount;
-  // Goes through the hosted card checkout: any guest, or a registered CASH
-  // deposit. Registered ONLINE stays on the wallet; the Network Pass and a
+  // Hosted card checkout is REGISTERED-ONLY for spaces (space booking is
+  // account-only — guests sign in first). It fires for a registered CASH
+  // deposit; registered ONLINE stays on the wallet, and the Network Pass and a
   // registered CASH booking on a listing WITHOUT a configured deposit keep
   // their existing (wallet / legacy reserve-on-site) flows.
-  const useCard = !useNetworkPass && (!isAuthed || (isCash && hasDeposit));
+  const useCard = !useNetworkPass && isAuthed && isCash && hasDeposit;
   const cashDeposit = isCash && hasDeposit && validRange && finalTotal > 0
     ? computeClientDeposit(finalTotal, space.cashDepositType, space.cashDepositValue)
     : null;
@@ -450,62 +427,6 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
     return { code: 'UNKNOWN', message: t('errorGeneric') };
   }
 
-  function mapAccountError(err: unknown): { code: string; message: string } {
-    if (err instanceof ApiClientError) {
-      if (err.code === 'EMAIL_EXISTS') return { code: err.code, message: tAcc('errorEmailExists') };
-      if (err.code === 'PHONE_EXISTS') return { code: err.code, message: tAcc('errorPhoneExists') };
-      // Booking-target failures (unit/hours/overlap/capacity…) reuse the card map.
-      const mapped = mapCardError(err);
-      if (mapped.code !== 'UNKNOWN') return mapped;
-    }
-    return { code: 'ACCOUNT_FAILED', message: tAcc('errorGeneric') };
-  }
-
-  // "Book & create an account": register a pending account tied to THIS booking,
-  // then go to the OTP step. The server creates the (guest) card intent and
-  // re-prices it; nothing about the amount travels through the redirect.
-  async function onSubmitCreateAccount() {
-    if (!isGuestContactValid(contact)) {
-      setError({ code: 'INVALID_CONTACT', message: t('errorContact') });
-      return;
-    }
-    const accErr = bookingAccountError(account, tAcc);
-    if (accErr) {
-      setError({ code: 'INVALID_ACCOUNT', message: accErr });
-      return;
-    }
-    if (!accountRef.current) accountRef.current = crypto.randomUUID();
-    setSubmitting(true);
-    try {
-      const res = await authService.signupPending({
-        fullName: contact.fullName,
-        email: contact.email,
-        phone: contact.phone,
-        password: account.password,
-        confirmPassword: account.confirmPassword,
-        city: account.city,
-        locale,
-        intent: {
-          kind: 'CARD',
-          target: { itemKind: 'SPACE', spaceId: space.id, unit: effectiveUnit, startsAt: startIso, endsAt: endIso },
-          paymentMode: isCash ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
-          promoCode: promoResult?.code,
-          clientReference: accountRef.current,
-        },
-      });
-      const params = new URLSearchParams({
-        userId: res.userId,
-        email: res.maskedEmail,
-        phone: res.maskedPhone,
-      });
-      router.push(`/verify-otp?${params.toString()}`);
-      return;
-    } catch (err) {
-      setError(mapAccountError(err));
-      setSubmitting(false);
-    }
-  }
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -514,21 +435,16 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
       return;
     }
 
-    // ── Guest opted to register first ──────────────────────────────────────
-    if (!isAuthed && createAccount) {
-      await onSubmitCreateAccount();
+    // Space booking is account-only — guests sign in first (the CTA already
+    // shows "Sign in"; this guards a stray Enter-key submit too).
+    if (!user) {
+      router.push(`/login?next=${encodeURIComponent('/spaces')}`);
       return;
     }
 
-    // ── Card checkout: guests, or a registered CASH deposit ────────────────
+    // ── Card checkout: registered CASH deposit (spaces are account-only) ────
     if (useCard) {
-      if (!isAuthed && !isGuestContactValid(contact)) {
-        setError({ code: 'INVALID_CONTACT', message: t('errorContact') });
-        return;
-      }
-      const customer = isAuthed && user
-        ? { fullName: user.fullName, email: user.email, phone: user.phone }
-        : contact;
+      const customer = { fullName: user.fullName, email: user.email, phone: user.phone };
       setSubmitting(true);
       try {
         const res = await bookingService.createCardBooking({
@@ -550,10 +466,6 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
     }
 
     // ── Registered wallet / network pass / legacy cash reserve ─────────────
-    if (!isAuthed) {
-      router.push(`/login?next=${encodeURIComponent('/spaces')}`);
-      return;
-    }
     setSubmitting(true);
     try {
       const res = await bookingService.createSpaceBooking({
@@ -740,26 +652,6 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         </div>
       )}
 
-      {/* Guest contact details — only when a guest is booking by card */}
-      {!isAuthed && guestCanCard && (
-        <GuestContactFields
-          value={contact}
-          onChange={setContact}
-          disabled={submitting}
-          idPrefix="space"
-        />
-      )}
-
-      {/* Account fields — only when the guest chose "create an account" */}
-      {!isAuthed && guestCanCard && createAccount && (
-        <BookingCreateAccountFields
-          value={account}
-          onChange={setAccount}
-          disabled={submitting}
-          idPrefix="space"
-        />
-      )}
-
       {/* ── Network Pass option (Builder / Founder only, partner spaces) ── */}
       {canUsePass && (
         <div>
@@ -921,41 +813,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         </div>
       )}
 
-      {!isAuthed && guestCanCard ? (
-        <div className="space-y-2">
-          {!createAccount ? (
-            <>
-              <Button type="submit" size="lg" className="w-full" loading={submitting} disabled={!validRange}>
-                {submitting ? t('submitting') : tAcc('guestButton')}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="w-full"
-                disabled={!validRange || submitting}
-                onClick={() => { setError(null); setCreateAccount(true); }}
-              >
-                {tAcc('createButton')}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button type="submit" size="lg" className="w-full" loading={submitting} disabled={!validRange}>
-                {submitting ? tAcc('submitting') : tAcc('submit')}
-              </Button>
-              <button
-                type="button"
-                onClick={() => { setError(null); setCreateAccount(false); }}
-                disabled={submitting}
-                className="block w-full text-center text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-              >
-                {tAcc('guestInstead')}
-              </button>
-            </>
-          )}
-        </div>
-      ) : !isAuthed && !guestCanCard ? (
+      {!isAuthed ? (
         <Button asChild className="w-full" size="lg">
           <Link href={`/login?next=${encodeURIComponent('/spaces')}`}>{t('signIn')}</Link>
         </Button>

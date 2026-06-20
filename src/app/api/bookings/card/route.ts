@@ -25,6 +25,7 @@ import { readSession } from '@/server/auth/session';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { createCardBookingSchema } from '@/server/bookings/schemas';
 import { createCardBookingIntent } from '@/server/bookings/card-payment';
+import { guestCheckoutAllowedFor } from '@/server/bookings/status';
 import {
   getSpaceDiscountForUser,
   getEventDiscountForUser,
@@ -64,6 +65,13 @@ export async function POST(req: NextRequest) {
   // guest → 0. We never trust a userId or discount from the request body.
   const ctx = await readSession();
   const userId = ctx?.user.id ?? null;
+
+  // Guest checkout is allowed ONLY for programs. Spaces, events and
+  // consultations require a Metwork account and must pass through Metwork
+  // payments — bounce guests to login (the UI returns them to the booking).
+  if (!userId && !guestCheckoutAllowedFor(input.target.itemKind)) {
+    return jsonError(401, 'LOGIN_REQUIRED', 'Please sign in to complete this booking.');
+  }
   let membershipDiscount = 0;
   if (userId) {
     if (input.target.itemKind === 'SPACE') {

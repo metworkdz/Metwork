@@ -269,6 +269,64 @@ export interface TopUpIntentRecord {
   updatedAt: string;
 }
 
+/* ─────────────────────────── Payment links ─────────────────────────── */
+
+/**
+ * Direct payment link — an incubator invoices a client (NO Metwork account
+ * required for the payer) by sharing a public `/pay/<slug>` URL. Single-use:
+ * once PAID the link can never be paid again.
+ *
+ * Money model mirrors an ONLINE_FULL card booking through the central commission
+ * engine (src/server/payments/commission.ts). The payer is charged
+ * `amount + payerFee` (default 2 % on top, frozen at payment init). At settlement
+ * the incubator wallet moves +amount (PAYOUT) − receiverCommission (COMMISSION).
+ * Incubators on an ACTIVE subscription (effective FLAT plan) pay NO receiver
+ * commission, but their payers still pay the payer fee. Net credited = amount −
+ * receiverCommission, always ≥ 0.
+ *
+ * Additive & backward-compatible: every field beyond the core set is optional
+ * with a safe default, and the collection back-fills to [] via the read-merge.
+ */
+export type PaymentLinkStatus = 'ACTIVE' | 'PAID' | 'EXPIRED' | 'CANCELLED';
+
+export interface PaymentLinkRecord {
+  id: string;
+  /** Owning incubator (IncubatorRecord.id). */
+  incubatorId: string;
+  /** What the client is paying for — shown on the public page + receipt. */
+  serviceName: string;
+  /** Integer DZD — the base amount the incubator invoices (fee added on top). */
+  amount: number;
+  description?: string | null;
+  /** Unguessable, url-safe public identifier used in /pay/<slug>. */
+  slug: string;
+  status: PaymentLinkStatus;
+  /** When true an `expiresAt` is set and enforced. */
+  hasExpiry: boolean;
+  expiresAt?: string | null;
+  /** Captured on the public page when the payer initiates payment. */
+  payerName?: string | null;
+  payerEmail?: string | null;
+  /** Provider transfer id (SlickPay) — set at payment init, polled to verify. */
+  providerRef?: string | null;
+  /** Payer-side fee frozen at payment init (default 2 % of amount). */
+  payerFeeAmount?: number | null;
+  payerFeeRate?: number | null;
+  /** GROSS charged to the payer online = amount + payerFeeAmount. */
+  grossChargedToPayer?: number | null;
+  /** Receiver commission debited from the incubator wallet at settlement. */
+  commissionAmount?: number | null;
+  commissionRate?: number | null;
+  /** Locale of the payer's pay page — drives receipt language + return URL. */
+  locale?: string | null;
+  /** Dedup stamps — claimed inside the settlement mutation. */
+  paidReceiptSentAt?: string | null;
+  incubatorNotifiedAt?: string | null;
+  createdAt: string;
+  paidAt?: string | null;
+  updatedAt: string;
+}
+
 /* ─────────────────────────── Bookings ─────────────────────────── */
 
 export type BookingStatus = 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'REFUNDED';
@@ -1931,6 +1989,8 @@ interface DbShape {
   transactions: TransactionRecord[];
   topUpIntents: TopUpIntentRecord[];
   bookings: BookingRecord[];
+  /** Incubator-created direct payment links (no payer account required). */
+  paymentLinks: PaymentLinkRecord[];
   contactSubmissions: ContactSubmissionRecord[];
   startupListings: StartupListingRecord[];
   mentors: MentorRecord[];
@@ -2034,6 +2094,7 @@ const empty: DbShape = {
   transactions: [],
   topUpIntents: [],
   bookings: [],
+  paymentLinks: [],
   contactSubmissions: [],
   startupListings: [],
   mentors: [],

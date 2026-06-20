@@ -24,6 +24,7 @@
  * record id is used as its own key (counts as a distinct seat).
  */
 import type { BookingRecord, RegistrationRecord } from '@/server/db/store';
+import { bookingHoldsSeat } from '@/server/bookings/status';
 
 type EntityKind = 'PROGRAM' | 'EVENT';
 
@@ -58,8 +59,9 @@ export function countAttendance(
 
   for (const b of data.bookings ?? []) {
     if (b.itemKind !== kind || b.itemId !== id) continue;
-    // Unpaid card-deposit intents hold no seat until verified.
-    if (b.status === 'CANCELLED' || b.status === 'REFUNDED' || b.status === 'PENDING_PAYMENT') continue;
+    // CANCELLED / REFUNDED are gone; PENDING_PAYMENT (unpaid card/cash intents)
+    // hold no seat until settled — see bookingHoldsSeat (single source of truth).
+    if (!bookingHoldsSeat(b)) continue;
     seats.add(attendeeKey(b.userId, b.clientEmail, b.id));
   }
 

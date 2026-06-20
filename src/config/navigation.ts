@@ -28,6 +28,7 @@ import {
   Network,
   IdCard,
   MapPin,
+  Link2,
 } from 'lucide-react';
 import type { UserRole } from '@/types/auth';
 
@@ -146,6 +147,7 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.bookings',  href: '/dashboard/incubator/bookings',     icon: CalendarIcon },
     { labelKey: 'dashboard.revenue',   href: '/dashboard/incubator/revenue',      icon: TrendingUp },
     { labelKey: 'dashboard.invoices',  href: '/dashboard/incubator/invoices',     icon: FileText },
+    { labelKey: 'dashboard.paymentLinks', href: '/dashboard/incubator/payment-links', icon: Link2 },
     { labelKey: 'dashboard.wallet',    href: '/dashboard/incubator/wallet',       icon: Wallet },
     { labelKey: 'dashboard.settings',  href: '/dashboard/incubator/settings',     icon: Settings },
   ],

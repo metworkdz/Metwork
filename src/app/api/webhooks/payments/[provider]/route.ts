@@ -15,6 +15,7 @@ import { ProviderError } from '@/server/payments/errors';
 import { confirmTopUp } from '@/server/wallet/service';
 import { settleCardBookingFromWebhook } from '@/server/bookings/card-payment';
 import { settleGuestConsultationFromWebhook } from '@/server/consultations/guest-payment';
+import { settlePaymentLinkFromWebhook } from '@/server/payments/payment-links';
 import { json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -79,9 +80,15 @@ export async function POST(
     return json({ kind: 'guest_consultation', id: event.topUpId, result: guest });
   }
 
+  // 3. Direct payment link (id = PaymentLinkRecord.id).
+  const payLink = await settlePaymentLinkFromWebhook(event.topUpId, event.providerRef, event.status);
+  if (payLink === 'SETTLED' || payLink === 'ALREADY') {
+    return json({ kind: 'payment_link', id: event.topUpId, result: payLink });
+  }
+
   // A FAILED event for a booking (status IGNORED) is acknowledged so the
   // provider stops retrying; only a genuinely unknown id is a 404.
-  if (card === 'IGNORED' || guest === 'IGNORED') {
+  if (card === 'IGNORED' || guest === 'IGNORED' || payLink === 'IGNORED') {
     return json({ kind: 'ignored', id: event.topUpId });
   }
 

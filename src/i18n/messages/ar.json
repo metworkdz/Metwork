@@ -727,7 +727,10 @@
       "cashCollected": "تم تحصيل النقد",
       "balanceDue": "الرصيد المستحق: {amount}",
       "balanceCollected": "تم التحصيل: {amount}",
-      "markCashPaid": "تأكيد الدفع نقدًا"
+      "markCashPaid": "تأكيد الدفع نقدًا",
+      "awaitingPayment": "بانتظار الدفع",
+      "filterAwaitingPayment": "بانتظار الدفع",
+      "cancelUnpaid": "إلغاء"
     },
     "clients": {
       "editTitle": "تعديل العميل",
@@ -817,6 +820,40 @@
       "actionEdit": "تعديل",
       "actionDelete": "حذف",
       "actionAvailability": "التوفّر"
+    },
+    "paymentLinks": {
+      "addLink": "رابط جديد",
+      "createTitle": "رابط دفع جديد",
+      "createDescription": "أنشئ رابطًا لتحصيل المبلغ من عميل. يدفع بالبطاقة — دون الحاجة إلى حساب Metwork.",
+      "labelService": "اسم الخدمة",
+      "labelAmount": "المبلغ (دج)",
+      "labelDescription": "الوصف",
+      "descriptionPlaceholder": "تفاصيل اختيارية تظهر للدافع…",
+      "labelHasExpiry": "تحديد تاريخ انتهاء",
+      "labelExpiresAt": "ينتهي في",
+      "create": "إنشاء الرابط",
+      "copy": "نسخ الرابط",
+      "copied": "تم النسخ!",
+      "cancel": "إلغاء",
+      "confirmCancel": "إلغاء رابط الدفع الخاص بـ «{service}»؟ لن يكون من الممكن دفعه بعد ذلك.",
+      "colService": "الخدمة",
+      "colAmount": "المبلغ",
+      "colStatus": "الحالة",
+      "colActions": "الإجراءات",
+      "count": "{count, plural, =0 {لا توجد روابط دفع} one {رابط دفع واحد} other {# روابط دفع}}",
+      "loading": "جارٍ التحميل…",
+      "emptyTitle": "لا توجد روابط دفع بعد",
+      "emptyDescription": "أنشئ رابطًا لتحصيل المبلغ من عميل مباشرةً — يدفع بالبطاقة دون حساب Metwork.",
+      "errorAmount": "أدخل مبلغًا صالحًا (50 دج على الأقل).",
+      "errorExpiry": "اختر تاريخ انتهاء.",
+      "errorGeneric": "تعذّر إنشاء الرابط. يرجى المحاولة مرة أخرى.",
+      "errorNetwork": "خطأ في الشبكة — يرجى المحاولة مرة أخرى.",
+      "status": {
+        "ACTIVE": "نشط",
+        "PAID": "مدفوع",
+        "EXPIRED": "منتهٍ",
+        "CANCELLED": "ملغى"
+      }
     },
     "services": {
       "addService": "إضافة خدمة",
@@ -1202,6 +1239,7 @@
     "events": "الفعاليات",
     "revenue": "الإيرادات",
     "invoices": "الفواتير",
+    "paymentLinks": "روابط الدفع",
     "users": "المستخدمون",
     "incubators": "الحاضنات",
     "investors": "المستثمرون",
@@ -1252,6 +1290,36 @@
       "rejectedDesc": "تم رفض طلب الاستشارة هذا، لذا لا يوجد ما يُدفع.",
       "invalidTitle": "الرابط غير موجود",
       "invalidDesc": "رابط الدفع هذا غير صالح. يرجى التحقق من الرابط في بريدك الإلكتروني.",
+      "backHome": "العودة إلى الرئيسية"
+    },
+    "pay": {
+      "awaitingTitle": "أكمل عملية الدفع",
+      "awaitingDesc": "أدخل بياناتك وادفع بأمان بالبطاقة.",
+      "service": "الخدمة",
+      "description": "الوصف",
+      "provider": "الفاتورة من",
+      "amount": "المبلغ",
+      "platformFee": "رسوم المنصة",
+      "amountDue": "المبلغ المستحق",
+      "fullName": "الاسم الكامل",
+      "fullNamePlaceholder": "اسمك الكامل",
+      "email": "البريد الإلكتروني",
+      "emailPlaceholder": "you@example.com",
+      "emailHint": "سيُرسل إيصالك إلى هذا العنوان.",
+      "payNow": "ادفع الآن",
+      "starting": "جارٍ البدء…",
+      "secureNote": "دفع آمن عبر CIB / الذهبية. لا يتم حفظ بيانات بطاقتك أبدًا.",
+      "payError": "تعذّر بدء عملية الدفع. يرجى المحاولة مرة أخرى.",
+      "errorExpired": "انتهت صلاحية رابط الدفع هذا. يرجى التواصل مع مزوّد الخدمة.",
+      "paidTitle": "تم استلام الدفعة",
+      "paidDesc": "شكرًا لك — تم تأكيد دفعتك. الإيصال في طريقه إلى بريدك الإلكتروني.",
+      "amountPaid": "المبلغ المدفوع",
+      "expiredTitle": "انتهت صلاحية الرابط",
+      "expiredDesc": "لم يعد رابط الدفع هذا صالحًا. يرجى التواصل مع مزوّد الخدمة للحصول على رابط جديد.",
+      "cancelledTitle": "تم إلغاء الرابط",
+      "cancelledDesc": "تم إلغاء رابط الدفع هذا، لذا لا يوجد ما يُدفع.",
+      "invalidTitle": "الرابط غير موجود",
+      "invalidDesc": "رابط الدفع هذا غير صالح. يرجى التحقق من الرابط الذي تلقيته.",
       "backHome": "العودة إلى الرئيسية"
     },
     "bookingPay": {
@@ -1634,7 +1702,12 @@
           "kindEvent": "فعالية",
           "paymentCash": "نقداً",
           "paymentOnline": "إلكتروني",
-          "free": "مجاني"
+          "free": "مجاني",
+          "colActions": "إجراءات",
+          "cancelUnpaid": "إلغاء",
+          "cancelling": "جارٍ الإلغاء…",
+          "confirmCancel": "تأكيد",
+          "keep": "إبقاء"
         },
         "members": {
           "title": "الأعضاء",
@@ -1846,6 +1919,10 @@
           "spaces": {
             "title": "الفضاءات",
             "subtitle": "{count} نشط — فضاءات عمل مشترك، مكاتب خاصة، قاعات تدريب."
+          },
+          "paymentLinks": {
+            "title": "روابط الدفع",
+            "subtitle": "حصّل المبالغ من عملائك مباشرةً — يدفعون بالبطاقة دون حساب Metwork."
           },
           "programs": {
             "title": "البرامج",

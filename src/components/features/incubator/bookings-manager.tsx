@@ -18,6 +18,7 @@ import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { StatCard } from '@/components/shared/stat-card';
 import { ReceiptModal } from './receipt-modal';
 import { ManualBookingForm } from './manual-booking-form';
+import { bookingCountsAsRevenue } from '@/server/bookings/status';
 import type { BookingRecord, IncubatorRecord, IncubatorSpaceRecord, IncubatorProgramRecord } from '@/server/db/store';
 
 type BookingWithCustomer = BookingRecord & {
@@ -28,6 +29,7 @@ type BookingWithCustomer = BookingRecord & {
 
 const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'danger' | 'default' | 'outline'> = {
   PENDING: 'warning',
+  PENDING_PAYMENT: 'warning',
   CONFIRMED: 'success',
   CANCELLED: 'danger',
   COMPLETED: 'default',
@@ -48,7 +50,7 @@ interface Props {
 }
 
 type SourceFilter = 'ALL' | 'online' | 'offline';
-type StatusFilter = 'ALL' | 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+type StatusFilter = 'ALL' | 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
 
 export function BookingsManager({ initial, incubator, spaces, programs }: Props) {
   const t = useTranslations('incubator.bookings');
@@ -70,6 +72,21 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
       if (!res.ok) return;
       const data = await res.json() as { booking: BookingWithCustomer };
       setBookings((prev) => prev.map((b) => b.id === id ? data.booking : b));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function cancelUnpaid(id: string) {
+    setBusy(id);
+    try {
+      const res = await fetch(`/api/incubator/bookings/${id}/cancel-unpaid`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) return;
+      const data = await res.json() as { booking: BookingRecord };
+      setBookings((prev) => prev.map((b) => b.id === id ? { ...b, ...data.booking } : b));
     } finally {
       setBusy(null);
     }
@@ -107,8 +124,9 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
 
   const pending = bookings.filter((b) => b.status === 'PENDING').length;
   const confirmed = bookings.filter((b) => b.status === 'CONFIRMED').length;
+  // Only settled/paid bookings count toward revenue (awaiting-payment excluded).
   const gross = bookings
-    .filter((b) => b.status !== 'CANCELLED' && b.status !== 'REFUNDED')
+    .filter((b) => bookingCountsAsRevenue(b))
     .reduce((s, b) => s + b.totalAmount, 0);
 
   return (
@@ -139,6 +157,7 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
           <SelectContent>
             <SelectItem value="ALL">{t('filterAllStatuses')}</SelectItem>
             <SelectItem value="PENDING">{t('filterPending')}</SelectItem>
+            <SelectItem value="PENDING_PAYMENT">{t('filterAwaitingPayment')}</SelectItem>
             <SelectItem value="CONFIRMED">{t('filterConfirmed')}</SelectItem>
             <SelectItem value="CANCELLED">{t('filterCancelled')}</SelectItem>
             <SelectItem value="COMPLETED">{t('filterCompleted')}</SelectItem>
@@ -214,7 +233,9 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                         </TableCell>
                         <TableCell>
                           <Badge variant={STATUS_VARIANT[b.status] ?? 'outline'}>
-                            {b.status.charAt(0) + b.status.slice(1).toLowerCase()}
+                            {b.status === 'PENDING_PAYMENT'
+                              ? t('awaitingPayment')
+                              : b.status.charAt(0) + b.status.slice(1).toLowerCase()}
                           </Badge>
                           {awaitingCash && (
                             <Badge variant="warning" className="mt-1 flex w-fit items-center gap-1 text-xs">
@@ -265,6 +286,14 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                                 disabled={busy === b.id}
                                 onClick={() => markCashPaid(b.id)}>
                                 <Banknote className="size-3.5" /> {t('markCashPaid')}
+                              </Button>
+                            )}
+                            {b.status === 'PENDING_PAYMENT' && (
+                              <Button size="sm" variant="ghost" className="h-8 gap-1 text-xs text-destructive hover:text-destructive"
+                                title={t('cancelUnpaid')}
+                                disabled={busy === b.id}
+                                onClick={() => cancelUnpaid(b.id)}>
+                                <XCircle className="size-3.5" /> {t('cancelUnpaid')}
                               </Button>
                             )}
                             {b.status !== 'PENDING' && b.status !== 'CANCELLED' && (

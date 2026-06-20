@@ -9,6 +9,7 @@ import { db, defaultPlatformConfig } from '@/server/db/store';
 import { json, jsonError } from '@/server/http/json';
 import { resolveCommissionRates } from '@/server/payments/commission';
 import { getEffectiveSubscriptionCode } from '@/server/incubator/service';
+import { bookingCountsAsRevenue } from '@/server/bookings/status';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,10 +44,12 @@ export async function GET() {
     (data.events ?? []).filter((e) => e.incubatorId === incubator.id).map((e) => e.id),
   );
 
+  // Only settled/paid bookings count toward revenue. Awaiting-payment
+  // (PENDING_PAYMENT) intents hold no seat and no money — excluded via the
+  // shared rule so gross/net here can never drift from seat-hold / analytics.
   const relevant = data.bookings.filter(
     (b) =>
-      b.status !== 'CANCELLED' &&
-      b.status !== 'REFUNDED' &&
+      bookingCountsAsRevenue(b) &&
       (
         (b.itemKind === 'SPACE'   && ownedSpaceIds.has(b.itemId))   ||
         (b.itemKind === 'PROGRAM' && ownedProgramIds.has(b.itemId)) ||

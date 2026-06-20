@@ -20,7 +20,21 @@ import type {
   WebhookEvent,
 } from './provider';
 
-const DEFAULT_API_BASE = 'https://prod.slick-pay.com/api/v2';
+// Real SlickPay v2 hosts: sandbox = devapi.slick-pay.com, production =
+// prodapi.slick-pay.com. (The old `prod.slick-pay.com` host does not resolve.)
+// IMPORTANT: the public key and the host must match — a prod key against
+// devapi (or vice-versa) returns `401 Unauthenticated` and the top-up never
+// produces a checkout URL. Override per-environment via SLICKPAY_BASE_URL.
+const DEFAULT_API_BASE = 'https://prodapi.slick-pay.com/api/v2';
+
+/**
+ * Dev-only request/response tracing. Guarded so it never logs in production.
+ * The Authorization header is never passed in, so the public key can't leak.
+ */
+const SLICKPAY_DEBUG = process.env.NODE_ENV !== 'production';
+function devLog(...args: unknown[]): void {
+  if (SLICKPAY_DEBUG) console.info('[slickpay]', ...args);
+}
 
 interface SlickPayConfig {
   publicKey: string;
@@ -86,23 +100,27 @@ export const slickpayProvider: PaymentProvider = {
     const base = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'http://localhost:3000';
     const locale = localeFromReturnUrl(input.returnUrl);
 
+    const endpoint = `${cfg.apiBase}/users/transfers`;
+    const requestBody = {
+      amount: input.amount,
+      url: input.returnUrl,
+      cancel_url: `${base}/${locale}/payment/cancel`,
+      // Echo our internal id back on the webhook so settlement can map the
+      // callback to the originating top-up intent / booking. Without this the
+      // signed webhook has no `external_id` and can never settle (the return-
+      // page poll was the only working path). Sent under several key names
+      // for resilience across SlickPay payload variants.
+      external_id: input.topUpId,
+      metadata: { external_id: input.topUpId },
+    };
+    devLog(`POST ${endpoint}`, requestBody);
+
     let res: Response;
     try {
-      res = await fetch(`${cfg.apiBase}/users/transfers`, {
+      res = await fetch(endpoint, {
         method: 'POST',
         headers: authHeaders(cfg),
-        body: JSON.stringify({
-          amount: input.amount,
-          url: input.returnUrl,
-          cancel_url: `${base}/${locale}/payment/cancel`,
-          // Echo our internal id back on the webhook so settlement can map the
-          // callback to the originating top-up intent / booking. Without this the
-          // signed webhook has no `external_id` and can never settle (the return-
-          // page poll was the only working path). Sent under several key names
-          // for resilience across SlickPay payload variants.
-          external_id: input.topUpId,
-          metadata: { external_id: input.topUpId },
-        }),
+        body: JSON.stringify(requestBody),
       });
     } catch (err) {
       throw new ProviderRequestError(
@@ -111,9 +129,14 @@ export const slickpayProvider: PaymentProvider = {
       );
     }
 
+    // Read the raw text first so we can log the exact response even when it's
+    // not valid JSON (e.g. an HTML error page or a bare `401 Unauthenticated`).
+    const rawText = await res.text();
+    devLog(`POST ${endpoint} -> HTTP ${res.status}`, rawText);
+
     let body: Record<string, unknown>;
     try {
-      body = (await res.json()) as Record<string, unknown>;
+      body = JSON.parse(rawText) as Record<string, unknown>;
     } catch {
       throw new ProviderRequestError(`SlickPay returned non-JSON (${res.status})`, res.status);
     }
@@ -205,12 +228,12 @@ export async function getSlickPayTransferStatus(
   const cfg = readConfig();
   if (!cfg) throw new ProviderNotConfiguredError('slickpay');
 
+  const endpoint = `${cfg.apiBase}/users/transfers/${encodeURIComponent(transferId)}`;
+  devLog(`GET ${endpoint}`);
+
   let res: Response;
   try {
-    res = await fetch(
-      `${cfg.apiBase}/users/transfers/${encodeURIComponent(transferId)}`,
-      { headers: authHeaders(cfg) },
-    );
+    res = await fetch(endpoint, { headers: authHeaders(cfg) });
   } catch (err) {
     throw new ProviderRequestError(
       `SlickPay network error: ${err instanceof Error ? err.message : String(err)}`,
@@ -218,11 +241,20 @@ export async function getSlickPayTransferStatus(
     );
   }
 
+  const rawText = await res.text();
+  devLog(`GET ${endpoint} -> HTTP ${res.status}`, rawText);
+
   if (!res.ok) {
     throw new ProviderRequestError(`SlickPay status check failed (${res.status})`, res.status);
   }
 
-  const body = (await res.json()) as Record<string, unknown>;
+  let body: Record<string, unknown>;
+  try {
+    body = JSON.parse(rawText) as Record<string, unknown>;
+  } catch {
+    throw new ProviderRequestError(`SlickPay returned non-JSON (${res.status})`, res.status);
+  }
+  // `completed` (0|1) sits at the top level of the status response.
   const completed = Number(body.completed ?? 0) === 1 ? 1 : 0;
   return { completed: completed as 0 | 1 };
 }

@@ -10,7 +10,7 @@
  * Language: 'en' or 'fr'. Arabic falls back to French.
  */
 import PDFDocument from 'pdfkit';
-import type { BookingRecord, IncubatorRecord, MentorBookingRecord, MentorRecord } from '@/server/db/store';
+import type { BookingRecord, IncubatorRecord, MentorBookingRecord, MentorRecord, PaymentLinkRecord } from '@/server/db/store';
 
 /* ─────────────────── Types ─────────────────── */
 
@@ -632,6 +632,99 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
   if (booking.status === 'CONFIRMED') {
     drawStamp(doc, stampBuffer);
   }
+
+  // ── Footer ──
+  drawFooter(doc, t, incubator.name);
+
+  return collectBuffer(doc);
+}
+
+/* ─────────────────── Payment-link receipt ─────────────────── */
+
+export interface PaymentLinkReceiptInput {
+  link:       PaymentLinkRecord;
+  incubator:  Pick<IncubatorRecord, 'name' | 'email' | 'phone' | 'city' | 'logoUrl' | 'stampUrl' | 'address' | 'registrationNumber'>;
+  lang:       ReceiptLang;
+}
+
+/**
+ * Generates an A4 PDF receipt for a paid direct payment link. Reuses the same
+ * branded primitives as the booking receipt (header, rows, stamp, footer) so
+ * the look is identical — the "guest" variant for an account-less payer.
+ */
+export async function generatePaymentLinkReceiptPdf(input: PaymentLinkReceiptInput): Promise<Buffer> {
+  const { link, incubator, lang } = input;
+  const t = T[lang];
+  const isFr = lang === 'fr';
+
+  const amount = link.amount;
+  const payerFee = link.payerFeeAmount ?? 0;
+  const grossCharge = link.grossChargedToPayer ?? amount + payerFee;
+  const reference = link.id.slice(0, 8).toUpperCase();
+  const issuedOn = link.paidAt ?? link.createdAt;
+
+  const [logoBuffer, stampBuffer] = await Promise.all([
+    fetchImageBuffer(incubator.logoUrl),
+    fetchImageBuffer(incubator.stampUrl),
+  ]);
+
+  const doc = makeDoc();
+
+  // ── Header ──
+  drawHeader(doc, incubator, logoBuffer);
+  drawIncubatorContact(doc, incubator, lang);
+
+  // ── Receipt title ──
+  drawReceiptTitle(doc, t, reference, issuedOn, lang, t.receipt);
+
+  // ── Billed to ──
+  drawSectionLabel(doc, t.billedTo);
+  doc.moveDown(0.2);
+  doc.fillColor(DARK).font('Helvetica-Bold').fontSize(11).text(link.payerName ?? '—', MARGIN, doc.y);
+  if (link.payerEmail) {
+    doc.fillColor(GRAY).font('Helvetica').fontSize(9).text(link.payerEmail, MARGIN, doc.y);
+  }
+  drawDivider(doc);
+
+  // ── Service details ──
+  drawSectionLabel(doc, isFr ? 'DÉTAILS' : 'DETAILS');
+  doc.moveDown(0.2);
+  drawRow(doc, t.item, link.serviceName, { bold: true });
+  if (link.description) {
+    drawRow(doc, isFr ? 'Description' : 'Description', link.description);
+  }
+  drawDivider(doc);
+
+  // ── Payment ──
+  drawSectionLabel(doc, t.payment);
+  doc.moveDown(0.2);
+  drawRow(doc, t.paymentMethod, t.card);
+  drawRow(doc, isFr ? 'Montant' : 'Amount', fmt(amount), { bold: true });
+  if (payerFee > 0) {
+    drawRow(doc, t.platformFee, `+ ${fmt(payerFee)}`);
+    drawRow(doc, t.chargedOnline, fmt(grossCharge));
+  }
+  drawRow(doc, t.status, t.paidInFull);
+  drawDivider(doc);
+
+  // ── Total (highlighted row) ──
+  const totalY = doc.y + 8;
+  doc.rect(MARGIN, totalY, CONTENT_W, 36).fill(LIGHT);
+  doc
+    .fillColor(GRAY)
+    .font('Helvetica')
+    .fontSize(11)
+    .text(isFr ? 'TOTAL PAYÉ' : 'TOTAL PAID', MARGIN + 12, totalY + 11, { width: 200 });
+  doc
+    .fillColor(GREEN)
+    .font('Helvetica-Bold')
+    .fontSize(14)
+    .text(fmt(grossCharge), MARGIN + 160, totalY + 8, { width: CONTENT_W - 172, align: 'right' });
+
+  doc.y = totalY + 50;
+
+  // ── Paid stamp ──
+  drawStamp(doc, stampBuffer, isFr ? 'PAYÉ' : 'PAID');
 
   // ── Footer ──
   drawFooter(doc, t, incubator.name);

@@ -24,6 +24,7 @@ import {
   bookingReceiptEmailHtml,
   bookingConfirmedWithQrEmailHtml,
   bookingDeclinedEmailHtml,
+  bookingCancelledUnpaidEmailHtml,
   withdrawalRequestedEmailHtml,
   withdrawalProcessedEmailHtml,
   consultationConfirmationEmailHtml,
@@ -35,14 +36,18 @@ import {
   adminIncubatorNotificationHtml,
   adminInvestorNotificationHtml,
   mentorSessionConfirmedEmailHtml,
+  paymentLinkReceiptEmailHtml,
+  paymentLinkPaidEmailHtml,
   type AdminOrderNotifParams,
 } from './email';
 import {
   generateBookingReceiptPdf,
   generateMentorConfirmationPdf,
+  generatePaymentLinkReceiptPdf,
   type BookingReceiptInput,
   type MentorConfirmationInput,
 } from './receipt';
+import type { IncubatorRecord, PaymentLinkRecord } from '@/server/db/store';
 
 const banner = '\x1b[36m[notify]\x1b[0m';
 
@@ -549,6 +554,36 @@ export function sendBookingDeclinedEmail(
     );
 }
 
+/**
+ * Sent when a provider cancels a client's UNPAID booking. States explicitly
+ * that no payment was taken (no refund — nothing was charged). Fire-and-forget.
+ */
+export function sendBookingCancelledUnpaidEmail(
+  email: string,
+  opts: { customerName: string; bookingId: string; itemName: string; vendorName: string },
+  lang: 'en' | 'fr' | 'ar' = 'en',
+): void {
+  const subject =
+    lang === 'fr' ? `Réservation annulée — ${opts.itemName}`
+    : lang === 'ar' ? `تم إلغاء الحجز — ${opts.itemName}`
+    : `Booking cancelled — ${opts.itemName}`;
+  sendResendEmail({
+    to: email,
+    subject,
+    html: bookingCancelledUnpaidEmailHtml(opts, lang),
+  })
+    .then((sent) => {
+      if (!sent) {
+        // eslint-disable-next-line no-console
+        console.log(`${banner} EMAIL (booking-cancelled-unpaid) → ${email} :: Booking ${opts.bookingId.slice(0, 8).toUpperCase()} cancelled, no payment taken`);
+      }
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Resend booking-cancelled-unpaid email failed →`, err.message),
+    );
+}
+
 export function sendWithdrawalRequestedEmail(
   email: string,
   opts: { userName: string; amount: number; accountDetails: string },
@@ -696,6 +731,118 @@ export function sendBookingReceiptEmail(input: BookingReceiptInput): void {
     .catch((err: Error) =>
       // eslint-disable-next-line no-console
       console.error(`${banner} Receipt email failed →`, err.message),
+    );
+}
+
+/* ─────────────────────────── Payment-link receipts ─────────────────────────── */
+
+/**
+ * Email the (account-less) payer their PDF receipt after a successful payment
+ * link settlement. Fire-and-forget — errors are logged, never surfaced to the
+ * settlement flow.
+ */
+export function sendPaymentLinkReceiptEmail(input: {
+  link: PaymentLinkRecord;
+  incubator: IncubatorRecord;
+  lang: 'en' | 'fr';
+}): void {
+  const { link, incubator, lang } = input;
+  const isFr = lang === 'fr';
+  if (!link.payerEmail) return;
+
+  const amount = link.amount;
+  const payerFee = link.payerFeeAmount ?? 0;
+  const grossCharge = link.grossChargedToPayer ?? amount + payerFee;
+  const reference = link.id.slice(0, 8).toUpperCase();
+  const filename = `receipt-${reference}.pdf`;
+
+  generatePaymentLinkReceiptPdf({ link, incubator, lang })
+    .then((pdfBuffer) =>
+      sendResendEmail({
+        to: link.payerEmail!,
+        subject: isFr
+          ? `Votre reçu – ${link.serviceName} – ${incubator.name}`
+          : `Your receipt – ${link.serviceName} – ${incubator.name}`,
+        html: paymentLinkReceiptEmailHtml({
+          payerName: link.payerName ?? '',
+          incubatorName: incubator.name,
+          serviceName: link.serviceName,
+          reference,
+          amount,
+          payerFee,
+          grossCharge,
+          lang,
+        }),
+        attachments: [{ filename, content: pdfBuffer }],
+      }),
+    )
+    .then((sent) => {
+      if (!sent)
+        // eslint-disable-next-line no-console
+        console.log(`${banner} PAY-LINK RECEIPT (no Resend) → ${link.payerEmail} :: ${link.serviceName} ref=${reference}`);
+      else
+        // eslint-disable-next-line no-console
+        console.log(`${banner} PAY-LINK RECEIPT sent → ${link.payerEmail} :: ref=${reference}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Payment-link receipt email failed →`, err.message),
+    );
+}
+
+/**
+ * Notify the incubator owner of a new payment received via a payment link.
+ * Skipped silently when the incubator record has no email. Fire-and-forget.
+ */
+export function sendPaymentLinkPaidIncubatorEmail(input: {
+  link: PaymentLinkRecord;
+  incubator: IncubatorRecord;
+  lang: 'en' | 'fr';
+}): void {
+  const { link, incubator, lang } = input;
+  const isFr = lang === 'fr';
+  const to = incubator.email;
+  if (!to) {
+    // eslint-disable-next-line no-console
+    console.log(`${banner} PAY-LINK INCUBATOR NOTIF skipped — no email on incubator record (id=${incubator.id})`);
+    return;
+  }
+
+  const amount = link.amount;
+  const commission = link.commissionAmount ?? 0;
+  const netAmount = amount - commission;
+  const reference = link.id.slice(0, 8).toUpperCase();
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/incubator/wallet`;
+
+  sendResendEmail({
+    to,
+    subject: isFr
+      ? `Nouveau paiement reçu — ${link.serviceName}`
+      : `New payment received — ${link.serviceName}`,
+    html: paymentLinkPaidEmailHtml({
+      incubatorName: incubator.name,
+      serviceName: link.serviceName,
+      payerName: link.payerName ?? '—',
+      payerEmail: link.payerEmail ?? '—',
+      reference,
+      netAmount,
+      amount,
+      commission,
+      dashboardUrl,
+      lang,
+    }),
+  })
+    .then((sent) => {
+      if (!sent)
+        // eslint-disable-next-line no-console
+        console.log(`${banner} PAY-LINK INCUBATOR NOTIF (no Resend) → ${to} :: net=${netAmount} ref=${reference}`);
+      else
+        // eslint-disable-next-line no-console
+        console.log(`${banner} PAY-LINK INCUBATOR NOTIF sent → ${to} :: ref=${reference}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Payment-link incubator notification failed →`, err.message),
     );
 }
 

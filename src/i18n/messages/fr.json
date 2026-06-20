@@ -727,7 +727,10 @@
       "cashCollected": "Espèces encaissées",
       "balanceDue": "Solde dû : {amount}",
       "balanceCollected": "Encaissé : {amount}",
-      "markCashPaid": "Marquer payé"
+      "markCashPaid": "Marquer payé",
+      "awaitingPayment": "En attente de paiement",
+      "filterAwaitingPayment": "En attente de paiement",
+      "cancelUnpaid": "Annuler"
     },
     "clients": {
       "editTitle": "Modifier le client",
@@ -817,6 +820,40 @@
       "actionEdit": "Modifier",
       "actionDelete": "Supprimer",
       "actionAvailability": "Disponibilité"
+    },
+    "paymentLinks": {
+      "addLink": "Nouveau lien",
+      "createTitle": "Nouveau lien de paiement",
+      "createDescription": "Créez un lien pour facturer un client. Il paie par carte — sans compte Metwork.",
+      "labelService": "Nom de la prestation",
+      "labelAmount": "Montant (DZD)",
+      "labelDescription": "Description",
+      "descriptionPlaceholder": "Détails facultatifs affichés au payeur…",
+      "labelHasExpiry": "Définir une date d’expiration",
+      "labelExpiresAt": "Expire le",
+      "create": "Créer le lien",
+      "copy": "Copier le lien",
+      "copied": "Copié !",
+      "cancel": "Annuler",
+      "confirmCancel": "Annuler le lien de paiement pour « {service} » ? Il ne pourra plus être payé.",
+      "colService": "Prestation",
+      "colAmount": "Montant",
+      "colStatus": "Statut",
+      "colActions": "Actions",
+      "count": "{count, plural, =0 {Aucun lien de paiement} one {# lien de paiement} other {# liens de paiement}}",
+      "loading": "Chargement…",
+      "emptyTitle": "Aucun lien de paiement",
+      "emptyDescription": "Créez un lien pour facturer un client directement — il paie par carte sans compte Metwork.",
+      "errorAmount": "Saisissez un montant valide (au moins 50 DZD).",
+      "errorExpiry": "Choisissez une date d’expiration.",
+      "errorGeneric": "Impossible de créer le lien. Veuillez réessayer.",
+      "errorNetwork": "Erreur réseau — veuillez réessayer.",
+      "status": {
+        "ACTIVE": "Actif",
+        "PAID": "Payé",
+        "EXPIRED": "Expiré",
+        "CANCELLED": "Annulé"
+      }
     },
     "services": {
       "addService": "Ajouter un service",
@@ -1202,6 +1239,7 @@
     "events": "Événements",
     "revenue": "Revenus",
     "invoices": "Factures",
+    "paymentLinks": "Liens de paiement",
     "users": "Utilisateurs",
     "incubators": "Incubateurs",
     "investors": "Investisseurs",
@@ -1253,6 +1291,36 @@
       "invalidTitle": "Lien introuvable",
       "invalidDesc": "Ce lien de paiement est invalide. Veuillez vérifier le lien dans votre e-mail.",
       "backHome": "Retour à l'accueil"
+    },
+    "pay": {
+      "awaitingTitle": "Finalisez votre paiement",
+      "awaitingDesc": "Renseignez vos informations et payez en toute sécurité par carte.",
+      "service": "Prestation",
+      "description": "Description",
+      "provider": "Facturé par",
+      "amount": "Montant",
+      "platformFee": "Frais de plateforme",
+      "amountDue": "Montant à payer",
+      "fullName": "Nom complet",
+      "fullNamePlaceholder": "Votre nom complet",
+      "email": "E-mail",
+      "emailPlaceholder": "vous@exemple.com",
+      "emailHint": "Votre reçu sera envoyé à cette adresse.",
+      "payNow": "Payer maintenant",
+      "starting": "Démarrage…",
+      "secureNote": "Paiement sécurisé via CIB / Edahabia. Vos données de carte ne sont jamais conservées.",
+      "payError": "Impossible de démarrer le paiement. Veuillez réessayer.",
+      "errorExpired": "Ce lien de paiement a expiré. Veuillez contacter le prestataire.",
+      "paidTitle": "Paiement reçu",
+      "paidDesc": "Merci — votre paiement est confirmé. Un reçu vous parvient par e-mail.",
+      "amountPaid": "Montant payé",
+      "expiredTitle": "Lien expiré",
+      "expiredDesc": "Ce lien de paiement n’est plus valide. Veuillez contacter le prestataire pour en obtenir un nouveau.",
+      "cancelledTitle": "Lien annulé",
+      "cancelledDesc": "Ce lien de paiement a été annulé, il n’y a donc rien à payer.",
+      "invalidTitle": "Lien introuvable",
+      "invalidDesc": "Ce lien de paiement est invalide. Veuillez vérifier le lien qui vous a été communiqué.",
+      "backHome": "Retour à l’accueil"
     },
     "bookingPay": {
       "awaitingTitle": "Confirmer et payer",
@@ -1634,7 +1702,12 @@
           "kindEvent": "Événement",
           "paymentCash": "Espèces",
           "paymentOnline": "En ligne",
-          "free": "Gratuit"
+          "free": "Gratuit",
+          "colActions": "Actions",
+          "cancelUnpaid": "Annuler",
+          "cancelling": "Annulation…",
+          "confirmCancel": "Confirmer",
+          "keep": "Garder"
         },
         "members": {
           "title": "Membres",
@@ -1846,6 +1919,10 @@
           "spaces": {
             "title": "Espaces",
             "subtitle": "{count} actifs — coworking, bureaux privés, salles de formation."
+          },
+          "paymentLinks": {
+            "title": "Liens de paiement",
+            "subtitle": "Facturez vos clients directement — ils paient par carte, sans compte Metwork."
           },
           "programs": {
             "title": "Programmes",

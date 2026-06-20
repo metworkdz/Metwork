@@ -706,6 +706,43 @@ export function bookingDeclinedEmailHtml(opts: {
   `);
 }
 
+/**
+ * Sent to the client when the provider cancels their UNPAID (awaiting-payment)
+ * booking. Unlike the declined email, it explicitly states no payment was taken
+ * — there is no refund because nothing was ever charged. Localised (en/fr/ar).
+ */
+export function bookingCancelledUnpaidEmailHtml(
+  opts: { customerName: string; bookingId: string; itemName: string; vendorName: string },
+  lang: 'en' | 'fr' | 'ar' = 'en',
+): string {
+  const ref = opts.bookingId.slice(0, 8).toUpperCase();
+  const refRow = (label: string) =>
+    p(`<span style="color:#71717a;font-size:13px;">${label}: <code style="background:#f4f4f5;padding:2px 6px;border-radius:4px;font-family:monospace;">${ref}</code></span>`);
+
+  if (lang === 'fr') {
+    return layout(`
+      ${h1('Réservation annulée')}
+      ${p(`Bonjour <strong>${opts.customerName}</strong>, votre réservation non payée pour <strong>${opts.itemName}</strong> auprès de <strong>${opts.vendorName}</strong> a été annulée.`)}
+      ${p('<strong>Aucun paiement n’a été prélevé</strong> — il n’y a donc aucun remboursement. Vous pouvez réserver à nouveau à tout moment.')}
+      ${refRow('Référence')}
+    `);
+  }
+  if (lang === 'ar') {
+    return layout(`
+      ${h1('تم إلغاء الحجز')}
+      ${p(`مرحبًا <strong>${opts.customerName}</strong>، تم إلغاء حجزك غير المدفوع لـ <strong>${opts.itemName}</strong> لدى <strong>${opts.vendorName}</strong>.`)}
+      ${p('<strong>لم يتم تحصيل أي دفعة</strong> — لذلك لا يوجد أي استرداد. يمكنك الحجز مرة أخرى في أي وقت.')}
+      ${refRow('المرجع')}
+    `);
+  }
+  return layout(`
+    ${h1('Booking cancelled')}
+    ${p(`Hi <strong>${opts.customerName}</strong>, your unpaid booking for <strong>${opts.itemName}</strong> with <strong>${opts.vendorName}</strong> has been cancelled.`)}
+    ${p('<strong>No payment was taken</strong>, so there is nothing to refund. You can book again any time.')}
+    ${refRow('Reference')}
+  `);
+}
+
 /** Sent to the incubator when a new booking arrives. */
 export function newBookingAlertHtml(opts: {
   incubatorName: string;
@@ -907,6 +944,125 @@ export function bookingReceiptEmailHtml(params: ReceiptEmailParams): string {
         ? 'Ce reçu est votre preuve de paiement. Conservez-le précieusement.'
         : 'This receipt is your proof of payment. Please keep it for your records.'}
     </span>`)}
+  `);
+}
+
+/* ─────────────────── Payment-link email bodies ─────────────────── */
+
+interface PaymentLinkReceiptEmailParams {
+  payerName:      string;
+  incubatorName:  string;
+  serviceName:    string;
+  reference:      string;
+  amount:         number;
+  payerFee:       number;
+  grossCharge:    number;
+  lang:           'en' | 'fr';
+}
+
+/** Receipt email sent to the (account-less) payer after a successful payment. */
+export function paymentLinkReceiptEmailHtml(params: PaymentLinkReceiptEmailParams): string {
+  const { payerName, incubatorName, serviceName, reference, amount, payerFee, grossCharge, lang } = params;
+  const isFr = lang === 'fr';
+  const fmtAmt = (n: number) => n.toLocaleString('fr-DZ') + ' DZD';
+
+  const greeting = isFr ? `Bonjour ${payerName},` : `Hello ${payerName},`;
+  const bodyText = isFr
+    ? `Votre paiement à <strong>${incubatorName}</strong> a bien été reçu. Vous trouverez votre reçu PDF en pièce jointe.`
+    : `Your payment to <strong>${incubatorName}</strong> has been received. Please find your PDF receipt attached.`;
+
+  const rows: Array<[string, string]> = [
+    [isFr ? 'Prestation' : 'Service', serviceName],
+    [isFr ? 'Montant' : 'Amount', fmtAmt(amount)],
+  ];
+  if (payerFee > 0) {
+    rows.push([isFr ? 'Frais de plateforme' : 'Platform fee', `+ ${fmtAmt(payerFee)}`]);
+    rows.push([isFr ? 'Total payé' : 'Total paid', fmtAmt(grossCharge)]);
+  } else {
+    rows.push([isFr ? 'Total payé' : 'Total paid', fmtAmt(grossCharge)]);
+  }
+  rows.push([isFr ? 'Référence' : 'Reference', reference]);
+
+  const tableRows = rows
+    .map(([label, value]) =>
+      `<tr>
+         <td style="padding:8px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:140px;">${label}</td>
+         <td style="padding:8px 12px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;font-weight:500;">${value ?? '—'}</td>
+       </tr>`,
+    )
+    .join('');
+
+  const title = isFr ? 'Votre reçu de paiement' : 'Your payment receipt';
+
+  return layout(`
+    ${h1(title)}
+    ${p(greeting)}
+    ${p(bodyText)}
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin:20px 0;">
+      ${tableRows}
+    </table>
+    ${p(`<span style="color:#71717a;font-size:13px;">
+      ${isFr
+        ? 'Ce reçu est votre preuve de paiement. Conservez-le précieusement.'
+        : 'This receipt is your proof of payment. Please keep it for your records.'}
+    </span>`)}
+  `);
+}
+
+interface PaymentLinkPaidEmailParams {
+  incubatorName:  string;
+  serviceName:    string;
+  payerName:      string;
+  payerEmail:     string;
+  reference:      string;
+  /** Net amount credited to the incubator wallet (amount − commission). */
+  netAmount:      number;
+  amount:         number;
+  commission:     number;
+  dashboardUrl:   string;
+  lang:           'en' | 'fr';
+}
+
+/** "New payment received" email sent to the incubator owner. */
+export function paymentLinkPaidEmailHtml(params: PaymentLinkPaidEmailParams): string {
+  const { serviceName, payerName, payerEmail, reference, netAmount, amount, commission, dashboardUrl, lang } = params;
+  const isFr = lang === 'fr';
+  const fmtAmt = (n: number) => n.toLocaleString('fr-DZ') + ' DZD';
+
+  const rows: Array<[string, string]> = [
+    [isFr ? 'Prestation' : 'Service', serviceName],
+    [isFr ? 'Client' : 'Payer', `${payerName} (${payerEmail})`],
+    [isFr ? 'Montant' : 'Amount', fmtAmt(amount)],
+  ];
+  if (commission > 0) {
+    rows.push([isFr ? 'Commission plateforme' : 'Platform commission', `− ${fmtAmt(commission)}`]);
+  }
+  rows.push([isFr ? 'Net crédité' : 'Net credited', fmtAmt(netAmount)]);
+  rows.push([isFr ? 'Référence' : 'Reference', reference]);
+
+  const tableRows = rows
+    .map(([label, value]) =>
+      `<tr>
+         <td style="padding:8px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:160px;">${label}</td>
+         <td style="padding:8px 12px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;font-weight:500;">${value ?? '—'}</td>
+       </tr>`,
+    )
+    .join('');
+
+  const title = isFr ? 'Nouveau paiement reçu 🎉' : 'New payment received 🎉';
+  const bodyText = isFr
+    ? `Un client vient de régler un lien de paiement. Le montant net a été crédité sur votre portefeuille Metwork.`
+    : `A client just paid one of your payment links. The net amount has been credited to your Metwork wallet.`;
+
+  return layout(`
+    ${h1(title)}
+    ${p(bodyText)}
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin:20px 0;">
+      ${tableRows}
+    </table>
+    ${p(`<a href="${dashboardUrl}" style="color:#166534;">${isFr ? 'Voir mon portefeuille' : 'View my wallet'}</a>`)}
   `);
 }
 
