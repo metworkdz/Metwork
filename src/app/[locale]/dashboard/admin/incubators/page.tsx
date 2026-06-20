@@ -24,7 +24,7 @@ export default async function AdminIncubatorsPage({ params }: PageProps) {
   const incubators = (data.incubators ?? [])
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-  const activeCount = incubators.filter((i) => i.status === 'ACTIVE').length;
+  const activeCount = incubators.filter((i) => i.status === 'ACTIVE' && !i.archivedAt).length;
 
   return (
     <div className="space-y-6">

@@ -17,7 +17,9 @@ const createSchema = z.object({
   email:            z.string().email().max(200),
   phone:            z.string().min(6).max(30),
   city:             z.string().min(1).max(80),
-  status:           z.enum(['PENDING', 'ACTIVE', 'INACTIVE', 'SUSPENDED']).default('ACTIVE'),
+  website:          z.string().max(200).optional(),
+  instagram:        z.string().max(200).optional(),
+  status:           z.enum(['PENDING', 'ACTIVE', 'INACTIVE', 'SUSPENDED', 'REJECTED']).default('ACTIVE'),
   subscriptionCode: z.enum(['COMMISSION', 'FLAT']).default('COMMISSION'),
 });
 
@@ -56,6 +58,8 @@ export async function POST(req: NextRequest) {
       email: input.email.trim(),
       phone: input.phone.trim(),
       city: input.city.trim(),
+      website: input.website?.trim() || null,
+      instagram: input.instagram?.trim() || null,
       status: input.status,
       subscriptionCode: input.subscriptionCode,
       // Subscription fields — starts with no active subscription

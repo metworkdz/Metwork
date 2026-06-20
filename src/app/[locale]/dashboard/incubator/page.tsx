@@ -16,6 +16,7 @@ import {
 import { mobileQuickActionsByRole } from '@/config/mobile-nav';
 import { db } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
+import { IncubatorPendingApprovalBanner } from '@/components/features/incubator/pending-approval-banner';
 import { formatCurrency } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 
@@ -79,6 +80,12 @@ export default async function IncubatorDashboard({ params }: PageProps) {
 
   return (
     <>
+      {inc?.status === 'PENDING' && (
+        <div className="mb-4">
+          <IncubatorPendingApprovalBanner />
+        </div>
+      )}
+
       {/* ── Mobile app UI (below lg) ─────────────────────────────────────── */}
       <div className="lg:hidden">
         <MobileGreeting

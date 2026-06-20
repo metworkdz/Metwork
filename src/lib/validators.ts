@@ -17,6 +17,25 @@ export const algerianPhoneRegex = /^(\+213|0)(\s?[5-7])(\s?\d){8}$/;
 export const strongPasswordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
 
 export const emailSchema = z.string().email();
+
+/**
+ * Treat an empty / whitespace-only string as "not provided" so optional
+ * URL/handle fields don't fail validation when the user leaves them blank.
+ */
+const emptyToUndefined = (v: unknown) =>
+  typeof v === 'string' && v.trim() === '' ? undefined : v;
+
+/** Optional website — must be a valid URL when present. */
+export const optionalUrlSchema = z.preprocess(
+  emptyToUndefined,
+  z.string().url({ message: 'invalidUrl' }).max(200).optional(),
+);
+
+/** Optional social handle or URL (Instagram / LinkedIn). Free text, capped. */
+export const optionalHandleSchema = z.preprocess(
+  emptyToUndefined,
+  z.string().max(200).optional(),
+);
 export const phoneSchema = z
   .string()
   .min(1)
@@ -69,6 +88,12 @@ export const signupSchema = z
     }),
     /** Optional — only shown when role === 'INCUBATOR'. */
     incubatorName: z.string().max(100).optional(),
+    /** Optional — incubator website (role === 'INCUBATOR'). URL-validated. */
+    website: optionalUrlSchema,
+    /** Optional — incubator Instagram handle or URL (role === 'INCUBATOR'). */
+    instagram: optionalHandleSchema,
+    /** Optional (recommended) — investor LinkedIn handle or URL (role === 'INVESTOR'). */
+    linkedin: optionalHandleSchema,
     /** Biological sex — shown for ENTREPRENEUR and INVESTOR roles. */
     sex: z.enum(['MALE', 'FEMALE']).optional(),
   })

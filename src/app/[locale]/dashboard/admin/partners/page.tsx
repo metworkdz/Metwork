@@ -5,6 +5,9 @@ import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { StatCard } from '@/components/shared/stat-card';
 import { PartnerManagement } from '@/components/features/admin/partner-management';
 import { db } from '@/server/db/store';
+import { ensurePartnerPerIncubatorMigration } from '@/server/network/partner-incubator-service';
+
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -18,11 +21,15 @@ export default async function AdminPartnersPage({ params }: PageProps) {
   const t = await getTranslations('pages.dashboard.admin.partners');
   await requireRole(['ADMIN']);
 
+  // Run the one-time per-space → per-incubator migration before counting.
+  await ensurePartnerPerIncubatorMigration();
   const data = await db.read();
 
-  const totalPartners  = data.partnerMemberships.length;
-  const activePartners = data.partnerMemberships.filter((p) => p.isActive).length;
-  const passEnabled    = data.partnerMemberships.filter((p) => p.isActive && p.acceptNetworkPasses).length;
+  // Per-incubator partner records (legacy per-space records are superseded).
+  const incubatorPartners = data.partnerMemberships.filter((p) => p.incubatorId);
+  const totalPartners  = incubatorPartners.length;
+  const activePartners = incubatorPartners.filter((p) => p.isActive).length;
+  const passEnabled    = incubatorPartners.filter((p) => p.isActive && p.acceptNetworkPasses).length;
 
   return (
     <div className="space-y-6">

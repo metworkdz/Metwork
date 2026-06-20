@@ -1,15 +1,16 @@
 'use client';
 
 /**
- * Admin component — manage Partner Program enrolments.
+ * Admin — manage the Partner Program PER INCUBATOR.
  *
- * Shows a table of enrolled spaces, lets admin enroll new spaces,
- * toggle settings, and unenroll.
+ * Add an incubator to the network (all its coworking/training/domiciliation
+ * spaces become bookable by default, private offices off), tune settings, and
+ * toggle individual spaces in/out via the expandable spaces panel.
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { Fragment, useEffect, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { Building2, Plus, Settings2, Trash2, CheckCircle2, XCircle } from 'lucide-react';
+import { Building2, Plus, Settings2, Trash2, CheckCircle2, XCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,11 +26,11 @@ import {
 } from '@/components/ui/dialog';
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 
-// ─── Types (mirrors API response shapes) ────────────────────────────────────
+// ─── Types (mirror API response shapes) ─────────────────────────────────────
 
 interface PartnerRecord {
   id: string;
-  spaceId: string;
+  incubatorId: string;
   isActive: boolean;
   offerDiscountedMemberships: boolean;
   discountPercentage: number;
@@ -38,35 +39,46 @@ interface PartnerRecord {
   acceptNetworkPasses: boolean;
   networkPayoutRate: number;
   maxNetworkUsersPerDay: number | null;
-  createdAt: string;
-  updatedAt: string;
+}
+
+type SpaceCategory = 'COWORKING' | 'PRIVATE_OFFICE' | 'TRAINING_ROOM' | 'DOMICILIATION';
+
+interface PartnerSpace {
+  id: string;
+  name: string;
+  category: SpaceCategory;
+  networkBookable: boolean;
+  isPartnerInNetwork: boolean;
 }
 
 interface PartnerListItem {
   partner: PartnerRecord;
-  spaceName: string;
+  incubatorId: string;
   incubatorName: string;
+  spaces: PartnerSpace[];
 }
 
-interface SpaceOption {
+interface IncubatorOption {
   id: string;
   name: string;
-  incubatorName: string;
   city: string;
+  status: string;
+  archivedAt?: string | null;
 }
 
 // ─── Enroll dialog ───────────────────────────────────────────────────────────
 
-interface EnrollDialogProps {
+function EnrollDialog({
+  open, onClose, onEnrolled, enrolledIds,
+}: {
   open: boolean;
   onClose: () => void;
   onEnrolled: () => void;
-}
-
-function EnrollDialog({ open, onClose, onEnrolled }: EnrollDialogProps) {
+  enrolledIds: Set<string>;
+}) {
   const t = useTranslations('admin.partnerManagement');
-  const [spaces, setSpaces] = useState<SpaceOption[]>([]);
-  const [spaceId, setSpaceId] = useState('');
+  const [incubators, setIncubators] = useState<IncubatorOption[]>([]);
+  const [incubatorId, setIncubatorId] = useState('');
   const [acceptPasses, setAcceptPasses] = useState(true);
   const [payoutRate, setPayoutRate] = useState(300);
   const [offerDiscount, setOfferDiscount] = useState(false);
@@ -76,14 +88,21 @@ function EnrollDialog({ open, onClose, onEnrolled }: EnrollDialogProps) {
 
   useEffect(() => {
     if (!open) return;
-    fetch('/api/admin/spaces')
+    setIncubatorId(''); setAcceptPasses(true); setPayoutRate(300);
+    setOfferDiscount(false); setDiscountPct(50); setError('');
+    fetch('/api/admin/incubators')
       .then((r) => r.json())
-      .then((d) => setSpaces(Array.isArray(d.items) ? d.items : []))
-      .catch(() => setSpaces([]));
+      .then((d) => setIncubators(Array.isArray(d.items) ? d.items : []))
+      .catch(() => setIncubators([]));
   }, [open]);
 
+  // Only approved, non-archived incubators that aren't already enrolled.
+  const options = incubators.filter(
+    (i) => i.status === 'ACTIVE' && !i.archivedAt && !enrolledIds.has(i.id),
+  );
+
   async function handleSubmit() {
-    if (!spaceId) { setError(t('selectSpaceError')); return; }
+    if (!incubatorId) { setError(t('selectIncubatorError')); return; }
     setSaving(true);
     setError('');
     try {
@@ -91,7 +110,7 @@ function EnrollDialog({ open, onClose, onEnrolled }: EnrollDialogProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          spaceId,
+          incubatorId,
           acceptNetworkPasses: acceptPasses,
           networkPayoutRate: payoutRate,
           offerDiscountedMemberships: offerDiscount,
@@ -114,22 +133,20 @@ function EnrollDialog({ open, onClose, onEnrolled }: EnrollDialogProps) {
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{t('enrollDialogTitle')}</DialogTitle>
-          <DialogDescription>
-            {t('enrollDialogDescription')}
-          </DialogDescription>
+          <DialogDescription>{t('enrollDialogDescription')}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label htmlFor="ep-space">{t('spaceLabel')}</Label>
+            <Label htmlFor="ep-incubator">{t('incubatorLabel')}</Label>
             <select
-              id="ep-space"
-              value={spaceId}
-              onChange={(e) => setSpaceId(e.target.value)}
+              id="ep-incubator"
+              value={incubatorId}
+              onChange={(e) => setIncubatorId(e.target.value)}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
-              <option value="">{t('spaceSelectPlaceholder')}</option>
-              {spaces.map((s) => (
-                <option key={s.id} value={s.id}>{s.name} — {s.incubatorName}</option>
+              <option value="">{t('incubatorSelectPlaceholder')}</option>
+              {options.map((i) => (
+                <option key={i.id} value={i.id}>{i.name} — {i.city}</option>
               ))}
             </select>
           </div>
@@ -145,13 +162,8 @@ function EnrollDialog({ open, onClose, onEnrolled }: EnrollDialogProps) {
           {acceptPasses && (
             <div className="space-y-1.5">
               <Label htmlFor="ep-payout">{t('payoutRateLabel')}</Label>
-              <Input
-                id="ep-payout"
-                type="number"
-                min={0}
-                value={payoutRate}
-                onChange={(e) => setPayoutRate(Number(e.target.value))}
-              />
+              <Input id="ep-payout" type="number" min={0} value={payoutRate}
+                onChange={(e) => setPayoutRate(Number(e.target.value))} />
             </div>
           )}
 
@@ -166,14 +178,8 @@ function EnrollDialog({ open, onClose, onEnrolled }: EnrollDialogProps) {
           {offerDiscount && (
             <div className="space-y-1.5">
               <Label htmlFor="ep-discount">{t('discountPercentLabel')}</Label>
-              <Input
-                id="ep-discount"
-                type="number"
-                min={1}
-                max={99}
-                value={discountPct}
-                onChange={(e) => setDiscountPct(Number(e.target.value))}
-              />
+              <Input id="ep-discount" type="number" min={1} max={99} value={discountPct}
+                onChange={(e) => setDiscountPct(Number(e.target.value))} />
             </div>
           )}
 
@@ -192,14 +198,14 @@ function EnrollDialog({ open, onClose, onEnrolled }: EnrollDialogProps) {
 
 // ─── Settings dialog ─────────────────────────────────────────────────────────
 
-interface SettingsDialogProps {
+function SettingsDialog({
+  item, open, onClose, onSaved,
+}: {
   item: PartnerListItem;
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
-}
-
-function SettingsDialog({ item, open, onClose, onSaved }: SettingsDialogProps) {
+}) {
   const t = useTranslations('admin.partnerManagement');
   const { partner } = item;
   const [isActive, setIsActive] = useState(partner.isActive);
@@ -207,9 +213,7 @@ function SettingsDialog({ item, open, onClose, onSaved }: SettingsDialogProps) {
   const [payoutRate, setPayoutRate] = useState(partner.networkPayoutRate);
   const [offerDiscount, setOfferDiscount] = useState(partner.offerDiscountedMemberships);
   const [discountPct, setDiscountPct] = useState(partner.discountPercentage);
-  const [maxDaily, setMaxDaily] = useState<string>(
-    partner.maxNetworkUsersPerDay?.toString() ?? '',
-  );
+  const [maxDaily, setMaxDaily] = useState<string>(partner.maxNetworkUsersPerDay?.toString() ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -217,7 +221,7 @@ function SettingsDialog({ item, open, onClose, onSaved }: SettingsDialogProps) {
     setSaving(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/partners/${partner.spaceId}`, {
+      const res = await fetch(`/api/admin/partners/${item.incubatorId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -244,7 +248,7 @@ function SettingsDialog({ item, open, onClose, onSaved }: SettingsDialogProps) {
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t('settingsDialogTitle', { spaceName: item.spaceName })}</DialogTitle>
+          <DialogTitle>{t('settingsDialogTitle', { name: item.incubatorName })}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="flex items-center justify-between rounded-lg border p-3">
@@ -256,9 +260,7 @@ function SettingsDialog({ item, open, onClose, onSaved }: SettingsDialogProps) {
           </div>
 
           <div className="flex items-center justify-between rounded-lg border p-3">
-            <div>
-              <div className="text-sm font-medium">{t('acceptPassesLabel')}</div>
-            </div>
+            <div className="text-sm font-medium">{t('acceptPassesLabel')}</div>
             <input type="checkbox" checked={acceptPasses} onChange={(e) => setAcceptPasses(e.target.checked)} className="h-4 w-4 accent-green-700" />
           </div>
 
@@ -266,46 +268,27 @@ function SettingsDialog({ item, open, onClose, onSaved }: SettingsDialogProps) {
             <>
               <div className="space-y-1.5">
                 <Label htmlFor="st-payout">{t('payoutRateDzdLabel')}</Label>
-                <Input
-                  id="st-payout"
-                  type="number"
-                  min={0}
-                  value={payoutRate}
-                  onChange={(e) => setPayoutRate(Number(e.target.value))}
-                />
+                <Input id="st-payout" type="number" min={0} value={payoutRate}
+                  onChange={(e) => setPayoutRate(Number(e.target.value))} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="st-max-daily">{t('maxDailyLabel')}</Label>
-                <Input
-                  id="st-max-daily"
-                  type="number"
-                  min={1}
-                  value={maxDaily}
-                  onChange={(e) => setMaxDaily(e.target.value)}
-                  placeholder={t('maxDailyPlaceholder')}
-                />
+                <Input id="st-max-daily" type="number" min={1} value={maxDaily}
+                  onChange={(e) => setMaxDaily(e.target.value)} placeholder={t('maxDailyPlaceholder')} />
               </div>
             </>
           )}
 
           <div className="flex items-center justify-between rounded-lg border p-3">
-            <div>
-              <div className="text-sm font-medium">{t('offerDiscountLabel')}</div>
-            </div>
+            <div className="text-sm font-medium">{t('offerDiscountLabel')}</div>
             <input type="checkbox" checked={offerDiscount} onChange={(e) => setOfferDiscount(e.target.checked)} className="h-4 w-4 accent-green-700" />
           </div>
 
           {offerDiscount && (
             <div className="space-y-1.5">
               <Label htmlFor="st-discount">{t('discountPercentLabel')}</Label>
-              <Input
-                id="st-discount"
-                type="number"
-                min={1}
-                max={99}
-                value={discountPct}
-                onChange={(e) => setDiscountPct(Number(e.target.value))}
-              />
+              <Input id="st-discount" type="number" min={1} max={99} value={discountPct}
+                onChange={(e) => setDiscountPct(Number(e.target.value))} />
             </div>
           )}
 
@@ -322,6 +305,67 @@ function SettingsDialog({ item, open, onClose, onSaved }: SettingsDialogProps) {
   );
 }
 
+// ─── Spaces panel (per-space toggles) ────────────────────────────────────────
+
+function SpacesPanel({
+  item, onToggled,
+}: {
+  item: PartnerListItem;
+  onToggled: (spaceId: string, networkBookable: boolean, isPartnerInNetwork: boolean) => void;
+}) {
+  const t = useTranslations('admin.partnerManagement');
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  async function toggle(space: PartnerSpace) {
+    setBusyId(space.id);
+    try {
+      const res = await fetch(`/api/admin/partners/${item.incubatorId}/space`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spaceId: space.id, networkBookable: !space.networkBookable }),
+      });
+      if (!res.ok) return;
+      const json = await res.json();
+      onToggled(space.id, json.networkBookable, json.isPartnerInNetwork);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <div className="border-t bg-zinc-50/60 px-4 py-3">
+      <div className="mb-2">
+        <div className="text-sm font-medium">{t('spacesTitle')}</div>
+        <div className="text-xs text-zinc-500">{t('spacesDescription')}</div>
+      </div>
+      {item.spaces.length === 0 ? (
+        <p className="py-2 text-sm text-zinc-500">{t('noSpaces')}</p>
+      ) : (
+        <ul className="divide-y rounded-md border bg-background">
+          {item.spaces.map((space) => (
+            <li key={space.id} className="flex items-center justify-between px-3 py-2">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium">{space.name}</div>
+                <div className="text-xs text-zinc-500">{t(`cat${space.category}` as 'catCOWORKING')}</div>
+              </div>
+              <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs text-zinc-600">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-green-700"
+                  checked={space.networkBookable}
+                  disabled={busyId === space.id}
+                  onChange={() => toggle(space)}
+                />
+                {space.networkBookable ? t('yes') : t('no')}
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export function PartnerManagement() {
@@ -330,6 +374,7 @@ export function PartnerManagement() {
   const [loading, setLoading] = useState(true);
   const [showEnroll, setShowEnroll] = useState(false);
   const [editItem, setEditItem] = useState<PartnerListItem | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -346,10 +391,23 @@ export function PartnerManagement() {
 
   useEffect(() => { void load(); }, [load]);
 
+  // Only ACTIVE enrolments block re-adding; an unenrolled (inactive) incubator
+  // can be re-added via the dialog (enrollIncubator reactivates it).
+  const enrolledIds = new Set(items.filter((i) => i.partner.isActive).map((i) => i.incubatorId));
+
   async function handleUnenroll(item: PartnerListItem) {
-    if (!confirm(t('unenrollConfirm', { spaceName: item.spaceName }))) return;
-    await fetch(`/api/admin/partners/${item.partner.spaceId}`, { method: 'DELETE' });
+    if (!confirm(t('unenrollConfirm', { name: item.incubatorName }))) return;
+    await fetch(`/api/admin/partners/${item.incubatorId}`, { method: 'DELETE' });
     void load();
+  }
+
+  function handleSpaceToggled(incubatorId: string, spaceId: string, networkBookable: boolean, isPartnerInNetwork: boolean) {
+    setItems((prev) => prev.map((it) =>
+      it.incubatorId !== incubatorId ? it : {
+        ...it,
+        spaces: it.spaces.map((s) => (s.id === spaceId ? { ...s, networkBookable, isPartnerInNetwork } : s)),
+      },
+    ));
   }
 
   return (
@@ -376,69 +434,86 @@ export function PartnerManagement() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-zinc-50 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  <th className="px-4 py-3">{t('colSpace')}</th>
                   <th className="px-4 py-3">{t('colIncubator')}</th>
                   <th className="px-4 py-3">{t('colStatus')}</th>
                   <th className="px-4 py-3">{t('colNetworkPasses')}</th>
                   <th className="px-4 py-3">{t('colDiscounts')}</th>
                   <th className="px-4 py-3">{t('colPayoutRate')}</th>
+                  <th className="px-4 py-3">{t('colSpaces')}</th>
                   <th className="px-4 py-3 text-right">{t('colActions')}</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
-                  <tr key={item.partner.id} className="border-b last:border-0 hover:bg-zinc-50">
-                    <td className="px-4 py-3 font-medium">{item.spaceName}</td>
-                    <td className="px-4 py-3 text-zinc-500">{item.incubatorName}</td>
-                    <td className="px-4 py-3">
-                      {item.partner.isActive ? (
-                        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700">
-                          <CheckCircle2 className="mr-1 h-3 w-3" /> {t('active')}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-zinc-200 bg-zinc-50 text-zinc-500">
-                          <XCircle className="mr-1 h-3 w-3" /> {t('inactive')}
-                        </Badge>
+                {items.map((item) => {
+                  const bookableCount = item.spaces.filter((s) => s.networkBookable).length;
+                  const expanded = expandedId === item.incubatorId;
+                  return (
+                    <Fragment key={item.partner.id}>
+                      <tr className="border-b last:border-0 hover:bg-zinc-50">
+                        <td className="px-4 py-3 font-medium">{item.incubatorName}</td>
+                        <td className="px-4 py-3">
+                          {item.partner.isActive ? (
+                            <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700">
+                              <CheckCircle2 className="mr-1 h-3 w-3" /> {t('active')}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-zinc-200 bg-zinc-50 text-zinc-500">
+                              <XCircle className="mr-1 h-3 w-3" /> {t('inactive')}
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {item.partner.acceptNetworkPasses ? (
+                            <span className="text-green-700">{t('yes')}</span>
+                          ) : (
+                            <span className="text-zinc-400">{t('no')}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {item.partner.offerDiscountedMemberships ? (
+                            <span className="text-green-700">{item.partner.discountPercentage}%</span>
+                          ) : (
+                            <span className="text-zinc-400">{t('no')}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 tabular-nums">
+                          {item.partner.networkPayoutRate.toLocaleString()} {t('dzdSuffix')}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedId(expanded ? null : item.incubatorId)}
+                            className="inline-flex items-center gap-1 text-zinc-600 hover:text-zinc-900"
+                          >
+                            {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                            {bookableCount}/{item.spaces.length}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => setEditItem(item)} aria-label={t('settings')}>
+                              <Settings2 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600"
+                              onClick={() => handleUnenroll(item)} aria-label={t('unenroll')}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                      {expanded && (
+                        <tr>
+                          <td colSpan={7} className="p-0">
+                            <SpacesPanel
+                              item={item}
+                              onToggled={(spaceId, nb, ipn) => handleSpaceToggled(item.incubatorId, spaceId, nb, ipn)}
+                            />
+                          </td>
+                        </tr>
                       )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {item.partner.acceptNetworkPasses ? (
-                        <span className="text-green-700">{t('yes')}</span>
-                      ) : (
-                        <span className="text-zinc-400">{t('no')}</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {item.partner.offerDiscountedMemberships ? (
-                        <span className="text-green-700">{item.partner.discountPercentage}%</span>
-                      ) : (
-                        <span className="text-zinc-400">{t('no')}</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 tabular-nums">
-                      {item.partner.networkPayoutRate.toLocaleString()} DZD
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setEditItem(item)}
-                        >
-                          <Settings2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-500 hover:text-red-600"
-                          onClick={() => handleUnenroll(item)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </CardContent>
@@ -449,6 +524,7 @@ export function PartnerManagement() {
         open={showEnroll}
         onClose={() => setShowEnroll(false)}
         onEnrolled={load}
+        enrolledIds={enrolledIds}
       />
 
       {editItem && (

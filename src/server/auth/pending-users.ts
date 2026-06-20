@@ -31,6 +31,12 @@ export interface PendingUserInput {
   city: string;
   locale: 'en' | 'fr' | 'ar';
   incubatorName?: string;
+  /** Optional incubator website (role INCUBATOR/TRAINER). */
+  website?: string;
+  /** Optional incubator Instagram handle/URL (role INCUBATOR/TRAINER). */
+  instagram?: string;
+  /** Optional investor LinkedIn handle/URL (role INVESTOR). */
+  linkedin?: string;
   sex?: 'MALE' | 'FEMALE';
   /** "Book & create an account": booking carried through OTP. See PendingUserRecord. */
   pendingBooking?: { kind: 'CARD' | 'CONSULTATION'; ref: string } | null;
@@ -77,6 +83,9 @@ export async function issuePendingUser(input: PendingUserInput): Promise<IssuePe
       city: input.city,
       locale: input.locale,
       incubatorName: input.incubatorName,
+      website: input.website,
+      instagram: input.instagram,
+      linkedin: input.linkedin,
       sex: input.sex,
       pendingBooking: input.pendingBooking ?? null,
       otpHash: hashOtp(code),
@@ -170,6 +179,15 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
       createdAt: now,
       updatedAt: now,
     };
+
+    // Investor onboarding: new investors require admin approval before they can
+    // use the gated investor surfaces. Stored separately from `status` (which
+    // stays ACTIVE so they can log in and reach the "awaiting approval" screen).
+    if (role === 'INVESTOR') {
+      user.investorStatus = 'PENDING_APPROVAL';
+      user.linkedin = pending.linkedin?.trim() || null;
+    }
+
     d.users.push(user);
 
     // Auto-create a provider IncubatorRecord for INCUBATOR- and TRAINER-role
@@ -201,7 +219,8 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
          * that account is activated immediately.
          */
         status:           isBootstrapAdmin ? 'ACTIVE' : 'PENDING',
-        website:          null,
+        website:          pending.website?.trim() || null,
+        instagram:        pending.instagram?.trim() || null,
         logoUrl:          null,
         subscriptionTier: 'COMMISSION',   // legacy field
         subscriptionCode: 'COMMISSION',   // canonical field

@@ -340,7 +340,7 @@ export async function getPartnerStats(partnerId: string): Promise<PartnerStats> 
 
   return {
     partnerId,
-    spaceId: partner.spaceId,
+    spaceId: partner.spaceId ?? '',
     spaceName,
     totalVisits: visits.length,
     visitsThisMonth,
@@ -380,7 +380,7 @@ export async function listPartners(opts: {
   const spaceById = new Map((data.spaces ?? []).map((s) => [s.id, s]));
 
   return partners.map((p) => {
-    const space = spaceById.get(p.spaceId);
+    const space = p.spaceId ? spaceById.get(p.spaceId) : undefined;
     return {
       partner: p,
       spaceName: space?.name ?? 'Unknown space',

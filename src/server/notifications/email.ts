@@ -125,17 +125,26 @@ export function welcomeEmailHtml(opts: { fullName: string; role: string; dashboa
 
 /* ─────────────── Incubator approval (admin gate) ─────────────── */
 
+/** Supported email locales. Arabic is RTL — templates set dir accordingly. */
+export type EmailLang = 'en' | 'fr' | 'ar';
+
+/** Normalize any incoming locale to a supported email locale (default fr). */
+function normalizeEmailLang(lang?: string): EmailLang {
+  return lang === 'en' ? 'en' : lang === 'ar' ? 'ar' : 'fr';
+}
+
 interface IncubatorApprovalCopy {
   subject: string;
   heading: string;
   intro: string;
   next: string;
+  bullets: string[];
   cta: string;
   footer: string;
 }
 
-/** Localized strings for the incubator-approval email. */
-const INCUBATOR_APPROVAL_COPY: Record<'en' | 'fr', (incubatorName: string) => IncubatorApprovalCopy> = {
+/** Localized strings for the incubator-approval email (en / fr / ar). */
+const INCUBATOR_APPROVAL_COPY: Record<EmailLang, (incubatorName: string) => IncubatorApprovalCopy> = {
   en: (name) => ({
     subject: 'Your incubator is approved on Metwork',
     heading: `${name} is approved! 🎉`,
@@ -143,50 +152,67 @@ const INCUBATOR_APPROVAL_COPY: Record<'en' | 'fr', (incubatorName: string) => In
       'Great news — your incubator profile has just been approved by the Metwork team. ' +
       'Your coworking spaces, programs and events are now visible to the public on the platform.',
     next: 'Here\'s what you can do next:',
+    bullets: [
+      'Publish spaces and start accepting bookings',
+      'Create programs and events for your community',
+      'Invite your team and manage payouts',
+    ],
     cta: 'Open your dashboard',
     footer: 'Need help getting started? Reply to this email and our team will guide you.',
   }),
   fr: (name) => ({
-    subject: 'Votre incubateur est approuvé sur Metwork',
+    subject: 'Votre compte Metwork a été approuvé',
     heading: `${name} est approuvé ! 🎉`,
     intro:
-      'Bonne nouvelle — votre profil d\'incubateur vient d\'être approuvé par l\'équipe Metwork. ' +
-      'Vos espaces de coworking, programmes et événements sont désormais visibles publiquement sur la plateforme.',
+      'Votre compte Metwork a été approuvé. Vous pouvez maintenant profiter de toutes les ' +
+      'fonctionnalités. Vos espaces de coworking, programmes et événements sont désormais visibles ' +
+      'publiquement sur la plateforme.',
     next: 'Voici ce que vous pouvez faire maintenant :',
+    bullets: [
+      'Publier vos espaces et activer les réservations',
+      'Créer programmes et événements pour votre communauté',
+      'Inviter votre équipe et gérer les paiements',
+    ],
     cta: 'Accéder à mon tableau de bord',
     footer: 'Besoin d\'aide pour démarrer ? Répondez à cet e-mail et notre équipe vous accompagnera.',
+  }),
+  ar: (name) => ({
+    subject: 'تمت الموافقة على حسابك في Metwork',
+    heading: `تمت الموافقة على ${name}! 🎉`,
+    intro:
+      'تمت الموافقة على حسابك في Metwork. يمكنك الآن الاستفادة من جميع الميزات. أصبحت مساحات العمل ' +
+      'المشترك والبرامج والفعاليات الخاصة بك مرئية الآن للجميع على المنصة.',
+    next: 'إليك ما يمكنك فعله الآن:',
+    bullets: [
+      'نشر مساحاتك وبدء قبول الحجوزات',
+      'إنشاء البرامج والفعاليات لمجتمعك',
+      'دعوة فريقك وإدارة المدفوعات',
+    ],
+    cta: 'الذهاب إلى لوحة التحكم',
+    footer: 'هل تحتاج مساعدة للبدء؟ رد على هذا البريد وسيرشدك فريقنا.',
   }),
 };
 
 export function incubatorApprovalEmailHtml(opts: {
   incubatorName: string;
   dashboardUrl: string;
-  lang?: 'en' | 'fr';
+  lang?: EmailLang;
 }): string {
-  const lang = opts.lang === 'fr' ? 'fr' : 'en';
+  const lang = normalizeEmailLang(opts.lang);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
   const c = INCUBATOR_APPROVAL_COPY[lang](opts.incubatorName);
-  const bullets =
-    lang === 'fr'
-      ? [
-          'Publier vos espaces et activer les réservations',
-          'Créer programmes et événements pour votre communauté',
-          'Inviter votre équipe et gérer les paiements',
-        ]
-      : [
-          'Publish spaces and start accepting bookings',
-          'Create programs and events for your community',
-          'Invite your team and manage payouts',
-        ];
 
   return layout(`
+    <div dir="${dir}">
     ${h1(c.heading)}
     ${p(c.intro)}
     ${p(c.next)}
-    <ul style="margin:0 0 20px;padding:0 0 0 20px;color:#3f3f46;font-size:15px;line-height:2;">
-      ${bullets.map((b) => `<li>${b}</li>`).join('')}
+    <ul style="margin:0 0 20px;padding:0 20px;color:#3f3f46;font-size:15px;line-height:2;">
+      ${c.bullets.map((b) => `<li>${b}</li>`).join('')}
     </ul>
     ${button(opts.dashboardUrl, c.cta)}
     ${p(`<span style="color:#71717a;font-size:13px;">${c.footer}</span>`)}
+    </div>
   `);
 }
 
@@ -198,9 +224,9 @@ export function incubatorApprovalEmailHtml(opts: {
 export async function sendIncubatorApprovalEmail(opts: {
   to: string;
   incubatorName: string;
-  lang?: 'en' | 'fr';
+  lang?: EmailLang;
 }): Promise<boolean> {
-  const lang = opts.lang === 'fr' ? 'fr' : 'en';
+  const lang = normalizeEmailLang(opts.lang);
   const subject = INCUBATOR_APPROVAL_COPY[lang](opts.incubatorName).subject;
   const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard`;
   const html = incubatorApprovalEmailHtml({
@@ -213,6 +239,214 @@ export async function sendIncubatorApprovalEmail(opts: {
     // Resend not configured — log for ops visibility.
     console.log('[email/incubator-approval]', { to: opts.to, subject });
   }
+  return delivered;
+}
+
+/* ─────────────── Incubator rejection (admin gate) ─────────────── */
+
+interface RejectionCopy {
+  subject: string;
+  heading: string;
+  intro: string;
+  reasonLabel: string;
+  next: string;
+  footer: string;
+}
+
+const INCUBATOR_REJECTION_COPY: Record<EmailLang, (name: string) => RejectionCopy> = {
+  en: (name) => ({
+    subject: 'Your Metwork incubator account — more information needed',
+    heading: `Update on ${name}`,
+    intro:
+      'Thank you for registering on Metwork. After review, your incubator account has not been ' +
+      'approved yet.',
+    reasonLabel: 'Reason',
+    next:
+      'You can update your profile with the requested information and reply to this email — we will ' +
+      'review your account again.',
+    footer: 'Questions? Just reply to this email and our team will help.',
+  }),
+  fr: (name) => ({
+    subject: 'Votre compte incubateur Metwork — informations complémentaires requises',
+    heading: `Mise à jour concernant ${name}`,
+    intro:
+      'Merci de votre inscription sur Metwork. Après examen, votre compte incubateur n\'a pas encore ' +
+      'été approuvé.',
+    reasonLabel: 'Motif',
+    next:
+      'Vous pouvez mettre à jour votre profil avec les informations demandées et répondre à cet ' +
+      'e-mail — nous réexaminerons votre compte.',
+    footer: 'Des questions ? Répondez simplement à cet e-mail et notre équipe vous aidera.',
+  }),
+  ar: (name) => ({
+    subject: 'حساب الحاضنة في Metwork — مطلوب معلومات إضافية',
+    heading: `تحديث بخصوص ${name}`,
+    intro:
+      'شكرًا لتسجيلك في Metwork. بعد المراجعة، لم تتم الموافقة على حساب الحاضنة الخاص بك بعد.',
+    reasonLabel: 'السبب',
+    next:
+      'يمكنك تحديث ملفك بالمعلومات المطلوبة والرد على هذا البريد — وسنراجع حسابك مرة أخرى.',
+    footer: 'هل لديك أسئلة؟ رد على هذا البريد وسيساعدك فريقنا.',
+  }),
+};
+
+const INVESTOR_REJECTION_COPY: Record<EmailLang, (name: string) => RejectionCopy> = {
+  en: (name) => ({
+    subject: 'Your Metwork investor account — more information needed',
+    heading: `Update on your account, ${name}`,
+    intro:
+      'Thank you for registering on Metwork. After review, your investor account has not been ' +
+      'approved yet.',
+    reasonLabel: 'Reason',
+    next:
+      'You can provide more information by replying to this email — we will review your account again.',
+    footer: 'Questions? Just reply to this email and our team will help.',
+  }),
+  fr: (name) => ({
+    subject: 'Votre compte investisseur Metwork — informations complémentaires requises',
+    heading: `Mise à jour concernant votre compte, ${name}`,
+    intro:
+      'Merci de votre inscription sur Metwork. Après examen, votre compte investisseur n\'a pas ' +
+      'encore été approuvé.',
+    reasonLabel: 'Motif',
+    next:
+      'Vous pouvez fournir plus d\'informations en répondant à cet e-mail — nous réexaminerons votre compte.',
+    footer: 'Des questions ? Répondez simplement à cet e-mail et notre équipe vous aidera.',
+  }),
+  ar: (name) => ({
+    subject: 'حساب المستثمر في Metwork — مطلوب معلومات إضافية',
+    heading: `تحديث بخصوص حسابك، ${name}`,
+    intro:
+      'شكرًا لتسجيلك في Metwork. بعد المراجعة، لم تتم الموافقة على حساب المستثمر الخاص بك بعد.',
+    reasonLabel: 'السبب',
+    next:
+      'يمكنك تقديم مزيد من المعلومات بالرد على هذا البريد — وسنراجع حسابك مرة أخرى.',
+    footer: 'هل لديك أسئلة؟ رد على هذا البريد وسيساعدك فريقنا.',
+  }),
+};
+
+function rejectionEmailHtml(c: RejectionCopy, reason: string, lang: EmailLang): string {
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const safeReason = reason.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return layout(`
+    <div dir="${dir}">
+    ${h1(c.heading)}
+    ${p(c.intro)}
+    ${reason.trim() ? `
+    <div style="background:#f9fafb;border:1px solid #e4e4e7;border-radius:8px;padding:16px 20px;margin:20px 0;">
+      <p style="margin:0 0 4px;font-size:13px;color:#71717a;font-weight:600;">${c.reasonLabel}</p>
+      <p style="margin:0;font-size:14px;color:#3f3f46;white-space:pre-line;">${safeReason}</p>
+    </div>` : ''}
+    ${p(c.next)}
+    ${p(`<span style="color:#71717a;font-size:13px;">${c.footer}</span>`)}
+    </div>
+  `);
+}
+
+/** Send the incubator-rejection email (incubator locale, default fr). */
+export async function sendIncubatorRejectionEmail(opts: {
+  to: string;
+  incubatorName: string;
+  reason: string;
+  lang?: EmailLang;
+}): Promise<boolean> {
+  const lang = normalizeEmailLang(opts.lang);
+  const c = INCUBATOR_REJECTION_COPY[lang](opts.incubatorName);
+  const html = rejectionEmailHtml(c, opts.reason, lang);
+  const delivered = await sendResendEmail({ to: opts.to, subject: c.subject, html });
+  if (!delivered) console.log('[email/incubator-rejection]', { to: opts.to, subject: c.subject });
+  return delivered;
+}
+
+/* ─────────────── Investor approval / rejection (admin gate) ─────────────── */
+
+const INVESTOR_APPROVAL_COPY: Record<EmailLang, (name: string) => IncubatorApprovalCopy> = {
+  en: (name) => ({
+    subject: 'Your Metwork investor account is approved',
+    heading: `Welcome aboard, ${name}! 🎉`,
+    intro:
+      'Your Metwork investor account has been approved. You now have full access to the startup ' +
+      'directory and your investor dashboard.',
+    next: 'Here\'s what you can do next:',
+    bullets: [
+      'Browse the startup directory',
+      'Save and track promising ventures',
+      'Request introductions and manage your portfolio',
+    ],
+    cta: 'Open your dashboard',
+    footer: 'Need help getting started? Reply to this email and our team will guide you.',
+  }),
+  fr: (name) => ({
+    subject: 'Votre compte investisseur Metwork a été approuvé',
+    heading: `Bienvenue, ${name} ! 🎉`,
+    intro:
+      'Votre compte Metwork a été approuvé. Vous pouvez maintenant profiter de toutes les ' +
+      'fonctionnalités : l\'annuaire des startups et votre tableau de bord investisseur.',
+    next: 'Voici ce que vous pouvez faire maintenant :',
+    bullets: [
+      'Parcourir l\'annuaire des startups',
+      'Enregistrer et suivre les projets prometteurs',
+      'Demander des mises en relation et gérer votre portefeuille',
+    ],
+    cta: 'Accéder à mon tableau de bord',
+    footer: 'Besoin d\'aide pour démarrer ? Répondez à cet e-mail et notre équipe vous accompagnera.',
+  }),
+  ar: (name) => ({
+    subject: 'تمت الموافقة على حساب المستثمر الخاص بك في Metwork',
+    heading: `مرحبًا بك، ${name}! 🎉`,
+    intro:
+      'تمت الموافقة على حسابك في Metwork. يمكنك الآن الاستفادة من جميع الميزات: دليل الشركات الناشئة ' +
+      'ولوحة تحكم المستثمر.',
+    next: 'إليك ما يمكنك فعله الآن:',
+    bullets: [
+      'تصفح دليل الشركات الناشئة',
+      'حفظ ومتابعة المشاريع الواعدة',
+      'طلب التعارف وإدارة محفظتك',
+    ],
+    cta: 'الذهاب إلى لوحة التحكم',
+    footer: 'هل تحتاج مساعدة للبدء؟ رد على هذا البريد وسيرشدك فريقنا.',
+  }),
+};
+
+/** Send the investor-approval email (investor locale, default fr). */
+export async function sendInvestorApprovalEmail(opts: {
+  to: string;
+  investorName: string;
+  lang?: EmailLang;
+}): Promise<boolean> {
+  const lang = normalizeEmailLang(opts.lang);
+  const c = INVESTOR_APPROVAL_COPY[lang](opts.investorName);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard`;
+  const html = layout(`
+    <div dir="${dir}">
+    ${h1(c.heading)}
+    ${p(c.intro)}
+    ${p(c.next)}
+    <ul style="margin:0 0 20px;padding:0 20px;color:#3f3f46;font-size:15px;line-height:2;">
+      ${c.bullets.map((b) => `<li>${b}</li>`).join('')}
+    </ul>
+    ${button(dashboardUrl, c.cta)}
+    ${p(`<span style="color:#71717a;font-size:13px;">${c.footer}</span>`)}
+    </div>
+  `);
+  const delivered = await sendResendEmail({ to: opts.to, subject: c.subject, html });
+  if (!delivered) console.log('[email/investor-approval]', { to: opts.to, subject: c.subject });
+  return delivered;
+}
+
+/** Send the investor-rejection email (investor locale, default fr). */
+export async function sendInvestorRejectionEmail(opts: {
+  to: string;
+  investorName: string;
+  reason: string;
+  lang?: EmailLang;
+}): Promise<boolean> {
+  const lang = normalizeEmailLang(opts.lang);
+  const c = INVESTOR_REJECTION_COPY[lang](opts.investorName);
+  const html = rejectionEmailHtml(c, opts.reason, lang);
+  const delivered = await sendResendEmail({ to: opts.to, subject: c.subject, html });
+  if (!delivered) console.log('[email/investor-rejection]', { to: opts.to, subject: c.subject });
   return delivered;
 }
 
@@ -1088,42 +1322,91 @@ export interface AdminIncubatorNotifParams {
   phone?:    string;
   userId:    string;
   createdAt: string;
+  /** Incubator / organisation name, if distinct from the contact's full name. */
+  incubatorName?: string;
+  website?:  string | null;
+  instagram?: string | null;
+  /** Admin review link (incubators manager). */
+  reviewUrl?: string;
+}
+
+function notifRow(label: string, value: string, striped: boolean): string {
+  return `<tr${striped ? ' style="background:#f9fafb;"' : ''}>
+    <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;width:140px;border-bottom:1px solid #e4e4e7;">${label}</td>
+    <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${value}</td>
+  </tr>`;
+}
+
+function linkCell(raw: string): string {
+  const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  return `<a href="${href}" style="color:#166534;">${raw}</a>`;
 }
 
 export function adminIncubatorNotificationHtml(params: AdminIncubatorNotifParams): string {
-  const { fullName, email, phone, userId, createdAt } = params;
+  const { fullName, email, phone, userId, createdAt, incubatorName, website, instagram, reviewUrl } = params;
   const fmtDate = (iso: string) => {
     try { return new Date(iso).toLocaleString('fr-DZ', { dateStyle: 'long', timeStyle: 'short' }); }
     catch { return iso; }
   };
 
+  const rows = [
+    incubatorName ? notifRow('Incubateur', incubatorName, true) : '',
+    notifRow('Contact', fullName, !incubatorName),
+    notifRow('Email', linkCell(`mailto:${email}`.replace('mailto:', '')), true),
+    phone ? notifRow('Téléphone', phone, false) : '',
+    website ? notifRow('Site web', linkCell(website), true) : '',
+    instagram ? notifRow('Instagram', linkCell(instagram), false) : '',
+    notifRow('Inscrit le', fmtDate(createdAt), true),
+    notifRow('ID', `<span style="font-family:monospace;">${userId}</span>`, false),
+  ].join('');
+
   return layout(`
-    ${h1('[Admin] Nouvel incubateur inscrit')}
-    ${p(`Un nouveau compte incubateur vient d'être créé et vérifié.`)}
+    ${h1('[Admin] Nouvel incubateur inscrit — révision requise')}
+    ${p(`Un nouveau compte incubateur vient d'être créé et vérifié. Merci de le passer en revue.`)}
     <table width="100%" cellpadding="0" cellspacing="0"
            style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin:20px 0;">
-      <tr style="background:#f9fafb;">
-        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;width:140px;border-bottom:1px solid #e4e4e7;">Nom</td>
-        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${fullName}</td>
-      </tr>
-      <tr>
-        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Email</td>
-        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${email}</td>
-      </tr>
-      ${phone ? `<tr style="background:#f9fafb;">
-        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Téléphone</td>
-        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${phone}</td>
-      </tr>` : ''}
-      <tr>
-        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #e4e4e7;">Inscrit le</td>
-        <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #e4e4e7;">${fmtDate(createdAt)}</td>
-      </tr>
-      <tr style="background:#f9fafb;">
-        <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;">ID</td>
-        <td style="padding:10px 16px;font-size:13px;color:#09090b;font-family:monospace;">${userId}</td>
-      </tr>
+      ${rows}
     </table>
-    ${p('<span style="color:#71717a;font-size:12px;">Accédez au tableau de bord admin pour gérer ce compte.</span>')}
+    ${reviewUrl ? button(reviewUrl, 'Réviser dans le tableau de bord') : p('<span style="color:#71717a;font-size:12px;">Accédez au tableau de bord admin pour gérer ce compte.</span>')}
+  `);
+}
+
+/* ── Admin: new investor account ── */
+
+export interface AdminInvestorNotifParams {
+  fullName:  string;
+  email:     string;
+  phone?:    string;
+  userId:    string;
+  createdAt: string;
+  linkedin?: string | null;
+  reviewUrl?: string;
+}
+
+export function adminInvestorNotificationHtml(params: AdminInvestorNotifParams): string {
+  const { fullName, email, phone, userId, createdAt, linkedin, reviewUrl } = params;
+  const fmtDate = (iso: string) => {
+    try { return new Date(iso).toLocaleString('fr-DZ', { dateStyle: 'long', timeStyle: 'short' }); }
+    catch { return iso; }
+  };
+
+  const rows = [
+    notifRow('Nom', fullName, true),
+    notifRow('Email', email, false),
+    phone ? notifRow('Téléphone', phone, true) : '',
+    linkedin ? notifRow('LinkedIn', linkCell(linkedin), false) : '',
+    notifRow('Inscrit le', fmtDate(createdAt), true),
+    notifRow('ID', `<span style="font-family:monospace;">${userId}</span>`, false),
+  ].join('');
+
+  return layout(`
+    ${h1('[Admin] Nouvel investisseur inscrit — révision requise')}
+    ${p(`Un nouveau compte investisseur vient d'être créé et vérifié. Merci de le passer en revue.`)}
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin:20px 0;">
+      ${rows}
+    </table>
+    ${reviewUrl ? button(reviewUrl, 'Réviser dans le tableau de bord') : p('<span style="color:#71717a;font-size:12px;">Accédez au tableau de bord admin pour gérer ce compte.</span>')}
   `);
 }
 

@@ -33,6 +33,7 @@ import {
   adminConsultationNotificationHtml,
   adminOrderNotificationHtml,
   adminIncubatorNotificationHtml,
+  adminInvestorNotificationHtml,
   mentorSessionConfirmedEmailHtml,
   type AdminOrderNotifParams,
 } from './email';
@@ -994,13 +995,17 @@ export function sendAdminNewIncubatorNotification(params: {
   phone?:    string;
   userId:    string;
   createdAt: string;
+  incubatorName?: string;
+  website?:  string | null;
+  instagram?: string | null;
 }): void {
   const adminEmail = process.env.CONTACT_EMAIL ?? process.env.EMAIL_FROM ?? 'contact@metwork.dz';
+  const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/admin/incubators`;
 
   sendResendEmail({
     to:      adminEmail,
-    subject: `[Metwork] Nouvel incubateur inscrit — ${params.fullName}`,
-    html:    adminIncubatorNotificationHtml(params),
+    subject: `[Metwork] Nouvel incubateur inscrit — ${params.incubatorName ?? params.fullName}`,
+    html:    adminIncubatorNotificationHtml({ ...params, reviewUrl }),
   })
     .then((sent) => {
       if (!sent)
@@ -1013,6 +1018,40 @@ export function sendAdminNewIncubatorNotification(params: {
     .catch((err: Error) =>
       // eslint-disable-next-line no-console
       console.error(`${banner} Admin incubator notification failed →`, err.message),
+    );
+}
+
+/**
+ * Notify the admin when a new INVESTOR account is verified (review required).
+ * Fire-and-forget — errors are logged, never surfaced.
+ */
+export function sendAdminNewInvestorNotification(params: {
+  fullName:  string;
+  email:     string;
+  phone?:    string;
+  userId:    string;
+  createdAt: string;
+  linkedin?: string | null;
+}): void {
+  const adminEmail = process.env.CONTACT_EMAIL ?? process.env.EMAIL_FROM ?? 'contact@metwork.dz';
+  const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/admin/investors`;
+
+  sendResendEmail({
+    to:      adminEmail,
+    subject: `[Metwork] Nouvel investisseur inscrit — ${params.fullName}`,
+    html:    adminInvestorNotificationHtml({ ...params, reviewUrl }),
+  })
+    .then((sent) => {
+      if (!sent)
+        // eslint-disable-next-line no-console
+        console.log(`${banner} ADMIN INVESTOR NOTIF (no Resend) → ${adminEmail} :: ${params.email}`);
+      else
+        // eslint-disable-next-line no-console
+        console.log(`${banner} ADMIN INVESTOR NOTIF sent → ${adminEmail} :: ${params.email}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Admin investor notification failed →`, err.message),
     );
 }
 

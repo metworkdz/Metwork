@@ -7,6 +7,8 @@
  */
 import { readSession } from '@/server/auth/session';
 import { toSessionUser } from '@/server/auth/serialize';
+import { db } from '@/server/db/store';
+import { isArchivedIncubatorManager } from '@/server/incubator/visibility';
 import { json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -15,5 +17,15 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const ctx = await readSession();
   if (!ctx) return jsonError(401, 'UNAUTHENTICATED', 'Not authenticated');
+
+  // Soft-archived incubator owners are treated as logged-out everywhere so any
+  // existing session is effectively invalidated (RSC guards redirect to login).
+  if (ctx.user.role === 'INCUBATOR') {
+    const data = await db.read();
+    if (isArchivedIncubatorManager(data.incubators ?? [], ctx.user.id)) {
+      return jsonError(401, 'UNAUTHENTICATED', 'Not authenticated');
+    }
+  }
+
   return json(toSessionUser(ctx.user));
 }

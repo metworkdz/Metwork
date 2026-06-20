@@ -1,18 +1,18 @@
 /**
- * GET  /api/admin/partners   — list all partner enrolments
- * POST /api/admin/partners   — enroll a space in the Partner Program
+ * GET  /api/admin/partners   — list per-incubator partner enrolments
+ * POST /api/admin/partners   — enroll an INCUBATOR in the Partner Program
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
-import { enrollSpace, listPartners } from '@/server/network/partner-service';
+import { enrollIncubator, listIncubatorPartners } from '@/server/network/partner-incubator-service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const enrollSchema = z.object({
-  spaceId:                    z.string().uuid('spaceId must be a UUID'),
+  incubatorId:                z.string().min(1, 'incubatorId is required'),
   offerDiscountedMemberships: z.boolean().optional(),
   discountPercentage:         z.number().int().min(1).max(99).optional(),
   acceptNetworkPasses:        z.boolean().optional(),
@@ -25,7 +25,7 @@ export async function GET() {
   const guard = await requireApiRole(['ADMIN']);
   if (!guard.ok) return guard.response;
 
-  const items = await listPartners();
+  const items = await listIncubatorPartners();
   return json({ items, total: items.length });
 }
 
@@ -45,16 +45,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const partner = await enrollSpace(
-      input,
-      guard.user.id,
-      guard.user.email,
-    );
+    const partner = await enrollIncubator(input, guard.user.id, guard.user.email);
     return json({ partner }, { status: 201 });
   } catch (err) {
     console.error('[partner-route]', err);
     const msg = err instanceof Error ? err.message : '';
-    if (msg.includes('not found')) return jsonError(404, 'SPACE_NOT_FOUND', 'Space not found');
+    if (msg.includes('not found')) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'Incubator not found');
     return jsonError(400, 'ENROLL_FAILED', 'An unexpected error occurred');
   }
 }

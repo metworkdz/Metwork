@@ -7,13 +7,14 @@
  */
 import { useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { MoreVertical, Search, ShieldCheck, ShieldOff, Trash2, UserCog, UserX } from 'lucide-react';
+import { Download, MoreVertical, Search, ShieldCheck, ShieldOff, Trash2, UserCog, UserX } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,6 +45,7 @@ export interface AdminUserView {
   phoneVerified: boolean;
   emailVerified: boolean;
   membershipCode: string | null;
+  membershipTier?: 'EXPLORER' | 'BUILDER' | 'FOUNDER';
   locale: string;
   createdAt: string;
   updatedAt: string;
@@ -105,19 +107,49 @@ export function AdminUsersTable({ initial }: { initial: AdminUserView[] }) {
   const [query,       setQuery]       = useState('');
   const [role,        setRole]        = useState<UserRole | typeof ALL>(ALL);
   const [status,      setStatus]      = useState<UserStatus | typeof ALL>(ALL);
+  const [tier,        setTier]        = useState<'EXPLORER' | 'BUILDER' | 'FOUNDER' | typeof ALL>(ALL);
+  const [fromDate,    setFromDate]    = useState('');
+  const [toDate,      setToDate]      = useState('');
   const [deletingUser, setDeletingUser] = useState<AdminUserView | null>(null);
   const [deletebusy,  setDeleteBusy]  = useState(false);
   const [deleteErr,   setDeleteErr]   = useState<string | null>(null);
+
+  const fromMs = fromDate ? Date.parse(fromDate) : null;
+  const toMs = useMemo(() => {
+    if (!toDate) return null;
+    const d = new Date(toDate);
+    d.setHours(23, 59, 59, 999);
+    return d.getTime();
+  }, [toDate]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return users.filter((u) => {
       if (role   !== ALL && u.role   !== role)   return false;
       if (status !== ALL && u.status !== status) return false;
+      if (tier   !== ALL && (u.membershipTier ?? 'EXPLORER') !== tier) return false;
+      const createdMs = Date.parse(u.createdAt);
+      if (fromMs !== null && !Number.isNaN(fromMs) && createdMs < fromMs) return false;
+      if (toMs !== null && createdMs > toMs) return false;
       if (!q) return true;
       return u.fullName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
     });
-  }, [users, query, role, status]);
+  }, [users, query, role, status, tier, fromMs, toMs]);
+
+  function buildExportUrl(format: 'csv' | 'xlsx'): string {
+    const params = new URLSearchParams({ format });
+    if (role   !== ALL) params.set('role', role);
+    if (status !== ALL) params.set('status', status);
+    if (tier   !== ALL) params.set('tier', tier);
+    if (fromDate) params.set('from', fromDate);
+    if (toDate) params.set('to', toDate);
+    if (query.trim()) params.set('q', query.trim());
+    return `/api/admin/users/export?${params.toString()}`;
+  }
+
+  function exportAs(format: 'csv' | 'xlsx') {
+    window.location.assign(buildExportUrl(format));
+  }
 
   async function applyPatch(id: string, patch: { role?: UserRole; status?: UserStatus }) {
     try {
@@ -182,6 +214,42 @@ export function AdminUsersTable({ initial }: { initial: AdminUserView[] }) {
             <SelectItem value="BANNED">{t('banned')}</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      {/* Tier + date-range filters + export */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="space-y-1">
+          <Label htmlFor="users-tier" className="text-xs text-muted-foreground">{t('tierFilter')}</Label>
+          <Select value={tier} onValueChange={(v) => setTier(v as 'EXPLORER' | 'BUILDER' | 'FOUNDER' | typeof ALL)}>
+            <SelectTrigger id="users-tier" className="w-full sm:w-[150px]">
+              <SelectValue placeholder={t('tierFilter')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>{t('allTiers')}</SelectItem>
+              <SelectItem value="EXPLORER">{t('tierExplorer')}</SelectItem>
+              <SelectItem value="BUILDER">{t('tierBuilder')}</SelectItem>
+              <SelectItem value="FOUNDER">{t('tierFounder')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="users-from" className="text-xs text-muted-foreground">{t('fromDate')}</Label>
+          <Input id="users-from" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full sm:w-[160px]" />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="users-to" className="text-xs text-muted-foreground">{t('toDate')}</Label>
+          <Input id="users-to" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full sm:w-[160px]" />
+        </div>
+        <div className="ms-auto flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => exportAs('csv')} disabled={filtered.length === 0}>
+            <Download className="size-4" />
+            {t('exportCsv')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => exportAs('xlsx')} disabled={filtered.length === 0}>
+            <Download className="size-4" />
+            {t('exportXlsx')}
+          </Button>
+        </div>
       </div>
 
       <p className="text-sm text-muted-foreground">

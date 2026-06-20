@@ -20,6 +20,7 @@ import { createSession, setSessionCookie } from '@/server/auth/session';
 import { toSessionUser } from '@/server/auth/serialize';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
+import { isArchivedIncubatorManager } from '@/server/incubator/visibility';
 import { identify } from '@/lib/analytics';
 
 export const runtime = 'nodejs';
@@ -82,6 +83,19 @@ export async function POST(req: NextRequest) {
 
   if (user.status !== 'ACTIVE') {
     return jsonError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
+  }
+
+  // Soft-archived incubator owners cannot sign in. We give a clear, specific
+  // message (rather than the generic 401) so they know to contact support.
+  if (
+    user.role === 'INCUBATOR' &&
+    isArchivedIncubatorManager(data.incubators ?? [], user.id)
+  ) {
+    return jsonError(
+      403,
+      'ACCOUNT_ARCHIVED',
+      'This account has been archived. Please contact Metwork support.',
+    );
   }
 
   const issued = await createSession(user.id, { remember: input.rememberMe });

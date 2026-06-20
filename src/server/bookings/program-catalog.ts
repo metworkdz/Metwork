@@ -6,6 +6,7 @@
  */
 import { db, type ProgramRecord } from '@/server/db/store';
 import { countAttendance } from '@/server/attendance';
+import { isPubliclyVisibleIncubator, visibleIncubatorIds } from '@/server/incubator/visibility';
 import type { Program } from '@/types/domain';
 
 function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
@@ -37,13 +38,9 @@ function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
 /** List all active programs whose owning incubator is ACTIVE (no demo fallback). */
 export async function listPrograms(): Promise<Program[]> {
   const data = await db.read();
-  const activeIncIds = new Set(
-    (data.incubators ?? [])
-      .filter((i) => i.status === 'ACTIVE')
-      .map((i) => i.id),
-  );
+  const visibleIncIds = visibleIncubatorIds(data.incubators ?? []);
   return (data.programs ?? [])
-    .filter((p) => p.isActive && activeIncIds.has(p.incubatorId))
+    .filter((p) => p.isActive && visibleIncIds.has(p.incubatorId))
     .map((p) => fromRecord(p, countAttendance(data, 'PROGRAM', p.id)));
 }
 
@@ -53,7 +50,7 @@ export async function findProgramById(id: string): Promise<Program | null> {
   const dbProg = (data.programs ?? []).find((p) => p.id === id && p.isActive);
   if (!dbProg) return null;
   const inc = (data.incubators ?? []).find((i) => i.id === dbProg.incubatorId);
-  if (!inc || inc.status !== 'ACTIVE') return null;
+  if (!isPubliclyVisibleIncubator(inc)) return null;
   return fromRecord(dbProg, countAttendance(data, 'PROGRAM', dbProg.id));
 }
 

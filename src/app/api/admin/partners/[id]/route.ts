@@ -1,17 +1,16 @@
 /**
- * GET    /api/admin/partners/[spaceId]   — get partner record + stats for a space
- * PATCH  /api/admin/partners/[spaceId]   — update partner settings
- * DELETE /api/admin/partners/[spaceId]   — unenroll a space
+ * PATCH  /api/admin/partners/[id]   — update an incubator's partner settings
+ * DELETE /api/admin/partners/[id]   — unenroll an incubator
+ *
+ * `id` is the IncubatorRecord.id (per-incubator Partner Program).
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import {
-  updatePartnerSettings,
-  unenrollSpace,
-  getPartnerStats,
-  listPartners,
-} from '@/server/network/partner-service';
+  updateIncubatorPartnerSettings,
+  unenrollIncubator,
+} from '@/server/network/partner-incubator-service';
 import { fromZod, json, jsonError, noContent } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -27,31 +26,14 @@ const patchSchema = z.object({
   maxDiscountedMembers:       z.number().int().min(1).nullable().optional(),
 });
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { spaceId: string } },
-) {
-  const guard = await requireApiRole(['ADMIN']);
-  if (!guard.ok) return guard.response;
-
-  const items = await listPartners();
-  const item = items.find((i) => i.partner.spaceId === params.spaceId);
-  if (!item) return jsonError(404, 'PARTNER_NOT_FOUND', 'No partner record for this space');
-
-  try {
-    const stats = await getPartnerStats(item.partner.id);
-    return json({ partner: item.partner, spaceName: item.spaceName, stats });
-  } catch {
-    return json({ partner: item.partner, spaceName: item.spaceName, stats: null });
-  }
-}
-
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { spaceId: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const guard = await requireApiRole(['ADMIN']);
   if (!guard.ok) return guard.response;
+
+  const { id } = await params;
 
   let body: unknown;
   try { body = await req.json(); }
@@ -65,12 +47,7 @@ export async function PATCH(
   }
 
   try {
-    const partner = await updatePartnerSettings(
-      params.spaceId,
-      input,
-      guard.user.id,
-      guard.user.email,
-    );
+    const partner = await updateIncubatorPartnerSettings(id, input, guard.user.id, guard.user.email);
     return json({ partner });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Update failed';
@@ -81,11 +58,12 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { spaceId: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const guard = await requireApiRole(['ADMIN']);
   if (!guard.ok) return guard.response;
 
-  await unenrollSpace(params.spaceId, guard.user.id, guard.user.email);
+  const { id } = await params;
+  await unenrollIncubator(id, guard.user.id, guard.user.email);
   return noContent();
 }

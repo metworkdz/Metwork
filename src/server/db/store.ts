@@ -93,6 +93,20 @@ export interface UserRecord {
    * Used to prevent re-sending the warning multiple times in the same month.
    */
   lastLowCreditWarningDate?: string | null;
+
+  // ─── Investor onboarding / approval extensions ──────────────────────────
+  // Additive & nullable for backward compatibility. INVESTOR accounts created
+  // after this feature land in 'PENDING_APPROVAL'; pre-existing investors lack
+  // the key and are grandfathered as 'APPROVED' (see getInvestorApproval).
+  // This is kept SEPARATE from `status` (which gates login) so a pending
+  // investor can still sign in and reach the "awaiting approval" screen.
+
+  /** Investor-specific approval gate. Unset ⇒ APPROVED for legacy investors. */
+  investorStatus?: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+  /** Optional LinkedIn profile URL/handle provided at investor signup. */
+  linkedin?: string | null;
+  /** Admin free-text reason captured when an investor is rejected. */
+  investorRejectionReason?: string | null;
 }
 
 export interface SessionRecord {
@@ -150,6 +164,12 @@ export interface PendingUserRecord {
   createdAt: string;
   /** Only set when role === 'INCUBATOR'. Used to create the IncubatorRecord. */
   incubatorName?: string;
+  /** Optional incubator website (role === 'INCUBATOR'). Carried to IncubatorRecord. */
+  website?: string;
+  /** Optional incubator Instagram handle/URL (role === 'INCUBATOR'). */
+  instagram?: string;
+  /** Optional investor LinkedIn handle/URL (role === 'INVESTOR'). Carried to UserRecord. */
+  linkedin?: string;
   /** Biological sex provided at signup. Optional. */
   sex?: 'MALE' | 'FEMALE';
   /**
@@ -416,7 +436,7 @@ export interface ContactSubmissionRecord {
 
 /* ─────────────────────────── Incubators ─────────────────────────── */
 
-export type IncubatorStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+export type IncubatorStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'REJECTED';
 export type IncubatorSubscription = 'COMMISSION' | 'FLAT';
 export type IncubatorBillingCycle = 'MONTHLY' | 'YEARLY';
 export type IncubatorSubscriptionStatus = 'ACTIVE' | 'NONE' | 'EXPIRED';
@@ -440,6 +460,17 @@ export interface IncubatorRecord {
   providerType?: 'INCUBATOR' | 'TRAINER';
   status: IncubatorStatus;
   website?: string | null;
+  /** Instagram handle or full profile URL provided at registration. Nullable. */
+  instagram?: string | null;
+  /** Admin free-text reason captured when the incubator is rejected. Nullable. */
+  rejectionReason?: string | null;
+  /**
+   * Soft-archive marker. When set, the incubator + its listings are hidden from
+   * every public surface, the owner's login is blocked, and it is excluded from
+   * admin default lists — but all financial history (wallet, transactions,
+   * bookings, invoices) is preserved. Cleared on restore. Additive & nullable.
+   */
+  archivedAt?: string | null;
   /** Billing model — legacy alias. Prefer subscriptionCode. */
   subscriptionTier?: 'COMMISSION' | 'FLAT';
   /** Billing model: 'COMMISSION' = platform takes a cut; 'FLAT' = periodic fee. */
@@ -508,6 +539,12 @@ export type AuditAction =
   | 'INCUBATOR_CREATED'
   | 'INCUBATOR_UPDATED'
   | 'INCUBATOR_DELETED'
+  | 'INCUBATOR_APPROVED'
+  | 'INCUBATOR_REJECTED'
+  | 'INCUBATOR_ARCHIVED'
+  | 'INCUBATOR_RESTORED'
+  | 'INVESTOR_APPROVED'
+  | 'INVESTOR_REJECTED'
   | 'PROMO_CODE_CREATED'
   | 'PROMO_CODE_UPDATED'
   | 'PLATFORM_SETTINGS_UPDATED'
@@ -686,9 +723,18 @@ export interface SpaceRecord {
   /**
    * Convenience flag — true when an active partner enrolment exists for
    * this space AND `acceptNetworkPasses` is on for that enrolment. Kept
-   * denormalised so the public spaces filter can avoid a join.
+   * denormalised so the public spaces filter can avoid a join. In the
+   * per-incubator model this also requires `networkBookable` to be on.
    */
   isPartnerInNetwork?: boolean;
+  /**
+   * Per-space opt-in toggle for the per-incubator Partner Program. When the
+   * owning incubator is enrolled, each space can be individually included or
+   * excluded from network bookings. Defaults by category when unset:
+   * COWORKING / TRAINING_ROOM / DOMICILIATION ⇒ true, PRIVATE_OFFICE ⇒ false.
+   * Additive & nullable — legacy records lack it and fall back to the default.
+   */
+  networkBookable?: boolean;
 }
 
 export interface ProgramRecord {
@@ -875,8 +921,22 @@ export interface NetworkVisitRecord {
  */
 export interface PartnerMembershipRecord {
   id: string;
-  /** SpaceRecord.id this enrolment belongs to. Unique. Indexed. */
-  spaceId: string;
+  /**
+   * IncubatorRecord.id this enrolment belongs to (per-incubator model). The
+   * Partner Program is configured per-incubator: one active record per
+   * incubator, with per-space opt-in via SpaceRecord.networkBookable.
+   * Additive & nullable for backward compatibility — legacy per-space records
+   * have only `spaceId`; the one-time migration sets `incubatorId` on a
+   * consolidated canonical record per incubator.
+   */
+  incubatorId?: string | null;
+  /**
+   * SpaceRecord.id this enrolment belonged to in the legacy per-space model.
+   * Now optional: incubator-level records leave this null. Kept for history.
+   */
+  spaceId?: string | null;
+  /** Set on legacy per-space records superseded by the per-incubator migration. */
+  supersededByIncubatorId?: string | null;
   /** False = enrolment paused; bookings via partner channels are rejected. */
   isActive: boolean;
 
@@ -1958,6 +2018,8 @@ interface DbShape {
     promoCodesSeeded?: boolean;
     demoMentorsRemoved?: boolean;
     platformConfig?: PlatformConfig;
+    /** ISO timestamp — set once the one-time per-space → per-incubator partner migration runs. */
+    partnerPerIncubatorMigratedAt?: string;
   };
 }
 

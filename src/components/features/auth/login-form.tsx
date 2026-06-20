@@ -63,7 +63,8 @@ export function LoginForm() {
         router.push(next ?? dashboardPathForRole(session.user.role));
       } catch (err) {
         if (err instanceof ApiClientError) {
-          if (err.status === 401) setSubmitError(t('errors.invalidCredentials'));
+          if (err.code === 'ACCOUNT_ARCHIVED') setSubmitError(t('errors.accountArchived'));
+          else if (err.status === 401) setSubmitError(t('errors.invalidCredentials'));
           else if (err.status === 429) setSubmitError(t('errors.tooManyAttempts'));
           else setSubmitError(t('errors.networkError'));
         } else {

@@ -6,6 +6,7 @@
  */
 import { db, type EventRecord } from '@/server/db/store';
 import { countAttendance } from '@/server/attendance';
+import { isPubliclyVisibleIncubator, visibleIncubatorIds } from '@/server/incubator/visibility';
 import type { Event as PlatformEvent } from '@/types/domain';
 
 function fromRecord(r: EventRecord, attendeeCount = 0): PlatformEvent {
@@ -35,13 +36,9 @@ function fromRecord(r: EventRecord, attendeeCount = 0): PlatformEvent {
 /** List all active events whose owning incubator is ACTIVE (no demo fallback). */
 export async function listEvents(): Promise<PlatformEvent[]> {
   const data = await db.read();
-  const activeIncIds = new Set(
-    (data.incubators ?? [])
-      .filter((i) => i.status === 'ACTIVE')
-      .map((i) => i.id),
-  );
+  const visibleIncIds = visibleIncubatorIds(data.incubators ?? []);
   return (data.events ?? [])
-    .filter((e) => e.isActive && activeIncIds.has(e.incubatorId))
+    .filter((e) => e.isActive && visibleIncIds.has(e.incubatorId))
     .map((e) => fromRecord(e, countAttendance(data, 'EVENT', e.id)));
 }
 
@@ -51,7 +48,7 @@ export async function findEventById(id: string): Promise<PlatformEvent | null> {
   const dbEv = (data.events ?? []).find((e) => e.id === id && e.isActive);
   if (!dbEv) return null;
   const inc = (data.incubators ?? []).find((i) => i.id === dbEv.incubatorId);
-  if (!inc || inc.status !== 'ACTIVE') return null;
+  if (!isPubliclyVisibleIncubator(inc)) return null;
   return fromRecord(dbEv, countAttendance(data, 'EVENT', dbEv.id));
 }
 

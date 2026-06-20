@@ -6,6 +6,7 @@
  * incubator publishes a space.
  */
 import { db } from '@/server/db/store';
+import { isPubliclyVisibleIncubator, visibleIncubatorIds } from '@/server/incubator/visibility';
 import type { Space } from '@/types/domain';
 
 const DEFAULT_WORKING_DAYS = [1, 2, 3, 4, 5]; // Mon–Fri
@@ -51,15 +52,12 @@ function fromRecord(r: import('@/server/db/store').SpaceRecord): Space {
 /** List all active spaces whose owning incubator is also ACTIVE (no demo fallback). */
 export async function listSpaces(): Promise<Space[]> {
   const data = await db.read();
-  // Pre-compute the set of approved (ACTIVE) incubator IDs so we can filter
-  // out spaces belonging to PENDING / INACTIVE / SUSPENDED incubators.
-  const activeIncIds = new Set(
-    (data.incubators ?? [])
-      .filter((i) => i.status === 'ACTIVE')
-      .map((i) => i.id),
-  );
+  // Pre-compute the set of publicly-visible incubator IDs (APPROVED + not
+  // archived) so we hide spaces belonging to PENDING / REJECTED / INACTIVE /
+  // SUSPENDED / archived incubators.
+  const visibleIncIds = visibleIncubatorIds(data.incubators ?? []);
   return (data.spaces ?? [])
-    .filter((s) => s.isActive && activeIncIds.has(s.incubatorId))
+    .filter((s) => s.isActive && visibleIncIds.has(s.incubatorId))
     .map(fromRecord);
 }
 
@@ -69,7 +67,7 @@ export async function findSpaceById(id: string): Promise<Space | null> {
   const dbSpace = (data.spaces ?? []).find((s) => s.id === id && s.isActive);
   if (!dbSpace) return null;
   const inc = (data.incubators ?? []).find((i) => i.id === dbSpace.incubatorId);
-  if (!inc || inc.status !== 'ACTIVE') return null;
+  if (!isPubliclyVisibleIncubator(inc)) return null;
   return fromRecord(dbSpace);
 }
 

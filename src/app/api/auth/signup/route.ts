@@ -90,6 +90,15 @@ export async function POST(req: NextRequest) {
       input.role === 'INCUBATOR' || input.role === 'TRAINER'
         ? input.incubatorName?.trim()
         : undefined,
+    website:
+      input.role === 'INCUBATOR' || input.role === 'TRAINER'
+        ? input.website?.trim()
+        : undefined,
+    instagram:
+      input.role === 'INCUBATOR' || input.role === 'TRAINER'
+        ? input.instagram?.trim()
+        : undefined,
+    linkedin: input.role === 'INVESTOR' ? input.linkedin?.trim() : undefined,
     sex: input.sex,
   });
 

@@ -57,6 +57,9 @@ export function SignupForm() {
       acceptTerms: false as unknown as true,
       acceptPrivacy: false as unknown as true,
       incubatorName: '',
+      website: '',
+      instagram: '',
+      linkedin: '',
       sex: undefined,
     },
   });
@@ -200,6 +203,72 @@ export function SignupForm() {
               }
               error={!!errors.incubatorName}
               {...register('incubatorName')}
+            />
+          </FormField>
+        )}
+
+        {/* Website + Instagram — optional, shown for INCUBATOR and TRAINER */}
+        {(selectedRole === 'INCUBATOR' || selectedRole === 'TRAINER') && (
+          <>
+            <FormField
+              label={t('signup.websiteLabel')}
+              htmlFor="website"
+              hint={t('signup.optionalHint')}
+              error={
+                errors.website &&
+                t(`errors.${errors.website.message}` as 'errors.required')
+              }
+            >
+              <Input
+                id="website"
+                type="url"
+                inputMode="url"
+                dir="ltr"
+                autoComplete="url"
+                placeholder={t('signup.websitePlaceholder')}
+                error={!!errors.website}
+                {...register('website')}
+              />
+            </FormField>
+
+            <FormField
+              label={t('signup.instagramLabel')}
+              htmlFor="instagram"
+              hint={t('signup.optionalHint')}
+              error={
+                errors.instagram &&
+                t(`errors.${errors.instagram.message}` as 'errors.required')
+              }
+            >
+              <Input
+                id="instagram"
+                dir="ltr"
+                placeholder={t('signup.instagramPlaceholder')}
+                error={!!errors.instagram}
+                {...register('instagram')}
+              />
+            </FormField>
+          </>
+        )}
+
+        {/* LinkedIn — optional (recommended), shown for INVESTOR */}
+        {selectedRole === 'INVESTOR' && (
+          <FormField
+            label={t('signup.linkedinLabel')}
+            htmlFor="linkedin"
+            hint={t('signup.linkedinHint')}
+            error={
+              errors.linkedin &&
+              t(`errors.${errors.linkedin.message}` as 'errors.required')
+            }
+          >
+            <Input
+              id="linkedin"
+              dir="ltr"
+              autoComplete="url"
+              placeholder={t('signup.linkedinPlaceholder')}
+              error={!!errors.linkedin}
+              {...register('linkedin')}
             />
           </FormField>
         )}
