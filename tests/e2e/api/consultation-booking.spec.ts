@@ -8,12 +8,10 @@
 import { test, expect, type APIRequestContext, type APIResponse } from '@playwright/test';
 import {
   roleContext,
-  guestContext,
   mintConsultantContext,
   setupMentorAvailability,
   nextUniqueSlot,
   instantBook,
-  settleGuest,
   consultantWallet,
   ensureConsultationPromo,
   expectedConsultantShare,
@@ -68,19 +66,15 @@ test.describe.serial('Consultation instant-book — booking & settlement', () =>
     expect(gate.status(), `approval gate should be 410, got ${await dump(gate)}`).toBe(410);
   });
 
-  test('2 — free-intro (100% promo) slot → CONFIRMED with no payment step', async () => {
+  test('2 — free-intro (100% promo) slot → CONFIRMED with no payment step (member)', async () => {
+    // Consultations are account-only — a member drives the zero-price path.
     const promo = await ensureConsultationPromo(admin, 100);
     const { date, time } = slots();
-    const guest = await guestContext();
-    try {
-      const res = await instantBook(guest, { date, time, durationMinutes: 60, promoCode: promo });
-      expect(res.status(), `expected 201, got ${await dump(res)}`).toBe(201);
-      const body = await res.json();
-      expect(body.mode, `expected confirmed (zero-price), got ${JSON.stringify(body)}`).toBe('confirmed');
-      expect(body.payToken, 'a zero-price booking must not issue a pay token').toBeFalsy();
-    } finally {
-      await guest.dispose();
-    }
+    const res = await instantBook(founder, { date, time, durationMinutes: 60, promoCode: promo });
+    expect(res.status(), `expected 201, got ${await dump(res)}`).toBe(201);
+    const body = await res.json();
+    expect(body.mode, `expected confirmed (zero-price), got ${JSON.stringify(body)}`).toBe('confirmed');
+    expect(body.payToken, 'a zero-price booking must not issue a pay token').toBeFalsy();
   });
 
   test('3a — a slot outside the availability template is rejected (409 SLOT_NOT_BOOKABLE)', async () => {
@@ -112,28 +106,23 @@ test.describe.serial('Consultation instant-book — booking & settlement', () =>
     expect(await errCode(loser)).toBe('SLOT_NOT_BOOKABLE');
   });
 
-  test('5 — replayed guest settlement credits the consultant exactly once (idempotent)', async () => {
+  test('5 — a replayed member booking credits the consultant exactly once (idempotent)', async () => {
+    // Account-only flow: a member books and pays (mock-sync top-up settles in
+    // the request). Replaying the same idempotency key must return the original
+    // booking and NOT credit the consultant twice.
     const { date, time } = slots();
+    const ref = clientRef('member-replay');
     const before = await consultantWallet(consultant);
 
-    const guest = await guestContext();
-    let token: string;
-    try {
-      const res = await instantBook(guest, { date, time, durationMinutes: 60 });
-      expect(res.status(), `expected 201, got ${await dump(res)}`).toBe(201);
-      const body = await res.json();
-      expect(body.mode).toBe('awaiting_payment');
-      token = body.payToken;
-      expect(token, 'guest pay token missing').toBeTruthy();
-    } finally {
-      await guest.dispose();
-    }
+    const first = await instantBook(founder, { date, time, durationMinutes: 60, clientReference: ref });
+    expect(first.status(), `first booking → ${await dump(first)}`).toBe(201);
+    const b1 = await first.json();
+    expect(b1.mode, `expected confirmed, got ${JSON.stringify(b1)}`).toBe('confirmed');
 
-    // Settle, then settle AGAIN — the second pass must be a no-op (no double credit).
-    const ip = '10.55.55.55';
-    await settleGuest(token, ip);
-    const second = await settleGuest(token, ip);
-    expect(second.verifyBody.state).toBe('CONFIRMED');
+    const replay = await instantBook(founder, { date, time, durationMinutes: 60, clientReference: ref });
+    expect(replay.status(), `replay → ${await dump(replay)}`).toBe(201);
+    const b2 = await replay.json();
+    expect(b2.id, 'replay returns the original booking').toBe(b1.id);
 
     const after = await consultantWallet(consultant);
     expect(

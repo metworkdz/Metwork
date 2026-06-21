@@ -17,7 +17,7 @@
  * settles inside the request. OTP is recovered from the local DB via _otp.ts.
  * Booking ownership/lifecycle is asserted from server state (local DB). Serial.
  */
-import { test, expect, type APIRequestContext, type APIResponse } from '@playwright/test';
+import { test, expect, type APIRequestContext } from '@playwright/test';
 import {
   roleContext,
   guestContext,
@@ -25,19 +25,11 @@ import {
   createProgram,
   clientRef,
   xff,
-  readLocalDb,
   findBookingByRef,
   futureWeekdayUtc,
   utcWindow,
 } from './_helpers';
-import {
-  mintConsultantContext,
-  setupMentorAvailability,
-  nextUniqueSlot,
-  instantBook,
-  settleGuest,
-  MENTOR_ID,
-} from './_consult-helpers';
+import { nextUniqueSlot, instantBook } from './_consult-helpers';
 import { getSignupOtpByPendingId } from './_otp';
 
 const ALL_WEEK = [0, 1, 2, 3, 4, 5, 6];
@@ -61,24 +53,17 @@ async function settleCard(ctx: APIRequestContext, token: string): Promise<void> 
 
 test.describe.serial('Guest booking', () => {
   let inc: APIRequestContext;
-  let admin: APIRequestContext;
-  let consultant: APIRequestContext;
 
   test.beforeAll(async () => {
     inc = await roleContext('incubator');
-    admin = await roleContext('admin');
-    ({ ctx: consultant } = await mintConsultantContext(admin));
-    await setupMentorAvailability(consultant, { minNoticeHours: 1, bufferMinutes: 0 });
   });
   test.afterAll(async () => {
     await inc.dispose();
-    await admin.dispose();
-    await consultant.dispose();
   });
 
-  // ─── Book as guest ──────────────────────────────────────────────────────
+  // ─── Account-only surfaces: guest checkout is blocked ────────────────────
 
-  test('guest books a SPACE by card and settles (no account)', async () => {
+  test('guest SPACE booking is rejected — account required (401)', async () => {
     const space = await createSpace(inc, { workingDays: ALL_WEEK });
     const day = futureWeekdayUtc(13);
     const { startsAt, endsAt } = utcWindow(day, 10, 12);
@@ -95,19 +80,16 @@ test.describe.serial('Guest booking', () => {
           clientReference: ref,
         },
       });
-      expect(res.status(), `card intent → ${res.status()} ${await res.text()}`).toBe(201);
-      const { token } = await res.json();
-      await settleCard(guest, token);
+      expect(res.status(), `guest space should be 401 → ${res.status()} ${await res.text()}`).toBe(401);
     } finally {
       await guest.dispose();
     }
 
-    const booking = findBookingByRef(ref);
-    expect(booking, 'guest booking persisted').toBeTruthy();
-    expect(booking!.userId, 'guest booking has no owner').toBeNull();
-    expect(booking!.status).toBe('CONFIRMED');
-    expect(booking!.paymentStatus).toBe('PAID');
+    // No intent is created for a blocked guest.
+    expect(findBookingByRef(ref), 'no booking created for a blocked guest space').toBeFalsy();
   });
+
+  // ─── Book as guest (allowed for programs only) ───────────────────────────
 
   test('guest books a PROGRAM by card and settles (no account)', async () => {
     const program = await createProgram(inc, { price: 4000, seatsTotal: 10 });
@@ -135,32 +117,15 @@ test.describe.serial('Guest booking', () => {
     expect(booking?.userId).toBeNull();
   });
 
-  test('guest books a CONSULTATION (instant-book) and settles via the pay token', async () => {
+  test('guest CONSULTATION booking is rejected — account required (401)', async () => {
     const guest = await guestContext();
-    let bookingId: string;
-    let payToken: string;
     try {
       const { date, time } = nextUniqueSlot();
       const res = await instantBook(guest, { date, time, durationMinutes: 60 });
-      expect(res.status(), `guest instant-book → ${res.status()} ${await res.text()}`).toBe(201);
-      const body = await res.json();
-      expect(body.mode, 'guest must pay before confirm').toBe('awaiting_payment');
-      bookingId = body.id;
-      payToken = body.payToken;
-      expect(payToken).toBeTruthy();
+      expect(res.status(), `guest instant-book should be 401 → ${res.status()} ${await res.text()}`).toBe(401);
     } finally {
       await guest.dispose();
     }
-
-    const settled = await settleGuest(payToken);
-    expect(settled.initStatus, `guest pay init → ${settled.initStatus}`).toBeLessThan(400);
-
-    const mb = readLocalDb().mentorBookings.find((b) => (b as { id: string }).id === bookingId) as
-      | { status: string; source?: string; userId: string | null }
-      | undefined;
-    expect(mb, 'guest consultation persisted').toBeTruthy();
-    expect(mb!.source).toBe('guest');
-    expect(['CONFIRMED', 'READY', 'AWAITING_LINK'], `settled status → ${mb!.status}`).toContain(mb!.status);
   });
 
   // ─── Book & create account ──────────────────────────────────────────────
@@ -223,65 +188,6 @@ test.describe.serial('Guest booking', () => {
     expect(booking?.status).toBe('CONFIRMED');
   });
 
-  test('book & create account (CONSULTATION): a guest request is linked to the new account on OTP verify', async () => {
-    // 1. Guest consultation request (unclaimed, source=guest).
-    const guest = await guestContext();
-    let mentorBookingId: string;
-    let payToken: string;
-    const cust = guestCustomer();
-    const password = 'GuestAcct2026!';
-    try {
-      const { date, time } = nextUniqueSlot();
-      const res = await instantBook(guest, {
-        date,
-        time,
-        durationMinutes: 60,
-        email: cust.email,
-        name: cust.fullName,
-        phone: cust.phone,
-      });
-      expect(res.status(), `guest instant-book → ${res.status()} ${await res.text()}`).toBe(201);
-      const body = await res.json();
-      mentorBookingId = body.id;
-      payToken = body.payToken;
-
-      // 2. signup-pending CONSULTATION links the existing guest request.
-      const pendingRes = await guest.post('/api/auth/signup-pending', {
-        headers: xff(),
-        data: {
-          fullName: cust.fullName,
-          email: cust.email,
-          phone: cust.phone,
-          password,
-          confirmPassword: password,
-          city: 'Alger',
-          locale: 'en',
-          intent: { kind: 'CONSULTATION', mentorBookingId },
-        },
-      });
-      expect(pendingRes.status(), `signup-pending → ${pendingRes.status()} ${await pendingRes.text()}`).toBe(201);
-      const pendingId = (await pendingRes.json()).userId as string;
-
-      // 3. Verify OTP → account promoted + consultation re-assigned.
-      const code = getSignupOtpByPendingId(pendingId);
-      const verify = await guest.post('/api/auth/verify-otp', {
-        headers: xff(),
-        data: { userId: pendingId, code },
-      });
-      expect(verify.status(), `verify → ${verify.status()} ${await verify.text()}`).toBe(200);
-      const userId = (await verify.json()).user.id as string;
-
-      const mb = readLocalDb().mentorBookings.find((b) => (b as { id: string }).id === mentorBookingId) as
-        | { userId: string | null; source?: string }
-        | undefined;
-      expect(mb?.userId, 'consultation linked to the new account').toBe(userId);
-      expect(mb?.source).toBe('guest');
-    } finally {
-      await guest.dispose();
-    }
-
-    // 4. The pay link still settles the (now-linked) booking.
-    const settled = await settleGuest(payToken);
-    expect(settled.initStatus).toBeLessThan(400);
-  });
+  // The legacy "guest consultation → create account" flow is retired:
+  // consultations are account-only, so a visitor signs in / signs up first.
 });

@@ -18,7 +18,6 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 import {
   roleContext,
-  guestContext,
   createSpace,
   bookSpace,
   walletBalance,
@@ -145,24 +144,21 @@ test.describe.serial('Payments & money lifecycle', () => {
     const { startsAt, endsAt } = utcWindow(day, 10, 12); // 2 hours → T = 2000
     const ref = clientRef('cashdep');
 
-    const guest = await guestContext();
-    try {
-      const intent = await guest.post('/api/bookings/card', {
-        headers: xff(),
-        data: {
-          target: { itemKind: 'SPACE', spaceId: space.id, unit: 'HOUR', startsAt, endsAt },
-          paymentMode: 'CASH_DEPOSIT',
-          customer: { fullName: 'QA Cash Guest', email: `qa.cash.${Date.now()}@metwork.test`, phone: '+213700112255' },
-          clientReference: ref,
-        },
-      });
-      expect(intent.status(), `cash intent → ${intent.status()} ${await intent.text()}`).toBe(201);
-      const { token } = await intent.json();
-      const init = await guest.post(`/api/bookings/pay/${token}`, { headers: xff(), data: { action: 'init' } });
-      expect(init.status()).toBe(200);
-    } finally {
-      await guest.dispose();
-    }
+    // Card SPACE bookings are account-only — a registered explorer (no
+    // membership discount, so T stays 2000) drives the card-deposit flow.
+    const intent = await explorer.post('/api/bookings/card', {
+      headers: xff(),
+      data: {
+        target: { itemKind: 'SPACE', spaceId: space.id, unit: 'HOUR', startsAt, endsAt },
+        paymentMode: 'CASH_DEPOSIT',
+        customer: { fullName: 'QA Cash Client', email: `qa.cash.${Date.now()}@metwork.test`, phone: '+213700112255' },
+        clientReference: ref,
+      },
+    });
+    expect(intent.status(), `cash intent → ${intent.status()} ${await intent.text()}`).toBe(201);
+    const { token } = await intent.json();
+    const init = await explorer.post(`/api/bookings/pay/${token}`, { headers: xff(), data: { action: 'init' } });
+    expect(init.status()).toBe(200);
 
     // Settled card deposit → CONFIRMED + AWAITING_CASH; T − D still due.
     const booking = findBookingByRef(ref);
@@ -183,8 +179,8 @@ test.describe.serial('Payments & money lifecycle', () => {
     expect((await again.json()).booking.paymentStatus).toBe('PAID');
   });
 
-  // 5. Guest tokenized ONLINE_FULL link settles, and replaying verify never
-  //    double-credits the incubator (idempotent settlement).
+  // 5. A registered card link settles, and replaying verify never double-credits
+  //    the incubator (idempotent settlement). Card SPACE bookings are account-only.
   test('a settled card booking is not re-credited to the incubator on a replayed verify', async () => {
     const space = await createSpace(inc, { pricePerHour: 900, workingDays: ALL_WEEK });
     const day = futureWeekdayUtc(18);
@@ -193,32 +189,27 @@ test.describe.serial('Payments & money lifecycle', () => {
 
     const incBefore = walletOf(SEED.incubatorUserId);
 
-    const guest = await guestContext();
-    try {
-      const intent = await guest.post('/api/bookings/card', {
-        headers: xff(),
-        data: {
-          target: { itemKind: 'SPACE', spaceId: space.id, unit: 'HOUR', startsAt, endsAt },
-          paymentMode: 'ONLINE_FULL',
-          customer: { fullName: 'QA Idem Guest', email: `qa.idem.${Date.now()}@metwork.test`, phone: '+213700112266' },
-          clientReference: ref,
-        },
-      });
-      expect(intent.status()).toBe(201);
-      const { token } = await intent.json();
+    const intent = await explorer.post('/api/bookings/card', {
+      headers: xff(),
+      data: {
+        target: { itemKind: 'SPACE', spaceId: space.id, unit: 'HOUR', startsAt, endsAt },
+        paymentMode: 'ONLINE_FULL',
+        customer: { fullName: 'QA Idem Client', email: `qa.idem.${Date.now()}@metwork.test`, phone: '+213700112266' },
+        clientReference: ref,
+      },
+    });
+    expect(intent.status()).toBe(201);
+    const { token } = await intent.json();
 
-      const init = await guest.post(`/api/bookings/pay/${token}`, { headers: xff(), data: { action: 'init' } });
-      expect(init.status()).toBe(200);
-      const incAfterSettle = walletOf(SEED.incubatorUserId);
-      expect(incAfterSettle, 'incubator credited on settlement').toBeGreaterThan(incBefore);
+    const init = await explorer.post(`/api/bookings/pay/${token}`, { headers: xff(), data: { action: 'init' } });
+    expect(init.status()).toBe(200);
+    const incAfterSettle = walletOf(SEED.incubatorUserId);
+    expect(incAfterSettle, 'incubator credited on settlement').toBeGreaterThan(incBefore);
 
-      // Replay verify twice — settlement is idempotent, balance must not move.
-      await guest.post(`/api/bookings/pay/${token}`, { headers: xff(), data: { action: 'verify' } });
-      await guest.post(`/api/bookings/pay/${token}`, { headers: xff(), data: { action: 'verify' } });
-      expect(walletOf(SEED.incubatorUserId), 'no double-credit on replay').toBe(incAfterSettle);
-    } finally {
-      await guest.dispose();
-    }
+    // Replay verify twice — settlement is idempotent, balance must not move.
+    await explorer.post(`/api/bookings/pay/${token}`, { headers: xff(), data: { action: 'verify' } });
+    await explorer.post(`/api/bookings/pay/${token}`, { headers: xff(), data: { action: 'verify' } });
+    expect(walletOf(SEED.incubatorUserId), 'no double-credit on replay').toBe(incAfterSettle);
 
     expect(findBookingByRef(ref)?.status).toBe('CONFIRMED');
   });
