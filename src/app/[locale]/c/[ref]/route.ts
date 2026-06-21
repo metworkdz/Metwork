@@ -13,11 +13,11 @@ export const dynamic = 'force-dynamic';
  * `[locale]` layout has started rendering.
  *
  * The booking ref isn't resolved here: the consultant portal is session-scoped
- * (durable token + PIN), not URL-scoped, so we land the consultant on the portal
- * in French (its default language) where they sign in and see the booking. The
+ * (email → OTP, then PIN on trusted devices), not URL-scoped, so we land the
+ * consultant on the portal entry where they sign in and see the booking. The
  * i18n middleware locale-prefixes `metwork.dz/c/<ref>` → `/<locale>/c/<ref>`,
- * which routes here; we then redirect to the canonical portal path.
+ * which routes here; we then redirect to the canonical (non-localized) portal.
  */
 export function GET(req: NextRequest) {
-  return NextResponse.redirect(new URL('/fr/consultant', req.url), 307);
+  return NextResponse.redirect(new URL('/mentordashboard', req.url), 307);
 }

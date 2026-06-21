@@ -10,14 +10,13 @@
  * requireConsultant-guarded /api/consultant/* endpoints. No client storage.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
-  ArrowUpRight, CalendarClock, CalendarDays, Loader2, LogOut, TrendingUp, User, Wallet,
+  ArrowUpRight, CalendarClock, CalendarDays, Loader2, LogOut, ShieldOff, TrendingUp, User, Wallet,
 } from 'lucide-react';
 import { consultantService, type ConsultantMe, type ConsultantMentor } from '@/services/consultant.service';
 import { cn } from '@/lib/utils';
-import { SignIn } from './portal/sign-in';
+import { PinUnlock } from './portal/pin-unlock';
 import { AvailabilityEditor } from './portal/availability-editor';
 import { BookingsSection } from './portal/bookings-section';
 import { ProfileSection } from './portal/profile-section';
@@ -29,9 +28,6 @@ import { AppLogo, Avatar, CP_GLOW, CP_GREEN, fmtDZD } from './portal/shared';
 type Tab = 'consultations' | 'availability' | 'profile' | 'earnings' | 'wallet';
 
 export function ConsultantPortal() {
-  const params = useSearchParams();
-  const locale = useLocale();
-
   const [phase, setPhase] = useState<'loading' | 'signedOut' | 'signedIn'>('loading');
   const [me, setMe] = useState<ConsultantMe | null>(null);
 
@@ -58,12 +54,7 @@ export function ConsultantPortal() {
           <div className="flex justify-end pt-3">
             <LanguageSwitcher />
           </div>
-          <SignIn
-            token={params.get('token')}
-            errorCode={params.get('error')}
-            locale={locale}
-            onSignedIn={() => { setPhase('loading'); void load(); }}
-          />
+          <PinUnlock onUnlocked={() => { setPhase('loading'); void load(); }} />
         </div>
       ) : (
         <Dashboard
@@ -87,9 +78,11 @@ function Dashboard({
 }) {
   const t = useTranslations('consultantPortal');
   const [tab, setTab] = useState<Tab>('consultations');
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  async function signOut() {
-    try { await consultantService.logout(); } catch { /* ignore */ }
+  async function signOut(forgetDevice: boolean) {
+    setMenuOpen(false);
+    try { await consultantService.logout(forgetDevice); } catch { /* ignore */ }
     onSignedOut();
   }
 
@@ -108,10 +101,28 @@ function Dashboard({
         <AppLogo height={26} />
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
-          <button type="button" onClick={signOut} aria-label={t('nav.signOut')}
-            className="grid size-9 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white">
-            <LogOut className="size-4" />
-          </button>
+          <div className="relative">
+            <button type="button" onClick={() => setMenuOpen((o) => !o)} aria-label={t('nav.signOut')}
+              aria-expanded={menuOpen}
+              className="grid size-9 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white">
+              <LogOut className="size-4" />
+            </button>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} aria-hidden />
+                <div className="absolute end-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-white/10 bg-[#161616] p-1 shadow-xl shadow-black/40">
+                  <button type="button" onClick={() => void signOut(false)}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start text-sm text-white/80 transition-colors hover:bg-white/[0.06]">
+                    <LogOut className="size-4 text-white/50" /> {t('nav.signOut')}
+                  </button>
+                  <button type="button" onClick={() => void signOut(true)}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start text-sm text-white/80 transition-colors hover:bg-white/[0.06]">
+                    <ShieldOff className="size-4 text-white/50" /> {t('nav.forgetDevice')}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 

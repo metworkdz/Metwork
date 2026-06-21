@@ -17,6 +17,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { db, type MentorRecord } from '@/server/db/store';
 import { jsonError } from '@/server/http/json';
 import { hashPassword, verifyPassword } from '@/server/auth/password';
+import { issueOtp, verifyOtp, type OtpVerifyResult } from '@/server/auth/otp';
 import type { NextResponse } from 'next/server';
 
 /** Separate from the user session cookie (AUTH_COOKIE_NAME). */
@@ -26,7 +27,7 @@ export const CONSULTANT_DEVICE_COOKIE_NAME = 'metwork_consultant_device';
 
 const MAGIC_LINK_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-const DEVICE_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const DEVICE_TOKEN_TTL_MS = 60 * 24 * 60 * 60 * 1000; // 60 days ("remember this device")
 
 /** Accepted PIN format: 4–6 digits. Enforced before hashing. */
 const PIN_RE = /^\d{4,6}$/;
@@ -88,6 +89,54 @@ export async function consumeMentorMagicLink(token: string): Promise<ConsumeMagi
     rec.consumed = true;
     return { ok: true, mentorId: rec.mentorId };
   });
+}
+
+/* ─────────────────────────── Email OTP sign-in ─────────────────────────── */
+
+/**
+ * OTP key namespace. The user OTP table (`d.otps`) is keyed by an arbitrary
+ * string; prefixing with `mentor:` reuses the exact issue/verify/lockout
+ * machinery (`@/server/auth/otp`) without colliding with user-account OTPs.
+ */
+const OTP_KEY_PREFIX = 'mentor:';
+/** Sentinel key used to equalize timing on the email-not-found branch. */
+const OTP_KEY_NO_MATCH = `${OTP_KEY_PREFIX}__no_match__`;
+
+/** Resolve the mentor record for an email (case-insensitive, trimmed), or null. */
+export async function findMentorByEmail(email: string): Promise<MentorRecord | null> {
+  const needle = email.trim().toLowerCase();
+  if (!needle) return null;
+  const data = await db.read();
+  return (
+    (data.mentors ?? []).find((m) => (m.email ?? '').trim().toLowerCase() === needle) ?? null
+  );
+}
+
+export interface IssuedConsultantOtp {
+  /** Plaintext 6-digit code — only ever returned to the issuer for delivery. */
+  code: string;
+  mentor: MentorRecord;
+}
+
+/**
+ * Issue a sign-in OTP for the mentor with this email. Returns null when no
+ * mentor matches — but ALWAYS performs an equivalent issuance (to a sentinel
+ * key) first, so the matched / unmatched branches do the same work and cannot
+ * be distinguished by timing. The caller still responds with a generic 200.
+ */
+export async function issueConsultantOtp(email: string): Promise<IssuedConsultantOtp | null> {
+  const mentor = await findMentorByEmail(email);
+  const { code } = await issueOtp(mentor ? OTP_KEY_PREFIX + mentor.id : OTP_KEY_NO_MATCH);
+  if (!mentor) return null;
+  return { code, mentor };
+}
+
+/** Verify a sign-in OTP for a mentor. Single-use, expiry- and attempt-checked. */
+export async function verifyConsultantOtp(
+  mentorId: string,
+  code: string,
+): Promise<OtpVerifyResult> {
+  return verifyOtp(OTP_KEY_PREFIX + mentorId, code);
 }
 
 /* ─────────────────────────── Session ─────────────────────────── */
@@ -352,6 +401,23 @@ export async function issueMentorDeviceToken(
     });
   });
   return { token, expiresAt };
+}
+
+/**
+ * Resolve the mentorId bound to a remembered-device token, or null. Used at the
+ * `/mentordashboard` entry to decide whether a returning (session-less) browser
+ * is a trusted device — and therefore which mentor's PIN-unlock screen to show.
+ * Checks expiry and that the mentor still exists. Never reveals the PIN.
+ */
+export async function resolveMentorIdByDeviceToken(token: string): Promise<string | null> {
+  if (!token) return null;
+  const hash = sha256(token);
+  const data = await db.read();
+  const rec = (data.mentorDeviceTokens ?? []).find((t) => t.tokenHash === hash);
+  if (!rec) return null;
+  if (new Date(rec.expiresAt).getTime() <= Date.now()) return null;
+  const mentor = (data.mentors ?? []).find((m) => m.id === rec.mentorId);
+  return mentor ? mentor.id : null;
 }
 
 /** True when `token` is a live remembered-device token for `mentorId`. */

@@ -10,11 +10,12 @@
 // Bump this on any change to caching behaviour: `activate` deletes every cache
 // whose name isn't the current one, so a version bump purges the prior shell in
 // one pass (clears any stale asset graph a long-lived standalone client pinned).
-const CACHE = 'metwork-shell-v2';
+const CACHE = 'metwork-shell-v3';
 const OFFLINE_URL = '/offline.html';
 const PRECACHE = [
   OFFLINE_URL,
   '/manifest.webmanifest',
+  '/mentor.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/apple-touch-icon.png',

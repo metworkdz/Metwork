@@ -35,6 +35,6 @@ export async function sendBookingNotificationOnce(bookingId: string): Promise<vo
   // Link the consultant to their PIN-gated portal (where the client PII lives).
   // Notifications default to French (locked product decision).
   const base = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  const portalUrl = `${base}/fr/consultant`;
+  const portalUrl = `${base}/mentordashboard`;
   sendConsultantNewBookingEmail({ booking: claim.booking, mentor, portalUrl, lang: 'fr' });
 }

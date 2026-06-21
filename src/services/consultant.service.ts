@@ -100,13 +100,6 @@ export interface ConsultantEarnings {
   transactions: ConsultantLedgerTxn[];
 }
 
-/** Durable-token + PIN sign-in state, used to pick the set/enter PIN screen. */
-export interface ConsultantPinInfo {
-  valid: boolean;
-  pinSet: boolean;
-  deviceRemembered?: boolean;
-}
-
 export interface ConsultantWithdrawal {
   id: string;
   amount: number;
@@ -119,9 +112,15 @@ export interface ConsultantWithdrawal {
 
 export const consultantService = {
   me: () => apiClient.get<ConsultantMe>('/consultant/me'),
-  requestLink: (email: string, locale?: string) =>
-    apiClient.post<{ ok: true }>('/consultant/request-link', { email, locale }),
-  logout: () => apiClient.post<{ ok: true }>('/consultant/logout'),
+
+  // ── Email → OTP sign-in (untrusted device / first sign-in) ──
+  requestOtp: (email: string) =>
+    apiClient.post<{ ok: true }>('/consultant/otp/request', { email }),
+  verifyOtp: (email: string, code: string) =>
+    apiClient.post<{ ok: true; pinSet: boolean }>('/consultant/otp/verify', { email, code }),
+
+  logout: (forgetDevice?: boolean) =>
+    apiClient.post<{ ok: true }>('/consultant/logout', { forgetDevice: Boolean(forgetDevice) }),
 
   updateProfile: (body: {
     defaultMeetingMode?: 'ONLINE' | 'OFFLINE';
@@ -145,11 +144,15 @@ export const consultantService = {
     bufferMinutes?: number | null;
   }) => apiClient.patch<{ mentor: ConsultantMentor }>('/consultant/availability', body),
 
-  // Durable-token + PIN sign-in (parallel to the email magic link).
-  pinInfo: (token: string) =>
-    apiClient.get<ConsultantPinInfo>(`/consultant/pin?token=${encodeURIComponent(token)}`),
-  pinSubmit: (body: { token: string; pin?: string; rememberDevice?: boolean }) =>
-    apiClient.post<{ ok: true; pinJustSet: boolean; deviceRemembered: boolean }>('/consultant/pin', body),
+  // ── First-time PIN creation (after OTP sign-in, session-guarded) ──
+  setPin: (body: { pin: string; rememberDevice?: boolean }) =>
+    apiClient.post<{ ok: true; deviceRemembered: boolean }>('/consultant/pin/set', body),
+
+  // ── Trusted-device PIN unlock ──
+  unlockState: () => apiClient.get<{ trusted: boolean }>('/consultant/pin/unlock'),
+  unlockPin: (pin: string) =>
+    apiClient.post<{ ok: true }>('/consultant/pin/unlock', { pin }),
+
   changePin: (body: { currentPin: string; newPin: string }) =>
     apiClient.patch<{ ok: true }>('/consultant/pin/change', body),
 
