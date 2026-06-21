@@ -38,6 +38,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local db + DB snapshots (never commit data dumps)
+.local-db.json
+/backups/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
