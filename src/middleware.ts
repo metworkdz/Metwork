@@ -6,6 +6,17 @@ const intlMiddleware = createMiddleware(routing);
 
 const AUTH_COOKIE = process.env.AUTH_COOKIE_NAME ?? 'metwork_session';
 
+/**
+ * The consultant portal is served at the prefix-free `/mentordashboard` (its own
+ * PWA scope) but rendered by the localized route tree. We REWRITE (not redirect)
+ * to `/{locale}/mentordashboard`, keeping the public URL clean. The language is
+ * the consultant's explicit choice; kept in sync with CONSULTANT_LOCALE_COOKIE
+ * in `components/features/consultant/portal/language-switcher.tsx`.
+ */
+const CONSULTANT_LOCALE_COOKIE = 'metwork_consultant_locale';
+/** Most consultants are French speakers — the portal defaults to French. */
+const PORTAL_DEFAULT_LOCALE = 'fr';
+
 /** Pages that require authentication */
 const PROTECTED_PREFIXES = ['/dashboard'];
 
@@ -26,12 +37,18 @@ function stripLocale(pathname: string): { locale: string | null; path: string } 
 export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // The consultant portal lives at the non-localized `/mentordashboard` route
-  // (its own PWA scope). Skip next-intl entirely so no locale prefix is added;
-  // the portal resolves its language from the `metwork_consultant_locale` cookie
-  // and self-guards via the session-scoped /api/consultant/* endpoints.
+  // Prefix-free consultant portal: rewrite `/mentordashboard…` to its localized
+  // route so the URL stays its own PWA scope. Bypasses next-intl + the auth
+  // guards (the portal self-guards via the session-scoped /api/consultant/*).
   if (pathname === '/mentordashboard' || pathname.startsWith('/mentordashboard/')) {
-    return NextResponse.next();
+    const supported = routing.locales as readonly string[];
+    const cookieLocale = req.cookies.get(CONSULTANT_LOCALE_COOKIE)?.value;
+    const portalLocale = cookieLocale && supported.includes(cookieLocale)
+      ? cookieLocale
+      : PORTAL_DEFAULT_LOCALE;
+    const url = req.nextUrl.clone();
+    url.pathname = `/${portalLocale}${pathname}`;
+    return NextResponse.rewrite(url);
   }
 
   const { locale, path } = stripLocale(pathname);
