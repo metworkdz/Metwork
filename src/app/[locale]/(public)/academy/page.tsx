@@ -1,22 +1,17 @@
 import type { Metadata } from 'next';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import {
-  ArrowRight,
+  BookOpen,
   GraduationCap,
   Megaphone,
   Rocket,
   ShieldCheck,
+  Sparkles,
   TrendingUp,
   Users,
-  Sparkles,
-  BookOpen,
 } from 'lucide-react';
 import { Container } from '@/components/ui/container';
-import { Button } from '@/components/ui/button';
-import { siteConfig } from '@/config/site';
-
-/** Refresh live course highlights hourly without blocking requests. */
-export const revalidate = 3600;
+import { AcademyNotifyForm } from '@/components/features/academy/academy-notify-form';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -29,77 +24,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: t('metaTitle'), description: t('metaDescription') };
 }
 
-interface AcademyCourse {
-  key: string;
-  title: string;
-  link: string;
-  excerpt: string;
-  image: string | null;
-}
+/* ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+   COURSE POSTERS DROP ZONE
 
-/** Strip HTML tags and decode the common entities WordPress returns. */
-function cleanHtml(input: string): string {
-  return input
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, n) => String.fromCharCode(parseInt(n, 16)))
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&(?:#039|apos|rsquo|lsquo);/g, "'")
-    .replace(/&(?:ldquo|rdquo);/g, '"')
-    .replace(/&hellip;/g, '…')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+   The Academy launches as a "coming soon" page — no live course data is wired.
+   When you're ready to tease real courses, add entries below. Each renders as a
+   3:4 portrait poster card; any remaining slots fall back to a branded
+   "coming soon" placeholder so the grid always looks full.
 
-/**
- * Best-effort fetch of live course highlights from the LearnDash WordPress
- * REST API. Never throws and never blocks render — any failure (network,
- * timeout, unexpected shape) yields an empty list so the page falls back to
- * curated static content.
- */
-async function getAcademyCourses(): Promise<AcademyCourse[]> {
-  try {
-    const res = await fetch(`${siteConfig.academy.apiUrl}?per_page=6&_embed`, {
-      next: { revalidate },
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!res.ok) return [];
+     1. Drop the poster image in  public/assets/academy/  (e.g. growth.jpg)
+     2. Add a row here:
+          { src: '/assets/academy/growth.jpg', alt: 'Growth & fundraising' }
 
-    const data: unknown = await res.json();
-    if (!Array.isArray(data)) return [];
+   Nothing else needs to change.
+   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ */
+const coursePosters: { src: string; alt: string }[] = [];
+const MIN_POSTER_SLOTS = 6;
 
-    const courses: AcademyCourse[] = [];
-    for (const raw of data) {
-      if (!raw || typeof raw !== 'object') continue;
-      const c = raw as Record<string, unknown>;
-
-      const title = cleanHtml(String((c.title as { rendered?: unknown })?.rendered ?? ''));
-      const link = typeof c.link === 'string' ? c.link : '';
-      if (!title || !link) continue;
-
-      const rawExcerpt = cleanHtml(String((c.excerpt as { rendered?: unknown })?.rendered ?? ''));
-      const excerpt =
-        rawExcerpt.length > 150 ? `${rawExcerpt.slice(0, 147).trimEnd()}…` : rawExcerpt;
-
-      const media = (c._embedded as { 'wp:featuredmedia'?: unknown })?.['wp:featuredmedia'];
-      const first = Array.isArray(media) ? media[0] : undefined;
-      const source = (first as { source_url?: unknown } | undefined)?.source_url;
-      const image = typeof source === 'string' ? source : null;
-
-      courses.push({ key: link, title, link, excerpt, image });
-      if (courses.length >= 6) break;
-    }
-    return courses;
-  } catch {
-    return [];
-  }
-}
-
-const FALLBACK_ICONS = [Rocket, TrendingUp, ShieldCheck, Megaphone] as const;
+const TRACK_ICONS = [Rocket, TrendingUp, ShieldCheck, Megaphone] as const;
 const PILLAR_ICONS = [Users, BookOpen, Sparkles] as const;
 
 export default async function AcademyPage({ params }: PageProps) {
@@ -107,10 +49,7 @@ export default async function AcademyPage({ params }: PageProps) {
   setRequestLocale(locale);
   const t = await getTranslations('pages.academy');
 
-  const courses = await getAcademyCourses();
-  const hasLive = courses.length > 0;
-
-  const fallbackCourses = FALLBACK_ICONS.map((icon, i) => ({
+  const tracks = TRACK_ICONS.map((icon, i) => ({
     icon,
     title: t(`fallback${i + 1}Title`),
     description: t(`fallback${i + 1}Desc`),
@@ -122,145 +61,163 @@ export default async function AcademyPage({ params }: PageProps) {
     description: t(`pillar${i + 1}Desc`),
   }));
 
+  const placeholderCount = Math.max(0, MIN_POSTER_SLOTS - coursePosters.length);
+
   return (
     <div className="bg-background">
-      {/* ── Hero ── */}
-      <section className="border-b border-border/60 bg-gradient-to-b from-primary-50/60 to-background">
-        <Container size="xl" className="py-20 sm:py-28 lg:py-32">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-4 py-1.5">
-              <GraduationCap className="size-3.5 text-primary-600" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary-700">
-                {t('heroEyebrow')}
+      {/* ── Hero — coming soon ── */}
+      <section className="relative flex min-h-[calc(100svh-4rem)] items-center overflow-hidden border-b border-border/60 bg-background">
+        <div aria-hidden className="absolute inset-0 -z-10 bg-dot-grid" />
+        <div aria-hidden className="absolute inset-x-0 top-0 -z-10 h-[640px] hero-glow" />
+
+        <Container size="xl" className="py-16 sm:py-20">
+          <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
+            {/* Coming-soon badge */}
+            <div className="animate-fade-in inline-flex items-center gap-2.5 rounded-full border border-primary-200 bg-primary-50/80 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.15em] text-primary-700 backdrop-blur-sm">
+              <span className="relative flex size-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-500 opacity-75" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-primary-600" />
               </span>
+              {t('heroBadge')}
             </div>
-            <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              {t('heroTitle')}{' '}
-              <span className="text-primary-600">{t('heroTitleHighlight')}</span>
+
+            <p
+              className="animate-fade-in mt-6 text-xs font-bold uppercase tracking-[0.18em] text-primary"
+              style={{ animationDelay: '50ms', animationFillMode: 'backwards' }}
+            >
+              {t('heroEyebrow')}
+            </p>
+
+            <h1
+              className="animate-fade-in mt-3 text-balance font-display text-4xl font-semibold leading-[1.07] tracking-tight text-foreground sm:text-5xl lg:text-6xl"
+              style={{ animationDelay: '110ms', animationFillMode: 'backwards' }}
+            >
+              {t('heroTitle')}
             </h1>
-            <p className="mx-auto mt-6 max-w-xl text-balance text-base leading-relaxed text-muted-foreground sm:text-lg">
+
+            <p
+              className="animate-fade-in mt-6 max-w-xl text-balance text-base leading-relaxed text-muted-foreground sm:text-lg"
+              style={{ animationDelay: '180ms', animationFillMode: 'backwards' }}
+            >
               {t('heroSubtitle')}
             </p>
-            <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button asChild size="lg" className="w-full sm:w-auto">
-                <a href={siteConfig.academy.registerUrl} target="_blank" rel="noopener noreferrer">
-                  {t('startLearning')}
-                  <ArrowRight className="size-4 rtl:rotate-180" />
-                </a>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
-                <a href={siteConfig.academy.coursesUrl} target="_blank" rel="noopener noreferrer">
-                  {t('exploreCourses')}
-                </a>
-              </Button>
+
+            {/* Prominent email capture */}
+            <div
+              className="animate-fade-in mt-10 w-full"
+              style={{ animationDelay: '260ms', animationFillMode: 'backwards' }}
+            >
+              <AcademyNotifyForm />
             </div>
           </div>
         </Container>
       </section>
 
-      {/* ── Courses ── */}
+      {/* ── What you'll learn — track teasers ── */}
       <section className="py-20 sm:py-28">
         <Container size="xl">
-          <div className="mb-14 max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-widest text-primary-600">
-              {t('coursesEyebrow')}
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-              {t('coursesTitle')}
+          <div className="mx-auto mb-12 max-w-2xl text-center sm:mb-16">
+            <p className="section-label">{t('tracksEyebrow')}</p>
+            <h2 className="mt-3 text-balance font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+              {t('tracksTitle')}
             </h2>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              {t('coursesSubtitle')}
+            <p className="mt-4 text-balance text-base leading-relaxed text-muted-foreground">
+              {t('tracksSubtitle')}
             </p>
           </div>
 
-          {hasLive ? (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {courses.map((course) => (
-                <a
-                  key={course.key}
-                  href={course.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md"
-                >
-                  <div className="aspect-[16/9] overflow-hidden bg-muted">
-                    {course.image ? (
-                      <img
-                        src={course.image}
-                        alt={course.title}
-                        loading="lazy"
-                        className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex size-full items-center justify-center bg-primary-50">
-                        <GraduationCap className="size-10 text-primary-300" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-1 flex-col p-6">
-                    <h3 className="text-base font-semibold text-foreground group-hover:text-primary-700">
-                      {course.title}
-                    </h3>
-                    {course.excerpt && (
-                      <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-                        {course.excerpt}
-                      </p>
-                    )}
-                    <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary-600">
-                      {t('viewCourse')}
-                      <ArrowRight className="size-4 rtl:rotate-180" />
-                    </span>
-                  </div>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {fallbackCourses.map(({ icon: Icon, title, description }) => (
-                <a
-                  key={title}
-                  href={siteConfig.academy.coursesUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex flex-col rounded-xl border border-border/60 bg-card p-6 transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md"
-                >
-                  <div className="flex size-11 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
-                    <Icon className="size-5" />
-                  </div>
-                  <h3 className="mt-4 text-base font-semibold text-foreground">{title}</h3>
-                  <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
-                    {description}
-                  </p>
-                  <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary-600">
-                    {t('viewCourse')}
-                    <ArrowRight className="size-4 rtl:rotate-180" />
-                  </span>
-                </a>
-              ))}
-            </div>
-          )}
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {tracks.map(({ icon: Icon, title, description }) => (
+              <div
+                key={title}
+                className="group relative flex flex-col rounded-xl border border-border/60 bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-lg hover:shadow-primary/5"
+              >
+                <div className="flex size-11 items-center justify-center rounded-lg bg-primary-50 text-primary-600 transition-colors duration-300 group-hover:bg-primary-100">
+                  <Icon className="size-5" />
+                </div>
+                <h3 className="mt-4 font-display text-base font-semibold tracking-tight text-foreground">
+                  {title}
+                </h3>
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+                  {description}
+                </p>
+                <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary-600/70">
+                  {t('comingSoon')}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Container>
+      </section>
+
+      {/* ── Course poster teaser grid (placeholder drop zone) ── */}
+      <section className="border-y border-border/60 bg-muted/25 py-20 sm:py-28">
+        <Container size="xl">
+          <div className="mx-auto mb-12 max-w-2xl text-center sm:mb-16">
+            <p className="section-label">{t('postersEyebrow')}</p>
+            <h2 className="mt-3 text-balance font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+              {t('postersTitle')}
+            </h2>
+            <p className="mt-4 text-balance text-base leading-relaxed text-muted-foreground">
+              {t('postersSubtitle')}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-3">
+            {/* Real posters (none yet — see COURSE POSTERS DROP ZONE above) */}
+            {coursePosters.map((poster) => (
+              <div
+                key={poster.src}
+                className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-border/60 bg-card"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={poster.src}
+                  alt={poster.alt}
+                  loading="lazy"
+                  className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
+            ))}
+
+            {/* Branded "coming soon" placeholders */}
+            {Array.from({ length: placeholderCount }).map((_, i) => (
+              <div
+                key={`placeholder-${i}`}
+                className="relative flex aspect-[3/4] flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-background/60"
+              >
+                <div aria-hidden className="absolute inset-0 -z-10 bg-dot-grid opacity-60" />
+                <div className="flex size-12 items-center justify-center rounded-full bg-primary-50 text-primary-400">
+                  <GraduationCap className="size-6" />
+                </div>
+                <span className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
+                  {t('comingSoon')}
+                </span>
+              </div>
+            ))}
+          </div>
         </Container>
       </section>
 
       {/* ── Why the academy ── */}
-      <section className="border-y border-border/60 bg-muted/25 py-20 sm:py-28">
+      <section className="py-20 sm:py-28">
         <Container size="xl">
-          <div className="mb-14 max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-widest text-primary-600">
-              {t('whyEyebrow')}
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          <div className="mx-auto mb-12 max-w-2xl text-center sm:mb-16">
+            <p className="section-label">{t('whyEyebrow')}</p>
+            <h2 className="mt-3 text-balance font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
               {t('whyTitle')}
             </h2>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-3">
             {pillars.map(({ icon: Icon, title, description }) => (
               <div key={title} className="rounded-xl border border-border/60 bg-card p-6">
                 <div className="flex size-11 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
                   <Icon className="size-5" />
                 </div>
-                <h3 className="mt-4 text-base font-semibold text-foreground">{title}</h3>
+                <h3 className="mt-4 font-display text-base font-semibold tracking-tight text-foreground">
+                  {title}
+                </h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
               </div>
             ))}
@@ -268,27 +225,25 @@ export default async function AcademyPage({ params }: PageProps) {
         </Container>
       </section>
 
-      {/* ── Final CTA ── */}
-      <section className="py-20 sm:py-28">
-        <Container size="md" className="text-center">
-          <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            {t('ctaTitle')}
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
-            {t('ctaSubtitle')}
-          </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button asChild size="lg" className="w-full sm:w-auto">
-              <a href={siteConfig.academy.registerUrl} target="_blank" rel="noopener noreferrer">
-                {t('startLearning')}
-                <ArrowRight className="size-4 rtl:rotate-180" />
-              </a>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
-              <a href={siteConfig.academy.coursesUrl} target="_blank" rel="noopener noreferrer">
-                {t('exploreCourses')}
-              </a>
-            </Button>
+      {/* ── Final CTA — repeat the capture on a dark band ── */}
+      <section className="pb-20 sm:pb-28">
+        <Container size="lg">
+          <div className="relative overflow-hidden rounded-2xl bg-foreground px-5 py-14 text-center sm:rounded-3xl sm:px-12 sm:py-20">
+            <div
+              aria-hidden
+              className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(142_65%_30%_/_0.35),_transparent_60%)]"
+            />
+            <div className="relative">
+              <h2 className="mx-auto max-w-2xl text-balance font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-5xl">
+                {t('ctaTitle')}
+              </h2>
+              <p className="mx-auto mt-4 max-w-lg text-balance text-base text-white/60">
+                {t('ctaSubtitle')}
+              </p>
+              <div className="mt-10">
+                <AcademyNotifyForm variant="dark" />
+              </div>
+            </div>
           </div>
         </Container>
       </section>

@@ -367,17 +367,18 @@
   },
   "landing": {
     "hero": {
-      "badge": "Applications open · Built in Oran",
-      "title": "Build Algeria's startup ecosystem.",
-      "subtitle": "Algeria's startup incubator and ecosystem platform. Founders, incubators & investors — all in one network.",
-      "ctaPrimary": "Join now",
-      "ctaSecondary": "Explore the platform"
+      "badge": "Innovation starts here",
+      "title": "Connecting founders, incubators, and investors - in one <g>ecosystem</g>.",
+      "subtitle": "Join the network powering Algeria's startup ecosystem.",
+      "ctaPrimary": "Get started",
+      "ctaSecondary": "Explore the network"
     },
     "stats": {
       "founders": "Founders",
       "investors": "Investors",
       "incubators": "Incubators",
-      "cities": "Cities"
+      "cities": "Cities",
+      "spaces": "Spaces"
     },
     "features": {
       "title": "One operating system for your startup.",
@@ -1542,18 +1543,27 @@
       "ctaSecondary": "Talk to us"
     },
     "academy": {
-      "metaTitle": "Startup Academy",
-      "metaDescription": "Learn how to build, launch, and grow a startup with Metwork Startup Academy — practical courses built for Algerian founders.",
+      "metaTitle": "Startup Academy — Coming soon",
+      "metaDescription": "Something new is coming to Metwork: the Startup Academy — a learning experience built for Algerian founders. Be the first to know when it opens.",
+      "heroBadge": "Coming soon",
       "heroEyebrow": "Metwork Startup Academy",
-      "heroTitle": "Learn to build and grow",
-      "heroTitleHighlight": "your startup",
-      "heroSubtitle": "Practical, founder-first courses covering everything from idea to fundraising — built for the Algerian ecosystem.",
-      "startLearning": "Start learning",
-      "exploreCourses": "Explore courses",
-      "coursesEyebrow": "Courses",
-      "coursesTitle": "What you'll learn",
-      "coursesSubtitle": "Hands-on lessons you can apply to your startup right away.",
-      "viewCourse": "View course",
+      "heroTitle": "Something is coming to level up Algeria's founders.",
+      "heroSubtitle": "We're building a new way to learn how to build, launch, and grow — practical, founder-first, and made for the Algerian ecosystem. Be the first to know when it opens.",
+      "notifyEmailLabel": "Email address",
+      "notifyPlaceholder": "Enter your email",
+      "notifySubmit": "Notify me",
+      "notifyPrivacy": "We'll only email you about the Academy launch. No spam.",
+      "notifySuccess": "You're on the list — we'll reach out the moment it's live.",
+      "notifyError": "Something went wrong. Please try again.",
+      "notifyInvalidEmail": "Please enter a valid email address.",
+      "notifyRateLimited": "Too many attempts. Please try again later.",
+      "tracksEyebrow": "What you'll learn",
+      "tracksTitle": "Built to take you from idea to scale.",
+      "tracksSubtitle": "A first look at the tracks we're preparing — practical, hands-on, and tailored to founders building in Algeria.",
+      "comingSoon": "Coming soon",
+      "postersEyebrow": "A first look",
+      "postersTitle": "Courses are on the way.",
+      "postersSubtitle": "We're putting the finishing touches on the first set of courses. Here's a glimpse of what's coming.",
       "fallback1Title": "Startup fundamentals",
       "fallback1Desc": "Go from idea to a validated business model and your first customers.",
       "fallback2Title": "Growth & fundraising",
@@ -1570,8 +1580,8 @@
       "pillar2Desc": "Every course is built around real tasks you can apply to your startup today.",
       "pillar3Title": "Built for Algeria",
       "pillar3Desc": "Context, examples, and guidance tailored to the Algerian startup ecosystem.",
-      "ctaTitle": "Start learning today",
-      "ctaSubtitle": "Create your free Academy account and begin your first course in minutes."
+      "ctaTitle": "Be first in line.",
+      "ctaSubtitle": "Drop your email and we'll let you know the moment the Academy goes live."
     },
     "dashboard": {
       "entrepreneur": {

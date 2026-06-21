@@ -132,4 +132,30 @@
   .section-label {
     @apply text-xs font-bold uppercase tracking-[0.18em] text-primary;
   }
+
+  /* ── Hero textures ──
+     Reusable, low-opacity background decorations for marketing heroes
+     (landing + academy). Purely decorative — always pair with aria-hidden
+     and a negative z-index so they never trap clicks. */
+
+  /* Fine light-green dot-grid, softly masked so it fades toward the edges. */
+  .bg-dot-grid {
+    background-image: radial-gradient(
+      circle,
+      hsl(142 52% 45% / 0.22) 1.3px,
+      transparent 1.8px
+    );
+    background-size: 22px 22px;
+    -webkit-mask-image: radial-gradient(ellipse 95% 85% at 50% 32%, #000 55%, transparent 92%);
+    mask-image: radial-gradient(ellipse 95% 85% at 50% 32%, #000 55%, transparent 92%);
+  }
+
+  /* Soft green radial glow — sits behind hero headlines. */
+  .hero-glow {
+    background: radial-gradient(
+      ellipse 60% 50% at 50% 0%,
+      hsl(var(--primary) / 0.12),
+      transparent 70%
+    );
+  }
 }

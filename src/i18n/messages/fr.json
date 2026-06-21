@@ -367,17 +367,18 @@
   },
   "landing": {
     "hero": {
-      "badge": "Pour La Première Fois En Algérie",
-      "title": "Construisez, lancez et développez votre startup",
-      "subtitle": "La plateforme unifiée qui connecte entrepreneurs, investisseurs et incubateurs partout en Algérie. Programmes, espaces de coworking, financement — tout en un.",
-      "ctaPrimary": "Rejoindre maintenant",
-      "ctaSecondary": "Voir les programmes"
+      "badge": "L'innovation commence ici",
+      "title": "Connecter les fondateurs, les incubateurs et les investisseurs - dans un seul <g>écosystème</g>.",
+      "subtitle": "Rejoignez le réseau qui propulse l'écosystème startup algérien.",
+      "ctaPrimary": "Commencer",
+      "ctaSecondary": "Explorer le réseau"
     },
     "stats": {
       "founders": "Fondateurs",
       "investors": "Investisseurs",
       "incubators": "Incubateurs",
-      "cities": "Villes"
+      "cities": "Villes",
+      "spaces": "Espaces"
     },
     "features": {
       "title": "Tout ce dont les entrepreneurs ont besoin",
@@ -1542,18 +1543,27 @@
       "ctaSecondary": "Parlez-nous"
     },
     "academy": {
-      "metaTitle": "Startup Academy",
-      "metaDescription": "Apprenez à créer, lancer et développer une startup avec la Metwork Startup Academy — des cours pratiques conçus pour les fondateurs algériens.",
+      "metaTitle": "Startup Academy — Bientôt disponible",
+      "metaDescription": "Quelque chose de nouveau arrive sur Metwork : la Startup Academy — une expérience d'apprentissage conçue pour les fondateurs algériens. Soyez les premiers informés de son ouverture.",
+      "heroBadge": "Bientôt disponible",
       "heroEyebrow": "Metwork Startup Academy",
-      "heroTitle": "Apprenez à créer et développer",
-      "heroTitleHighlight": "votre startup",
-      "heroSubtitle": "Des cours pratiques pensés pour les fondateurs, couvrant tout, de l'idée à la levée de fonds — conçus pour l'écosystème algérien.",
-      "startLearning": "Commencer à apprendre",
-      "exploreCourses": "Explorer les cours",
-      "coursesEyebrow": "Cours",
-      "coursesTitle": "Ce que vous allez apprendre",
-      "coursesSubtitle": "Des leçons concrètes que vous pouvez appliquer immédiatement à votre startup.",
-      "viewCourse": "Voir le cours",
+      "heroTitle": "Quelque chose arrive pour faire passer les fondateurs algériens au niveau supérieur.",
+      "heroSubtitle": "Nous préparons une nouvelle façon d'apprendre à créer, lancer et développer — pratique, pensée pour les fondateurs et faite pour l'écosystème algérien. Soyez les premiers informés de son ouverture.",
+      "notifyEmailLabel": "Adresse e-mail",
+      "notifyPlaceholder": "Entrez votre e-mail",
+      "notifySubmit": "Me prévenir",
+      "notifyPrivacy": "Nous vous écrirons uniquement à propos du lancement de l'Academy. Pas de spam.",
+      "notifySuccess": "Vous êtes sur la liste — nous vous contacterons dès le lancement.",
+      "notifyError": "Une erreur est survenue. Veuillez réessayer.",
+      "notifyInvalidEmail": "Veuillez saisir une adresse e-mail valide.",
+      "notifyRateLimited": "Trop de tentatives. Veuillez réessayer plus tard.",
+      "tracksEyebrow": "Ce que vous allez apprendre",
+      "tracksTitle": "Conçu pour vous mener de l'idée à la croissance.",
+      "tracksSubtitle": "Un premier aperçu des parcours que nous préparons — concrets, pratiques et adaptés aux fondateurs qui se lancent en Algérie.",
+      "comingSoon": "Bientôt",
+      "postersEyebrow": "Premier aperçu",
+      "postersTitle": "Les cours arrivent.",
+      "postersSubtitle": "Nous peaufinons la première série de cours. Voici un aperçu de ce qui arrive.",
       "fallback1Title": "Fondamentaux de la startup",
       "fallback1Desc": "Passez de l'idée à un modèle économique validé et à vos premiers clients.",
       "fallback2Title": "Croissance et levée de fonds",
@@ -1570,8 +1580,8 @@
       "pillar2Desc": "Chaque cours est construit autour de tâches concrètes que vous pouvez appliquer à votre startup dès aujourd'hui.",
       "pillar3Title": "Conçu pour l'Algérie",
       "pillar3Desc": "Contexte, exemples et conseils adaptés à l'écosystème startup algérien.",
-      "ctaTitle": "Commencez à apprendre aujourd'hui",
-      "ctaSubtitle": "Créez votre compte Academy gratuit et démarrez votre premier cours en quelques minutes."
+      "ctaTitle": "Soyez les premiers.",
+      "ctaSubtitle": "Laissez votre e-mail et nous vous préviendrons dès l'ouverture de l'Academy."
     },
     "dashboard": {
       "entrepreneur": {

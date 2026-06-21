@@ -1,3 +1,4 @@
+import { Fragment, type ReactNode } from 'react';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { ArrowRight, Briefcase, Building2, TrendingUp, Users, type LucideIcon } from 'lucide-react';
 
@@ -31,7 +32,10 @@ export default async function LandingPage({ params }: PageProps) {
   const content: LandingContent = {
     hero: {
       badge:        t('hero.badge'),
-      title:        t('hero.title'),
+      // Rendered separately as a rich node (`heroTitle`) so one word can be
+      // highlighted in green; left blank here to avoid formatting the tagged
+      // message as plain text.
+      title:        '',
       subtitle:     t('hero.subtitle'),
       ctaPrimary:   t('hero.ctaPrimary'),
       ctaSecondary: t('hero.ctaSecondary'),
@@ -91,9 +95,23 @@ export default async function LandingPage({ params }: PageProps) {
     getStarted:      t('hero.ctaPrimary'),
   };
 
+  // Slim hero trust strip — incubators & cities reuse the (admin-maintained)
+  // stats figures; spaces uses a static launch figure (no CMS field for it).
+  const heroTrust = [
+    { value: content.stats.incubators.value, label: content.stats.incubators.label },
+    { value: content.stats.cities.value,     label: content.stats.cities.label },
+    { value: '25+',                          label: t('stats.spaces') },
+  ];
+
+  // Headline with one word emphasised in brand green via next-intl rich text.
+  // The <g> tag wraps the highlighted word in each locale's message.
+  const heroTitle = t.rich('hero.title', {
+    g: (chunks) => <span className="text-primary">{chunks}</span>,
+  });
+
   return (
     <>
-      <Hero hero={content.hero} socialProof={sections.socialProof} />
+      <Hero hero={content.hero} title={heroTitle} trust={heroTrust} />
       <About about={about} />
       <Stats stats={content.stats} />
       <Features features={content.features} sectionLabel={sections.whatWeOffer} />
@@ -116,27 +134,25 @@ export default async function LandingPage({ params }: PageProps) {
 
 function Hero({
   hero,
-  socialProof,
+  title,
+  trust,
 }: {
   hero: LandingContent['hero'];
-  socialProof: string;
+  title: ReactNode;
+  trust: { value: string; label: string }[];
 }) {
   return (
-    <section className="relative overflow-hidden">
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10 bg-gradient-to-b from-primary-50/80 via-background to-background"
-      />
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 -z-10 h-[500px] bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_var(--tw-gradient-stops))] from-primary-100/70 via-primary-50/20 to-transparent"
-      />
+    <section className="relative isolate flex min-h-[calc(100svh-4rem)] items-center overflow-hidden bg-background">
+      {/* Fine light-green dot-grid texture */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-dot-grid" />
+      {/* Soft green radial glow behind the headline */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[640px] hero-glow" />
 
       <Container>
-        <div className="flex flex-col items-center pb-14 pt-12 text-center sm:pb-24 sm:pt-20">
+        <div className="mx-auto flex max-w-4xl flex-col items-center py-16 text-center sm:py-20">
 
           {/* Badge */}
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-primary-200 bg-primary-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.15em] text-primary-700">
+          <div className="animate-fade-in inline-flex items-center gap-2.5 rounded-full border border-primary-200 bg-primary-50/80 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.15em] text-primary-700 backdrop-blur-sm">
             <span className="relative flex size-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-500 opacity-75" />
               <span className="relative inline-flex size-1.5 rounded-full bg-primary-600" />
@@ -144,18 +160,27 @@ function Hero({
             {hero.badge}
           </div>
 
-          {/* Title */}
-          <h1 className="mt-6 max-w-4xl text-balance font-display text-4xl font-semibold tracking-tight text-foreground sm:mt-8 sm:text-5xl md:text-6xl lg:text-7xl">
-            {hero.title}
+          {/* Title — one word emphasised in brand green */}
+          <h1
+            className="animate-fade-in mt-6 text-balance font-display text-4xl font-semibold leading-[1.07] tracking-tight text-foreground sm:mt-8 sm:text-5xl md:text-6xl lg:text-7xl"
+            style={{ animationDelay: '60ms', animationFillMode: 'backwards' }}
+          >
+            {title}
           </h1>
 
           {/* Subtitle */}
-          <p className="mt-7 max-w-xl text-balance text-base leading-relaxed text-muted-foreground sm:text-lg">
+          <p
+            className="animate-fade-in mt-6 max-w-2xl text-balance text-base leading-relaxed text-muted-foreground sm:text-lg"
+            style={{ animationDelay: '140ms', animationFillMode: 'backwards' }}
+          >
             {hero.subtitle}
           </p>
 
           {/* CTAs */}
-          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div
+            className="animate-fade-in mt-10 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center"
+            style={{ animationDelay: '220ms', animationFillMode: 'backwards' }}
+          >
             <Button
               asChild
               size="lg"
@@ -172,12 +197,30 @@ function Hero({
               variant="outline"
               className="rounded-full px-8 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5"
             >
-              <Link href="/programs">{hero.ctaSecondary}</Link>
+              <Link href="/spaces">{hero.ctaSecondary}</Link>
             </Button>
           </div>
 
-          {/* Social proof line */}
-          <p className="mt-8 text-xs text-muted-foreground/60">{socialProof}</p>
+          {/* Trust strip — incubators / cities / spaces */}
+          <div className="animate-fade-in mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 sm:gap-x-8"
+            style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}
+          >
+            {trust.map((item, i) => (
+              <Fragment key={item.label}>
+                {i > 0 && (
+                  <span aria-hidden className="hidden h-3.5 w-px bg-border sm:inline-block" />
+                )}
+                <div className="flex items-baseline gap-1.5">
+                  <span className="font-display text-sm font-bold tracking-tight text-foreground">
+                    {item.value}
+                  </span>
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    {item.label}
+                  </span>
+                </div>
+              </Fragment>
+            ))}
+          </div>
         </div>
       </Container>
     </section>
