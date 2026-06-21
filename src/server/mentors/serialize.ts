@@ -27,8 +27,8 @@ export function toMentorDto(m: MentorRecord): Mentor {
     availabilityTimezone: m.availabilityTimezone ?? 'Africa/Algiers',
     defaultMeetingMode: m.defaultMeetingMode,
     defaultMeetingLink: m.defaultMeetingLink ?? null,
-    // Booking policy — public-safe. PII (accessTokenHash/pinHash), the
-    // consultant phone, and the exact in-person address are NEVER serialized here.
+    // Booking policy — public-safe. PII (the PIN hash), the consultant phone,
+    // and the exact in-person address are NEVER serialized here.
     minNoticeHours: m.minNoticeHours ?? null,
     bufferMinutes: m.bufferMinutes ?? null,
     topics: m.topics ?? [],
@@ -50,9 +50,5 @@ export function toMentorPrivateDto(m: MentorRecord): Mentor {
     phone: m.phone ?? null,
     defaultMeetingAddress: m.defaultMeetingAddress ?? null,
     defaultMeetingMapsLink: m.defaultMeetingMapsLink ?? null,
-    // When the durable sign-in token was last (re)generated — lets the admin UI
-    // show whether a consultant link is already active. The token hash itself is
-    // NEVER serialized; the plaintext is returned only once at generation time.
-    accessTokenRotatedAt: m.accessTokenRotatedAt ?? null,
   };
 }

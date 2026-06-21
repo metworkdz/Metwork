@@ -1513,20 +1513,13 @@ export interface MentorRecord {
   /** True if the consultant offers a free introductory session. Absent ⇒ false. */
   freeIntroEnabled?: boolean | null;
 
-  // ─── Durable self-service access (token + PIN) ───────────────────────────
-  // Parallel to the email magic-link flow (which stays as a fallback). A DB
-  // leak can't impersonate: only hashes are stored. All optional & additive.
+  // ─── Self-service access (PIN for trusted-device unlock) ─────────────────
+  // The consultant signs in with email → OTP; the PIN is the fast re-entry on a
+  // remembered device. A DB leak can't impersonate: only the scrypt hash is
+  // stored. All optional & additive.
 
   /**
-   * SHA-256 of the durable per-mentor access token. The plaintext travels only
-   * in the link the admin shares out-of-band; rotating replaces this hash.
-   * Absent ⇒ no durable token issued yet.
-   */
-  accessTokenHash?: string | null;
-  /** ISO timestamp the access token was last (re)generated. */
-  accessTokenRotatedAt?: string | null;
-  /**
-   * scrypt hash of the consultant's PIN (set on first durable-token access).
+   * scrypt hash of the consultant's PIN (set on first sign-in after OTP).
    * Reuses the user password hashing util. Absent ⇒ PIN not set yet.
    */
   pinHash?: string | null;
@@ -1869,18 +1862,10 @@ export interface MentorWithdrawalRecord {
 
 /* ─────────────────────────── Consultant (mentor) self-service access ───────────────────────────
  * Consultants are not platform users, so they cannot use the user session
- * system. These two tables give them an ISOLATED magic-link + session flow,
- * mirroring the user `EmailTokenRecord` / `SessionRecord` mechanics (random id,
- * only the SHA-256 hash persisted). Keyed by mentorId; never resolves a user. */
-
-/** Single-use, hashed magic-link token emailed for consultant portal access. */
-export interface MentorAccessTokenRecord {
-  /** SHA-256 of the random token (plaintext travels only in the email link). */
-  tokenHash: string;
-  mentorId: string;
-  expiresAt: string;
-  consumed: boolean;
-}
+ * system. These tables give them an ISOLATED email → OTP + session flow,
+ * mirroring the user `OtpRecord` / `SessionRecord` mechanics (random id, only
+ * the hash persisted). Keyed by mentorId; never resolves a user. The OTP itself
+ * reuses the shared `d.otps` table via a `mentor:<id>` key. */
 
 /** Consultant portal session — separate cookie/table from user sessions. */
 export interface MentorSessionRecord {
@@ -1892,9 +1877,10 @@ export interface MentorSessionRecord {
 }
 
 /**
- * "Remember this device" token for durable-token + PIN access. Lets a
- * consultant skip the PIN on a trusted device until expiry. Revocable
- * (admin rotate / PIN change clears them). Only the hash is persisted.
+ * "Remember this device" token. Lets a consultant unlock with just their PIN on
+ * a trusted device until expiry (60 days), skipping the email → OTP step.
+ * Revocable (PIN change clears all; "forget this device" clears one). Only the
+ * hash is persisted.
  */
 export interface MentorDeviceTokenRecord {
   /** SHA-256 of the random device token (plaintext lives only in the cookie). */
@@ -2039,11 +2025,9 @@ interface DbShape {
   mentorLedgerTxns: MentorLedgerTxnRecord[];
   /** Withdrawal requests submitted by consultants against their mentor wallet. */
   mentorWithdrawals: MentorWithdrawalRecord[];
-  /** Single-use magic-link tokens for consultant portal access. */
-  mentorAccessTokens: MentorAccessTokenRecord[];
   /** Active consultant portal sessions (mentorId-keyed). */
   mentorSessions: MentorSessionRecord[];
-  /** "Remember this device" tokens for durable-token + PIN access. */
+  /** "Remember this device" tokens for trusted-device PIN unlock. */
   mentorDeviceTokens: MentorDeviceTokenRecord[];
   /** Short-lived slot holds taken at payment initiation. */
   mentorSlotLocks: MentorSlotLockRecord[];
@@ -2122,7 +2106,6 @@ const empty: DbShape = {
   mentorWallets: [],
   mentorLedgerTxns: [],
   mentorWithdrawals: [],
-  mentorAccessTokens: [],
   mentorSessions: [],
   mentorDeviceTokens: [],
   mentorSlotLocks: [],

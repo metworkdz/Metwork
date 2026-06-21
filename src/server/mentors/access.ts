@@ -1,16 +1,17 @@
 /**
- * Consultant (mentor) self-service access — magic link + isolated session.
+ * Consultant (mentor) self-service access — email → OTP + isolated session.
  *
  * Consultants have no platform user account, so this gives them a parallel,
  * minimal auth flow that NEVER resolves a `UserRecord`:
  *
- *   request link → issueMentorMagicLink (single-use, hashed, 30-min TTL, emailed)
- *   click link   → consumeMentorMagicLink → createMentorSession (cookie, 30-day TTL)
+ *   email → OTP  → verifyConsultantOtp → createMentorSession (cookie, 30-day TTL)
+ *   first sign-in → setMentorPin (scrypt) + optional "remember this device"
+ *   trusted device → verify PIN → createMentorSession (no OTP)
  *   each request → requireConsultant() resolves the mentorId from the cookie
  *
- * Mirrors the user `email-verification.ts` / `session.ts` mechanics: only the
- * SHA-256 hash of the token / session id is persisted; the plaintext lives only
- * in the email link / the HttpOnly cookie. A DB leak can't hijack a session.
+ * Mirrors the user `otp.ts` / `session.ts` mechanics: only the hash of the OTP
+ * code / session id / device token is persisted; the plaintext lives only in
+ * the email / the HttpOnly cookie. A DB leak can't hijack a session.
  */
 import { cookies } from 'next/headers';
 import { createHash, randomBytes } from 'node:crypto';
@@ -25,7 +26,6 @@ export const CONSULTANT_COOKIE_NAME = 'metwork_consultant';
 /** "Remember this device" cookie for the durable-token + PIN flow. */
 export const CONSULTANT_DEVICE_COOKIE_NAME = 'metwork_consultant_device';
 
-const MAGIC_LINK_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const DEVICE_TOKEN_TTL_MS = 60 * 24 * 60 * 60 * 1000; // 60 days ("remember this device")
 
@@ -37,58 +37,6 @@ export function isValidPinFormat(pin: string): boolean {
 
 function sha256(s: string): string {
   return createHash('sha256').update(s).digest('hex');
-}
-
-/* ─────────────────────────── Magic link ─────────────────────────── */
-
-export interface IssuedMagicLink {
-  /** Plaintext token — embed in the email link. Never persisted. */
-  token: string;
-  mentor: MentorRecord;
-}
-
-/**
- * Issue a single-use magic-link token for the mentor with this email. Returns
- * null when no mentor matches (the caller still responds 200 to avoid email
- * enumeration). Invalidates any prior unconsumed tokens for the mentor.
- */
-export async function issueMentorMagicLink(email: string): Promise<IssuedMagicLink | null> {
-  const needle = email.trim().toLowerCase();
-  if (!needle) return null;
-
-  const data = await db.read();
-  const mentor = (data.mentors ?? []).find(
-    (m) => (m.email ?? '').trim().toLowerCase() === needle,
-  );
-  if (!mentor) return null;
-
-  const token = randomBytes(32).toString('base64url');
-  const expiresAt = new Date(Date.now() + MAGIC_LINK_TTL_MS).toISOString();
-  await db.update((d) => {
-    if (!Array.isArray(d.mentorAccessTokens)) d.mentorAccessTokens = [];
-    d.mentorAccessTokens = d.mentorAccessTokens.filter(
-      (t) => t.mentorId !== mentor.id || t.consumed,
-    );
-    d.mentorAccessTokens.push({ tokenHash: sha256(token), mentorId: mentor.id, expiresAt, consumed: false });
-  });
-  return { token, mentor };
-}
-
-export type ConsumeMagicLinkResult =
-  | { ok: true; mentorId: string }
-  | { ok: false; reason: 'NOT_FOUND' | 'EXPIRED' | 'CONSUMED' };
-
-/** Validate + consume a magic-link token. Single-use. */
-export async function consumeMentorMagicLink(token: string): Promise<ConsumeMagicLinkResult> {
-  const tokenHash = sha256(token);
-  return db.update<ConsumeMagicLinkResult>((d) => {
-    const rec = (d.mentorAccessTokens ?? []).find((t) => t.tokenHash === tokenHash);
-    if (!rec) return { ok: false, reason: 'NOT_FOUND' };
-    if (rec.consumed) return { ok: false, reason: 'CONSUMED' };
-    if (new Date(rec.expiresAt).getTime() <= Date.now()) return { ok: false, reason: 'EXPIRED' };
-    rec.consumed = true;
-    return { ok: true, mentorId: rec.mentorId };
-  });
 }
 
 /* ─────────────────────────── Email OTP sign-in ─────────────────────────── */
@@ -233,71 +181,13 @@ export async function requireConsultant(): Promise<ConsultantGuardResult> {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
- * Durable per-mentor access token + PIN + "remember this device"
+ * PIN + "remember this device"
  *
- * Parallel access path to the email magic-link above (which stays as a
- * fallback). The admin generates a long, unguessable token whose SHA-256 hash
- * is stored on the MentorRecord; the plaintext link is shared out-of-band. On
- * first use the consultant sets a PIN (scrypt-hashed, reusing the user
- * password util). Viewing client PII requires a valid PIN or a valid
- * "remember this device" token. Everything is revocable: rotating the access
- * token or changing the PIN clears all device tokens.
+ * After an email → OTP sign-in, the consultant sets a PIN (scrypt-hashed,
+ * reusing the user password util). On a trusted device a valid PIN restores the
+ * session without another OTP. Everything is revocable: changing the PIN clears
+ * all remembered devices; "forget this device" revokes a single one.
  * ════════════════════════════════════════════════════════════════════════ */
-
-/* ─────────────────────────── Access token ─────────────────────────── */
-
-export interface GeneratedAccessToken {
-  /** Plaintext token — embed in the link shown ONCE to the admin. Never persisted. */
-  token: string;
-  mentor: MentorRecord;
-}
-
-/**
- * (Re)generate the durable access token for a mentor. Stores only the hash and
- * stamps `accessTokenRotatedAt`. Rotation invalidates the previous link AND all
- * remembered devices (security: a rotate is also the "something's wrong" lever).
- * The PIN is preserved. Returns null when the mentor doesn't exist.
- */
-export async function generateMentorAccessToken(
-  mentorId: string,
-): Promise<GeneratedAccessToken | null> {
-  const token = randomBytes(48).toString('base64url');
-  const now = new Date().toISOString();
-  return db.update<GeneratedAccessToken | null>((d) => {
-    const mentor = (d.mentors ?? []).find((m) => m.id === mentorId);
-    if (!mentor) return null;
-    mentor.accessTokenHash = sha256(token);
-    mentor.accessTokenRotatedAt = now;
-    // Rotation revokes remembered devices for this mentor.
-    d.mentorDeviceTokens = (d.mentorDeviceTokens ?? []).filter((t) => t.mentorId !== mentorId);
-    return { token, mentor };
-  });
-}
-
-/**
- * Revoke durable-token access entirely: clears the token hash and all remembered
- * devices. The PIN hash is left in place (harmless without a token; restored if
- * the admin later re-issues a token). Returns false when the mentor doesn't exist.
- */
-export async function revokeMentorAccessToken(mentorId: string): Promise<boolean> {
-  return db.update<boolean>((d) => {
-    const mentor = (d.mentors ?? []).find((m) => m.id === mentorId);
-    if (!mentor) return false;
-    mentor.accessTokenHash = null;
-    mentor.accessTokenRotatedAt = null;
-    d.mentorDeviceTokens = (d.mentorDeviceTokens ?? []).filter((t) => t.mentorId !== mentorId);
-    return true;
-  });
-}
-
-/** Resolve a mentorId from a raw durable access token, or null. Does NOT check PIN/device. */
-export async function resolveMentorIdByAccessToken(token: string): Promise<string | null> {
-  if (!token) return null;
-  const hash = sha256(token);
-  const data = await db.read();
-  const mentor = (data.mentors ?? []).find((m) => m.accessTokenHash && m.accessTokenHash === hash);
-  return mentor ? mentor.id : null;
-}
 
 /* ─────────────────────────── PIN ─────────────────────────── */
 
@@ -473,33 +363,4 @@ export async function clearMentorDeviceCookie(): Promise<void> {
     path: '/',
     maxAge: 0,
   });
-}
-
-/* ─────────────────────── Combined validator ─────────────────────── */
-
-/**
- * The single entry point required by PROMPT 2 §2.
- *
- * Resolves a mentorId from a durable access token AND a passing credential
- * (a valid remembered-device token OR a correct PIN). Returns the mentorId on
- * success, or null on any failure (unknown/expired token, no PIN set, wrong
- * PIN, bad device token). This is the gate for viewing client PII.
- *
- * NOTE: this performs no rate-limiting itself — callers (the PIN route) wrap it
- * with `checkRateLimitDistributed` keyed by mentor + client IP.
- */
-export async function validateMentorAccess(
-  token: string,
-  credential: { pin?: string; deviceToken?: string },
-): Promise<string | null> {
-  const mentorId = await resolveMentorIdByAccessToken(token);
-  if (!mentorId) return null;
-
-  if (credential.deviceToken && (await validateMentorDeviceToken(mentorId, credential.deviceToken))) {
-    return mentorId;
-  }
-  if (credential.pin && (await verifyMentorPin(mentorId, credential.pin))) {
-    return mentorId;
-  }
-  return null;
 }

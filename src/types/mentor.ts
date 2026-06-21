@@ -87,8 +87,6 @@ export interface Mentor {
   defaultMeetingAddress?: string | null;
   /** Default Google Maps link for the in-person address (PRIVATE). */
   defaultMeetingMapsLink?: string | null;
-  /** When the durable consultant sign-in token was last (re)generated (admin DTO only). Null ⇒ no link issued yet. */
-  accessTokenRotatedAt?: string | null;
 
   // ─── Booking policy (public-safe, all optional for back-compat) ───────────
   /** Minimum lead time (hours) before a session. Absent ⇒ validator default. */

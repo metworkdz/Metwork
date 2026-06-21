@@ -11,7 +11,7 @@
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { CalendarClock, KeyRound, MoreVertical, Pencil, Plus, Trash2, UserPlus } from 'lucide-react';
+import { CalendarClock, MoreVertical, Pencil, Plus, Trash2, UserPlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,7 +33,6 @@ import { mentorsService } from '@/services/mentors.service';
 import { ApiClientError } from '@/lib/api-client';
 import { MentorFormDialog } from './mentor-form-dialog';
 import { MentorAvailabilityDialog } from './mentor-availability-dialog';
-import { ConsultantLinkDialog } from './consultant-link-dialog';
 import { LandingMentorCard } from '@/components/features/mentors/landing-mentor-card';
 import type { Mentor } from '@/types/mentor';
 
@@ -46,7 +45,6 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [availabilityFor, setAvailabilityFor] = useState<Mentor | null>(null);
-  const [linkFor, setLinkFor] = useState<Mentor | null>(null);
 
   function openCreate() {
     setEditing(null);
@@ -139,10 +137,6 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
                       <CalendarClock />
                       {t('availability')}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setLinkFor(m)}>
-                      <KeyRound />
-                      {t('consultantLink')}
-                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onSelect={() => setDeleting(m)}
                       className="text-destructive focus:text-destructive"
@@ -175,15 +169,6 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
         }}
         mentor={availabilityFor}
         onSaved={onSaved}
-      />
-
-      <ConsultantLinkDialog
-        open={linkFor !== null}
-        onOpenChange={(open) => {
-          if (!open) setLinkFor(null);
-        }}
-        mentor={linkFor}
-        onChanged={onSaved}
       />
 
       <Dialog
