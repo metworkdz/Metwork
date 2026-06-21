@@ -163,13 +163,13 @@ export function RegistrationsTable({
           />
         </div>
 
-        {/* Status tabs */}
-        <div className="flex gap-1">
+        {/* Status tabs — horizontally scrollable on mobile */}
+        <div className="flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {statusTabs.map(({ value, labelKey }) => (
             <button
               key={value}
               onClick={() => handleStatusChange(value)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium transition-colors lg:py-1.5 ${
                 statusFilter === value
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -191,7 +191,9 @@ export function RegistrationsTable({
           <p className="text-sm text-muted-foreground">{t('empty')}</p>
         </div>
       ) : (
-        <div className="rounded-lg border border-border overflow-hidden">
+        <>
+        {/* Desktop table (unchanged) */}
+        <div className="hidden rounded-lg border border-border overflow-hidden lg:block">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b border-border">
               <tr>
@@ -218,6 +220,19 @@ export function RegistrationsTable({
             </tbody>
           </table>
         </div>
+
+        {/* Mobile card list */}
+        <div className="space-y-3 lg:hidden">
+          {registrations.map((reg) => (
+            <RegistrationCard
+              key={reg.id}
+              registration={reg}
+              formFields={formFields}
+              onCancel={() => handleCancel(reg.id)}
+            />
+          ))}
+        </div>
+        </>
       )}
 
       {/* Pagination */}
@@ -328,6 +343,82 @@ function RegistrationRow({
         </tr>
       )}
     </>
+  );
+}
+
+/* ───────────────────── Mobile card (below lg) ───────────────────── */
+
+function RegistrationCard({
+  registration: reg,
+  formFields,
+  onCancel,
+}: {
+  registration: Registration;
+  formFields: RegistrationFormField[];
+  onCancel: () => void;
+}) {
+  const t = useTranslations('registrationsTable');
+  const [expanded, setExpanded] = useState(false);
+
+  const hasAnswers = reg.answers.length > 0 && formFields.length > 0;
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate font-medium">{reg.fullName}</p>
+          {reg.email && <p className="truncate text-xs text-muted-foreground">{reg.email}</p>}
+          {reg.phone && <p className="truncate text-xs text-muted-foreground">{reg.phone}</p>}
+        </div>
+        <div className="shrink-0">
+          <StatusBadge status={reg.status} />
+        </div>
+      </div>
+
+      <div className="mt-2.5 flex items-center justify-between gap-3">
+        <span className="text-xs text-muted-foreground">
+          {new Date(reg.createdAt).toLocaleDateString()}
+        </span>
+        <div className="flex items-center gap-4">
+          {hasAnswers && (
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              {t('viewAnswers')}
+              {expanded ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+            </button>
+          )}
+          {reg.status !== 'CANCELLED' && (
+            <button
+              onClick={onCancel}
+              className="text-xs text-muted-foreground transition-colors hover:text-destructive"
+            >
+              {t('cancel')}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {expanded && hasAnswers && (
+        <div className="mt-3 grid gap-2 border-t border-border/60 pt-3">
+          {formFields.map((field) => {
+            const answer = reg.answers.find((a) => a.fieldId === field.id);
+            if (!answer) return null;
+            const display = Array.isArray(answer.value)
+              ? answer.value.join(', ')
+              : String(answer.value);
+            if (!display) return null;
+            return (
+              <div key={field.id}>
+                <p className="text-xs font-medium text-muted-foreground">{field.label}</p>
+                <p className="mt-0.5 text-sm">{display}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

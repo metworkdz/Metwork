@@ -61,8 +61,8 @@ export function ProgramRegistrationDashboard({
         </a>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-border">
+      {/* Tabs — desktop (unchanged) */}
+      <div className="hidden border-b border-border lg:flex">
         {tabs.map(({ id, labelKey, Icon }) => (
           <button
             key={id}
@@ -79,8 +79,26 @@ export function ProgramRegistrationDashboard({
         ))}
       </div>
 
+      {/* Tabs — mobile: horizontal scrollable pill bar */}
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {tabs.map(({ id, labelKey, Icon }) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={`flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors ${
+              tab === id
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Icon className="size-4" />
+            {t(labelKey)}
+          </button>
+        ))}
+      </div>
+
       {/* Tab content */}
-      <div className="rounded-lg border border-border bg-card p-5">
+      <div className="rounded-lg border border-border bg-card p-3 lg:p-5">
         {tab === 'form' ? (
           <RegistrationFormBuilder
             entityType={entityType}
