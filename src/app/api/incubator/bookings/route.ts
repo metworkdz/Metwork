@@ -5,7 +5,7 @@
 import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiRole } from '@/server/auth/api-guards';
+import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db, type BookingRecord } from '@/server/db/store';
 import { checkSpaceAvailability } from '@/server/bookings/availability';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
@@ -87,7 +87,7 @@ export async function GET() {
 
 /* ── POST — manual offline booking ── */
 export async function POST(req: NextRequest) {
-  const guard = await requireApiRole(['INCUBATOR']);
+  const guard = await requireApprovedApiRole(['INCUBATOR']);
   if (!guard.ok) return guard.response;
 
   const inc = await findIncubatorByUserEmail(guard.user.email);

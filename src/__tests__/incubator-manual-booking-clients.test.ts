@@ -12,12 +12,15 @@ import { NextRequest } from 'next/server';
 import { db } from '@/server/db/store';
 
 // Both routes resolve the incubator from an authenticated INCUBATOR session.
-vi.mock('@/server/auth/api-guards', () => ({
-  requireApiRole: vi.fn(async () => ({
-    ok: true,
-    user: { id: 'mgr-1', email: 'i@x.com', role: 'INCUBATOR' },
-  })),
-}));
+vi.mock('@/server/auth/api-guards', () => {
+  const ok = async () => ({ ok: true, user: { id: 'mgr-1', email: 'i@x.com', role: 'INCUBATOR', approvalStatus: 'APPROVED' } });
+  return {
+    requireApiRole: vi.fn(ok),
+    requireApprovedApiRole: vi.fn(ok),
+    requireApiSession: vi.fn(ok),
+    requireApprovedApiSession: vi.fn(ok),
+  };
+});
 
 // Manual bookings send a receipt email (now awaited) — stub it so the test
 // neither hits the network nor depends on its outcome.

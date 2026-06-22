@@ -1248,6 +1248,51 @@ export function sendAdminNewInvestorNotification(params: {
 }
 
 /**
+ * Notify the admin when a new BUSINESS account is verified (review required).
+ * Reuses the provider-notification template (business behaves like a provider).
+ * Fire-and-forget — errors are logged, never surfaced.
+ */
+export function sendAdminNewBusinessNotification(params: {
+  fullName:  string;
+  email:     string;
+  phone?:    string;
+  userId:    string;
+  createdAt: string;
+  businessName?: string;
+  subTypeLabel?: string;
+  website?:  string | null;
+  instagram?: string | null;
+}): void {
+  const adminEmail = process.env.CONTACT_EMAIL ?? process.env.EMAIL_FROM ?? 'contact@metwork.dz';
+  const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/admin/approvals`;
+  const label = params.subTypeLabel ?? 'Business';
+
+  sendResendEmail({
+    to:      adminEmail,
+    subject: `[Metwork] Nouveau compte ${label} inscrit — ${params.businessName ?? params.fullName}`,
+    html:    adminIncubatorNotificationHtml({
+      fullName:      params.fullName,
+      email:         params.email,
+      phone:         params.phone,
+      userId:        params.userId,
+      createdAt:     params.createdAt,
+      incubatorName: params.businessName,
+      website:       params.website,
+      instagram:     params.instagram,
+      reviewUrl,
+    }),
+  })
+    .then((sent) => {
+      // eslint-disable-next-line no-console
+      console.log(`${banner} ADMIN BUSINESS NOTIF ${sent ? 'sent' : '(no Resend)'} → ${adminEmail} :: ${params.email}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Admin business notification failed →`, err.message),
+    );
+}
+
+/**
  * Notify the mentor (consultant) that their session has been confirmed by admin.
  * Sent alongside the client's confirmation email.
  * Skipped silently when the MentorRecord has no email address.

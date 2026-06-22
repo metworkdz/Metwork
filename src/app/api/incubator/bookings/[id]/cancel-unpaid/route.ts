@@ -9,7 +9,7 @@
  * The client is notified non-blocking (in-app + email) that no payment was taken.
  */
 import type { NextRequest } from 'next/server';
-import { requireApiRole } from '@/server/auth/api-guards';
+import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { json, jsonError } from '@/server/http/json';
 import { cancelUnpaidBooking } from '@/server/bookings/incubator-cancel';
 import { notifyBookingCancelledUnpaid } from '@/server/notifications/booking-cancelled-unpaid';
@@ -21,7 +21,7 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
+  const guard = await requireApprovedApiRole(['INCUBATOR', 'ADMIN']);
   if (!guard.ok) return guard.response;
 
   const { id } = await params;

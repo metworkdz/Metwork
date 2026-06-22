@@ -12,7 +12,7 @@
  */
 import type { NextRequest } from 'next/server';
 import { ZodError } from 'zod';
-import { requireApiSession } from '@/server/auth/api-guards';
+import { requireApprovedApiSession } from '@/server/auth/api-guards';
 import { initiateTopUp } from '@/server/wallet/service';
 import { initTopUpSchema } from '@/server/wallet/schemas';
 import { fromZod, json, jsonError } from '@/server/http/json';
@@ -24,7 +24,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApiSession();
+  const guard = await requireApprovedApiSession();
   if (!guard.ok) return guard.response;
 
   // Rate limit: 10 top-up attempts per user per hour. Top-ups are a deliberate

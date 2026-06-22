@@ -10,11 +10,11 @@ interface PageProps {
 export const metadata = { title: 'Events' };
 export const dynamic = 'force-dynamic';
 
-export default async function TrainerEventsPage({ params }: PageProps) {
+export default async function BusinessEventsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.dashboard');
-  await requireRole(['TRAINER']);
+  await requireRole(['BUSINESS']);
 
   return (
     <div className="space-y-6">

@@ -45,7 +45,7 @@ export async function GET(_req: NextRequest) {
   const byRole: Record<UserRole, number> = {
     ENTREPRENEUR: 0,
     INCUBATOR: 0,
-    TRAINER: 0,
+    BUSINESS: 0,
     ADMIN: 0,
     INVESTOR: 0,
   };

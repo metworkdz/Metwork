@@ -27,13 +27,13 @@ interface PageProps {
   params: Promise<{ locale: string }>;
 }
 
-// Trainers post programs & events (no spaces), so only those two kinds appear.
+// Businesses post programs & events (no spaces), so only those two kinds appear.
 const kindIcon: Record<'PROGRAM' | 'EVENT', React.ReactNode> = {
   PROGRAM: <Briefcase className="size-3.5" />,
   EVENT:   <Calendar className="size-3.5" />,
 };
 
-interface TrainerBookingRow {
+interface BusinessBookingRow {
   id: string;
   itemKind: 'PROGRAM' | 'EVENT';
   itemName: string;
@@ -47,13 +47,13 @@ interface TrainerBookingRow {
   customerEmail: string;
 }
 
-export default async function TrainerBookingsPage({ params }: PageProps) {
+export default async function BusinessBookingsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   // Reuse the incubator bookings translations — the table is identical.
   const t    = await getTranslations('pages.dashboard.incubator.bookings');
   const lang = (await getLocale()) as Locale;
-  const user = await requireRole(['TRAINER']);
+  const user = await requireRole(['BUSINESS']);
 
   const kindLabel: Record<'PROGRAM' | 'EVENT', string> = {
     PROGRAM: t('kindProgram'),
@@ -61,12 +61,12 @@ export default async function TrainerBookingsPage({ params }: PageProps) {
   };
 
   const inc  = await findIncubatorByUserEmail(user.email);
-  let rows: TrainerBookingRow[] = [];
+  let rows: BusinessBookingRow[] = [];
 
   if (inc) {
     const data = await db.read();
 
-    // Trainers own programs & events only — never spaces.
+    // Businesses own programs & events only — never spaces.
     const programIds = new Set((data.programs ?? []).filter((p) => p.incubatorId === inc.id).map((p) => p.id));
     const eventIds   = new Set((data.events   ?? []).filter((e) => e.incubatorId === inc.id).map((e) => e.id));
 

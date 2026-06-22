@@ -5,7 +5,7 @@
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiRole } from '@/server/auth/api-guards';
+import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -29,7 +29,7 @@ const patchSchema = z.object({
 });
 
 export async function GET() {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN', 'TRAINER']);
+  const guard = await requireApiRole(['INCUBATOR', 'ADMIN', 'BUSINESS']);
   if (!guard.ok) return guard.response;
 
   const data = await db.read();
@@ -48,7 +48,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN', 'TRAINER']);
+  const guard = await requireApprovedApiRole(['INCUBATOR', 'ADMIN', 'BUSINESS']);
   if (!guard.ok) return guard.response;
 
   let body: unknown;

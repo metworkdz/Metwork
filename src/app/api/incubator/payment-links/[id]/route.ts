@@ -7,7 +7,7 @@
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiRole } from '@/server/auth/api-guards';
+import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { cancelPaymentLink } from '@/server/payments/payment-links';
 import { fromZod, json, jsonError } from '@/server/http/json';
@@ -21,7 +21,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const guard = await requireApiRole(['INCUBATOR']);
+  const guard = await requireApprovedApiRole(['INCUBATOR']);
   if (!guard.ok) return guard.response;
 
   const inc = await findIncubatorByUserEmail(guard.user.email);

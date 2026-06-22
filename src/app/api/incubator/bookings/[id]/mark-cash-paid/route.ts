@@ -15,7 +15,7 @@
  *     and cashCollectedBy. Idempotent — a booking already PAID returns as-is.
  */
 import type { NextRequest } from 'next/server';
-import { requireApiRole } from '@/server/auth/api-guards';
+import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { json, jsonError } from '@/server/http/json';
 import { createNotification } from '@/server/notifications/create-notification';
@@ -28,7 +28,7 @@ export async function PATCH(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
+  const guard = await requireApprovedApiRole(['INCUBATOR', 'ADMIN']);
   if (!guard.ok) return guard.response;
   const { id } = await params;
 

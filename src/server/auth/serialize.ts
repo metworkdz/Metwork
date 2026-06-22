@@ -5,6 +5,7 @@
  */
 import type { UserRecord } from '@/server/db/store';
 import type { SessionUser } from '@/types/auth';
+import { getApprovalStatus } from '@/lib/approval-guard';
 
 export function toSessionUser(u: UserRecord): SessionUser {
   return {
@@ -15,6 +16,10 @@ export function toSessionUser(u: UserRecord): SessionUser {
     city: u.city,
     role: u.role,
     status: u.status,
+    // Always resolved (legacy/non-gated ⇒ APPROVED) so the client read-only
+    // gate can rely on it without a separate fetch.
+    approvalStatus: getApprovalStatus(u),
+    businessSubType: u.businessSubType ?? null,
     phoneVerified: u.phoneVerified,
     emailVerified: u.emailVerified,
     membershipCode: u.membershipCode,

@@ -9,7 +9,7 @@
  */
 import type { NextRequest } from 'next/server';
 import { ZodError } from 'zod';
-import { requireApiSession } from '@/server/auth/api-guards';
+import { requireApiSession, requireApprovedApiSession } from '@/server/auth/api-guards';
 import { createSpaceBookingSchema } from '@/server/bookings/schemas';
 import { createSpaceBooking, listBookingsForUser } from '@/server/bookings/service';
 import { toBookingDto } from '@/server/bookings/serialize';
@@ -27,7 +27,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApiSession();
+  const guard = await requireApprovedApiSession();
   if (!guard.ok) return guard.response;
 
   // Rate limit: 30 bookings per hour per authenticated user. Legitimate

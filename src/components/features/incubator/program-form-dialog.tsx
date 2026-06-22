@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils';
 import { GalleryUploadField } from '@/components/shared/gallery-upload-field';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
+import { useAccountApproved } from '@/hooks/use-account-approved';
 import type { ProgramType } from '@/types/domain';
 
 const PROGRAM_TYPE_KEYS: ProgramType[] = ['INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP'];
@@ -54,6 +55,8 @@ interface ProgramFormDialogProps {
 export function ProgramFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange }: ProgramFormDialogProps) {
   const t = useTranslations('incubator.programForm');
   const tQuestions = useTranslations('defaultQuestions');
+  const tApproval = useTranslations('accountApproval');
+  const { isApproved } = useAccountApproved();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -199,12 +202,19 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
       {/* FIX: BUG-2 — only render trigger in create mode */}
       {!editId && (
-        <DialogTrigger asChild>
-          <Button size="sm" className="gap-1.5">
+        isApproved ? (
+          <DialogTrigger asChild>
+            <Button size="sm" className="gap-1.5">
+              <PlusCircle className="size-4" />
+              {t('addProgram')}
+            </Button>
+          </DialogTrigger>
+        ) : (
+          <Button size="sm" className="gap-1.5" disabled title={tApproval('actionDisabled')}>
             <PlusCircle className="size-4" />
             {t('addProgram')}
           </Button>
-        </DialogTrigger>
+        )
       )}
 
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg max-sm:inset-0 max-sm:h-full max-sm:max-h-full max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none max-sm:border-0 max-sm:pb-0 max-sm:pt-[calc(1.5rem+env(safe-area-inset-top))]">

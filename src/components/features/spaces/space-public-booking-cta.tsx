@@ -42,8 +42,8 @@ export function SpacePublicBookingCTA({ space }: Props) {
     );
   }
 
-  // Entrepreneurs and trainers (training centres / companies) may book spaces.
-  if (user.role !== 'ENTREPRENEUR' && user.role !== 'TRAINER') {
+  // Entrepreneurs and businesses (trainers / training centres / companies) may book spaces.
+  if (user.role !== 'ENTREPRENEUR' && user.role !== 'BUSINESS') {
     return (
       <p className="text-sm text-muted-foreground text-center">
         {t('entrepreneurOnly')}

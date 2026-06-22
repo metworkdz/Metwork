@@ -508,12 +508,23 @@
       "roleInvestorDesc": "Je cherche à financer des startups algériennes",
       "roleIncubator": "Incubateur / espace de coworking",
       "roleIncubatorDesc": "Je gère un incubateur, accélérateur ou coworking",
-      "roleTrainer": "Formateur / Centre de formation / Entreprise",
-      "roleTrainerDesc": "Je propose des formations, gère un centre de formation ou une entreprise avec des programmes",
+      "roleBusiness": "Entreprise",
+      "roleBusinessDesc": "Je suis formateur, centre de formation ou entreprise proposant des programmes ou événements",
+      "businessTypeLabel": "Type d'activité",
+      "businessTypePlaceholder": "Sélectionnez votre type d'activité",
+      "businessTypeTrainer": "Formateur",
+      "businessTypeTrainingCenter": "Centre de formation",
+      "businessTypeCompany": "Entreprise",
+      "businessNameLabel": "Nom de l'entreprise",
+      "businessNamePlaceholder": "ex. Oran Skills Academy",
+      "businessIndustryLabel": "Domaine / secteur",
+      "businessIndustryPlaceholder": "ex. Compétences numériques, Finance, Marketing",
+      "businessPhoneLabel": "Téléphone public",
+      "businessPhonePlaceholder": "Numéro de contact affiché aux clients",
+      "businessDescriptionLabel": "Brève description",
+      "businessDescriptionPlaceholder": "Décrivez brièvement ce que propose votre activité",
       "incubatorNameLabel": "Nom de l'incubateur",
       "incubatorNamePlaceholder": "ex. Hub Innovation Alger",
-      "trainerNameLabel": "Nom du centre de formation / de l'entreprise",
-      "trainerNamePlaceholder": "ex. Académie des Compétences d'Oran",
       "optionalHint": "Facultatif",
       "websiteLabel": "Site web",
       "websitePlaceholder": "https://exemple.com",
@@ -552,7 +563,8 @@
       "invalidUrl": "Veuillez entrer une URL valide (avec https://)",
       "invalidPhone": "Veuillez entrer un numéro algérien valide",
       "termsRequired": "Vous devez accepter les conditions",
-      "privacyRequired": "Vous devez accepter la politique de confidentialité et le traitement des données pour continuer"
+      "privacyRequired": "Vous devez accepter la politique de confidentialité et le traitement des données pour continuer",
+      "businessTypeRequired": "Veuillez choisir un type d'activité"
     },
     "resetPassword": {
       "title": "Définir un nouveau mot de passe",
@@ -670,6 +682,14 @@
     "rejectedTitle": "Compte non approuvé",
     "rejectedDescription": "Votre compte investisseur n'a pas été approuvé. Vous pouvez fournir plus d'informations — voir le motif ci-dessous — et nous le réexaminerons.",
     "reasonLabel": "Motif"
+  },
+  "accountApproval": {
+    "bannerTitle": "Votre compte est en attente de validation",
+    "bannerDescription": "Vous avez un accès en lecture seule. Vous pouvez tout consulter, mais la réservation, le paiement et la création sont désactivés jusqu'à la validation de votre compte par un administrateur.",
+    "bannerRejectedTitle": "Votre compte n'a pas été approuvé",
+    "bannerRejectedDescription": "Vous avez un accès en lecture seule. Consultez votre e-mail pour connaître la raison ou contactez le support.",
+    "dismiss": "Fermer",
+    "actionDisabled": "Votre compte est en attente de validation"
   },
   "incubator": {
     "pendingBanner": {
@@ -1293,6 +1313,7 @@
     "paymentLinks": "Liens de paiement",
     "users": "Utilisateurs",
     "incubators": "Incubateurs",
+    "accountApprovals": "Validation des comptes",
     "investors": "Investisseurs",
     "memberships": "Abonnements",
     "promoCodes": "Codes promo",
@@ -1699,20 +1720,20 @@
           "subtitle": "Utilisez votre pass pour vous enregistrer dans les espaces coworking partenaires."
         }
       },
-      "trainer": {
+      "business": {
         "overview": {
           "title": "Aperçu",
           "subtitle": "Vos programmes, événements, réservations et revenus en un coup d'œil."
         },
         "withdrawals": {
           "title": "Retraits",
-          "subtitle": "Demandez un retrait du solde de votre portefeuille et suivez son statut."
+          "subtitle": "Demandez un versement depuis le solde de votre portefeuille et suivez son statut."
         },
         "settings": {
           "title": "Paramètres",
-          "subtitle": "Gérez votre profil de formateur et votre compte.",
-          "subtitleNoProfile": "Votre profil de formateur est en cours de configuration.",
-          "settingUp": "Votre profil de formateur est en cours de configuration. Veuillez contacter le support si cela persiste."
+          "subtitle": "Gérez le profil de votre entreprise et votre compte.",
+          "subtitleNoProfile": "Le profil de votre entreprise est en cours de configuration.",
+          "settingUp": "Le profil de votre entreprise est en cours de configuration. Contactez le support si le problème persiste."
         }
       },
       "incubator": {
@@ -3108,6 +3129,41 @@
       "actionFailed": "Échec de l'action",
       "emptyTitle": "Aucun investisseur ici",
       "emptyDescription": "Les comptes investisseurs apparaîtront ici pour examen."
+    },
+    "accountApprovals": {
+      "title": "Validation des comptes",
+      "subtitle": "Examinez et validez les comptes incubateur, investisseur et entreprise.",
+      "statPending": "En attente",
+      "statApproved": "Validés",
+      "statRejected": "Rejetés",
+      "filterPending": "En attente ({count})",
+      "filterApproved": "Validés ({count})",
+      "filterRejected": "Rejetés ({count})",
+      "filterAll": "Tous ({count})",
+      "roleAll": "Tous les rôles",
+      "roleIncubator": "Incubateur",
+      "roleInvestor": "Investisseur",
+      "roleBusiness": "Entreprise",
+      "subTypeTrainer": "Formateur",
+      "subTypeTrainingCenter": "Centre de formation",
+      "subTypeCompany": "Entreprise",
+      "statusPending": "En attente",
+      "statusApproved": "Validé",
+      "statusRejected": "Rejeté",
+      "contactLabel": "Contact",
+      "registeredOn": "Inscrit le {date}",
+      "rejectionReasonShown": "Motif",
+      "approve": "Valider",
+      "reject": "Rejeter",
+      "emptyTitle": "Rien ici",
+      "emptyDescription": "Aucun compte ne correspond à ce filtre.",
+      "rejectTitle": "Rejeter {name}",
+      "rejectDescription": "Indiquez au demandeur pourquoi son compte n'a pas été validé. Il le recevra par e-mail.",
+      "rejectReasonLabel": "Motif",
+      "rejectReasonPlaceholder": "ex. Nous n'avons pas pu vérifier votre organisation. Veuillez fournir…",
+      "cancel": "Annuler",
+      "rejectConfirm": "Rejeter le compte",
+      "actionFailed": "Échec de l'action. Veuillez réessayer."
     },
     "investorContacts": {
       "emptyTitle": "Aucune demande de contact",

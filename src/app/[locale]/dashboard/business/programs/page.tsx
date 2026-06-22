@@ -11,11 +11,11 @@ interface PageProps {
 export const metadata = { title: 'Programs' };
 export const dynamic = 'force-dynamic';
 
-export default async function TrainerProgramsPage({ params }: PageProps) {
+export default async function BusinessProgramsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.dashboard');
-  const user = await requireRole(['TRAINER']);
+  const user = await requireRole(['BUSINESS']);
 
   const data = await db.read();
   const provider = data.incubators.find((i) => i.managerId === user.id);

@@ -508,12 +508,23 @@
       "roleInvestorDesc": "أبحث عن تمويل الشركات الناشئة الجزائرية",
       "roleIncubator": "حاضنة / فضاء عمل مشترك",
       "roleIncubatorDesc": "أدير حاضنة، مسرّعة، أو فضاء عمل مشترك",
-      "roleTrainer": "مدرّب / مركز تدريب / شركة",
-      "roleTrainerDesc": "أقدّم تدريبات، أو أدير مركز تدريب أو شركة تقدّم برامج",
+      "roleBusiness": "شركة / نشاط تجاري",
+      "roleBusinessDesc": "أنا مدرّب، أو مركز تدريب، أو شركة تقدّم برامج أو فعاليات",
+      "businessTypeLabel": "نوع النشاط",
+      "businessTypePlaceholder": "اختر نوع نشاطك",
+      "businessTypeTrainer": "مدرّب",
+      "businessTypeTrainingCenter": "مركز تدريب",
+      "businessTypeCompany": "شركة",
+      "businessNameLabel": "اسم النشاط",
+      "businessNamePlaceholder": "مثال: أكاديمية وهران للمهارات",
+      "businessIndustryLabel": "المجال / القطاع",
+      "businessIndustryPlaceholder": "مثال: المهارات الرقمية، المالية، التسويق",
+      "businessPhoneLabel": "هاتف للعرض",
+      "businessPhonePlaceholder": "رقم الاتصال الظاهر للعملاء",
+      "businessDescriptionLabel": "وصف موجز",
+      "businessDescriptionPlaceholder": "صف باختصار ما يقدّمه نشاطك",
       "incubatorNameLabel": "اسم الحاضنة",
       "incubatorNamePlaceholder": "مثال: مركز ابتكار الجزائر",
-      "trainerNameLabel": "اسم مركز التدريب / الشركة",
-      "trainerNamePlaceholder": "مثال: أكاديمية وهران للمهارات",
       "optionalHint": "اختياري",
       "websiteLabel": "الموقع الإلكتروني",
       "websitePlaceholder": "https://example.com",
@@ -552,7 +563,8 @@
       "invalidUrl": "أدخل رابطًا صحيحًا (يتضمن https://)",
       "invalidPhone": "أدخل رقمًا جزائريًا صحيحًا",
       "termsRequired": "يجب الموافقة على الشروط للمتابعة",
-      "privacyRequired": "يجب قبول سياسة الخصوصية والموافقة على معالجة البيانات للمتابعة"
+      "privacyRequired": "يجب قبول سياسة الخصوصية والموافقة على معالجة البيانات للمتابعة",
+      "businessTypeRequired": "يرجى اختيار نوع النشاط"
     },
     "resetPassword": {
       "title": "تعيين كلمة مرور جديدة",
@@ -670,6 +682,14 @@
     "rejectedTitle": "لم تتم الموافقة على الحساب",
     "rejectedDescription": "لم تتم الموافقة على حساب المستثمر الخاص بك. يمكنك تقديم مزيد من المعلومات — انظر السبب أدناه — وسنراجعه مرة أخرى.",
     "reasonLabel": "السبب"
+  },
+  "accountApproval": {
+    "bannerTitle": "حسابك قيد المراجعة للموافقة",
+    "bannerDescription": "لديك صلاحية الاطلاع فقط. يمكنك تصفّح كل شيء، لكن الحجز والدفع والإنشاء معطّلة حتى يوافق المشرف على حسابك.",
+    "bannerRejectedTitle": "لم تتم الموافقة على حسابك",
+    "bannerRejectedDescription": "لديك صلاحية الاطلاع فقط. يرجى مراجعة بريدك الإلكتروني لمعرفة السبب أو التواصل مع الدعم.",
+    "dismiss": "إغلاق",
+    "actionDisabled": "حسابك قيد المراجعة للموافقة"
   },
   "incubator": {
     "pendingBanner": {
@@ -1293,6 +1313,7 @@
     "paymentLinks": "روابط الدفع",
     "users": "المستخدمون",
     "incubators": "الحاضنات",
+    "accountApprovals": "اعتماد الحسابات",
     "investors": "المستثمرون",
     "memberships": "العضويات",
     "promoCodes": "رموز الخصم",
@@ -1699,20 +1720,20 @@
           "subtitle": "استخدم بطاقتك لتسجيل الحضور في فضاءات العمل المشترك الشريكة عبر الشبكة."
         }
       },
-      "trainer": {
+      "business": {
         "overview": {
           "title": "نظرة عامة",
           "subtitle": "برامجك وفعالياتك وحجوزاتك وإيراداتك في لمحة."
         },
         "withdrawals": {
           "title": "السحوبات",
-          "subtitle": "اطلب سحبًا من رصيد محفظتك وتابع حالته."
+          "subtitle": "اطلب تحويلاً من رصيد محفظتك وتابع حالته."
         },
         "settings": {
           "title": "الإعدادات",
-          "subtitle": "أدِر ملف المدرّب الخاص بك وحسابك.",
-          "subtitleNoProfile": "يتم إعداد ملف المدرّب الخاص بك.",
-          "settingUp": "يتم إعداد ملف المدرّب الخاص بك. يُرجى التواصل مع الدعم إذا استمرت هذه الحالة."
+          "subtitle": "أدر ملف نشاطك وحسابك.",
+          "subtitleNoProfile": "يتم إعداد ملف نشاطك.",
+          "settingUp": "يتم إعداد ملف نشاطك. يرجى التواصل مع الدعم إذا استمر ذلك."
         }
       },
       "incubator": {
@@ -3108,6 +3129,41 @@
       "actionFailed": "فشل الإجراء",
       "emptyTitle": "لا يوجد مستثمرون هنا",
       "emptyDescription": "ستظهر حسابات المستثمرين هنا للمراجعة."
+    },
+    "accountApprovals": {
+      "title": "اعتماد الحسابات",
+      "subtitle": "راجع واعتمد حسابات الحاضنات والمستثمرين والشركات.",
+      "statPending": "قيد الانتظار",
+      "statApproved": "معتمد",
+      "statRejected": "مرفوض",
+      "filterPending": "قيد الانتظار ({count})",
+      "filterApproved": "معتمد ({count})",
+      "filterRejected": "مرفوض ({count})",
+      "filterAll": "الكل ({count})",
+      "roleAll": "كل الأدوار",
+      "roleIncubator": "حاضنة",
+      "roleInvestor": "مستثمر",
+      "roleBusiness": "شركة",
+      "subTypeTrainer": "مدرّب",
+      "subTypeTrainingCenter": "مركز تدريب",
+      "subTypeCompany": "شركة",
+      "statusPending": "قيد الانتظار",
+      "statusApproved": "معتمد",
+      "statusRejected": "مرفوض",
+      "contactLabel": "جهة الاتصال",
+      "registeredOn": "مسجّل في {date}",
+      "rejectionReasonShown": "السبب",
+      "approve": "اعتماد",
+      "reject": "رفض",
+      "emptyTitle": "لا يوجد شيء هنا",
+      "emptyDescription": "لا توجد حسابات مطابقة لهذا التصفية.",
+      "rejectTitle": "رفض {name}",
+      "rejectDescription": "أخبر مقدّم الطلب بسبب عدم اعتماد حسابه. سيصله ذلك عبر البريد الإلكتروني.",
+      "rejectReasonLabel": "السبب",
+      "rejectReasonPlaceholder": "مثال: تعذّر علينا التحقق من مؤسستك. يرجى تقديم…",
+      "cancel": "إلغاء",
+      "rejectConfirm": "رفض الحساب",
+      "actionFailed": "فشل الإجراء. يرجى المحاولة مرة أخرى."
     },
     "investorContacts": {
       "emptyTitle": "لا توجد طلبات تواصل بعد",

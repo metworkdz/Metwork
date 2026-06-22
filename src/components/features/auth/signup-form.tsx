@@ -61,6 +61,10 @@ export function SignupForm() {
       instagram: '',
       linkedin: '',
       sex: undefined,
+      businessSubType: undefined,
+      businessIndustry: '',
+      businessPhone: '',
+      businessDescription: '',
     },
   });
 
@@ -179,12 +183,42 @@ export function SignupForm() {
           />
         </FormField>
 
-        {/* Organisation name — shown for INCUBATOR and TRAINER providers */}
-        {(selectedRole === 'INCUBATOR' || selectedRole === 'TRAINER') && (
+        {/* Business sub-type — required single-select, shown for BUSINESS only */}
+        {selectedRole === 'BUSINESS' && (
+          <Controller
+            control={control}
+            name="businessSubType"
+            render={({ field }) => (
+              <FormField
+                label={t('signup.businessTypeLabel')}
+                htmlFor="businessSubType"
+                error={
+                  errors.businessSubType &&
+                  t(`errors.${errors.businessSubType.message}` as 'errors.required')
+                }
+                required
+              >
+                <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                  <SelectTrigger id="businessSubType" error={!!errors.businessSubType}>
+                    <SelectValue placeholder={t('signup.businessTypePlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TRAINER">{t('signup.businessTypeTrainer')}</SelectItem>
+                    <SelectItem value="TRAINING_CENTER">{t('signup.businessTypeTrainingCenter')}</SelectItem>
+                    <SelectItem value="COMPANY">{t('signup.businessTypeCompany')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormField>
+            )}
+          />
+        )}
+
+        {/* Organisation name — shown for INCUBATOR and BUSINESS providers */}
+        {(selectedRole === 'INCUBATOR' || selectedRole === 'BUSINESS') && (
           <FormField
             label={
-              selectedRole === 'TRAINER'
-                ? t('signup.trainerNameLabel')
+              selectedRole === 'BUSINESS'
+                ? t('signup.businessNameLabel')
                 : t('signup.incubatorNameLabel')
             }
             htmlFor="incubatorName"
@@ -197,8 +231,8 @@ export function SignupForm() {
               id="incubatorName"
               autoComplete="organization"
               placeholder={
-                selectedRole === 'TRAINER'
-                  ? t('signup.trainerNamePlaceholder')
+                selectedRole === 'BUSINESS'
+                  ? t('signup.businessNamePlaceholder')
                   : t('signup.incubatorNamePlaceholder')
               }
               error={!!errors.incubatorName}
@@ -207,8 +241,28 @@ export function SignupForm() {
           </FormField>
         )}
 
-        {/* Website + Instagram — optional, shown for INCUBATOR and TRAINER */}
-        {(selectedRole === 'INCUBATOR' || selectedRole === 'TRAINER') && (
+        {/* Field / industry — optional, BUSINESS only */}
+        {selectedRole === 'BUSINESS' && (
+          <FormField
+            label={t('signup.businessIndustryLabel')}
+            htmlFor="businessIndustry"
+            hint={t('signup.optionalHint')}
+            error={
+              errors.businessIndustry &&
+              t(`errors.${errors.businessIndustry.message}` as 'errors.required')
+            }
+          >
+            <Input
+              id="businessIndustry"
+              placeholder={t('signup.businessIndustryPlaceholder')}
+              error={!!errors.businessIndustry}
+              {...register('businessIndustry')}
+            />
+          </FormField>
+        )}
+
+        {/* Website + Instagram — optional, shown for INCUBATOR and BUSINESS */}
+        {(selectedRole === 'INCUBATOR' || selectedRole === 'BUSINESS') && (
           <>
             <FormField
               label={t('signup.websiteLabel')}
@@ -246,6 +300,49 @@ export function SignupForm() {
                 placeholder={t('signup.instagramPlaceholder')}
                 error={!!errors.instagram}
                 {...register('instagram')}
+              />
+            </FormField>
+          </>
+        )}
+
+        {/* Optional contact phone + short description — BUSINESS only */}
+        {selectedRole === 'BUSINESS' && (
+          <>
+            <FormField
+              label={t('signup.businessPhoneLabel')}
+              htmlFor="businessPhone"
+              hint={t('signup.optionalHint')}
+              error={
+                errors.businessPhone &&
+                t(`errors.${errors.businessPhone.message}` as 'errors.required')
+              }
+            >
+              <Input
+                id="businessPhone"
+                type="tel"
+                inputMode="tel"
+                dir="ltr"
+                placeholder={t('signup.businessPhonePlaceholder')}
+                error={!!errors.businessPhone}
+                {...register('businessPhone')}
+              />
+            </FormField>
+
+            <FormField
+              label={t('signup.businessDescriptionLabel')}
+              htmlFor="businessDescription"
+              hint={t('signup.optionalHint')}
+              error={
+                errors.businessDescription &&
+                t(`errors.${errors.businessDescription.message}` as 'errors.required')
+              }
+            >
+              <textarea
+                id="businessDescription"
+                rows={3}
+                placeholder={t('signup.businessDescriptionPlaceholder')}
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                {...register('businessDescription')}
               />
             </FormField>
           </>

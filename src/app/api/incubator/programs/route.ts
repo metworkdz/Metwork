@@ -5,7 +5,7 @@
 import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiRole } from '@/server/auth/api-guards';
+import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db, type ProgramRecord } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { listProgramsByIncubator } from '@/server/bookings/program-catalog';
@@ -40,7 +40,7 @@ const createProgramSchema = z.object({
 });
 
 export async function GET() {
-  const guard = await requireApiRole(['INCUBATOR', 'TRAINER']);
+  const guard = await requireApiRole(['INCUBATOR', 'BUSINESS']);
   if (!guard.ok) return guard.response;
 
   const inc = await findIncubatorByUserEmail(guard.user.email);
@@ -51,7 +51,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApiRole(['INCUBATOR', 'TRAINER']);
+  const guard = await requireApprovedApiRole(['INCUBATOR', 'BUSINESS']);
   if (!guard.ok) return guard.response;
 
   const inc = await findIncubatorByUserEmail(guard.user.email);

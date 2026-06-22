@@ -12,7 +12,7 @@
  */
 import type { NextRequest } from 'next/server';
 import { ZodError } from 'zod';
-import { requireApiSession } from '@/server/auth/api-guards';
+import { requireApprovedApiSession } from '@/server/auth/api-guards';
 import { chargeWallet } from '@/server/wallet/service';
 import { chargeWalletSchema } from '@/server/wallet/schemas';
 import { toTransactionDto, toWalletDto } from '@/server/wallet/serialize';
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     return jsonError(403, 'FORBIDDEN', 'This endpoint is internal only');
   }
 
-  const guard = await requireApiSession();
+  const guard = await requireApprovedApiSession();
   if (!guard.ok) return guard.response;
 
   let body: unknown;

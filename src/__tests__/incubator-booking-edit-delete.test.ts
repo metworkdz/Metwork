@@ -11,12 +11,15 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { db } from '@/server/db/store';
 
-vi.mock('@/server/auth/api-guards', () => ({
-  requireApiRole: vi.fn(async () => ({
-    ok: true,
-    user: { id: 'mgr-1', email: 'i@x.com', role: 'INCUBATOR' },
-  })),
-}));
+vi.mock('@/server/auth/api-guards', () => {
+  const ok = async () => ({ ok: true, user: { id: 'mgr-1', email: 'i@x.com', role: 'INCUBATOR', approvalStatus: 'APPROVED' } });
+  return {
+    requireApiRole: vi.fn(ok),
+    requireApprovedApiRole: vi.fn(ok),
+    requireApiSession: vi.fn(ok),
+    requireApprovedApiSession: vi.fn(ok),
+  };
+});
 
 // Stub the awaited client emails so tests neither hit the network nor depend on
 // PDF generation, while still letting us assert they were invoked.

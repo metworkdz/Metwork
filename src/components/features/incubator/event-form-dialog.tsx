@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { PlusCircle } from 'lucide-react';
+import { useAccountApproved } from '@/hooks/use-account-approved';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,6 +43,8 @@ interface EventFormDialogProps {
 
 export function EventFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange }: EventFormDialogProps) {
   const t = useTranslations('incubator.eventForm');
+  const tApproval = useTranslations('accountApproval');
+  const { isApproved } = useAccountApproved();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -154,12 +157,19 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
       {/* FIX: BUG-2 — only render trigger in create mode */}
       {!editId && (
-        <DialogTrigger asChild>
-          <Button size="sm" className="gap-1.5">
+        isApproved ? (
+          <DialogTrigger asChild>
+            <Button size="sm" className="gap-1.5">
+              <PlusCircle className="size-4" />
+              {t('addEvent')}
+            </Button>
+          </DialogTrigger>
+        ) : (
+          <Button size="sm" className="gap-1.5" disabled title={tApproval('actionDisabled')}>
             <PlusCircle className="size-4" />
             {t('addEvent')}
           </Button>
-        </DialogTrigger>
+        )
       )}
 
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">

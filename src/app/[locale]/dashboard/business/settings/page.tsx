@@ -12,11 +12,11 @@ interface PageProps {
 export const metadata = { title: 'Settings' };
 export const dynamic = 'force-dynamic';
 
-export default async function TrainerSettingsPage({ params }: PageProps) {
+export default async function BusinessSettingsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations('pages.dashboard.trainer.settings');
-  const user = await requireRole(['TRAINER']);
+  const t = await getTranslations('pages.dashboard.business.settings');
+  const user = await requireRole(['BUSINESS']);
 
   const data = await db.read();
   const provider = data.incubators.find((i) => i.managerId === user.id);
@@ -34,7 +34,7 @@ export default async function TrainerSettingsPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <DashboardPageHeader title={t('title')} subtitle={t('subtitle')} />
-      {/* Trainers are commission-only — hide the subscription / billing section. */}
+      {/* Businesses are commission-only — hide the subscription / billing section. */}
       <IncubatorProfileForm
         incubator={provider}
         user={{ id: user.id, fullName: user.fullName, email: user.email, avatarUrl: user.avatarUrl }}

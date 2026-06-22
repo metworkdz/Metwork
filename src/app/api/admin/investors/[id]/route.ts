@@ -4,15 +4,17 @@
  *   { status: 'APPROVED' }                       → grant full access + email
  *   { status: 'REJECTED', reason: '<text>' }     → block gated surfaces + email
  *
- * Email sends are fire-and-forget and never block/fail the response.
+ * Delegates to the shared `setAccountApproval` service so the unified approval
+ * gate (`approvalStatus`) and the legacy investor gate (`investorStatus`) stay
+ * in sync regardless of which admin surface performs the action. Email sends
+ * are fire-and-forget and never block/fail the response.
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
+import { setAccountApproval } from '@/server/auth/approval';
 import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
-import { sendInvestorApprovalEmail, sendInvestorRejectionEmail } from '@/server/notifications/email';
-import { appendAuditLog } from '@/server/audit/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,10 +23,6 @@ const patchSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED']),
   reason: z.string().max(2000).optional(),
 });
-
-type SideEffect =
-  | { kind: 'APPROVED'; to: string; lang: 'en' | 'fr' | 'ar'; name: string }
-  | { kind: 'REJECTED'; to: string; lang: 'en' | 'fr' | 'ar'; name: string; reason: string };
 
 export async function PATCH(
   req: NextRequest,
@@ -50,55 +48,19 @@ export async function PATCH(
     return jsonError(400, 'REASON_REQUIRED', 'A rejection reason is required');
   }
 
-  let sideEffect: SideEffect | null = null;
-
-  const result = await db.update((d) => {
-    const user = (d.users ?? []).find((u) => u.id === id && u.role === 'INVESTOR');
-    if (!user) return null;
-
-    const now = new Date().toISOString();
-    const email = user.email.trim();
-
-    if (input.status === 'APPROVED') {
-      user.investorStatus = 'APPROVED';
-      user.investorRejectionReason = null;
-      sideEffect = { kind: 'APPROVED', to: email, lang: user.locale, name: user.fullName };
-    } else {
-      user.investorStatus = 'REJECTED';
-      user.investorRejectionReason = input.reason!.trim();
-      sideEffect = { kind: 'REJECTED', to: email, lang: user.locale, name: user.fullName, reason: user.investorRejectionReason };
-    }
-    user.updatedAt = now;
-
-    // Strip the password hash from the returned record.
-    const { passwordHash: _ph, ...safe } = user;
-    void _ph;
-    return safe;
-  });
-
-  if (!result) return jsonError(404, 'NOT_FOUND', 'Investor not found');
-
-  void appendAuditLog({
-    adminId: guard.user.id, adminEmail: guard.user.email,
-    action: input.status === 'APPROVED' ? 'INVESTOR_APPROVED' : 'INVESTOR_REJECTED',
-    targetType: 'user', targetId: id,
-    details: input.status === 'REJECTED' ? { reason: input.reason } : {},
-  });
-
-  if (sideEffect) {
-    const fx = sideEffect as SideEffect;
-    void (async () => {
-      try {
-        if (fx.kind === 'APPROVED') {
-          await sendInvestorApprovalEmail({ to: fx.to, investorName: fx.name, lang: fx.lang });
-        } else {
-          await sendInvestorRejectionEmail({ to: fx.to, investorName: fx.name, reason: fx.reason, lang: fx.lang });
-        }
-      } catch (err) {
-        console.error('[admin/investors] status email failed', err);
-      }
-    })();
+  // Guard the surface to investors only (the dedicated investor admin page).
+  const target = (await db.read()).users.find((u) => u.id === id);
+  if (!target || target.role !== 'INVESTOR') {
+    return jsonError(404, 'NOT_FOUND', 'Investor not found');
   }
 
-  return json(result);
+  const result = await setAccountApproval({
+    userId: id,
+    decision: input.status,
+    reason: input.reason,
+    admin: { id: guard.user.id, email: guard.user.email },
+  });
+
+  if (!result.ok) return jsonError(404, 'NOT_FOUND', 'Investor not found');
+  return json(result.user);
 }

@@ -47,11 +47,11 @@ const primaryTabHrefsByRole: Record<UserRole, string[]> = {
     '/dashboard/incubator/bookings',
     '/dashboard/incubator/wallet',
   ],
-  TRAINER: [
-    '/dashboard/trainer',
-    '/dashboard/trainer/programs',
-    '/dashboard/trainer/bookings',
-    '/dashboard/trainer/wallet',
+  BUSINESS: [
+    '/dashboard/business',
+    '/dashboard/business/programs',
+    '/dashboard/business/bookings',
+    '/dashboard/business/wallet',
   ],
   ADMIN: [
     '/dashboard/admin',
@@ -120,11 +120,11 @@ export const mobileQuickActionsByRole: Record<UserRole, MobileQuickAction[]> = {
     { labelKey: 'dashboard.bookings',     href: '/dashboard/incubator/bookings',        icon: Calendar },
     { labelKey: 'dashboard.clients',      href: '/dashboard/incubator/clients',         icon: UsersRound },
   ],
-  TRAINER: [
-    { labelKey: 'dashboard.programs',     href: '/dashboard/trainer/programs',          icon: Briefcase },
-    { labelKey: 'dashboard.events',       href: '/dashboard/trainer/events',            icon: Calendar },
-    { labelKey: 'dashboard.bookings',     href: '/dashboard/trainer/bookings',          icon: Calendar },
-    { labelKey: 'dashboard.wallet',       href: '/dashboard/trainer/wallet',            icon: Wallet },
+  BUSINESS: [
+    { labelKey: 'dashboard.programs',     href: '/dashboard/business/programs',         icon: Briefcase },
+    { labelKey: 'dashboard.events',       href: '/dashboard/business/events',           icon: Calendar },
+    { labelKey: 'dashboard.bookings',     href: '/dashboard/business/bookings',         icon: Calendar },
+    { labelKey: 'dashboard.wallet',       href: '/dashboard/business/wallet',           icon: Wallet },
   ],
   ADMIN: [
     { labelKey: 'dashboard.users',        href: '/dashboard/admin/users',               icon: Users },

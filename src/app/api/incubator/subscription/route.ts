@@ -14,7 +14,7 @@
 import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiRole } from '@/server/auth/api-guards';
+import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import {
   findIncubatorByUserEmail,
@@ -62,7 +62,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApiRole(['INCUBATOR']);
+  const guard = await requireApprovedApiRole(['INCUBATOR']);
   if (!guard.ok) return guard.response;
 
   let body: unknown;

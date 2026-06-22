@@ -12,7 +12,7 @@
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { UserRole, UserStatus } from '@/types/auth';
+import type { UserRole, UserStatus, ApprovalStatus, BusinessSubType } from '@/types/auth';
 import type { LandingContent } from '@/types/cms';
 import type { WeeklyAvailabilityDay } from '@/types/mentor';
 
@@ -107,6 +107,37 @@ export interface UserRecord {
   linkedin?: string | null;
   /** Admin free-text reason captured when an investor is rejected. */
   investorRejectionReason?: string | null;
+
+  // ─── Unified account-approval gate (read-only-until-approved) ───────────
+  // Additive & nullable for backward compatibility. INCUBATOR / INVESTOR /
+  // BUSINESS accounts created after this feature land in 'PENDING'; every other
+  // role (and every pre-existing account, which lacks the key) is treated as
+  // 'APPROVED' by getApprovalStatus(). This gates *write* access platform-wide
+  // and is kept separate from `status` (which gates login) and from the legacy
+  // per-surface gates (investorStatus, IncubatorRecord.status), which are kept
+  // in sync by setAccountApproval() so all surfaces unlock together.
+
+  /** Unified approval gate. Unset ⇒ APPROVED (legacy + entrepreneurs + admins). */
+  approvalStatus?: ApprovalStatus;
+  /** Admin free-text reason captured when an account is rejected (any gated role). */
+  approvalRejectionReason?: string | null;
+
+  // ─── Business account (role === 'BUSINESS') ─────────────────────────────
+  // All optional. `businessSubType` discriminates trainer / training centre /
+  // company; the rest are optional profile fields collected at signup.
+
+  /** BUSINESS sub-type. Unset for non-business or legacy TRAINER pre-migration. */
+  businessSubType?: BusinessSubType | null;
+  /** Optional field / industry (free text). */
+  businessIndustry?: string | null;
+  /** Optional public website (URL-validated at signup when present). */
+  businessWebsite?: string | null;
+  /** Optional Instagram handle/URL. */
+  businessInstagram?: string | null;
+  /** Optional public-facing phone (distinct from the account login phone). */
+  businessPhone?: string | null;
+  /** Optional short description / bio. */
+  businessDescription?: string | null;
 }
 
 export interface SessionRecord {
@@ -172,6 +203,20 @@ export interface PendingUserRecord {
   linkedin?: string;
   /** Biological sex provided at signup. Optional. */
   sex?: 'MALE' | 'FEMALE';
+
+  // ─── Business signup (role === 'BUSINESS') — all optional, carried to UserRecord ───
+  /** Required at signup when role === 'BUSINESS'; absent otherwise. */
+  businessSubType?: BusinessSubType;
+  /** Optional field / industry. */
+  businessIndustry?: string;
+  /** Optional public website (URL-validated at signup). */
+  businessWebsite?: string;
+  /** Optional Instagram handle/URL. */
+  businessInstagram?: string;
+  /** Optional public-facing phone. */
+  businessPhone?: string;
+  /** Optional short description / bio. */
+  businessDescription?: string;
   /**
    * "Book & create an account": a pointer to the booking this pending account
    * was created from. On OTP verify the booking is re-assigned to the new user
@@ -511,11 +556,12 @@ export interface IncubatorRecord {
   /**
    * Provider discriminator. Additive & nullable for backward compatibility:
    * missing/null ⇒ 'INCUBATOR' (every pre-existing record and all managerId
-   * lookups keep working unchanged). 'TRAINER' marks a trainer / training
+   * lookups keep working unchanged). 'BUSINESS' marks a trainer / training
    * centre / company that can post programs & events and receive payments,
-   * but cannot manage spaces and has no subscription plan.
+   * but cannot manage spaces and has no subscription plan. 'TRAINER' is the
+   * legacy value for pre-migration records (treated identically to 'BUSINESS').
    */
-  providerType?: 'INCUBATOR' | 'TRAINER';
+  providerType?: 'INCUBATOR' | 'TRAINER' | 'BUSINESS';
   status: IncubatorStatus;
   website?: string | null;
   /** Instagram handle or full profile URL provided at registration. Nullable. */
@@ -603,6 +649,8 @@ export type AuditAction =
   | 'INCUBATOR_RESTORED'
   | 'INVESTOR_APPROVED'
   | 'INVESTOR_REJECTED'
+  | 'ACCOUNT_APPROVED'
+  | 'ACCOUNT_REJECTED'
   | 'PROMO_CODE_CREATED'
   | 'PROMO_CODE_UPDATED'
   | 'PLATFORM_SETTINGS_UPDATED'
@@ -2061,6 +2109,8 @@ interface DbShape {
     mentorsSeeded?: boolean;
     promoCodesSeeded?: boolean;
     demoMentorsRemoved?: boolean;
+    /** Set once legacy TRAINER-role users are migrated to the BUSINESS role. */
+    businessRoleMigrated?: boolean;
     platformConfig?: PlatformConfig;
     /** ISO timestamp — set once the one-time per-space → per-incubator partner migration runs. */
     partnerPerIncubatorMigratedAt?: string;
@@ -2206,6 +2256,47 @@ let writeQueue: Promise<unknown> = Promise.resolve();
  *
  * PostgREST error PGRST116 = "no rows found" — treated as first run.
  */
+/**
+ * Idempotent one-time migrations applied to `cache` after every cold load,
+ * for BOTH the local-file and Supabase backends. Each is guarded by a meta
+ * flag and only persists when it actually changes something.
+ */
+async function applyOneTimeMigrations(): Promise<void> {
+  let changed = false;
+
+  // Purge the 8 hardcoded demo mentor records and any bookings that reference
+  // them. Runs once, then the flag is set.
+  if (!cache!.meta?.demoMentorsRemoved) {
+    const DEMO_IDS = new Set([
+      'mn_amina', 'mn_yacine', 'mn_nora', 'mn_karim',
+      'mn_sara',  'mn_riad',  'mn_imane', 'mn_walid',
+    ]);
+    cache!.mentors        = (cache!.mentors        ?? []).filter((m) => !DEMO_IDS.has(m.id));
+    cache!.mentorBookings = (cache!.mentorBookings ?? []).filter((b) => !DEMO_IDS.has(b.mentorId));
+    cache!.meta = { ...(cache!.meta ?? {}), demoMentorsRemoved: true };
+    changed = true;
+  }
+
+  // The former TRAINER role is replaced by BUSINESS (with a `businessSubType`
+  // discriminator). Rewrite any legacy `role: 'TRAINER'` user to `'BUSINESS'`
+  // so it keeps resolving a dashboard + passing role guards; default its
+  // sub-type to TRAINER. Pre-existing accounts get NO approvalStatus written,
+  // so getApprovalStatus() grandfathers them to APPROVED (nobody is locked
+  // out). Provider records keep their legacy providerType. Idempotent via flag.
+  if (!cache!.meta?.businessRoleMigrated) {
+    for (const u of cache!.users ?? []) {
+      if ((u.role as string) === 'TRAINER') {
+        u.role = 'BUSINESS';
+        if (u.businessSubType == null) u.businessSubType = 'TRAINER';
+      }
+    }
+    cache!.meta = { ...(cache!.meta ?? {}), businessRoleMigrated: true };
+    changed = true;
+  }
+
+  if (changed) await persist(cache!);
+}
+
 async function load(): Promise<DbShape> {
   if (cache && Date.now() - cacheAt < CACHE_TTL_MS) return cache;
   // Cache is absent or stale — discard and re-fetch.
@@ -2213,6 +2304,7 @@ async function load(): Promise<DbShape> {
 
   if (isLocalMode()) {
     cache = localLoad();
+    await applyOneTimeMigrations();
     cacheAt = Date.now();
     return cache;
   }
@@ -2237,18 +2329,7 @@ async function load(): Promise<DbShape> {
     cache = { ...empty, ...parsed };
   }
 
-  // One-time migration: purge the 8 hardcoded demo mentor records and any
-  // mentor bookings that reference them. Runs once, then the flag is set.
-  if (!cache!.meta?.demoMentorsRemoved) {
-    const DEMO_IDS = new Set([
-      'mn_amina', 'mn_yacine', 'mn_nora', 'mn_karim',
-      'mn_sara',  'mn_riad',  'mn_imane', 'mn_walid',
-    ]);
-    cache!.mentors       = (cache!.mentors       ?? []).filter((m) => !DEMO_IDS.has(m.id));
-    cache!.mentorBookings = (cache!.mentorBookings ?? []).filter((b) => !DEMO_IDS.has(b.mentorId));
-    cache!.meta = { ...(cache!.meta ?? {}), demoMentorsRemoved: true };
-    await persist(cache!);
-  }
+  await applyOneTimeMigrations();
 
   cacheAt = Date.now();
   return cache!;

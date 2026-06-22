@@ -87,19 +87,24 @@ export async function POST(req: NextRequest) {
     city: input.city,
     locale,
     incubatorName:
-      input.role === 'INCUBATOR' || input.role === 'TRAINER'
+      input.role === 'INCUBATOR' || input.role === 'BUSINESS'
         ? input.incubatorName?.trim()
         : undefined,
     website:
-      input.role === 'INCUBATOR' || input.role === 'TRAINER'
+      input.role === 'INCUBATOR' || input.role === 'BUSINESS'
         ? input.website?.trim()
         : undefined,
     instagram:
-      input.role === 'INCUBATOR' || input.role === 'TRAINER'
+      input.role === 'INCUBATOR' || input.role === 'BUSINESS'
         ? input.instagram?.trim()
         : undefined,
     linkedin: input.role === 'INVESTOR' ? input.linkedin?.trim() : undefined,
     sex: input.sex,
+    // Business-specific fields — only carried when role === 'BUSINESS'.
+    businessSubType: input.role === 'BUSINESS' ? input.businessSubType : undefined,
+    businessIndustry: input.role === 'BUSINESS' ? input.businessIndustry?.trim() : undefined,
+    businessPhone: input.role === 'BUSINESS' ? input.businessPhone?.trim() : undefined,
+    businessDescription: input.role === 'BUSINESS' ? input.businessDescription?.trim() : undefined,
   });
 
   // Primary: WhatsApp (Infobip). Secondary: email as reliable fallback.

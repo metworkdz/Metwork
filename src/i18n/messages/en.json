@@ -508,12 +508,23 @@
       "roleInvestorDesc": "I'm looking to fund Algerian startups",
       "roleIncubator": "Incubator / coworking space",
       "roleIncubatorDesc": "I run an incubator, accelerator, or coworking space",
-      "roleTrainer": "Trainer / Training center / Company",
-      "roleTrainerDesc": "I run trainings, a training center, or a company offering programs",
+      "roleBusiness": "Business",
+      "roleBusinessDesc": "I'm a trainer, training centre, or company offering programs or events",
+      "businessTypeLabel": "Business type",
+      "businessTypePlaceholder": "Select your business type",
+      "businessTypeTrainer": "Trainer",
+      "businessTypeTrainingCenter": "Training center",
+      "businessTypeCompany": "Company",
+      "businessNameLabel": "Business name",
+      "businessNamePlaceholder": "e.g. Oran Skills Academy",
+      "businessIndustryLabel": "Field / industry",
+      "businessIndustryPlaceholder": "e.g. Digital skills, Finance, Marketing",
+      "businessPhoneLabel": "Public phone",
+      "businessPhonePlaceholder": "Contact number shown to clients",
+      "businessDescriptionLabel": "Short description",
+      "businessDescriptionPlaceholder": "Briefly describe what your business offers",
       "incubatorNameLabel": "Incubator name",
       "incubatorNamePlaceholder": "e.g. Algiers Innovation Hub",
-      "trainerNameLabel": "Training center / company name",
-      "trainerNamePlaceholder": "e.g. Oran Skills Academy",
       "optionalHint": "Optional",
       "websiteLabel": "Website",
       "websitePlaceholder": "https://example.com",
@@ -552,7 +563,8 @@
       "invalidUrl": "Please enter a valid URL (including https://)",
       "invalidPhone": "Please enter a valid Algerian phone number",
       "termsRequired": "You must accept the terms to continue",
-      "privacyRequired": "You must accept the privacy policy and data processing to continue"
+      "privacyRequired": "You must accept the privacy policy and data processing to continue",
+      "businessTypeRequired": "Please choose a business type"
     },
     "resetPassword": {
       "title": "Set a new password",
@@ -670,6 +682,14 @@
     "rejectedTitle": "Account not approved",
     "rejectedDescription": "Your investor account has not been approved. You can provide more information — see the reason below — and we'll review it again.",
     "reasonLabel": "Reason"
+  },
+  "accountApproval": {
+    "bannerTitle": "Your account is pending approval",
+    "bannerDescription": "You have read-only access. You can browse everything, but booking, paying, and creating are disabled until an admin approves your account.",
+    "bannerRejectedTitle": "Your account was not approved",
+    "bannerRejectedDescription": "You have read-only access. Please check your email for the reason, or contact support.",
+    "dismiss": "Dismiss",
+    "actionDisabled": "Your account is pending approval"
   },
   "incubator": {
     "pendingBanner": {
@@ -1293,6 +1313,7 @@
     "paymentLinks": "Payment links",
     "users": "Users",
     "incubators": "Incubators",
+    "accountApprovals": "Account approvals",
     "investors": "Investors",
     "memberships": "Memberships",
     "promoCodes": "Promo codes",
@@ -1699,7 +1720,7 @@
           "subtitle": "Use your pass to check in at partner coworking spaces across the network."
         }
       },
-      "trainer": {
+      "business": {
         "overview": {
           "title": "Overview",
           "subtitle": "Your programs, events, bookings, and revenue at a glance."
@@ -1710,9 +1731,9 @@
         },
         "settings": {
           "title": "Settings",
-          "subtitle": "Manage your trainer profile and account.",
-          "subtitleNoProfile": "Your trainer profile is being set up.",
-          "settingUp": "Your trainer profile is being set up. Please contact support if this persists."
+          "subtitle": "Manage your business profile and account.",
+          "subtitleNoProfile": "Your business profile is being set up.",
+          "settingUp": "Your business profile is being set up. Please contact support if this persists."
         }
       },
       "incubator": {
@@ -3108,6 +3129,41 @@
       "actionFailed": "Action failed",
       "emptyTitle": "No investors here",
       "emptyDescription": "Investor accounts will appear here for review."
+    },
+    "accountApprovals": {
+      "title": "Account approvals",
+      "subtitle": "Review and approve incubator, investor, and business accounts.",
+      "statPending": "Pending",
+      "statApproved": "Approved",
+      "statRejected": "Rejected",
+      "filterPending": "Pending ({count})",
+      "filterApproved": "Approved ({count})",
+      "filterRejected": "Rejected ({count})",
+      "filterAll": "All ({count})",
+      "roleAll": "All roles",
+      "roleIncubator": "Incubator",
+      "roleInvestor": "Investor",
+      "roleBusiness": "Business",
+      "subTypeTrainer": "Trainer",
+      "subTypeTrainingCenter": "Training center",
+      "subTypeCompany": "Company",
+      "statusPending": "Pending",
+      "statusApproved": "Approved",
+      "statusRejected": "Rejected",
+      "contactLabel": "Contact",
+      "registeredOn": "Registered on {date}",
+      "rejectionReasonShown": "Reason",
+      "approve": "Approve",
+      "reject": "Reject",
+      "emptyTitle": "Nothing here",
+      "emptyDescription": "No accounts match this filter.",
+      "rejectTitle": "Reject {name}",
+      "rejectDescription": "Tell the applicant why their account wasn't approved. They'll receive this by email.",
+      "rejectReasonLabel": "Reason",
+      "rejectReasonPlaceholder": "e.g. We couldn't verify your organisation. Please provide…",
+      "cancel": "Cancel",
+      "rejectConfirm": "Reject account",
+      "actionFailed": "Action failed. Please try again."
     },
     "investorContacts": {
       "emptyTitle": "No contact requests yet",

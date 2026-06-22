@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { NextRequest } from 'next/server';
-import { requireApiRole } from '@/server/auth/api-guards';
+import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { json, jsonError } from '@/server/http/json';
 import {
   isConfigured,
@@ -30,7 +30,7 @@ const MIME_TO_EXT: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN', 'TRAINER']);
+  const guard = await requireApprovedApiRole(['INCUBATOR', 'ADMIN', 'BUSINESS']);
   if (!guard.ok) return guard.response;
 
   let form: FormData;

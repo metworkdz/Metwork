@@ -9,7 +9,8 @@
 import { createHmac, randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { db, type PendingUserRecord, type UserRecord } from '@/server/db/store';
 import { serverEnvVars } from '@/lib/env';
-import type { UserRole } from '@/types/auth';
+import type { UserRole, BusinessSubType, ApprovalStatus } from '@/types/auth';
+import { isApprovalGatedRole } from '@/lib/approval-guard';
 
 const OTP_TTL_MIN = 10;
 const MAX_ATTEMPTS = 5;
@@ -38,6 +39,14 @@ export interface PendingUserInput {
   /** Optional investor LinkedIn handle/URL (role INVESTOR). */
   linkedin?: string;
   sex?: 'MALE' | 'FEMALE';
+  /** Business sub-type (role BUSINESS) — required at signup. */
+  businessSubType?: BusinessSubType;
+  /** Optional business field / industry. */
+  businessIndustry?: string;
+  /** Optional business public-facing phone. */
+  businessPhone?: string;
+  /** Optional business short description. */
+  businessDescription?: string;
   /** "Book & create an account": booking carried through OTP. See PendingUserRecord. */
   pendingBooking?: { kind: 'CARD' | 'CONSULTATION'; ref: string } | null;
 }
@@ -87,6 +96,10 @@ export async function issuePendingUser(input: PendingUserInput): Promise<IssuePe
       instagram: input.instagram,
       linkedin: input.linkedin,
       sex: input.sex,
+      businessSubType: input.businessSubType,
+      businessIndustry: input.businessIndustry,
+      businessPhone: input.businessPhone,
+      businessDescription: input.businessDescription,
       pendingBooking: input.pendingBooking ?? null,
       otpHash: hashOtp(code),
       otpAttempts: 0,
@@ -161,6 +174,12 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
 
     const now = new Date().toISOString();
     const userId = randomUUID();
+
+    // Unified approval gate: gated roles (INCUBATOR / INVESTOR / BUSINESS) land
+    // PENDING and stay read-only until an admin approves. Entrepreneurs and the
+    // bootstrap-admin (role flipped to ADMIN above) are non-gated ⇒ APPROVED.
+    const approvalStatus: ApprovalStatus = isApprovalGatedRole(role) ? 'PENDING' : 'APPROVED';
+
     const user: UserRecord = {
       id: userId,
       email: pending.email,
@@ -170,6 +189,7 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
       city: pending.city,
       role,
       status: 'ACTIVE',
+      approvalStatus,
       phoneVerified: true,
       emailVerified: false,
       membershipCode: null,
@@ -181,33 +201,44 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
     };
 
     // Investor onboarding: new investors require admin approval before they can
-    // use the gated investor surfaces. Stored separately from `status` (which
-    // stays ACTIVE so they can log in and reach the "awaiting approval" screen).
+    // use the gated investor surfaces. The legacy `investorStatus` is kept in
+    // sync with the unified gate (both PENDING here) so the existing investor
+    // "awaiting approval" screen keeps working unchanged.
     if (role === 'INVESTOR') {
       user.investorStatus = 'PENDING_APPROVAL';
       user.linkedin = pending.linkedin?.trim() || null;
     }
 
+    // Business onboarding: persist the sub-type + optional profile fields.
+    if (role === 'BUSINESS') {
+      user.businessSubType = pending.businessSubType ?? null;
+      user.businessIndustry = pending.businessIndustry?.trim() || null;
+      user.businessWebsite = pending.website?.trim() || null;
+      user.businessInstagram = pending.instagram?.trim() || null;
+      user.businessPhone = pending.businessPhone?.trim() || null;
+      user.businessDescription = pending.businessDescription?.trim() || null;
+    }
+
     d.users.push(user);
 
-    // Auto-create a provider IncubatorRecord for INCUBATOR- and TRAINER-role
-    // users. Trainers reuse the exact same record + managerId-linking pattern;
+    // Auto-create a provider IncubatorRecord for INCUBATOR- and BUSINESS-role
+    // users. Businesses reuse the exact same record + managerId-linking pattern;
     // the only difference is the providerType discriminator (and that they get
     // no Spaces/subscription sections in their dashboard). Bootstrap-admin
-    // promotion above only applies to INCUBATOR, so a TRAINER always lands as
+    // promotion above only applies to INCUBATOR, so a BUSINESS always lands as
     // a plain provider record.
-    if (role === 'INCUBATOR' || role === 'TRAINER') {
+    if (role === 'INCUBATOR' || role === 'BUSINESS') {
       const incubatorId = randomUUID();
       const incubatorName =
         pending.incubatorName?.trim() || pending.fullName.trim();
       d.incubators.push({
         id:               incubatorId,
         name:             incubatorName,
-        description:      '',
+        description:      pending.businessDescription?.trim() || '',
         city:             pending.city,
         managerId:        userId,
-        /** Distinguishes trainers from incubators; INCUBATOR keeps the legacy default. */
-        providerType:     role === 'TRAINER' ? 'TRAINER' : 'INCUBATOR',
+        /** Distinguishes businesses from incubators; INCUBATOR keeps the legacy default. */
+        providerType:     role === 'BUSINESS' ? 'BUSINESS' : 'INCUBATOR',
         /** email is required by findIncubatorByUserEmail for the fast lookup path */
         email:            pending.email,
         phone:            pending.phone,

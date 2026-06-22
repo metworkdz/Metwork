@@ -13,7 +13,7 @@
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiRole } from '@/server/auth/api-guards';
+import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db, type BookingRecord, type SpaceRecord } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import type { DaySlot } from '@/types/mentor';
@@ -256,7 +256,7 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
+  const guard = await requireApprovedApiRole(['INCUBATOR', 'ADMIN']);
   if (!guard.ok) return guard.response;
   const { id } = await params;
 

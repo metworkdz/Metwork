@@ -6,7 +6,7 @@
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiRole } from '@/server/auth/api-guards';
+import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { listRegistrations, cancelRegistration } from '@/server/registrations/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
@@ -78,7 +78,7 @@ const cancelSchema = z.object({
 });
 
 export async function DELETE(req: NextRequest) {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
+  const guard = await requireApprovedApiRole(['INCUBATOR', 'ADMIN']);
   if (!guard.ok) return guard.response;
 
   const inc = await findIncubatorByUserEmail(guard.user.email);

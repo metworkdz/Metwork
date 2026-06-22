@@ -9,7 +9,7 @@
 import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiSession } from '@/server/auth/api-guards';
+import { requireApiSession, requireApprovedApiSession } from '@/server/auth/api-guards';
 import { db, type TransactionRecord, type WithdrawalRequestRecord } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { sendWithdrawalRequestedEmail } from '@/server/notifications/mock';
@@ -28,7 +28,7 @@ const createSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApiSession();
+  const guard = await requireApprovedApiSession();
   if (!guard.ok) return guard.response;
 
   // Rate limit: 5 withdrawal requests per user per day. Withdrawals are

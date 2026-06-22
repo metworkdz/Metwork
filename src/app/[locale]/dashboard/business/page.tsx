@@ -10,12 +10,12 @@ interface PageProps {
 
 export const dynamic = 'force-dynamic';
 
-export default async function TrainerOverviewPage({ params }: PageProps) {
+export default async function BusinessOverviewPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations('pages.dashboard.trainer.overview');
+  const t = await getTranslations('pages.dashboard.business.overview');
   const tRoot = await getTranslations();
-  await requireRole(['TRAINER']);
+  await requireRole(['BUSINESS']);
 
   return (
     <>
@@ -23,7 +23,7 @@ export default async function TrainerOverviewPage({ params }: PageProps) {
       <div className="lg:hidden">
         <MobileGreeting title={t('title')} subtitle={t('subtitle')} />
         <MobileQuickActions
-          actions={mobileQuickActionsByRole.TRAINER.map((a) => ({
+          actions={mobileQuickActionsByRole.BUSINESS.map((a) => ({
             label: tRoot(a.labelKey),
             href: a.href,
             icon: a.icon,

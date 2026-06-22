@@ -11,12 +11,15 @@ import { countAttendance } from '@/server/attendance';
 import { checkSpaceAvailability } from '@/server/bookings/availability';
 
 // Revenue route reads an authenticated incubator — stub the guard.
-vi.mock('@/server/auth/api-guards', () => ({
-  requireApiRole: vi.fn(async () => ({
-    ok: true,
-    user: { id: 'mgr-1', email: 'i@x.com', role: 'INCUBATOR' },
-  })),
-}));
+vi.mock('@/server/auth/api-guards', () => {
+  const ok = async () => ({ ok: true, user: { id: 'mgr-1', email: 'i@x.com', role: 'INCUBATOR', approvalStatus: 'APPROVED' } });
+  return {
+    requireApiRole: vi.fn(ok),
+    requireApprovedApiRole: vi.fn(ok),
+    requireApiSession: vi.fn(ok),
+    requireApprovedApiSession: vi.fn(ok),
+  };
+});
 
 const THIS_MONTH = `${new Date().toISOString().slice(0, 7)}-15T10:00:00.000Z`;
 

@@ -4,7 +4,7 @@
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiRole } from '@/server/auth/api-guards';
+import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
@@ -39,7 +39,7 @@ async function findIncubator(userId: string) {
 interface RouteParams { params: Promise<{ id: string }> }
 
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN', 'TRAINER']);
+  const guard = await requireApprovedApiRole(['INCUBATOR', 'ADMIN', 'BUSINESS']);
   if (!guard.ok) return guard.response;
 
   const incubator = await findIncubator(guard.user.id);
@@ -111,7 +111,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN', 'TRAINER']);
+  const guard = await requireApprovedApiRole(['INCUBATOR', 'ADMIN', 'BUSINESS']);
   if (!guard.ok) return guard.response;
 
   const incubator = await findIncubator(guard.user.id);

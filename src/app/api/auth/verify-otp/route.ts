@@ -19,7 +19,7 @@ import { verifyPendingOtp, promotePendingUser } from '@/server/auth/pending-user
 import { issueEmailToken } from '@/server/auth/email-verification';
 import { createSession, setSessionCookie } from '@/server/auth/session';
 import { toSessionUser } from '@/server/auth/serialize';
-import { sendVerificationEmail, sendWelcomeEmail, sendAdminNewIncubatorNotification, sendAdminNewInvestorNotification } from '@/server/notifications/mock';
+import { sendVerificationEmail, sendWelcomeEmail, sendAdminNewIncubatorNotification, sendAdminNewInvestorNotification, sendAdminNewBusinessNotification } from '@/server/notifications/mock';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { clientEnvVars } from '@/lib/env';
 import { dashboardPathForRole } from '@/lib/dashboard-routes';
@@ -174,6 +174,22 @@ export async function POST(req: NextRequest) {
         userId:    user.id,
         createdAt: user.createdAt,
         linkedin:  user.linkedin ?? undefined,
+      });
+    }
+
+    // Notify admin when a new business account is verified (review required).
+    if (user.role === 'BUSINESS') {
+      const biz = (await db.read()).incubators.find((i) => i.managerId === user.id);
+      sendAdminNewBusinessNotification({
+        fullName:     user.fullName,
+        email:        user.email,
+        phone:        user.phone ?? undefined,
+        userId:       user.id,
+        createdAt:    user.createdAt,
+        businessName: biz?.name,
+        subTypeLabel: user.businessSubType ?? undefined,
+        website:      user.businessWebsite ?? biz?.website,
+        instagram:    user.businessInstagram ?? biz?.instagram,
       });
     }
 

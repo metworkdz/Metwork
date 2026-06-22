@@ -14,7 +14,7 @@
 import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiSession } from '@/server/auth/api-guards';
+import { requireApprovedApiSession } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { validatePromoCode, consumePromoCode } from '@/server/promo-codes/service';
 import { MEMBERSHIP_PRICES } from '@/server/memberships/service';
@@ -30,7 +30,7 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApiSession();
+  const guard = await requireApprovedApiSession();
   if (!guard.ok) return guard.response;
 
   let body: unknown;

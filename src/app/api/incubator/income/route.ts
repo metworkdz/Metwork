@@ -5,7 +5,7 @@
 import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
-import { requireApiRole } from '@/server/auth/api-guards';
+import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db, type IncomeRecord, type ClientRecord } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
@@ -80,7 +80,7 @@ function ensureClient(
 }
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApiRole(['INCUBATOR']);
+  const guard = await requireApprovedApiRole(['INCUBATOR']);
   if (!guard.ok) return guard.response;
 
   const inc = await findIncubatorByUserEmail(guard.user.email);
