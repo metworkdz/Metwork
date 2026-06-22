@@ -13,9 +13,16 @@ export function ServiceWorkerRegister() {
     if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
 
     const register = () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
-        /* registration is best-effort; never block the app */
-      });
+      navigator.serviceWorker
+        // `updateViaCache: 'none'` forces the browser to byte-check /sw.js from
+        // the network on every load instead of serving a cached worker — so a
+        // fixed SW propagates to iOS Safari instead of being pinned on a stale
+        // one. `reg.update()` nudges an immediate check on each visit.
+        .register('/sw.js', { updateViaCache: 'none' })
+        .then((reg) => { void reg.update(); })
+        .catch(() => {
+          /* registration is best-effort; never block the app */
+        });
     };
 
     if (document.readyState === 'complete') register();

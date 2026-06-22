@@ -13,7 +13,7 @@
  * Vercel's runtime logs use, making correlation trivial.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { AlertCircle, RotateCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
@@ -25,15 +25,6 @@ interface DashboardErrorProps {
 }
 
 export default function DashboardError({ error, reset }: DashboardErrorProps) {
-  // TEMP(feat/booking-form-ux): on-device iOS Safari error capture via `?debug=1`.
-  // REMOVE once the root cause is confirmed.
-  const [debug, setDebug] = useState(false);
-  useEffect(() => {
-    try {
-      setDebug(new URLSearchParams(window.location.search).get('debug') === '1');
-    } catch { /* no-op */ }
-  }, []);
-
   useEffect(() => {
     // A stale chunk after a deploy (common in the long-lived standalone PWA)
     // can't be fixed by `reset()` — only a fresh document recovers it. Try a
@@ -69,14 +60,6 @@ export default function DashboardError({ error, reset }: DashboardErrorProps) {
           <p className="mt-3 font-mono text-xs text-muted-foreground/60">
             Reference: {error.digest}
           </p>
-        )}
-        {/* TEMP(feat/booking-form-ux): remove after confirming the iOS root cause */}
-        {debug && (
-          <pre className="mt-3 max-w-full overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted p-3 text-start font-mono text-[11px] text-foreground">
-            {error.name}: {error.message}
-            {error.digest ? `\ndigest: ${error.digest}` : ''}
-            {error.stack ? `\n\n${error.stack.split('\n').slice(0, 6).join('\n')}` : ''}
-          </pre>
         )}
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Button onClick={reset} className="gap-1.5">

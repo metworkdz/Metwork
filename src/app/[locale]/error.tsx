@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/ui/container';
@@ -14,17 +14,6 @@ export default function LocaleError({
   reset: () => void;
 }) {
   const t = useTranslations('pages.error');
-
-  // TEMP(feat/booking-form-ux): on-device iOS Safari error capture. Append
-  // `?debug=1` to the URL, reproduce on the device, and read the message off
-  // screen (Sentry is unavailable to the owner). REMOVE once the root cause is
-  // confirmed.
-  const [debug, setDebug] = useState(false);
-  useEffect(() => {
-    try {
-      setDebug(new URLSearchParams(window.location.search).get('debug') === '1');
-    } catch { /* no-op */ }
-  }, []);
 
   useEffect(() => {
     // Recover a stale-chunk error (post-deploy) with a loop-guarded reload
@@ -50,14 +39,6 @@ export default function LocaleError({
         </p>
         {error.digest && (
           <p className="font-mono text-xs text-muted-foreground/60">{t('id', { id: error.digest })}</p>
-        )}
-        {/* TEMP(feat/booking-form-ux): remove after confirming the iOS root cause */}
-        {debug && (
-          <pre className="max-w-full overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted p-3 text-start font-mono text-[11px] text-foreground">
-            {error.name}: {error.message}
-            {error.digest ? `\ndigest: ${error.digest}` : ''}
-            {error.stack ? `\n\n${error.stack.split('\n').slice(0, 6).join('\n')}` : ''}
-          </pre>
         )}
         <Button onClick={reset}>{t('tryAgain')}</Button>
       </div>

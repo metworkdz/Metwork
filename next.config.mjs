@@ -74,6 +74,15 @@ const nextConfig = {
 
     return [
       {
+        // The service worker must always be revalidated so a fixed SW actually
+        // reaches clients (iOS Safari otherwise pins an old /sw.js and stays on
+        // a stale, broken worker → blank/reload loop after a deploy).
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+        ],
+      },
+      {
         source: '/:path*',
         headers: [
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
