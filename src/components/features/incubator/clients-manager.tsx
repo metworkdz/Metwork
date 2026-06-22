@@ -95,8 +95,14 @@ export function ClientsManager() {
         }),
       });
       if (!res.ok) {
-        const d = await res.json().catch(() => ({})) as { message?: string };
-        setEditError(d.message ?? 'Failed to save.');
+        // API error envelope: { error: { code, message, details: { fieldErrors } } }
+        const d = await res.json().catch(() => ({})) as {
+          error?: { message?: string; details?: { fieldErrors?: Record<string, string[]> } };
+        };
+        const fieldReason = Object.values(d.error?.details?.fieldErrors ?? {})
+          .flat()
+          .find(Boolean);
+        setEditError(fieldReason ?? d.error?.message ?? 'Failed to save.');
         return;
       }
       setEditOpen(false);

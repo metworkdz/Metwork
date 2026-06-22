@@ -15,8 +15,11 @@ export const dynamic = 'force-dynamic';
 
 const createSchema = z.object({
   fullName:     z.string().min(2).max(120),
-  email:        z.string().email().max(200),
-  phone:        z.string().min(6).max(30),
+  // Email & phone are optional in the CRM "add client" form (a name-only record
+  // is valid). Stored as '' when omitted, matching ClientRecord and the
+  // find-or-create in the manual-bookings route.
+  email:        z.string().email().max(200).optional().nullable(),
+  phone:        z.string().min(6).max(30).optional().nullable(),
   idCardNumber: z.string().max(30).optional().nullable(),
   companyName:  z.string().max(120).optional().nullable(),
   notes:        z.string().max(2000).optional().nullable(),
@@ -55,21 +58,26 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
+  const email = (input.email ?? '').trim().toLowerCase();
+  const phone = (input.phone ?? '').trim();
   const now = new Date().toISOString();
   const record = await db.update<ClientRecord>((d) => {
     if (!Array.isArray(d.clients)) d.clients = [];
-    // Dedup by email within this incubator
-    const existing = d.clients.find(
-      (c) => c.incubatorId === inc.id && c.email.toLowerCase() === input.email.toLowerCase(),
-    );
-    if (existing) return existing; // idempotent — return existing if same email
+    // Dedup by email within this incubator — but only when an email is given.
+    // Name-only clients (empty email) must never collapse into one another.
+    if (email) {
+      const existing = d.clients.find(
+        (c) => c.incubatorId === inc.id && c.email.toLowerCase() === email,
+      );
+      if (existing) return existing; // idempotent — return existing if same email
+    }
 
     const client: ClientRecord = {
       id:           randomUUID(),
       incubatorId:  inc.id,
       fullName:     input.fullName.trim(),
-      email:        input.email.trim().toLowerCase(),
-      phone:        input.phone.trim(),
+      email,
+      phone,
       idCardNumber: input.idCardNumber ?? null,
       companyName:  input.companyName ?? null,
       notes:        input.notes ?? null,

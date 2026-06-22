@@ -24,8 +24,12 @@ const manualBookingSchema = z.object({
   startsAt:        z.string().datetime(),
   endsAt:          z.string().datetime(),
   unit:            z.enum(['HOUR', 'HALF_DAY', 'DAY', 'MONTH']),
-  totalAmount:     z.number().int().min(0),
-  paymentMethod:   z.enum(['manual', 'wallet', 'OTHER']).default('manual'),
+  // Accept decimals from the <input type="number"> field; rounded to an integer
+  // (DZD) before persisting so a fractional amount never trips validation.
+  totalAmount:     z.number().min(0),
+  // How the offline payment was collected. Request-only label — the booking
+  // record always settles as 'manual' (no wallet/online transaction occurs).
+  paymentMethod:   z.enum(['CASH', 'ONLINE', 'OTHER']).default('CASH'),
   notes:           z.string().max(500).optional().nullable(),
 }).refine((d) => new Date(d.endsAt) > new Date(d.startsAt), {
   message: 'endsAt must be after startsAt',
@@ -71,8 +75,10 @@ export async function GET() {
         endsAt:          b.endsAt,
         createdAt:       b.createdAt,
         clientReference: b.clientReference,
-        customerName:    user?.fullName ?? 'Unknown',
-        customerEmail:   user?.email    ?? '',
+        // Offline bookings carry the client on the record itself (no platform
+        // user); online bookings resolve via the user map.
+        customerName:    b.clientName  ?? user?.fullName ?? 'Unknown',
+        customerEmail:   b.clientEmail ?? user?.email    ?? '',
       };
     });
 
@@ -102,6 +108,24 @@ export async function POST(req: NextRequest) {
     // Confirm space belongs to this incubator
     const space = (d.spaces ?? []).find((s) => s.id === input.spaceId && s.incubatorId === inc.id);
     if (!space) return { ok: false, reason: 'SPACE_NOT_FOUND' };
+
+    // Idempotency: a retried submit (same space, window, client + amount) must
+    // not create a duplicate offline booking. Return the existing one instead.
+    const totalAmount = Math.round(input.totalAmount);
+    const clientNameKey = input.clientName.trim().toLowerCase();
+    const duplicate = d.bookings.find(
+      (b) =>
+        b.source === 'offline' &&
+        b.itemKind === 'SPACE' &&
+        b.itemId === space.id &&
+        b.startsAt === input.startsAt &&
+        b.endsAt === input.endsAt &&
+        b.totalAmount === totalAmount &&
+        (b.clientName ?? '').trim().toLowerCase() === clientNameKey &&
+        b.status !== 'CANCELLED' &&
+        b.status !== 'REFUNDED',
+    );
+    if (duplicate) return { ok: true, booking: duplicate };
 
     // Shared availability gate: blackouts + capacity-aware occupancy. A manual
     // booking gets NO bypass of blackouts — the incubator must unblock the date
@@ -134,7 +158,11 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
     const booking: BookingRecord = {
       id:              randomUUID(),
-      userId:          guard.user.id,  // incubator user ID as owner
+      // Offline bookings have no platform user — the client may not have an
+      // account. Storing the incubator's own id here would mislabel the booking
+      // as the manager's own and pollute their personal bookings list.
+      userId:          null,
+      source:          'offline',
       itemKind:        'SPACE',
       itemId:          space.id,
       itemName:        space.name,
@@ -144,11 +172,12 @@ export async function POST(req: NextRequest) {
       quantity,
       startsAt:        input.startsAt,
       endsAt:          input.endsAt,
-      totalAmount:     input.totalAmount,
+      totalAmount,
       status:          'CONFIRMED',
       clientReference: randomUUID(),   // generated for manual bookings
       transactionId:   null,
-      paymentMethod:   input.paymentMethod === 'wallet' ? 'wallet' : 'manual',
+      paymentMethod:   'manual',       // offline settlement (cash/online/other label is request-only)
+      clientName:      input.clientName.trim(),
       clientEmail:     input.clientEmail ?? null,
       notes:           input.notes ?? null,
       createdAt:       now,

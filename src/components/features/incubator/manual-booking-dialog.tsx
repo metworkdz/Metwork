@@ -98,11 +98,13 @@ export function ManualBookingDialog({ spaces, onCreated }: ManualBookingDialogPr
         }),
       });
       if (!res.ok) {
-        const d = await res.json().catch(() => ({})) as { message?: string; code?: string };
-        if (d.code === 'OVERLAP_CONFLICT') {
+        // API error envelope: { error: { code, message, details } }
+        const d = await res.json().catch(() => ({})) as { error?: { code?: string; message?: string } };
+        const code = d.error?.code;
+        if (code === 'OVERLAP_CONFLICT') {
           setError('This time slot is already booked. Please choose a different time.');
         } else {
-          setError(d.message ?? 'Failed to create booking.');
+          setError(d.error?.message ?? 'Failed to create booking.');
         }
         return;
       }

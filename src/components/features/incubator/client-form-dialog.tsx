@@ -91,8 +91,14 @@ export function ClientFormDialog({ client, trigger, onSaved }: ClientFormDialogP
         }),
       });
       if (!res.ok) {
-        const d = await res.json().catch(() => ({})) as { message?: string };
-        setError(d.message ?? t('errorSave'));
+        // API error envelope: { error: { code, message, details: { fieldErrors } } }
+        const d = await res.json().catch(() => ({})) as {
+          error?: { message?: string; details?: { fieldErrors?: Record<string, string[]> } };
+        };
+        const fieldReason = Object.values(d.error?.details?.fieldErrors ?? {})
+          .flat()
+          .find(Boolean);
+        setError(fieldReason ?? d.error?.message ?? t('errorSave'));
         return;
       }
       onSaved();
