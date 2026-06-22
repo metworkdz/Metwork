@@ -31,18 +31,56 @@ interface ClientValues {
   notes: string | null;
 }
 
+/** Shape of the client record returned by POST /api/incubator/clients. */
+export interface CreatedClient {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  idCardNumber: string | null;
+  companyName: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface ClientFormDialogProps {
   /** Pass an existing client to edit. Omit (or undefined) for create mode. */
   client?: ClientValues;
   /** Shown instead of the default trigger button (create mode only). */
   trigger?: React.ReactNode;
   onSaved: () => void;
+  /**
+   * Optional: receive the created client record (create mode). Lets a caller
+   * auto-select the new client without a second round-trip. Fires in addition
+   * to `onSaved`.
+   */
+  onCreated?: (client: CreatedClient) => void;
+  /**
+   * Optional controlled open state. When provided the dialog renders no
+   * trigger (the caller opens it). Omitted → self-managed with its trigger.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function ClientFormDialog({ client, trigger, onSaved }: ClientFormDialogProps) {
+export function ClientFormDialog({
+  client,
+  trigger,
+  onSaved,
+  onCreated,
+  open: controlledOpen,
+  onOpenChange,
+}: ClientFormDialogProps) {
   const t = useTranslations('incubator.clientForm');
   const isEdit = Boolean(client);
-  const [open, setOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (v: boolean) => {
+    if (!isControlled) setInternalOpen(v);
+    onOpenChange?.(v);
+  };
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,6 +139,11 @@ export function ClientFormDialog({ client, trigger, onSaved }: ClientFormDialogP
         setError(fieldReason ?? d.error?.message ?? t('errorSave'));
         return;
       }
+      // Surface the created record so a caller can auto-select it (create only).
+      if (onCreated && !isEdit) {
+        const record = await res.json().catch(() => null) as CreatedClient | null;
+        if (record) onCreated(record);
+      }
       onSaved();
       setOpen(false);
       if (!isEdit) reset();
@@ -113,14 +156,16 @@ export function ClientFormDialog({ client, trigger, onSaved }: ClientFormDialogP
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v && !isEdit) reset(); }}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button size="sm" className="gap-1.5">
-            <PlusCircle className="size-4" />
-            {t('addClient')}
-          </Button>
-        )}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button size="sm" className="gap-1.5">
+              <PlusCircle className="size-4" />
+              {t('addClient')}
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>

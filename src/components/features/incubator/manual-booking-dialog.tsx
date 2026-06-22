@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ClientPicker, type PickedClient } from './client-picker';
 
 interface SpaceOption {
   id: string;
@@ -48,6 +49,7 @@ export function ManualBookingDialog({ spaces, onCreated }: ManualBookingDialogPr
   const today = new Date().toISOString().slice(0, 10);
 
   const [spaceId, setSpaceId]         = useState(spaces[0]?.id ?? '');
+  const [client, setClient]           = useState<PickedClient | null>(null);
   const [clientName, setClientName]   = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [startDate, setStartDate]     = useState(today);
@@ -66,6 +68,7 @@ export function ManualBookingDialog({ spaces, onCreated }: ManualBookingDialogPr
   }
 
   function reset() {
+    setClient(null);
     setClientName(''); setClientEmail(''); setStartDate(today); setStartTime('09:00');
     setEndDate(today); setEndTime('18:00'); setUnit('HOUR');
     setAmount(''); setPayMethod('CASH'); setNotes(''); setError(null); setSuccess(false);
@@ -169,22 +172,31 @@ export function ManualBookingDialog({ spaces, onCreated }: ManualBookingDialogPr
               </div>
             )}
 
-            {/* Client name + email */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="mb-client">Client name *</Label>
-                <Input id="mb-client" className="mt-1" value={clientName}
-                  onChange={(e) => setClientName(e.target.value)} required maxLength={120} />
+            {/* Client — searchable picker with inline "add new" */}
+            <div>
+              <Label htmlFor="mb-client">Client *</Label>
+              <div className="mt-1">
+                <ClientPicker
+                  id="mb-client"
+                  value={client}
+                  onSelect={(c) => {
+                    setClient(c);
+                    setClientName(c?.fullName ?? '');
+                    setClientEmail(c?.email ?? '');
+                  }}
+                />
               </div>
-              <div>
-                <Label htmlFor="mb-cemail">
-                  Client email
-                  <span className="ml-1 text-xs text-muted-foreground">(receipt sent if provided)</span>
-                </Label>
-                <Input id="mb-cemail" type="email" className="mt-1" value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)} maxLength={200}
-                  placeholder="client@email.com" />
-              </div>
+            </div>
+
+            {/* Client email — auto-filled from the selected client; editable for receipts */}
+            <div>
+              <Label htmlFor="mb-cemail">
+                Client email
+                <span className="ml-1 text-xs text-muted-foreground">(receipt sent if provided)</span>
+              </Label>
+              <Input id="mb-cemail" type="email" className="mt-1" value={clientEmail}
+                onChange={(e) => setClientEmail(e.target.value)} maxLength={200}
+                placeholder="client@email.com" />
             </div>
 
             {/* Start */}
@@ -272,7 +284,7 @@ export function ManualBookingDialog({ spaces, onCreated }: ManualBookingDialogPr
             )}
 
             <DialogFooter>
-              <Button type="submit" loading={submitting}>Create booking</Button>
+              <Button type="submit" loading={submitting} disabled={!clientName.trim()}>Create booking</Button>
             </DialogFooter>
           </form>
         )}

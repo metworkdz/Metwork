@@ -22,6 +22,7 @@ import { bookingService } from '@/services/booking.service';
 import { ApiClientError } from '@/lib/api-client';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { safeUUID } from '@/lib/safe-uuid';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { computeClientDeposit } from '@/lib/deposit';
 import {
@@ -94,7 +95,7 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
   // whenever the payment method / promo changes (effect below).
   const bookingRef = useRef<string>('');
   const ensureBookingRef = (): string => {
-    if (!bookingRef.current) bookingRef.current = crypto.randomUUID();
+    if (!bookingRef.current) bookingRef.current = safeUUID();
     return bookingRef.current;
   };
   useEffect(() => {
@@ -198,7 +199,7 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
       setError({ code: 'INVALID_ACCOUNT', message: accErr });
       return;
     }
-    if (!accountRef.current) accountRef.current = crypto.randomUUID();
+    if (!accountRef.current) accountRef.current = safeUUID();
     setSubmitting(true);
     try {
       const res = await authService.signupPending({

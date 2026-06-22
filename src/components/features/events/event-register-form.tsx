@@ -17,6 +17,7 @@ import { bookingService } from '@/services/booking.service';
 import { ApiClientError } from '@/lib/api-client';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { safeUUID } from '@/lib/safe-uuid';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
 import { resolveTier } from '@/lib/tier-utils';
@@ -69,7 +70,7 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
   // the payment method / promo changes (effect below).
   const bookingRef = useRef<string>('');
   const ensureBookingRef = (): string => {
-    if (!bookingRef.current) bookingRef.current = crypto.randomUUID();
+    if (!bookingRef.current) bookingRef.current = safeUUID();
     return bookingRef.current;
   };
   useEffect(() => {

@@ -49,6 +49,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { safeUUID } from '@/lib/safe-uuid';
 import { DURATION_OPTIONS, computePrice } from '@/lib/consultation-pricing';
 import type { Mentor } from '@/types/mentor';
 
@@ -323,7 +324,7 @@ export function BookConsultationDialog({
     // offered here (it's hidden when instant-book is on).
     if (instantBookEnabled) {
       try {
-        if (!clientRef.current) clientRef.current = crypto.randomUUID();
+        if (!clientRef.current) clientRef.current = safeUUID();
         const res = await fetch(`/api/mentors/${mentor.id}/instant-book`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -369,7 +370,7 @@ export function BookConsultationDialog({
       if (isGuest) {
         // Guest: NO payment now. The server creates a PENDING/UNPAID request and
         // emails a pay link once an admin approves. Reuse one idempotency key.
-        if (!clientRef.current) clientRef.current = crypto.randomUUID();
+        if (!clientRef.current) clientRef.current = safeUUID();
         res = await fetch(`/api/mentors/${mentor.id}/guest-book`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },

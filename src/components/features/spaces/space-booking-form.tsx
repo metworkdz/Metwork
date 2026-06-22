@@ -33,6 +33,7 @@ import { bookingService } from '@/services/booking.service';
 import { ApiClientError } from '@/lib/api-client';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { safeUUID } from '@/lib/safe-uuid';
 import { SpaceScheduler } from './space-scheduler';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
@@ -241,7 +242,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   // regenerated whenever the booking parameters change (effect further below).
   const bookingRef = useRef<string>('');
   const ensureBookingRef = useCallback(() => {
-    if (!bookingRef.current) bookingRef.current = crypto.randomUUID();
+    if (!bookingRef.current) bookingRef.current = safeUUID();
     return bookingRef.current;
   }, []);
 

@@ -9,6 +9,7 @@
 import { useRef, useState } from 'react';
 import { CheckCircle2, FileUp, Loader2, TriangleAlert, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { safeUUID } from '@/lib/safe-uuid';
 import {
   Dialog,
   DialogContent,
@@ -150,7 +151,7 @@ export function CsvImportDialog({
         return;
       }
       // Fresh file → fresh idempotency key for this batch.
-      importRef.current = crypto.randomUUID();
+      importRef.current = safeUUID();
       setPreviewRows(rows);
       setStage('preview');
     };
