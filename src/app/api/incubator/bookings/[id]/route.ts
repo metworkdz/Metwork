@@ -13,13 +13,49 @@ import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
-import { db, type TransactionRecord, type WalletRecord } from '@/server/db/store';
+import { db, type BookingRecord, type TransactionRecord, type WalletRecord } from '@/server/db/store';
+import { checkSpaceAvailability } from '@/server/bookings/availability';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { createNotification } from '@/server/notifications/create-notification';
 import {
   sendBookingConfirmedWithQrEmail,
   sendBookingDeclinedEmail,
+  sendBookingUpdatedEmail,
+  sendBookingProviderCancelledEmail,
 } from '@/server/notifications/mock';
+
+type StoreData = Parameters<Parameters<typeof db.update>[0]>[0];
+
+/** True when `booking`'s item (space/program/event) belongs to this incubator. */
+function bookingOwnedByIncubator(d: StoreData, incubatorId: string, booking: BookingRecord): boolean {
+  const ownedSpaceIds   = new Set((d.spaces   ?? []).filter((s) => s.incubatorId === incubatorId).map((s) => s.id));
+  const ownedProgramIds = new Set((d.programs ?? []).filter((p) => p.incubatorId === incubatorId).map((p) => p.id));
+  const ownedEventIds   = new Set((d.events   ?? []).filter((e) => e.incubatorId === incubatorId).map((e) => e.id));
+  return (
+    (booking.itemKind === 'SPACE'   && ownedSpaceIds.has(booking.itemId))   ||
+    (booking.itemKind === 'PROGRAM' && ownedProgramIds.has(booking.itemId)) ||
+    (booking.itemKind === 'EVENT'   && ownedEventIds.has(booking.itemId))
+  );
+}
+
+/** A manual/offline booking carries no wallet/ledger entries — safe to edit/delete. */
+function isManualBooking(b: BookingRecord): boolean {
+  return b.source === 'offline' || b.paymentMethod === 'manual';
+}
+
+function computeQuantity(unit: 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH', startsAt: string, endsAt: string): number {
+  const diffMs = new Date(endsAt).getTime() - new Date(startsAt).getTime();
+  switch (unit) {
+    case 'HOUR':     return Math.max(1, Math.ceil(diffMs / 3_600_000));
+    case 'HALF_DAY': return 1;
+    case 'DAY':      return Math.max(1, Math.ceil(diffMs / 86_400_000));
+    case 'MONTH': {
+      const s = new Date(startsAt);
+      const e = new Date(endsAt);
+      return Math.max(1, (e.getUTCFullYear() - s.getUTCFullYear()) * 12 + (e.getUTCMonth() - s.getUTCMonth()));
+    }
+  }
+}
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -314,4 +350,178 @@ export async function PATCH(
   })();
 
   return json({ booking: result });
+}
+
+/* ── PUT — edit a manual/offline booking ── */
+const editSchema = z.object({
+  startsAt:    z.string().datetime(),
+  endsAt:      z.string().datetime(),
+  unit:        z.enum(['HOUR', 'HALF_DAY', 'DAY', 'MONTH']),
+  totalAmount: z.number().min(0),
+  clientName:  z.string().min(1).max(120),
+  clientEmail: z.string().email().max(200).optional().nullable(),
+  notes:       z.string().max(500).optional().nullable(),
+}).refine((d) => new Date(d.endsAt) > new Date(d.startsAt), {
+  message: 'endsAt must be after startsAt',
+  path: ['endsAt'],
+});
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const guard = await requireApiRole(['INCUBATOR']);
+  if (!guard.ok) return guard.response;
+  const { id } = await params;
+
+  let body: unknown;
+  try { body = await req.json(); } catch {
+    return jsonError(400, 'INVALID_JSON', 'Request body must be JSON');
+  }
+
+  let input;
+  try { input = editSchema.parse(body); } catch (err) {
+    if (err instanceof ZodError) return fromZod(err);
+    throw err;
+  }
+
+  const result = await db.update((d) => {
+    const incubator = d.incubators.find((i) => i.managerId === guard.user.id);
+    if (!incubator) return 'NO_INCUBATOR' as const;
+
+    const booking = d.bookings.find((b) => b.id === id);
+    if (!booking) return 'NOT_FOUND' as const;
+    if (!bookingOwnedByIncubator(d, incubator.id, booking)) return 'FORBIDDEN' as const;
+    if (!isManualBooking(booking)) return 'NOT_EDITABLE' as const;
+    if (booking.status === 'CANCELLED' || booking.status === 'REFUNDED') return 'ALREADY_FINAL' as const;
+
+    // Re-check availability for SPACE bookings, excluding THIS booking so it
+    // never conflicts with its own current slot. Blackouts + capacity apply.
+    if (booking.itemKind === 'SPACE') {
+      const space = (d.spaces ?? []).find((s) => s.id === booking.itemId);
+      if (!space) return 'SPACE_NOT_FOUND' as const;
+      const avail = checkSpaceAvailability({
+        space,
+        bookings: d.bookings.filter((b) => b.id !== booking.id),
+        spaceId:  space.id,
+        unit:     input.unit,
+        startsAt: input.startsAt,
+        endsAt:   input.endsAt,
+      });
+      if (!avail.ok) return avail.reason;
+    }
+
+    const now = new Date().toISOString();
+    booking.startsAt    = input.startsAt;
+    booking.endsAt      = input.endsAt;
+    booking.unit        = input.unit;
+    booking.quantity    = computeQuantity(input.unit, input.startsAt, input.endsAt);
+    booking.totalAmount = Math.round(input.totalAmount);
+    booking.clientName  = input.clientName.trim();
+    booking.clientEmail = input.clientEmail ?? null;
+    booking.notes       = input.notes ?? null;
+    booking.updatedAt   = now;
+
+    return {
+      booking,
+      customerEmail: booking.clientEmail ?? '',
+      customerName:  booking.clientName ?? 'Unknown',
+      vendorName:    booking.vendorName ?? incubator.name,
+    };
+  });
+
+  if (typeof result === 'string') {
+    switch (result) {
+      case 'NO_INCUBATOR':    return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile');
+      case 'NOT_FOUND':       return jsonError(404, 'NOT_FOUND', 'Booking not found');
+      case 'FORBIDDEN':       return jsonError(403, 'FORBIDDEN', 'Not your booking');
+      case 'NOT_EDITABLE':    return jsonError(409, 'NOT_EDITABLE', 'Only manual (offline) bookings can be edited');
+      case 'ALREADY_FINAL':   return jsonError(409, 'ALREADY_FINAL', 'Booking is already in a final state');
+      case 'SPACE_NOT_FOUND': return jsonError(404, 'SPACE_NOT_FOUND', 'Space not found');
+      case 'OVERLAP_CONFLICT':  return jsonError(409, 'OVERLAP_CONFLICT', 'This time slot is already booked');
+      case 'DATE_UNAVAILABLE':  return jsonError(409, 'DATE_UNAVAILABLE', 'This date is blocked. Unblock it in the availability calendar first.');
+      case 'CAPACITY_EXCEEDED': return jsonError(409, 'CAPACITY_EXCEEDED', 'No capacity left for this slot');
+      default:                return jsonError(400, 'BAD_REQUEST', result);
+    }
+  }
+
+  // Notify the client of the change (manual bookings default to French).
+  // Awaited inside a never-throwing helper so the edit is never rolled back.
+  if (result.customerEmail) {
+    await sendBookingUpdatedEmail(
+      result.customerEmail,
+      {
+        customerName: result.customerName,
+        bookingId:    result.booking.id,
+        itemName:     result.booking.itemName,
+        vendorName:   result.vendorName,
+        startsAt:     result.booking.startsAt,
+        endsAt:       result.booking.endsAt,
+        totalAmount:  result.booking.totalAmount,
+      },
+      'fr',
+    );
+  }
+
+  return json({ booking: result.booking });
+}
+
+/* ── DELETE — remove a manual/offline booking ── */
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const guard = await requireApiRole(['INCUBATOR']);
+  if (!guard.ok) return guard.response;
+  const { id } = await params;
+
+  const result = await db.update((d) => {
+    const incubator = d.incubators.find((i) => i.managerId === guard.user.id);
+    if (!incubator) return 'NO_INCUBATOR' as const;
+
+    const idx = d.bookings.findIndex((b) => b.id === id);
+    if (idx === -1) return 'NOT_FOUND' as const;
+    const booking = d.bookings[idx]!;
+    if (!bookingOwnedByIncubator(d, incubator.id, booking)) return 'FORBIDDEN' as const;
+    if (!isManualBooking(booking)) return 'NOT_DELETABLE' as const;
+
+    // Capture for the cancellation email before removing the record. A manual
+    // booking has no transactions/wallet movements, so there is nothing to
+    // reverse — the booking IS the only record.
+    const captured = {
+      bookingId:     booking.id,
+      itemName:      booking.itemName,
+      customerEmail: booking.clientEmail ?? '',
+      customerName:  booking.clientName ?? 'Unknown',
+      vendorName:    booking.vendorName ?? incubator.name,
+    };
+    d.bookings.splice(idx, 1);
+    return captured;
+  });
+
+  if (typeof result === 'string') {
+    switch (result) {
+      case 'NO_INCUBATOR':  return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile');
+      case 'NOT_FOUND':     return jsonError(404, 'NOT_FOUND', 'Booking not found');
+      case 'FORBIDDEN':     return jsonError(403, 'FORBIDDEN', 'Not your booking');
+      case 'NOT_DELETABLE': return jsonError(409, 'NOT_DELETABLE', 'Only manual (offline) bookings can be deleted');
+      default:              return jsonError(400, 'BAD_REQUEST', result);
+    }
+  }
+
+  // Notify the client their booking was cancelled (manual → French).
+  if (result.customerEmail) {
+    await sendBookingProviderCancelledEmail(
+      result.customerEmail,
+      {
+        customerName: result.customerName,
+        bookingId:    result.bookingId,
+        itemName:     result.itemName,
+        vendorName:   result.vendorName,
+      },
+      'fr',
+    );
+  }
+
+  return json({ ok: true });
 }

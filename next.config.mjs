@@ -48,6 +48,14 @@ const nextConfig = {
 
   experimental: {
     optimizePackageImports: ['lucide-react'],
+    // pdfkit ships its font-metric files (Helvetica.afm, …) as data files it
+    // reads at runtime via a path relative to its own location. When webpack
+    // bundles it into a server chunk those files aren't copied, so receipt PDF
+    // generation throws ENOENT (…/vendor-chunks/data/Helvetica.afm) and the
+    // booking receipt email silently fails. Keeping pdfkit external loads it
+    // from node_modules (where the .afm files live) and lets Vercel's file
+    // tracing include them in the serverless bundle.
+    serverComponentsExternalPackages: ['pdfkit'],
   },
 
   async headers() {

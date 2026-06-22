@@ -16,6 +16,7 @@ import { BookingStatusBadge } from '@/components/features/booking/booking-status
 import { StatCard } from '@/components/shared/stat-card';
 import { ManualBookingDialog } from '@/components/features/incubator/manual-booking-dialog';
 import { CancelUnpaidButton } from '@/components/features/incubator/cancel-unpaid-button';
+import { BookingRowActions } from '@/components/features/incubator/booking-row-actions';
 import { requireRole } from '@/lib/auth-guards';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
@@ -50,6 +51,10 @@ interface IncubatorBookingRow {
   createdAt: string;
   customerName: string;
   customerEmail: string;
+  // Manual/offline bookings can be edited or deleted by the incubator.
+  isManual: boolean;
+  unit: 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH';
+  notes: string;
 }
 
 export default async function IncubatorBookingsPage({ params }: PageProps) {
@@ -105,6 +110,9 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
           createdAt:     b.createdAt,
           customerName:  customer?.fullName ?? b.clientName ?? 'Unknown',
           customerEmail: customer?.email    ?? b.clientEmail ?? '',
+          isManual:      b.source === 'offline' || b.paymentMethod === 'manual',
+          unit:          (b.unit ?? 'DAY') as 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH',
+          notes:         b.notes ?? '',
         };
       });
   }
@@ -225,9 +233,26 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                           )}
                         </TableCell>
                         <TableCell className="text-end">
-                          {b.status === 'PENDING_PAYMENT' && (
-                            <CancelUnpaidButton bookingId={b.id} />
-                          )}
+                          <div className="flex items-center justify-end gap-1">
+                            {b.status === 'PENDING_PAYMENT' && (
+                              <CancelUnpaidButton bookingId={b.id} />
+                            )}
+                            {b.isManual && (
+                              <BookingRowActions
+                                booking={{
+                                  id:          b.id,
+                                  itemName:    b.itemName,
+                                  startsAt:    b.startsAt,
+                                  endsAt:      b.endsAt,
+                                  unit:        b.unit,
+                                  totalAmount: b.totalAmount,
+                                  clientName:  b.customerName,
+                                  clientEmail: b.customerEmail,
+                                  notes:       b.notes,
+                                }}
+                              />
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );

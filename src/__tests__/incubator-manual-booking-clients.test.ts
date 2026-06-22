@@ -19,10 +19,11 @@ vi.mock('@/server/auth/api-guards', () => ({
   })),
 }));
 
-// Manual bookings fire a fire-and-forget receipt email — stub it so the test
+// Manual bookings send a receipt email (now awaited) — stub it so the test
 // neither hits the network nor depends on its outcome.
 vi.mock('@/server/notifications/mock', () => ({
   sendBookingReceiptEmail: vi.fn(),
+  sendBookingReceiptEmailAsync: vi.fn(async () => undefined),
 }));
 
 function bookingsReq(body: Record<string, unknown>) {

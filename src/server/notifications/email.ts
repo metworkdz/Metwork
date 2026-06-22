@@ -723,6 +723,119 @@ export function bookingCancelledUnpaidEmailHtml(
   `);
 }
 
+/**
+ * Sent to the client when the provider EDITS their manual/offline booking.
+ * Shows the new schedule + amount. No payment/refund language (settled offline).
+ * Localised (en/fr/ar).
+ */
+export function bookingUpdatedEmailHtml(
+  opts: {
+    customerName: string;
+    bookingId: string;
+    itemName: string;
+    vendorName: string;
+    startsAt: string;
+    endsAt: string;
+    totalAmount: number;
+  },
+  lang: 'en' | 'fr' | 'ar' = 'fr',
+): string {
+  const isFr = lang === 'fr';
+  const isAr = lang === 'ar';
+  const dir = isAr ? 'rtl' : 'ltr';
+  const ref = opts.bookingId.slice(0, 8).toUpperCase();
+  const locale = isFr ? 'fr-DZ' : isAr ? 'ar-DZ' : 'en-GB';
+  const fmtDt = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString(locale, {
+        day: '2-digit', month: 'long', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+      });
+    } catch { return iso; }
+  };
+  const fmtAmt = (n: number) =>
+    n === 0 ? (isFr ? 'Gratuit' : isAr ? 'مجاني' : 'Free') : `${n.toLocaleString('fr-DZ')} DZD`;
+
+  const L = isFr
+    ? { title: 'Réservation modifiée', greeting: `Bonjour ${opts.customerName},`,
+        body: `Votre réservation chez <strong>${opts.vendorName}</strong> a été mise à jour. Voici les nouveaux détails :`,
+        item: 'Prestation', from: 'Du', to: 'Au', total: 'Total', reference: 'Référence' }
+    : isAr
+    ? { title: 'تم تعديل الحجز', greeting: `مرحبًا ${opts.customerName},`,
+        body: `تم تحديث حجزك لدى <strong>${opts.vendorName}</strong>. إليك التفاصيل الجديدة:`,
+        item: 'الخدمة', from: 'من', to: 'إلى', total: 'الإجمالي', reference: 'المرجع' }
+    : { title: 'Booking updated', greeting: `Hi ${opts.customerName},`,
+        body: `Your booking with <strong>${opts.vendorName}</strong> has been updated. Here are the new details:`,
+        item: 'Item', from: 'From', to: 'To', total: 'Total', reference: 'Reference' };
+
+  const rows: Array<[string, string]> = [
+    [L.item, opts.itemName],
+    [L.from, fmtDt(opts.startsAt)],
+    [L.to, fmtDt(opts.endsAt)],
+    [L.total, fmtAmt(opts.totalAmount)],
+    [L.reference, ref],
+  ];
+  const tableRows = rows
+    .map(([label, value]) =>
+      `<tr>
+         <td style="padding:8px 12px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;width:140px;">${label}</td>
+         <td style="padding:8px 12px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;font-weight:500;">${value}</td>
+       </tr>`,
+    )
+    .join('');
+
+  return layout(`
+    <div dir="${dir}">
+    ${h1(L.title)}
+    ${p(L.greeting)}
+    ${p(L.body)}
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin:20px 0;">
+      ${tableRows}
+    </table>
+    </div>
+  `);
+}
+
+/**
+ * Sent to the client when the provider DELETES their manual/offline booking.
+ * No refund language (manual bookings settle offline). Localised (en/fr/ar).
+ */
+export function bookingProviderCancelledEmailHtml(
+  opts: { customerName: string; bookingId: string; itemName: string; vendorName: string },
+  lang: 'en' | 'fr' | 'ar' = 'fr',
+): string {
+  const isFr = lang === 'fr';
+  const isAr = lang === 'ar';
+  const ref = opts.bookingId.slice(0, 8).toUpperCase();
+  const refRow = (label: string) =>
+    p(`<span style="color:#71717a;font-size:13px;">${label}: <code style="background:#f4f4f5;padding:2px 6px;border-radius:4px;font-family:monospace;">${ref}</code></span>`);
+
+  if (isFr) {
+    return layout(`
+      ${h1('Réservation annulée')}
+      ${p(`Bonjour <strong>${opts.customerName}</strong>, votre réservation pour <strong>${opts.itemName}</strong> auprès de <strong>${opts.vendorName}</strong> a été annulée.`)}
+      ${p('Si vous avez des questions, veuillez contacter directement le prestataire.')}
+      ${refRow('Référence')}
+    `);
+  }
+  if (isAr) {
+    return layout(`
+      <div dir="rtl">
+      ${h1('تم إلغاء الحجز')}
+      ${p(`مرحبًا <strong>${opts.customerName}</strong>، تم إلغاء حجزك لـ <strong>${opts.itemName}</strong> لدى <strong>${opts.vendorName}</strong>.`)}
+      ${p('إذا كان لديك أي أسئلة، يرجى التواصل مباشرة مع مقدّم الخدمة.')}
+      ${refRow('المرجع')}
+      </div>
+    `);
+  }
+  return layout(`
+    ${h1('Booking cancelled')}
+    ${p(`Hi <strong>${opts.customerName}</strong>, your booking for <strong>${opts.itemName}</strong> with <strong>${opts.vendorName}</strong> has been cancelled.`)}
+    ${p('If you have any questions, please contact the provider directly.')}
+    ${refRow('Reference')}
+  `);
+}
+
 /** Sent to the incubator when a new booking arrives. */
 export function newBookingAlertHtml(opts: {
   incubatorName: string;

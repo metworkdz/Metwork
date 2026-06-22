@@ -24,6 +24,8 @@ import {
   bookingConfirmedWithQrEmailHtml,
   bookingDeclinedEmailHtml,
   bookingCancelledUnpaidEmailHtml,
+  bookingUpdatedEmailHtml,
+  bookingProviderCancelledEmailHtml,
   withdrawalRequestedEmailHtml,
   withdrawalProcessedEmailHtml,
   consultationConfirmationEmailHtml,
@@ -638,12 +640,12 @@ export function sendContactNotification(submission: {
 /* ─────────────────────────── Booking receipts ─────────────────────────── */
 
 /**
- * Generate a PDF receipt and email it to the client.
- * Fire-and-forget — errors are logged, never surfaced to the booking flow.
- *
- * @param input - Same shape as BookingReceiptInput used by the PDF generator.
+ * Generate a PDF receipt and email it to the client. Awaitable: the caller
+ * SHOULD `await` this before returning so a serverless function doesn't suspend
+ * mid-flight and drop the PDF + email. Never throws — errors are caught and
+ * logged so the (already-committed) booking is never affected.
  */
-export function sendBookingReceiptEmail(input: BookingReceiptInput): void {
+export async function sendBookingReceiptEmailAsync(input: BookingReceiptInput): Promise<void> {
   const { booking, clientName, clientEmail, incubator, lang } = input;
   const isFr = lang === 'fr';
 
@@ -678,40 +680,103 @@ export function sendBookingReceiptEmail(input: BookingReceiptInput): void {
 
   const filename = `${variant === 'deposit' ? 'deposit-receipt' : 'receipt'}-${booking.clientReference.slice(0, 8)}.pdf`;
 
-  generateBookingReceiptPdf(input)
-    .then((pdfBuffer) =>
-      sendResendEmail({
-        to:      clientEmail,
-        subject,
-        html:    bookingReceiptEmailHtml({
-          clientName,
-          incubatorName:  incubator.name,
-          itemName:       booking.itemName,
-          reference:      booking.clientReference,
-          startsAt:       booking.startsAt,
-          endsAt:         booking.endsAt,
-          totalAmount:    booking.totalAmount,
-          paymentMethod:  paymentLabel,
-          lang,
-        }),
-        attachments: [{ filename, content: pdfBuffer }],
+  try {
+    const pdfBuffer = await generateBookingReceiptPdf(input);
+    const sent = await sendResendEmail({
+      to:      clientEmail,
+      subject,
+      html:    bookingReceiptEmailHtml({
+        clientName,
+        incubatorName:  incubator.name,
+        itemName:       booking.itemName,
+        reference:      booking.clientReference,
+        startsAt:       booking.startsAt,
+        endsAt:         booking.endsAt,
+        totalAmount:    booking.totalAmount,
+        paymentMethod:  paymentLabel,
+        lang,
       }),
-    )
-    .then((sent) => {
-      if (!sent) {
-        // eslint-disable-next-line no-console
-        console.log(
-          `${banner} RECEIPT (no Resend) → ${clientEmail} :: ${booking.itemName} ref=${booking.clientReference}`,
-        );
-      } else {
-        // eslint-disable-next-line no-console
-        console.log(`${banner} RECEIPT sent → ${clientEmail} :: ref=${booking.clientReference}`);
-      }
-    })
-    .catch((err: Error) =>
+      attachments: [{ filename, content: pdfBuffer }],
+    });
+    if (!sent) {
       // eslint-disable-next-line no-console
-      console.error(`${banner} Receipt email failed →`, err.message),
-    );
+      console.log(
+        `${banner} RECEIPT (no Resend) → ${clientEmail} :: ${booking.itemName} ref=${booking.clientReference}`,
+      );
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(`${banner} RECEIPT sent → ${clientEmail} :: ref=${booking.clientReference}`);
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(`${banner} Receipt email failed →`, (err as Error).message);
+  }
+}
+
+/**
+ * Fire-and-forget wrapper for callers that don't need to await delivery.
+ * Prefer `sendBookingReceiptEmailAsync` inside serverless request handlers.
+ */
+export function sendBookingReceiptEmail(input: BookingReceiptInput): void {
+  void sendBookingReceiptEmailAsync(input);
+}
+
+/**
+ * Sent to the client when the incubator EDITS their (manual/offline) booking.
+ * Awaitable + never throws. No payment language — manual bookings settle offline.
+ */
+export async function sendBookingUpdatedEmail(
+  email: string,
+  opts: {
+    customerName: string;
+    bookingId: string;
+    itemName: string;
+    vendorName: string;
+    startsAt: string;
+    endsAt: string;
+    totalAmount: number;
+  },
+  lang: 'en' | 'fr' | 'ar' = 'fr',
+): Promise<void> {
+  const subject =
+    lang === 'fr' ? `Réservation modifiée — ${opts.itemName}`
+    : lang === 'ar' ? `تم تعديل الحجز — ${opts.itemName}`
+    : `Booking updated — ${opts.itemName}`;
+  try {
+    const sent = await sendResendEmail({ to: email, subject, html: bookingUpdatedEmailHtml(opts, lang) });
+    if (!sent) {
+      // eslint-disable-next-line no-console
+      console.log(`${banner} EMAIL (booking-updated) → ${email} :: ${opts.bookingId.slice(0, 8).toUpperCase()}`);
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(`${banner} Resend booking-updated email failed →`, (err as Error).message);
+  }
+}
+
+/**
+ * Sent to the client when the incubator DELETES their (manual/offline) booking.
+ * Awaitable + never throws. No refund language — manual bookings settle offline.
+ */
+export async function sendBookingProviderCancelledEmail(
+  email: string,
+  opts: { customerName: string; bookingId: string; itemName: string; vendorName: string },
+  lang: 'en' | 'fr' | 'ar' = 'fr',
+): Promise<void> {
+  const subject =
+    lang === 'fr' ? `Réservation annulée — ${opts.itemName}`
+    : lang === 'ar' ? `تم إلغاء الحجز — ${opts.itemName}`
+    : `Booking cancelled — ${opts.itemName}`;
+  try {
+    const sent = await sendResendEmail({ to: email, subject, html: bookingProviderCancelledEmailHtml(opts, lang) });
+    if (!sent) {
+      // eslint-disable-next-line no-console
+      console.log(`${banner} EMAIL (booking-provider-cancelled) → ${email} :: ${opts.bookingId.slice(0, 8).toUpperCase()}`);
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(`${banner} Resend booking-provider-cancelled email failed →`, (err as Error).message);
+  }
 }
 
 /* ─────────────────────────── Payment-link receipts ─────────────────────────── */

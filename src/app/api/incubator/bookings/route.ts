@@ -10,7 +10,7 @@ import { db, type BookingRecord } from '@/server/db/store';
 import { checkSpaceAvailability } from '@/server/bookings/availability';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
-import { sendBookingReceiptEmail } from '@/server/notifications/mock';
+import { sendBookingReceiptEmailAsync } from '@/server/notifications/mock';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -199,9 +199,12 @@ export async function POST(req: NextRequest) {
     return jsonError(400, 'BAD_REQUEST', result.reason);
   }
 
-  // Send PDF receipt to the client if an email was supplied
+  // Send PDF receipt to the client if an email was supplied. Awaited (inside a
+  // never-throwing helper) so the PDF + email actually completes before the
+  // serverless function suspends — the booking is already committed above, so
+  // this can only add latency, never roll the booking back.
   if (input.clientEmail) {
-    sendBookingReceiptEmail({
+    await sendBookingReceiptEmailAsync({
       booking:     result.booking,
       clientName:  input.clientName,
       clientEmail: input.clientEmail,
