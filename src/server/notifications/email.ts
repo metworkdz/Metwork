@@ -450,6 +450,137 @@ export async function sendInvestorRejectionEmail(opts: {
   return delivered;
 }
 
+/* ─────────────── Business approval / rejection (admin gate) ─────────────── */
+// Neutral copy for the BUSINESS role (trainer / training centre / company) —
+// avoids the incubator-specific "coworking spaces" wording.
+
+const BUSINESS_APPROVAL_COPY: Record<EmailLang, (name: string) => IncubatorApprovalCopy> = {
+  en: (name) => ({
+    subject: 'Your business account is approved on Metwork',
+    heading: `${name} is approved! 🎉`,
+    intro:
+      'Great news — your business account has just been approved by the Metwork team. ' +
+      'Your programs and events are now visible to the public on the platform.',
+    next: 'Here\'s what you can do next:',
+    bullets: [
+      'Publish programs and events',
+      'Accept bookings and registrations',
+      'Manage your wallet and payouts',
+    ],
+    cta: 'Open your dashboard',
+    footer: 'Need help getting started? Reply to this email and our team will guide you.',
+  }),
+  fr: (name) => ({
+    subject: 'Votre compte professionnel a été approuvé sur Metwork',
+    heading: `${name} est approuvé ! 🎉`,
+    intro:
+      'Votre compte professionnel vient d\'être approuvé par l\'équipe Metwork. Vos programmes et ' +
+      'événements sont désormais visibles publiquement sur la plateforme.',
+    next: 'Voici ce que vous pouvez faire maintenant :',
+    bullets: [
+      'Publier vos programmes et événements',
+      'Accepter les réservations et inscriptions',
+      'Gérer votre portefeuille et vos paiements',
+    ],
+    cta: 'Accéder à mon tableau de bord',
+    footer: 'Besoin d\'aide pour démarrer ? Répondez à cet e-mail et notre équipe vous accompagnera.',
+  }),
+  ar: (name) => ({
+    subject: 'تمت الموافقة على حسابك المهني في Metwork',
+    heading: `تمت الموافقة على ${name}! 🎉`,
+    intro:
+      'تمت الموافقة على حسابك المهني من قبل فريق Metwork. أصبحت برامجك وفعالياتك مرئية الآن للجميع ' +
+      'على المنصة.',
+    next: 'إليك ما يمكنك فعله الآن:',
+    bullets: [
+      'نشر برامجك وفعالياتك',
+      'قبول الحجوزات والتسجيلات',
+      'إدارة محفظتك ومدفوعاتك',
+    ],
+    cta: 'الذهاب إلى لوحة التحكم',
+    footer: 'هل تحتاج مساعدة للبدء؟ رد على هذا البريد وسيرشدك فريقنا.',
+  }),
+};
+
+const BUSINESS_REJECTION_COPY: Record<EmailLang, (name: string) => RejectionCopy> = {
+  en: (name) => ({
+    subject: 'Your Metwork business account — more information needed',
+    heading: `Update on ${name}`,
+    intro:
+      'Thank you for registering on Metwork. After review, your business account has not been ' +
+      'approved yet.',
+    reasonLabel: 'Reason',
+    next:
+      'You can update your profile with the requested information and reply to this email — we will ' +
+      'review your account again.',
+    footer: 'Questions? Just reply to this email and our team will help.',
+  }),
+  fr: (name) => ({
+    subject: 'Votre compte professionnel Metwork — informations complémentaires requises',
+    heading: `Mise à jour concernant ${name}`,
+    intro:
+      'Merci de votre inscription sur Metwork. Après examen, votre compte professionnel n\'a pas ' +
+      'encore été approuvé.',
+    reasonLabel: 'Motif',
+    next:
+      'Vous pouvez mettre à jour votre profil avec les informations demandées et répondre à cet ' +
+      'e-mail — nous réexaminerons votre compte.',
+    footer: 'Des questions ? Répondez simplement à cet e-mail et notre équipe vous aidera.',
+  }),
+  ar: (name) => ({
+    subject: 'حسابك المهني في Metwork — مطلوب معلومات إضافية',
+    heading: `تحديث بخصوص ${name}`,
+    intro:
+      'شكرًا لتسجيلك في Metwork. بعد المراجعة، لم تتم الموافقة على حسابك المهني بعد.',
+    reasonLabel: 'السبب',
+    next:
+      'يمكنك تحديث ملفك بالمعلومات المطلوبة والرد على هذا البريد — وسنراجع حسابك مرة أخرى.',
+    footer: 'هل لديك أسئلة؟ رد على هذا البريد وسيساعدك فريقنا.',
+  }),
+};
+
+/** Send the "your business account is approved" email (account locale, default fr). */
+export async function sendBusinessApprovalEmail(opts: {
+  to: string;
+  businessName: string;
+  lang?: EmailLang;
+}): Promise<boolean> {
+  const lang = normalizeEmailLang(opts.lang);
+  const c = BUSINESS_APPROVAL_COPY[lang](opts.businessName);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard`;
+  const html = layout(`
+    <div dir="${dir}">
+    ${h1(c.heading)}
+    ${p(c.intro)}
+    ${p(c.next)}
+    <ul style="margin:0 0 20px;padding:0 20px;color:#3f3f46;font-size:15px;line-height:2;">
+      ${c.bullets.map((b) => `<li>${b}</li>`).join('')}
+    </ul>
+    ${button(dashboardUrl, c.cta)}
+    ${p(`<span style="color:#71717a;font-size:13px;">${c.footer}</span>`)}
+    </div>
+  `);
+  const delivered = await sendResendEmail({ to: opts.to, subject: c.subject, html });
+  if (!delivered) console.log('[email/business-approval]', { to: opts.to, subject: c.subject });
+  return delivered;
+}
+
+/** Send the business-rejection email (account locale, default fr). */
+export async function sendBusinessRejectionEmail(opts: {
+  to: string;
+  businessName: string;
+  reason: string;
+  lang?: EmailLang;
+}): Promise<boolean> {
+  const lang = normalizeEmailLang(opts.lang);
+  const c = BUSINESS_REJECTION_COPY[lang](opts.businessName);
+  const html = rejectionEmailHtml(c, opts.reason, lang);
+  const delivered = await sendResendEmail({ to: opts.to, subject: c.subject, html });
+  if (!delivered) console.log('[email/business-rejection]', { to: opts.to, subject: c.subject });
+  return delivered;
+}
+
 export function otpEmailHtml(code: string): string {
   return layout(`
     ${h1('Your verification code')}

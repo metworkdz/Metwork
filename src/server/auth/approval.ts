@@ -25,6 +25,8 @@ import {
   sendInvestorRejectionEmail,
   sendIncubatorApprovalEmail,
   sendIncubatorRejectionEmail,
+  sendBusinessApprovalEmail,
+  sendBusinessRejectionEmail,
 } from '@/server/notifications/email';
 
 export type AccountApprovalDecision = 'APPROVED' | 'REJECTED';
@@ -43,9 +45,10 @@ export type SetAccountApprovalResult =
   | { ok: true; user: SafeUser }
   | { ok: false; reason: 'NOT_FOUND' | 'NOT_GATED' };
 
+type EmailSurface = 'INVESTOR' | 'INCUBATOR' | 'BUSINESS';
 type EmailSideEffect =
-  | { kind: 'APPROVED'; surface: 'INVESTOR' | 'PROVIDER'; to: string; name: string; lang: 'en' | 'fr' | 'ar' }
-  | { kind: 'REJECTED'; surface: 'INVESTOR' | 'PROVIDER'; to: string; name: string; lang: 'en' | 'fr' | 'ar'; reason: string };
+  | { kind: 'APPROVED'; surface: EmailSurface; to: string; name: string; lang: 'en' | 'fr' | 'ar' }
+  | { kind: 'REJECTED'; surface: EmailSurface; to: string; name: string; lang: 'en' | 'fr' | 'ar'; reason: string };
 
 export async function setAccountApproval(
   input: SetAccountApprovalInput,
@@ -80,9 +83,10 @@ export async function setAccountApproval(
         provider.updatedAt = now;
       }
       const providerName = provider?.name?.trim() || user.fullName;
+      const surface: EmailSurface = user.role === 'BUSINESS' ? 'BUSINESS' : 'INCUBATOR';
       sideEffect = approved
-        ? { kind: 'APPROVED', surface: 'PROVIDER', to: user.email.trim(), name: providerName, lang: user.locale }
-        : { kind: 'REJECTED', surface: 'PROVIDER', to: user.email.trim(), name: providerName, lang: user.locale, reason };
+        ? { kind: 'APPROVED', surface, to: user.email.trim(), name: providerName, lang: user.locale }
+        : { kind: 'REJECTED', surface, to: user.email.trim(), name: providerName, lang: user.locale, reason };
     }
 
     user.updatedAt = now;
@@ -118,11 +122,15 @@ export async function setAccountApproval(
         if (fx.kind === 'APPROVED') {
           if (fx.surface === 'INVESTOR') {
             await sendInvestorApprovalEmail({ to: fx.to, investorName: fx.name, lang: fx.lang });
+          } else if (fx.surface === 'BUSINESS') {
+            await sendBusinessApprovalEmail({ to: fx.to, businessName: fx.name, lang: fx.lang });
           } else {
             await sendIncubatorApprovalEmail({ to: fx.to, incubatorName: fx.name, lang: fx.lang });
           }
         } else if (fx.surface === 'INVESTOR') {
           await sendInvestorRejectionEmail({ to: fx.to, investorName: fx.name, reason: fx.reason, lang: fx.lang });
+        } else if (fx.surface === 'BUSINESS') {
+          await sendBusinessRejectionEmail({ to: fx.to, businessName: fx.name, reason: fx.reason, lang: fx.lang });
         } else {
           await sendIncubatorRejectionEmail({ to: fx.to, incubatorName: fx.name, reason: fx.reason, lang: fx.lang });
         }
