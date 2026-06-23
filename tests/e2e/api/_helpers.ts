@@ -466,3 +466,77 @@ export async function bookSpace(
     data: { spaceId, unit, startsAt, endsAt, clientReference, paymentMethod },
   });
 }
+
+/* ───────────────── Availability calendar (single canonical source) ───────────────── */
+
+/** One unavailable span from the public availability read. */
+export interface AvailabilityInterval {
+  start: string;
+  end: string;
+  kind: 'BOOKING' | 'BLOCK';
+  allDay: boolean;
+}
+
+export interface AvailabilityView {
+  spaceId: string;
+  from: string;
+  to: string;
+  capacity: number;
+  workingDays: number[];
+  openingTime: string;
+  closingTime: string;
+  intervals: AvailabilityInterval[];
+}
+
+/**
+ * Read the SINGLE canonical public availability endpoint (`GET
+ * /api/spaces/:id/availability?from&to`). Public — any context works.
+ */
+export async function getAvailability(
+  ctx: APIRequestContext,
+  spaceId: string,
+  from: string,
+  to: string,
+): Promise<AvailabilityView> {
+  const res = await ctx.get(`/api/spaces/${spaceId}/availability?from=${from}&to=${to}`);
+  expect(res.status(), `availability → ${res.status()} ${await res.text()}`).toBe(200);
+  return res.json();
+}
+
+/** True iff `date` (YYYY-MM-DD) carries an interval of the given kind. */
+export function hasInterval(
+  view: AvailabilityView,
+  date: string,
+  kind: 'BOOKING' | 'BLOCK',
+): boolean {
+  return view.intervals.some((iv) => iv.kind === kind && iv.start.slice(0, 10) === date);
+}
+
+/** POST block — block full-day dates (additive, idempotent), as the incubator. */
+export function blockSpaceDates(inc: APIRequestContext, spaceId: string, dates: string[]) {
+  return inc.post(`/api/incubator/spaces/${spaceId}/availability`, { data: { dates } });
+}
+
+/** DELETE unblock — release full-day dates (idempotent), as the incubator. */
+export function unblockSpaceDates(inc: APIRequestContext, spaceId: string, dates: string[]) {
+  return inc.delete(`/api/incubator/spaces/${spaceId}/availability`, { data: { dates } });
+}
+
+/** Cancel a booking as its owner (PATCH /api/bookings/:id → CANCELLED, releases seat). */
+export function cancelBooking(ctx: APIRequestContext, bookingId: string) {
+  return ctx.patch(`/api/bookings/${bookingId}`, { data: {} });
+}
+
+/** N consecutive YYYY-MM-DD days (UTC) starting `daysAhead` from today. */
+export function consecutiveUtcDates(daysAhead: number, count: number): string[] {
+  const out: string[] = [];
+  const base = new Date();
+  base.setUTCHours(0, 0, 0, 0);
+  base.setUTCDate(base.getUTCDate() + daysAhead);
+  for (let i = 0; i < count; i++) {
+    const d = new Date(base);
+    d.setUTCDate(d.getUTCDate() + i);
+    out.push(d.toISOString().slice(0, 10));
+  }
+  return out;
+}

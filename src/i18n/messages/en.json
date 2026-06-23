@@ -330,7 +330,11 @@
       "nextMonth": "Next month",
       "available": "Available",
       "unavailable": "Unavailable",
-      "selected": "Selected"
+      "selected": "Selected",
+      "legendAvailable": "Available",
+      "legendBooked": "Booked",
+      "legendBlocked": "Blocked",
+      "legendSelected": "Selected"
     },
     "timeSlots": {
       "noSlots": "No time slots available",
@@ -1278,12 +1282,11 @@
       "loading": "Loading…",
       "loadError": "Could not load availability.",
       "saveError": "Could not save. Please try again.",
-      "save": "Save",
-      "cancel": "Cancel",
-      "tapHint": "Tap a date to block or unblock it.",
-      "legendBlocked": "Blocked",
-      "legendFullyBooked": "Fully booked",
-      "fullyBookedNote": "Fully booked this month: {dates}",
+      "dragHint": "Tap a day to select it, or drag across days to select a range — then block or unblock.",
+      "selectionCount": "{count} selected",
+      "blockSelected": "Block dates",
+      "unblockSelected": "Unblock",
+      "confirmLargeBlock": "Block {count} dates? No one will be able to book them until you unblock.",
       "rangeTitle": "Block a time range",
       "rangeHint": "Block only part of a day (e.g. maintenance from 12:00 to 14:00).",
       "rangeDate": "Date",
@@ -1291,7 +1294,8 @@
       "rangeTo": "To",
       "addRange": "Block range",
       "removeRange": "Remove",
-      "rangeInvalid": "Pick a date and a valid time range (from before to)."
+      "rangeInvalid": "Pick a date and a valid time range (from before to).",
+      "close": "Close"
     }
   },
   "dashboard": {

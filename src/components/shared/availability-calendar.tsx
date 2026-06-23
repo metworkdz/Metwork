@@ -3,21 +3,31 @@
 /**
  * AvailabilityCalendar — a controlled, presentational month-grid calendar in
  * the Airbnb style. It owns NO business logic: the parent decides which dates
- * are available / unavailable / selected and reacts to navigation + selection.
+ * are available / booked / blocked / selected and reacts to navigation +
+ * selection.
  *
- * Localization: month and weekday names come from `Intl.DateTimeFormat`, so we
- * don't ship a translation table for every month. Arabic renders fully RTL
- * (the grid mirrors, weekday order flips, the prev/next arrows swap).
+ * Two interaction models, picked by the props the parent passes:
+ *
+ *   • SINGLE-SELECT (default) — `onSelectDate` + `selectedDate` (+ optional
+ *     `selectedRangeEnd`). Tap one day. Used by the booking picker, the mentor
+ *     scheduler, the fixed-date marker, and the legacy block editors. UNCHANGED.
+ *
+ *   • MULTI-SELECT — pass `onSelectionChange` (and `selectedDates`). Tap toggles
+ *     a day in/out of the selection; PRESS-AND-DRAG paints a contiguous range
+ *     (pointer events → mouse-drag and touch-swipe both work; the grid sets
+ *     `touch-action:none` while dragging so the page doesn't scroll). Used by the
+ *     space owner's block editor.
+ *
+ * Localization: month and weekday names come from `Intl.DateTimeFormat`. Arabic
+ * renders fully RTL (the grid mirrors, weekday order flips, the prev/next arrows
+ * swap, and the drag range is computed by date so its direction stays correct).
  *
  * Accessibility: arrow keys move focus across days (logical direction in RTL),
- * Enter / Space selects, and every cell carries an aria-label describing the
- * date and its state.
+ * Enter / Space selects/toggles, and every cell carries an aria-label.
  *
- * Design: the selected day uses the brand green (`bg-primary` ≈ #2ECC71) with
- * white text; surfaces use the design-system tokens so the component is at home
- * in both light and dark dialogs. Available days get a subtle dot; unavailable
- * days are muted, struck through, and not selectable (except in `block` mode,
- * where every non-past day is clickable so an admin can toggle blocked dates).
+ * Design: selected = brand green (`bg-primary`) with white text; booked = muted
+ * with a small indicator; blocked = a neutral diagonal hatch; available days get
+ * a subtle green dot. Surfaces use design-system tokens for light/dark dialogs.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -32,8 +42,12 @@ export interface AvailabilityCalendarProps {
   onMonthChange: (month: string) => void;
   /** ISO yyyy-mm-dd dates that are selectable. */
   availableDates?: string[];
-  /** ISO yyyy-mm-dd dates rendered as unavailable / blocked. */
+  /** ISO yyyy-mm-dd dates rendered as unavailable / blocked (legacy single bucket). */
   unavailableDates?: string[];
+  /** ISO yyyy-mm-dd dates taken by bookings — muted with an indicator (visual only). */
+  bookedDates?: string[];
+  /** ISO yyyy-mm-dd dates owner-blocked — neutral hatch (visual only). */
+  blockedDates?: string[];
   selectedDate?: string | null;
   /**
    * Optional range end (ISO). When set together with `selectedDate`, days
@@ -43,13 +57,22 @@ export interface AvailabilityCalendarProps {
    */
   selectedRangeEnd?: string | null;
   onSelectDate: (date: string) => void;
+  /**
+   * MULTI-SELECT opt-in. When provided, `selectedDates` is the controlled
+   * selection set and tap/drag report the next set through this callback;
+   * `onSelectDate` / `selectedDate` are then ignored.
+   */
+  selectedDates?: string[];
+  onSelectionChange?: (dates: string[]) => void;
+  /** Show the Available / Booked / Blocked / Selected legend under the grid. */
+  showLegend?: boolean;
   /** Earliest selectable date (ISO). Defaults to today. Past dates are always disabled. */
   minDate?: string;
   locale?: CalLocale;
   /**
    * 'select' (default): only `availableDates` are clickable.
-   * 'block': every non-past day is clickable (toggle) — used by the admin
-   * blocked-dates editor. `unavailableDates` then means "currently blocked".
+   * 'block': every non-past day is clickable — used by the blocked-dates editors.
+   * `unavailableDates` then means "currently blocked".
    */
   mode?: 'select' | 'block';
   className?: string;
@@ -105,14 +128,40 @@ function addDaysISO(iso: string, delta: number): string {
   return isoOf(nd.getUTCFullYear(), nd.getUTCMonth() + 1, nd.getUTCDate());
 }
 
+/** Inclusive list of ISO days between two dates, in ascending order. */
+function datesInRange(a: string, b: string): string[] {
+  const lo = a <= b ? a : b;
+  const hi = a <= b ? b : a;
+  const out: string[] = [];
+  let cur = lo;
+  let guard = 0;
+  while (cur <= hi && guard < 400) {
+    out.push(cur);
+    cur = addDaysISO(cur, 1);
+    guard++;
+  }
+  return out;
+}
+
+/** Diagonal-hatch fill for owner-blocked days (neutral, theme-aware). */
+const HATCH_STYLE: React.CSSProperties = {
+  backgroundImage:
+    'repeating-linear-gradient(45deg, hsl(var(--muted-foreground) / 0.18) 0, hsl(var(--muted-foreground) / 0.18) 1px, transparent 1px, transparent 5px)',
+};
+
 export function AvailabilityCalendar({
   month,
   onMonthChange,
   availableDates = [],
   unavailableDates = [],
+  bookedDates = [],
+  blockedDates = [],
   selectedDate = null,
   selectedRangeEnd = null,
   onSelectDate,
+  selectedDates,
+  onSelectionChange,
+  showLegend = false,
   minDate,
   locale = 'en',
   mode = 'select',
@@ -122,11 +171,15 @@ export function AvailabilityCalendar({
   const tag = LOCALE_TAG[locale];
   const isRtl = locale === 'ar';
   const floor = minDate ?? todayISO();
+  const multiSelect = typeof onSelectionChange === 'function';
 
   const { y, mon } = parseMonth(month);
 
   const availableSet = useMemo(() => new Set(availableDates), [availableDates]);
   const unavailableSet = useMemo(() => new Set(unavailableDates), [unavailableDates]);
+  const bookedSet = useMemo(() => new Set(bookedDates), [bookedDates]);
+  const blockedSet = useMemo(() => new Set(blockedDates), [blockedDates]);
+  const selectionSet = useMemo(() => new Set(selectedDates ?? []), [selectedDates]);
 
   // Localized labels via Intl (no translation table needed).
   const monthLabel = useMemo(
@@ -152,6 +205,9 @@ export function AvailabilityCalendar({
   const [focusedDate, setFocusedDate] = useState<string>(() => isoOf(y, mon, 1));
   const wantFocusRef = useRef(false);
   const cellRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+
+  // Pointer drag (multi-select only).
+  const [drag, setDrag] = useState<{ anchor: string; current: string; adding: boolean } | null>(null);
 
   // Keep the focused day inside the displayed month.
   useEffect(() => {
@@ -182,8 +238,73 @@ export function AvailabilityCalendar({
     return availableSet.has(iso) && !unavailableSet.has(iso);
   }
 
+  /* ── Selection (single vs multi) ── */
+  function emitSelection(next: Set<string>) {
+    onSelectionChange?.([...next].sort());
+  }
+  function toggleOne(iso: string) {
+    const next = new Set(selectionSet);
+    if (next.has(iso)) next.delete(iso);
+    else next.add(iso);
+    emitSelection(next);
+  }
   function selectIfPossible(iso: string) {
-    if (isSelectable(iso)) onSelectDate(iso);
+    if (!isSelectable(iso)) return;
+    if (multiSelect) toggleOne(iso);
+    else onSelectDate(iso);
+  }
+
+  // The selection to render: committed set with the in-flight drag range applied.
+  const previewSet = useMemo(() => {
+    if (!drag) return selectionSet;
+    const next = new Set(selectionSet);
+    for (const d of datesInRange(drag.anchor, drag.current)) {
+      if (d < floor) continue;
+      if (drag.adding) next.add(d);
+      else next.delete(d);
+    }
+    return next;
+  }, [drag, selectionSet, floor]);
+
+  // Commit the in-flight drag. Held in a ref so the window pointerup listener
+  // (attached while dragging) always sees the latest selection.
+  const commitRef = useRef<() => void>(() => {});
+  commitRef.current = () => {
+    if (!drag) return;
+    const next = new Set(selectionSet);
+    for (const d of datesInRange(drag.anchor, drag.current)) {
+      if (d < floor) continue;
+      if (drag.adding) next.add(d);
+      else next.delete(d);
+    }
+    emitSelection(next);
+    setDrag(null);
+  };
+
+  useEffect(() => {
+    if (!drag) return;
+    const finish = () => commitRef.current();
+    window.addEventListener('pointerup', finish);
+    window.addEventListener('pointercancel', finish);
+    return () => {
+      window.removeEventListener('pointerup', finish);
+      window.removeEventListener('pointercancel', finish);
+    };
+  }, [drag]);
+
+  function onCellPointerDown(iso: string, e: React.PointerEvent<HTMLButtonElement>) {
+    if (!multiSelect || !isSelectable(iso)) return;
+    e.preventDefault();
+    // Drop the implicit touch capture so pointermove tracks across sibling cells.
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    setDrag({ anchor: iso, current: iso, adding: !selectionSet.has(iso) });
+  }
+
+  function onGridPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!drag) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const iso = el?.closest<HTMLElement>('[data-date]')?.dataset.date;
+    if (iso && iso !== drag.current) setDrag((d) => (d ? { ...d, current: iso } : d));
   }
 
   function moveFocus(targetIso: string) {
@@ -298,7 +419,9 @@ export function AvailabilityCalendar({
         role="grid"
         aria-label={monthLabel}
         onKeyDown={onKeyDown}
+        onPointerMove={multiSelect ? onGridPointerMove : undefined}
         className="grid grid-cols-7 gap-1"
+        style={drag ? { touchAction: 'none' } : undefined}
       >
         {cells.map((day, idx) => {
           if (day === null) return <div key={`pad-${idx}`} aria-hidden="true" />;
@@ -306,9 +429,14 @@ export function AvailabilityCalendar({
           const isPast = iso < floor;
           const isUnavailable = unavailableSet.has(iso);
           const isAvailable = availableSet.has(iso);
+          const isBooked = bookedSet.has(iso);
+          const isBlocked = blockedSet.has(iso);
           const isRangeEnd = selectedRangeEnd != null && selectedRangeEnd === iso;
-          const isSelected = selectedDate === iso || isRangeEnd;
+          const isSelected = multiSelect
+            ? previewSet.has(iso)
+            : selectedDate === iso || isRangeEnd;
           const isInRange =
+            !multiSelect &&
             selectedDate != null &&
             selectedRangeEnd != null &&
             iso > selectedDate &&
@@ -319,31 +447,42 @@ export function AvailabilityCalendar({
           // Compose an accessible label: date + state.
           const stateText = isSelected
             ? t('selected')
-            : isUnavailable || (mode === 'select' && !isAvailable && !isPast)
-              ? t('unavailable')
-              : selectable
-                ? t('available')
-                : '';
+            : isBlocked
+              ? t('legendBlocked')
+              : isBooked
+                ? t('legendBooked')
+                : isUnavailable || (mode === 'select' && !isAvailable && !isPast)
+                  ? t('unavailable')
+                  : selectable
+                    ? t('available')
+                    : '';
           const ariaLabel = `${dayLabelFmt.format(new Date(Date.UTC(y, mon - 1, day)))}${
             stateText ? ` — ${stateText}` : ''
           }`;
+
+          // Blocked/booked are visual overlays only when the day isn't selected.
+          const showBlocked = !isSelected && isBlocked;
+          const showBooked = !isSelected && !isBlocked && isBooked;
 
           return (
             <button
               key={iso}
               type="button"
               role="gridcell"
+              data-date={iso}
               ref={(el) => {
                 if (el) cellRefs.current.set(iso, el);
                 else cellRefs.current.delete(iso);
               }}
               tabIndex={isFocusTarget ? 0 : -1}
               aria-label={ariaLabel}
-              aria-pressed={isSelected}
+              aria-selected={isSelected}
               aria-disabled={!selectable}
               disabled={!selectable && mode === 'select'}
-              onClick={() => selectIfPossible(iso)}
+              onPointerDown={multiSelect ? (e) => onCellPointerDown(iso, e) : undefined}
+              onClick={multiSelect ? undefined : () => selectIfPossible(iso)}
               onFocus={() => setFocusedDate(iso)}
+              style={showBlocked ? HATCH_STYLE : undefined}
               className={cn(
                 'relative flex aspect-square min-h-11 items-center justify-center rounded-xl text-sm font-medium tabular-nums transition-colors duration-150',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card',
@@ -351,36 +490,84 @@ export function AvailabilityCalendar({
                 isSelected && 'bg-primary text-primary-foreground shadow-sm hover:bg-primary',
                 // In-range (between start and end) — subtle brand tint.
                 !isSelected && isInRange && 'bg-primary/15 text-foreground hover:bg-primary/25',
-                // Blocked (block mode) — clickable but visibly struck.
+                // Owner-blocked — neutral hatch (clickable in block mode).
+                showBlocked && 'bg-muted/40 text-muted-foreground',
+                showBlocked && mode === 'select' && 'cursor-not-allowed',
+                // Booked — muted with an indicator.
+                showBooked && 'bg-muted text-muted-foreground',
+                showBooked && mode === 'select' && 'cursor-not-allowed',
+                // Legacy single unavailable bucket (mentor/consultant block editors).
                 !isSelected &&
                   mode === 'block' &&
                   isUnavailable &&
+                  !isBlocked &&
                   'bg-destructive/10 text-destructive line-through hover:bg-destructive/20',
-                // Available, not selected.
+                // Available, not selected, no overlay.
                 !isSelected &&
                   selectable &&
+                  !showBlocked &&
+                  !showBooked &&
                   !(mode === 'block' && isUnavailable) &&
                   'hover:bg-accent hover:text-accent-foreground',
                 // Unavailable (select mode) / past — muted & struck.
                 !isSelected &&
                   !isInRange &&
                   !selectable &&
+                  !showBlocked &&
+                  !showBooked &&
                   'cursor-not-allowed text-muted-foreground/40',
-                !isSelected && !isInRange && !selectable && (isUnavailable || (mode === 'select' && !isPast)) && 'line-through',
+                !isSelected &&
+                  !isInRange &&
+                  !selectable &&
+                  !showBlocked &&
+                  !showBooked &&
+                  (isUnavailable || (mode === 'select' && !isPast)) &&
+                  'line-through',
               )}
             >
               {day}
-              {/* Availability dot — only in select mode for non-selected available days. */}
-              {mode === 'select' && isAvailable && !isSelected && selectable && (
+              {/* Availability dot — select mode, non-selected available days. */}
+              {mode === 'select' && isAvailable && !isSelected && selectable && !showBooked && !showBlocked && (
                 <span
                   aria-hidden="true"
                   className="absolute bottom-1.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary"
+                />
+              )}
+              {/* Booked indicator — muted dot. */}
+              {showBooked && (
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-1.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-muted-foreground/60"
                 />
               )}
             </button>
           );
         })}
       </div>
+
+      {/* Legend */}
+      {showLegend && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="relative size-3 rounded-sm border border-border/60 bg-card">
+              <span className="absolute bottom-0 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary" />
+            </span>
+            {t('legendAvailable')}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-3 rounded-sm bg-muted" />
+            {t('legendBooked')}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-3 rounded-sm border border-border/60 bg-muted/40" style={HATCH_STYLE} />
+            {t('legendBlocked')}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-3 rounded-sm bg-primary" />
+            {t('legendSelected')}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

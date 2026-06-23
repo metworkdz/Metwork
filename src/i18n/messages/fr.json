@@ -330,7 +330,11 @@
       "nextMonth": "Mois suivant",
       "available": "Disponible",
       "unavailable": "Indisponible",
-      "selected": "Sélectionné"
+      "selected": "Sélectionné",
+      "legendAvailable": "Disponible",
+      "legendBooked": "Réservé",
+      "legendBlocked": "Bloqué",
+      "legendSelected": "Sélectionné"
     },
     "timeSlots": {
       "noSlots": "Aucun créneau disponible",
@@ -1278,12 +1282,11 @@
       "loading": "Chargement…",
       "loadError": "Impossible de charger la disponibilité.",
       "saveError": "Échec de l'enregistrement. Réessayez.",
-      "save": "Enregistrer",
-      "cancel": "Annuler",
-      "tapHint": "Touchez une date pour la bloquer ou la débloquer.",
-      "legendBlocked": "Bloquée",
-      "legendFullyBooked": "Complet",
-      "fullyBookedNote": "Complet ce mois-ci : {dates}",
+      "dragHint": "Touchez un jour pour le sélectionner, ou faites glisser sur plusieurs jours pour sélectionner une plage — puis bloquez ou débloquez.",
+      "selectionCount": "{count} sélectionné(s)",
+      "blockSelected": "Bloquer les dates",
+      "unblockSelected": "Débloquer",
+      "confirmLargeBlock": "Bloquer {count} dates ? Personne ne pourra les réserver jusqu'à ce que vous les débloquiez.",
       "rangeTitle": "Bloquer une plage horaire",
       "rangeHint": "Bloquez seulement une partie de la journée (ex. maintenance de 12:00 à 14:00).",
       "rangeDate": "Date",
@@ -1291,7 +1294,8 @@
       "rangeTo": "À",
       "addRange": "Bloquer la plage",
       "removeRange": "Supprimer",
-      "rangeInvalid": "Choisissez une date et une plage horaire valide (début avant fin)."
+      "rangeInvalid": "Choisissez une date et une plage horaire valide (début avant fin).",
+      "close": "Fermer"
     }
   },
   "dashboard": {

@@ -1,18 +1,24 @@
 'use client';
 
 /**
- * Manage-availability dialog for a single space.
+ * Manage-availability dialog for a single space — the Airbnb-style OWNER editor.
  *
- * Airbnb-style month calendar (AvailabilityCalendar in `block` mode): tap a date
- * to block / unblock it for EVERYONE — public, guests, and the incubator's own
- * manual bookings — until it is unblocked. Optionally block a time range within
- * a date. Dates already taken by bookings are shown distinctly (read-only).
+ * Reads the SAME canonical endpoint the public booking calendar reads
+ * (`GET /api/spaces/:id/availability?from&to`) so the two views can never
+ * disagree: `BLOCK` intervals → owner-blocked days, `BOOKING` intervals → days
+ * taken by a booking (shown read-only).
  *
- * Loads the full current block config (all months) up front, edits it in
- * memory, and PUTs the complete replacement set to
- * `PUT /api/incubator/spaces/:id/availability`.
+ * Selection: tap a day to toggle it into the pending selection, or PRESS-AND-DRAG
+ * across days to paint a contiguous range (pointer events → mouse + touch). Then:
+ *   • "Block dates"   → one POST   /api/incubator/spaces/:id/availability { dates }
+ *   • "Unblock dates" → one DELETE /api/incubator/spaces/:id/availability { dates }
+ * Both Prompt-1 APIs are additive and idempotent. A large block asks to confirm.
+ * After a write we refetch so this view and the public calendar agree.
+ *
+ * Time-range blackouts (block only part of a day) use the same POST/DELETE with
+ * a `ranges` body.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Loader2, X } from 'lucide-react';
 import {
@@ -22,6 +28,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AvailabilityCalendar } from '@/components/shared/availability-calendar';
+import {
+  computeDayInfos,
+  monthRange,
+  ownerBuckets,
+  type AvailabilityIntervalDto,
+  type SpaceAvailabilityResponse,
+} from '@/lib/space-availability-view';
 import { cn } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 
@@ -39,7 +52,10 @@ interface Props {
   onSaved?: () => void;
 }
 
-interface Blackout { date: string; from?: string; to?: string }
+interface Blackout { date: string; from: string; to: string }
+
+/** Selecting more than this many days asks for confirmation before blocking. */
+const LARGE_BLOCK_THRESHOLD = 14;
 
 function currentMonth(): string {
   const d = new Date();
@@ -49,14 +65,12 @@ function currentMonth(): string {
 export function SpaceAvailabilityDialog({ space, open, onOpenChange, onSaved }: Props) {
   const t = useTranslations('incubator.availability');
   const locale = useLocale() as Locale;
+  const calLocale = locale === 'ar' ? 'ar' : locale === 'fr' ? 'fr' : 'en';
 
   const [month, setMonth] = useState(currentMonth());
-  // Full-day blocks (all months) — the editable toggle set.
-  const [blocked, setBlocked] = useState<Set<string>>(new Set());
-  // Time-range blocks (all months).
-  const [blackouts, setBlackouts] = useState<Blackout[]>([]);
-  // Read-only, current month only.
-  const [fullyBooked, setFullyBooked] = useState<string[]>([]);
+  const [avail, setAvail] = useState<SpaceAvailabilityResponse | null>(null);
+  // Pending day selection (to block / unblock in one request).
+  const [selection, setSelection] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -67,73 +81,77 @@ export function SpaceAvailabilityDialog({ space, open, onOpenChange, onSaved }: 
   const [rangeFrom, setRangeFrom] = useState(space.openingTime ?? '09:00');
   const [rangeTo, setRangeTo] = useState(space.closingTime ?? '18:00');
 
-  // Load the full block config once when the dialog opens.
+  const fetchMonth = useCallback(
+    (signal?: { cancelled: boolean }) => {
+      const { from, to } = monthRange(month);
+      return fetch(`/api/spaces/${space.id}/availability?from=${from}&to=${to}`, { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error('load'))))
+        .then((data: SpaceAvailabilityResponse) => {
+          if (signal?.cancelled) return;
+          setAvail(data && Array.isArray(data.intervals) ? data : null);
+        });
+    },
+    [month, space.id],
+  );
+
+  // Load the visible month whenever the dialog opens or the month changes.
   useEffect(() => {
     if (!open) return;
-    let cancelled = false;
+    const signal = { cancelled: false };
     setLoading(true);
     setError(null);
-    void fetch(`/api/incubator/spaces/${space.id}/availability`, { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('load'))))
-      .then((data: { unavailableDates?: string[]; blackouts?: Blackout[] }) => {
-        if (cancelled) return;
-        setBlocked(new Set(data.unavailableDates ?? []));
-        setBlackouts(data.blackouts ?? []);
-      })
-      .catch(() => { if (!cancelled) setError(t('loadError')); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [open, space.id, t]);
+    void fetchMonth(signal)
+      .catch(() => { if (!signal.cancelled) setError(t('loadError')); })
+      .finally(() => { if (!signal.cancelled) setLoading(false); });
+    return () => { signal.cancelled = true; };
+  }, [open, fetchMonth, t]);
 
-  // Fully-booked days for the visible month (read-only display).
+  // Reset the pending selection each time the dialog opens.
   useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    void fetch(`/api/incubator/spaces/${space.id}/availability?month=${month}`, { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('month'))))
-      .then((data: { fullyBookedDates?: string[] }) => {
-        if (!cancelled) setFullyBooked(data.fullyBookedDates ?? []);
-      })
-      .catch(() => { /* non-fatal */ });
-    return () => { cancelled = true; };
-  }, [open, space.id, month]);
+    if (open) setSelection([]);
+  }, [open]);
 
-  const toggleDate = useCallback((date: string) => {
-    setBlocked((prev) => {
-      const next = new Set(prev);
-      if (next.has(date)) next.delete(date);
-      else next.add(date);
-      return next;
-    });
-  }, []);
+  const infos = useMemo(
+    () => (avail ? computeDayInfos(avail, { unit: 'DAY' }) : []),
+    [avail],
+  );
+  const { bookedDates, blockedDates } = useMemo(() => ownerBuckets(infos), [infos]);
+  const blockedSet = useMemo(() => new Set(blockedDates), [blockedDates]);
 
-  function addRange() {
-    if (!rangeDate || !rangeFrom || !rangeTo || rangeFrom >= rangeTo) {
-      setError(t('rangeInvalid'));
-      return;
-    }
-    setError(null);
-    setBlackouts((prev) => [...prev, { date: rangeDate, from: rangeFrom, to: rangeTo }]);
-  }
-  function removeRange(i: number) {
-    setBlackouts((prev) => prev.filter((_, idx) => idx !== i));
-  }
+  // Existing time-range blackouts for the visible month (partial BLOCK intervals).
+  const blackouts = useMemo<Blackout[]>(() => {
+    if (!avail) return [];
+    return avail.intervals
+      .filter((iv): iv is AvailabilityIntervalDto => iv.kind === 'BLOCK' && !iv.allDay)
+      .map((iv) => ({
+        date: iv.start.slice(0, 10),
+        from: iv.start.slice(11, 16),
+        to: iv.end.slice(11, 16),
+      }));
+  }, [avail]);
 
-  async function save() {
+  // How much of the current selection is already blocked → drives Block vs Unblock.
+  const selectedBlockedCount = useMemo(
+    () => selection.filter((d) => blockedSet.has(d)).length,
+    [selection, blockedSet],
+  );
+
+  async function writeBlocks(
+    method: 'POST' | 'DELETE',
+    body: { dates?: string[]; ranges?: Blackout[] },
+  ) {
     setSaving(true);
     setError(null);
     try {
       const res = await fetch(`/api/incubator/spaces/${space.id}/availability`, {
-        method: 'PUT',
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          unavailableDates: [...blocked],
-          blackouts: blackouts.filter((b) => b.from && b.to),
-        }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error('save');
+      setSelection([]);
+      await fetchMonth(); // refetch so this view and the public calendar agree
       onSaved?.();
-      onOpenChange(false);
     } catch {
       setError(t('saveError'));
     } finally {
@@ -141,11 +159,31 @@ export function SpaceAvailabilityDialog({ space, open, onOpenChange, onSaved }: 
     }
   }
 
-  // In block mode every non-past day is clickable; the calendar greys + strikes
-  // whatever we pass as unavailable. We pass our editable blocked set ∪ the
-  // read-only fully-booked days so both read as "not bookable"; toggling a
-  // fully-booked day still just adds/removes a manual block, which is harmless.
-  const unavailable = [...new Set([...blocked, ...fullyBooked])];
+  function blockSelection() {
+    if (selection.length === 0) return;
+    if (selection.length > LARGE_BLOCK_THRESHOLD &&
+        !window.confirm(t('confirmLargeBlock', { count: selection.length }))) {
+      return;
+    }
+    void writeBlocks('POST', { dates: selection });
+  }
+  function unblockSelection() {
+    const toUnblock = selection.filter((d) => blockedSet.has(d));
+    if (toUnblock.length === 0) return;
+    void writeBlocks('DELETE', { dates: toUnblock });
+  }
+
+  function addRange() {
+    if (!rangeDate || !rangeFrom || !rangeTo || rangeFrom >= rangeTo) {
+      setError(t('rangeInvalid'));
+      return;
+    }
+    setError(null);
+    void writeBlocks('POST', { ranges: [{ date: rangeDate, from: rangeFrom, to: rangeTo }] });
+  }
+  function removeRange(b: Blackout) {
+    void writeBlocks('DELETE', { ranges: [b] });
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -162,34 +200,47 @@ export function SpaceAvailabilityDialog({ space, open, onOpenChange, onSaved }: 
           </div>
         ) : (
           <div className="space-y-4 py-1">
-            <p className="text-xs text-muted-foreground">{t('tapHint')}</p>
+            <p className="text-xs text-muted-foreground">{t('dragHint')}</p>
 
             <AvailabilityCalendar
               month={month}
               onMonthChange={setMonth}
               mode="block"
-              unavailableDates={unavailable}
-              onSelectDate={toggleDate}
-              locale={locale === 'ar' ? 'ar' : locale === 'fr' ? 'fr' : 'en'}
+              bookedDates={bookedDates}
+              blockedDates={blockedDates}
+              selectedDates={selection}
+              onSelectionChange={setSelection}
+              onSelectDate={() => {}}
+              showLegend
+              locale={calLocale}
             />
 
-            {/* Legend */}
-            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-3 rounded-sm border border-destructive/50 bg-destructive/15" />
-                {t('legendBlocked')}
+            {/* Block / unblock actions for the current selection */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                {t('selectionCount', { count: selection.length })}
               </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-3 rounded-sm bg-muted" />
-                {t('legendFullyBooked')}
-              </span>
+              <div className="ms-auto flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={saving || selectedBlockedCount === 0}
+                  onClick={unblockSelection}
+                >
+                  {t('unblockSelected')}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  loading={saving}
+                  disabled={selection.length === 0}
+                  onClick={blockSelection}
+                >
+                  {t('blockSelected')}
+                </Button>
+              </div>
             </div>
-
-            {fullyBooked.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                {t('fullyBookedNote', { dates: fullyBooked.map((d) => d.slice(8)).join(', ') })}
-              </p>
-            )}
 
             {/* Time-range blocks */}
             <div className="rounded-lg border border-border bg-muted/30 p-3">
@@ -212,16 +263,18 @@ export function SpaceAvailabilityDialog({ space, open, onOpenChange, onSaved }: 
                     onChange={(e) => setRangeTo(e.target.value)} />
                 </div>
               </div>
-              <Button type="button" size="sm" variant="outline" className="mt-2" onClick={addRange}>
+              <Button type="button" size="sm" variant="outline" className="mt-2"
+                loading={saving} onClick={addRange}>
                 {t('addRange')}
               </Button>
 
               {blackouts.length > 0 && (
                 <ul className="mt-3 space-y-1.5">
-                  {blackouts.map((b, i) => (
-                    <li key={i} className="flex items-center justify-between rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs">
+                  {blackouts.map((b) => (
+                    <li key={`${b.date}-${b.from}-${b.to}`}
+                      className="flex items-center justify-between rounded-md border border-border/60 bg-background px-2.5 py-1.5 text-xs">
                       <span className="tabular-nums">{b.date} · {b.from}–{b.to}</span>
-                      <button type="button" onClick={() => removeRange(i)}
+                      <button type="button" onClick={() => removeRange(b)}
                         className={cn('rounded p-1 text-muted-foreground hover:text-destructive')}
                         aria-label={t('removeRange')}>
                         <X className="size-3.5" />
@@ -241,8 +294,7 @@ export function SpaceAvailabilityDialog({ space, open, onOpenChange, onSaved }: 
         )}
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
-          <Button type="button" loading={saving} disabled={loading} onClick={() => void save()}>{t('save')}</Button>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('close')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

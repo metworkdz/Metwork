@@ -3,11 +3,14 @@
 /**
  * SpaceScheduler — the Airbnb-style "pick a date, then a time" surface for a
  * coworking space. It wraps the shared, presentational AvailabilityCalendar +
- * TimeSlotPicker and owns only the fetching of availability from the public
- * endpoint `GET /api/incubator/spaces/:id/availability`:
+ * TimeSlotPicker and owns only the fetching of availability from the SINGLE
+ * canonical public endpoint `GET /api/spaces/:id/availability?from&to` (the same
+ * source the owner's block editor reads — no second data path). The raw
+ * unavailable `intervals` are interpreted for display by the pure
+ * `space-availability-view` helpers:
  *
- *   ?month=YYYY-MM → which days are selectable / blocked / fully-booked
- *   ?date=YYYY-MM-DD → the concrete hourly slots for the chosen day
+ *   computeDayInfos + publicBuckets → which days are available / booked / blocked
+ *   daySlotsFromIntervals          → the concrete hourly slots for the chosen day
  *
  * It is fully CONTROLLED by the booking form: it never owns the booking state,
  * it only reads `startDate/endDate/startTime/endTime/unit` and reports changes
@@ -24,6 +27,13 @@ import { Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { AvailabilityCalendar } from '@/components/shared/availability-calendar';
 import { TimeSlotPicker } from '@/components/shared/time-slot-picker';
+import {
+  computeDayInfos,
+  daySlotsFromIntervals,
+  monthRange,
+  publicBuckets,
+  type SpaceAvailabilityResponse,
+} from '@/lib/space-availability-view';
 import { cn } from '@/lib/utils';
 import type { DaySlot } from '@/types/mentor';
 import type { BookingUnit } from '@/types/booking';
@@ -88,34 +98,29 @@ export function SpaceScheduler({
   const isSingleDay = isHour || isHalfDay;
 
   const [month, setMonth] = useState<string>(() => (startDate || todayISO()).slice(0, 7));
-  const [availableDates, setAvailableDates] = useState<string[]>([]);
-  const [unavailableDates, setUnavailableDates] = useState<string[]>([]);
+  // Raw availability response for the visible month; day buckets + hourly slots
+  // are derived from it so there is exactly one fetch per month.
+  const [avail, setAvail] = useState<SpaceAvailabilityResponse | null>(null);
   const [loadingDates, setLoadingDates] = useState(true);
-
-  const [slots, setSlots] = useState<DaySlot[]>([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
 
   // True while the user is mid-way through choosing a DAY/MONTH range
   // (start chosen, waiting for the end click).
   const [pickingEnd, setPickingEnd] = useState(false);
   const autoPickedRef = useRef(false);
 
-  /* ── Fetch the month overview whenever the visible month changes ── */
+  /* ── Fetch the month range from the single canonical endpoint ── */
   useEffect(() => {
     let cancelled = false;
     setLoadingDates(true);
-    void fetch(`/api/incubator/spaces/${spaceId}/availability?month=${month}`)
+    const { from, to } = monthRange(month);
+    void fetch(`/api/spaces/${spaceId}/availability?from=${from}&to=${to}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { availableDates?: string[]; unavailableDates?: string[] } | null) => {
-        if (cancelled || !data) return;
-        setAvailableDates(data.availableDates ?? []);
-        setUnavailableDates(data.unavailableDates ?? []);
+      .then((data: SpaceAvailabilityResponse | null) => {
+        if (cancelled) return;
+        setAvail(data && Array.isArray(data.intervals) ? data : null);
       })
       .catch(() => {
-        if (!cancelled) {
-          setAvailableDates([]);
-          setUnavailableDates([]);
-        }
+        if (!cancelled) setAvail(null);
       })
       .finally(() => {
         if (!cancelled) setLoadingDates(false);
@@ -124,6 +129,19 @@ export function SpaceScheduler({
       cancelled = true;
     };
   }, [spaceId, month]);
+
+  // Day buckets for the calendar — recomputed when the unit changes (DAY needs
+  // the whole day free; HOUR/HALF_DAY only need one open hour).
+  const { availableDates, bookedDates, blockedDates } = useMemo(() => {
+    if (!avail) return { availableDates: [], bookedDates: [], blockedDates: [] };
+    return publicBuckets(computeDayInfos(avail, { unit }));
+  }, [avail, unit]);
+
+  // Hourly slots for the chosen day, derived from the same intervals (HOUR only).
+  const slots = useMemo<DaySlot[]>(() => {
+    if (!isHour || !startDate || !avail) return [];
+    return daySlotsFromIntervals(startDate, avail);
+  }, [isHour, startDate, avail]);
 
   /* ── If the default date isn't selectable, advance to the first open day ── */
   useEffect(() => {
@@ -139,31 +157,6 @@ export function SpaceScheduler({
       onChange({ startDate: first, endDate: first });
     }
   }, [availableDates, loadingDates, month, startDate, onChange]);
-
-  /* ── Fetch hourly slots for the chosen day (HOUR only) ── */
-  useEffect(() => {
-    if (!isHour || !startDate) {
-      setSlots([]);
-      return;
-    }
-    let cancelled = false;
-    setLoadingSlots(true);
-    void fetch(`/api/incubator/spaces/${spaceId}/availability?date=${startDate}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: { slots?: DaySlot[] } | null) => {
-        if (cancelled || !data) return;
-        setSlots(data.slots ?? []);
-      })
-      .catch(() => {
-        if (!cancelled) setSlots([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingSlots(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [spaceId, startDate, isHour]);
 
   /* ── Pin times to opening/closing while in DAY/MONTH mode ── */
   // HALF_DAY is excluded: its times are owned by the booking form (the
@@ -236,7 +229,11 @@ export function SpaceScheduler({
     [onChange],
   );
 
-  const noAvailability = !loadingDates && availableDates.length === 0 && unavailableDates.length === 0;
+  const noAvailability =
+    !loadingDates &&
+    availableDates.length === 0 &&
+    bookedDates.length === 0 &&
+    blockedDates.length === 0;
   const rangeEnd = !isSingleDay && endDate && endDate !== startDate ? endDate : null;
 
   return (
@@ -246,7 +243,9 @@ export function SpaceScheduler({
           month={month}
           onMonthChange={setMonth}
           availableDates={availableDates}
-          unavailableDates={unavailableDates}
+          bookedDates={bookedDates}
+          blockedDates={blockedDates}
+          showLegend
           selectedDate={startDate}
           selectedRangeEnd={rangeEnd}
           onSelectDate={handleSelectDate}
@@ -279,22 +278,15 @@ export function SpaceScheduler({
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {t('startTime')}
             </p>
-            {loadingSlots ? (
-              <p className="flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                {t('loadingTimes')}
-              </p>
-            ) : (
-              <TimeSlotPicker
-                slots={slots}
-                selected={slots.some((s) => s.start === startTime) ? startTime : null}
-                onSelect={onSelectStart}
-                locale={locale}
-              />
-            )}
+            <TimeSlotPicker
+              slots={slots}
+              selected={slots.some((s) => s.start === startTime) ? startTime : null}
+              onSelect={onSelectStart}
+              locale={locale}
+            />
           </div>
 
-          {!loadingSlots && endSlots.length > 0 && (
+          {endSlots.length > 0 && (
             <div>
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {t('endTime')}

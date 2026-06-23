@@ -330,7 +330,11 @@
       "nextMonth": "الشهر التالي",
       "available": "متاح",
       "unavailable": "غير متاح",
-      "selected": "محدد"
+      "selected": "محدد",
+      "legendAvailable": "متاح",
+      "legendBooked": "محجوز",
+      "legendBlocked": "محجوب",
+      "legendSelected": "محدد"
     },
     "timeSlots": {
       "noSlots": "لا توجد مواعيد متاحة",
@@ -1278,12 +1282,11 @@
       "loading": "جارٍ التحميل…",
       "loadError": "تعذّر تحميل التوفّر.",
       "saveError": "تعذّر الحفظ. حاول مرة أخرى.",
-      "save": "حفظ",
-      "cancel": "إلغاء",
-      "tapHint": "انقر على تاريخ لحجبه أو رفع الحجب عنه.",
-      "legendBlocked": "محجوب",
-      "legendFullyBooked": "محجوز بالكامل",
-      "fullyBookedNote": "محجوز بالكامل هذا الشهر: {dates}",
+      "dragHint": "انقر على يوم لتحديده، أو اسحب عبر الأيام لتحديد نطاق — ثم احجب أو ارفع الحجب.",
+      "selectionCount": "{count} محدد",
+      "blockSelected": "حجب التواريخ",
+      "unblockSelected": "رفع الحجب",
+      "confirmLargeBlock": "حجب {count} تاريخاً؟ لن يتمكّن أحد من حجزها حتى ترفع الحجب.",
       "rangeTitle": "حجب فترة زمنية",
       "rangeHint": "احجب جزءاً من اليوم فقط (مثلاً صيانة من ١٢:٠٠ إلى ١٤:٠٠).",
       "rangeDate": "التاريخ",
@@ -1291,7 +1294,8 @@
       "rangeTo": "إلى",
       "addRange": "حجب الفترة",
       "removeRange": "حذف",
-      "rangeInvalid": "اختر تاريخاً وفترة زمنية صحيحة (البداية قبل النهاية)."
+      "rangeInvalid": "اختر تاريخاً وفترة زمنية صحيحة (البداية قبل النهاية).",
+      "close": "إغلاق"
     }
   },
   "dashboard": {

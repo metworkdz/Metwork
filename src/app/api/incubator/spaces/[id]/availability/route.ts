@@ -1,31 +1,34 @@
 /**
- * GET  /api/incubator/spaces/:id/availability — public.
- *   - no query           → { unavailableDates }                    (legacy shape, unchanged)
- *   - ?month=YYYY-MM      → { availableDates, unavailableDates, fullyBookedDates, ...config }
- *   - ?date=YYYY-MM-DD    → { slots }  (hourly blocks, overlap + capacity aware)
+ * Owner-side availability WRITE surface for a single space.
  *
- *   The month/date branches are READ-ONLY views that *surface* the exact rules
- *   `createSpaceBooking` already enforces (working days/hours, blocked dates,
- *   concurrent-occupancy capacity). They never mutate state or change those
- *   rules — they only let the UI grey out what the server would reject.
+ *   GET    → { unavailableDates, blackouts }   — raw current block config.
+ *   PUT    → replace the full block set (legacy; used by the test fixture).
+ *   POST   → block one/many full-day dates and/or time ranges (additive, idempotent).
+ *   DELETE → unblock one/many full-day dates and/or time ranges (idempotent).
  *
- * PUT  /api/incubator/spaces/:id/availability — incubator manager; replaces blocked dates.
+ * The CALENDAR READ path lives elsewhere: every availability *view* (public
+ * booking picker AND the owner block editor) reads the single canonical endpoint
+ * `GET /api/spaces/:id/availability?from&to`, which aggregates bookings + blocks
+ * via the SAME helpers the booking write gate uses. This route only mutates the
+ * `unavailableDates` / `blackouts` fields that endpoint (and `checkSpaceAvailability`)
+ * consult — there is no parallel block store.
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApprovedApiRole } from '@/server/auth/api-guards';
-import { db, type BookingRecord, type SpaceRecord } from '@/server/db/store';
-import { bookingHoldsSeat } from '@/server/bookings/status';
+import { db, type SpaceRecord } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
-import type { DaySlot } from '@/types/mentor';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_RE = /^\d{2}:\d{2}$/;
+
 const putSchema = z.object({
   /** Array of YYYY-MM-DD date strings to block full-day. Empty array clears all. */
   unavailableDates: z.array(
-    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Each date must be YYYY-MM-DD'),
+    z.string().regex(DATE_RE, 'Each date must be YYYY-MM-DD'),
   ).max(365),
   /**
    * Optional time-range blackouts. When `from`/`to` are present only that range
@@ -33,14 +36,11 @@ const putSchema = z.object({
    * existing blackouts untouched; send [] to clear them.
    */
   blackouts: z.array(z.object({
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD'),
-    from: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-    to:   z.string().regex(/^\d{2}:\d{2}$/).optional(),
+    date: z.string().regex(DATE_RE, 'date must be YYYY-MM-DD'),
+    from: z.string().regex(TIME_RE).optional(),
+    to:   z.string().regex(TIME_RE).optional(),
   })).max(365).optional(),
 });
-
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const TIME_RE = /^\d{2}:\d{2}$/;
 
 /**
  * Additive block / unblock body for POST and DELETE. Either or both of `dates`
@@ -58,15 +58,10 @@ const blockSchema = z.object({
   message: 'Provide at least one date or range',
 });
 
-/* ───────────────────────── helpers (read-only) ───────────────────────── */
+/* ───────────────────────────── helpers ───────────────────────────── */
 
 function pad2(n: number): string {
   return String(n).padStart(2, '0');
-}
-
-function todayISO(): string {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
 }
 
 /** "HH:MM" → minutes since midnight. */
@@ -77,128 +72,6 @@ function timeToMinutes(t: string): number {
 
 function minutesToTime(mins: number): string {
   return `${pad2(Math.floor(mins / 60))}:${pad2(mins % 60)}`;
-}
-
-/** UTC day-of-week (0=Sun…6=Sat) for a YYYY-MM-DD date. */
-function dowOf(date: string): number {
-  return new Date(`${date}T00:00:00.000Z`).getUTCDay();
-}
-
-/**
- * Seat-holding SPACE bookings for this space. Uses the SAME `bookingHoldsSeat`
- * predicate as the booking write gate, so the calendar can never count a slot the
- * gate would let someone book: CANCELLED / REFUNDED / PENDING_PAYMENT release it.
- */
-function activeSpaceBookings(bookings: BookingRecord[], spaceId: string): BookingRecord[] {
-  return bookings.filter(
-    (b) => b.itemKind === 'SPACE' && b.itemId === spaceId && bookingHoldsSeat(b),
-  );
-}
-
-interface SpaceHours {
-  workingDays: number[];
-  openMins: number;
-  closeMins: number;
-  capacity: number;
-  /** Full-day blocked dates: legacy unavailableDates ∪ whole-day blackouts. */
-  blocked: Set<string>;
-  /** Time-range blackouts grouped by date (minutes since midnight). */
-  partials: Map<string, { from: number; to: number }[]>;
-}
-
-function spaceHours(space: SpaceRecord): SpaceHours {
-  const blocked = new Set(space.unavailableDates ?? []);
-  const partials = new Map<string, { from: number; to: number }[]>();
-  for (const b of space.blackouts ?? []) {
-    if (!b.from || !b.to) {
-      blocked.add(b.date);
-    } else {
-      const arr = partials.get(b.date) ?? [];
-      arr.push({ from: timeToMinutes(b.from), to: timeToMinutes(b.to) });
-      partials.set(b.date, arr);
-    }
-  }
-  return {
-    workingDays: space.workingDays ?? [1, 2, 3, 4, 5],
-    openMins: timeToMinutes(space.openingTime ?? '09:00'),
-    closeMins: timeToMinutes(space.closingTime ?? '18:00'),
-    capacity: space.capacity ?? 1,
-    blocked,
-    partials,
-  };
-}
-
-/** Concurrent active bookings overlapping the absolute window [startMs, endMs). */
-function concurrentCount(bookings: BookingRecord[], startMs: number, endMs: number): number {
-  let n = 0;
-  for (const b of bookings) {
-    const bStart = Date.parse(b.startsAt);
-    const bEnd = Date.parse(b.endsAt);
-    if (startMs < bEnd && endMs > bStart) n++;
-  }
-  return n;
-}
-
-/** True when [m, m+60) on `date` falls within any time-range blackout. */
-function inPartialBlackout(date: string, m: number, hours: SpaceHours): boolean {
-  for (const p of hours.partials.get(date) ?? []) {
-    if (m < p.to && m + 60 > p.from) return true;
-  }
-  return false;
-}
-
-/** Hourly blocks for one day, each marked available iff a booking would be accepted. */
-function buildDaySlots(date: string, hours: SpaceHours, active: BookingRecord[]): DaySlot[] {
-  const slots: DaySlot[] = [];
-  const isWorkingDay = hours.workingDays.includes(dowOf(date));
-  const isBlocked = hours.blocked.has(date);
-  const isPast = date < todayISO();
-  for (let m = hours.openMins; m + 60 <= hours.closeMins; m += 60) {
-    const start = minutesToTime(m);
-    const end = minutesToTime(m + 60);
-    const startMs = Date.parse(`${date}T${start}:00.000Z`);
-    const endMs = Date.parse(`${date}T${end}:00.000Z`);
-    const taken = concurrentCount(active, startMs, endMs);
-    slots.push({
-      start,
-      end,
-      available:
-        isWorkingDay && !isBlocked && !isPast &&
-        !inPartialBlackout(date, m, hours) &&
-        taken < hours.capacity,
-    });
-  }
-  return slots;
-}
-
-/** Peak concurrent occupancy across `date`'s working hours (for "desks left"). */
-function peakOccupancy(date: string, hours: SpaceHours, active: BookingRecord[]): number {
-  let peak = 0;
-  for (let m = hours.openMins; m + 60 <= hours.closeMins; m += 60) {
-    const startMs = Date.parse(`${date}T${minutesToTime(m)}:00.000Z`);
-    const endMs = Date.parse(`${date}T${minutesToTime(m + 60)}:00.000Z`);
-    const taken = concurrentCount(active, startMs, endMs);
-    if (taken > peak) peak = taken;
-  }
-  return peak;
-}
-
-/** True when EVERY hour block of `date` is saturated to capacity (no bookable time). */
-function isDayFullyBooked(date: string, hours: SpaceHours, active: BookingRecord[]): boolean {
-  let hadBlock = false;
-  for (let m = hours.openMins; m + 60 <= hours.closeMins; m += 60) {
-    hadBlock = true;
-    const startMs = Date.parse(`${date}T${minutesToTime(m)}:00.000Z`);
-    const endMs = Date.parse(`${date}T${minutesToTime(m + 60)}:00.000Z`);
-    if (concurrentCount(active, startMs, endMs) < hours.capacity) return false;
-  }
-  return hadBlock;
-}
-
-function daysInMonth(month: string): string[] {
-  const [y, m] = month.split('-').map(Number);
-  const count = new Date(Date.UTC(y!, m!, 0)).getUTCDate();
-  return Array.from({ length: count }, (_, i) => `${month}-${pad2(i + 1)}`);
 }
 
 /** ADMIN manages every space; an incubator manager only their own. */
@@ -244,71 +117,14 @@ function mergeDateRanges(
 /* ─────────────────────────────── GET ─────────────────────────────── */
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   const data = await db.read();
   const space = (data.spaces ?? []).find((s) => s.id === id);
   if (!space) return jsonError(404, 'NOT_FOUND', 'Space not found');
-
-  const url = new URL(req.url);
-  const monthParam = url.searchParams.get('month');
-  const dateParam = url.searchParams.get('date');
-  const unavailableDates = space.unavailableDates ?? [];
-
-  // ── Per-day hourly slots ──────────────────────────────────────────
-  if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
-    const hours = spaceHours(space);
-    const active = activeSpaceBookings(data.bookings ?? [], id);
-    return json({ slots: buildDaySlots(dateParam, hours, active) });
-  }
-
-  // ── Month overview (selectable / blocked / fully-booked) ──────────
-  if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
-    const hours = spaceHours(space);
-    const active = activeSpaceBookings(data.bookings ?? [], id);
-    const today = todayISO();
-
-    const availableDates: string[] = [];
-    const fullyBookedDates: string[] = [];
-    const remainingByDate: Record<string, number> = {};
-    for (const date of daysInMonth(monthParam)) {
-      if (date < today) continue;
-      if (!hours.workingDays.includes(dowOf(date))) continue;
-      if (hours.blocked.has(date)) continue;
-      // Desks still free that day (capacity − peak concurrent occupancy).
-      remainingByDate[date] = Math.max(0, hours.capacity - peakOccupancy(date, hours, active));
-      if (isDayFullyBooked(date, hours, active)) {
-        fullyBookedDates.push(date);
-        continue;
-      }
-      availableDates.push(date);
-    }
-
-    // Manually-blocked full-day dates in this month (incubator blackouts) — kept
-    // distinct from fully-booked so the editor can render them differently.
-    const blockedDates = [...hours.blocked].filter((d) => d.startsWith(`${monthParam}-`)).sort();
-    const partialBlackouts = (space.blackouts ?? [])
-      .filter((b) => b.from && b.to && b.date.startsWith(`${monthParam}-`));
-    return json({
-      availableDates,
-      // Legacy merged shape (blocked ∪ fully-booked) — unchanged for the public scheduler.
-      unavailableDates: [...new Set([...blockedDates, ...fullyBookedDates])].sort(),
-      blockedDates,
-      fullyBookedDates,
-      partialBlackouts,
-      remainingByDate,
-      workingDays: hours.workingDays,
-      openingTime: space.openingTime ?? '09:00',
-      closingTime: space.closingTime ?? '18:00',
-      capacity: hours.capacity,
-    });
-  }
-
-  // ── Default shape: full raw block config (the editor loads this before
-  //    editing, then PUTs the complete replacement set) ───────────────
-  return json({ unavailableDates, blackouts: space.blackouts ?? [] });
+  return json({ unavailableDates: space.unavailableDates ?? [], blackouts: space.blackouts ?? [] });
 }
 
 /* ─────────────────────────────── PUT ─────────────────────────────── */
