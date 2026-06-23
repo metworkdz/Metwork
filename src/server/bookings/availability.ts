@@ -78,7 +78,7 @@ interface DayInterval {
  * the slot all day); HOUR / HALF_DAY bookings occupy only their actual minutes
  * (so a capacity-1 room can sell its half-day window AND the remaining hours).
  */
-function occupiedIntervals(unit: BookingUnit, startsAt: string, endsAt: string): DayInterval[] {
+export function occupiedIntervals(unit: BookingUnit, startsAt: string, endsAt: string): DayInterval[] {
   const startMs = Date.parse(startsAt);
   const endMs = Date.parse(endsAt);
   if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return [];
@@ -246,4 +246,155 @@ export function bestDurationDiscountPercent(
 export function applyDiscountPercent(amount: number, percent: number): number {
   if (percent <= 0) return amount;
   return Math.round(amount * (1 - percent / 100));
+}
+
+/* ─────────────── Canonical unavailable-interval aggregation ─────────────── */
+
+/** One unavailable span for a space, returned by the public availability read. */
+export interface UnavailableInterval {
+  /** ISO datetime (inclusive start). */
+  start: string;
+  /** ISO datetime (exclusive end). */
+  end: string;
+  /** BLOCK = owner-set blackout; BOOKING = capacity reached by active bookings. */
+  kind: 'BOOKING' | 'BLOCK';
+  /** True when the span covers a whole calendar day [00:00, next-00:00). */
+  allDay: boolean;
+}
+
+/** Hard ceiling so an over-wide ?from&to range can't fan out unbounded work. */
+export const MAX_AVAILABILITY_RANGE_DAYS = 366;
+
+/** Parse an ISO datetime or a bare YYYY-MM-DD (as UTC midnight). */
+function toMsLoose(v: string): number {
+  return Date.parse(v.length === 10 ? `${v}T00:00:00.000Z` : v);
+}
+
+/**
+ * Merge a day's occupied minute-intervals into the sub-ranges where concurrent
+ * occupancy reaches `capacity` (i.e. a new booking would be refused). All events
+ * at the same instant are applied before the threshold is re-tested, so a booking
+ * ending exactly when another begins neither leaves a false gap nor merges across
+ * a real one — matching the sweep in checkSpaceAvailability.
+ */
+function saturatedSubIntervals(
+  intervals: { start: number; end: number }[],
+  capacity: number,
+): { start: number; end: number }[] {
+  const events: { at: number; delta: number }[] = [];
+  for (const iv of intervals) {
+    if (iv.end <= iv.start) continue;
+    events.push({ at: iv.start, delta: 1 });
+    events.push({ at: iv.end, delta: -1 });
+  }
+  if (events.length === 0) return [];
+  events.sort((a, b) => a.at - b.at);
+
+  const out: { start: number; end: number }[] = [];
+  let running = 0;
+  let openStart: number | null = null;
+  let i = 0;
+  while (i < events.length) {
+    const at = events[i]!.at;
+    while (i < events.length && events[i]!.at === at) {
+      running += events[i]!.delta;
+      i++;
+    }
+    if (running >= capacity && openStart === null) {
+      openStart = at;
+    } else if (running < capacity && openStart !== null) {
+      out.push({ start: openStart, end: at });
+      openStart = null;
+    }
+  }
+  return out;
+}
+
+/**
+ * THE canonical "what is unavailable for this space in [from, to]" computation —
+ * the single source behind every availability read (the public scheduler endpoint
+ * and the new from/to interval endpoint). It aggregates exactly two things, using
+ * the SAME helpers the write gate (checkSpaceAvailability) uses so a read can never
+ * disagree with what a booking would be allowed to do:
+ *
+ *   (i)  active bookings REGARDLESS OF ORIGIN (online + manual) — counted via
+ *        `bookingHoldsSeat`, so CANCELLED / REFUNDED / PENDING_PAYMENT release the
+ *        slot — collapsed into the sub-ranges where occupancy reaches capacity.
+ *   (ii) owner-set blocks: `unavailableDates` ∪ whole-day blackouts (full-day),
+ *        plus time-range blackouts (partial).
+ *
+ * Pure & synchronous (takes a bookings snapshot, never touches the store). The
+ * range is iterated day-by-day and capped at MAX_AVAILABILITY_RANGE_DAYS.
+ */
+export function computeUnavailableIntervals(args: {
+  space: AvailabilitySpace;
+  bookings: BookingRecord[];
+  spaceId: string;
+  /** ISO datetime or YYYY-MM-DD. */
+  from: string;
+  /** ISO datetime or YYYY-MM-DD (the day it falls on is included). */
+  to: string;
+}): UnavailableInterval[] {
+  const { space, bookings, spaceId, from, to } = args;
+  const fromMs = toMsLoose(from);
+  const toMs = toMsLoose(to);
+  if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || toMs < fromMs) return [];
+
+  const capacity = Math.max(1, space.capacity ?? 1);
+  const blockedDays = fullDayBlocked(space);
+  const partials = partialBlackouts(space);
+
+  // Pre-decompose every active seat-holding booking into per-day minute-intervals.
+  const activeByDate = new Map<string, { start: number; end: number }[]>();
+  for (const b of bookings) {
+    if (!seatHolding(b, spaceId)) continue;
+    for (const iv of occupiedIntervals(b.unit, b.startsAt, b.endsAt)) {
+      const arr = activeByDate.get(iv.date) ?? [];
+      arr.push({ start: iv.start, end: iv.end });
+      activeByDate.set(iv.date, arr);
+    }
+  }
+
+  const out: UnavailableInterval[] = [];
+  const firstDay = startOfUtcDate(fromMs);
+  const lastDay = startOfUtcDate(toMs);
+  let dayCount = 0;
+  for (let dayStart = firstDay; dayStart <= lastDay; dayStart += MS_PER_DAY) {
+    if (++dayCount > MAX_AVAILABILITY_RANGE_DAYS) break;
+    const date = isoDate(dayStart);
+
+    // (ii) Owner full-day block → whole day unavailable; bookings are moot.
+    if (blockedDays.has(date)) {
+      out.push({
+        start: new Date(dayStart).toISOString(),
+        end: new Date(dayStart + MS_PER_DAY).toISOString(),
+        kind: 'BLOCK',
+        allDay: true,
+      });
+      continue;
+    }
+
+    // (ii) Owner time-range blackouts on this day.
+    for (const p of partials.get(date) ?? []) {
+      out.push({
+        start: new Date(dayStart + p.from * 60_000).toISOString(),
+        end: new Date(dayStart + p.to * 60_000).toISOString(),
+        kind: 'BLOCK',
+        allDay: false,
+      });
+    }
+
+    // (i) Booking occupancy collapsed to capacity-saturated sub-ranges.
+    for (const sat of saturatedSubIntervals(activeByDate.get(date) ?? [], capacity)) {
+      out.push({
+        start: new Date(dayStart + sat.start * 60_000).toISOString(),
+        end: new Date(dayStart + sat.end * 60_000).toISOString(),
+        kind: 'BOOKING',
+        allDay: sat.start === 0 && sat.end === 1440,
+      });
+    }
+  }
+
+  out.sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end));
+  return out;
 }

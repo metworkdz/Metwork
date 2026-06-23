@@ -9,6 +9,7 @@ import { describe, it, expect } from 'vitest';
 import {
   checkSpaceAvailability,
   bestDurationDiscountPercent,
+  computeUnavailableIntervals,
   type AvailabilitySpace,
 } from '@/server/bookings/availability';
 import { unitPrice, availableUnits, computeQuantity, type SpacePricing } from '@/server/bookings/service';
@@ -177,6 +178,71 @@ describe('half-day pricing (Phase 2)', () => {
   });
   it('a half-day is always quantity 1', () => {
     expect(computeQuantity(`${D}T09:00:00.000Z`, `${D}T13:00:00.000Z`, 'HALF_DAY')).toBe(1);
+  });
+});
+
+describe('computeUnavailableIntervals — canonical availability source', () => {
+  // Single-day window covering D (the `to` day is included).
+  const intervals = (space: AvailabilitySpace, bookings: BookingRecord[], from = D, to = D) =>
+    computeUnavailableIntervals({ space, bookings, spaceId: 'space-1', from, to });
+
+  it('surfaces an active booking as a BOOKING interval (capacity 1)', () => {
+    const r = intervals(room(), [booking({ id: 'h', startsAt: `${D}T09:00:00.000Z`, endsAt: `${D}T12:00:00.000Z` })]);
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ start: `${D}T09:00:00.000Z`, end: `${D}T12:00:00.000Z`, kind: 'BOOKING', allDay: false });
+  });
+
+  it('REGRESSION: a normalized full-day DAY booking blocks the whole day (manual-booking fix)', () => {
+    // After the fix, a single-day manual DAY booking persists [00:00, next-00:00).
+    const dayBooking = booking({ id: 'd', unit: 'DAY', startsAt: `${D}T00:00:00.000Z`, endsAt: '2026-06-06T00:00:00.000Z' });
+    const r = intervals(room(), [dayBooking]);
+    expect(r).toEqual([{ start: `${D}T00:00:00.000Z`, end: '2026-06-06T00:00:00.000Z', kind: 'BOOKING', allDay: true }]);
+  });
+
+  it('REGRESSION: a zero-length stored window (the old bug) yields NO interval', () => {
+    // The pre-fix manual route persisted startsAt === endsAt → invisible to the calendar.
+    const broken = booking({ id: 'z', unit: 'DAY', startsAt: `${D}T00:00:00.000Z`, endsAt: `${D}T00:00:00.000Z` });
+    expect(intervals(room(), [broken])).toEqual([]);
+  });
+
+  it('a CANCELLED / PENDING_PAYMENT booking releases its slot (no interval)', () => {
+    const cancelled = booking({ id: 'c', status: 'CANCELLED', startsAt: `${D}T09:00:00.000Z`, endsAt: `${D}T12:00:00.000Z` });
+    const unpaid = booking({ id: 'p', status: 'PENDING_PAYMENT', startsAt: `${D}T13:00:00.000Z`, endsAt: `${D}T15:00:00.000Z` });
+    expect(intervals(room(), [cancelled, unpaid])).toEqual([]);
+  });
+
+  it('merges adjacent bookings into one contiguous interval (capacity 1)', () => {
+    const a = booking({ id: 'a', startsAt: `${D}T09:00:00.000Z`, endsAt: `${D}T12:00:00.000Z` });
+    const b = booking({ id: 'b', startsAt: `${D}T12:00:00.000Z`, endsAt: `${D}T15:00:00.000Z` });
+    const r = intervals(room(), [a, b]);
+    expect(r).toEqual([{ start: `${D}T09:00:00.000Z`, end: `${D}T15:00:00.000Z`, kind: 'BOOKING', allDay: false }]);
+  });
+
+  it('emits a full-day BLOCK for an owner unavailableDates entry', () => {
+    const r = intervals(room({ unavailableDates: [D] }), []);
+    expect(r).toEqual([{ start: `${D}T00:00:00.000Z`, end: '2026-06-06T00:00:00.000Z', kind: 'BLOCK', allDay: true }]);
+  });
+
+  it('emits a time-range BLOCK for an owner partial blackout', () => {
+    const r = intervals(room({ blackouts: [{ date: D, from: '12:00', to: '14:00' }] }), []);
+    expect(r).toEqual([{ start: `${D}T12:00:00.000Z`, end: `${D}T14:00:00.000Z`, kind: 'BLOCK', allDay: false }]);
+  });
+
+  it('a single booking on a capacity-5 space leaves it bookable (no interval)', () => {
+    const r = intervals(room({ capacity: 5 }), [booking({ id: 'one', startsAt: `${D}T09:00:00.000Z`, endsAt: `${D}T12:00:00.000Z` })]);
+    expect(r).toEqual([]);
+  });
+
+  it('marks only the capacity-saturated sub-range on a capacity-2 space', () => {
+    const a = booking({ id: 'a', startsAt: `${D}T09:00:00.000Z`, endsAt: `${D}T12:00:00.000Z` });
+    const b = booking({ id: 'b', startsAt: `${D}T10:00:00.000Z`, endsAt: `${D}T13:00:00.000Z` });
+    const r = intervals(room({ capacity: 2 }), [a, b]);
+    expect(r).toEqual([{ start: `${D}T10:00:00.000Z`, end: `${D}T12:00:00.000Z`, kind: 'BOOKING', allDay: false }]);
+  });
+
+  it('excludes bookings outside the [from, to] range', () => {
+    const r = intervals(room(), [booking({ id: 'h', startsAt: `${D}T09:00:00.000Z`, endsAt: `${D}T12:00:00.000Z` })], '2026-06-10', '2026-06-12');
+    expect(r).toEqual([]);
   });
 });
 

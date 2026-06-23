@@ -81,6 +81,13 @@ export async function POST(req: NextRequest) {
 
     let itemName = '';
     let city = '';
+    // The window actually persisted on the booking. A SPACE booking is stored as
+    // the NORMALIZED [startsAt, endsAt) it was validated against — never the raw
+    // date-only input — so the slot it holds is visible to every reader (the
+    // public calendar and the next overlap check). Persisting the raw zero-length
+    // input was the root cause of manual bookings not blocking the calendar.
+    let startsAt = input.startsAt;
+    let endsAt = input.endsAt;
 
     if (input.itemKind === 'SPACE') {
       const space = (d.spaces ?? []).find((s) => s.id === input.itemId && s.incubatorId === incubator.id);
@@ -88,13 +95,15 @@ export async function POST(req: NextRequest) {
       // Shared availability gate — blackouts + capacity-aware occupancy. Manual
       // bookings get NO blackout bypass; the incubator unblocks the date first.
       const win = normalizeBookingWindow(input.startsAt, input.endsAt, input.unit, input.quantity);
+      startsAt = win.startsAt;
+      endsAt = win.endsAt;
       const avail = checkSpaceAvailability({
         space,
         bookings: d.bookings,
         spaceId: space.id,
         unit: input.unit,
-        startsAt: win.startsAt,
-        endsAt: win.endsAt,
+        startsAt,
+        endsAt,
       });
       if (!avail.ok) return avail.reason;
       itemName = space.name;
@@ -110,6 +119,31 @@ export async function POST(req: NextRequest) {
       if (taken >= program.seatsTotal) return 'PROGRAM_FULL' as const;
       itemName = program.title;
       city = program.city;
+    }
+
+    // Idempotency: a retried submit (same item, persisted window, client name +
+    // amount) must not create a duplicate offline booking. Return the existing
+    // one — safe to replay. Mirrors the dedup in /api/incubator/bookings.
+    const dupNameKey = input.clientName.trim().toLowerCase();
+    const duplicate = d.bookings.find(
+      (b) =>
+        b.source === 'offline' &&
+        b.itemKind === input.itemKind &&
+        b.itemId === input.itemId &&
+        b.startsAt === startsAt &&
+        b.endsAt === endsAt &&
+        b.totalAmount === input.totalAmount &&
+        (b.clientName ?? '').trim().toLowerCase() === dupNameKey &&
+        b.status !== 'CANCELLED' &&
+        b.status !== 'REFUNDED',
+    );
+    if (duplicate) {
+      return {
+        ...duplicate,
+        customerName: duplicate.clientName ?? input.clientName,
+        customerEmail: duplicate.clientEmail ?? '',
+        customerPhone: duplicate.clientPhone ?? input.clientPhone,
+      };
     }
 
     const now = new Date().toISOString();
@@ -161,8 +195,8 @@ export async function POST(req: NextRequest) {
       city,
       unit: input.unit,
       quantity: input.quantity,
-      startsAt: input.startsAt,
-      endsAt: input.endsAt,
+      startsAt,
+      endsAt,
       totalAmount: input.totalAmount,
       status: 'CONFIRMED' as const,
       clientReference: `manual-${randomUUID().slice(0, 8)}`,
