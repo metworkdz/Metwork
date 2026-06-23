@@ -8,26 +8,29 @@
  * IMPORTANT run constraints (mirrors the existing api suite):
  *   • The consultation project is meant to run SERIALLY (`--workers=1`) — every
  *     spec reconfigures the ONE shared `qa-mentor` (availability, minNotice) and
- *     mints a consultant session by ROTATING the mentor access token, which
- *     invalidates any other live token. Serial execution makes that safe.
+ *     reuses the ONE consultant session minted at runtime. Serial execution
+ *     makes that safe.
  *   • Payments must be in MOCK SYNC mode (`MOCK_PAYMENT_MODE=sync`, the default)
  *     so a member top-up / guest checkout settles inside the request, giving an
  *     instantly-CONFIRMED booking with no second round-trip.
- *   • The consultant has no role login; we mint a portal session at runtime:
- *     admin generates the durable access token → POST /api/consultant/pin sets
- *     (first run) or verifies (reruns) the PIN and drops the session cookie.
+ *   • The consultant has no role login; we mint a portal session at runtime via
+ *     the email → OTP flow: POST /api/consultant/otp/request, recover the code
+ *     from the local DB (HMAC-reverse with the known AUTH_SECRET — see _otp.ts),
+ *     then POST /api/consultant/otp/verify to drop the session cookie. The
+ *     OTP-request endpoint is rate-limited per email (5/h), so the minted
+ *     session is cached at module scope and reused for the whole (serial) run.
  */
 import { request as pwRequest, expect, type APIRequestContext } from '@playwright/test';
 import { authStatePath } from '../global-setup';
+import { getUserOtp } from './_otp';
 
 export const BASE = 'http://localhost:3000';
 
 /** Seeded consultant — see scripts/seed-test-users.ts (consultationFee 5000 DZD/h). */
 export const MENTOR_ID = 'qa-mentor-id';
+/** The seeded consultant's admin-assigned login email (the OTP recipient). */
+export const MENTOR_EMAIL = 'qa.mentor@metwork.test';
 export const MENTOR_FEE_PER_HOUR = 5000;
-
-/** Stable PIN: first run sets it on the seeded (PIN-less) mentor; reruns verify it. */
-export const CONSULT_PIN = '4321';
 
 export type Role = 'admin' | 'incubator' | 'builder' | 'founder' | 'explorer';
 
@@ -132,28 +135,48 @@ export function nearUniqueSlot(): { date: string; time: string } {
 /* ───────────────────────────── Mentor setup ───────────────────────────── */
 
 /**
- * Generate a fresh durable access token for the seeded mentor (admin), then
- * establish a consultant portal session on a NEW request context by setting /
- * verifying the PIN. Returns the authenticated consultant context + the token.
+ * The minted consultant session (cookie jar), captured once and reused for the
+ * whole serial run so the rate-limited OTP-request endpoint is hit only once.
+ */
+let cachedConsultantState: Awaited<ReturnType<APIRequestContext['storageState']>> | null = null;
+
+/**
+ * Establish a consultant portal session via the email → OTP flow and return an
+ * authenticated request context. The first call drives the real endpoints
+ * (request OTP → recover the code from the local DB → verify, which drops the
+ * `metwork_consultant` cookie); later calls rebuild a context from the cached
+ * cookie jar. The `admin` arg is unused now (kept for call-site compatibility).
  */
 export async function mintConsultantContext(
-  admin: APIRequestContext,
-): Promise<{ ctx: APIRequestContext; token: string }> {
-  const tokRes = await admin.post(`/api/admin/mentors/${MENTOR_ID}/access-token`);
-  expect(tokRes.status(), `access-token → ${tokRes.status()} ${await tokRes.text()}`).toBe(200);
-  const { token } = await tokRes.json();
-  expect(token, 'access token missing').toBeTruthy();
+  _admin?: APIRequestContext,
+): Promise<{ ctx: APIRequestContext }> {
+  if (cachedConsultantState) {
+    const ctx = await pwRequest.newContext({ baseURL: BASE, storageState: cachedConsultantState });
+    return { ctx };
+  }
 
   const ctx = await pwRequest.newContext({ baseURL: BASE });
-  const pinRes = await ctx.post('/api/consultant/pin', {
+
+  // 1. Request an OTP for the seeded mentor's admin-assigned email.
+  const reqRes = await ctx.post('/api/consultant/otp/request', {
     headers: xff(),
-    data: { token, pin: CONSULT_PIN, rememberDevice: false },
+    data: { email: MENTOR_EMAIL },
   });
-  expect(
-    pinRes.status(),
-    `consultant pin sign-in → ${pinRes.status()} ${await pinRes.text()} (seeded PIN drift? reseed the local DB)`,
-  ).toBe(200);
-  return { ctx, token };
+  expect(reqRes.status(), `otp/request → ${reqRes.status()} ${await reqRes.text()}`).toBe(200);
+
+  // 2. Recover the just-issued code — the app never returns it. The OTP table is
+  //    keyed `mentor:<id>` (see server/mentors/access.ts: issueConsultantOtp).
+  const code = getUserOtp(`mentor:${MENTOR_ID}`);
+
+  // 3. Verify → mints the consultant session cookie on this context.
+  const verifyRes = await ctx.post('/api/consultant/otp/verify', {
+    headers: xff(),
+    data: { email: MENTOR_EMAIL, code },
+  });
+  expect(verifyRes.status(), `otp/verify → ${verifyRes.status()} ${await verifyRes.text()}`).toBe(200);
+
+  cachedConsultantState = await ctx.storageState();
+  return { ctx };
 }
 
 /**

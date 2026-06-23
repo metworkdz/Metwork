@@ -1,6 +1,6 @@
 /**
  * API-driven e2e — CONSULTANT self-service portal (P5/P6) over the instant-book
- * lifecycle: durable-token + PIN access, PII gating, meeting-link / in-person
+ * lifecycle: email → OTP access, PII gating, meeting-link / in-person
  * resolution, consultant-initiated cancel (wallet refund + credit reversal),
  * completion → withdrawal → admin payout, and bidirectional reschedule.
  *
@@ -8,7 +8,7 @@
  */
 import { test, expect, type APIRequestContext, type APIResponse } from '@playwright/test';
 import {
-  MENTOR_ID,
+  MENTOR_EMAIL,
   roleContext,
   guestContext,
   mintConsultantContext,
@@ -78,37 +78,35 @@ test.describe.serial('Consultation portal — access, lifecycle, payouts, resche
     }
   });
 
-  test('6b — wrong PIN is rejected (401 WRONG_PIN)', async () => {
-    // Mint a fresh token (rotation does NOT kill existing sessions). PIN was set
-    // in beforeAll, so a wrong PIN now verifies → 401.
-    const tok = await admin.post(`/api/admin/mentors/${MENTOR_ID}/access-token`);
-    const { token } = await tok.json();
+  test('6b — a wrong OTP code is rejected (401 INVALID_OTP)', async () => {
+    // The credential is now the emailed OTP. With no live code for the mentor
+    // (beforeAll consumed its own), any guess collapses to the generic reject —
+    // identical to the unknown-email response, so existence is never revealed.
     const ctx = await guestContext();
     try {
-      const res = await ctx.post('/api/consultant/pin', {
+      const res = await ctx.post('/api/consultant/otp/verify', {
         headers: xff(),
-        data: { token, pin: '9999' },
+        data: { email: MENTOR_EMAIL, code: '000000' },
       });
       expect(res.status(), `expected 401, got ${await dump(res)}`).toBe(401);
-      expect(await errCode(res)).toBe('WRONG_PIN');
+      expect(await errCode(res)).toBe('INVALID_OTP');
     } finally {
       await ctx.dispose();
     }
-    // Re-establish a valid session for the rest of the suite (token was rotated).
-    ({ ctx: consultant } = await mintConsultantContext(admin));
   });
 
-  test('6c — PIN attempts are rate-limited per IP (429)', async () => {
-    // Hammer with a BOGUS token from ONE IP: mentorId stays null so only the
-    // per-IP bucket (20/15min) is consumed — the real mentor PIN budget is safe.
+  test('6c — sign-in attempts are rate-limited per IP (429)', async () => {
+    // Hammer the trusted-device PIN unlock from ONE IP with no device cookie:
+    // the per-IP bucket (20/15min) is checked before device resolution, so each
+    // pre-limit call is a 401 DEVICE_NOT_TRUSTED, then the budget trips → 429.
     const ip = '10.231.231.231';
     const ctx = await guestContext();
     let sawRateLimit = false;
     try {
       for (let i = 0; i < 24; i++) {
-        const res = await ctx.post('/api/consultant/pin', {
+        const res = await ctx.post('/api/consultant/pin/unlock', {
           headers: xff(ip),
-          data: { token: 'definitely-not-a-real-token', pin: '1234' },
+          data: { pin: '1234' },
         });
         if (res.status() === 429) {
           sawRateLimit = true;
@@ -119,7 +117,7 @@ test.describe.serial('Consultation portal — access, lifecycle, payouts, resche
     } finally {
       await ctx.dispose();
     }
-    expect(sawRateLimit, 'expected a 429 after exhausting the per-IP PIN budget').toBe(true);
+    expect(sawRateLimit, 'expected a 429 after exhausting the per-IP unlock budget').toBe(true);
   });
 
   test('7 — consultant adds an ONLINE meeting link → booking becomes READY', async () => {
