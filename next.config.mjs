@@ -116,22 +116,11 @@ const nextConfig = {
     ];
   },
 
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/en',
-        permanent: false,
-        has: [
-          {
-            type: 'header',
-            key: 'accept-language',
-            value: '(?!ar|fr).*',
-          },
-        ],
-      },
-    ];
-  },
+  // NOTE: Root-path locale selection is handled entirely by the next-intl
+  // middleware (Accept-Language negotiation + NEXT_LOCALE cookie). We do NOT
+  // add a `redirects()` rule for `/` here — next.config redirects run before
+  // middleware and would shadow next-intl's negotiation and the user's stored
+  // cookie preference. See src/i18n/routing.ts (`localeDetection: true`).
 };
 
 const sentryOptions = {
