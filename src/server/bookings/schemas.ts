@@ -99,6 +99,13 @@ export const createCardBookingSchema = z
       z.object({ itemKind: z.literal('EVENT'), eventId: z.string().min(1) }),
     ]),
     paymentMode: z.enum(['ONLINE_FULL', 'CASH_DEPOSIT']),
+    /**
+     * Fixed 50/50 split: when true on a CASH_DEPOSIT booking, the online portion
+     * is exactly half the total (the remainder is cash on-site), bypassing the
+     * listing's configured cash-deposit. Ignored for ONLINE_FULL. Used by the
+     * logged-in space flow for listings with no deposit configured.
+     */
+    splitHalf: z.boolean().optional(),
     customer: cardCustomerSchema,
     clientReference: z.string().min(8).max(128),
     promoCode: promoCodeField,

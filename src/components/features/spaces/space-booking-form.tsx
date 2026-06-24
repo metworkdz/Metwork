@@ -191,6 +191,16 @@ export function BookingSuccessPanel({
 }
 
 /* ── Main form ── */
+
+/**
+ * Direct-payment choice for the (account-only) space flow:
+ *   CARD_FULL  — pay the whole total online by card now (no wallet top-up).
+ *   CARD_SPLIT — pay part online by card now, the rest in cash on-site.
+ *   WALLET     — pay the whole total from the Metwork wallet balance.
+ * The Network Pass is a separate toggle that overrides the choice when active.
+ */
+type PayChoice = 'CARD_FULL' | 'CARD_SPLIT' | 'WALLET';
+
 export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const locale   = useLocale() as Locale;
   const t        = useTranslations('spaces.booking');
@@ -220,22 +230,30 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const acceptedMethods = space.acceptedPaymentMethods ?? ['ONLINE'];
   const hasDeposit =
     space.cashDepositType != null && space.cashDepositValue != null;
-  // CASH is offered to guests only when a deposit is configured (the card needs
-  // something to charge); registered users can always pick CASH (→ card deposit
-  // when configured, else the legacy reserve-on-site flow).
   const onlineOffered = acceptedMethods.includes('ONLINE');
-  const cashOffered = acceptedMethods.includes('CASH') && (isAuthed || hasDeposit);
-  const showMethodPicker = onlineOffered && cashOffered;
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
-    acceptedMethods.includes('ONLINE') ? 'ONLINE' : 'CASH',
-  );
+  const cashOffered = acceptedMethods.includes('CASH');
+
+  // Build the available direct-payment choices from what the listing accepts.
+  // ONLINE → card-full + wallet; CASH → 50/50 split (deposit by card, rest cash).
+  const payOptions = useMemo<PayChoice[]>(() => {
+    const opts: PayChoice[] = [];
+    if (onlineOffered) opts.push('CARD_FULL');
+    if (cashOffered) opts.push('CARD_SPLIT');
+    if (onlineOffered) opts.push('WALLET');
+    return opts;
+  }, [onlineOffered, cashOffered]);
+
+  const [payChoice, setPayChoice] = useState<PayChoice>(payOptions[0] ?? 'CARD_FULL');
+  // Keep the selection valid if the available options change.
+  useEffect(() => {
+    if (!payOptions.includes(payChoice)) setPayChoice(payOptions[0] ?? 'CARD_FULL');
+  }, [payOptions, payChoice]);
+
   const [useNetworkPass, setUseNetworkPass] = useState(false);
-  const method: PaymentMethod = showMethodPicker
-    ? paymentMethod
-    : onlineOffered
-    ? 'ONLINE'
-    : 'CASH';
-  const isCash         = method === 'CASH' && !useNetworkPass;
+
+  const isCardFull = !useNetworkPass && payChoice === 'CARD_FULL';
+  const isSplit    = !useNetworkPass && payChoice === 'CARD_SPLIT';
+  const isWallet   = !useNetworkPass && payChoice === 'WALLET';
 
   // Stable idempotency key for the booking itself — reused across retries so a
   // dropped response / network retry replays instead of double-booking. It is
@@ -292,7 +310,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   // a replay of the previous (now-stale) one.
   useEffect(() => {
     bookingRef.current = '';
-  }, [effectiveUnit, startIso, endIso, method, useNetworkPass]);
+  }, [effectiveUnit, startIso, endIso, payChoice, useNetworkPass]);
 
   const unitPrice = useMemo(
     () => units.find((u) => u.unit === effectiveUnit)?.price ?? 0,
@@ -329,17 +347,29 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const membershipDiscountAmount   = membershipDiscountFraction > 0 ? afterDuration - Math.round(afterDuration * (1 - membershipDiscountFraction)) : 0;
   const afterMembershipDiscount    = afterDuration - membershipDiscountAmount;
   const finalTotal = promoResult?.finalAmount ?? afterMembershipDiscount;
-  // Hosted card checkout is REGISTERED-ONLY for spaces (space booking is
-  // account-only — guests sign in first). It fires for a registered CASH
-  // deposit; registered ONLINE stays on the wallet, and the Network Pass and a
-  // registered CASH booking on a listing WITHOUT a configured deposit keep
-  // their existing (wallet / legacy reserve-on-site) flows.
-  const useCard = !useNetworkPass && isAuthed && isCash && hasDeposit;
-  const cashDeposit = isCash && hasDeposit && validRange && finalTotal > 0
-    ? computeClientDeposit(finalTotal, space.cashDepositType, space.cashDepositValue)
-    : null;
-  const cashBalance = cashDeposit != null ? Math.max(0, finalTotal - cashDeposit) : null;
-  const insufficient = !useCard && !isCash && !useNetworkPass && isAuthed && balance != null && finalTotal > 0 && balance < finalTotal;
+  // Both card paths settle through the hosted checkout — paid directly, with no
+  // wallet top-up. Spaces are account-only, so this only runs for signed-in users.
+  const useCard = isCardFull || isSplit;
+
+  // Split deposit preview: the listing's configured deposit when it has one,
+  // otherwise a fixed 50 % (mirrors the server's computeSplit). Display only —
+  // the server recomputes the authoritative split at intent + settlement.
+  const splitDepositPreview =
+    validRange && finalTotal > 0
+      ? hasDeposit
+        ? computeClientDeposit(finalTotal, space.cashDepositType, space.cashDepositValue) ??
+          Math.max(1, Math.round(finalTotal / 2))
+        : Math.max(1, Math.round(finalTotal / 2))
+      : null;
+  const splitBalancePreview =
+    splitDepositPreview != null ? Math.max(0, finalTotal - splitDepositPreview) : null;
+  // Send splitHalf only when the listing has no configured deposit (→ fixed 50/50).
+  const splitHalf = isSplit && !hasDeposit;
+
+  const cashDeposit = isSplit ? splitDepositPreview : null;
+  const cashBalance = isSplit ? splitBalancePreview : null;
+  const insufficient =
+    isWallet && isAuthed && balance != null && finalTotal > 0 && balance < finalTotal;
 
   // Hourly + half-day bookings are single-day — keep end date pinned to start.
   useEffect(() => {
@@ -443,14 +473,18 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
       return;
     }
 
-    // ── Card checkout: registered CASH deposit (spaces are account-only) ────
-    if (useCard) {
+    // A free booking (full promo / Network Pass) never opens a hosted checkout.
+    const isFree = useNetworkPass || finalTotal === 0;
+
+    // ── Direct card checkout: full online or 50/50 split (no wallet top-up) ─
+    if (!isFree && useCard) {
       const customer = { fullName: user.fullName, email: user.email, phone: user.phone };
       setSubmitting(true);
       try {
         const res = await bookingService.createCardBooking({
           target: { itemKind: 'SPACE', spaceId: space.id, unit: effectiveUnit, startsAt: startIso, endsAt: endIso },
-          paymentMode: isCash ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
+          paymentMode: isSplit ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
+          splitHalf,
           customer,
           clientReference: ensureBookingRef(),
           promoCode: promoResult?.code,
@@ -466,7 +500,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
       return;
     }
 
-    // ── Registered wallet / network pass / legacy cash reserve ─────────────
+    // ── Wallet balance, Network Pass, or free booking ──────────────────────
     setSubmitting(true);
     try {
       const res = await bookingService.createSpaceBooking({
@@ -476,7 +510,11 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         endsAt:   endIso,
         clientReference: ensureBookingRef(),
         promoCode: promoResult?.code,
-        paymentMethod: useNetworkPass ? ('NETWORK_PASS' as PaymentMethod) : method,
+        paymentMethod: useNetworkPass
+          ? ('NETWORK_PASS' as PaymentMethod)
+          : onlineOffered
+          ? 'ONLINE'
+          : 'CASH',
       });
       setBalance(res.wallet.balance);
       // Booking landed — start a fresh key so a later booking on this form isn't
@@ -621,35 +659,64 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         </div>
       )}
 
-      {/* Payment method picker */}
-      {showMethodPicker && (
+      {/* Payment choice — direct card (full), 50/50 split, or wallet */}
+      {payOptions.length > 1 && !useNetworkPass && (
         <div>
-          <span className="text-sm font-medium">{t('paymentMethod')}</span>
-          <div className="mt-1.5 grid grid-cols-2 gap-2">
-            {(['ONLINE', 'CASH'] as PaymentMethod[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setPaymentMethod(m)}
-                className={cn(
-                  'flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-colors',
-                  paymentMethod === m
-                    ? 'border-primary bg-primary/5 font-medium text-primary'
-                    : 'border-border text-muted-foreground hover:border-primary/40',
-                )}
-              >
-                {m === 'ONLINE'
-                  ? <CreditCard className="size-4 shrink-0" />
-                  : <Banknote className="size-4 shrink-0" />}
-                {m === 'ONLINE' ? t('paymentOnline') : t('paymentCash')}
-              </button>
-            ))}
+          <span className="text-sm font-medium">{t('payHeading')}</span>
+          <div
+            className={cn(
+              'mt-1.5 grid gap-2',
+              payOptions.length >= 3 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2',
+            )}
+          >
+            {payOptions.map((opt) => {
+              const active = payChoice === opt;
+              const Icon = opt === 'CARD_FULL' ? CreditCard : opt === 'CARD_SPLIT' ? Banknote : WalletIcon;
+              const title =
+                opt === 'CARD_FULL'
+                  ? t('methodCardFullTitle')
+                  : opt === 'CARD_SPLIT'
+                  ? hasDeposit
+                    ? t('methodDepositTitle')
+                    : t('methodSplitTitle')
+                  : t('methodWalletTitle');
+              const sub =
+                opt === 'CARD_FULL'
+                  ? validRange && finalTotal > 0
+                    ? t('methodCardFullSub', { amount: formatCurrency(finalTotal, locale) })
+                    : null
+                  : opt === 'CARD_SPLIT'
+                  ? splitDepositPreview != null && splitBalancePreview != null
+                    ? t('methodSplitSub', {
+                        now: formatCurrency(splitDepositPreview, locale),
+                        site: formatCurrency(splitBalancePreview, locale),
+                      })
+                    : null
+                  : balance != null
+                  ? t('methodWalletSub', { amount: formatCurrency(balance, locale) })
+                  : null;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setPayChoice(opt)}
+                  aria-pressed={active}
+                  className={cn(
+                    'flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-start text-sm transition-colors',
+                    active
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border text-muted-foreground hover:border-primary/40',
+                  )}
+                >
+                  <Icon className="mt-0.5 size-4 shrink-0" />
+                  <span className="flex min-w-0 flex-col">
+                    <span className="font-medium text-foreground">{title}</span>
+                    {sub && <span className="text-xs text-muted-foreground">{sub}</span>}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          {isCash && (
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              {t('cashHint')}
-            </p>
-          )}
         </div>
       )}
 
@@ -793,7 +860,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
       )}
 
       {/* Wallet balance */}
-      {isAuthed && !isCash && balance != null && (
+      {isAuthed && isWallet && balance != null && (
         <div className={cn(
           'flex items-center justify-between rounded-md border px-3 py-2 text-xs',
           insufficient
@@ -841,12 +908,10 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
             ? t('submitting')
             : useNetworkPass || finalTotal === 0
             ? t('submitFree')
-            : useCard
-            ? isCash
-              ? t('payDeposit', { amount: formatCurrency(cashDeposit ?? finalTotal, locale) })
-              : t('payNow', { amount: formatCurrency(finalTotal, locale) })
-            : isCash
-            ? t('submitCash')
+            : isCardFull
+            ? t('payNow', { amount: formatCurrency(finalTotal, locale) })
+            : isSplit
+            ? t('payDeposit', { amount: formatCurrency(splitDepositPreview ?? finalTotal, locale) })
             : t('submitOnline', { amount: formatCurrency(finalTotal, locale) })}
         </Button>
       )}

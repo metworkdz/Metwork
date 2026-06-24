@@ -255,11 +255,16 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                             `${b.totalAmount.toLocaleString()} DZD`
                           )}
                           {isCashDeposit && balanceDue > 0 && (
-                            <div className={`mt-0.5 text-xs font-normal ${awaitingCash ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                              {awaitingCash
-                                ? t('balanceDue', { amount: `${balanceDue.toLocaleString()} DZD` })
-                                : t('balanceCollected', { amount: `${balanceDue.toLocaleString()} DZD` })}
-                            </div>
+                            <>
+                              <div className="mt-0.5 text-xs font-normal text-muted-foreground">
+                                {t('paidOnline', { amount: `${(b.onlinePaidAmount ?? 0).toLocaleString()} DZD` })}
+                              </div>
+                              <div className={`text-xs font-normal ${awaitingCash ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                                {awaitingCash
+                                  ? t('balanceDue', { amount: `${balanceDue.toLocaleString()} DZD` })
+                                  : t('balanceCollected', { amount: `${balanceDue.toLocaleString()} DZD` })}
+                              </div>
+                            </>
                           )}
                         </TableCell>
                         <TableCell className="text-end">
