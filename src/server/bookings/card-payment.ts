@@ -90,6 +90,13 @@ export interface CreateCardBookingInput {
   target: CardBookingTarget;
   /** ONLINE_FULL = pay T online; CASH_DEPOSIT = pay D online, T−D cash on site. */
   paymentMode: BookingPaymentMode;
+  /**
+   * Fixed 50/50 split for CASH_DEPOSIT: the online portion is exactly half the
+   * total (remainder cash on-site), bypassing the listing's configured deposit.
+   * Ignored for ONLINE_FULL. Used by the logged-in space flow when the listing
+   * has no cash-deposit configured.
+   */
+  splitHalf?: boolean;
   /** Registered platform user id, or null/undefined for a guest booking. */
   userId?: string | null;
   customer: { fullName: string; email: string; phone: string; idNumber?: string | null };
@@ -349,28 +356,46 @@ export async function createCardBookingIntent(
   }
   if (item.total <= 0) return { ok: false, reason: 'INVALID_TOTAL' };
 
-  // Online amount charged now: deposit D for CASH_DEPOSIT, full T for ONLINE_FULL.
-  let onlinePaidAmount: number;
-  let cashRemainingAmount: number;
-  if (input.paymentMode === 'CASH_DEPOSIT') {
-    const dep = computeDeposit(item.total, {
+  // Centralized online/cash split — the SINGLE place the deposit math is
+  // decided, so the initial computation and the post-promo recomputation can
+  // never disagree. ONLINE_FULL pays the full total; a CASH_DEPOSIT pays either
+  // a fixed 50 % (splitHalf) or the listing's configured deposit, with the
+  // remainder collected in cash on-site.
+  function computeSplit(total: number):
+    | { ok: true; online: number; cash: number }
+    | { ok: false; reason: CreateCardBookingReason } {
+    if (input.paymentMode !== 'CASH_DEPOSIT') {
+      return { ok: true, online: total, cash: 0 };
+    }
+    if (input.splitHalf) {
+      let online = Math.round(total / 2);
+      if (online <= 0) online = Math.min(1, total);
+      if (online > total) online = total;
+      return { ok: true, online, cash: total - online };
+    }
+    const dep = computeDeposit(total, {
       cashDepositType: item.cashDepositType ?? null,
       cashDepositValue: item.cashDepositValue ?? null,
     });
     if (!dep.ok) {
       return {
         ok: false,
-        reason: dep.reason === 'INVALID_CONFIG' ? 'INVALID_DEPOSIT_CONFIG'
+        reason:
+          dep.reason === 'INVALID_CONFIG' ? 'INVALID_DEPOSIT_CONFIG'
           : dep.reason === 'NOT_CONFIGURED' ? 'DEPOSIT_NOT_CONFIGURED'
           : 'INVALID_TOTAL',
       };
     }
-    onlinePaidAmount = dep.deposit;
-    cashRemainingAmount = item.total - dep.deposit;
-  } else {
-    onlinePaidAmount = item.total;
-    cashRemainingAmount = 0;
+    return { ok: true, online: dep.deposit, cash: total - dep.deposit };
   }
+
+  // Online amount charged now: deposit D for CASH_DEPOSIT, full T for ONLINE_FULL.
+  let onlinePaidAmount: number;
+  let cashRemainingAmount: number;
+  const initialSplit = computeSplit(item.total);
+  if (!initialSplit.ok) return initialSplit;
+  onlinePaidAmount = initialSplit.online;
+  cashRemainingAmount = initialSplit.cash;
 
   return db.update<CreateCardBookingResult>((d) => {
     // Idempotency: same (userId, clientReference) → return the existing intent.
@@ -430,19 +455,11 @@ export async function createCardBookingIntent(
       if (promo.valid) {
         total = promo.finalAmount;
         promoCodeId = promo.promoCodeId;
-        // Re-derive the online split against the discounted total.
-        if (input.paymentMode === 'CASH_DEPOSIT') {
-          const dep = computeDeposit(total, {
-            cashDepositType: item.cashDepositType ?? null,
-            cashDepositValue: item.cashDepositValue ?? null,
-          });
-          if (dep.ok) {
-            onlinePaidAmount = dep.deposit;
-            cashRemainingAmount = total - dep.deposit;
-          }
-        } else {
-          onlinePaidAmount = total;
-          cashRemainingAmount = 0;
+        // Re-derive the online split against the discounted total (same engine).
+        const reSplit = computeSplit(total);
+        if (reSplit.ok) {
+          onlinePaidAmount = reSplit.online;
+          cashRemainingAmount = reSplit.cash;
         }
       }
     }

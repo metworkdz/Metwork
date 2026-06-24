@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
   const result = await createCardBookingIntent({
     target: input.target,
     paymentMode: input.paymentMode,
+    splitHalf: input.splitHalf,
     userId,
     customer: input.customer,
     clientReference: input.clientReference,

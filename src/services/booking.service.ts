@@ -47,6 +47,12 @@ export type CardBookingTargetInput =
 export interface CreateCardBookingInput {
   target: CardBookingTargetInput;
   paymentMode: 'ONLINE_FULL' | 'CASH_DEPOSIT';
+  /**
+   * Fixed 50/50 split for CASH_DEPOSIT: pay exactly half online now, half in
+   * cash on-site (bypasses the listing's configured deposit). Ignored for
+   * ONLINE_FULL. Used by the logged-in space flow when no deposit is configured.
+   */
+  splitHalf?: boolean;
   customer: { fullName: string; email: string; phone: string; idNumber?: string | null };
   /** Idempotency key. Generate one per attempt. */
   clientReference: string;
