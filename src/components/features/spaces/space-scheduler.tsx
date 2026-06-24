@@ -113,7 +113,7 @@ export function SpaceScheduler({
     let cancelled = false;
     setLoadingDates(true);
     const { from, to } = monthRange(month);
-    void fetch(`/api/spaces/${spaceId}/availability?from=${from}&to=${to}`)
+    void fetch(`/api/spaces/${spaceId}/availability?from=${from}&to=${to}`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: SpaceAvailabilityResponse | null) => {
         if (cancelled) return;

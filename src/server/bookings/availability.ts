@@ -26,7 +26,7 @@
  *         allowed up to N; the (N+1)-th overlapping booking → 'CAPACITY_EXCEEDED'.
  *
  * PENDING_PAYMENT / CANCELLED / REFUNDED bookings hold no seat and are ignored,
- * matching findSpaceOverlapConflict / countSpaceConcurrent.
+ * via the shared `bookingHoldsSeat` predicate.
  *
  * Pure & synchronous — it takes a bookings snapshot and never reads/writes the
  * store, so callers invoke it inside their own db.update critical section.

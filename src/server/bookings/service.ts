@@ -61,55 +61,6 @@ export function overlapsBlockedDates(
   return false;
 }
 
-/**
- * Find an active booking on `spaceId` whose window overlaps [startsAt, endsAt),
- * returning its id (else null). CANCELLED / REFUNDED / PENDING_PAYMENT bookings
- * hold no slot — an unpaid card-deposit intent must never block a real booking.
- * Shared by the wallet flow and the card-deposit settlement re-check so both
- * apply identical occupancy rules.
- */
-export function findSpaceOverlapConflict(
-  bookings: BookingRecord[],
-  spaceId: string,
-  startsAt: string,
-  endsAt: string,
-): string | null {
-  const newStart = new Date(startsAt).getTime();
-  const newEnd   = new Date(endsAt).getTime();
-  const conflict = bookings.find((b) => {
-    if (b.itemKind !== 'SPACE' || b.itemId !== spaceId) return false;
-    if (b.status === 'CANCELLED' || b.status === 'REFUNDED' || b.status === 'PENDING_PAYMENT') return false;
-    const bStart = new Date(b.startsAt).getTime();
-    const bEnd   = new Date(b.endsAt).getTime();
-    return newStart < bEnd && newEnd > bStart;
-  });
-  return conflict ? conflict.id : null;
-}
-
-/**
- * Count active bookings occupying any part of [startsAt, endsAt) on `spaceId`
- * — the concurrent-occupancy capacity gate. CANCELLED / REFUNDED /
- * PENDING_PAYMENT do not count. Shared by the wallet flow and the card-deposit
- * settlement re-check.
- */
-export function countSpaceConcurrent(
-  bookings: BookingRecord[],
-  spaceId: string,
-  startsAt: string,
-  endsAt: string,
-): number {
-  return bookings.filter(
-    (b) =>
-      b.itemKind === 'SPACE' &&
-      b.itemId === spaceId &&
-      b.status !== 'CANCELLED' &&
-      b.status !== 'REFUNDED' &&
-      b.status !== 'PENDING_PAYMENT' &&
-      b.startsAt < endsAt &&
-      b.endsAt > startsAt,
-  ).length;
-}
-
 export interface CreateSpaceBookingArgs {
   userId: string;
   spaceId: string;

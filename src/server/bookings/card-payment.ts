@@ -13,8 +13,8 @@
  *   - T, D and C are ALWAYS recomputed server-side here; the client never
  *     supplies a price. D and C come from `pricing.ts`, the single source of
  *     money math.
- *   - The PENDING_PAYMENT intent holds NO seat (see `attendance.ts` /
- *     `findSpaceOverlapConflict`), so an abandoned checkout never blocks a paid
+ *   - The PENDING_PAYMENT intent holds NO seat (see `bookingHoldsSeat` /
+ *     `checkSpaceAvailability`), so an abandoned checkout never blocks a paid
  *     booking. A binding capacity / overlap re-check runs at settlement.
  *   - Settlement is idempotent: the CONFIRMED transition is claimed via
  *     `settledAt` inside one store mutation, so replays (refresh, double return,
