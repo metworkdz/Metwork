@@ -56,6 +56,13 @@ const nextConfig = {
     // from node_modules (where the .afm files live) and lets Vercel's file
     // tracing include them in the serverless bundle.
     serverComponentsExternalPackages: ['pdfkit'],
+    // The contract PDF generator reads a bundled Arabic TTF at runtime via fs.
+    // process.cwd() isn't statically analyzable, so explicitly include the font
+    // file in the serverless trace for the generation route (otherwise Arabic
+    // contracts would silently fall back to Helvetica on Vercel).
+    outputFileTracingIncludes: {
+      '/api/incubator/bookings/[id]/contract': ['./src/server/contracts/fonts/**'],
+    },
   },
 
   async headers() {

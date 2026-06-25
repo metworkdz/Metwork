@@ -18,6 +18,7 @@ import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { StatCard } from '@/components/shared/stat-card';
 import { ReceiptModal } from './receipt-modal';
 import { ManualBookingForm } from './manual-booking-form';
+import { DownloadContractButton } from './download-contract-button';
 import { bookingCountsAsRevenue } from '@/server/bookings/status';
 import type { BookingRecord, IncubatorRecord, IncubatorSpaceRecord, IncubatorProgramRecord } from '@/server/db/store';
 
@@ -25,6 +26,8 @@ type BookingWithCustomer = BookingRecord & {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  /** Applicable contract templates for SPACE bookings (server-precomputed). */
+  contractTemplates?: { id: string; name: string }[];
 };
 
 const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'danger' | 'default' | 'outline'> = {
@@ -269,6 +272,9 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                         </TableCell>
                         <TableCell className="text-end">
                           <div className="flex justify-end gap-1">
+                            {b.itemKind === 'SPACE' && (
+                              <DownloadContractButton bookingId={b.id} templates={b.contractTemplates ?? []} />
+                            )}
                             {b.status === 'PENDING' && (
                               <>
                                 <Button size="icon" variant="ghost" title="Confirm"

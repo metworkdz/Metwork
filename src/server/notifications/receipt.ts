@@ -178,7 +178,7 @@ const T: Record<ReceiptLang, Record<LangKey, string>> = {
  * Fetch a remote image URL and return its raw bytes as a Buffer.
  * Returns null on any network / decode error so callers can gracefully skip.
  */
-async function fetchImageBuffer(url: string | null | undefined): Promise<Buffer | null> {
+export async function fetchImageBuffer(url: string | null | undefined): Promise<Buffer | null> {
   if (!url) return null;
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
@@ -192,16 +192,16 @@ async function fetchImageBuffer(url: string | null | undefined): Promise<Buffer 
 
 /* ─────────────────── Layout constants (points, A4) ─────────────────── */
 
-const PAGE_W    = 595.28;
-const PAGE_H    = 841.89;
-const MARGIN    = 50;
-const CONTENT_W = PAGE_W - MARGIN * 2;
+export const PAGE_W    = 595.28;
+export const PAGE_H    = 841.89;
+export const MARGIN    = 50;
+export const CONTENT_W = PAGE_W - MARGIN * 2;
 
-const GREEN  = '#166534';
-const DARK   = '#09090b';
-const GRAY   = '#71717a';
-const LIGHT  = '#f4f4f5';
-const WHITE  = '#ffffff';
+export const GREEN  = '#166534';
+export const DARK   = '#09090b';
+export const GRAY   = '#71717a';
+export const LIGHT  = '#f4f4f5';
+export const WHITE  = '#ffffff';
 
 /* ─────────────────── Helpers ─────────────────── */
 
@@ -232,7 +232,7 @@ function fmtDateOnly(iso: string, lang: ReceiptLang): string {
 
 /* ─────────────────── PDF builder ─────────────────── */
 
-function makeDoc(): InstanceType<typeof PDFDocument> {
+export function makeDoc(): InstanceType<typeof PDFDocument> {
   return new PDFDocument({
     size: 'A4',
     margin: MARGIN,
@@ -240,7 +240,7 @@ function makeDoc(): InstanceType<typeof PDFDocument> {
   });
 }
 
-async function collectBuffer(doc: InstanceType<typeof PDFDocument>): Promise<Buffer> {
+export async function collectBuffer(doc: InstanceType<typeof PDFDocument>): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     doc.on('data', (c: Buffer) => chunks.push(c));
@@ -260,7 +260,7 @@ async function collectBuffer(doc: InstanceType<typeof PDFDocument>): Promise<Buf
  *
  * If logoBuffer is null the name occupies the full width.
  */
-function drawHeader(
+export function drawHeader(
   doc: InstanceType<typeof PDFDocument>,
   incubator: BookingReceiptInput['incubator'],
   logoBuffer: Buffer | null,
@@ -312,7 +312,7 @@ function drawHeader(
 
 /* ─────────────────── Incubator sub-header (contact line) ─────────────── */
 
-function drawIncubatorContact(
+export function drawIncubatorContact(
   doc: InstanceType<typeof PDFDocument>,
   incubator: BookingReceiptInput['incubator'],
   lang: ReceiptLang,

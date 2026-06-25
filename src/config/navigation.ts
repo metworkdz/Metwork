@@ -30,6 +30,7 @@ import {
   IdCard,
   MapPin,
   Link2,
+  FileSignature,
 } from 'lucide-react';
 import type { UserRole } from '@/types/auth';
 
@@ -146,6 +147,7 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.programs',  href: '/dashboard/incubator/programs',     icon: Briefcase },
     { labelKey: 'dashboard.events',    href: '/dashboard/incubator/events',       icon: Calendar },
     { labelKey: 'dashboard.bookings',  href: '/dashboard/incubator/bookings',     icon: CalendarIcon },
+    { labelKey: 'dashboard.contracts', href: '/dashboard/incubator/contracts',    icon: FileSignature },
     { labelKey: 'dashboard.revenue',   href: '/dashboard/incubator/revenue',      icon: TrendingUp },
     { labelKey: 'dashboard.invoices',  href: '/dashboard/incubator/invoices',     icon: FileText },
     { labelKey: 'dashboard.paymentLinks', href: '/dashboard/incubator/payment-links', icon: Link2 },
