@@ -924,7 +924,10 @@
       "emptyDescription": "Add coworking floors, private offices, or training rooms.",
       "actionEdit": "Edit",
       "actionDelete": "Delete",
-      "actionAvailability": "Availability"
+      "actionAvailability": "Availability",
+      "actionCopyLink": "Copy public link",
+      "linkCopied": "Public link copied",
+      "copyLinkPrompt": "Copy this public link"
     },
     "paymentLinks": {
       "addLink": "New link",

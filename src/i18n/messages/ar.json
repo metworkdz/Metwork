@@ -924,7 +924,10 @@
       "emptyDescription": "أضف فضاءات مشتركة أو مكاتب خاصة أو قاعات تدريب.",
       "actionEdit": "تعديل",
       "actionDelete": "حذف",
-      "actionAvailability": "التوفّر"
+      "actionAvailability": "التوفّر",
+      "actionCopyLink": "نسخ الرابط العام",
+      "linkCopied": "تم نسخ الرابط العام",
+      "copyLinkPrompt": "انسخ هذا الرابط العام"
     },
     "paymentLinks": {
       "addLink": "رابط جديد",

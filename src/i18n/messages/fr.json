@@ -924,7 +924,10 @@
       "emptyDescription": "Ajoutez des espaces de coworking, bureaux privés ou salles de formation.",
       "actionEdit": "Modifier",
       "actionDelete": "Supprimer",
-      "actionAvailability": "Disponibilité"
+      "actionAvailability": "Disponibilité",
+      "actionCopyLink": "Copier le lien public",
+      "linkCopied": "Lien public copié",
+      "copyLinkPrompt": "Copiez ce lien public"
     },
     "paymentLinks": {
       "addLink": "Nouveau lien",

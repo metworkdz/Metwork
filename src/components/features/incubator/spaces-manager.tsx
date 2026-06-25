@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Building2, CalendarClock, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { Building2, CalendarClock, Check, Link2, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { SpaceFormDialog } from './space-form-dialog';
@@ -29,6 +29,24 @@ export function SpacesManager() {
   const [editingSpace, setEditingSpace] = useState<Space | null>(null);
   const [managingSpace, setManagingSpace] = useState<Space | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // Public shareable link ("Copy public link" action). Origin is read on the
+  // client so the link matches whatever domain the dashboard is served from
+  // (metwork.dz, a preview deploy, or localhost) — no hard-coded host.
+  const [origin, setOrigin] = useState('');
+  useEffect(() => { setOrigin(window.location.origin); }, []);
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopyLink(space: Space) {
+    const url = `${origin}/${locale}/spaces/${space.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Clipboard blocked (insecure context) — fall back to a copyable prompt.
+      window.prompt(t('copyLinkPrompt'), url);
+    }
+  }
 
   async function fetchSpaces() {
     setLoading(true);
@@ -156,6 +174,11 @@ export function SpacesManager() {
             onSelect: (s) => setEditingSpace(s),
           },
           {
+            label: t('actionCopyLink'),
+            icon: <Link2 className="size-4" />,
+            onSelect: (s) => void handleCopyLink(s),
+          },
+          {
             label: t('actionAvailability'),
             icon: <CalendarClock className="size-4" />,
             onSelect: (s) => setManagingSpace(s),
@@ -178,6 +201,7 @@ export function SpacesManager() {
         onEdit={(s) => setEditingSpace(s)}
         onDelete={(id) => void handleDelete(id)}
         onManageAvailability={(s) => setManagingSpace(s)}
+        onCopyLink={(s) => void handleCopyLink(s)}
       />
       {/* FIX: BUG-2 — edit dialog rendered outside the table, controlled by editingSpace state */}
       {editingSpace && (
@@ -227,6 +251,17 @@ export function SpacesManager() {
           open={true}
           onOpenChange={(v) => { if (!v) setManagingSpace(null); }}
         />
+      )}
+      {/* Transient "link copied" confirmation — shared by the desktop menu
+          (which closes on select) and the mobile copy button. */}
+      {copied && (
+        <div
+          role="status"
+          className="fixed inset-x-0 bottom-6 z-50 mx-auto flex w-fit items-center gap-2 rounded-full border border-border bg-foreground px-4 py-2 text-sm font-medium text-background shadow-lg"
+        >
+          <Check className="size-4" />
+          {t('linkCopied')}
+        </div>
       )}
       {/* suppress unused deletingId warning */}
       {deletingId && null}
