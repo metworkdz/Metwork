@@ -744,6 +744,7 @@
         "clientPhone": "Téléphone du client",
         "clientEmail": "E-mail du client",
         "clientIdNumber": "N° de pièce d'identité / passeport",
+        "clientCity": "Ville du client",
         "spaceName": "Nom de l'espace",
         "spaceCategory": "Catégorie d'espace",
         "startDate": "Date de début",

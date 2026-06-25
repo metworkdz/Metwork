@@ -26,6 +26,7 @@ export type ContractVariableToken =
   | 'client_phone'
   | 'client_email'
   | 'client_id_number'
+  | 'client_city'
   | 'space_name'
   | 'space_category'
   | 'start_date'
@@ -52,6 +53,7 @@ export const CONTRACT_VARIABLES: { token: ContractVariableToken; descriptionKey:
   { token: 'client_phone',      descriptionKey: 'clientPhone' },
   { token: 'client_email',      descriptionKey: 'clientEmail' },
   { token: 'client_id_number',  descriptionKey: 'clientIdNumber' },
+  { token: 'client_city',       descriptionKey: 'clientCity' },
   { token: 'space_name',        descriptionKey: 'spaceName' },
   { token: 'space_category',    descriptionKey: 'spaceCategory' },
   { token: 'start_date',        descriptionKey: 'startDate' },
@@ -189,6 +191,9 @@ export function resolveContractVariables(ctx: ResolveContext): Record<ContractVa
     client_phone:      user?.phone ?? booking.clientPhone ?? '',
     client_email:      user?.email ?? booking.clientEmail ?? '',
     client_id_number:  booking.clientIdNumber ?? '',
+    // Client's own city — only platform users carry it; offline bookings don't
+    // store one, so it falls back to blank (never the booking/listing city).
+    client_city:       user?.city ?? '',
     space_name:        booking.itemName ?? space?.name ?? '',
     space_category:    category ? CATEGORY_WORDS[lang][category] : '',
     start_date:        fmtDateOnly(booking.startsAt, lang),
@@ -239,6 +244,7 @@ export function buildSampleVariables(lang: ContractLang): Record<ContractVariabl
     client_phone:      '+213 555 12 34 56',
     client_email:      'ahmed.benali@example.dz',
     client_id_number:  '1234567890',
+    client_city:       lang === 'ar' ? 'الجزائر' : 'Algiers',
     space_name:        lang === 'ar' ? 'قاعة التدريب أ' : 'Training Room A',
     space_category:    CATEGORY_WORDS[lang][cat],
     start_date:        fmtDateOnly(new Date().toISOString(), lang),

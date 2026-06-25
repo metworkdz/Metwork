@@ -78,6 +78,7 @@ export async function GET(
     pdf = await generateContractPdf({
       incubator: inc,
       lang: template.language,
+      title: template.name,
       contractNumber,
       body,
     });

@@ -2,16 +2,25 @@
  * Contract PDF generator.
  *
  * Renders a filled contract (variables already substituted upstream by the
- * variable engine) to an A4 PDF buffer, reusing the branded pdfkit primitives
- * from the receipt generator (same header band, logo handling, layout grid and
- * colour system) so contracts look like the rest of the platform's documents.
+ * variable engine) to an A4 PDF buffer. Letterhead style (no coloured banner):
+ *   ┌───────────────────────────────────────────────┐
+ *   │ Company info block (name + RC/NIF/…)   [ LOGO ]│
+ *   │                                                │
+ *   │            CONTRACT TITLE (centered)           │
+ *   │              N° … · issued on …                │
+ *   │                                                │
+ *   │  body …                                        │
+ *   └───────────────────────────────────────────────┘
+ * Reuses the receipt generator's pdfkit primitives (page geometry, colours,
+ * logo fetch, doc lifecycle) so contracts share the platform's document stack.
  *
  * Arabic ('ar') templates render right-to-left using an embedded Amiri TTF (a
  * traditional naskh face) — pdfkit/fontkit applies Arabic contextual shaping
  * and mark positioning (tashkeel/diacritics) automatically for embedded
  * OpenType fonts. The built-in Helvetica used for en/fr cannot render Arabic
- * glyphs, so every Arabic surface (header name, legal block, title, body) is
- * drawn with the embedded font instead.
+ * glyphs, so any Arabic surface (company name, body) is drawn with the embedded
+ * font instead. Amiri also covers Latin, so an Arabic client name inside an
+ * en/fr contract still renders.
  *
  * NOTE: Amiri was chosen over Noto Naskh Arabic specifically because Noto
  * Naskh's GPOS mark-anchor tables trigger a null-anchor crash in the bundled
@@ -25,13 +34,10 @@ import {
   CONTENT_W,
   DARK,
   GRAY,
-  GREEN,
   MARGIN,
   PAGE_H,
   PAGE_W,
   collectBuffer,
-  drawHeader,
-  drawIncubatorContact,
   fetchImageBuffer,
   makeDoc,
 } from '@/server/notifications/receipt';
@@ -71,9 +77,16 @@ interface ContractLabels {
 }
 
 const LABELS: Record<ContractLang, ContractLabels> = {
-  en: { title: 'CONTRACT', number: 'Contract No.', issuedOn: 'Issued on',  poweredBy: 'Powered by Metwork' },
-  fr: { title: 'CONTRAT',  number: 'Contrat N°',   issuedOn: 'Établi le',  poweredBy: 'Propulsé par Metwork' },
-  ar: { title: 'عقد',      number: 'رقم العقد',     issuedOn: 'حرر في',     poweredBy: 'مُشغَّل بواسطة Metwork' },
+  en: { title: 'CONTRACT', number: 'No.',       issuedOn: 'Issued on',  poweredBy: 'Powered by Metwork' },
+  fr: { title: 'CONTRAT',  number: 'N°',        issuedOn: 'Établi le',  poweredBy: 'Propulsé par Metwork' },
+  ar: { title: 'عقد',      number: 'رقم',       issuedOn: 'حرر في',     poweredBy: 'مُشغَّل بواسطة Metwork' },
+};
+
+/** Company-info line labels (letterhead block). */
+const INFO_LABELS: Record<ContractLang, { rc: string; nif: string; address: string; phone: string; email: string }> = {
+  en: { rc: 'RC', nif: 'NIF', address: 'Address', phone: 'Phone', email: 'Email' },
+  fr: { rc: 'RC', nif: 'NIF', address: 'Adresse', phone: 'Tél',   email: 'Email' },
+  ar: { rc: 'السجل التجاري', nif: 'رقم التعريف الجبائي', address: 'العنوان', phone: 'الهاتف', email: 'البريد الإلكتروني' },
 };
 
 /* ─────────────────── Input ─────────────────── */
@@ -84,13 +97,15 @@ export interface ContractPdfInput {
     'name' | 'email' | 'phone' | 'city' | 'logoUrl' | 'address' | 'commercialRegNumber' | 'registrationNumber' | 'nif'
   >;
   lang: ContractLang;
+  /** Displayed contract title (the template name). Falls back to a generic word. */
+  title?: string;
   /** Unique contract number (from the variable engine). */
   contractNumber: string;
   /** Fully-rendered contract body — `{{tokens}}` already substituted. */
   body: string;
 }
 
-/* ─────────────────── Arabic-aware helpers ─────────────────── */
+/* ─────────────────── Helpers ─────────────────── */
 
 type Doc = InstanceType<typeof PDFDocument>;
 
@@ -113,65 +128,66 @@ function setFont(doc: Doc, lang: ContractLang, bold: boolean): void {
 }
 
 /**
- * Arabic header — green band + logo + RTL incubator name. Mirrors the receipt's
- * `drawHeader` visual but uses the embedded Arabic font, which Helvetica can't.
+ * Letterhead header: company-info block on the leading side and a large logo on
+ * the trailing side (mirrored for RTL). No coloured banner. Leaves `doc.y` just
+ * below the taller of the two columns.
  */
-function drawArabicHeader(doc: Doc, incubator: ContractPdfInput['incubator'], logoBuffer: Buffer | null): void {
-  const HEADER_H = 90;
-  doc.rect(0, 0, PAGE_W, HEADER_H).fill(GREEN);
+function drawContractHeader(doc: Doc, incubator: ContractPdfInput['incubator'], logoBuffer: Buffer | null, lang: ContractLang): void {
+  const isAr = lang === 'ar';
+  const al: 'left' | 'right' = isAr ? 'right' : 'left';
+  const startY = MARGIN;
 
-  const LOGO_SIZE = 64;
-  // Logo sits top-right for RTL.
-  if (logoBuffer) {
+  const LOGO_W = 150;
+  const LOGO_H = 72;
+  const GAP = 20;
+  const hasLogo = !!logoBuffer;
+
+  const companyW = hasLogo ? CONTENT_W - LOGO_W - GAP : CONTENT_W;
+  const companyX = isAr && hasLogo ? MARGIN + LOGO_W + GAP : MARGIN;
+  const logoX = isAr ? MARGIN : PAGE_W - MARGIN - LOGO_W;
+
+  // Logo (larger than a corner icon; aspect preserved within the box). pdfkit
+  // only supports align right/center inside the fit box — for LTR we right-align
+  // it to hug the right margin; for RTL the default (top-left) hugs the left.
+  if (hasLogo) {
     try {
-      doc.image(logoBuffer, PAGE_W - MARGIN - LOGO_SIZE, 13, {
-        width: LOGO_SIZE, height: LOGO_SIZE, fit: [LOGO_SIZE, LOGO_SIZE], align: 'center', valign: 'center',
-      });
+      doc.image(
+        logoBuffer as Buffer,
+        logoX,
+        startY,
+        isAr ? { fit: [LOGO_W, LOGO_H] } : { fit: [LOGO_W, LOGO_H], align: 'right' },
+      );
     } catch { /* skip logo on error */ }
   }
 
-  const textWidth = logoBuffer ? CONTENT_W - LOGO_SIZE - 16 : CONTENT_W;
-  setFont(doc, 'ar', true);
-  doc.fillColor('#ffffff').fontSize(18).text(incubator.name, MARGIN, 24, { width: textWidth, align: 'right', lineBreak: false });
-  if (incubator.city) {
-    doc.fillColor('#ffffff').fontSize(10).text(incubator.city, MARGIN, 50, { width: textWidth, align: 'right' });
+  // Company name (bold).
+  setFont(doc, lang, true);
+  doc.fillColor(DARK).fontSize(13).text(incubator.name || '', companyX, startY, { width: companyW, align: al });
+
+  // Legal / contact lines.
+  const L = INFO_LABELS[lang];
+  const cr = incubator.commercialRegNumber ?? incubator.registrationNumber ?? null;
+  const lines: string[] = [];
+  if (cr)                lines.push(`${L.rc} : ${cr}`);
+  if (incubator.nif)     lines.push(`${L.nif} : ${incubator.nif}`);
+  if (incubator.address) lines.push(`${L.address} : ${incubator.address}`);
+  if (incubator.phone)   lines.push(`${L.phone} : ${incubator.phone}`);
+  if (incubator.email)   lines.push(`${L.email} : ${incubator.email}`);
+  if (lines.length) {
+    setFont(doc, lang, false);
+    doc.fillColor('#3f3f46').fontSize(9.5).text(lines.join('\n'), companyX, doc.y + 2, { width: companyW, align: al, lineGap: 2 });
   }
-  doc.moveDown(0);
-}
 
-/** Legal block: address • phone • email • RC • NIF (richer than the receipt's). */
-function drawLegalBlock(doc: Doc, incubator: ContractPdfInput['incubator'], lang: ContractLang): void {
-  const isAr = lang === 'ar';
-  const rcLabel  = isAr ? 'السجل التجاري' : 'RC';
-  const nifLabel = isAr ? 'رقم التعريف الجبائي' : 'NIF';
-  const cr  = incubator.commercialRegNumber ?? incubator.registrationNumber ?? null;
-
-  const parts: string[] = [];
-  if (incubator.address) parts.push(incubator.address);
-  if (incubator.phone)   parts.push(incubator.phone);
-  if (incubator.email)   parts.push(incubator.email);
-  if (cr)                parts.push(`${rcLabel}: ${cr}`);
-  if (incubator.nif)     parts.push(`${nifLabel}: ${incubator.nif}`);
-  if (parts.length === 0) return;
-
-  setFont(doc, lang, false);
-  doc
-    .fillColor(GRAY)
-    .fontSize(9)
-    .text(parts.join('  •  '), MARGIN, 100, { width: CONTENT_W, align: isAr ? 'right' : 'left' });
-  doc.moveDown(0.5);
-}
-
-function drawDivider(doc: Doc): void {
-  const y = doc.y + 6;
-  doc.moveTo(MARGIN, y).lineTo(MARGIN + CONTENT_W, y).strokeColor('#e4e4e7').lineWidth(0.5).stroke();
-  doc.moveDown(0.5);
+  // Advance below the taller of the company block / logo.
+  const companyBottom = doc.y;
+  const logoBottom = hasLogo ? startY + LOGO_H : startY;
+  doc.y = Math.max(companyBottom, logoBottom);
 }
 
 /* ─────────────────── Main ─────────────────── */
 
 export async function generateContractPdf(input: ContractPdfInput): Promise<Buffer> {
-  const { incubator, lang, contractNumber, body } = input;
+  const { incubator, lang, contractNumber, body, title } = input;
   const isAr = lang === 'ar';
   const labels = LABELS[lang];
   const align: 'left' | 'right' = isAr ? 'right' : 'left';
@@ -193,35 +209,34 @@ export async function generateContractPdf(input: ContractPdfInput): Promise<Buff
     }
   }
 
-  // ── Header + legal block ──
-  if (isAr) {
-    drawArabicHeader(doc, incubator, logoBuffer);
-  } else {
-    drawHeader(doc, incubator, logoBuffer);
-  }
-  drawLegalBlock(doc, incubator, lang);
+  // ── Letterhead header (company info + logo) ──
+  drawContractHeader(doc, incubator, logoBuffer, lang);
 
-  // ── Title + contract number + date ──
+  // ── Title (centered, underlined) + contract number / date ──
   const todayStr = new Date().toLocaleDateString(
     lang === 'fr' ? 'fr-DZ' : lang === 'ar' ? 'ar-DZ' : 'en-GB',
     { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' },
   );
-  doc.moveDown(0.8);
+  const rawTitle = (title && title.trim()) || labels.title;
+  const displayTitle = isAr ? rawTitle : rawTitle.toUpperCase();
+
+  doc.moveDown(1.6);
   setFont(doc, lang, true);
-  doc.fillColor(DARK).fontSize(18).text(labels.title, MARGIN, doc.y, { width: CONTENT_W, align });
-  doc.moveDown(0.3);
+  doc.fillColor(DARK).fontSize(15).text(displayTitle, MARGIN, doc.y, { width: CONTENT_W, align: 'center', underline: true });
+
+  doc.moveDown(0.4);
   setFont(doc, lang, false);
   doc
     .fillColor(GRAY)
-    .fontSize(10)
+    .fontSize(9)
     .text(`${labels.number} ${contractNumber}  ·  ${labels.issuedOn} ${todayStr}`, MARGIN, doc.y, {
       width: CONTENT_W,
-      align,
+      align: 'center',
+      underline: false,
     });
-  drawDivider(doc);
 
   // ── Body (rendered template) ──
-  doc.moveDown(0.4);
+  doc.moveDown(1.6);
   if (bodyArabic && loadArabicFont()) doc.font(ARABIC_FONT);
   else setFont(doc, lang, false);
   doc

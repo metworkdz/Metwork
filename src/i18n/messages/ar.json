@@ -744,6 +744,7 @@
         "clientPhone": "هاتف العميل",
         "clientEmail": "البريد الإلكتروني للعميل",
         "clientIdNumber": "رقم بطاقة التعريف / جواز السفر",
+        "clientCity": "مدينة العميل",
         "spaceName": "اسم المساحة",
         "spaceCategory": "فئة المساحة",
         "startDate": "تاريخ البداية",
