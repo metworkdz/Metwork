@@ -354,20 +354,20 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   // wallet top-up. Spaces are account-only, so this only runs for signed-in users.
   const useCard = isCardFull || isSplit;
 
-  // Split deposit preview: the listing's configured deposit when it has one,
-  // otherwise a fixed 50 % (mirrors the server's computeSplit). Display only —
-  // the server recomputes the authoritative split at intent + settlement.
+  // Split deposit preview. CARD_SPLIT is only offered when the listing accepts
+  // CASH, and a CASH listing ALWAYS has a deposit configured (enforced by
+  // validateCashDeposit on every create/edit path), so the split is always the
+  // listing's configured deposit. The server recomputes the authoritative split
+  // at intent + settlement; computeClientDeposit keeps a null-safety fallback for
+  // any malformed legacy record. (The server's fixed-50/50 `splitHalf` fallback
+  // stays for direct API callers — this UI never needs it.)
   const splitDepositPreview =
     validRange && finalTotal > 0
-      ? hasDeposit
-        ? computeClientDeposit(finalTotal, space.cashDepositType, space.cashDepositValue) ??
-          Math.max(1, Math.round(finalTotal / 2))
-        : Math.max(1, Math.round(finalTotal / 2))
+      ? computeClientDeposit(finalTotal, space.cashDepositType, space.cashDepositValue) ??
+        Math.max(1, Math.round(finalTotal / 2))
       : null;
   const splitBalancePreview =
     splitDepositPreview != null ? Math.max(0, finalTotal - splitDepositPreview) : null;
-  // Send splitHalf only when the listing has no configured deposit (→ fixed 50/50).
-  const splitHalf = isSplit && !hasDeposit;
 
   const cashDeposit = isSplit ? splitDepositPreview : null;
   const cashBalance = isSplit ? splitBalancePreview : null;
@@ -481,7 +481,6 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         startsAt: startIso,
         endsAt: endIso,
         paymentMode: isSplit ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
-        splitHalf,
       });
       const path = dest === 'signup' ? '/signup' : '/login';
       router.push(`${path}?bookingIntent=${encodeURIComponent(id)}`);
@@ -518,7 +517,6 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         const res = await bookingService.createCardBooking({
           target: { itemKind: 'SPACE', spaceId: space.id, unit: effectiveUnit, startsAt: startIso, endsAt: endIso },
           paymentMode: isSplit ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
-          splitHalf,
           customer,
           clientReference: ensureBookingRef(),
           promoCode: promoResult?.code,
