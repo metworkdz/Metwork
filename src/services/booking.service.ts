@@ -67,6 +67,31 @@ export interface CreateCardBookingResponse {
   replayed: boolean;
 }
 
+/**
+ * Public-space "book before you sign up" selection carrier. A logged-out visitor
+ * picks a date/time + payment option; we persist ONLY the selection (no price)
+ * so it survives signup+OTP / login, then resume it once authenticated.
+ */
+export interface CreateSpaceBookingIntentInput {
+  spaceId: string;
+  unit: BookingUnit;
+  startsAt: string;
+  endsAt: string;
+  paymentMode: 'ONLINE_FULL' | 'CASH_DEPOSIT';
+  /** Fixed 50/50 split for CASH_DEPOSIT when the listing has no configured deposit. */
+  splitHalf?: boolean;
+}
+
+export interface CreateSpaceBookingIntentResponse {
+  id: string;
+  expiresAt: string;
+}
+
+export interface ResumeBookingIntentResponse {
+  /** Locale-prefixed path of the hosted-checkout pay page to navigate to. */
+  payPath: string;
+}
+
 export const bookingService = {
   async createSpaceBooking(input: CreateSpaceBookingInput): Promise<CreateSpaceBookingResponse> {
     return apiClient.post<CreateSpaceBookingResponse>('/bookings', input);
@@ -78,6 +103,27 @@ export const bookingService = {
    */
   async createCardBooking(input: CreateCardBookingInput): Promise<CreateCardBookingResponse> {
     return apiClient.post<CreateCardBookingResponse>('/bookings/card', input);
+  },
+
+  /**
+   * Persist a logged-out visitor's space selection before sending them to
+   * signup/login. Returns the carrier id to thread through `?bookingIntent=`.
+   */
+  async createSpaceBookingIntent(
+    input: CreateSpaceBookingIntentInput,
+  ): Promise<CreateSpaceBookingIntentResponse> {
+    return apiClient.post<CreateSpaceBookingIntentResponse>('/bookings/intent', input);
+  },
+
+  /**
+   * Resume a carried selection once authenticated: the server re-validates
+   * availability, prices the booking, and returns the pay-page path.
+   */
+  async resumeBookingIntent(id: string): Promise<ResumeBookingIntentResponse> {
+    return apiClient.post<ResumeBookingIntentResponse>(
+      `/bookings/intent/${encodeURIComponent(id)}/resume`,
+      {},
+    );
   },
 
   async applyToProgram(programId: string, input: ApplyOrRegisterInput): Promise<ApplyOrRegisterResponse> {

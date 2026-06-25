@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { ArrowLeft, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,13 @@ export function SignupForm() {
   const t = useTranslations('auth');
   const locale = useLocale() as Locale;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Public-space "book before you sign up": carry the selection through to OTP
+  // (and preserve it on the "log in instead" link) so payment resumes after auth.
+  const bookingIntent = searchParams.get('bookingIntent');
+  const loginHref = bookingIntent
+    ? `/login?bookingIntent=${encodeURIComponent(bookingIntent)}`
+    : '/login';
   const [step, setStep] = useState<Step>('role');
   const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
@@ -90,9 +98,10 @@ export function SignupForm() {
             phone: res.maskedPhone,
             email: res.maskedEmail,
           });
+          if (bookingIntent) params.set('bookingIntent', bookingIntent);
           router.push(`/verify-otp?${params.toString()}`);
         } else {
-          router.push('/login');
+          router.push(loginHref);
         }
       } catch (err) {
         if (err instanceof ApiClientError) {
@@ -141,7 +150,7 @@ export function SignupForm() {
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {t('signup.haveAccount')}{' '}
-          <Link href="/login" className="font-medium text-primary hover:underline">
+          <Link href={loginHref} className="font-medium text-primary hover:underline">
             {t('signup.loginLink')}
           </Link>
         </p>

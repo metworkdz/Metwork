@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { SignupForm } from '@/components/features/auth/signup-form';
 
@@ -16,5 +17,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function SignupPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <SignupForm />;
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
+  );
 }

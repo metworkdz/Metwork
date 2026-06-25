@@ -7,6 +7,7 @@ import { MessageCircle, Mail, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter, Link } from '@/i18n/routing';
 import { authService } from '@/services/auth.service';
+import { bookingService } from '@/services/booking.service';
 import { ApiClientError } from '@/lib/api-client';
 import { useAuth } from '@/components/providers/auth-provider';
 import { dashboardPathForRole } from '@/lib/dashboard-routes';
@@ -26,9 +27,14 @@ export function OtpForm() {
   const userId = searchParams.get('userId') ?? '';
   const phone = searchParams.get('phone') ?? '';
   const email = searchParams.get('email') ?? '';
+  // Public-space "book before you sign up": resume the carried selection to
+  // payment once the account is verified.
+  const bookingIntent = searchParams.get('bookingIntent');
 
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [error, setError] = useState<string | null>(null);
+  // Set when the account was verified but the carried slot is gone / expired.
+  const [resumeFailed, setResumeFailed] = useState(false);
   const [cooldown, setCooldown] = useState(RESEND_COOLDOWN);
   const [lastChannel, setLastChannel] = useState<OtpChannel>('whatsapp');
   const [isPending, startTransition] = useTransition();
@@ -81,6 +87,26 @@ export function OtpForm() {
       try {
         const session = await authService.verifyOtp({ userId, code });
         await refresh();
+        // Public-space flow: resume the carried selection straight to payment.
+        // The server re-checks availability + re-prices for the new account.
+        if (bookingIntent) {
+          try {
+            const { payPath } = await bookingService.resumeBookingIntent(bookingIntent);
+            window.location.assign(payPath);
+            return;
+          } catch (resumeErr) {
+            // Account is verified, but the slot was taken / the selection expired.
+            setResumeFailed(true);
+            setError(
+              resumeErr instanceof ApiClientError &&
+                (resumeErr.code === 'SLOT_UNAVAILABLE' ||
+                  resumeErr.code === 'BOOKING_INTENT_EXPIRED')
+                ? t('errors.bookingUnavailable')
+                : t('errors.networkError'),
+            );
+            return;
+          }
+        }
         // "Book & create an account": the server returns a booking-specific
         // destination (pay page for spaces/programs, pending-approval page for
         // consultations). Full navigation — the pay page lives outside the SPA.
@@ -135,6 +161,23 @@ export function OtpForm() {
     { channel: 'email',    label: t('verifyOtp.channelEmail'),    Icon: Mail           },
     { channel: 'sms',      label: t('verifyOtp.channelSms'),      Icon: MessageSquare  },
   ];
+
+  // Account verified, but the carried space slot is gone / the selection expired.
+  if (resumeFailed) {
+    return (
+      <div className="rounded-lg border border-border bg-background p-5 text-center shadow-sm sm:p-8">
+        <h1 className="text-xl font-semibold tracking-tight">{t('verifyOtp.accountReadyTitle')}</h1>
+        {error && (
+          <p role="alert" className="mt-2 text-sm text-destructive">
+            {error}
+          </p>
+        )}
+        <Button asChild className="mt-5 w-full" size="lg">
+          <Link href="/spaces">{t('verifyOtp.browseSpaces')}</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border border-border bg-background p-5 shadow-sm sm:p-8">

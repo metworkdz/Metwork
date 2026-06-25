@@ -550,7 +550,9 @@
       "didntReceive": "Didn't receive it?",
       "channelWhatsapp": "Resend via WhatsApp",
       "channelEmail": "Send via Email",
-      "channelSms": "Send via SMS"
+      "channelSms": "Send via SMS",
+      "accountReadyTitle": "Your account is ready",
+      "browseSpaces": "Browse spaces"
     },
     "errors": {
       "invalidCredentials": "Invalid email or password",
@@ -568,7 +570,8 @@
       "invalidPhone": "Please enter a valid Algerian phone number",
       "termsRequired": "You must accept the terms to continue",
       "privacyRequired": "You must accept the privacy policy and data processing to continue",
-      "businessTypeRequired": "Please choose a business type"
+      "businessTypeRequired": "Please choose a business type",
+      "bookingUnavailable": "This slot is no longer available. Please pick another slot."
     },
     "resetPassword": {
       "title": "Set a new password",
@@ -2351,6 +2354,8 @@
       "total": "Total",
       "endAfterStart": "End must be after start.",
       "signIn": "Sign in to book",
+      "createAndBook": "Create account & book",
+      "haveAccountLogin": "Already have an account? Log in",
       "topUp": "Top up to {amount}",
       "topUpWarning": "Pay from wallet — top up first",
       "submitting": "Booking…",

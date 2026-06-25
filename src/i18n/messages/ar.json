@@ -550,7 +550,9 @@
       "didntReceive": "لم تستلمه؟",
       "channelWhatsapp": "إعادة الإرسال عبر WhatsApp",
       "channelEmail": "إرسال عبر البريد الإلكتروني",
-      "channelSms": "إرسال عبر SMS"
+      "channelSms": "إرسال عبر SMS",
+      "accountReadyTitle": "حسابك جاهز",
+      "browseSpaces": "تصفّح المساحات"
     },
     "errors": {
       "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
@@ -568,7 +570,8 @@
       "invalidPhone": "أدخل رقمًا جزائريًا صحيحًا",
       "termsRequired": "يجب الموافقة على الشروط للمتابعة",
       "privacyRequired": "يجب قبول سياسة الخصوصية والموافقة على معالجة البيانات للمتابعة",
-      "businessTypeRequired": "يرجى اختيار نوع النشاط"
+      "businessTypeRequired": "يرجى اختيار نوع النشاط",
+      "bookingUnavailable": "لم يعد هذا الموعد متاحًا. يرجى اختيار موعد آخر."
     },
     "resetPassword": {
       "title": "تعيين كلمة مرور جديدة",
@@ -2351,6 +2354,8 @@
       "total": "الإجمالي",
       "endAfterStart": "يجب أن تكون نهاية الحجز بعد بدايته.",
       "signIn": "سجل الدخول للحجز",
+      "createAndBook": "أنشئ حسابًا واحجز",
+      "haveAccountLogin": "لديك حساب بالفعل؟ سجّل الدخول",
       "topUp": "شحن إلى {amount}",
       "topUpWarning": "الدفع من المحفظة — اشحن أولاً",
       "submitting": "جارٍ الحجز…",
