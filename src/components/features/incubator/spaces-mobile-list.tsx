@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Building2, CalendarClock, Pencil, Trash2 } from 'lucide-react';
+import { Building2, CalendarClock, Link2, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
@@ -17,6 +17,7 @@ interface SpacesMobileListProps {
   onEdit: (space: Space) => void;
   onDelete: (id: string) => void;
   onManageAvailability: (space: Space) => void;
+  onCopyLink: (space: Space) => void;
 }
 
 /**
@@ -32,6 +33,7 @@ export function SpacesMobileList({
   onEdit,
   onDelete,
   onManageAvailability,
+  onCopyLink,
 }: SpacesMobileListProps) {
   const t = useTranslations('incubator.spaces');
   const locale = useLocale() as Locale;
@@ -100,6 +102,15 @@ export function SpacesMobileList({
                     aria-label={t('actionAvailability')}
                   >
                     <CalendarClock className="size-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => onCopyLink(s)}
+                    aria-label={t('actionCopyLink')}
+                  >
+                    <Link2 className="size-4" />
                   </Button>
                   <Button
                     variant="ghost"
