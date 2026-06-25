@@ -90,6 +90,11 @@ describe('resolveContractVariables', () => {
     expect(values.incubator_nif).toBe('NIF-999');
     expect(values.contract_number).toBe('CT-1');
     expect(values.price).toContain('DZD');
+    // Offline booking (no platform user) → no client city available.
+    expect(values.client_city).toBe('');
+    // Online booking → client city comes from the resolved user.
+    const online = resolveContractVariables({ booking, space, incubator, user: { city: 'Oran' } as never, lang: 'en', contractNumber: 'CT-1' });
+    expect(online.client_city).toBe('Oran');
   });
 });
 
@@ -117,7 +122,8 @@ describe('templateAppliesToCategory', () => {
 describe('CONTRACT_VARIABLES catalogue', () => {
   it('lists every documented token', () => {
     expect(CONTRACT_VARIABLES.map((v) => v.token)).toContain('contract_number');
-    expect(CONTRACT_VARIABLES.length).toBe(20);
+    expect(CONTRACT_VARIABLES.map((v) => v.token)).toContain('client_city');
+    expect(CONTRACT_VARIABLES.length).toBe(21);
   });
 });
 
