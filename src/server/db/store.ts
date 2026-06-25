@@ -401,6 +401,30 @@ export type BookingPaymentMethod =
 export type BookingPaymentMode = 'ONLINE_FULL' | 'CASH_DEPOSIT';
 
 /**
+ * Public-space "book before you sign up" selection carrier.
+ *
+ * A guest on a public space page picks a date/time + payment option and is sent
+ * to signup/login. This DB-backed record carries ONLY that selection across the
+ * signup+OTP (or login) round trip — it holds NO price and NO seat. The real,
+ * server-priced card-booking intent is created at RESUME time (once the visitor
+ * is authenticated) by `createCardBookingIntent`, so availability + pricing are
+ * always re-validated against the live data, never the visitor's earlier read.
+ * Short-lived (1h TTL); swept on write.
+ */
+export interface BookingIntentRecord {
+  id: string;
+  spaceId: string;
+  unit: BookingUnit;
+  startsAt: string;
+  endsAt: string;
+  paymentMode: BookingPaymentMode;
+  /** Fixed 50/50 split for CASH_DEPOSIT when the listing has no configured deposit. */
+  splitHalf?: boolean;
+  createdAt: string;
+  expiresAt: string;
+}
+
+/**
  * Payment lifecycle for a card-settled booking, independent of the booking's
  * scheduling `status`.
  * - 'AWAITING_CASH' — deposit paid online; the cash balance is still due.
@@ -2023,6 +2047,8 @@ interface DbShape {
   transactions: TransactionRecord[];
   topUpIntents: TopUpIntentRecord[];
   bookings: BookingRecord[];
+  /** Short-lived guest selection carriers for the public-space booking flow. */
+  bookingIntents: BookingIntentRecord[];
   /** Incubator-created direct payment links (no payer account required). */
   paymentLinks: PaymentLinkRecord[];
   contactSubmissions: ContactSubmissionRecord[];
@@ -2128,6 +2154,7 @@ const empty: DbShape = {
   transactions: [],
   topUpIntents: [],
   bookings: [],
+  bookingIntents: [],
   paymentLinks: [],
   contactSubmissions: [],
   startupListings: [],

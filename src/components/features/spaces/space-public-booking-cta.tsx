@@ -1,49 +1,31 @@
 'use client';
 
 import { useState } from 'react';
-import { LogIn, UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/routing';
 import { useAuth } from '@/components/providers/auth-provider';
-import { SpaceDetailSheet } from './space-detail-sheet';
+import { SpaceBookingForm, BookingSuccessPanel } from './space-booking-form';
 import type { Space } from '@/types/domain';
+import type { BookingDto } from '@/types/booking';
 
 interface Props {
   space: Space;
   locale?: string;
 }
 
+/**
+ * Inline booking widget on the public space page — the SAME widget for everyone:
+ *   - Logged-out visitors pick a date/time + payment option; the CTAs persist the
+ *     selection and route to signup/login, which resume straight to payment.
+ *   - Entrepreneurs / businesses book directly (no detour).
+ *   - Other authenticated roles can't book a space → a short note.
+ */
 export function SpacePublicBookingCTA({ space }: Props) {
   const { user } = useAuth();
   const t = useTranslations('spaces.detail');
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [success, setSuccess] = useState<{ booking: BookingDto; newBalance: number } | null>(null);
 
-  const redirect = `/spaces/${space.id}`;
-
-  // Space bookings are account-only — guest checkout is restricted to programs.
-  // Anonymous visitors must sign in (or create an account) before booking.
-  if (!user) {
-    return (
-      <div className="space-y-2">
-        <Link href={`/login?redirect=${encodeURIComponent(redirect)}`}>
-          <Button className="w-full" variant="default">
-            <LogIn className="size-4" />
-            {t('signInToBook')}
-          </Button>
-        </Link>
-        <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`}>
-          <Button className="w-full" variant="outline">
-            <UserPlus className="size-4" />
-            {t('createAndBook')}
-          </Button>
-        </Link>
-      </div>
-    );
-  }
-
-  // Entrepreneurs and businesses (trainers / training centres / companies) may book spaces.
-  if (user.role !== 'ENTREPRENEUR' && user.role !== 'BUSINESS') {
+  // Spaces are bookable by entrepreneurs and businesses; other authed roles get a note.
+  if (user && user.role !== 'ENTREPRENEUR' && user.role !== 'BUSINESS') {
     return (
       <p className="text-sm text-muted-foreground text-center">
         {t('entrepreneurOnly')}
@@ -51,16 +33,14 @@ export function SpacePublicBookingCTA({ space }: Props) {
     );
   }
 
+  if (success) {
+    return <BookingSuccessPanel booking={success.booking} newBalance={success.newBalance} />;
+  }
+
   return (
-    <>
-      <Button className="w-full" onClick={() => setSheetOpen(true)}>
-        {t('bookThisSpace')}
-      </Button>
-      <SpaceDetailSheet
-        space={space}
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-      />
-    </>
+    <SpaceBookingForm
+      space={space}
+      onSuccess={(booking, newBalance) => setSuccess({ booking, newBalance })}
+    />
   );
 }

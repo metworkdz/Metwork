@@ -224,6 +224,8 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
     return minutesToTime(Math.min(parseTime(open) + 60, parseTime(close)));
   });
   const [submitting, setSubmitting] = useState(false);
+  // Logged-out "Create account & book" / "Log in" → persist the selection first.
+  const [guestSubmitting, setGuestSubmitting] = useState(false);
   const [error, setError]         = useState<{ code: string; message: string } | null>(null);
   const [promoResult, setPromoResult] = useState<PromoResult | null>(null);
 
@@ -239,9 +241,10 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
     const opts: PayChoice[] = [];
     if (onlineOffered) opts.push('CARD_FULL');
     if (cashOffered) opts.push('CARD_SPLIT');
-    if (onlineOffered) opts.push('WALLET');
+    // The Metwork wallet is account-only — guests pay by card (full or split).
+    if (onlineOffered && isAuthed) opts.push('WALLET');
     return opts;
-  }, [onlineOffered, cashOffered]);
+  }, [onlineOffered, cashOffered, isAuthed]);
 
   const [payChoice, setPayChoice] = useState<PayChoice>(payOptions[0] ?? 'CARD_FULL');
   // Keep the selection valid if the available options change.
@@ -458,6 +461,36 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
     return { code: 'UNKNOWN', message: t('errorGeneric') };
   }
 
+  /**
+   * Logged-out flow: persist the current selection as a server-side booking
+   * intent, then carry its id to signup or login. After auth, the resume step
+   * re-prices + re-checks availability and hands off to the pay page — nothing
+   * is re-entered. The price never travels through the client.
+   */
+  async function handleGuestContinue(dest: 'signup' | 'login') {
+    setError(null);
+    if (!validRange) {
+      setError({ code: 'INVALID_RANGE', message: t('endAfterStart') });
+      return;
+    }
+    setGuestSubmitting(true);
+    try {
+      const { id } = await bookingService.createSpaceBookingIntent({
+        spaceId: space.id,
+        unit: effectiveUnit,
+        startsAt: startIso,
+        endsAt: endIso,
+        paymentMode: isSplit ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
+        splitHalf,
+      });
+      const path = dest === 'signup' ? '/signup' : '/login';
+      router.push(`${path}?bookingIntent=${encodeURIComponent(id)}`);
+    } catch (err) {
+      setError(mapCardError(err));
+      setGuestSubmitting(false);
+    }
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -466,10 +499,11 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
       return;
     }
 
-    // Space booking is account-only — guests sign in first (the CTA already
-    // shows "Sign in"; this guards a stray Enter-key submit too).
+    // Space booking is account-only. A guest's primary path is the explicit
+    // "Create account & book" / "Log in" CTAs; this guards a stray Enter-key
+    // submit by funnelling it through the same selection-preserving flow.
     if (!user) {
-      router.push(`/login?next=${encodeURIComponent('/spaces')}`);
+      await handleGuestContinue('signup');
       return;
     }
 
@@ -882,9 +916,28 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
       )}
 
       {!isAuthed ? (
-        <Button asChild className="w-full" size="lg">
-          <Link href={`/login?next=${encodeURIComponent('/spaces')}`}>{t('signIn')}</Link>
-        </Button>
+        <div className="space-y-2">
+          <Button
+            type="button"
+            size="lg"
+            className="w-full"
+            loading={guestSubmitting}
+            disabled={!validRange}
+            onClick={() => void handleGuestContinue('signup')}
+          >
+            {guestSubmitting ? t('submitting') : t('createAndBook')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="w-full"
+            disabled={guestSubmitting || !validRange}
+            onClick={() => void handleGuestContinue('login')}
+          >
+            {t('haveAccountLogin')}
+          </Button>
+        </div>
       ) : insufficient ? (
         <div className="space-y-2">
           <Button asChild className="w-full" size="lg" variant="outline">

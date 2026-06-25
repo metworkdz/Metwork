@@ -12,6 +12,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Link, useRouter, routing } from '@/i18n/routing';
 import { loginSchema, type LoginInput } from '@/lib/validators';
 import { authService } from '@/services/auth.service';
+import { bookingService } from '@/services/booking.service';
 import { ApiClientError } from '@/lib/api-client';
 import { useAuth } from '@/components/providers/auth-provider';
 import { dashboardPathForRole } from '@/lib/dashboard-routes';
@@ -59,6 +60,24 @@ export function LoginForm() {
       try {
         const session = await authService.login(values);
         await refresh();
+        // Public-space flow: resume the carried selection straight to payment.
+        const bookingIntent = searchParams.get('bookingIntent');
+        if (bookingIntent) {
+          try {
+            const { payPath } = await bookingService.resumeBookingIntent(bookingIntent);
+            window.location.assign(payPath);
+            return;
+          } catch (resumeErr) {
+            setSubmitError(
+              resumeErr instanceof ApiClientError &&
+                (resumeErr.code === 'SLOT_UNAVAILABLE' ||
+                  resumeErr.code === 'BOOKING_INTENT_EXPIRED')
+                ? t('errors.bookingUnavailable')
+                : t('errors.networkError'),
+            );
+            return;
+          }
+        }
         const next = safeNextPath(searchParams.get('next'));
         router.push(next ?? dashboardPathForRole(session.user.role));
       } catch (err) {

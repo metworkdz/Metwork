@@ -550,7 +550,9 @@
       "didntReceive": "Vous ne l'avez pas reçu ?",
       "channelWhatsapp": "Renvoyer via WhatsApp",
       "channelEmail": "Envoyer par e-mail",
-      "channelSms": "Envoyer par SMS"
+      "channelSms": "Envoyer par SMS",
+      "accountReadyTitle": "Votre compte est prêt",
+      "browseSpaces": "Parcourir les espaces"
     },
     "errors": {
       "invalidCredentials": "E-mail ou mot de passe invalide",
@@ -568,7 +570,8 @@
       "invalidPhone": "Veuillez entrer un numéro algérien valide",
       "termsRequired": "Vous devez accepter les conditions",
       "privacyRequired": "Vous devez accepter la politique de confidentialité et le traitement des données pour continuer",
-      "businessTypeRequired": "Veuillez choisir un type d'activité"
+      "businessTypeRequired": "Veuillez choisir un type d'activité",
+      "bookingUnavailable": "Ce créneau n'est plus disponible. Veuillez en choisir un autre."
     },
     "resetPassword": {
       "title": "Définir un nouveau mot de passe",
@@ -2351,6 +2354,8 @@
       "total": "Total",
       "endAfterStart": "La fin doit être après le début.",
       "signIn": "Se connecter pour réserver",
+      "createAndBook": "Créer un compte et réserver",
+      "haveAccountLogin": "Vous avez déjà un compte ? Connectez-vous",
       "topUp": "Recharger à {amount}",
       "topUpWarning": "Payer depuis le portefeuille — rechargez d'abord",
       "submitting": "Réservation…",
