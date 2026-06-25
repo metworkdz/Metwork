@@ -3,6 +3,7 @@ import { requireRole } from '@/lib/auth-guards';
 import { getOrCreateAdminIncubator } from '@/lib/admin-incubator';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { BookingsManager } from '@/components/features/incubator/bookings-manager';
+import { applicableTemplates } from '@/server/contracts/service';
 import { db, type BookingRecord } from '@/server/db/store';
 
 interface PageProps {
@@ -15,6 +16,7 @@ type BookingWithCustomer = BookingRecord & {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  contractTemplates?: { id: string; name: string }[];
 };
 
 export default async function AdminIncubatorBookingsPage({ params }: PageProps) {
@@ -33,6 +35,11 @@ export default async function AdminIncubatorBookingsPage({ params }: PageProps) 
     (data.programs ?? []).filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
   );
 
+  // Space category lookup + this incubator's contract templates → applicable
+  // "Download contract" options per SPACE booking.
+  const spaceCategoryById = new Map((data.spaces ?? []).map((s) => [s.id, s.category]));
+  const myTemplates = (data.contractTemplates ?? []).filter((c) => c.incubatorId === incubator.id);
+
   const bookings: BookingWithCustomer[] = data.bookings
     .filter(
       (b) =>
@@ -47,6 +54,9 @@ export default async function AdminIncubatorBookingsPage({ params }: PageProps) 
         customerName: customer?.fullName ?? b.clientName ?? 'Unknown',
         customerEmail: customer?.email ?? b.clientEmail ?? '',
         customerPhone: customer?.phone ?? b.clientPhone ?? '',
+        contractTemplates: b.itemKind === 'SPACE'
+          ? applicableTemplates(myTemplates, spaceCategoryById.get(b.itemId) ?? null).map((c) => ({ id: c.id, name: c.name }))
+          : [],
       };
     });
 

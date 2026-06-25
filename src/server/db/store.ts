@@ -1636,6 +1636,42 @@ export const DEFAULT_SERVICES: Omit<ServiceRecord, 'id' | 'incubatorId' | 'creat
   { name: 'Acceleration Program', description: null, isActive: true },
 ];
 
+/* ─────────────────── Contract templates ─────────────────── */
+
+/**
+ * Which space category a template applies to. Mirrors `SpaceCategory` plus an
+ * `'ANY'` wildcard so a single template can cover every space the incubator
+ * runs. Used to pick the applicable template(s) for a given SPACE booking.
+ */
+export type ContractTemplateCategory = SpaceCategory | 'ANY';
+
+/**
+ * Reusable, incubator-owned contract template. The `body` is free-text authored
+ * by the incubator and may contain whitelisted `{{variables}}` (see
+ * `src/server/contracts/variables.ts`) that are resolved server-side at
+ * generation time against the booking + client + incubator records. Templates
+ * are never coupled to a specific booking — they are filled on demand to
+ * produce a downloadable PDF for any SPACE booking the incubator owns.
+ *
+ * Additive collection — legacy DB documents that predate this feature simply
+ * lack the `contractTemplates` key and resolve to `[]` via the empty-merge.
+ */
+export interface ContractTemplateRecord {
+  id: string;
+  /** Owning incubator (IncubatorRecord.id). */
+  incubatorId: string;
+  /** Human label shown in the templates list and the booking picker. */
+  name: string;
+  /** Space category this template targets. Defaults to 'ANY' when unset. */
+  spaceCategory?: ContractTemplateCategory;
+  /** Free-text body with optional `{{variable}}` placeholders. */
+  body: string;
+  /** Drives PDF font/direction: 'ar' renders RTL with an embedded Arabic font. */
+  language: 'fr' | 'en' | 'ar';
+  createdAt: string;
+  updatedAt: string;
+}
+
 /* ─────────────────── Expenses ─────────────────── */
 
 export interface ExpenseRecord {
@@ -2067,6 +2103,8 @@ interface DbShape {
   clients: ClientRecord[];
   /** Per-incubator service catalog (used in manual income / CSV imports). */
   services: ServiceRecord[];
+  /** Reusable, incubator-owned contract templates (filled per booking → PDF). */
+  contractTemplates: ContractTemplateRecord[];
   /** Manual and imported expense operations. */
   expenses: ExpenseRecord[];
   /** Manual and imported income operations (separate from platform bookings). */
@@ -2167,6 +2205,7 @@ const empty: DbShape = {
   events: [],
   clients: [],
   services: [],
+  contractTemplates: [],
   expenses: [],
   income: [],
   landingContent: null,

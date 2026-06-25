@@ -17,6 +17,8 @@ import { StatCard } from '@/components/shared/stat-card';
 import { ManualBookingDialog } from '@/components/features/incubator/manual-booking-dialog';
 import { CancelUnpaidButton } from '@/components/features/incubator/cancel-unpaid-button';
 import { BookingRowActions } from '@/components/features/incubator/booking-row-actions';
+import { DownloadContractButton } from '@/components/features/incubator/download-contract-button';
+import { applicableTemplates } from '@/server/contracts/service';
 import { requireRole } from '@/lib/auth-guards';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
@@ -55,6 +57,8 @@ interface IncubatorBookingRow {
   isManual: boolean;
   unit: 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH';
   notes: string;
+  // Applicable contract templates for this booking (SPACE bookings only).
+  contractTemplates: { id: string; name: string }[];
 }
 
 export default async function IncubatorBookingsPage({ params }: PageProps) {
@@ -85,6 +89,11 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
     const programIds = new Set((data.programs ?? []).filter((p) => p.incubatorId === inc.id).map((p) => p.id));
     const eventIds   = new Set((data.events   ?? []).filter((e) => e.incubatorId === inc.id).map((e) => e.id));
 
+    // Space category lookup + the incubator's contract templates, used to offer
+    // a "Download contract" action per applicable SPACE booking.
+    const spaceCategoryById = new Map((data.spaces ?? []).map((s) => [s.id, s.category]));
+    const myTemplates = (data.contractTemplates ?? []).filter((c) => c.incubatorId === inc.id);
+
     const relevant = data.bookings.filter((b) => {
       if (b.itemKind === 'SPACE'   && spaceIds.has(b.itemId))   return true;
       if (b.itemKind === 'PROGRAM' && programIds.has(b.itemId)) return true;
@@ -113,6 +122,9 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
           isManual:      b.source === 'offline' || b.paymentMethod === 'manual',
           unit:          (b.unit ?? 'DAY') as 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH',
           notes:         b.notes ?? '',
+          contractTemplates: b.itemKind === 'SPACE'
+            ? applicableTemplates(myTemplates, spaceCategoryById.get(b.itemId) ?? null).map((c) => ({ id: c.id, name: c.name }))
+            : [],
         };
       });
   }
@@ -234,6 +246,9 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                         </TableCell>
                         <TableCell className="text-end">
                           <div className="flex items-center justify-end gap-1">
+                            {b.itemKind === 'SPACE' && (
+                              <DownloadContractButton bookingId={b.id} templates={b.contractTemplates} />
+                            )}
                             {b.status === 'PENDING_PAYMENT' && (
                               <CancelUnpaidButton bookingId={b.id} />
                             )}
