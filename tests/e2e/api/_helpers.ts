@@ -181,6 +181,11 @@ export interface SpaceOpts {
   category?: 'COWORKING' | 'PRIVATE_OFFICE' | 'TRAINING_ROOM' | 'DOMICILIATION';
   /** Per-space duration discounts (0 < percent < 100, minQty > 0). */
   durationDiscounts?: { unit: 'HOUR' | 'DAY'; minQty: number; percent: number }[];
+  /** Accepted surfaces. Defaults to ['ONLINE']; pass ['ONLINE','CASH'] for split/deposit. */
+  acceptedPaymentMethods?: ('ONLINE' | 'CASH')[];
+  /** Configured cash deposit (CASH_DEPOSIT non-split path). */
+  cashDepositType?: 'FIXED' | 'PERCENT';
+  cashDepositValue?: number;
 }
 
 /** Create a space fixture as the incubator. Returns the full SpaceRecord (has `id` UUID). */
@@ -205,11 +210,13 @@ export async function createSpace(
       pricePerMonth,
       capacity: opts.capacity ?? 20,
       amenities: ['wifi'],
-      acceptedPaymentMethods: ['ONLINE'],
+      acceptedPaymentMethods: opts.acceptedPaymentMethods ?? ['ONLINE'],
       workingDays: opts.workingDays ?? [1, 2, 3, 4, 5],
       openingTime: opts.openingTime ?? '09:00',
       closingTime: opts.closingTime ?? '18:00',
       ...(opts.durationDiscounts ? { durationDiscounts: opts.durationDiscounts } : {}),
+      ...(opts.cashDepositType ? { cashDepositType: opts.cashDepositType } : {}),
+      ...(opts.cashDepositValue !== undefined ? { cashDepositValue: opts.cashDepositValue } : {}),
     },
   });
   expect(res.status(), `createSpace failed → ${res.status()} ${await res.text()}`).toBe(201);
@@ -372,7 +379,14 @@ export interface BookingView {
   cashRemainingAmount?: number;
   itemId?: string;
   itemKind?: string;
+  unit?: string;
+  startsAt?: string;
+  endsAt?: string;
   settledAt?: string | null;
+  /** Receipt / refund dedup stamps — assert "dispatched exactly once". */
+  depositReceiptSentAt?: string | null;
+  finalReceiptSentAt?: string | null;
+  refundAlertSentAt?: string | null;
 }
 
 export interface LocalDbView {
@@ -539,4 +553,63 @@ export function consecutiveUtcDates(daysAhead: number, count: number): string[] 
     out.push(d.toISOString().slice(0, 10));
   }
   return out;
+}
+
+/* ───────────────── Card hosted-checkout + public booking-intent ───────────────── */
+
+export type SpaceUnit = 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH';
+export type CardPaymentMode = 'ONLINE_FULL' | 'CASH_DEPOSIT';
+
+/** Create a card-booking intent (account-only space/program/event). Returns the raw response. */
+export function cardIntent(
+  ctx: APIRequestContext,
+  body: {
+    target:
+      | { itemKind: 'SPACE'; spaceId: string; unit: SpaceUnit; startsAt: string; endsAt: string }
+      | { itemKind: 'PROGRAM'; programId: string }
+      | { itemKind: 'EVENT'; eventId: string };
+    paymentMode: CardPaymentMode;
+    splitHalf?: boolean;
+    customer: { fullName: string; email: string; phone: string };
+    clientReference: string;
+    promoCode?: string;
+  },
+) {
+  return ctx.post('/api/bookings/card', { headers: xff(), data: body });
+}
+
+/** Drive the hosted-checkout pay page action (`init` settles in mock-sync; `verify` re-checks). */
+export function payCard(ctx: APIRequestContext, token: string, action: 'init' | 'verify') {
+  return ctx.post(`/api/bookings/pay/${token}`, { headers: xff(), data: { action } });
+}
+
+/**
+ * Settle a card intent end-to-end on the mock-sync provider: `init` settles
+ * inside the request, then `verify` confirms it (idempotent). Returns nothing —
+ * assert from server state (findBookingByRef / findBookingByPayToken).
+ */
+export async function settleCard(ctx: APIRequestContext, token: string): Promise<void> {
+  const init = await payCard(ctx, token, 'init');
+  expect(init.status(), `card pay init → ${init.status()} ${await init.text()}`).toBe(200);
+  await payCard(ctx, token, 'verify');
+}
+
+/** PUBLIC: persist a guest's space selection (date/time + payment option). Returns the raw response. */
+export function createSpaceBookingIntent(
+  ctx: APIRequestContext,
+  body: {
+    spaceId: string;
+    unit: SpaceUnit;
+    startsAt: string;
+    endsAt: string;
+    paymentMode: CardPaymentMode;
+    splitHalf?: boolean;
+  },
+) {
+  return ctx.post('/api/bookings/intent', { headers: xff(), data: body });
+}
+
+/** AUTH: resume a persisted selection once signed in → returns the raw response ({ payPath } on success). */
+export function resumeBookingIntent(ctx: APIRequestContext, intentId: string) {
+  return ctx.post(`/api/bookings/intent/${intentId}/resume`, { headers: xff(), data: {} });
 }

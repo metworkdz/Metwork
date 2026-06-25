@@ -534,6 +534,13 @@ export interface BookingRecord {
   /** Receipt dedup guards — interim deposit receipt and final paid receipt. */
   depositReceiptSentAt?: string | null;
   finalReceiptSentAt?: string | null;
+  /**
+   * Dedup guard — operator refund alert sent for a card booking that was paid
+   * online but VOIDED because the slot was taken at settlement
+   * (declineReason SLOT_TAKEN_AFTER_PAYMENT). Nullable/additive: legacy records
+   * have no stamp and behave as "not yet alerted".
+   */
+  refundAlertSentAt?: string | null;
 
   /* ── Hosted-checkout intent (guest + registered card flows) ───────────── */
   /** Single-use token addressing this PENDING_PAYMENT intent on the pay page. */

@@ -71,7 +71,10 @@ export async function POST(
   //    signature-verified, so settle directly (idempotent). This is the only
   //    path that recovers a payer who never returns to the pay page.
   const card = await settleCardBookingFromWebhook(event.topUpId, event.providerRef, event.status);
-  if (card === 'SETTLED' || card === 'ALREADY') {
+  // VOIDED = paid online but the slot was taken at settlement; the booking was
+  // cancelled and the operator alerted to refund. Acknowledged like a settle so
+  // the provider stops retrying.
+  if (card === 'SETTLED' || card === 'ALREADY' || card === 'VOIDED') {
     return json({ kind: 'card_booking', id: event.topUpId, result: card });
   }
 

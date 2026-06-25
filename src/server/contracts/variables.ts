@@ -16,6 +16,7 @@ import type {
   SpaceRecord,
   UserRecord,
 } from '@/server/db/store';
+import { bookingHoldsSeat } from '@/server/bookings/status';
 
 export type ContractLang = 'fr' | 'en' | 'ar';
 
@@ -155,13 +156,33 @@ export function resolveContractVariables(ctx: ResolveContext): Record<ContractVa
 
   const category = space?.category ?? null;
 
-  // amount_paid / amount_due: card CASH_DEPOSIT bookings carry an explicit
-  // online/cash split; everything else is treated as paid-in-full.
-  const isCashDeposit = booking.paymentMode === 'CASH_DEPOSIT';
-  const amountPaid = isCashDeposit
-    ? booking.onlinePaidAmount ?? 0
-    : booking.onlinePaidAmount ?? booking.totalAmount;
-  const amountDue = isCashDeposit ? booking.cashRemainingAmount ?? 0 : 0;
+  // amount_paid / amount_due reflect the booking's REAL settlement state — never
+  // a blanket "paid in full":
+  //   • card CASH_DEPOSIT → deposit paid online now, balance due in cash until
+  //     paymentStatus PAID closes the cash leg (then paid in full, nothing due);
+  //   • card ONLINE_FULL  → full total once settled (CONFIRMED/COMPLETED/PAID),
+  //     otherwise nothing paid yet and the whole total is due;
+  //   • wallet / manual   → paid in full once the booking holds a seat (wallet
+  //     debit / incubator-confirmed); an unpaid intent has paid nothing.
+  const total = booking.totalAmount;
+  const cashCollected = booking.paymentStatus === 'PAID';
+  let amountPaid: number;
+  let amountDue: number;
+  if (booking.paymentMode === 'CASH_DEPOSIT') {
+    const deposit = booking.onlinePaidAmount ?? 0;
+    amountPaid = cashCollected ? total : deposit;
+    amountDue = cashCollected ? 0 : booking.cashRemainingAmount ?? Math.max(0, total - deposit);
+  } else if (booking.paymentMode === 'ONLINE_FULL') {
+    const settled = cashCollected || booking.status === 'CONFIRMED' || booking.status === 'COMPLETED';
+    amountPaid = settled ? booking.onlinePaidAmount ?? total : 0;
+    amountDue = settled ? 0 : total;
+  } else {
+    // Wallet or manual booking (no card paymentMode): a seat-holding booking has
+    // been paid (wallet debit / incubator-confirmed); an unpaid intent has not.
+    const paid = bookingHoldsSeat(booking);
+    amountPaid = paid ? total : 0;
+    amountDue = paid ? 0 : total;
+  }
 
   return {
     client_name:       user?.fullName ?? booking.clientName ?? '',

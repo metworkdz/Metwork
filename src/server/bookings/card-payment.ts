@@ -75,6 +75,7 @@ import { getActiveProvider } from '@/server/payments/registry';
 import { getSlickPayTransferStatus } from '@/server/payments/slickpay-provider';
 import { ProviderNotConfiguredError } from '@/server/payments/errors';
 import { sendBookingReceiptEmail } from '@/server/notifications/mock';
+import { createNotification } from '@/server/notifications/create-notification';
 
 /** Pay tokens live for 7 days — long enough to finish a hosted checkout. */
 const PAY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -800,6 +801,77 @@ export async function dispatchCardReceiptIfDue(bookingId: string): Promise<void>
 }
 
 /**
+ * Alert the operator when a card booking was paid online but had to be VOIDED
+ * because the slot was taken between payment and settlement (declineReason
+ * SLOT_TAKEN_AFTER_PAYMENT). The buyer's online payment is sitting at the
+ * provider and must be refunded MANUALLY, so we surface it to the incubator
+ * manager AND every admin — otherwise a charged-then-cancelled booking is
+ * silent until the buyer complains.
+ *
+ * Exactly-once via the `refundAlertSentAt` claim (settlement replays all see the
+ * same voided booking). Fully fire-and-forget: never throws into the money path.
+ */
+interface VoidRefundAlert {
+  recipients: { userId: string; href: string }[];
+  itemName: string;
+  amount: number;
+  providerRef: string | null;
+}
+
+async function notifyVoidedAfterPayment(bookingId: string): Promise<void> {
+  try {
+    let alert: VoidRefundAlert | null = null;
+
+    await db.update((d) => {
+      const b = d.bookings.find((x) => x.id === bookingId);
+      if (!b || b.paymentMethod !== 'card') return;
+      // Only the paid-then-voided case warrants a refund alert.
+      if (b.declineReason !== 'SLOT_TAKEN_AFTER_PAYMENT') return;
+      if (b.refundAlertSentAt) return; // already alerted — claim is exactly-once
+
+      const incubator = findOwningIncubator(d, b.itemKind, b.itemId);
+      const recipients: { userId: string; href: string }[] = [];
+      if (incubator?.managerId) {
+        recipients.push({ userId: incubator.managerId, href: '/dashboard/incubator/bookings' });
+      }
+      for (const u of d.users) {
+        if (u.role === 'ADMIN' && u.id !== incubator?.managerId) {
+          recipients.push({ userId: u.id, href: '/dashboard/admin/bookings' });
+        }
+      }
+      if (recipients.length === 0) return; // nobody to tell — don't burn the claim
+
+      b.refundAlertSentAt = new Date().toISOString();
+      alert = {
+        recipients,
+        itemName: b.itemName ?? 'booking',
+        amount: b.onlineChargeAmount ?? b.onlinePaidAmount ?? 0,
+        providerRef: b.paymentProviderRef ?? null,
+      };
+    });
+
+    // `alert` is assigned inside the db.update closure; TS narrows it to null
+    // here, so cast back before the guard (same shape as dispatchCardReceiptIfDue).
+    const a = alert as VoidRefundAlert | null;
+    if (!a) return;
+
+    const amountStr = `${a.amount.toLocaleString('fr-DZ')} DZD`;
+    const refStr = a.providerRef ? ` (provider ref ${a.providerRef})` : '';
+    for (const r of a.recipients) {
+      await createNotification({
+        userId: r.userId,
+        type: 'BOOKING_CANCELLED',
+        title: 'Online payment needs a manual refund',
+        body: `A card payment of ${amountStr} for "${a.itemName}" was received, but the slot was no longer available, so the booking was cancelled. Refund the buyer ${amountStr}${refStr} via the payment provider.`,
+        href: r.href,
+      });
+    }
+  } catch {
+    // Operator alerts are non-critical — swallow so settlement is unaffected.
+  }
+}
+
+/**
  * Verify with the provider and settle if paid. Called when the client returns
  * from the hosted checkout. Never trusts the redirect — asks the provider.
  */
@@ -838,7 +910,10 @@ export async function verifyAndSettleCardBooking(token: string): Promise<CardPay
 
   const outcome = await applyCardSettlement(booking.id, booking.paymentProviderRef);
   const after = (await db.read()).bookings.find((b) => b.id === booking.id) ?? booking;
-  if (outcome.kind === 'SLOT_TAKEN') return viewFor(after, 'SLOT_TAKEN');
+  if (outcome.kind === 'SLOT_TAKEN') {
+    void notifyVoidedAfterPayment(booking.id);
+    return viewFor(after, 'SLOT_TAKEN');
+  }
   void dispatchCardReceiptIfDue(booking.id);
   return viewFor(after, 'CONFIRMED');
 }
@@ -853,7 +928,7 @@ export async function settleCardBookingFromWebhook(
   bookingId: string,
   providerRef: string | null,
   status: 'COMPLETED' | 'FAILED',
-): Promise<'SETTLED' | 'ALREADY' | 'NOT_FOUND' | 'IGNORED'> {
+): Promise<'SETTLED' | 'ALREADY' | 'NOT_FOUND' | 'IGNORED' | 'VOIDED'> {
   const data = await db.read();
   const booking = data.bookings.find((b) => b.id === bookingId && b.paymentMethod === 'card');
   if (!booking) return 'NOT_FOUND';
@@ -861,6 +936,12 @@ export async function settleCardBookingFromWebhook(
   if (isSettled(booking)) return 'ALREADY';
   const outcome = await applyCardSettlement(bookingId, providerRef);
   if (outcome.kind === 'NOT_FOUND') return 'NOT_FOUND';
+  if (outcome.kind === 'SLOT_TAKEN') {
+    // Paid online but the slot was gone → booking voided. Report VOIDED (not
+    // SETTLED) so the webhook ack is accurate, and alert the operator to refund.
+    void notifyVoidedAfterPayment(bookingId);
+    return 'VOIDED';
+  }
   void dispatchCardReceiptIfDue(bookingId);
   return 'SETTLED';
 }
@@ -932,8 +1013,9 @@ export async function initCardBookingPayment(
 
   // Synchronous settlement (mock sync) → settle now, bounce to the pay page.
   if (result.status === 'COMPLETED') {
-    await applyCardSettlement(booking.id, result.providerRef);
-    void dispatchCardReceiptIfDue(booking.id);
+    const outcome = await applyCardSettlement(booking.id, result.providerRef);
+    if (outcome.kind === 'SLOT_TAKEN') void notifyVoidedAfterPayment(booking.id);
+    else void dispatchCardReceiptIfDue(booking.id);
     return { ok: true, redirectUrl: returnUrl };
   }
 
