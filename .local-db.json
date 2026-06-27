@@ -162,7 +162,7 @@
       "fullName": "QA TRAINER mqlj33bvkwdy",
       "phone": "+213665261194",
       "city": "Alger",
-      "role": "TRAINER",
+      "role": "BUSINESS",
       "status": "ACTIVE",
       "phoneVerified": true,
       "emailVerified": false,
@@ -171,7 +171,8 @@
       "locale": "en",
       "sex": null,
       "createdAt": "2026-06-19T22:56:37.786Z",
-      "updatedAt": "2026-06-19T22:56:37.786Z"
+      "updatedAt": "2026-06-19T22:56:37.786Z",
+      "businessSubType": "TRAINER"
     },
     {
       "id": "d16aa062-0ab9-4487-8d20-c4e8331b0186",
@@ -378,7 +379,7 @@
       "fullName": "QA TRAINER mqlj9927cm7a",
       "phone": "+213606456345",
       "city": "Alger",
-      "role": "TRAINER",
+      "role": "BUSINESS",
       "status": "ACTIVE",
       "phoneVerified": true,
       "emailVerified": false,
@@ -387,7 +388,8 @@
       "locale": "en",
       "sex": null,
       "createdAt": "2026-06-19T23:01:25.082Z",
-      "updatedAt": "2026-06-19T23:01:25.082Z"
+      "updatedAt": "2026-06-19T23:01:25.082Z",
+      "businessSubType": "TRAINER"
     },
     {
       "id": "38f056c7-7322-4c32-bf46-e2c95079fe42",
@@ -594,7 +596,7 @@
       "fullName": "QA TRAINER mqlkkvwqhk5w",
       "phone": "+213628380479",
       "city": "Alger",
-      "role": "TRAINER",
+      "role": "BUSINESS",
       "status": "ACTIVE",
       "phoneVerified": true,
       "emailVerified": false,
@@ -603,7 +605,8 @@
       "locale": "en",
       "sex": null,
       "createdAt": "2026-06-19T23:38:27.573Z",
-      "updatedAt": "2026-06-19T23:38:27.573Z"
+      "updatedAt": "2026-06-19T23:38:27.573Z",
+      "businessSubType": "TRAINER"
     },
     {
       "id": "4da88b3c-4f1c-40d5-899d-3355978b9be4",
@@ -8281,6 +8284,8 @@
       "updatedAt": "2026-06-19T23:46:07.159Z"
     }
   ],
+  "bookingIntents": [],
+  "paymentLinks": [],
   "contactSubmissions": [],
   "startupListings": [],
   "mentors": [
@@ -17945,6 +17950,7 @@
       "updatedAt": "2026-05-21T22:56:20.970Z"
     }
   ],
+  "contractTemplates": [],
   "expenses": [],
   "income": [],
   "landingContent": null,
@@ -22855,7 +22861,6 @@
       "adminNote": "QA payout"
     }
   ],
-  "mentorAccessTokens": [],
   "mentorSessions": [
     {
       "idHash": "eb870ca8ea81e126b218e0eb084cf491f65c1d449393ee6476801e24b8e28b4a",
@@ -23177,8 +23182,11 @@
     }
   ],
   "meta": {
-    "promoCodesSeeded": true
+    "promoCodesSeeded": true,
+    "demoMentorsRemoved": true,
+    "businessRoleMigrated": true
   },
+  "mentorAccessTokens": [],
   "incubatorProfiles": [
     {
       "id": "qa-incubator-profile-id",

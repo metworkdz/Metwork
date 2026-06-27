@@ -1378,6 +1378,7 @@
     "membership": "Membership",
     "settings": "Settings",
     "startups": "Startups",
+    "saved": "Saved",
     "meetings": "Meetings",
     "portfolio": "Portfolio",
     "spaces": "Spaces",
@@ -1395,7 +1396,12 @@
     "promoCodes": "Promo codes",
     "commissions": "Commissions",
     "content": "Content",
+    "auditLog": "Audit log",
     "consultations": "Consultations",
+    "mentors": "Mentors",
+    "mentorRevenue": "Mentor revenue",
+    "contacts": "Contacts",
+    "investorContacts": "Investor contacts",
     "clients": "Clients",
     "services": "Services",
     "expenses": "Expenses",
@@ -1411,7 +1417,8 @@
     "quickActions": "Quick actions",
     "recentBookings": "Recent bookings",
     "recentClients": "Recent clients",
-    "nothingYet": "Nothing here yet"
+    "nothingYet": "Nothing here yet",
+    "payments": "Payments"
   },
   "pages": {
     "consultationPay": {
@@ -2109,6 +2116,10 @@
         "partnerPromoCodes": {
           "title": "Partner Promo Codes",
           "subtitle": "Generate and manage membership discount codes issued by partner spaces."
+        },
+        "payments": {
+          "title": "Payments",
+          "subtitle": "Review withdrawal requests and pay them out manually or via SlickPay."
         }
       }
     },
@@ -3077,7 +3088,33 @@
       "mentorEmptyDescription": "Consultant payout requests will appear here.",
       "colConsultant": "Consultant",
       "colAvailable": "Available",
-      "mentorRejectDescription": "Reject this withdrawal. The {amount} will be refunded to the consultant's earnings balance."
+      "mentorRejectDescription": "Reject this withdrawal. The {amount} will be refunded to the consultant's earnings balance.",
+      "approveAmountIntro": "Pay out {amount}. Choose how to send it.",
+      "methodManual": "Manual transfer",
+      "methodManualHint": "You wire the funds externally, then mark as sent.",
+      "methodSlickpay": "SlickPay (automatic)",
+      "methodSlickpayHint": "Send to a RIB via SlickPay. Funds leave only after SlickPay confirms.",
+      "beneficiaryHeading": "Beneficiary bank account",
+      "ribLabel": "RIB (20 digits)",
+      "ribPlaceholder": "00799999000123456789",
+      "ribInvalid": "Enter a valid 20-digit RIB.",
+      "firstNameLabel": "First name",
+      "lastNameLabel": "Last name",
+      "addressLabel": "Address",
+      "feeNote": "The SlickPay fee is paid by the platform — the beneficiary receives the full amount.",
+      "approveManualConfirm": "Mark as sent",
+      "approveSlickpayConfirm": "Send via SlickPay",
+      "colPayout": "Payout",
+      "totalSent": "Total sent",
+      "slickpayFees": "SlickPay fees",
+      "feeShort": "fee {fee}",
+      "badgePending": "pending",
+      "badgeProcessing": "sending…",
+      "badgeSent": "sent",
+      "badgeManual": "paid manually",
+      "badgeFailed": "failed",
+      "badgeRejected": "rejected",
+      "retry": "Retry SlickPay"
     },
     "contacts": {
       "filterUnhandled": "Unhandled",
@@ -3424,6 +3461,94 @@
       "settingsSaved": "Settings saved.",
       "saveFailed": "Save failed",
       "lastUpdated": "Last updated: {date}"
+    },
+    "payments": {
+      "cancel": "Cancel",
+      "back": "Back",
+      "refresh": "Refresh",
+      "newTransfer": "New transfer",
+      "tabs": {
+        "users": "Users",
+        "requests": "Withdrawal requests"
+      },
+      "users": {
+        "searchPlaceholder": "Search by name…",
+        "allRoles": "All",
+        "colName": "Name",
+        "colRole": "Role",
+        "colBalance": "Balance",
+        "colAccount": "Payout account",
+        "accountOnFile": "Bank account",
+        "noAccount": "No bank account",
+        "addBank": "Add bank account",
+        "editBank": "Edit bank",
+        "send": "Send transfer",
+        "emptyTitle": "No payable users",
+        "emptyDescription": "Users and consultants with a wallet appear here."
+      },
+      "requests": {
+        "colUser": "Requester",
+        "colAmount": "Amount",
+        "colStatus": "Status",
+        "colDate": "Date",
+        "process": "Process",
+        "retry": "Retry",
+        "reject": "Reject",
+        "rejectTitle": "Reject withdrawal?",
+        "rejectBody": "The {amount} will be refunded to the requester’s wallet.",
+        "notePlaceholder": "Reason (optional)…",
+        "emptyTitle": "No withdrawal requests",
+        "emptyDescription": "Requests from users and consultants appear here.",
+        "pill": {
+          "requested": "requested",
+          "processing": "processing",
+          "sent": "sent",
+          "failed": "failed",
+          "rejected": "rejected"
+        }
+      },
+      "bank": {
+        "addTitle": "Add bank account",
+        "editTitle": "Edit bank account",
+        "subtitle": "Payout RIB for {name}.",
+        "title": "Account title",
+        "titlePlaceholder": "e.g. Personal account",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "address": "Address",
+        "rib": "RIB (20 digits)",
+        "ribPlaceholder": "00799999000123456789",
+        "ribReplacePlaceholder": "Current: {masked} — type a new RIB to replace",
+        "ribInvalid": "Enter a valid 20-digit RIB.",
+        "save": "Save"
+      },
+      "transfer": {
+        "title": "New transfer",
+        "subtitle": "Send a payout to {name}.",
+        "recipient": "Recipient",
+        "destination": "Destination",
+        "amount": "Amount (DZD)",
+        "min": "Min 500 DZD",
+        "balance": "Balance: {amount}",
+        "belowMin": "Minimum is 500 DZD.",
+        "exceedsBalance": "Amount exceeds the balance.",
+        "review": "Review transfer",
+        "beneficiaryReceives": "Beneficiary receives",
+        "fee": "SlickPay fee",
+        "feeUnknown": "Calculated at send",
+        "feeNote": "The fee is paid by the platform — the beneficiary receives the full amount.",
+        "confirmSend": "Confirm & send",
+        "noBank": "This recipient has no bank account on file. Add one before sending.",
+        "addBank": "Add bank account",
+        "sentTitle": "Transfer sent",
+        "sentBody": "The payout was confirmed by SlickPay.",
+        "processingTitle": "Transfer processing",
+        "processingBody": "Awaiting SlickPay confirmation. It will settle automatically.",
+        "openConfirmation": "Open confirmation page",
+        "failedTitle": "Transfer failed",
+        "retry": "Retry",
+        "done": "Done"
+      }
     }
   },
   "bookings": {

@@ -1378,6 +1378,7 @@
     "membership": "Abonnement",
     "settings": "Paramètres",
     "startups": "Startups",
+    "saved": "Sauvegardés",
     "meetings": "Rendez-vous",
     "portfolio": "Portfolio",
     "spaces": "Espaces",
@@ -1395,7 +1396,12 @@
     "promoCodes": "Codes promo",
     "commissions": "Commissions",
     "content": "Contenu",
+    "auditLog": "Journal d'audit",
     "consultations": "Consultations",
+    "mentors": "Mentors",
+    "mentorRevenue": "Revenus des mentors",
+    "contacts": "Contacts",
+    "investorContacts": "Contacts investisseurs",
     "clients": "Clients",
     "services": "Services",
     "expenses": "Dépenses",
@@ -1411,7 +1417,8 @@
     "quickActions": "Actions rapides",
     "recentBookings": "Réservations récentes",
     "recentClients": "Clients récents",
-    "nothingYet": "Rien pour le moment"
+    "nothingYet": "Rien pour le moment",
+    "payments": "Paiements"
   },
   "pages": {
     "consultationPay": {
@@ -2109,6 +2116,10 @@
         "partnerPromoCodes": {
           "title": "Codes Promo Partenaires",
           "subtitle": "Générez et gérez les codes de réduction d'adhésion émis par les espaces partenaires."
+        },
+        "payments": {
+          "title": "Paiements",
+          "subtitle": "Examinez les demandes de retrait et payez-les manuellement ou via SlickPay."
         }
       }
     },
@@ -3077,7 +3088,33 @@
       "mentorEmptyDescription": "Les demandes de paiement des consultants apparaîtront ici.",
       "colConsultant": "Consultant",
       "colAvailable": "Disponible",
-      "mentorRejectDescription": "Rejeter ce retrait. Les {amount} seront recrédités sur le solde des gains du consultant."
+      "mentorRejectDescription": "Rejeter ce retrait. Les {amount} seront recrédités sur le solde des gains du consultant.",
+      "approveAmountIntro": "Verser {amount}. Choisissez le mode d'envoi.",
+      "methodManual": "Virement manuel",
+      "methodManualHint": "Vous virez les fonds vous-même, puis marquez comme envoyé.",
+      "methodSlickpay": "SlickPay (automatique)",
+      "methodSlickpayHint": "Envoi vers un RIB via SlickPay. Les fonds ne partent qu'après confirmation de SlickPay.",
+      "beneficiaryHeading": "Compte bancaire du bénéficiaire",
+      "ribLabel": "RIB (20 chiffres)",
+      "ribPlaceholder": "00799999000123456789",
+      "ribInvalid": "Saisissez un RIB valide à 20 chiffres.",
+      "firstNameLabel": "Prénom",
+      "lastNameLabel": "Nom",
+      "addressLabel": "Adresse",
+      "feeNote": "Les frais SlickPay sont payés par la plateforme — le bénéficiaire reçoit le montant total.",
+      "approveManualConfirm": "Marquer comme envoyé",
+      "approveSlickpayConfirm": "Envoyer via SlickPay",
+      "colPayout": "Versement",
+      "totalSent": "Total versé",
+      "slickpayFees": "Frais SlickPay",
+      "feeShort": "frais {fee}",
+      "badgePending": "en attente",
+      "badgeProcessing": "envoi…",
+      "badgeSent": "envoyé",
+      "badgeManual": "payé manuellement",
+      "badgeFailed": "échoué",
+      "badgeRejected": "rejeté",
+      "retry": "Réessayer SlickPay"
     },
     "contacts": {
       "filterUnhandled": "Unhandled",
@@ -3424,6 +3461,94 @@
       "settingsSaved": "Paramètres enregistrés.",
       "saveFailed": "Échec de la sauvegarde",
       "lastUpdated": "Dernière mise à jour : {date}"
+    },
+    "payments": {
+      "cancel": "Annuler",
+      "back": "Retour",
+      "refresh": "Actualiser",
+      "newTransfer": "Nouveau virement",
+      "tabs": {
+        "users": "Utilisateurs",
+        "requests": "Demandes de retrait"
+      },
+      "users": {
+        "searchPlaceholder": "Rechercher par nom…",
+        "allRoles": "Tous",
+        "colName": "Nom",
+        "colRole": "Rôle",
+        "colBalance": "Solde",
+        "colAccount": "Compte de versement",
+        "accountOnFile": "Compte bancaire",
+        "noAccount": "Aucun compte",
+        "addBank": "Ajouter un compte",
+        "editBank": "Modifier",
+        "send": "Envoyer",
+        "emptyTitle": "Aucun utilisateur à payer",
+        "emptyDescription": "Les utilisateurs et consultants disposant d’un portefeuille apparaissent ici."
+      },
+      "requests": {
+        "colUser": "Demandeur",
+        "colAmount": "Montant",
+        "colStatus": "Statut",
+        "colDate": "Date",
+        "process": "Traiter",
+        "retry": "Réessayer",
+        "reject": "Rejeter",
+        "rejectTitle": "Rejeter le retrait ?",
+        "rejectBody": "Les {amount} seront recrédités au portefeuille du demandeur.",
+        "notePlaceholder": "Motif (facultatif)…",
+        "emptyTitle": "Aucune demande de retrait",
+        "emptyDescription": "Les demandes des utilisateurs et consultants apparaissent ici.",
+        "pill": {
+          "requested": "demandé",
+          "processing": "en cours",
+          "sent": "envoyé",
+          "failed": "échoué",
+          "rejected": "rejeté"
+        }
+      },
+      "bank": {
+        "addTitle": "Ajouter un compte bancaire",
+        "editTitle": "Modifier le compte bancaire",
+        "subtitle": "RIB de versement pour {name}.",
+        "title": "Intitulé du compte",
+        "titlePlaceholder": "ex. Compte personnel",
+        "firstName": "Prénom",
+        "lastName": "Nom",
+        "address": "Adresse",
+        "rib": "RIB (20 chiffres)",
+        "ribPlaceholder": "00799999000123456789",
+        "ribReplacePlaceholder": "Actuel : {masked} — saisissez un nouveau RIB pour remplacer",
+        "ribInvalid": "Saisissez un RIB valide à 20 chiffres.",
+        "save": "Enregistrer"
+      },
+      "transfer": {
+        "title": "Nouveau virement",
+        "subtitle": "Envoyer un versement à {name}.",
+        "recipient": "Bénéficiaire",
+        "destination": "Destination",
+        "amount": "Montant (DZD)",
+        "min": "Min 500 DZD",
+        "balance": "Solde : {amount}",
+        "belowMin": "Le minimum est de 500 DZD.",
+        "exceedsBalance": "Le montant dépasse le solde.",
+        "review": "Vérifier le virement",
+        "beneficiaryReceives": "Le bénéficiaire reçoit",
+        "fee": "Frais SlickPay",
+        "feeUnknown": "Calculé à l’envoi",
+        "feeNote": "Les frais sont payés par la plateforme — le bénéficiaire reçoit le montant total.",
+        "confirmSend": "Confirmer et envoyer",
+        "noBank": "Ce bénéficiaire n’a aucun compte bancaire enregistré. Ajoutez-en un avant d’envoyer.",
+        "addBank": "Ajouter un compte",
+        "sentTitle": "Virement envoyé",
+        "sentBody": "Le versement a été confirmé par SlickPay.",
+        "processingTitle": "Virement en cours",
+        "processingBody": "En attente de la confirmation SlickPay. Le règlement sera automatique.",
+        "openConfirmation": "Ouvrir la page de confirmation",
+        "failedTitle": "Échec du virement",
+        "retry": "Réessayer",
+        "done": "Terminé"
+      }
     }
   },
   "bookings": {
