@@ -457,6 +457,11 @@ export async function resolveMentorWithdrawal(input: {
         hold.completedAt = now;
       }
       request.status = 'APPROVED';
+      // Manual approval: admin wired the funds externally. Record the method and
+      // clear any stale SlickPay state from a prior failed attempt.
+      request.payoutMethod = 'MANUAL';
+      request.payoutStatus = null;
+      request.payoutFailureReason = null;
       request.adminNote = input.adminNote ?? null;
       request.updatedAt = now;
       return { ok: true, request };

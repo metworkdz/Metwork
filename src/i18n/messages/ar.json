@@ -1411,7 +1411,8 @@
     "quickActions": "إجراءات سريعة",
     "recentBookings": "الحجوزات الأخيرة",
     "recentClients": "العملاء الجدد",
-    "nothingYet": "لا يوجد شيء بعد"
+    "nothingYet": "لا يوجد شيء بعد",
+    "payments": "المدفوعات"
   },
   "pages": {
     "consultationPay": {
@@ -2109,6 +2110,10 @@
         "partnerPromoCodes": {
           "title": "رموز الترويج للشركاء",
           "subtitle": "إنشاء وإدارة رموز الخصم للعضوية الصادرة عن الفضاءات الشريكة."
+        },
+        "payments": {
+          "title": "المدفوعات",
+          "subtitle": "راجع طلبات السحب وادفعها يدويًا أو عبر SlickPay."
         }
       }
     },
@@ -3077,7 +3082,33 @@
       "mentorEmptyDescription": "ستظهر هنا طلبات دفع المستشارين.",
       "colConsultant": "المستشار",
       "colAvailable": "المتاح",
-      "mentorRejectDescription": "رفض هذا السحب. ستتم إعادة {amount} إلى رصيد أرباح المستشار."
+      "mentorRejectDescription": "رفض هذا السحب. ستتم إعادة {amount} إلى رصيد أرباح المستشار.",
+      "approveAmountIntro": "دفع {amount}. اختر طريقة الإرسال.",
+      "methodManual": "تحويل يدوي",
+      "methodManualHint": "تقوم بتحويل الأموال خارجيًا ثم تحدّدها كمُرسَلة.",
+      "methodSlickpay": "SlickPay (تلقائي)",
+      "methodSlickpayHint": "الإرسال إلى RIB عبر SlickPay. لا تغادر الأموال إلا بعد تأكيد SlickPay.",
+      "beneficiaryHeading": "الحساب البنكي للمستفيد",
+      "ribLabel": "RIB (20 رقمًا)",
+      "ribPlaceholder": "00799999000123456789",
+      "ribInvalid": "أدخل رقم RIB صالحًا مكوّنًا من 20 رقمًا.",
+      "firstNameLabel": "الاسم",
+      "lastNameLabel": "اللقب",
+      "addressLabel": "العنوان",
+      "feeNote": "رسوم SlickPay تتحمّلها المنصّة — يتلقّى المستفيد المبلغ كاملًا.",
+      "approveManualConfirm": "تحديد كمُرسَل",
+      "approveSlickpayConfirm": "الإرسال عبر SlickPay",
+      "colPayout": "الدفع",
+      "totalSent": "إجمالي المُرسَل",
+      "slickpayFees": "رسوم SlickPay",
+      "feeShort": "رسوم {fee}",
+      "badgePending": "قيد الانتظار",
+      "badgeProcessing": "جارٍ الإرسال…",
+      "badgeSent": "تم الإرسال",
+      "badgeManual": "دُفع يدويًا",
+      "badgeFailed": "فشل",
+      "badgeRejected": "مرفوض",
+      "retry": "إعادة المحاولة عبر SlickPay"
     },
     "contacts": {
       "filterUnhandled": "Unhandled",
@@ -3424,6 +3455,94 @@
       "settingsSaved": "تم حفظ الإعدادات.",
       "saveFailed": "فشل الحفظ",
       "lastUpdated": "آخر تحديث: {date}"
+    },
+    "payments": {
+      "cancel": "إلغاء",
+      "back": "رجوع",
+      "refresh": "تحديث",
+      "newTransfer": "تحويل جديد",
+      "tabs": {
+        "users": "المستخدمون",
+        "requests": "طلبات السحب"
+      },
+      "users": {
+        "searchPlaceholder": "ابحث بالاسم…",
+        "allRoles": "الكل",
+        "colName": "الاسم",
+        "colRole": "الدور",
+        "colBalance": "الرصيد",
+        "colAccount": "حساب الدفع",
+        "accountOnFile": "حساب بنكي",
+        "noAccount": "لا يوجد حساب",
+        "addBank": "إضافة حساب بنكي",
+        "editBank": "تعديل",
+        "send": "إرسال تحويل",
+        "emptyTitle": "لا يوجد مستخدمون مستحقون",
+        "emptyDescription": "يظهر هنا المستخدمون والمستشارون الذين لديهم محفظة."
+      },
+      "requests": {
+        "colUser": "مقدّم الطلب",
+        "colAmount": "المبلغ",
+        "colStatus": "الحالة",
+        "colDate": "التاريخ",
+        "process": "معالجة",
+        "retry": "إعادة المحاولة",
+        "reject": "رفض",
+        "rejectTitle": "رفض السحب؟",
+        "rejectBody": "سيُعاد مبلغ {amount} إلى محفظة مقدّم الطلب.",
+        "notePlaceholder": "السبب (اختياري)…",
+        "emptyTitle": "لا توجد طلبات سحب",
+        "emptyDescription": "تظهر هنا طلبات المستخدمين والمستشارين.",
+        "pill": {
+          "requested": "مطلوب",
+          "processing": "قيد المعالجة",
+          "sent": "تم الإرسال",
+          "failed": "فشل",
+          "rejected": "مرفوض"
+        }
+      },
+      "bank": {
+        "addTitle": "إضافة حساب بنكي",
+        "editTitle": "تعديل الحساب البنكي",
+        "subtitle": "RIB الدفع لـ {name}.",
+        "title": "اسم الحساب",
+        "titlePlaceholder": "مثال: حساب شخصي",
+        "firstName": "الاسم",
+        "lastName": "اللقب",
+        "address": "العنوان",
+        "rib": "RIB (20 رقمًا)",
+        "ribPlaceholder": "00799999000123456789",
+        "ribReplacePlaceholder": "الحالي: {masked} — أدخل RIB جديدًا للاستبدال",
+        "ribInvalid": "أدخل رقم RIB صالحًا مكوّنًا من 20 رقمًا.",
+        "save": "حفظ"
+      },
+      "transfer": {
+        "title": "تحويل جديد",
+        "subtitle": "إرسال دفعة إلى {name}.",
+        "recipient": "المستفيد",
+        "destination": "الوجهة",
+        "amount": "المبلغ (دج)",
+        "min": "الحد الأدنى 500 دج",
+        "balance": "الرصيد: {amount}",
+        "belowMin": "الحد الأدنى هو 500 دج.",
+        "exceedsBalance": "المبلغ يتجاوز الرصيد.",
+        "review": "مراجعة التحويل",
+        "beneficiaryReceives": "يتلقى المستفيد",
+        "fee": "رسوم SlickPay",
+        "feeUnknown": "يُحتسب عند الإرسال",
+        "feeNote": "تتحمّل المنصّة الرسوم — يتلقّى المستفيد المبلغ كاملًا.",
+        "confirmSend": "تأكيد وإرسال",
+        "noBank": "لا يوجد حساب بنكي مسجّل لهذا المستفيد. أضف حسابًا قبل الإرسال.",
+        "addBank": "إضافة حساب بنكي",
+        "sentTitle": "تم إرسال التحويل",
+        "sentBody": "تم تأكيد الدفعة من SlickPay.",
+        "processingTitle": "التحويل قيد المعالجة",
+        "processingBody": "بانتظار تأكيد SlickPay. ستتم التسوية تلقائيًا.",
+        "openConfirmation": "فتح صفحة التأكيد",
+        "failedTitle": "فشل التحويل",
+        "retry": "إعادة المحاولة",
+        "done": "تم"
+      }
     }
   },
   "bookings": {

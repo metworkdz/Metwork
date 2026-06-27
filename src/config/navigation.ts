@@ -183,7 +183,7 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.mentorRevenue', href: '/dashboard/admin/mentor-revenue',  icon: TrendingUp },
     { labelKey: 'dashboard.contacts',         href: '/dashboard/admin/contacts',          icon: MessageSquare },
     { labelKey: 'dashboard.investorContacts', href: '/dashboard/admin/investor-contacts', icon: TrendingUp    },
-    { labelKey: 'dashboard.withdrawals',      href: '/dashboard/admin/withdrawals',       icon: Wallet        },
+    { labelKey: 'dashboard.payments',         href: '/dashboard/admin/payments',          icon: Wallet        },
     { labelKey: 'dashboard.content',          href: '/dashboard/admin/cms',               icon: LayoutTemplate },
     { labelKey: 'dashboard.auditLog',         href: '/dashboard/admin/audit-log',         icon: ShieldAlert    },
     { labelKey: 'dashboard.settings',      href: '/dashboard/admin/settings',        icon: Settings },

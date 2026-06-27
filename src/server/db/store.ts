@@ -138,6 +138,15 @@ export interface UserRecord {
   businessPhone?: string | null;
   /** Optional short description / bio. */
   businessDescription?: string | null;
+
+  // ─── Payout bank account (admin payouts) ────────────────────────────────
+  // Additive & nullable. Set by an admin via the Payments dashboard; reused for
+  // every SlickPay payout to this user. See [[PayoutBankAccount]].
+
+  /** Bank account on file for payouts (RIB + holder details). */
+  payoutBankAccount?: PayoutBankAccount | null;
+  /** SlickPay beneficiary uuid (from the accounts endpoint) — cached after first registration. */
+  slickpayBeneficiaryUuid?: string | null;
 }
 
 export interface SessionRecord {
@@ -694,6 +703,8 @@ export type AuditAction =
   | 'PARTNER_PROMO_CODE_BULK_GENERATED'
   | 'WITHDRAWAL_APPROVED'
   | 'WITHDRAWAL_REJECTED'
+  | 'PAYOUT_BANK_ACCOUNT_SET'
+  | 'PAYOUT_SENT'
   | 'ACCOUNT_DELETED';
 
 export interface AuditLogRecord {
@@ -1604,6 +1615,14 @@ export interface MentorRecord {
   pinHash?: string | null;
   /** ISO timestamp the PIN was last set/changed. */
   pinSetAt?: string | null;
+
+  // ─── Payout bank account (admin payouts) ────────────────────────────────
+  // Additive & nullable. Mirrors UserRecord — consultants are payable too.
+
+  /** Bank account on file for payouts (RIB + holder details). */
+  payoutBankAccount?: PayoutBankAccount | null;
+  /** SlickPay beneficiary uuid — cached after first registration. */
+  slickpayBeneficiaryUuid?: string | null;
 }
 
 /* ─────────────────── CRM — Clients ─────────────────── */
@@ -1869,7 +1888,89 @@ export interface InvestmentRecord {
 
 export type WithdrawalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
-export interface WithdrawalRequestRecord {
+/**
+ * How an approved withdrawal is paid out:
+ *   MANUAL   — admin wires the funds externally (CCP/BaridiMob/bank) and clicks
+ *              approve; the escrow hold is settled immediately.
+ *   SLICKPAY — automated disbursement to a registered RIB via the SlickPay
+ *              `users/transfers` API; the hold settles only once SlickPay
+ *              confirms `completed=1` ("sent").
+ */
+export type PayoutMethod = 'MANUAL' | 'SLICKPAY';
+
+/**
+ * Lifecycle of a SlickPay disbursement. Absent/null = not started (MANUAL or
+ * still awaiting an admin decision).
+ *   PROCESSING — claimed + sent to SlickPay, awaiting "sent" confirmation. The
+ *                escrow hold stays reserved; the wallet is NOT yet settled.
+ *   SENT       — SlickPay confirmed completed=1; the hold is settled out.
+ *   FAILED     — SlickPay rejected / errored. The hold stays reserved (money
+ *                untouched); the admin can retry SlickPay or reject to refund.
+ */
+export type PayoutDispatchStatus = 'PROCESSING' | 'SENT' | 'FAILED';
+
+/**
+ * Beneficiary bank details for an automated SlickPay payout. Entered/confirmed
+ * by the admin at approval time (admin-entered ⇒ approved). `rib` is an Algerian
+ * 20-digit RIB.
+ */
+export interface PayoutBeneficiary {
+  rib: string;
+  firstname: string;
+  lastname: string;
+  address: string;
+}
+
+/**
+ * A payable target's bank account "on file" — registered once with SlickPay and
+ * reused for every payout. Lives on the UserRecord / MentorRecord. `rib` is a
+ * 20-digit Algerian RIB; it is only ever surfaced to the client masked.
+ */
+export interface PayoutBankAccount {
+  title: string;
+  firstname: string;
+  lastname: string;
+  address: string;
+  rib: string;
+}
+
+/**
+ * SlickPay disbursement fields shared by user-wallet and mentor-ledger payouts.
+ * Every field is optional/nullable so existing records keep working untouched.
+ */
+export interface PayoutFields {
+  /** How the payout was/will be settled. Set by admin at resolution. */
+  payoutMethod?: PayoutMethod | null;
+  /** SlickPay disbursement lifecycle (only when payoutMethod === 'SLICKPAY'). */
+  payoutStatus?: PayoutDispatchStatus | null;
+  /** SlickPay transfer id (their reference) — set once the transfer is created. */
+  payoutProviderRef?: string | null;
+  /** SlickPay beneficiary account uuid created for the RIB. */
+  payoutAccountUuid?: string | null;
+  /** Idempotency key stamped when a SlickPay disbursement is first claimed. */
+  payoutIdempotencyKey?: string | null;
+  /** SlickPay fee (DZD) the platform paid on this transfer — accounting only. */
+  payoutFee?: number | null;
+  /** Failure reason when payoutStatus === 'FAILED'. */
+  payoutFailureReason?: string | null;
+  /** Structured beneficiary RIB used for the SlickPay payout. */
+  beneficiary?: PayoutBeneficiary | null;
+  /** True once the RIB is approved/entered by the admin (gates SlickPay send). */
+  ribApproved?: boolean | null;
+  /** Admin who initiated/processed this payout (audit). */
+  payoutCreatedByAdminId?: string | null;
+  /** SlickPay confirmation/redirect URL, when the transfer needs interactive validation. */
+  payoutRedirectUrl?: string | null;
+  /**
+   * How the payout originated:
+   *   USER_REQUEST — the user/mentor requested a withdrawal; admin processed it.
+   *   ADMIN_DIRECT — admin initiated the transfer from the Users tab (a withdrawal
+   *                  request is auto-created + reserved at send time).
+   */
+  payoutSource?: 'USER_REQUEST' | 'ADMIN_DIRECT' | null;
+}
+
+export interface WithdrawalRequestRecord extends PayoutFields {
   id: string;
   userId: string;
   /** Integer DZD. */
@@ -1958,7 +2059,7 @@ export interface MentorLedgerTxnRecord {
   completedAt: string | null;
 }
 
-export interface MentorWithdrawalRecord {
+export interface MentorWithdrawalRecord extends PayoutFields {
   id: string;
   mentorId: string;
   /** Integer DZD. */

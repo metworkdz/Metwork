@@ -258,3 +258,152 @@ export async function getSlickPayTransferStatus(
   const completed = Number(body.completed ?? 0) === 1 ? 1 : 0;
   return { completed: completed as 0 | 1 };
 }
+
+/* ─────────────────────────── Disbursement (payout to RIB) ───────────────────────────
+ * Sending money OUT to a beneficiary RIB. Same `users/transfers` family + same
+ * Bearer public key as the collection/top-up path above (single canonical
+ * client) — outbound mode is distinguished by posting `account` (a beneficiary
+ * uuid) instead of the collection's `url`-only body. Contract confirmed from the
+ * official SlickPay SDKs (slickpay-laravel `src/User/{Transfer,Account}.php`,
+ * SlickPAY-API-Flutter `lib/src/repositories/transfer_repository.dart`):
+ *   1. POST users/accounts   {rib, firstname, lastname, address}  → {uuid}
+ *   2. POST users/transfers  {amount, account: <uuid>, url}        → {id}
+ *   3. GET  users/transfers/:id                                    → {completed}
+ *   4. POST users/transfers/commission {amount}                    → {commission}
+ */
+
+// SLICKPAY-CONFIRM: which endpoint registers a payout beneficiary RIB. Concrete
+// SDK evidence (Flutter transfer_repository) shows the transfer body field is
+// `account`, whose uuid comes from `users/accounts`. The official v2 docs also
+// expose `users/contacts`; if a live test shows the transfer consumes a CONTACT
+// uuid instead, flip this one constant (and `TRANSFER_TARGET_FIELD` below).
+const BENEFICIARY_ENDPOINT = 'users/accounts';
+// SLICKPAY-CONFIRM: the transfer body field that references the beneficiary uuid.
+const TRANSFER_TARGET_FIELD = 'account';
+
+/** Shared authenticated JSON POST for the disbursement endpoints. */
+async function slickpayPost(
+  cfg: SlickPayConfig,
+  path: string,
+  body: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const endpoint = `${cfg.apiBase}/${path}`;
+  devLog(`POST ${endpoint}`, body);
+
+  let res: Response;
+  try {
+    res = await fetch(endpoint, {
+      method: 'POST',
+      headers: authHeaders(cfg),
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    throw new ProviderRequestError(
+      `SlickPay network error: ${err instanceof Error ? err.message : String(err)}`,
+      null,
+    );
+  }
+
+  const rawText = await res.text();
+  devLog(`POST ${endpoint} -> HTTP ${res.status}`, rawText);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(rawText) as Record<string, unknown>;
+  } catch {
+    throw new ProviderRequestError(`SlickPay returned non-JSON (${res.status})`, res.status);
+  }
+
+  if (!res.ok) {
+    const msg =
+      (parsed.message as string | undefined) ??
+      (parsed.error as string | undefined) ??
+      // SlickPay validation errors (422) arrive under `errors`.
+      (parsed.errors ? JSON.stringify(parsed.errors) : undefined) ??
+      `HTTP ${res.status}`;
+    throw new ProviderRequestError(`SlickPay request failed: ${msg}`, res.status);
+  }
+  return parsed;
+}
+
+/**
+ * Register a beneficiary bank account (RIB) for disbursement.
+ * `POST users/accounts` → returns the account uuid used as the transfer target.
+ */
+export async function createSlickpayBeneficiary(input: {
+  rib: string;
+  firstname: string;
+  lastname: string;
+  address: string;
+  title?: string;
+  email?: string;
+}): Promise<{ uuid: string }> {
+  const cfg = readConfig();
+  if (!cfg) throw new ProviderNotConfiguredError('slickpay');
+
+  const body = await slickpayPost(cfg, BENEFICIARY_ENDPOINT, {
+    title: input.title ?? `${input.firstname} ${input.lastname}`.trim(),
+    rib: input.rib,
+    firstname: input.firstname,
+    lastname: input.lastname,
+    address: input.address,
+    // SLICKPAY-CONFIRM: the contacts endpoint additionally expects `email`.
+    ...(input.email ? { email: input.email } : {}),
+  });
+
+  const uuid = String(body.uuid ?? body.id ?? '');
+  if (!uuid) {
+    throw new ProviderRequestError('SlickPay account response missing uuid', null);
+  }
+  return { uuid };
+}
+
+/**
+ * Create a disbursement to a previously-registered beneficiary account.
+ * `POST users/transfers` with `account` (uuid) → returns the transfer id, which
+ * is later polled via {@link getSlickPayTransferStatus} for `completed=1`.
+ */
+export async function createSlickpayDisbursement(input: {
+  /** Integer DZD — the amount the beneficiary receives. */
+  amount: number;
+  /** Beneficiary account uuid from {@link createSlickpayBeneficiary}. */
+  accountUuid: string;
+  /** Return URL (carries the locale; SlickPay echoes it on its flow). */
+  returnUrl: string;
+}): Promise<{ transferId: string; redirectUrl: string | null; raw: unknown }> {
+  const cfg = readConfig();
+  if (!cfg) throw new ProviderNotConfiguredError('slickpay');
+
+  const body = await slickpayPost(cfg, 'users/transfers', {
+    amount: input.amount,
+    [TRANSFER_TARGET_FIELD]: input.accountUuid,
+    url: input.returnUrl,
+  });
+
+  const transferId = String(body.id ?? body.transfer_id ?? body.transferId ?? '');
+  if (!transferId) {
+    throw new ProviderRequestError('SlickPay transfer response missing id', null);
+  }
+  // SLICKPAY-CONFIRM: a disbursement MAY complete silently (no URL) or return a
+  // confirmation/redirect URL needing interactive validation. Surface it when
+  // present; the caller keeps the payout PROCESSING until it confirms "sent".
+  const redirectUrl =
+    String(body.url ?? body.redirect_url ?? body.payment_url ?? body.checkout_url ?? '') || null;
+  return { transferId, redirectUrl, raw: body };
+}
+
+/**
+ * Compute the SlickPay fee for a transfer of `amount` DZD.
+ * `POST users/transfers/commission`. Best-effort accounting helper — the caller
+ * treats a thrown/zero result as "fee unknown" and never blocks the payout on it.
+ */
+export async function getSlickpayTransferCommission(
+  amount: number,
+): Promise<{ commission: number }> {
+  const cfg = readConfig();
+  if (!cfg) throw new ProviderNotConfiguredError('slickpay');
+
+  const body = await slickpayPost(cfg, 'users/transfers/commission', { amount });
+  const commission = Number(body.commission ?? body.fee ?? body.amount ?? 0);
+  return { commission: Number.isFinite(commission) ? commission : 0 };
+}

@@ -129,7 +129,7 @@ export const mobileQuickActionsByRole: Record<UserRole, MobileQuickAction[]> = {
   ADMIN: [
     { labelKey: 'dashboard.users',        href: '/dashboard/admin/users',               icon: Users },
     { labelKey: 'dashboard.bookings',     href: '/dashboard/admin/bookings',            icon: Calendar },
-    { labelKey: 'dashboard.withdrawals',  href: '/dashboard/admin/withdrawals',         icon: ArrowUpCircle },
+    { labelKey: 'dashboard.payments',     href: '/dashboard/admin/payments',            icon: ArrowUpCircle },
     { labelKey: 'dashboard.analytics',    href: '/dashboard/admin/analytics',           icon: BarChart2 },
   ],
 };
