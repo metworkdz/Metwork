@@ -883,6 +883,30 @@ export interface SpaceRecord {
    * Additive & nullable — legacy records lack it and fall back to the default.
    */
   networkBookable?: boolean;
+
+  // ─── Category-specific extensions (additive & nullable) ────────────────
+  // Each block applies to one SpaceCategory. All are optional so legacy
+  // records keep working unchanged; readers default to [] / null.
+  /**
+   * COWORKING — individually named/numbered desks, each independently
+   * bookable per day (e.g. ["Desk 01","Desk 02","A3"]). Desk-level
+   * availability is computed from `deskBookings`. Default ⇒ [].
+   */
+  deskNames?: string[];
+  /**
+   * PRIVATE_OFFICE — gallery + metadata for the single bookable office unit.
+   * `officeSize` is in m². Defaults ⇒ [] / null / [].
+   */
+  officePhotos?: string[];
+  officeSize?: number | null;
+  officeFloor?: string | null;
+  officeAmenities?: string[];
+  /**
+   * DOMICILIATION — no calendar booking. Total number of address slots the
+   * incubator offers; requests are collected via `domiciliationRequests` and
+   * handled offline. Default ⇒ null (unset = not a domiciliation listing).
+   */
+  domiciliationSlots?: number | null;
 }
 
 export interface ProgramRecord {
@@ -2180,6 +2204,72 @@ export type IncubatorProgramRecord = ProgramRecord;
 /** @deprecated Use EventRecord directly. Kept for backward compatibility. */
 export type IncubatorEventRecord = EventRecord;
 
+/**
+ * COWORKING desk reservation — one named desk held for a single day, a whole
+ * calendar month, or an arbitrary multi-day/multi-month range.
+ *
+ * Distinct from BookingRecord: desks are booked by day/month/range (no time
+ * window, no wallet transaction). A desk is "taken" when an active
+ * (status !== 'CANCELLED') row's day-span overlaps the queried day-span. The
+ * canonical availability logic lives in `src/server/spaces/availability.ts`,
+ * which collapses every record to an inclusive [start, end] day range and
+ * checks plain range overlap — so any reservation blocks any other whose days
+ * intersect it, regardless of the units involved.
+ */
+export interface DeskBookingRecord {
+  id: string;
+  spaceId: string;
+  incubatorId: string;
+  /** Matches a name in the owning space's `deskNames`. */
+  deskName: string;
+  /**
+   * Reservation granularity. Additive & optional — legacy records lack it and
+   * are treated as 'DAY'. Defaults to 'DAY'.
+   */
+  unit?: 'DAY' | 'MONTH' | 'RANGE';
+  /**
+   * The reserved period's anchor / inclusive start, by unit:
+   *   - 'DAY'   → the exact "YYYY-MM-DD" reserved.
+   *   - 'MONTH' → any day in the target month (canonically the 1st,
+   *               "YYYY-MM-01"); only the "YYYY-MM" prefix is significant.
+   *   - 'RANGE' → the inclusive START day "YYYY-MM-DD"; `endDate` is the
+   *               inclusive end. Use this for spans longer than one month.
+   */
+  date: string;
+  /**
+   * Inclusive END day "YYYY-MM-DD" for unit 'RANGE'. Ignored for DAY/MONTH.
+   * Additive & optional — legacy/day/month records omit it.
+   */
+  endDate?: string;
+  /** Platform user who booked. Null for offline / manual incubator entries. */
+  userId: string | null;
+  /** For offline bookings: client's name (not necessarily a platform user). */
+  clientName: string | null;
+  clientPhone: string | null;
+  status: 'CONFIRMED' | 'CANCELLED';
+  source: 'online' | 'offline';
+  createdAt: string;
+}
+
+/**
+ * DOMICILIATION address-slot request — no calendar booking. The visitor
+ * submits a form; the incubator follows up offline and moves the request
+ * through the lifecycle. A slot counts as consumed when status === 'ACTIVE',
+ * compared against the space's `domiciliationSlots`.
+ */
+export interface DomiciliationRequestRecord {
+  id: string;
+  spaceId: string;
+  incubatorId: string;
+  fullName: string;
+  companyName: string | null;
+  phone: string;
+  email: string;
+  message: string | null;
+  status: 'PENDING' | 'CONTACTED' | 'ACTIVE' | 'REJECTED';
+  createdAt: string;
+}
+
 interface DbShape {
   pendingUsers: PendingUserRecord[];
   users: UserRecord[];
@@ -2207,6 +2297,10 @@ interface DbShape {
   programs: ProgramRecord[];
   /** DB-persisted event listings created by incubators. */
   events: EventRecord[];
+  /** COWORKING per-desk, per-day reservations (online + manual). */
+  deskBookings: DeskBookingRecord[];
+  /** DOMICILIATION address-slot requests (handled offline by the incubator). */
+  domiciliationRequests: DomiciliationRequestRecord[];
   /** CRM — client records per incubator. */
   clients: ClientRecord[];
   /** Per-incubator service catalog (used in manual income / CSV imports). */
@@ -2311,6 +2405,8 @@ const empty: DbShape = {
   spaces: [],
   programs: [],
   events: [],
+  deskBookings: [],
+  domiciliationRequests: [],
   clients: [],
   services: [],
   contractTemplates: [],
