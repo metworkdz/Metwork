@@ -51,7 +51,14 @@ export interface ListingManagementTableProps<T> {
   emptyDescription: string;
   emptyIcon?: ReactNode;
   /** Optional per-row actions; defaults to Edit / Delete stubs. */
-  actions?: { label: string; icon?: ReactNode; onSelect: (row: T) => void; destructive?: boolean }[];
+  actions?: {
+    label: string;
+    icon?: ReactNode;
+    onSelect: (row: T) => void;
+    destructive?: boolean;
+    /** When it returns true for a row, the action is hidden for that row. */
+    hidden?: (row: T) => boolean;
+  }[];
 }
 
 export function ListingManagementTable<T>({
@@ -67,7 +74,7 @@ export function ListingManagementTable<T>({
 }: ListingManagementTableProps<T>) {
   const t = useTranslations('incubator.listingTable');
 
-  const finalActions = actions ?? [
+  const finalActions: NonNullable<ListingManagementTableProps<T>['actions']> = actions ?? [
     { label: t('actionEdit'), icon: <Pencil className="size-4" />, onSelect: () => {} },
     { label: t('actionDelete'), icon: <Trash2 className="size-4" />, onSelect: () => {}, destructive: true },
   ];
@@ -142,16 +149,18 @@ export function ListingManagementTable<T>({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {finalActions.map((a) => (
-                            <DropdownMenuItem
-                              key={a.label}
-                              onSelect={() => a.onSelect(row)}
-                              className={a.destructive ? 'text-destructive focus:text-destructive' : undefined}
-                            >
-                              {a.icon}
-                              {a.label}
-                            </DropdownMenuItem>
-                          ))}
+                          {finalActions
+                            .filter((a) => !a.hidden?.(row))
+                            .map((a) => (
+                              <DropdownMenuItem
+                                key={a.label}
+                                onSelect={() => a.onSelect(row)}
+                                className={a.destructive ? 'text-destructive focus:text-destructive' : undefined}
+                              >
+                                {a.icon}
+                                {a.label}
+                              </DropdownMenuItem>
+                            ))}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

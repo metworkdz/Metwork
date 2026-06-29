@@ -69,6 +69,17 @@ export interface Space {
    * booking form can preview the server-applied discount. Empty/absent = none.
    */
   durationDiscounts?: { unit: 'HOUR' | 'DAY'; minQty: number; percent: number }[];
+
+  // ─── Category-specific extensions (additive & optional) ────────────────
+  /** COWORKING: individually named/numbered desks, each independently bookable. */
+  deskNames?: string[];
+  /** PRIVATE_OFFICE: gallery + metadata for the single bookable office unit. */
+  officePhotos?: string[];
+  officeSize?: number | null;
+  officeFloor?: string | null;
+  officeAmenities?: string[];
+  /** DOMICILIATION: total number of address slots offered (null when unset). */
+  domiciliationSlots?: number | null;
 }
 
 export type ProgramType = 'INCUBATION' | 'ACCELERATION' | 'TRAINING' | 'BOOTCAMP' | 'WORKSHOP';

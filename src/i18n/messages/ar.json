@@ -928,7 +928,8 @@
       "actionAvailability": "التوفّر",
       "actionCopyLink": "نسخ الرابط العام",
       "linkCopied": "تم نسخ الرابط العام",
-      "copyLinkPrompt": "انسخ هذا الرابط العام"
+      "copyLinkPrompt": "انسخ هذا الرابط العام",
+      "actionManageDesks": "إدارة المكاتب"
     },
     "paymentLinks": {
       "addLink": "رابط جديد",
@@ -1345,7 +1346,37 @@
       "discountPercent": "نسبة الخصم",
       "discountOff": "خصم",
       "addDiscount": "إضافة قاعدة خصم",
-      "removeDiscount": "حذف قاعدة الخصم"
+      "removeDiscount": "حذف قاعدة الخصم",
+      "desksLabel": "المكاتب",
+      "desksHint": "كل مكتب قابل للحجز بشكل مستقل. سمِّها كما تشاء.",
+      "deskCount": "عدد المكاتب",
+      "autoGenerate": "توليد الأسماء تلقائيًا",
+      "deskNamePlaceholder": "مثال: مكتب 01، A3، مقعد النافذة",
+      "removeDesk": "حذف المكتب",
+      "addDesk": "إضافة مكتب",
+      "errorNoDesks": "أضف مكتبًا واحدًا على الأقل",
+      "errorDuplicateDesks": "يجب أن تكون أسماء المكاتب فريدة",
+      "officeLabel": "تفاصيل المكتب",
+      "officePhotos": "الصور",
+      "officeSize": "المساحة (م²)",
+      "officeFloor": "الطابق",
+      "officeFloorPlaceholder": "مثال: الطابق الثاني",
+      "officeAmenitiesLabel": "المرافق",
+      "domiciliationLabel": "التوطين",
+      "domiciliationSlots": "أماكن العنوان",
+      "domiciliationInfo": "سيقوم المستخدمون بتقديم طلب توطين. ستتواصل معهم لإكمال العملية.",
+      "errorSlots": "أدخل مكانًا واحدًا على الأقل",
+      "deskName": "اسم المكتب {n}",
+      "officeAmenity": {
+        "airConditioning": "تكييف الهواء",
+        "privateBathroom": "حمام خاص",
+        "meetingTable": "طاولة اجتماعات",
+        "standingDesk": "مكتب وقوف",
+        "phoneBooth": "كابينة هاتف",
+        "storage": "تخزين",
+        "naturalLight": "إضاءة طبيعية",
+        "kitchenAccess": "الوصول إلى المطبخ"
+      }
     },
     "availability": {
       "title": "التوفّر — {name}",
@@ -1367,6 +1398,41 @@
       "removeRange": "حذف",
       "rangeInvalid": "اختر تاريخاً وفترة زمنية صحيحة (البداية قبل النهاية).",
       "close": "إغلاق"
+    },
+    "deskCalendar": {
+      "title": "المكاتب — {name}",
+      "description": "انقر على خلية متاحة لحجز مكتب، أو على حظر يدوي لإلغائه.",
+      "loading": "جارٍ التحميل…",
+      "loadError": "تعذّر تحميل تقويم المكاتب.",
+      "saveError": "تعذّر الحفظ. حاول مرة أخرى.",
+      "noDesks": "لا توجد مكاتب في هذا الفضاء بعد. أضف مكاتب عبر تعديل الفضاء.",
+      "legendAvailable": "متاح",
+      "legendBooked": "محجوز",
+      "deskColumn": "مكتب",
+      "cellBooked": "محجوز",
+      "cellAvailable": "متاح",
+      "close": "إغلاق"
+    },
+    "domiciliation": {
+      "title": "طلبات التوطين",
+      "subtitle": "استفسارات أماكن العنوان من قوائمك",
+      "loading": "جارٍ التحميل…",
+      "loadError": "تعذّر تحميل الطلبات.",
+      "saveError": "تعذّر تحديث الحالة.",
+      "emptyTitle": "لا توجد طلبات بعد",
+      "emptyDescription": "ستظهر هنا طلبات التوطين المقدمة من المستخدمين.",
+      "colName": "الاسم",
+      "colCompany": "الشركة",
+      "colPhone": "الهاتف",
+      "colEmail": "البريد الإلكتروني",
+      "colDate": "تاريخ الاستلام",
+      "colStatus": "الحالة",
+      "status": {
+        "PENDING": "قيد الانتظار",
+        "CONTACTED": "تم التواصل",
+        "ACTIVE": "نشط",
+        "REJECTED": "مرفوض"
+      }
     }
   },
   "dashboard": {
@@ -1418,7 +1484,8 @@
     "recentBookings": "الحجوزات الأخيرة",
     "recentClients": "العملاء الجدد",
     "nothingYet": "لا يوجد شيء بعد",
-    "payments": "المدفوعات"
+    "payments": "المدفوعات",
+    "domiciliation": "التوطين"
   },
   "pages": {
     "consultationPay": {

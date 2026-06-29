@@ -928,7 +928,8 @@
       "actionAvailability": "Availability",
       "actionCopyLink": "Copy public link",
       "linkCopied": "Public link copied",
-      "copyLinkPrompt": "Copy this public link"
+      "copyLinkPrompt": "Copy this public link",
+      "actionManageDesks": "Manage desks"
     },
     "paymentLinks": {
       "addLink": "New link",
@@ -1345,7 +1346,37 @@
       "discountPercent": "Discount percent",
       "discountOff": "off",
       "addDiscount": "Add discount rule",
-      "removeDiscount": "Remove discount rule"
+      "removeDiscount": "Remove discount rule",
+      "desksLabel": "Desks",
+      "desksHint": "Each desk is independently bookable. Name them as you like.",
+      "deskCount": "Number of desks",
+      "autoGenerate": "Auto-generate names",
+      "deskNamePlaceholder": "e.g. Desk 01, A3, Window seat",
+      "removeDesk": "Remove desk",
+      "addDesk": "Add desk",
+      "errorNoDesks": "Add at least one desk",
+      "errorDuplicateDesks": "Desk names must be unique",
+      "officeLabel": "Office details",
+      "officePhotos": "Photos",
+      "officeSize": "Size (m²)",
+      "officeFloor": "Floor",
+      "officeFloorPlaceholder": "e.g. 2nd floor",
+      "officeAmenitiesLabel": "Amenities",
+      "domiciliationLabel": "Domiciliation",
+      "domiciliationSlots": "Address slots",
+      "domiciliationInfo": "Users will submit a domiciliation request. You will contact them to complete the process.",
+      "errorSlots": "Enter at least 1 address slot",
+      "deskName": "Desk name {n}",
+      "officeAmenity": {
+        "airConditioning": "Air conditioning",
+        "privateBathroom": "Private bathroom",
+        "meetingTable": "Meeting table",
+        "standingDesk": "Standing desk",
+        "phoneBooth": "Phone booth",
+        "storage": "Storage",
+        "naturalLight": "Natural light",
+        "kitchenAccess": "Kitchen access"
+      }
     },
     "availability": {
       "title": "Availability — {name}",
@@ -1367,6 +1398,41 @@
       "removeRange": "Remove",
       "rangeInvalid": "Pick a date and a valid time range (from before to).",
       "close": "Close"
+    },
+    "deskCalendar": {
+      "title": "Desks — {name}",
+      "description": "Click an available cell to block a desk, or a manual block to release it.",
+      "loading": "Loading…",
+      "loadError": "Could not load the desk calendar.",
+      "saveError": "Could not save. Please try again.",
+      "noDesks": "This space has no desks yet. Add desks by editing the space.",
+      "legendAvailable": "Available",
+      "legendBooked": "Booked",
+      "deskColumn": "Desk",
+      "cellBooked": "Booked",
+      "cellAvailable": "Available",
+      "close": "Close"
+    },
+    "domiciliation": {
+      "title": "Domiciliation requests",
+      "subtitle": "Address-slot enquiries from your listings",
+      "loading": "Loading…",
+      "loadError": "Could not load requests.",
+      "saveError": "Could not update status.",
+      "emptyTitle": "No requests yet",
+      "emptyDescription": "Domiciliation requests submitted by users will appear here.",
+      "colName": "Name",
+      "colCompany": "Company",
+      "colPhone": "Phone",
+      "colEmail": "Email",
+      "colDate": "Received",
+      "colStatus": "Status",
+      "status": {
+        "PENDING": "Pending",
+        "CONTACTED": "Contacted",
+        "ACTIVE": "Active",
+        "REJECTED": "Rejected"
+      }
     }
   },
   "dashboard": {
@@ -1418,7 +1484,8 @@
     "recentBookings": "Recent bookings",
     "recentClients": "Recent clients",
     "nothingYet": "Nothing here yet",
-    "payments": "Payments"
+    "payments": "Payments",
+    "domiciliation": "Domiciliation"
   },
   "pages": {
     "consultationPay": {

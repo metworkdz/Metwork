@@ -7,6 +7,11 @@ import { z, ZodError } from 'zod';
 import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
+import {
+  cleanDeskNames,
+  validateDeskNames,
+  validateDomiciliationSlots,
+} from '@/server/spaces/category-fields';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -39,6 +44,13 @@ const patchSchema = z.object({
     minQty:  z.number().int().positive(),
     percent: z.number().int().min(1).max(99),
   })).max(20).optional(),
+  // Category-specific fields (validated against the merged category below).
+  deskNames:       z.array(z.string().max(60)).max(500).optional(),
+  officePhotos:    z.array(z.string().url()).max(5).optional(),
+  officeSize:      z.number().int().positive().nullable().optional(),
+  officeFloor:     z.string().max(40).nullable().optional(),
+  officeAmenities: z.array(z.string().max(60)).max(30).optional(),
+  domiciliationSlots: z.number().int().positive().nullable().optional(),
   status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
 });
 
@@ -62,18 +74,36 @@ export async function PATCH(
   }
 
   let depositError: string | null = null;
+  let categoryError: string | null = null;
   const space = await db.update((d) => {
     const s = (d.spaces ?? []).find((x) => x.id === id);
     if (!s) return null;
     const incubator = d.incubators.find((i) => i.id === s.incubatorId);
     if (!incubator || incubator.managerId !== guard.user.id) return 'FORBIDDEN';
-    // Reject (before mutating) any edit that would leave the space with no
-    // price for any unit — that makes it unbookable. Mirrors the create guard.
+    // Category after the patch — drives the per-category rules below.
+    const nextCategory = input.category ?? s.category;
+    // Reject (before mutating) any edit that would leave a BOOKABLE space with
+    // no price for any unit — that makes it unbookable. Domiciliation is
+    // request-based and carries no per-unit price, so it is exempt.
     const nextHour    = input.pricePerHour    !== undefined ? input.pricePerHour    : s.pricePerHour;
     const nextHalfDay = input.pricePerHalfDay !== undefined ? input.pricePerHalfDay : s.pricePerHalfDay;
     const nextDay     = input.pricePerDay     !== undefined ? input.pricePerDay     : s.pricePerDay;
     const nextMonth   = input.pricePerMonth   !== undefined ? input.pricePerMonth   : s.pricePerMonth;
-    if (nextHour == null && nextHalfDay == null && nextDay == null && nextMonth == null) return 'NO_PRICE';
+    if (
+      nextCategory !== 'DOMICILIATION' &&
+      nextHour == null && nextHalfDay == null && nextDay == null && nextMonth == null
+    ) return 'NO_PRICE';
+
+    // Category-specific validation against the merged state.
+    if (nextCategory === 'COWORKING' && input.deskNames !== undefined) {
+      categoryError = validateDeskNames(input.deskNames);
+      if (categoryError) return 'INVALID_CATEGORY';
+    }
+    if (nextCategory === 'DOMICILIATION') {
+      const nextSlots = input.domiciliationSlots !== undefined ? input.domiciliationSlots : s.domiciliationSlots;
+      categoryError = validateDomiciliationSlots(nextSlots);
+      if (categoryError) return 'INVALID_CATEGORY';
+    }
 
     // Payment config: validate against the merged (existing + patched) state so
     // turning CASH on always carries a valid deposit, and turning it off clears
@@ -117,6 +147,19 @@ export async function PATCH(
     if (input.capacity !== undefined) s.capacity = input.capacity;
     if (input.amenities !== undefined) s.amenities = input.amenities;
     if (input.durationDiscounts !== undefined) s.durationDiscounts = input.durationDiscounts;
+
+    // Category-specific fields. Desk count drives coworking capacity so the two
+    // can't diverge.
+    if (input.deskNames !== undefined) {
+      s.deskNames = cleanDeskNames(input.deskNames);
+      if (nextCategory === 'COWORKING') s.capacity = s.deskNames.length;
+    }
+    if (input.officePhotos !== undefined) s.officePhotos = input.officePhotos;
+    if (input.officeSize !== undefined) s.officeSize = input.officeSize ?? null;
+    if (input.officeFloor !== undefined) s.officeFloor = input.officeFloor ?? null;
+    if (input.officeAmenities !== undefined) s.officeAmenities = input.officeAmenities;
+    if (input.domiciliationSlots !== undefined) s.domiciliationSlots = input.domiciliationSlots ?? null;
+
     if (input.status !== undefined) s.isActive = input.status === 'ACTIVE';
     s.updatedAt = new Date().toISOString();
     return s;
@@ -126,6 +169,7 @@ export async function PATCH(
   if (space === 'FORBIDDEN') return jsonError(403, 'FORBIDDEN', 'Not your space');
   if (space === 'NO_PRICE') return jsonError(400, 'NO_PRICE', 'At least one price (per hour, day, or month) is required');
   if (space === 'INVALID_DEPOSIT') return jsonError(400, 'INVALID_DEPOSIT', depositError ?? 'Invalid cash deposit configuration');
+  if (space === 'INVALID_CATEGORY') return jsonError(400, 'INVALID_CATEGORY', categoryError ?? 'Invalid category fields');
   return json({ space });
 }
 

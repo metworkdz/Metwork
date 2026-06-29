@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Building2, CalendarClock, Check, Link2, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { Building2, CalendarClock, Check, LayoutGrid, Link2, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { SpaceFormDialog } from './space-form-dialog';
 import { SpaceAvailabilityDialog } from './space-availability-dialog';
+import { DeskCalendarDialog } from './desk-calendar-dialog';
 import { SpacesMobileList } from './spaces-mobile-list';
 import { formatCurrency } from '@/lib/format';
 import type { Space, SpaceCategory } from '@/types/domain';
@@ -28,6 +29,7 @@ export function SpacesManager() {
   // FIX: BUG-2 — edit/delete state
   const [editingSpace, setEditingSpace] = useState<Space | null>(null);
   const [managingSpace, setManagingSpace] = useState<Space | null>(null);
+  const [managingDesks, setManagingDesks] = useState<Space | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   // Public shareable link ("Copy public link" action). Origin is read on the
   // client so the link matches whatever domain the dashboard is served from
@@ -184,6 +186,12 @@ export function SpacesManager() {
             onSelect: (s) => setManagingSpace(s),
           },
           {
+            label: t('actionManageDesks'),
+            icon: <LayoutGrid className="size-4" />,
+            onSelect: (s) => setManagingDesks(s),
+            hidden: (s) => s.category !== 'COWORKING',
+          },
+          {
             label: t('actionDelete'),
             icon: <Trash2 className="size-4" />,
             onSelect: (s) => void handleDelete(s.id),
@@ -201,6 +209,7 @@ export function SpacesManager() {
         onEdit={(s) => setEditingSpace(s)}
         onDelete={(id) => void handleDelete(id)}
         onManageAvailability={(s) => setManagingSpace(s)}
+        onManageDesks={(s) => setManagingDesks(s)}
         onCopyLink={(s) => void handleCopyLink(s)}
       />
       {/* FIX: BUG-2 — edit dialog rendered outside the table, controlled by editingSpace state */}
@@ -234,6 +243,12 @@ export function SpacesManager() {
             openingTime: editingSpace.openingTime ?? '09:00',
             closingTime: editingSpace.closingTime ?? '18:00',
             durationDiscounts: editingSpace.durationDiscounts ?? [],
+            deskNames: editingSpace.deskNames ?? [],
+            officePhotos: editingSpace.officePhotos ?? [],
+            officeSize: editingSpace.officeSize,
+            officeFloor: editingSpace.officeFloor,
+            officeAmenities: editingSpace.officeAmenities ?? [],
+            domiciliationSlots: editingSpace.domiciliationSlots,
           }}
           open={true}
           onOpenChange={(v) => { if (!v) setEditingSpace(null); }}
@@ -250,6 +265,14 @@ export function SpacesManager() {
           }}
           open={true}
           onOpenChange={(v) => { if (!v) setManagingSpace(null); }}
+        />
+      )}
+      {/* Desk calendar dialog (coworking only) — block/unblock desks per day */}
+      {managingDesks && (
+        <DeskCalendarDialog
+          space={{ id: managingDesks.id, name: managingDesks.name, deskNames: managingDesks.deskNames }}
+          open={true}
+          onOpenChange={(v) => { if (!v) setManagingDesks(null); }}
         />
       )}
       {/* Transient "link copied" confirmation — shared by the desktop menu

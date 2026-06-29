@@ -31,6 +31,7 @@ import {
   MapPin,
   Link2,
   FileSignature,
+  Mailbox,
 } from 'lucide-react';
 import type { UserRole } from '@/types/auth';
 
@@ -144,6 +145,7 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.expenses',  href: '/dashboard/incubator/expenses',     icon: ArrowDownCircle },
     { labelKey: 'dashboard.services',  href: '/dashboard/incubator/services',     icon: Layers },
     { labelKey: 'dashboard.spaces',    href: '/dashboard/incubator/spaces',       icon: Building2 },
+    { labelKey: 'dashboard.domiciliation', href: '/dashboard/incubator/domiciliation', icon: Mailbox },
     { labelKey: 'dashboard.programs',  href: '/dashboard/incubator/programs',     icon: Briefcase },
     { labelKey: 'dashboard.events',    href: '/dashboard/incubator/events',       icon: Calendar },
     { labelKey: 'dashboard.bookings',  href: '/dashboard/incubator/bookings',     icon: CalendarIcon },

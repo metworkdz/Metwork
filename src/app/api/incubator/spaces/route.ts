@@ -13,6 +13,11 @@ import { db, type SpaceRecord } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { listSpacesByIncubator } from '@/server/bookings/space-catalog';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
+import {
+  cleanDeskNames,
+  validateDeskNames,
+  validateDomiciliationSlots,
+} from '@/server/spaces/category-fields';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -54,11 +59,22 @@ const createSpaceSchema = z.object({
     minQty:  z.number().int().positive(),
     percent: z.number().int().min(1).max(99),
   })).max(20).default([]),
+  /** COWORKING — individually named desks (validated per-category below). */
+  deskNames:       z.array(z.string().max(60)).max(500).optional(),
+  /** PRIVATE_OFFICE — gallery + metadata. */
+  officePhotos:    z.array(z.string().url()).max(5).optional(),
+  officeSize:      z.number().int().positive().nullable().optional(),
+  officeFloor:     z.string().max(40).nullable().optional(),
+  officeAmenities: z.array(z.string().max(60)).max(30).optional(),
+  /** DOMICILIATION — total address slots. */
+  domiciliationSlots: z.number().int().positive().nullable().optional(),
 }).refine(
-  // A space with no price for any unit is unbookable (availableUnits() would
-  // be empty). Require at least one pricing unit, mirroring the program/event
-  // price requirement.
-  (d) => d.pricePerHour != null || d.pricePerHalfDay != null || d.pricePerDay != null || d.pricePerMonth != null,
+  // A bookable space with no price for any unit is unbookable (availableUnits()
+  // would be empty). Require at least one pricing unit — EXCEPT domiciliation,
+  // which is request-based (no calendar booking) and carries no per-unit price.
+  (d) =>
+    d.category === 'DOMICILIATION' ||
+    d.pricePerHour != null || d.pricePerHalfDay != null || d.pricePerDay != null || d.pricePerMonth != null,
   { message: 'At least one price (per hour, half-day, day, or month) is required', path: ['pricePerHour'] },
 );
 
@@ -99,6 +115,19 @@ export async function POST(req: NextRequest) {
   if (depositError) return jsonError(400, 'INVALID_DEPOSIT', depositError);
   const depositConfig = normalizeDepositConfig(paymentMethods, input.cashDepositType, input.cashDepositValue);
 
+  // Category-specific validation + normalisation (shared with PATCH).
+  const deskNames = input.category === 'COWORKING' ? cleanDeskNames(input.deskNames) : [];
+  if (input.category === 'COWORKING') {
+    const deskError = validateDeskNames(input.deskNames);
+    if (deskError) return jsonError(400, 'INVALID_DESKS', deskError);
+  }
+  if (input.category === 'DOMICILIATION') {
+    const slotError = validateDomiciliationSlots(input.domiciliationSlots);
+    if (slotError) return jsonError(400, 'INVALID_SLOTS', slotError);
+  }
+  // Coworking capacity is the desk count — keep the two from diverging.
+  const capacity = input.category === 'COWORKING' ? deskNames.length : input.capacity;
+
   // Multi-image: imageUrls is the ordered gallery; imageUrls[0] is the cover.
   // Keep imageUrl in sync with the cover so legacy readers keep working.
   const imageUrls = input.imageUrls?.length ? input.imageUrls : (input.imageUrl ? [input.imageUrl] : []);
@@ -127,7 +156,7 @@ export async function POST(req: NextRequest) {
       cashPricePerHalfDay:    input.cashPricePerHalfDay ?? null,
       cashPricePerDay:        input.cashPricePerDay ?? null,
       cashPricePerMonth:      input.cashPricePerMonth ?? null,
-      capacity:               input.capacity,
+      capacity:               capacity,
       amenities:              input.amenities,
       acceptedPaymentMethods: paymentMethods,
       ...depositConfig,
@@ -135,6 +164,13 @@ export async function POST(req: NextRequest) {
       openingTime:            input.openingTime,
       closingTime:            input.closingTime,
       durationDiscounts:      input.durationDiscounts,
+      // Category-specific fields — only the active category's fields are stored.
+      deskNames:              deskNames,
+      officePhotos:           input.category === 'PRIVATE_OFFICE' ? (input.officePhotos ?? []) : [],
+      officeSize:             input.category === 'PRIVATE_OFFICE' ? (input.officeSize ?? null) : null,
+      officeFloor:            input.category === 'PRIVATE_OFFICE' ? (input.officeFloor ?? null) : null,
+      officeAmenities:        input.category === 'PRIVATE_OFFICE' ? (input.officeAmenities ?? []) : [],
+      domiciliationSlots:     input.category === 'DOMICILIATION' ? (input.domiciliationSlots ?? null) : null,
       isActive:               true,
       createdAt:              now,
       updatedAt:              now,

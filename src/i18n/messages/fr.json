@@ -928,7 +928,8 @@
       "actionAvailability": "Disponibilité",
       "actionCopyLink": "Copier le lien public",
       "linkCopied": "Lien public copié",
-      "copyLinkPrompt": "Copiez ce lien public"
+      "copyLinkPrompt": "Copiez ce lien public",
+      "actionManageDesks": "Gérer les bureaux"
     },
     "paymentLinks": {
       "addLink": "Nouveau lien",
@@ -1345,7 +1346,37 @@
       "discountPercent": "Pourcentage de remise",
       "discountOff": "de réduction",
       "addDiscount": "Ajouter une remise",
-      "removeDiscount": "Supprimer la remise"
+      "removeDiscount": "Supprimer la remise",
+      "desksLabel": "Bureaux",
+      "desksHint": "Chaque bureau est réservable individuellement. Nommez-les librement.",
+      "deskCount": "Nombre de bureaux",
+      "autoGenerate": "Générer les noms",
+      "deskNamePlaceholder": "ex. Bureau 01, A3, Place fenêtre",
+      "removeDesk": "Supprimer le bureau",
+      "addDesk": "Ajouter un bureau",
+      "errorNoDesks": "Ajoutez au moins un bureau",
+      "errorDuplicateDesks": "Les noms des bureaux doivent être uniques",
+      "officeLabel": "Détails du bureau",
+      "officePhotos": "Photos",
+      "officeSize": "Surface (m²)",
+      "officeFloor": "Étage",
+      "officeFloorPlaceholder": "ex. 2e étage",
+      "officeAmenitiesLabel": "Équipements",
+      "domiciliationLabel": "Domiciliation",
+      "domiciliationSlots": "Places d’adresse",
+      "domiciliationInfo": "Les utilisateurs soumettront une demande de domiciliation. Vous les contacterez pour finaliser.",
+      "errorSlots": "Saisissez au moins 1 place d’adresse",
+      "deskName": "Nom du bureau {n}",
+      "officeAmenity": {
+        "airConditioning": "Climatisation",
+        "privateBathroom": "Salle de bain privée",
+        "meetingTable": "Table de réunion",
+        "standingDesk": "Bureau debout",
+        "phoneBooth": "Cabine téléphonique",
+        "storage": "Rangement",
+        "naturalLight": "Lumière naturelle",
+        "kitchenAccess": "Accès cuisine"
+      }
     },
     "availability": {
       "title": "Disponibilité — {name}",
@@ -1367,6 +1398,41 @@
       "removeRange": "Supprimer",
       "rangeInvalid": "Choisissez une date et une plage horaire valide (début avant fin).",
       "close": "Fermer"
+    },
+    "deskCalendar": {
+      "title": "Bureaux — {name}",
+      "description": "Cliquez sur une case libre pour bloquer un bureau, ou sur un blocage manuel pour le libérer.",
+      "loading": "Chargement…",
+      "loadError": "Impossible de charger le calendrier des bureaux.",
+      "saveError": "Échec de l’enregistrement. Réessayez.",
+      "noDesks": "Cet espace n’a pas encore de bureaux. Ajoutez-en en modifiant l’espace.",
+      "legendAvailable": "Disponible",
+      "legendBooked": "Réservé",
+      "deskColumn": "Bureau",
+      "cellBooked": "Réservé",
+      "cellAvailable": "Disponible",
+      "close": "Fermer"
+    },
+    "domiciliation": {
+      "title": "Demandes de domiciliation",
+      "subtitle": "Demandes de places d’adresse pour vos annonces",
+      "loading": "Chargement…",
+      "loadError": "Impossible de charger les demandes.",
+      "saveError": "Impossible de mettre à jour le statut.",
+      "emptyTitle": "Aucune demande",
+      "emptyDescription": "Les demandes de domiciliation des utilisateurs apparaîtront ici.",
+      "colName": "Nom",
+      "colCompany": "Société",
+      "colPhone": "Téléphone",
+      "colEmail": "E-mail",
+      "colDate": "Reçue le",
+      "colStatus": "Statut",
+      "status": {
+        "PENDING": "En attente",
+        "CONTACTED": "Contacté",
+        "ACTIVE": "Actif",
+        "REJECTED": "Rejeté"
+      }
     }
   },
   "dashboard": {
@@ -1418,7 +1484,8 @@
     "recentBookings": "Réservations récentes",
     "recentClients": "Clients récents",
     "nothingYet": "Rien pour le moment",
-    "payments": "Paiements"
+    "payments": "Paiements",
+    "domiciliation": "Domiciliation"
   },
   "pages": {
     "consultationPay": {

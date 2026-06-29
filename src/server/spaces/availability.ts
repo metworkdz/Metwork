@@ -99,6 +99,38 @@ async function availableDesksInRange(
   return declared.filter((name) => !taken.has(name));
 }
 
+/**
+ * Pure, snapshot-based twin of `deskFreeInRange` — takes the deskBookings array
+ * directly so write paths can re-check INSIDE their own `db.update` critical
+ * section (race-free) without duplicating the overlap logic. Returns false for
+ * an inverted range.
+ */
+export function isDeskFreeInRange(
+  deskBookings: DeskBookingRecord[],
+  spaceId: string,
+  deskName: string,
+  qStart: string,
+  qEnd: string,
+): boolean {
+  if (qEnd < qStart) return false;
+  return !deskBookings.some(
+    (b) => b.deskName === deskName && conflicts(b, spaceId, qStart, qEnd),
+  );
+}
+
+/**
+ * Pure: all active (non-cancelled) bookings for `spaceId` that cover the single
+ * day `date` ("YYYY-MM-DD"), of any granularity. Lets the desk-calendar build
+ * its grid using the SAME overlap rule as the booking gate (no duplication).
+ */
+export function listDeskBookingsForDay(
+  deskBookings: DeskBookingRecord[],
+  spaceId: string,
+  date: string,
+): DeskBookingRecord[] {
+  return deskBookings.filter((b) => conflicts(b, spaceId, date, date));
+}
+
 /** Core: is `deskName` free across the whole inclusive span [qStart, qEnd]? */
 async function deskFreeInRange(
   spaceId: string,
@@ -106,11 +138,8 @@ async function deskFreeInRange(
   qStart: string,
   qEnd: string,
 ): Promise<boolean> {
-  if (qEnd < qStart) return false;
   const data = await db.read();
-  return !(data.deskBookings ?? []).some(
-    (b) => b.deskName === deskName && conflicts(b, spaceId, qStart, qEnd),
-  );
+  return isDeskFreeInRange(data.deskBookings ?? [], spaceId, deskName, qStart, qEnd);
 }
 
 /* ─────────────────────────── Public API ─────────────────────────────────
