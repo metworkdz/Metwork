@@ -2275,6 +2275,11 @@ export interface DomiciliationRequestRecord {
   id: string;
   spaceId: string;
   incubatorId: string;
+  /**
+   * Platform user who submitted the request. Null for guest (logged-out)
+   * submissions. Additive & nullable — legacy records lack it.
+   */
+  userId: string | null;
   fullName: string;
   companyName: string | null;
   phone: string;

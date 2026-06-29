@@ -21,6 +21,11 @@ export interface CreateSpaceBookingInput {
   promoCode?: string;
   /** Payment method. CASH = reserve without wallet debit (PENDING_PAYMENT). Default ONLINE. */
   paymentMethod?: 'ONLINE' | 'CASH';
+  /**
+   * Desk / office unit to reserve (COWORKING desk name or PRIVATE_OFFICE unit).
+   * When set, the server also writes per-day desk holds so the unit is blocked.
+   */
+  deskName?: string;
 }
 
 export interface ApplyOrRegisterInput {

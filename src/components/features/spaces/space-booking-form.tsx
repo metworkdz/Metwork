@@ -46,6 +46,16 @@ import type { BookingDto, BookingUnit } from '@/types/booking';
 interface SpaceBookingFormProps {
   space: Space;
   onSuccess: (booking: BookingDto, newBalance: number) => void;
+  /**
+   * Desk / office unit pre-selected upstream (COWORKING desk picker). When set it
+   * is sent with the booking so the server blocks that unit, and a small banner
+   * confirms the choice. Optional — the regular date-range flow omits it.
+   */
+  deskName?: string;
+  /** Seed the start date (e.g. the day chosen in the desk picker). */
+  initialStartDate?: string;
+  /** Seed the end date. Defaults to initialStartDate when omitted. */
+  initialEndDate?: string;
 }
 
 /* ── helpers ── */
@@ -201,7 +211,13 @@ export function BookingSuccessPanel({
  */
 type PayChoice = 'CARD_FULL' | 'CARD_SPLIT' | 'WALLET';
 
-export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
+export function SpaceBookingForm({
+  space,
+  onSuccess,
+  deskName,
+  initialStartDate,
+  initialEndDate,
+}: SpaceBookingFormProps) {
   const locale   = useLocale() as Locale;
   const t        = useTranslations('spaces.booking');
   const router   = useRouter();
@@ -212,9 +228,9 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
   const firstUnit = units[0]?.unit ?? 'DAY';
 
   const [unit,      setUnit]      = useState<BookingUnit>(firstUnit);
-  const [startDate, setStartDate] = useState<string>(todayStr());
+  const [startDate, setStartDate] = useState<string>(initialStartDate ?? todayStr());
   const [startTime, setStartTime] = useState<string>(space.openingTime ?? '09:00');
-  const [endDate,   setEndDate]   = useState<string>(todayStr());
+  const [endDate,   setEndDate]   = useState<string>(initialEndDate ?? initialStartDate ?? todayStr());
   const [endTime,   setEndTime]   = useState<string>(() => {
     // Default to a 1-hour window when Hourly is the initial mode, otherwise the
     // full opening–closing span (used by Full day / Monthly).
@@ -542,6 +558,7 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
         endsAt:   endIso,
         clientReference: ensureBookingRef(),
         promoCode: promoResult?.code,
+        deskName,
         paymentMethod: useNetworkPass
           ? ('NETWORK_PASS' as PaymentMethod)
           : onlineOffered
@@ -599,6 +616,14 @@ export function SpaceBookingForm({ space, onSuccess }: SpaceBookingFormProps) {
 
   return (
     <form onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
+
+      {/* Pre-selected desk / office (COWORKING desk picker hand-off) */}
+      {deskName && (
+        <div className="flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs font-medium text-primary">
+          <CheckCircle2 className="size-3.5 shrink-0" />
+          <span>{t('selectedDesk', { desk: deskName })}</span>
+        </div>
+      )}
 
       {/* Working hours hint */}
       <div className="flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
