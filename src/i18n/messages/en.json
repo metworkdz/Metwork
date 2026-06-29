@@ -1195,6 +1195,7 @@
       "selectDeskPlaceholder": "Select a desk / office…",
       "errorSelectDesk": "Please select a desk.",
       "errorSelectOffice": "Please select an office.",
+      "errorDeskBooked": "This desk is already booked for {date}.",
       "errorCreate": "Failed to create booking"
     },
     "membersTable": {

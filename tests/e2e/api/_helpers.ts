@@ -186,6 +186,10 @@ export interface SpaceOpts {
   /** Configured cash deposit (CASH_DEPOSIT non-split path). */
   cashDepositType?: 'FIXED' | 'PERCENT';
   cashDepositValue?: number;
+  /** COWORKING desk names — capacity is derived from these server-side. */
+  deskNames?: string[];
+  /** DOMICILIATION address-slot count. */
+  domiciliationSlots?: number;
 }
 
 /** Create a space fixture as the incubator. Returns the full SpaceRecord (has `id` UUID). */
@@ -217,6 +221,8 @@ export async function createSpace(
       ...(opts.durationDiscounts ? { durationDiscounts: opts.durationDiscounts } : {}),
       ...(opts.cashDepositType ? { cashDepositType: opts.cashDepositType } : {}),
       ...(opts.cashDepositValue !== undefined ? { cashDepositValue: opts.cashDepositValue } : {}),
+      ...(opts.deskNames ? { deskNames: opts.deskNames } : {}),
+      ...(opts.domiciliationSlots !== undefined ? { domiciliationSlots: opts.domiciliationSlots } : {}),
     },
   });
   expect(res.status(), `createSpace failed → ${res.status()} ${await res.text()}`).toBe(201);
@@ -252,6 +258,8 @@ export async function manualBooking(
     totalAmount?: number;
     clientName?: string;
     clientPhone?: string;
+    /** Desk / office unit — REQUIRED for COWORKING / PRIVATE_OFFICE manual bookings. */
+    deskName?: string;
   },
 ) {
   return inc.post('/api/incubator/manual-bookings', {
@@ -265,8 +273,21 @@ export async function manualBooking(
       endsAt: body.endsAt,
       quantity: body.quantity ?? 1,
       totalAmount: body.totalAmount ?? 0,
+      ...(body.deskName ? { deskName: body.deskName } : {}),
     },
   });
+}
+
+/** Public canonical desk availability (`GET /api/spaces/:id/desks?date=`). */
+export async function getPublicDesks(
+  ctx: APIRequestContext,
+  spaceId: string,
+  date: string,
+): Promise<string[]> {
+  const res = await ctx.get(`/api/spaces/${spaceId}/desks?date=${date}`);
+  expect(res.status(), `getPublicDesks → ${res.status()} ${await res.text()}`).toBe(200);
+  const body = await res.json();
+  return Array.isArray(body.available) ? body.available : [];
 }
 
 /**

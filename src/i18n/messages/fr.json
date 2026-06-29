@@ -1195,6 +1195,7 @@
       "selectDeskPlaceholder": "Sélectionnez un poste / bureau…",
       "errorSelectDesk": "Veuillez sélectionner un poste.",
       "errorSelectOffice": "Veuillez sélectionner un bureau.",
+      "errorDeskBooked": "Ce poste est déjà réservé pour le {date}.",
       "errorCreate": "Échec de la création de la réservation"
     },
     "membersTable": {

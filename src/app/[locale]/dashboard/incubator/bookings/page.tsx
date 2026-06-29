@@ -158,6 +158,8 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                 name: s.name,
                 openingTime: s.openingTime ?? '09:00',
                 closingTime: s.closingTime ?? '18:00',
+                category: s.category,
+                deskNames: s.deskNames ?? [],
               }))}
             />
           ) : undefined

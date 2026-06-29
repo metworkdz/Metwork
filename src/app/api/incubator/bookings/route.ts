@@ -8,6 +8,7 @@ import { z, ZodError } from 'zod';
 import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db, type BookingRecord } from '@/server/db/store';
 import { checkSpaceAvailability } from '@/server/bookings/availability';
+import { holdDeskForBooking } from '@/server/spaces/availability';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { sendBookingReceiptEmailAsync } from '@/server/notifications/mock';
@@ -31,6 +32,13 @@ const manualBookingSchema = z.object({
   // record always settles as 'manual' (no wallet/online transaction occurs).
   paymentMethod:   z.enum(['CASH', 'ONLINE', 'OTHER']).default('CASH'),
   notes:           z.string().max(500).optional().nullable(),
+  /**
+   * Desk / office unit — REQUIRED (enforced below) when the space is category
+   * COWORKING (must match a name in space.deskNames) or PRIVATE_OFFICE. When
+   * present the booking also writes per-day desk holds via the canonical
+   * `holdDeskForBooking`, so the unit is blocked in the availability calendar.
+   */
+  deskName:        z.string().min(1).max(120).optional(),
 }).refine((d) => new Date(d.endsAt) > new Date(d.startsAt), {
   message: 'endsAt must be after startsAt',
   path: ['endsAt'],
@@ -104,7 +112,10 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
-  const result = await db.update<{ ok: true; booking: BookingRecord } | { ok: false; reason: string }>((d) => {
+  const result = await db.update<
+    | { ok: true; booking: BookingRecord }
+    | { ok: false; reason: string; deskName?: string; date?: string }
+  >((d) => {
     // Confirm space belongs to this incubator
     const space = (d.spaces ?? []).find((s) => s.id === input.spaceId && s.incubatorId === inc.id);
     if (!space) return { ok: false, reason: 'SPACE_NOT_FOUND' };
@@ -155,9 +166,41 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Pre-mint the id so the desk hold can link back to it before either is
+    // persisted (race-free inside this same critical section).
+    const bookingId = randomUUID();
+
+    // ── Category-specific desk / office hold ─────────────────────────────
+    // COWORKING desks and PRIVATE_OFFICE units physically occupy space, so a
+    // manual booking MUST block them in the availability calendar. Uses the
+    // SAME canonical writer as the public/online + admin manual paths, so the
+    // desk-blocking rules can never diverge. A conflict returns BEFORE the
+    // booking is pushed, so nothing is half-written.
+    if (space.category === 'COWORKING' || space.category === 'PRIVATE_OFFICE') {
+      const deskName = input.deskName?.trim();
+      if (!deskName) return { ok: false, reason: 'DESK_REQUIRED' };
+      if (space.category === 'COWORKING' && !(space.deskNames ?? []).includes(deskName)) {
+        return { ok: false, reason: 'UNKNOWN_DESK' };
+      }
+      if (!Array.isArray(d.deskBookings)) d.deskBookings = [];
+      const hold = holdDeskForBooking(d.deskBookings, {
+        spaceId: space.id,
+        incubatorId: inc.id,
+        deskName,
+        startsAt: input.startsAt,
+        endsAt: input.endsAt,
+        userId: null,
+        clientName: input.clientName.trim(),
+        clientPhone: null,
+        bookingId,
+        source: 'offline',
+      });
+      if (!hold.ok) return { ok: false, reason: 'DESK_TAKEN', deskName, date: hold.conflictDate };
+    }
+
     const now = new Date().toISOString();
     const booking: BookingRecord = {
-      id:              randomUUID(),
+      id:              bookingId,
       // Offline bookings have no platform user — the client may not have an
       // account. Storing the incubator's own id here would mislabel the booking
       // as the manager's own and pollute their personal bookings list.
@@ -196,6 +239,13 @@ export async function POST(req: NextRequest) {
       return jsonError(409, 'DATE_UNAVAILABLE', 'This date is blocked. Unblock it in the availability calendar first.');
     if (result.reason === 'CAPACITY_EXCEEDED')
       return jsonError(409, 'CAPACITY_EXCEEDED', 'No capacity left for this slot');
+    if (result.reason === 'DESK_REQUIRED')
+      return jsonError(422, 'DESK_REQUIRED', 'Select a desk / office for this space');
+    if (result.reason === 'UNKNOWN_DESK')
+      return jsonError(422, 'UNKNOWN_DESK', 'No such desk on this space');
+    if (result.reason === 'DESK_TAKEN')
+      // Structured 409 so the dialog can name the exact desk + day.
+      return json({ error: 'DESK_ALREADY_BOOKED', deskName: result.deskName ?? null, date: result.date ?? null }, { status: 409 });
     return jsonError(400, 'BAD_REQUEST', result.reason);
   }
 

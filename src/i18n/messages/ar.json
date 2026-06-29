@@ -1195,6 +1195,7 @@
       "selectDeskPlaceholder": "اختر مكتبًا / مكتبًا خاصًا…",
       "errorSelectDesk": "يرجى اختيار مكتب.",
       "errorSelectOffice": "يرجى اختيار مكتب خاص.",
+      "errorDeskBooked": "هذا المكتب محجوز بالفعل في {date}.",
       "errorCreate": "فشل إنشاء الحجز"
     },
     "membersTable": {

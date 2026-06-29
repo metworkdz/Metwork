@@ -63,6 +63,27 @@ export default defineConfig({
       },
     },
     {
+      // Category-specific spaces (COWORKING desks / PRIVATE_OFFICE / DOMICILIATION)
+      // + manual-booking desk-blocking + expiry-notifier. SERIAL & state-sharing —
+      // run with `--workers=1`. Retries disabled so a flake never re-runs
+      // side-effectful fixture creation against the shared doc.
+      name: 'spaces-granularity',
+      testMatch: '**/spaces-granularity.spec.ts',
+      retries: 0,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authStatePath('incubator'),
+      },
+    },
+    {
+      // Test-data cleanup for the spaces-granularity suite. Run explicitly:
+      //   npx playwright test tests/cleanup/spaces-granularity.cleanup.ts
+      name: 'cleanup',
+      testDir: './tests/cleanup',
+      testMatch: '**/*.cleanup.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       // Instant-book consultation suite (P1–P7). API-driven specs build their own
       // role contexts via the saved storage states, so this project needs no
       // storageState of its own. The UI i18n smoke runs here too. SERIAL by

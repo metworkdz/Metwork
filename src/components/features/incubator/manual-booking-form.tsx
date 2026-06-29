@@ -100,8 +100,15 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
           totalAmount: form.totalAmount,
         }),
       });
-      const data = await res.json() as { booking?: BookingWithCustomer; error?: string; message?: string };
-      if (!res.ok) throw new Error(data.message ?? data.error ?? t('errorCreate'));
+      const data = await res.json() as { booking?: BookingWithCustomer; error?: string; message?: string; date?: string };
+      if (!res.ok) {
+        // Desk conflict carries a structured { error, deskName, date } — surface a
+        // friendly, localized message naming the day instead of the raw code.
+        if (data.error === 'DESK_ALREADY_BOOKED') {
+          throw new Error(t('errorDeskBooked', { date: data.date ?? form.startsAt }));
+        }
+        throw new Error(data.message ?? data.error ?? t('errorCreate'));
+      }
       onCreated(data.booking!);
       setOpen(false);
       setForm(EMPTY);
@@ -129,9 +136,9 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
             {/* Item type + item */}
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>{t('labelType')}</Label>
+                <Label htmlFor="mb-type">{t('labelType')}</Label>
                 <Select value={form.itemKind} onValueChange={(v) => { field('itemKind', v as 'SPACE' | 'PROGRAM'); field('itemId', ''); field('deskName', ''); }}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="mb-type"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="SPACE">{t('typeSpace')}</SelectItem>
                     <SelectItem value="PROGRAM">{t('typeProgram')}</SelectItem>
@@ -139,9 +146,9 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>{form.itemKind === 'SPACE' ? t('typeSpace') : t('typeProgram')} *</Label>
+                <Label htmlFor="mb-item">{form.itemKind === 'SPACE' ? t('typeSpace') : t('typeProgram')} *</Label>
                 <Select value={form.itemId} onValueChange={(v) => { field('itemId', v); field('deskName', ''); }}>
-                  <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
+                  <SelectTrigger id="mb-item"><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
                   <SelectContent>
                     {items.length === 0 && (
                       <SelectItem value="__none__" disabled>{t('noItems')}</SelectItem>
@@ -159,9 +166,9 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
                 manual booking blocks the availability calendar. */}
             {(requiresDesk || requiresOffice) && (
               <div className="space-y-1.5">
-                <Label>{requiresOffice ? t('labelOffice') : t('labelDesk')} *</Label>
+                <Label htmlFor="mb-desk">{requiresOffice ? t('labelOffice') : t('labelDesk')} *</Label>
                 <Select value={form.deskName} onValueChange={(v) => field('deskName', v)}>
-                  <SelectTrigger><SelectValue placeholder={t('selectDeskPlaceholder')} /></SelectTrigger>
+                  <SelectTrigger id="mb-desk"><SelectValue placeholder={t('selectDeskPlaceholder')} /></SelectTrigger>
                   <SelectContent>
                     {deskOptions.length === 0 && (
                       <SelectItem value="__none__" disabled>{t('noItems')}</SelectItem>
