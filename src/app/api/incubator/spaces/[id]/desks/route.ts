@@ -144,6 +144,8 @@ export async function POST(
       clientPhone: null,
       status: 'CONFIRMED',
       source: 'offline',
+      bookingId: null,
+      expiryReminderSentAt: null,
       createdAt: new Date().toISOString(),
     };
     d.deskBookings.push(rec);

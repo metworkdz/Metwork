@@ -1190,6 +1190,11 @@
       "errorClientName": "Client name is required.",
       "errorClientPhone": "Client phone is required.",
       "errorStartDate": "Start date is required.",
+      "labelDesk": "Desk",
+      "labelOffice": "Office",
+      "selectDeskPlaceholder": "Select a desk / office…",
+      "errorSelectDesk": "Please select a desk.",
+      "errorSelectOffice": "Please select an office.",
       "errorCreate": "Failed to create booking"
     },
     "membersTable": {

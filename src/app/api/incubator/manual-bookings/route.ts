@@ -9,8 +9,9 @@ import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApprovedApiRole } from '@/server/auth/api-guards';
-import { db, type ClientRecord } from '@/server/db/store';
+import { db, type ClientRecord, type SpaceRecord } from '@/server/db/store';
 import { checkSpaceAvailability } from '@/server/bookings/availability';
+import { holdDeskForBooking } from '@/server/spaces/availability';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -58,6 +59,12 @@ const bodySchema = z.object({
   unit: z.enum(['HOUR', 'HALF_DAY', 'DAY', 'MONTH']),
   quantity: z.number().int().min(1).max(1000),
   totalAmount: z.number().int().min(0).default(0),
+  /**
+   * Desk / office identifier — REQUIRED (enforced below) when the SPACE is
+   * category COWORKING (must match a name in space.deskNames) or PRIVATE_OFFICE
+   * (the single office unit). Ignored for DOMICILIATION / other categories.
+   */
+  deskName: z.string().min(1).max(120).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -81,6 +88,9 @@ export async function POST(req: NextRequest) {
 
     let itemName = '';
     let city = '';
+    // The resolved SPACE record (when itemKind === 'SPACE'), captured so the
+    // desk/office hold below can read its category + deskNames.
+    let spaceForDesk: SpaceRecord | null = null;
     // The window actually persisted on the booking. A SPACE booking is stored as
     // the NORMALIZED [startsAt, endsAt) it was validated against — never the raw
     // date-only input — so the slot it holds is visible to every reader (the
@@ -108,6 +118,7 @@ export async function POST(req: NextRequest) {
       if (!avail.ok) return avail.reason;
       itemName = space.name;
       city = space.city;
+      spaceForDesk = space;
     } else {
       const program = (d.programs ?? []).find((p) => p.id === input.itemId && p.incubatorId === incubator.id);
       if (!program) return 'ITEM_NOT_FOUND' as const;
@@ -146,6 +157,45 @@ export async function POST(req: NextRequest) {
       };
     }
 
+    // Pre-mint the booking id so the desk hold can link back to it (and so the
+    // hold + booking share one identity) before either is persisted.
+    const bookingId = randomUUID();
+
+    // ── Category-specific desk / office hold ─────────────────────────────
+    // COWORKING desks and PRIVATE_OFFICE units physically occupy space, so a
+    // manual booking MUST block the availability calendar — otherwise a public
+    // user could still book a desk that is already occupied. Written atomically
+    // with the BookingRecord below via the canonical writer: a conflict returns
+    // BEFORE the client/booking are persisted, so nothing is half-written.
+    if (spaceForDesk) {
+      const category = (spaceForDesk as SpaceRecord).category;
+      if (category === 'COWORKING' || category === 'PRIVATE_OFFICE') {
+        const deskName = input.deskName?.trim();
+        if (!deskName) return 'DESK_REQUIRED' as const;
+        if (category === 'COWORKING' && !((spaceForDesk as SpaceRecord).deskNames ?? []).includes(deskName)) {
+          return 'UNKNOWN_DESK' as const;
+        }
+        if (!Array.isArray(d.deskBookings)) d.deskBookings = [];
+        const hold = holdDeskForBooking(d.deskBookings, {
+          spaceId: (spaceForDesk as SpaceRecord).id,
+          incubatorId: incubator.id,
+          deskName,
+          startsAt,
+          endsAt,
+          userId: null,
+          clientName: input.clientName,
+          clientPhone: input.clientPhone,
+          bookingId,
+          source: 'offline',
+        });
+        if (!hold.ok) {
+          // Structured conflict carried out of the closure so the 409 can name
+          // the exact desk + day that was already taken.
+          return { __deskConflict: { deskName, date: hold.conflictDate } } as const;
+        }
+      }
+    }
+
     const now = new Date().toISOString();
 
     // Find-or-create the client record so this offline booking shows up in
@@ -180,7 +230,7 @@ export async function POST(req: NextRequest) {
     }
 
     const booking = {
-      id: randomUUID(),
+      id: bookingId,
       userId: null,
       source: 'offline' as const,
       paymentMethod: 'manual' as const,
@@ -221,6 +271,13 @@ export async function POST(req: NextRequest) {
   if (result === 'DATE_UNAVAILABLE') return jsonError(409, 'DATE_UNAVAILABLE', 'This date is blocked. Unblock it in the availability calendar first.');
   if (result === 'OVERLAP_CONFLICT') return jsonError(409, 'OVERLAP_CONFLICT', 'This time slot is already booked');
   if (result === 'CAPACITY_EXCEEDED') return jsonError(409, 'CAPACITY_EXCEEDED', 'No capacity left for this slot');
+  if (result === 'DESK_REQUIRED') return jsonError(422, 'DESK_REQUIRED', 'Select a desk / office for this space');
+  if (result === 'UNKNOWN_DESK') return jsonError(422, 'UNKNOWN_DESK', 'No such desk on this space');
+  if (typeof result === 'object' && result !== null && '__deskConflict' in result) {
+    // Structured 409 so the form can point at the exact desk + day.
+    const c = result.__deskConflict;
+    if (c) return json({ error: 'DESK_ALREADY_BOOKED', deskName: c.deskName, date: c.date }, { status: 409 });
+  }
 
   return json({ booking: result }, { status: 201 });
 }

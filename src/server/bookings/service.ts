@@ -21,6 +21,11 @@ import {
   bestDurationDiscountPercent,
   applyDiscountPercent,
 } from './availability';
+import {
+  holdDeskForBooking,
+  eachDayInRange,
+  isDeskFreeInRange,
+} from '@/server/spaces/availability';
 import { findProgramById } from './program-catalog';
 import { findEventById } from './event-catalog';
 import { countAttendance } from '@/server/attendance';
@@ -79,6 +84,13 @@ export interface CreateSpaceBookingArgs {
   paymentMethod?: 'wallet' | 'manual' | 'NETWORK_PASS';
   /** Fractional membership discount to apply before the promo code (0–1). e.g. 0.20 = 20 % off. */
   membershipDiscount?: number;
+  /**
+   * Desk / office unit to reserve — only meaningful for COWORKING (must match a
+   * name in space.deskNames) and PRIVATE_OFFICE spaces. When present, the booking
+   * also writes per-day DeskBookingRecords so the availability calendar blocks the
+   * unit; a taken unit rejects the whole booking. Ignored for other categories.
+   */
+  deskName?: string;
 }
 
 /** Minimal price shape — satisfied by both the domain `Space` and the raw `SpaceRecord`. */
@@ -340,6 +352,43 @@ export async function createSpaceBooking(
       }
     }
 
+    // ── Category-specific desk / office hold (COWORKING + PRIVATE_OFFICE) ──
+    // Pre-mint the booking id so every success branch shares one identity and the
+    // desk holds link back for cancellation. We pre-CHECK availability here (pure,
+    // no write) so a taken unit rejects BEFORE any wallet/credit mutation, then
+    // COMMIT the per-day holds inside each branch right before the booking push
+    // (single-threaded closure → the early check still holds). Same canonical
+    // writer the manual route uses, so the two surfaces can never diverge.
+    const bookingId = randomUUID();
+    const deskName = args.deskName?.trim();
+    const deskCategory = spaceRec?.category;
+    const needsDesk = !!deskName && (deskCategory === 'COWORKING' || deskCategory === 'PRIVATE_OFFICE');
+    if (needsDesk && spaceRec) {
+      if (deskCategory === 'COWORKING' && !(spaceRec.deskNames ?? []).includes(deskName!)) {
+        return { ok: false, reason: 'OVERLAP_CONFLICT', conflictingBookingId: '' };
+      }
+      const taken = eachDayInRange(args.startsAt, endsAt).find(
+        (day) => !isDeskFreeInRange(d.deskBookings ?? [], spaceRec.id, deskName!, day, day),
+      );
+      if (taken) return { ok: false, reason: 'OVERLAP_CONFLICT', conflictingBookingId: '' };
+    }
+    const commitDeskHold = () => {
+      if (!needsDesk || !spaceRec) return;
+      if (!Array.isArray(d.deskBookings)) d.deskBookings = [];
+      holdDeskForBooking(d.deskBookings, {
+        spaceId: spaceRec.id,
+        incubatorId: spaceRec.incubatorId,
+        deskName: deskName!,
+        startsAt: args.startsAt,
+        endsAt,
+        userId: args.userId,
+        clientName: d.users.find((u) => u.id === args.userId)?.fullName ?? null,
+        clientPhone: null,
+        bookingId,
+        source: 'online',
+      });
+    };
+
     // Apply promo code discount (only for online payment)
     let total = baseTotal;
     let promoCodeId: string | null = null;
@@ -393,7 +442,7 @@ export async function createSpaceBooking(
 
       // Free booking — CONFIRMED immediately, no wallet movement.
       const booking: BookingRecord = {
-        id: randomUUID(),
+        id: bookingId,
         userId: args.userId,
         itemKind: 'SPACE',
         itemId: space.id,
@@ -412,6 +461,7 @@ export async function createSpaceBooking(
         createdAt: now,
         updatedAt: now,
       };
+      commitDeskHold();
       d.bookings.push(booking);
 
       // Record the per-visit ledger entry that drives the monthly partner
@@ -470,7 +520,7 @@ export async function createSpaceBooking(
     if (isCash) {
       const now = new Date().toISOString();
       const booking: BookingRecord = {
-        id: randomUUID(),
+        id: bookingId,
         userId: args.userId,
         itemKind: 'SPACE',
         itemId: space.id,
@@ -489,6 +539,7 @@ export async function createSpaceBooking(
         createdAt: now,
         updatedAt: now,
       };
+      commitDeskHold();
       d.bookings.push(booking);
       // Return a placeholder zero transaction so the route shape stays consistent.
       const tx: TransactionRecord = {
@@ -586,7 +637,7 @@ export async function createSpaceBooking(
     }
 
     const booking: BookingRecord = {
-      id: randomUUID(),
+      id: bookingId,
       userId: args.userId,
       itemKind: 'SPACE',
       itemId: space.id,
@@ -605,6 +656,7 @@ export async function createSpaceBooking(
       createdAt: now,
       updatedAt: now,
     };
+    commitDeskHold();
     d.bookings.push(booking);
 
     return { ok: true, replayed: false, booking, transaction: tx, wallet };

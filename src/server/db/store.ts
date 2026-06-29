@@ -2248,6 +2248,20 @@ export interface DeskBookingRecord {
   clientPhone: string | null;
   status: 'CONFIRMED' | 'CANCELLED';
   source: 'online' | 'offline';
+  /**
+   * Parent BookingRecord this desk hold belongs to. Set when the hold was
+   * written alongside a SPACE booking (manual or online) so cancellation can
+   * release every day of the reservation in one pass. Null for standalone
+   * incubator desk blocks (desk-calendar) and legacy records.
+   * Additive & nullable — defaults to null.
+   */
+  bookingId: string | null;
+  /**
+   * ISO timestamp of when the "rental ending soon" reminder was sent for this
+   * hold's parent booking. Null until sent — prevents duplicate reminders.
+   * Additive & nullable — defaults to null.
+   */
+  expiryReminderSentAt: string | null;
   createdAt: string;
 }
 

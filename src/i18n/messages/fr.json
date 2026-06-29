@@ -1190,6 +1190,11 @@
       "errorClientName": "Le nom du client est requis.",
       "errorClientPhone": "Le téléphone du client est requis.",
       "errorStartDate": "La date de début est requise.",
+      "labelDesk": "Bureau",
+      "labelOffice": "Bureau privé",
+      "selectDeskPlaceholder": "Sélectionnez un poste / bureau…",
+      "errorSelectDesk": "Veuillez sélectionner un poste.",
+      "errorSelectOffice": "Veuillez sélectionner un bureau.",
       "errorCreate": "Échec de la création de la réservation"
     },
     "membersTable": {

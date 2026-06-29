@@ -30,6 +30,7 @@ interface Props {
 const EMPTY = {
   itemKind: 'SPACE' as 'SPACE' | 'PROGRAM',
   itemId: '',
+  deskName: '',
   clientName: '',
   clientPhone: '',
   clientEmail: '',
@@ -50,6 +51,20 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
 
   const items = form.itemKind === 'SPACE' ? spaces : programs;
 
+  // Resolve the selected space + whether it needs a desk/office unit selected.
+  // COWORKING → one of space.deskNames; PRIVATE_OFFICE → the single office unit
+  // (identified by the space name). Other categories need no unit selector.
+  const selectedSpace = form.itemKind === 'SPACE'
+    ? spaces.find((s) => s.id === form.itemId) ?? null
+    : null;
+  const requiresDesk = selectedSpace?.category === 'COWORKING';
+  const requiresOffice = selectedSpace?.category === 'PRIVATE_OFFICE';
+  const deskOptions = requiresDesk
+    ? (selectedSpace?.deskNames ?? [])
+    : requiresOffice && selectedSpace
+      ? [selectedSpace.name]
+      : [];
+
   function field<K extends keyof typeof EMPTY>(k: K, v: (typeof EMPTY)[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
@@ -57,6 +72,8 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.itemId) { setError(t('errorSelectItem')); return; }
+    if (requiresDesk && !form.deskName) { setError(t('errorSelectDesk')); return; }
+    if (requiresOffice && !form.deskName) { setError(t('errorSelectOffice')); return; }
     if (!form.clientName.trim()) { setError(t('errorClientName')); return; }
     if (!form.clientPhone.trim()) { setError(t('errorClientPhone')); return; }
     if (!form.startsAt) { setError(t('errorStartDate')); return; }
@@ -71,6 +88,7 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
         body: JSON.stringify({
           itemKind: form.itemKind,
           itemId: form.itemId,
+          deskName: (requiresDesk || requiresOffice) ? form.deskName : undefined,
           clientName: form.clientName.trim(),
           clientPhone: form.clientPhone.trim(),
           clientEmail: form.clientEmail.trim() || null,
@@ -112,7 +130,7 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>{t('labelType')}</Label>
-                <Select value={form.itemKind} onValueChange={(v) => { field('itemKind', v as 'SPACE' | 'PROGRAM'); field('itemId', ''); }}>
+                <Select value={form.itemKind} onValueChange={(v) => { field('itemKind', v as 'SPACE' | 'PROGRAM'); field('itemId', ''); field('deskName', ''); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="SPACE">{t('typeSpace')}</SelectItem>
@@ -122,7 +140,7 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
               </div>
               <div className="space-y-1.5">
                 <Label>{form.itemKind === 'SPACE' ? t('typeSpace') : t('typeProgram')} *</Label>
-                <Select value={form.itemId} onValueChange={(v) => field('itemId', v)}>
+                <Select value={form.itemId} onValueChange={(v) => { field('itemId', v); field('deskName', ''); }}>
                   <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
                   <SelectContent>
                     {items.length === 0 && (
@@ -136,6 +154,25 @@ export function ManualBookingForm({ spaces, programs, onCreated }: Props) {
                 </Select>
               </div>
             </div>
+
+            {/* Desk / office unit — required for COWORKING + PRIVATE_OFFICE so the
+                manual booking blocks the availability calendar. */}
+            {(requiresDesk || requiresOffice) && (
+              <div className="space-y-1.5">
+                <Label>{requiresOffice ? t('labelOffice') : t('labelDesk')} *</Label>
+                <Select value={form.deskName} onValueChange={(v) => field('deskName', v)}>
+                  <SelectTrigger><SelectValue placeholder={t('selectDeskPlaceholder')} /></SelectTrigger>
+                  <SelectContent>
+                    {deskOptions.length === 0 && (
+                      <SelectItem value="__none__" disabled>{t('noItems')}</SelectItem>
+                    )}
+                    {deskOptions.map((name) => (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Client info */}
             <div className="grid gap-3 sm:grid-cols-2">

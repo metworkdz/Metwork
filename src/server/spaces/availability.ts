@@ -16,6 +16,7 @@
  * with a caller's `db.update`. Write paths that need a race-free check must
  * re-validate against the data already held inside their own update closure.
  */
+import { randomUUID } from 'node:crypto';
 import { db } from '@/server/db/store';
 import type { DeskBookingRecord, SpaceRecord } from '@/server/db/store';
 
@@ -199,6 +200,100 @@ export function isDeskAvailableForRange(
   endDate: string,
 ): Promise<boolean> {
   return deskFreeInRange(spaceId, deskName, startDate, endDate);
+}
+
+/* ───────────────── Canonical desk-hold writer (booking paths) ─────────────
+ * The ONE place that turns a SPACE booking into desk reservations. Both the
+ * incubator manual route and the public/online booking service call this so
+ * the two surfaces can never diverge (per the no-duplication rule). It must be
+ * invoked INSIDE the caller's own `db.update` closure, passing the live
+ * `deskBookings` array, so the free-check and the writes are race-free with the
+ * parent BookingRecord write.
+ */
+
+/**
+ * Inclusive list of "YYYY-MM-DD" days from a booking window. `endsAt` is treated
+ * as EXCLUSIVE (the persisted booking window's end is the next-day boundary for a
+ * full-day reservation), so a single-day booking yields exactly one day. Accepts
+ * date-only ("YYYY-MM-DD") or full ISO inputs. Capped at 366 days as a guard.
+ */
+export function eachDayInRange(startsAt: string, endsAt: string): string[] {
+  const toMs = (v: string) => Date.parse(v.length === 10 ? `${v}T00:00:00.000Z` : v);
+  const startMs = toMs(startsAt);
+  if (!Number.isFinite(startMs)) return [];
+  const startDate = new Date(startMs).toISOString().slice(0, 10);
+
+  let endMs = toMs(endsAt);
+  // Exclusive end → inclusive last day is the day containing (end − 1ms). Fall
+  // back to a single-day hold when end is missing or not after start.
+  const endDate =
+    !Number.isFinite(endMs) || endMs <= startMs
+      ? startDate
+      : new Date(endMs - 1).toISOString().slice(0, 10);
+
+  const out: string[] = [];
+  for (let ms = Date.parse(`${startDate}T00:00:00.000Z`), i = 0;
+       ms <= Date.parse(`${endDate}T00:00:00.000Z`) && i < 366;
+       ms += 86_400_000, i++) {
+    out.push(new Date(ms).toISOString().slice(0, 10));
+  }
+  return out;
+}
+
+export interface DeskHoldArgs {
+  spaceId: string;
+  incubatorId: string;
+  deskName: string;
+  /** Booking start ("YYYY-MM-DD" or ISO). */
+  startsAt: string;
+  /** Booking end ("YYYY-MM-DD" or ISO) — EXCLUSIVE. */
+  endsAt: string;
+  userId: string | null;
+  clientName: string | null;
+  clientPhone: string | null;
+  /** Parent BookingRecord id (for cancellation sync). */
+  bookingId: string | null;
+  source: 'online' | 'offline';
+}
+
+/**
+ * Reserve `deskName` for every calendar day the booking window covers. Validates
+ * the desk is free on each day FIRST (via the canonical predicate); on the first
+ * conflicting day it writes nothing and returns that day. On success it pushes one
+ * CONFIRMED per-day DeskBookingRecord into `deskBookings` and returns them.
+ */
+export function holdDeskForBooking(
+  deskBookings: DeskBookingRecord[],
+  args: DeskHoldArgs,
+): { ok: true; records: DeskBookingRecord[] } | { ok: false; conflictDate: string } {
+  const days = eachDayInRange(args.startsAt, args.endsAt);
+  if (days.length === 0) return { ok: false, conflictDate: args.startsAt.slice(0, 10) };
+
+  for (const day of days) {
+    if (!isDeskFreeInRange(deskBookings, args.spaceId, args.deskName, day, day)) {
+      return { ok: false, conflictDate: day };
+    }
+  }
+
+  const now = new Date().toISOString();
+  const records: DeskBookingRecord[] = days.map((day) => ({
+    id: randomUUID(),
+    spaceId: args.spaceId,
+    incubatorId: args.incubatorId,
+    deskName: args.deskName,
+    unit: 'DAY' as const,
+    date: day,
+    userId: args.userId,
+    clientName: args.clientName,
+    clientPhone: args.clientPhone,
+    status: 'CONFIRMED' as const,
+    source: args.source,
+    bookingId: args.bookingId,
+    expiryReminderSentAt: null,
+    createdAt: now,
+  }));
+  for (const r of records) deskBookings.push(r);
+  return { ok: true, records };
 }
 
 /**

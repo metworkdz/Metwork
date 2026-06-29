@@ -61,6 +61,11 @@ const serverSchema = z.object({
   }, z.string().url().optional()),
   INFOBIP_API_KEY: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined), z.string().optional()),
   INFOBIP_SENDER: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined), z.string().optional()),
+  /**
+   * Shared secret for cron-triggered routes (e.g. /api/cron/space-expiry).
+   * Optional — when unset the cron routes reject all callers (locked down).
+   */
+  CRON_SECRET: z.string().optional(),
   PAYMENT_PROVIDER: z.string().transform(v => v.toLowerCase()).pipe(z.enum(['mock', 'slickpay', 'cib', 'edahabia'])).default('mock'),
   PAYMENT_WEBHOOK_SECRET: z.string().optional(),
   // SlickPay (Algerian processor). All optional — required only when

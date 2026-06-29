@@ -1190,6 +1190,11 @@
       "errorClientName": "اسم العميل مطلوب.",
       "errorClientPhone": "هاتف العميل مطلوب.",
       "errorStartDate": "تاريخ البداية مطلوب.",
+      "labelDesk": "مكتب",
+      "labelOffice": "مكتب خاص",
+      "selectDeskPlaceholder": "اختر مكتبًا / مكتبًا خاصًا…",
+      "errorSelectDesk": "يرجى اختيار مكتب.",
+      "errorSelectOffice": "يرجى اختيار مكتب خاص.",
       "errorCreate": "فشل إنشاء الحجز"
     },
     "membersTable": {

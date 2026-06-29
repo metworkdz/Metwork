@@ -1010,6 +1010,72 @@ export function newBookingAlertHtml(opts: {
   `);
 }
 
+/**
+ * Bilingual (FR/EN) "rental ending soon" reminder for the incubator — sent a
+ * day or two before a COWORKING desk / PRIVATE_OFFICE booking ends, prompting
+ * the manager to extend or release the unit. Pure HTML builder (no I/O).
+ */
+export function spaceExpiryReminderEmailHtml(payload: {
+  incubatorName: string;
+  clientName: string;
+  deskName: string;
+  spaceName: string;
+  endDate: string;
+  bookingId: string;
+}): string {
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/incubator/bookings`;
+  const ref = payload.bookingId.slice(0, 8).toUpperCase();
+  const esc = (s: string) => s.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const row = (label: string, value: string) =>
+    `<tr>
+       <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-top:1px solid #e4e4e7;width:42%;">${label}</td>
+       <td style="padding:10px 16px;font-size:14px;color:#09090b;border-top:1px solid #e4e4e7;">${esc(value)}</td>
+     </tr>`;
+
+  return layout(`
+    ${h1('Location se terminant bientôt / Rental ending soon')}
+    ${p(`Bonjour <strong>${esc(payload.incubatorName)}</strong>, une location arrive à échéance. / Hello <strong>${esc(payload.incubatorName)}</strong>, one of your rentals is ending soon.`)}
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin:20px 0;">
+      ${row('Client', payload.clientName)}
+      ${row('Poste / bureau · Desk / office', payload.deskName)}
+      ${row('Espace · Space', payload.spaceName)}
+      ${row('Fin · End date', payload.endDate)}
+    </table>
+    ${p('Souhaitez-vous prolonger la location ou libérer l’espace ? / Do you wish to extend the rental or release the space?')}
+    ${button(dashboardUrl, 'Voir la réservation / View booking')}
+    ${p(`<span style="color:#71717a;font-size:13px;">Référence · Reference: <code style="background:#f4f4f5;padding:2px 6px;border-radius:4px;font-family:monospace;">${ref}</code></span>`)}
+  `);
+}
+
+/**
+ * Fire-and-forget sender for the space-expiry reminder. NEVER throws and NEVER
+ * blocks the caller — failures are swallowed (logged) so the cron path can mark
+ * the reminder sent without risking a 500. Resend is best-effort; absent an API
+ * key it logs for ops visibility, matching every other sender here.
+ */
+export function sendSpaceExpiryReminderEmail(
+  to: string,
+  payload: {
+    incubatorName: string;
+    clientName: string;
+    deskName: string;
+    spaceName: string;
+    endDate: string;
+    bookingId: string;
+  },
+): void {
+  const subject = 'Rappel — Location se terminant bientôt / Reminder — Rental ending soon';
+  void (async () => {
+    try {
+      const html = spaceExpiryReminderEmailHtml(payload);
+      const delivered = await sendResendEmail({ to, subject, html });
+      if (!delivered) console.log('[email/space-expiry-reminder]', { to, subject, bookingId: payload.bookingId });
+    } catch (err) {
+      console.error('[email/space-expiry-reminder] send failed', err);
+    }
+  })();
+}
+
 export function consultationApprovedEmailHtml(opts: {
   userName: string;
   mentorName: string;

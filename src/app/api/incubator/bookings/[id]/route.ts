@@ -141,6 +141,18 @@ export async function PATCH(
       booking.declineReason = input.declineReason;
     }
 
+    // Release every desk/office day this booking held so the availability
+    // calendar frees up the moment the parent booking is cancelled. Linked by
+    // bookingId (any source) — leaving them CONFIRMED would re-introduce the
+    // exact "occupied desk still bookable" bug this feature fixes.
+    if (input.status === 'CANCELLED') {
+      for (const desk of d.deskBookings ?? []) {
+        if (desk.bookingId === booking.id && desk.status !== 'CANCELLED') {
+          desk.status = 'CANCELLED';
+        }
+      }
+    }
+
     // ── Wallet movements ─────────────────────────────────────────────────
     // Three disjoint payment models:
     //   • manual  — offline/cash with no online leg → never touches a wallet.
@@ -495,6 +507,13 @@ export async function DELETE(
       customerName:  booking.clientName ?? 'Unknown',
       vendorName:    booking.vendorName ?? incubator.name,
     };
+    // Release any desk/office holds this manual booking placed — otherwise the
+    // unit stays blocked forever after the parent booking is deleted.
+    for (const desk of d.deskBookings ?? []) {
+      if (desk.bookingId === booking.id && desk.status !== 'CANCELLED') {
+        desk.status = 'CANCELLED';
+      }
+    }
     d.bookings.splice(idx, 1);
     return captured;
   });

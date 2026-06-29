@@ -49,6 +49,12 @@ export const createSpaceBookingSchema = z.object({
   /** Optional promotional code — discount applied before wallet debit. */
   promoCode: promoCodeField,
   paymentMethod: spacePaymentMethodField,
+  /**
+   * Desk / office unit to reserve (COWORKING desk name or PRIVATE_OFFICE unit).
+   * Optional — only sent by the category-specific public detail flow; ignored
+   * for spaces that have no per-unit availability model.
+   */
+  deskName: z.string().min(1).max(120).optional(),
 }).refine((d) => new Date(d.endsAt) > new Date(d.startsAt), {
   message: 'endsAt must be after startsAt',
   path: ['endsAt'],

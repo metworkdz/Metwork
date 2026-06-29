@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
     promoCode: input.promoCode,
     paymentMethod: input.paymentMethod,
     membershipDiscount,
+    deskName: input.deskName,
   });
 
   if (!result.ok) {
