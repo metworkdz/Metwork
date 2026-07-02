@@ -128,6 +128,48 @@ describe('checkSpaceAvailability — capacity 5 (coworking desks)', () => {
   });
 });
 
+describe('checkSpaceAvailability — category-aware concurrency (exclusive units)', () => {
+  // A TRAINING_ROOM's capacity is how many people fit INSIDE (e.g. 12 seats),
+  // not how many parallel rentals exist — one active booking takes the room.
+  it('TRAINING_ROOM capacity 12: a single booking blocks the overlapping window', () => {
+    const existing = [booking({ id: 'b1', unit: 'DAY', startsAt: `${D}T09:00:00.000Z`, endsAt: `${D}T17:00:00.000Z` })];
+    const r = check(
+      room({ capacity: 12, category: 'TRAINING_ROOM' }),
+      existing, 'HOUR', `${D}T10:00:00.000Z`, `${D}T11:00:00.000Z`,
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toBe('OVERLAP_CONFLICT');
+  });
+
+  it('PRIVATE_OFFICE capacity 4: a single booking blocks the overlapping window', () => {
+    const existing = [booking({ id: 'b1' })]; // 09:00–12:00
+    const r = check(
+      room({ capacity: 4, category: 'PRIVATE_OFFICE' }),
+      existing, 'HOUR', `${D}T10:00:00.000Z`, `${D}T11:00:00.000Z`,
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toBe('OVERLAP_CONFLICT');
+  });
+
+  it('COWORKING capacity 12 keeps parallel bookings (capacity-based)', () => {
+    const existing = [booking({ id: 'b1' })];
+    const r = check(
+      room({ capacity: 12, category: 'COWORKING' }),
+      existing, 'HOUR', `${D}T10:00:00.000Z`, `${D}T11:00:00.000Z`,
+    );
+    expect(r.ok).toBe(true);
+  });
+
+  it('computeUnavailableIntervals reports the training-room booking as a BOOKING interval', () => {
+    const existing = [booking({ id: 'b1', unit: 'DAY', startsAt: `${D}T09:00:00.000Z`, endsAt: `${D}T17:00:00.000Z` })];
+    const ivs = computeUnavailableIntervals({
+      space: room({ capacity: 12, category: 'TRAINING_ROOM' }),
+      bookings: existing, spaceId: 'space-1', from: D, to: D,
+    });
+    expect(ivs.some((iv) => iv.kind === 'BOOKING' && iv.allDay)).toBe(true);
+  });
+});
+
 describe('bestDurationDiscountPercent', () => {
   const rules = [
     { unit: 'DAY' as const, minQty: 3, percent: 10 },

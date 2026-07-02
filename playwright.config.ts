@@ -70,6 +70,9 @@ export default defineConfig({
       name: 'spaces-granularity',
       testMatch: '**/spaces-granularity.spec.ts',
       retries: 0,
+      // Dev-server on-demand route compiles can stall a first fetch by ~10s;
+      // give the serial steps headroom instead of flaking on compile jank.
+      timeout: 90_000,
       use: {
         ...devices['Desktop Chrome'],
         storageState: authStatePath('incubator'),

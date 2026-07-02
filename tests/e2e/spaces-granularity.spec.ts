@@ -164,8 +164,9 @@ test.describe.serial('🟢 Spaces granularity', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
 
-    // Step 9 — 3 desk rows in the grid.
-    await expect(dialog.getByText('Desk 01', { exact: true })).toBeVisible();
+    // Step 9 — 3 desk rows in the grid. Generous timeout: the desks API route
+    // may be lazy-compiling on the dev server (first hit ≈ 10s).
+    await expect(dialog.getByText('Desk 01', { exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(dialog.getByText('Window Seat', { exact: true })).toBeVisible();
     await expect(dialog.getByText('Desk 03', { exact: true })).toBeVisible();
 
@@ -263,8 +264,8 @@ test.describe.serial('🟢 Spaces granularity', () => {
 
     await pickRadix(page, 'mb-space', NAME.block);
     await pickRadix(page, 'mb-desk', 'Desk A');
-    await page.locator('#mb-sd').fill(todayStr());
-    await page.locator('#mb-ed').fill(todayStr());
+    // The single availability calendar defaults to today — no date click needed.
+    await expect(page.getByText(todayStr(), { exact: true })).toBeVisible();
     // Pick the pre-created client.
     await page.locator('#mb-client').click();
     await page.getByRole('option', { name: `QA Block Client ${TS}` }).click();
@@ -281,7 +282,7 @@ test.describe.serial('🟢 Spaces granularity', () => {
     await expect(dialog).toBeVisible();
     const deskARow = dialog.getByRole('row', { name: /Desk A/ });
     const deskBRow = dialog.getByRole('row', { name: /Desk B/ });
-    await expect(deskARow.getByRole('button').first()).toHaveAttribute('aria-label', 'Booked');
+    await expect(deskARow.getByRole('button').first()).toHaveAttribute('aria-label', 'Booked', { timeout: 30_000 });
     await expect(deskBRow.getByRole('button').first()).toHaveAttribute('aria-label', 'Available');
 
     // Public page (guest): Desk B available, Desk A gone.
@@ -332,15 +333,18 @@ test.describe.serial('🟢 Spaces granularity', () => {
     await expect(page.getByRole('dialog')).toBeVisible();
     await pickRadix(page, 'mb-space', NAME.conflict);
     await pickRadix(page, 'mb-desk', 'Desk 1');
-    await page.locator('#mb-sd').fill(tomorrow);
-    await page.locator('#mb-ed').fill(tomorrow);
+    // Pick tomorrow on the single availability calendar (advance month if the
+    // day rolls over into the next one).
+    if (tomorrow.slice(0, 7) !== dayUtc(0).slice(0, 7)) {
+      await page.getByRole('button', { name: 'Next month' }).click();
+    }
+    await page.locator(`[data-date="${tomorrow}"]`).click();
     await page.locator('#mb-client').click();
     await page.getByRole('option', { name: `QA Conflict Client ${TS}` }).click();
     await page.getByRole('button', { name: 'Create booking' }).click();
 
     // Friendly conflict message naming the day.
-    await expect(page.getByText(/already booked for/i)).toBeVisible();
-    await expect(page.getByText(tomorrow)).toBeVisible();
+    await expect(page.getByText(new RegExp(`already booked for.*${tomorrow}`, 'i'))).toBeVisible();
 
     // No new BookingRecord was created (atomic reject).
     const bookingsAfter = readRaw().bookings.filter((b) => b.itemId === conflictSpaceId).length;

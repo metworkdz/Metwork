@@ -34,11 +34,31 @@
 import type { BookingRecord, BookingUnit, SpaceRecord } from '@/server/db/store';
 import { bookingHoldsSeat } from './status';
 
-/** Minimal space shape the check needs. */
+/** Minimal space shape the check needs. `category` drives booking concurrency. */
 export type AvailabilitySpace = Pick<
   SpaceRecord,
   'capacity' | 'unavailableDates' | 'blackouts'
->;
+> &
+  Partial<Pick<SpaceRecord, 'category'>>;
+
+/**
+ * How many bookings may overlap at any instant for this space.
+ *
+ * TRAINING_ROOM / PRIVATE_OFFICE are ONE physical unit rented as a whole —
+ * `capacity` describes how many people fit INSIDE (12 seats in a training
+ * room), not how many parallel rentals exist. A single active booking must
+ * therefore take the whole space, or a manual/online booking never blocks the
+ * calendar until `capacity` bookings stack up (the "slot still shows available
+ * after I added a manual booking" bug).
+ *
+ * COWORKING keeps capacity-based concurrency (N seats sold in parallel is the
+ * legacy hourly model; the per-desk model lives in src/server/spaces/).
+ * Uncategorized/legacy records also keep the capacity behavior unchanged.
+ */
+export function bookingConcurrency(space: AvailabilitySpace): number {
+  if (space.category === 'TRAINING_ROOM' || space.category === 'PRIVATE_OFFICE') return 1;
+  return Math.max(1, space.capacity ?? 1);
+}
 
 export type AvailabilityResult =
   | { ok: true }
@@ -170,7 +190,9 @@ export function checkSpaceAvailability(args: {
   }
 
   // ── 2. Capacity-aware occupancy ──────────────────────────────────────────
-  const capacity = Math.max(1, space.capacity ?? 1);
+  // Concurrency is category-aware: exclusive-unit categories (training room,
+  // private office) saturate at 1 regardless of seat capacity.
+  const capacity = bookingConcurrency(space);
   const active = bookings.filter((b) => seatHolding(b, spaceId, ignoreBookingId));
 
   // Pre-decompose every active booking into per-day intervals once.
@@ -340,7 +362,8 @@ export function computeUnavailableIntervals(args: {
   const toMs = toMsLoose(to);
   if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || toMs < fromMs) return [];
 
-  const capacity = Math.max(1, space.capacity ?? 1);
+  // Same category-aware concurrency as the write gate — read & write agree.
+  const capacity = bookingConcurrency(space);
   const blockedDays = fullDayBlocked(space);
   const partials = partialBlackouts(space);
 
