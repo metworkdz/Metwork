@@ -18,6 +18,8 @@ const patchSchema = z.object({
   city: z.string().min(1).optional(),
   website: z.string().url().nullable().optional(),
   logoUrl: z.string().url().nullable().optional(),
+  /** Official stamp/seal image — printed at the bottom of receipts. */
+  stampUrl: z.string().url().nullable().optional(),
   // Legal & billing fields
   address: z.string().max(500).nullable().optional(),
   commercialRegNumber: z.string().max(100).nullable().optional(),
@@ -74,6 +76,7 @@ export async function PATCH(req: NextRequest) {
     if (input.city !== undefined) incubator.city = input.city;
     if (input.website !== undefined) incubator.website = input.website ?? null;
     if (input.logoUrl !== undefined) incubator.logoUrl = input.logoUrl ?? null;
+    if (input.stampUrl !== undefined) incubator.stampUrl = input.stampUrl ?? null;
     if (input.address !== undefined) incubator.address = input.address ?? null;
     if (input.commercialRegNumber !== undefined) incubator.commercialRegNumber = input.commercialRegNumber ?? null;
     if (input.nif !== undefined) incubator.nif = input.nif ?? null;

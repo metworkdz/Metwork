@@ -3,14 +3,26 @@
  *
  * Produces an A4 PDF buffer for:
  *  - Standard bookings   (space / program / event)  → full payment receipt
+ *  - Payment-link payments                          → guest receipt
  *  - Mentor consultations                           → request confirmation
  *  - Manual / offline bookings                      → same as standard
  *
- * Uses pdfkit (pure Node.js, no native deps — works on Vercel serverless).
- * Language: 'en' or 'fr'. Arabic falls back to French.
+ * Layout follows Metwork's official letterhead receipt: company legal block
+ * (RC / NIF / address …) top-left, logo top-right, a centered underlined title,
+ * a "billed to" block, a details table, the total (with the amount spelled out
+ * in words), the payment lines, an attestation sentence, and the incubator's
+ * stamp at the bottom.
+ *
+ * Uses pdfkit (pure Node.js, no native deps — works on Vercel serverless) with
+ * an EMBEDDED Unicode serif font (see src/server/pdf/fonts.ts) so French
+ * typography (narrow/thin no-break spaces, guillemets, dashes …) and Arabic
+ * client names render correctly — the pdfkit built-ins only cover CP1252 and
+ * garble anything else.
  */
 import PDFDocument from 'pdfkit';
 import type { BookingRecord, IncubatorRecord, MentorBookingRecord, MentorRecord, PaymentLinkRecord } from '@/server/db/store';
+import { registerPdfFonts, fontFor, hasArabic, FONT } from '@/server/pdf/fonts';
+import { amountInWords } from './amount-words';
 
 /* ─────────────────── Types ─────────────────── */
 
@@ -25,13 +37,34 @@ export type ReceiptLang = 'en' | 'fr';
  */
 export type ReceiptVariant = 'standard' | 'deposit' | 'final';
 
+/** Incubator fields printed on the letterhead + stamp. */
+type ReceiptIncubator = Pick<
+  IncubatorRecord,
+  'name' | 'email' | 'phone' | 'city' | 'logoUrl' | 'stampUrl' | 'address'
+  | 'registrationNumber' | 'commercialRegNumber' | 'nif'
+>;
+
+/** Loose structural type the letterhead reads — accepts partial/ad-hoc objects. */
+type LetterheadInfo = {
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  logoUrl?: string | null;
+  address?: string | null;
+  registrationNumber?: string | null;
+  commercialRegNumber?: string | null;
+  nif?: string | null;
+};
+
 export interface BookingReceiptInput {
   booking:      BookingRecord;
   /** Display name of the client (platform user or offline client). */
   clientName:   string;
   /** Email we are sending to — shown on the receipt. */
   clientEmail:  string;
-  incubator:    Pick<IncubatorRecord, 'name' | 'email' | 'phone' | 'city' | 'logoUrl' | 'stampUrl' | 'address' | 'registrationNumber'>;
+  /** Client phone, when known (offline bookings capture it). */
+  clientPhone?: string | null;
+  incubator:    ReceiptIncubator;
   lang:         ReceiptLang;
   /** Defaults to 'standard'. CASH_DEPOSIT bookings use 'deposit' / 'final'. */
   variant?:     ReceiptVariant;
@@ -45,130 +78,121 @@ export interface MentorConfirmationInput {
 
 /* ─────────────────── i18n strings ─────────────────── */
 
-type LangKey =
-  | 'receipt'      | 'confirmation'   | 'receiptNo'
-  | 'issuedOn'     | 'billedTo'       | 'bookingDetails'
-  | 'type'         | 'item'           | 'from'
-  | 'to'           | 'unit'           | 'quantity'
-  | 'payment'      | 'paymentMethod'  | 'status'
-  | 'total'        | 'free'           | 'online'
-  | 'cash'         | 'confirmed'      | 'pending'
-  | 'pendingPaymt' | 'hour'           | 'day'
-  | 'month'        | 'half_day'       | 'halfDaily'
-  | 'space'        | 'program'
-  | 'event'        | 'hourly'         | 'daily'
-  | 'monthly'      | 'thankYou'       | 'consultTitle'
-  | 'consultRef'   | 'consultMessage' | 'requestedBy'
-  | 'phone'        | 'consultant'     | 'requested'
-  | 'consultNote'
-  | 'depositReceipt' | 'card'         | 'depositPaid'
-  | 'cashBalance'    | 'paidInFull'   | 'awaitingCashPay'
-  | 'platformFee'    | 'chargedOnline';
+interface Copy {
+  receipt: string;
+  depositReceipt: string;
+  receiptNo: string;
+  date: string;
+  receivedFrom: string;
+  clientNameLabel: string;
+  phone: string;
+  email: string;
+  paymentDetails: string;
+  colService: string;
+  colPeriod: string;
+  colAmount: string;
+  totalPaid: string;
+  depositPaid: string;
+  cashBalance: string;
+  paidInFull: string;
+  awaitingCash: string;
+  platformFee: string;
+  inWordsSuffix: string;   // e.g. "dinars"
+  paymentMethod: string;
+  paymentDate: string;
+  methodOnline: string;
+  methodCash: string;
+  methodCard: string;
+  attestation: (name: string) => string;
+  poweredBy: string;
+  free: string;
+  hour: string; halfDay: string; day: string; month: string;
+  space: string; program: string; event: string;
+  // consultation
+  consultTitle: string; consultRef: string; requestedOn: string;
+  requestedBy: string; consultant: string; position: string;
+  message: string; consultNote: string; duration: string;
+  confirmedDate: string; requestedDate: string; meetingLink: string;
+  inPerson: string; amountPaid: string; freeCredit: string;
+  method: string; teamNote: string;
+}
 
-const T: Record<ReceiptLang, Record<LangKey, string>> = {
-  en: {
-    receipt:       'RECEIPT',
-    confirmation:  'BOOKING CONFIRMATION',
-    receiptNo:     'Receipt #',
-    issuedOn:      'Issued on',
-    billedTo:      'BILLED TO',
-    bookingDetails:'BOOKING DETAILS',
-    type:          'Type',
-    item:          'Item',
-    from:          'From',
-    to:            'To',
-    unit:          'Billing unit',
-    quantity:      'Quantity',
-    payment:       'PAYMENT',
-    paymentMethod: 'Method',
-    status:        'Status',
-    total:         'TOTAL',
-    free:          'Free',
-    online:        'Online (wallet)',
-    cash:          'Cash on-site',
-    confirmed:     'Confirmed',
-    pending:       'Pending',
-    pendingPaymt:  'Pending payment (cash)',
-    hour:          'hour',
-    day:           'day',
-    month:         'month',
-    half_day:      'half-day',
-    halfDaily:     'Half-day',
-    space:         'Space',
-    program:       'Program',
-    event:         'Event',
-    hourly:        'Hourly',
-    daily:         'Daily',
-    monthly:       'Monthly',
-    thankYou:      'Thank you for your booking. This receipt is your proof of payment.',
-    consultTitle:  'CONSULTATION REQUEST CONFIRMED',
-    consultRef:    'Reference #',
-    consultMessage:'Your message',
-    requestedBy:   'Requested by',
-    phone:         'Phone',
-    consultant:    'Consultant',
-    requested:     'Requested on',
-    consultNote:   'Our team will contact you shortly to confirm the appointment.',
-    depositReceipt:'DEPOSIT RECEIPT',
-    card:          'Card (CIB / Edahabia)',
-    depositPaid:   'Deposit paid (card)',
-    cashBalance:   'Balance (cash on-site)',
-    paidInFull:    'Paid in full',
-    awaitingCashPay:'Awaiting cash on-site',
-    platformFee:   'Platform fee',
-    chargedOnline: 'Charged online (card)',
-  },
+const COPY: Record<ReceiptLang, Copy> = {
   fr: {
-    receipt:       'REÇU',
-    confirmation:  'CONFIRMATION DE RÉSERVATION',
-    receiptNo:     'Reçu n°',
-    issuedOn:      'Émis le',
-    billedTo:      'FACTURÉ À',
-    bookingDetails:'DÉTAILS DE LA RÉSERVATION',
-    type:          'Type',
-    item:          'Prestation',
-    from:          'Du',
-    to:            'Au',
-    unit:          'Unité de facturation',
-    quantity:      'Quantité',
-    payment:       'PAIEMENT',
-    paymentMethod: 'Mode',
-    status:        'Statut',
-    total:         'TOTAL',
-    free:          'Gratuit',
-    online:        'En ligne (portefeuille)',
-    cash:          'Espèces sur place',
-    confirmed:     'Confirmé',
-    pending:       'En attente',
-    pendingPaymt:  'En attente de paiement (espèces)',
-    hour:          'heure',
-    day:           'jour',
-    month:         'mois',
-    half_day:      'demi-journée',
-    halfDaily:     'Demi-journée',
-    space:         'Espace',
-    program:       'Programme',
-    event:         'Événement',
-    hourly:        'Horaire',
-    daily:         'Journalier',
-    monthly:       'Mensuel',
-    thankYou:      'Merci pour votre réservation. Ce reçu constitue votre preuve de paiement.',
-    consultTitle:  'DEMANDE DE CONSULTATION CONFIRMÉE',
-    consultRef:    'Référence n°',
-    consultMessage:'Votre message',
-    requestedBy:   'Demandé par',
-    phone:         'Téléphone',
-    consultant:    'Consultant',
-    requested:     'Demandé le',
-    consultNote:   'Notre équipe vous contactera prochainement pour confirmer le rendez-vous.',
-    depositReceipt:'REÇU D’ACOMPTE',
-    card:          'Carte (CIB / Edahabia)',
-    depositPaid:   'Acompte payé (carte)',
-    cashBalance:   'Solde (espèces sur place)',
-    paidInFull:    'Payé intégralement',
-    awaitingCashPay:'En attente d’espèces sur place',
-    platformFee:   'Frais de plateforme',
-    chargedOnline: 'Débité en ligne (carte)',
+    receipt: 'REÇU DE PAIEMENT',
+    depositReceipt: 'REÇU D’ACOMPTE',
+    receiptNo: 'N°',
+    date: 'Date',
+    receivedFrom: 'Reçu de',
+    clientNameLabel: 'Nom du client',
+    phone: 'Téléphone',
+    email: 'Email',
+    paymentDetails: 'Détails du paiement',
+    colService: 'Description du service',
+    colPeriod: 'Période',
+    colAmount: 'Montant (DZD)',
+    totalPaid: 'Total payé',
+    depositPaid: 'Acompte payé (carte)',
+    cashBalance: 'Solde (espèces sur place)',
+    paidInFull: 'Payé intégralement',
+    awaitingCash: 'En attente d’espèces sur place',
+    platformFee: 'Frais de plateforme',
+    inWordsSuffix: 'dinars',
+    paymentMethod: 'Mode de paiement',
+    paymentDate: 'Date du paiement',
+    methodOnline: 'En ligne (portefeuille)',
+    methodCash: 'Espèces',
+    methodCard: 'Carte (CIB / Edahabia)',
+    attestation: (name) => `Ce reçu atteste que le montant mentionné ci-dessus a bien été reçu par ${name} au titre des services rendus.`,
+    poweredBy: 'Propulsé par Metwork',
+    free: 'Gratuit',
+    hour: 'heure', halfDay: 'demi-journée', day: 'jour', month: 'mois',
+    space: 'Espace', program: 'Programme', event: 'Événement',
+    consultTitle: 'DEMANDE DE CONSULTATION CONFIRMÉE',
+    consultRef: 'Référence', requestedOn: 'Demandé le',
+    requestedBy: 'Demandé par', consultant: 'Consultant', position: 'Poste',
+    message: 'Votre message', consultNote: 'Notre équipe vous contactera prochainement pour confirmer le rendez-vous.',
+    duration: 'Durée', confirmedDate: 'Date confirmée', requestedDate: 'Date demandée',
+    meetingLink: 'Lien de réunion', inPerson: 'Présentiel', amountPaid: 'Montant payé',
+    freeCredit: 'Crédit mensuel gratuit', method: 'Méthode', teamNote: 'NOTE DE L’ÉQUIPE',
+  },
+  en: {
+    receipt: 'PAYMENT RECEIPT',
+    depositReceipt: 'DEPOSIT RECEIPT',
+    receiptNo: 'No.',
+    date: 'Date',
+    receivedFrom: 'Received from',
+    clientNameLabel: 'Client name',
+    phone: 'Phone',
+    email: 'Email',
+    paymentDetails: 'Payment details',
+    colService: 'Service description',
+    colPeriod: 'Period',
+    colAmount: 'Amount (DZD)',
+    totalPaid: 'Total paid',
+    depositPaid: 'Deposit paid (card)',
+    cashBalance: 'Balance (cash on-site)',
+    paidInFull: 'Paid in full',
+    awaitingCash: 'Awaiting cash on-site',
+    platformFee: 'Platform fee',
+    inWordsSuffix: 'dinars',
+    paymentMethod: 'Payment method',
+    paymentDate: 'Payment date',
+    methodOnline: 'Online (wallet)',
+    methodCash: 'Cash',
+    methodCard: 'Card (CIB / Edahabia)',
+    attestation: (name) => `This receipt certifies that the amount above has been duly received by ${name} for the services rendered.`,
+    poweredBy: 'Powered by Metwork',
+    free: 'Free',
+    hour: 'hour', halfDay: 'half-day', day: 'day', month: 'month',
+    space: 'Space', program: 'Program', event: 'Event',
+    consultTitle: 'CONSULTATION REQUEST CONFIRMED',
+    consultRef: 'Reference', requestedOn: 'Requested on',
+    requestedBy: 'Requested by', consultant: 'Consultant', position: 'Position',
+    message: 'Your message', consultNote: 'Our team will contact you shortly to confirm the appointment.',
+    duration: 'Duration', confirmedDate: 'Confirmed date', requestedDate: 'Requested date',
+    meetingLink: 'Meeting link', inPerson: 'In-person', amountPaid: 'Amount paid',
+    freeCredit: 'Free monthly credit', method: 'Method', teamNote: 'TEAM NOTE',
   },
 };
 
@@ -194,19 +218,21 @@ export async function fetchImageBuffer(url: string | null | undefined): Promise<
 
 export const PAGE_W    = 595.28;
 export const PAGE_H    = 841.89;
-export const MARGIN    = 50;
+export const MARGIN    = 56;
 export const CONTENT_W = PAGE_W - MARGIN * 2;
 
-export const GREEN  = '#166534';
-export const DARK   = '#09090b';
-export const GRAY   = '#71717a';
-export const LIGHT  = '#f4f4f5';
+export const GREEN  = '#30a735';
+export const DARK   = '#111114';
+export const INK    = '#26262b';
+export const GRAY   = '#6b6b73';
+export const RULE   = '#d9d9de';
+export const LIGHT  = '#f6f6f4';
 export const WHITE  = '#ffffff';
 
 /* ─────────────────── Helpers ─────────────────── */
 
-function fmt(n: number): string {
-  return n.toLocaleString('fr-DZ') + ' DZD';
+function fmtMoney(n: number): string {
+  return n.toLocaleString('fr-DZ').replace(/ | /g, ' ') + ' DZD';
 }
 
 function fmtDate(iso: string, lang: ReceiptLang): string {
@@ -214,30 +240,47 @@ function fmtDate(iso: string, lang: ReceiptLang): string {
     return new Date(iso).toLocaleString(lang === 'fr' ? 'fr-DZ' : 'en-GB', {
       day: '2-digit', month: 'long', year: 'numeric',
       hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
-    });
-  } catch {
-    return iso;
-  }
+    }).replace(/ | /g, ' ');
+  } catch { return iso; }
 }
 
 function fmtDateOnly(iso: string, lang: ReceiptLang): string {
   try {
     return new Date(iso).toLocaleDateString(lang === 'fr' ? 'fr-DZ' : 'en-GB', {
-      day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC',
+      day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC',
     });
-  } catch {
-    return iso.slice(0, 10);
-  }
+  } catch { return iso.slice(0, 10); }
 }
 
-/* ─────────────────── PDF builder ─────────────────── */
+/** Compact "22/09/2025 09:30–17:00" (or a plain date range for multi-day). */
+function fmtPeriod(startsAt: string, endsAt: string, unit: BookingRecord['unit'], lang: ReceiptLang): string {
+  try {
+    const s = new Date(startsAt), e = new Date(endsAt);
+    const d = (x: Date) => x.toLocaleDateString(lang === 'fr' ? 'fr-DZ' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+    const t = (x: Date) => x.toLocaleTimeString(lang === 'fr' ? 'fr-DZ' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC', hour12: false });
+    const sameDay = d(s) === d(e);
+    if (unit === 'HOUR' || unit === 'HALF_DAY') return `${d(s)} ${t(s)}–${t(e)}`;
+    return sameDay ? d(s) : `${d(s)} → ${d(e)}`;
+  } catch { return ''; }
+}
+
+type Doc = InstanceType<typeof PDFDocument>;
+
+/** Set the body font honouring weight/italic and Arabic script in the value. */
+function setFont(doc: Doc, opts: { bold?: boolean; italic?: boolean; arabic?: boolean } = {}): Doc {
+  return doc.font(fontFor(opts));
+}
+
+/* ─────────────────── PDF lifecycle ─────────────────── */
 
 export function makeDoc(): InstanceType<typeof PDFDocument> {
-  return new PDFDocument({
+  const doc = new PDFDocument({
     size: 'A4',
     margin: MARGIN,
     info: { Creator: 'Metwork', Producer: 'Metwork' },
   });
+  registerPdfFonts(doc);
+  return doc;
 }
 
 export async function collectBuffer(doc: InstanceType<typeof PDFDocument>): Promise<Buffer> {
@@ -250,304 +293,172 @@ export async function collectBuffer(doc: InstanceType<typeof PDFDocument>): Prom
   });
 }
 
-/* ─────────────────── Header (green bar + incubator logo/name) ────────── */
+/* ─────────────────── Letterhead (company block + logo) ─────────────────── */
 
 /**
- * Draws the green header band.
- *
- * Layout (left → right inside the 495-pt content area):
- *   [logo 80×80 px]  [incubator name + city]
- *
- * If logoBuffer is null the name occupies the full width.
+ * Company legal block on the left, logo on the right. Leaves `doc.y` just below
+ * the taller column, plus a thin brand rule.
  */
-export function drawHeader(
-  doc: InstanceType<typeof PDFDocument>,
-  incubator: BookingReceiptInput['incubator'],
-  logoBuffer: Buffer | null,
-): void {
-  const HEADER_H = 90;
+function drawLetterhead(doc: Doc, incubator: LetterheadInfo, logoBuffer: Buffer | null, lang: ReceiptLang): void {
+  const startY = MARGIN;
+  const LOGO_W = 150, LOGO_H = 60, GAP = 18;
+  const hasLogo = !!logoBuffer;
+  const infoW = hasLogo ? CONTENT_W - LOGO_W - GAP : CONTENT_W;
 
-  // Green header band
-  doc.rect(0, 0, PAGE_W, HEADER_H).fill(GREEN);
-
-  const LOGO_SIZE  = 64; // rendered size in points
-  const LOGO_PAD   = 13; // vertical padding inside band
-  const TEXT_LEFT  = logoBuffer ? MARGIN + LOGO_SIZE + 16 : MARGIN;
-  const TEXT_WIDTH = logoBuffer ? CONTENT_W - LOGO_SIZE - 16 : CONTENT_W;
-
-  // Incubator logo (top-left, vertically centred in the band)
-  if (logoBuffer) {
+  if (hasLogo) {
     try {
-      const logoY = LOGO_PAD;
-      doc.image(logoBuffer, MARGIN, logoY, {
-        width:  LOGO_SIZE,
-        height: LOGO_SIZE,
-        fit:    [LOGO_SIZE, LOGO_SIZE],
-        align:  'center',
-        valign: 'center',
-      });
-    } catch {
-      // Logo could not be embedded — fall through to text-only
-    }
+      doc.image(logoBuffer as Buffer, PAGE_W - MARGIN - LOGO_W, startY + 2, { fit: [LOGO_W, LOGO_H], align: 'right' });
+    } catch { /* skip logo on error */ }
   }
 
-  // Incubator name
-  doc
-    .fillColor(WHITE)
-    .font('Helvetica-Bold')
-    .fontSize(18)
-    .text(incubator.name, TEXT_LEFT, 22, { width: TEXT_WIDTH, lineBreak: false });
+  // Company name (bold).
+  const nameArabic = hasArabic(incubator.name ?? '');
+  setFont(doc, { bold: true, arabic: nameArabic }).fillColor(DARK).fontSize(15)
+    .text(incubator.name ?? 'Metwork', MARGIN, startY, { width: infoW });
 
-  // City / tagline
-  if (incubator.city) {
-    doc
-      .fillColor(WHITE)
-      .font('Helvetica')
-      .fontSize(10)
-      .text(incubator.city, TEXT_LEFT, 46, { width: TEXT_WIDTH });
+  // Legal / contact lines.
+  const rc = incubator.commercialRegNumber ?? incubator.registrationNumber ?? null;
+  const L = lang === 'fr'
+    ? { rc: 'RC', nif: 'NIF', address: 'Adresse', phone: 'Tél', email: 'Email' }
+    : { rc: 'RC', nif: 'NIF', address: 'Address', phone: 'Phone', email: 'Email' };
+  const lines: Array<[string, string]> = [];
+  if (rc)                lines.push([L.rc, rc]);
+  if (incubator.nif)     lines.push([L.nif, incubator.nif]);
+  if (incubator.address) lines.push([L.address, incubator.address]);
+  if (incubator.phone)   lines.push([L.phone, incubator.phone]);
+  if (incubator.email)   lines.push([L.email, incubator.email]);
+
+  doc.moveDown(0.35);
+  for (const [label, value] of lines) {
+    const y = doc.y;
+    setFont(doc).fillColor(GRAY).fontSize(9.5).text(`${label} : `, MARGIN, y, { continued: true })
+      .fillColor(INK).text(value, { width: infoW });
+    doc.moveDown(0.12);
   }
 
-  doc.moveDown(0);
+  const bottom = Math.max(doc.y, hasLogo ? startY + LOGO_H : startY);
+  // Thin brand rule under the letterhead.
+  doc.moveTo(MARGIN, bottom + 8).lineTo(PAGE_W - MARGIN, bottom + 8).lineWidth(1.4).strokeColor(GREEN).stroke();
+  doc.y = bottom + 20;
 }
 
-/* ─────────────────── Incubator sub-header (contact line) ─────────────── */
+/* ─────────────────── Title + meta (N° / Date) ─────────────────── */
 
-export function drawIncubatorContact(
-  doc: InstanceType<typeof PDFDocument>,
-  incubator: BookingReceiptInput['incubator'],
-  lang: ReceiptLang,
-): void {
-  const parts: string[] = [];
-  if (incubator.address)            parts.push(incubator.address);
-  if (incubator.phone)              parts.push(incubator.phone);
-  if (incubator.email)              parts.push(incubator.email);
-  if (incubator.registrationNumber) parts.push(`RC: ${incubator.registrationNumber}`);
-
-  doc
-    .fillColor(GRAY)
-    .font('Helvetica')
-    .fontSize(9)
-    .text(parts.join('  •  '), MARGIN, 100, { width: CONTENT_W });
-
-  void lang; // may be used later for RTL
-  doc.moveDown(0.5);
-}
-
-/* ─────────────────── Divider ─────────────────── */
-
-function drawDivider(doc: InstanceType<typeof PDFDocument>): void {
-  const y = doc.y + 6;
-  doc.moveTo(MARGIN, y).lineTo(MARGIN + CONTENT_W, y).strokeColor('#e4e4e7').lineWidth(0.5).stroke();
-  doc.moveDown(0.5);
-}
-
-/* ─────────────────── Section label ─────────────────── */
-
-function drawSectionLabel(doc: InstanceType<typeof PDFDocument>, label: string): void {
-  doc
-    .fillColor(GREEN)
-    .font('Helvetica-Bold')
-    .fontSize(9)
-    .text(label.toUpperCase(), MARGIN, doc.y + 6);
-  doc.moveDown(0.3);
-}
-
-/* ─────────────────── Two-column row ─────────────────── */
-
-function drawRow(
-  doc: InstanceType<typeof PDFDocument>,
-  label: string,
-  value: string,
-  opts: { bold?: boolean; large?: boolean } = {},
-): void {
-  const y   = doc.y;
-  const col = MARGIN + 160;
-  const fs  = opts.large ? 13 : 10;
-  doc
-    .fillColor(GRAY)
-    .font('Helvetica')
-    .fontSize(fs)
-    .text(label, MARGIN, y, { width: 155, continued: false });
-
-  doc
-    .fillColor(opts.bold ? DARK : '#3f3f46')
-    .font(opts.bold ? 'Helvetica-Bold' : 'Helvetica')
-    .fontSize(fs)
-    .text(value, col, y, { width: CONTENT_W - 160 });
-
-  doc.moveDown(0.1);
-}
-
-/* ─────────────────── Receipt title block ─────────────────── */
-
-function drawReceiptTitle(
-  doc: InstanceType<typeof PDFDocument>,
-  t: Record<LangKey, string>,
-  reference: string,
-  issuedOn: string,
-  lang: ReceiptLang,
-  title: string = t.receipt,
-): void {
-  doc.moveDown(0.8);
-  doc
-    .fillColor(DARK)
-    .font('Helvetica-Bold')
-    .fontSize(18)
-    .text(title, MARGIN, doc.y);
-
+function drawTitle(doc: Doc, title: string, refNo: string, dateStr: string, c: Copy): void {
   doc.moveDown(0.4);
-  doc
-    .fillColor(GRAY)
-    .font('Helvetica')
-    .fontSize(10)
-    .text(`${t.receiptNo}${reference}  ·  ${t.issuedOn} ${fmtDateOnly(issuedOn, lang)}`);
+  setFont(doc, { bold: true }).fillColor(DARK).fontSize(19)
+    .text(title, MARGIN, doc.y, { width: CONTENT_W, align: 'center' });
+  // Green underline centered under the title.
+  const tw = doc.widthOfString(title);
+  const uy = doc.y + 2;
+  doc.moveTo(PAGE_W / 2 - tw / 2, uy).lineTo(PAGE_W / 2 + tw / 2, uy).lineWidth(1.4).strokeColor(GREEN).stroke();
 
-  drawDivider(doc);
+  doc.moveDown(1.1);
+  const y = doc.y;
+  setFont(doc, { bold: true }).fillColor(DARK).fontSize(10.5).text(`${c.receiptNo} : `, MARGIN, y, { continued: true })
+    .fillColor(INK).font(FONT.body).text(refNo);
+  setFont(doc, { bold: true }).fillColor(DARK).fontSize(10.5).text(`${c.date} : `, MARGIN, doc.y, { continued: true })
+    .fillColor(INK).font(FONT.body).text(dateStr);
 }
 
-/* ─────────────────── Status box ─────────────────── */
+/* ─────────────────── Section helpers ─────────────────── */
 
-function statusLabel(
-  status: BookingRecord['status'],
-  t: Record<LangKey, string>,
-): string {
-  switch (status) {
-    case 'CONFIRMED':       return t.confirmed;
-    case 'PENDING':         return t.pending;
-    case 'PENDING_PAYMENT': return t.pendingPaymt;
-    default:                return status;
-  }
+function sectionRule(doc: Doc): void {
+  const y = doc.y + 10;
+  doc.moveTo(MARGIN, y).lineTo(PAGE_W - MARGIN, y).lineWidth(0.7).strokeColor(RULE).stroke();
+  doc.y = y + 12;
 }
 
-function paymentLabel(
-  method: BookingRecord['paymentMethod'],
-  t: Record<LangKey, string>,
-): string {
-  if (method === 'wallet') return t.online;
-  if (method === 'manual') return t.cash;
-  if (method === 'card') return t.card;
-  return '—';
+function sectionLabel(doc: Doc, label: string): void {
+  setFont(doc, { bold: true }).fillColor(DARK).fontSize(11.5).text(`${label} :`, MARGIN, doc.y);
+  doc.moveDown(0.45);
 }
 
-function kindLabel(kind: BookingRecord['itemKind'], t: Record<LangKey, string>): string {
-  switch (kind) {
-    case 'SPACE':   return t.space;
-    case 'PROGRAM': return t.program;
-    case 'EVENT':   return t.event;
-  }
+/** "Label : value" inline line. */
+function labelLine(doc: Doc, label: string, value: string): void {
+  const arabic = hasArabic(value);
+  const y = doc.y;
+  setFont(doc).fillColor(GRAY).fontSize(10.5).text(`${label} : `, MARGIN, y, { continued: true })
+    .fillColor(INK).font(fontFor({ arabic })).text(value || '—', { width: CONTENT_W - 20 });
+  doc.moveDown(0.28);
 }
 
-function unitLabel(unit: BookingRecord['unit'], t: Record<LangKey, string>): string {
-  switch (unit) {
-    case 'HOUR':     return t.hourly;
-    case 'HALF_DAY': return t.halfDaily;
-    case 'DAY':      return t.daily;
-    case 'MONTH':    return t.monthly;
+/* ─────────────────── Details table ─────────────────── */
+
+interface DetailRow { service: string; period: string; amount: string }
+
+function drawDetailsTable(doc: Doc, c: Copy, rows: DetailRow[]): void {
+  const x0 = MARGIN;
+  const colService = x0;
+  const colAmountW = 110;
+  const colPeriodW = 150;
+  const colPeriod = PAGE_W - MARGIN - colAmountW - colPeriodW;
+  const colAmount = PAGE_W - MARGIN - colAmountW;
+  const serviceW = colPeriod - colService - 12;
+
+  // Header row.
+  const hy = doc.y;
+  setFont(doc, { bold: true }).fillColor(DARK).fontSize(10);
+  doc.text(c.colService, colService, hy, { width: serviceW });
+  doc.text(c.colPeriod, colPeriod, hy, { width: colPeriodW - 8 });
+  doc.text(c.colAmount, colAmount, hy, { width: colAmountW, align: 'right' });
+  const headerBottom = doc.y + 4;
+  doc.moveTo(x0, headerBottom).lineTo(PAGE_W - MARGIN, headerBottom).lineWidth(0.8).strokeColor('#c8c8cf').stroke();
+  doc.y = headerBottom + 8;
+
+  for (const r of rows) {
+    const ry = doc.y;
+    setFont(doc, { arabic: hasArabic(r.service) }).fillColor(INK).fontSize(10.5)
+      .text(r.service, colService, ry, { width: serviceW });
+    const afterService = doc.y;
+    setFont(doc).fillColor(INK).fontSize(9.5).text(r.period, colPeriod, ry, { width: colPeriodW - 8, lineGap: 2 });
+    const afterPeriod = doc.y;
+    setFont(doc, { bold: true }).fillColor(DARK).fontSize(11).text(r.amount, colAmount, ry, { width: colAmountW, align: 'right' });
+    doc.y = Math.max(afterService, afterPeriod, doc.y) + 8;
   }
 }
 
 /* ─────────────────── Stamp ─────────────────── */
 
 /**
- * Draws an official-looking stamp near the bottom-right of the page.
- *
- * Priority:
- *   1. stampBuffer  — incubator's real stamp image (rendered at 90 × 90 pt)
- *   2. Vector stamp — green circular "CONFIRMED" badge (fallback)
+ * Draws the incubator's stamp near the bottom-right, above the footer. When no
+ * stamp image is configured, nothing is drawn (the receipt stays clean rather
+ * than showing a placeholder).
  */
-function drawStamp(
-  doc: InstanceType<typeof PDFDocument>,
-  stampBuffer: Buffer | null,
-  label = 'CONFIRMED',
-): void {
-  const STAMP_SIZE = 90;
-  const cx = PAGE_W - MARGIN - STAMP_SIZE / 2;
-  const cy = PAGE_H - MARGIN - STAMP_SIZE / 2 - 20;
-
-  doc.save();
-
-  if (stampBuffer) {
-    try {
-      doc.image(stampBuffer, cx - STAMP_SIZE / 2, cy - STAMP_SIZE / 2, {
-        width:  STAMP_SIZE,
-        height: STAMP_SIZE,
-        fit:    [STAMP_SIZE, STAMP_SIZE],
-        align:  'center',
-        valign: 'center',
-      });
-      doc.restore();
-      return;
-    } catch {
-      // Fall through to vector stamp
-    }
-  }
-
-  // Vector fallback — double-ring circular stamp
-  const r = 44;
-  doc.circle(cx, cy, r).strokeColor(GREEN).lineWidth(2.5).stroke();
-  doc.circle(cx, cy, r - 7).strokeColor(GREEN).lineWidth(0.8).stroke();
-  doc
-    .fillColor(GREEN)
-    .font('Helvetica-Bold')
-    .fontSize(8)
-    .text(label, cx - r + 6, cy - 5, { width: (r - 6) * 2, align: 'center' });
-
-  doc.restore();
+function drawStamp(doc: Doc, stampBuffer: Buffer | null): void {
+  if (!stampBuffer) return;
+  const STAMP = 120;
+  const x = PAGE_W - MARGIN - STAMP;
+  const y = PAGE_H - MARGIN - STAMP - 26;
+  try {
+    doc.save();
+    doc.image(stampBuffer, x, y, { fit: [STAMP, STAMP], align: 'center', valign: 'center' });
+    doc.restore();
+  } catch { /* skip on decode error */ }
 }
 
-/* ─────────────────── Footer ─────────────────── */
+/* ─────────────────── Footer (attestation) ─────────────────── */
 
-function drawFooter(
-  doc: InstanceType<typeof PDFDocument>,
-  t: Record<LangKey, string>,
-  incubatorName: string,
-): void {
-  // Background strip at the bottom
-  const stripY = PAGE_H - 60;
-  doc
-    .rect(0, stripY, PAGE_W, 60)
-    .fill(LIGHT);
-
-  doc
-    .fillColor(GRAY)
-    .font('Helvetica')
-    .fontSize(8)
-    .text(t.thankYou, MARGIN, stripY + 12, { width: CONTENT_W });
-
-  doc
-    .fillColor(GRAY)
-    .font('Helvetica')
-    .fontSize(8)
-    .text(
-      `© ${new Date().getFullYear()} ${incubatorName}  ·  Powered by Metwork`,
-      MARGIN, stripY + 28,
-      { width: CONTENT_W },
-    );
+function drawFooter(doc: Doc, c: Copy, incubatorName: string): void {
+  const y = PAGE_H - MARGIN - 8;
+  setFont(doc).fillColor(GRAY).fontSize(8.5)
+    .text(`© ${new Date().getFullYear()} ${incubatorName}  ·  ${c.poweredBy}`, MARGIN, y, { width: CONTENT_W, align: 'center' });
 }
 
 /* ─────────────────── Main: booking receipt ─────────────────── */
 
-/**
- * Generates an A4 PDF buffer for a standard booking (space / program / event)
- * or a manual / offline booking.
- */
 export async function generateBookingReceiptPdf(input: BookingReceiptInput): Promise<Buffer> {
-  const { booking, clientName, clientEmail, incubator, lang } = input;
-  const t = T[lang];
+  const { booking, clientName, clientEmail, clientPhone, incubator, lang } = input;
+  const c = COPY[lang];
 
-  // Card CASH_DEPOSIT bookings carry a deposit/balance split. The variant
-  // controls the title; the split rows are driven directly by the frozen
-  // server-side booking amounts so the receipt can never disagree with the
-  // ledger. Default to 'standard' for legacy wallet / manual bookings.
   const isCashDeposit = booking.paymentMode === 'CASH_DEPOSIT';
   const variant: ReceiptVariant = input.variant ?? (isCashDeposit
     ? (booking.paymentStatus === 'PAID' ? 'final' : 'deposit')
     : 'standard');
-  const onlinePaid = booking.onlinePaidAmount ?? 0;
+  const onlinePaid  = booking.onlinePaidAmount ?? 0;
   const cashBalance = booking.cashRemainingAmount ?? 0;
-  const payerFee = booking.payerFeeAmount ?? 0;
+  const payerFee    = booking.payerFeeAmount ?? 0;
 
-  // Pre-fetch images in parallel (non-blocking — failures return null)
   const [logoBuffer, stampBuffer] = await Promise.all([
     fetchImageBuffer(incubator.logoUrl),
     fetchImageBuffer(incubator.stampUrl),
@@ -555,86 +466,71 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
 
   const doc = makeDoc();
 
-  // ── Header ──
-  drawHeader(doc, incubator, logoBuffer);
-  drawIncubatorContact(doc, incubator, lang);
+  // ── Letterhead ──
+  drawLetterhead(doc, incubator, logoBuffer, lang);
 
-  // ── Receipt title ──
-  drawReceiptTitle(
-    doc, t, booking.clientReference, booking.createdAt, lang,
-    variant === 'deposit' ? t.depositReceipt : t.receipt,
-  );
+  // ── Title + meta ──
+  const title = variant === 'deposit' ? c.depositReceipt : c.receipt;
+  drawTitle(doc, title, booking.clientReference, fmtDateOnly(booking.createdAt, lang), c);
 
-  // ── Billed to ──
-  drawSectionLabel(doc, t.billedTo);
-  doc.moveDown(0.2);
-  doc.fillColor(DARK).font('Helvetica-Bold').fontSize(11).text(clientName, MARGIN, doc.y);
-  doc.fillColor(GRAY).font('Helvetica').fontSize(9).text(clientEmail, MARGIN, doc.y);
-  if (booking.notes) {
-    doc.fillColor(GRAY).font('Helvetica').fontSize(9).text(booking.notes, MARGIN, doc.y);
+  // ── Received from ──
+  // Prefer an explicit phone; otherwise fall back to the phone stored on an
+  // offline booking so manual receipts show "Téléphone" without every caller
+  // having to thread it through.
+  const phone = clientPhone ?? booking.clientPhone ?? null;
+  sectionRule(doc);
+  sectionLabel(doc, c.receivedFrom);
+  labelLine(doc, c.clientNameLabel, clientName);
+  if (phone) labelLine(doc, c.phone, phone);
+  labelLine(doc, c.email, clientEmail || '—');
+
+  // ── Payment details table ──
+  sectionRule(doc);
+  sectionLabel(doc, c.paymentDetails);
+  const kind = booking.itemKind === 'SPACE' ? c.space : booking.itemKind === 'PROGRAM' ? c.program : c.event;
+  drawDetailsTable(doc, c, [{
+    service: booking.itemName || kind,
+    period:  fmtPeriod(booking.startsAt, booking.endsAt, booking.unit, lang),
+    amount:  booking.totalAmount === 0 ? c.free : booking.totalAmount.toLocaleString('fr-DZ').replace(/ | /g, ' '),
+  }]);
+
+  // ── Total (highlighted) + amount in words ──
+  doc.moveDown(0.6);
+  const totalY = doc.y;
+  doc.rect(MARGIN, totalY, CONTENT_W, 38).fill(LIGHT);
+  setFont(doc, { bold: true }).fillColor(DARK).fontSize(12).text(`${c.totalPaid}`, MARGIN + 14, totalY + 12, { width: 200 });
+  const totalStr = booking.totalAmount === 0 ? c.free : fmtMoney(booking.totalAmount);
+  setFont(doc, { bold: true }).fillColor(GREEN).fontSize(14).text(totalStr, MARGIN + 200, totalY + 11, { width: CONTENT_W - 214, align: 'right' });
+  doc.y = totalY + 46;
+  if (booking.totalAmount > 0) {
+    setFont(doc, { italic: true }).fillColor(GRAY).fontSize(9.5)
+      .text(`(${amountInWords(booking.totalAmount, lang)} ${c.inWordsSuffix})`, MARGIN, doc.y, { width: CONTENT_W });
+    doc.moveDown(0.2);
   }
-  drawDivider(doc);
 
-  // ── Booking details ──
-  drawSectionLabel(doc, t.bookingDetails);
-  doc.moveDown(0.2);
-  drawRow(doc, t.type, kindLabel(booking.itemKind, t));
-  drawRow(doc, t.item, booking.itemName, { bold: true });
-  drawRow(doc, t.from, fmtDate(booking.startsAt, lang));
-  drawRow(doc, t.to,   fmtDate(booking.endsAt,   lang));
-  if (booking.itemKind === 'SPACE') {
-    drawRow(doc, t.unit,     unitLabel(booking.unit, t));
-    drawRow(doc, t.quantity, `${booking.quantity} ${t[booking.unit.toLowerCase() as 'hour' | 'half_day' | 'day' | 'month']}`);
-  }
-  drawDivider(doc);
-
-  // ── Payment ──
-  drawSectionLabel(doc, t.payment);
-  doc.moveDown(0.2);
-  drawRow(doc, t.paymentMethod, paymentLabel(booking.paymentMethod, t));
+  // ── Deposit / balance split (card CASH_DEPOSIT) ──
   if (isCashDeposit) {
-    // Deposit / balance split for CASH_DEPOSIT card bookings.
-    drawRow(doc, t.depositPaid, fmt(onlinePaid), { bold: true });
-    // Payer-side platform fee charged on top of the deposit (when applied).
-    if (payerFee > 0) drawRow(doc, t.platformFee, `+ ${fmt(payerFee)}`);
-    drawRow(
-      doc,
-      t.cashBalance,
-      variant === 'final'
-        ? `${fmt(cashBalance)} — ${t.paidInFull}`
-        : `${fmt(cashBalance)} — ${t.awaitingCashPay}`,
-    );
-  } else {
-    // Payer-side platform fee charged on top of the online payment (when applied).
-    if (payerFee > 0) drawRow(doc, t.platformFee, `+ ${fmt(payerFee)}`);
-    drawRow(doc, t.status, statusLabel(booking.status, t));
-  }
-  drawDivider(doc);
-
-  // ── Total (highlighted row) ──
-  const totalY = doc.y + 8;
-  doc.rect(MARGIN, totalY, CONTENT_W, 36).fill(LIGHT);
-  const totalStr = booking.totalAmount === 0 ? t.free : fmt(booking.totalAmount);
-  doc
-    .fillColor(GRAY)
-    .font('Helvetica')
-    .fontSize(11)
-    .text(t.total, MARGIN + 12, totalY + 11, { width: 150 });
-  doc
-    .fillColor(GREEN)
-    .font('Helvetica-Bold')
-    .fontSize(14)
-    .text(totalStr, MARGIN + 160, totalY + 8, { width: CONTENT_W - 172, align: 'right' });
-
-  doc.y = totalY + 50;
-
-  // ── Stamp when confirmed ──
-  if (booking.status === 'CONFIRMED') {
-    drawStamp(doc, stampBuffer);
+    doc.moveDown(0.2);
+    labelLine(doc, c.depositPaid, fmtMoney(onlinePaid));
+    if (payerFee > 0) labelLine(doc, c.platformFee, `+ ${fmtMoney(payerFee)}`);
+    labelLine(doc, c.cashBalance, `${fmtMoney(cashBalance)} — ${variant === 'final' ? c.paidInFull : c.awaitingCash}`);
   }
 
-  // ── Footer ──
-  drawFooter(doc, t, incubator.name);
+  // ── Payment method + date ──
+  doc.moveDown(0.3);
+  const method = booking.paymentMethod === 'wallet' ? c.methodOnline
+    : booking.paymentMethod === 'card' ? c.methodCard
+    : c.methodCash;
+  labelLine(doc, c.paymentMethod, method);
+  labelLine(doc, c.paymentDate, fmtDateOnly(booking.createdAt, lang));
+
+  // ── Attestation ──
+  sectionRule(doc);
+  setFont(doc).fillColor(INK).fontSize(10).text(c.attestation(incubator.name ?? 'Metwork'), MARGIN, doc.y, { width: CONTENT_W, lineGap: 2 });
+
+  // ── Stamp + footer ──
+  drawStamp(doc, stampBuffer);
+  drawFooter(doc, c, incubator.name ?? 'Metwork');
 
   return collectBuffer(doc);
 }
@@ -643,19 +539,13 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
 
 export interface PaymentLinkReceiptInput {
   link:       PaymentLinkRecord;
-  incubator:  Pick<IncubatorRecord, 'name' | 'email' | 'phone' | 'city' | 'logoUrl' | 'stampUrl' | 'address' | 'registrationNumber'>;
+  incubator:  ReceiptIncubator;
   lang:       ReceiptLang;
 }
 
-/**
- * Generates an A4 PDF receipt for a paid direct payment link. Reuses the same
- * branded primitives as the booking receipt (header, rows, stamp, footer) so
- * the look is identical — the "guest" variant for an account-less payer.
- */
 export async function generatePaymentLinkReceiptPdf(input: PaymentLinkReceiptInput): Promise<Buffer> {
   const { link, incubator, lang } = input;
-  const t = T[lang];
-  const isFr = lang === 'fr';
+  const c = COPY[lang];
 
   const amount = link.amount;
   const payerFee = link.payerFeeAmount ?? 0;
@@ -670,252 +560,102 @@ export async function generatePaymentLinkReceiptPdf(input: PaymentLinkReceiptInp
 
   const doc = makeDoc();
 
-  // ── Header ──
-  drawHeader(doc, incubator, logoBuffer);
-  drawIncubatorContact(doc, incubator, lang);
+  drawLetterhead(doc, incubator, logoBuffer, lang);
+  drawTitle(doc, c.receipt, reference, fmtDateOnly(issuedOn, lang), c);
 
-  // ── Receipt title ──
-  drawReceiptTitle(doc, t, reference, issuedOn, lang, t.receipt);
+  sectionRule(doc);
+  sectionLabel(doc, c.receivedFrom);
+  labelLine(doc, c.clientNameLabel, link.payerName ?? '—');
+  if (link.payerEmail) labelLine(doc, c.email, link.payerEmail);
 
-  // ── Billed to ──
-  drawSectionLabel(doc, t.billedTo);
-  doc.moveDown(0.2);
-  doc.fillColor(DARK).font('Helvetica-Bold').fontSize(11).text(link.payerName ?? '—', MARGIN, doc.y);
-  if (link.payerEmail) {
-    doc.fillColor(GRAY).font('Helvetica').fontSize(9).text(link.payerEmail, MARGIN, doc.y);
-  }
-  drawDivider(doc);
+  sectionRule(doc);
+  sectionLabel(doc, c.paymentDetails);
+  drawDetailsTable(doc, c, [{
+    service: link.serviceName + (link.description ? ` — ${link.description}` : ''),
+    period:  fmtDateOnly(issuedOn, lang),
+    amount:  amount.toLocaleString('fr-DZ').replace(/ | /g, ' '),
+  }]);
 
-  // ── Service details ──
-  drawSectionLabel(doc, isFr ? 'DÉTAILS' : 'DETAILS');
-  doc.moveDown(0.2);
-  drawRow(doc, t.item, link.serviceName, { bold: true });
-  if (link.description) {
-    drawRow(doc, isFr ? 'Description' : 'Description', link.description);
-  }
-  drawDivider(doc);
+  doc.moveDown(0.6);
+  const totalY = doc.y;
+  doc.rect(MARGIN, totalY, CONTENT_W, 38).fill(LIGHT);
+  setFont(doc, { bold: true }).fillColor(DARK).fontSize(12).text(c.totalPaid, MARGIN + 14, totalY + 12, { width: 200 });
+  setFont(doc, { bold: true }).fillColor(GREEN).fontSize(14).text(fmtMoney(grossCharge), MARGIN + 200, totalY + 11, { width: CONTENT_W - 214, align: 'right' });
+  doc.y = totalY + 46;
+  setFont(doc, { italic: true }).fillColor(GRAY).fontSize(9.5).text(`(${amountInWords(grossCharge, lang)} ${c.inWordsSuffix})`, MARGIN, doc.y, { width: CONTENT_W });
 
-  // ── Payment ──
-  drawSectionLabel(doc, t.payment);
-  doc.moveDown(0.2);
-  drawRow(doc, t.paymentMethod, t.card);
-  drawRow(doc, isFr ? 'Montant' : 'Amount', fmt(amount), { bold: true });
   if (payerFee > 0) {
-    drawRow(doc, t.platformFee, `+ ${fmt(payerFee)}`);
-    drawRow(doc, t.chargedOnline, fmt(grossCharge));
+    doc.moveDown(0.3);
+    labelLine(doc, c.platformFee, `+ ${fmtMoney(payerFee)}`);
   }
-  drawRow(doc, t.status, t.paidInFull);
-  drawDivider(doc);
+  doc.moveDown(0.2);
+  labelLine(doc, c.paymentMethod, c.methodCard);
+  labelLine(doc, c.paymentDate, fmtDateOnly(issuedOn, lang));
 
-  // ── Total (highlighted row) ──
-  const totalY = doc.y + 8;
-  doc.rect(MARGIN, totalY, CONTENT_W, 36).fill(LIGHT);
-  doc
-    .fillColor(GRAY)
-    .font('Helvetica')
-    .fontSize(11)
-    .text(isFr ? 'TOTAL PAYÉ' : 'TOTAL PAID', MARGIN + 12, totalY + 11, { width: 200 });
-  doc
-    .fillColor(GREEN)
-    .font('Helvetica-Bold')
-    .fontSize(14)
-    .text(fmt(grossCharge), MARGIN + 160, totalY + 8, { width: CONTENT_W - 172, align: 'right' });
+  sectionRule(doc);
+  setFont(doc).fillColor(INK).fontSize(10).text(c.attestation(incubator.name ?? 'Metwork'), MARGIN, doc.y, { width: CONTENT_W, lineGap: 2 });
 
-  doc.y = totalY + 50;
-
-  // ── Paid stamp ──
-  drawStamp(doc, stampBuffer, isFr ? 'PAYÉ' : 'PAID');
-
-  // ── Footer ──
-  drawFooter(doc, t, incubator.name);
+  drawStamp(doc, stampBuffer);
+  drawFooter(doc, c, incubator.name ?? 'Metwork');
 
   return collectBuffer(doc);
 }
 
 /* ─────────────────── Mentor consultation confirmation ─────────────────── */
 
-/**
- * Generates an A4 confirmation PDF for an approved mentor consultation.
- * Includes booking reference, mentor details, scheduled date/time, duration, and estimated fee.
- */
 export async function generateMentorConfirmationPdf(input: MentorConfirmationInput): Promise<Buffer> {
   const { booking, mentor, lang } = input;
-  const t = T[lang];
+  const c = COPY[lang];
 
-  // Compute estimated fee from mentor hourly rate × duration
   const feePerHour   = mentor.consultationFee ?? 0;
   const dur          = booking.durationMinutes ?? null;
-  const estimatedFee = feePerHour > 0 && dur
-    ? Math.round((dur / 60) * feePerHour)
-    : null;
+  const estimatedFee = feePerHour > 0 && dur ? Math.round((dur / 60) * feePerHour) : null;
 
-  // Pre-fetch the Metwork logo for the consultation header
-  const metworkLogoBuffer = await fetchImageBuffer(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/assets/Metworkwhitelogo.png`);
+  const metworkLogo = await fetchImageBuffer(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/assets/Metworklogo.png`);
 
   const doc = makeDoc();
 
-  // ── Header ──
-  const HEADER_H = 90;
-  doc.rect(0, 0, PAGE_W, HEADER_H).fill(GREEN);
+  // Letterhead: Metwork logo top-right + "Metwork · Mentor Network".
+  drawLetterhead(doc, {
+    name: 'Metwork', email: 'contact@metwork.dz', address: 'Mentor Network',
+  }, metworkLogo, lang);
 
-  if (metworkLogoBuffer) {
-    try {
-      doc.image(metworkLogoBuffer, MARGIN, 13, {
-        width: 120, height: 64, fit: [120, 64], align: 'center', valign: 'center',
-      });
-    } catch { /* skip logo on error */ }
-    doc
-      .fillColor(WHITE)
-      .font('Helvetica')
-      .fontSize(10)
-      .text('Mentor Network', MARGIN + 136, 46);
-  } else {
-    doc
-      .fillColor(WHITE)
-      .font('Helvetica-Bold')
-      .fontSize(20)
-      .text('Metwork', MARGIN, 28);
-    doc.fillColor(WHITE).font('Helvetica').fontSize(10).text('Mentor Network', MARGIN, 52);
-  }
-  doc.moveDown(0);
+  drawTitle(doc, c.consultTitle, booking.id.slice(0, 8).toUpperCase(), fmtDateOnly(booking.createdAt, lang), c);
 
-  // ── Title ──
-  doc.moveDown(1.5);
-  doc.fillColor(DARK).font('Helvetica-Bold').fontSize(16).text(t.consultTitle, MARGIN, doc.y);
-  doc.moveDown(0.4);
-  doc
-    .fillColor(GRAY)
-    .font('Helvetica')
-    .fontSize(10)
-    .text(`${t.consultRef}${booking.id.slice(0, 8).toUpperCase()}  ·  ${t.requested} ${fmtDateOnly(booking.createdAt, lang)}`);
+  sectionRule(doc);
+  sectionLabel(doc, c.requestedBy);
+  labelLine(doc, c.clientNameLabel, booking.userName);
+  labelLine(doc, c.email, booking.userEmail);
+  labelLine(doc, c.phone, booking.userPhone);
 
-  drawDivider(doc);
+  sectionRule(doc);
+  sectionLabel(doc, c.consultant);
+  labelLine(doc, c.consultant, mentor.fullName);
+  if (mentor.position) labelLine(doc, c.position, mentor.position);
 
-  // ── Requester details ──
-  drawSectionLabel(doc, t.requestedBy);
-  doc.moveDown(0.2);
-  drawRow(doc, t.requestedBy, booking.userName,  { bold: true });
-  drawRow(doc, 'Email',       booking.userEmail);
-  drawRow(doc, t.phone,       booking.userPhone);
-  drawDivider(doc);
+  if (booking.scheduledAt) labelLine(doc, c.confirmedDate, fmtDate(booking.scheduledAt, lang));
+  else if (booking.consultationDate) labelLine(doc, c.requestedDate, `${booking.consultationDate}${booking.consultationTime ? ` · ${booking.consultationTime}` : ''}`);
+  if (dur) labelLine(doc, c.duration, `${dur} min`);
+  if (booking.meetLink) labelLine(doc, c.meetingLink, booking.meetLink);
+  else if (booking.isOffline) labelLine(doc, c.method, c.inPerson);
 
-  // ── Consultant ──
-  drawSectionLabel(doc, t.consultant);
-  doc.moveDown(0.2);
-  drawRow(doc, t.consultant, mentor.fullName,  { bold: true });
-  drawRow(doc, 'Position',    mentor.position);
-  drawDivider(doc);
+  const chargedAmount = typeof booking.amountCharged === 'number' ? booking.amountCharged : estimatedFee;
+  if (booking.chargeType === 'FREE_QUOTA') labelLine(doc, c.method, c.freeCredit);
+  else if (chargedAmount != null) labelLine(doc, c.amountPaid, chargedAmount === 0 ? c.free : fmtMoney(chargedAmount));
 
-  // ── Consultation details (schedule, duration, fee) ──
-  const hasDetails = booking.scheduledAt || booking.consultationDate || dur || estimatedFee !== null;
-  if (hasDetails) {
-    const detailsLabel = lang === 'fr' ? 'DÉTAILS DU RENDEZ-VOUS' : 'APPOINTMENT DETAILS';
-    drawSectionLabel(doc, detailsLabel);
-    doc.moveDown(0.2);
+  sectionRule(doc);
+  sectionLabel(doc, c.message);
+  setFont(doc).fillColor(INK).fontSize(10).text(booking.message || '—', MARGIN, doc.y, { width: CONTENT_W, lineGap: 2 });
 
-    // Confirmed scheduled date (set by admin on approval) takes priority over requested date
-    if (booking.scheduledAt) {
-      const schedLabel = lang === 'fr' ? 'Date confirmée' : 'Confirmed date';
-      drawRow(doc, schedLabel, fmtDate(booking.scheduledAt, lang), { bold: true });
-    } else if (booking.consultationDate) {
-      const dateLabel = lang === 'fr' ? 'Date demandée' : 'Requested date';
-      const timeStr   = booking.consultationTime ? ` à ${booking.consultationTime}` : '';
-      drawRow(doc, dateLabel, `${booking.consultationDate}${timeStr}`);
-    }
-
-    if (dur) {
-      const durLabel = lang === 'fr' ? 'Durée' : 'Duration';
-      drawRow(doc, durLabel, `${dur} min`);
-    }
-
-    if (booking.meetLink) {
-      const linkLabel = lang === 'fr' ? 'Lien de réunion' : 'Meeting link';
-      drawRow(doc, linkLabel, booking.meetLink);
-    } else if (booking.isOffline) {
-      const modeLabel = lang === 'fr' ? 'Mode' : 'Mode';
-      drawRow(doc, modeLabel, lang === 'fr' ? 'Présentiel' : 'In-person');
-    }
-
-    // ── Amount charged ──────────────────────────────────────────────────
-    // Prefer the persisted booking.amountCharged (set authoritatively when
-    // the wallet was debited) over the locally re-computed `estimatedFee`.
-    // The "estimated" wording is reserved for the legacy code path where
-    // no chargeType was recorded — every recent booking has one.
-    const chargedAmount = typeof booking.amountCharged === 'number'
-      ? booking.amountCharged
-      : estimatedFee;
-
-    if (booking.chargeType === 'FREE_QUOTA') {
-      const feeLabel = lang === 'fr' ? 'Mode de paiement' : 'Payment method';
-      drawRow(
-        doc,
-        feeLabel,
-        lang === 'fr' ? 'Crédit mensuel gratuit' : 'Free monthly credit',
-        { bold: true },
-      );
-    } else if (chargedAmount !== null && chargedAmount !== undefined) {
-      // PAID: show the real amount that was debited from the user's wallet.
-      const feeLabel = booking.chargeType === 'PAID'
-        ? (lang === 'fr' ? 'Montant payé' : 'Amount paid')
-        : (lang === 'fr' ? 'Frais estimés' : 'Estimated fee');
-      drawRow(
-        doc,
-        feeLabel,
-        chargedAmount === 0 ? t.free : fmt(chargedAmount),
-        { bold: true },
-      );
-      if (booking.chargeType === 'PAID' && chargedAmount > 0) {
-        const methodLabel = lang === 'fr' ? 'Méthode' : 'Method';
-        drawRow(doc, methodLabel, lang === 'fr' ? 'Portefeuille Metwork' : 'Metwork wallet');
-      }
-    }
-
-    if (booking.appliedPromoCode) {
-      const promoLabel = lang === 'fr' ? 'Code promo appliqué' : 'Promo applied';
-      const discount   = booking.promoDiscountPercent ? ` (−${booking.promoDiscountPercent}%)` : '';
-      drawRow(doc, promoLabel, `${booking.appliedPromoCode}${discount}`);
-    }
-
-    drawDivider(doc);
-  }
-
-  // ── Message ──
-  drawSectionLabel(doc, t.consultMessage);
-  doc.moveDown(0.2);
-  doc
-    .fillColor('#3f3f46')
-    .font('Helvetica')
-    .fontSize(10)
-    .text(booking.message, MARGIN, doc.y, { width: CONTENT_W, align: 'left' });
-
-  drawDivider(doc);
-
-  // ── Admin note (if any) ──
   if (booking.adminNote) {
-    const noteLabel = lang === 'fr' ? 'NOTE DE L\'ÉQUIPE' : 'TEAM NOTE';
-    drawSectionLabel(doc, noteLabel);
-    doc.moveDown(0.2);
-    doc
-      .fillColor('#3f3f46')
-      .font('Helvetica-Oblique')
-      .fontSize(10)
-      .text(booking.adminNote, MARGIN, doc.y, { width: CONTENT_W });
-    drawDivider(doc);
+    sectionRule(doc);
+    sectionLabel(doc, c.teamNote);
+    setFont(doc, { italic: true }).fillColor(INK).fontSize(10).text(booking.adminNote, MARGIN, doc.y, { width: CONTENT_W, lineGap: 2 });
   }
 
-  // ── Note ──
-  doc.moveDown(0.4);
-  doc
-    .fillColor(GRAY)
-    .font('Helvetica-Oblique')
-    .fontSize(10)
-    .text(t.consultNote, MARGIN, doc.y, { width: CONTENT_W });
+  doc.moveDown(0.6);
+  setFont(doc, { italic: true }).fillColor(GRAY).fontSize(9.5).text(c.consultNote, MARGIN, doc.y, { width: CONTENT_W });
 
-  // ── Confirmed stamp ──
-  drawStamp(doc, null);
-
-  // ── Footer ──
-  drawFooter(doc, t, 'Metwork');
-
+  drawFooter(doc, c, 'Metwork');
   return collectBuffer(doc);
 }

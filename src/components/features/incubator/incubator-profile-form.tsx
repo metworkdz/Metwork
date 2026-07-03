@@ -38,6 +38,7 @@ export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = t
     city: incubator.city,
     website: incubator.website ?? '',
     logoUrl: incubator.logoUrl ?? '',
+    stampUrl: incubator.stampUrl ?? '',
     subscriptionTier: incubator.subscriptionTier,
     address: incubator.address ?? '',
     commercialRegNumber: incubator.commercialRegNumber ?? '',
@@ -47,12 +48,16 @@ export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = t
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingStamp, setUploadingStamp] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const stampRef = useRef<HTMLInputElement>(null);
 
-  async function handleLogoUpload(file: File) {
-    setUploading(true);
+  /** Upload an image and store its URL under `field` (logo or stamp). */
+  async function handleImageUpload(file: File, field: 'logoUrl' | 'stampUrl') {
+    const setBusy = field === 'stampUrl' ? setUploadingStamp : setUploading;
+    setBusy(true);
     setError(null);
     try {
       const fd = new FormData();
@@ -60,11 +65,11 @@ export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = t
       const res = await fetch('/api/incubator/upload', { method: 'POST', credentials: 'include', body: fd });
       if (!res.ok) throw new Error(t('errorUpload'));
       const data = await res.json() as { url: string };
-      setForm((f) => ({ ...f, logoUrl: data.url }));
+      setForm((f) => ({ ...f, [field]: data.url }));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('errorUpload'));
     } finally {
-      setUploading(false);
+      setBusy(false);
     }
   }
 
@@ -81,6 +86,7 @@ export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = t
           city: form.city.trim(),
           website: form.website.trim() || null,
           logoUrl: form.logoUrl.trim() || null,
+          stampUrl: form.stampUrl.trim() || null,
           ...(showSubscriptionTier ? { subscriptionTier: form.subscriptionTier } : {}),
           address: form.address.trim() || null,
           commercialRegNumber: form.commercialRegNumber.trim() || null,
@@ -195,7 +201,7 @@ export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = t
                 <input ref={fileRef} type="file" accept="image/*" className="hidden"
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     const f = e.target.files?.[0];
-                    if (f) void handleLogoUpload(f);
+                    if (f) void handleImageUpload(f, 'logoUrl');
                     e.target.value = '';
                   }} />
               </div>
@@ -205,6 +211,34 @@ export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = t
                   className="mt-2 h-12 w-12 rounded object-contain border border-border" />
               )}
             </div>
+          </div>
+
+          {/* Official stamp / seal — printed at the bottom of receipts. */}
+          <div className="space-y-1.5">
+            <Label>{t('labelStamp')}</Label>
+            <div className="flex gap-2">
+              <Input value={form.stampUrl}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, stampUrl: e.target.value }))}
+                placeholder={t('stampUrlPlaceholder')} />
+              <Button type="button" variant="outline" size="icon"
+                disabled={uploadingStamp}
+                onClick={() => stampRef.current?.click()}
+                title={t('uploadStampTitle')}>
+                <Upload className="size-4" />
+              </Button>
+              <input ref={stampRef} type="file" accept="image/png,image/jpeg,image/jpg" className="hidden"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const f = e.target.files?.[0];
+                  if (f) void handleImageUpload(f, 'stampUrl');
+                  e.target.value = '';
+                }} />
+            </div>
+            <p className="text-xs text-muted-foreground">{t('stampHint')}</p>
+            {form.stampUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={form.stampUrl} alt={t('stampPreviewAlt')}
+                className="mt-2 h-20 w-20 rounded object-contain border border-border bg-white p-1" />
+            )}
           </div>
         </CardContent>
       </Card>

@@ -26,8 +26,6 @@
  * Naskh's GPOS mark-anchor tables trigger a null-anchor crash in the bundled
  * fontkit when positioning diacritics; Amiri shapes the same text cleanly.
  */
-import fs from 'node:fs';
-import path from 'node:path';
 import type PDFDocument from 'pdfkit';
 import type { IncubatorRecord } from '@/server/db/store';
 import {
@@ -41,31 +39,8 @@ import {
   fetchImageBuffer,
   makeDoc,
 } from '@/server/notifications/receipt';
+import { fontFor, hasArabic } from '@/server/pdf/fonts';
 import type { ContractLang } from './variables';
-
-/* ─────────────────── Embedded Arabic font ─────────────────── */
-
-const ARABIC_FONT_PATH = path.join(
-  process.cwd(),
-  'src/server/contracts/fonts/Amiri-Regular.ttf',
-);
-const ARABIC_FONT = 'AmiriArabic';
-
-/**
- * Read the bundled Arabic TTF once. Null-safe: if the file can't be read the
- * caller falls back to Helvetica (Arabic glyphs won't render, but generation
- * never crashes).
- */
-let arabicFontBuffer: Buffer | null | undefined;
-function loadArabicFont(): Buffer | null {
-  if (arabicFontBuffer !== undefined) return arabicFontBuffer;
-  try {
-    arabicFontBuffer = fs.readFileSync(ARABIC_FONT_PATH);
-  } catch {
-    arabicFontBuffer = null;
-  }
-  return arabicFontBuffer;
-}
 
 /* ─────────────────── i18n labels ─────────────────── */
 
@@ -109,22 +84,14 @@ export interface ContractPdfInput {
 
 type Doc = InstanceType<typeof PDFDocument>;
 
-// Arabic Unicode blocks (incl. presentation forms) — used to detect Arabic text
-// in an otherwise-Latin (en/fr) contract body so Latin-only fonts don't garble
-// an Arabic client name. Amiri covers both scripts.
-const ARABIC_RE = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/;
-function hasArabic(s: string): boolean { return ARABIC_RE.test(s); }
-
-/** Apply the right font for the language ('ar' → embedded Amiri, else Helvetica). */
+/**
+ * Apply the right embedded font. Arabic templates use Amiri (naskh shaping);
+ * Latin (en/fr) uses the embedded DejaVu Serif — NOT the pdfkit built-in
+ * Helvetica, whose CP1252-only encoding garbles the narrow/thin no-break spaces
+ * and typographic marks that French contract text pasted from Word is full of.
+ */
 function setFont(doc: Doc, lang: ContractLang, bold: boolean): void {
-  if (lang === 'ar') {
-    const buf = loadArabicFont();
-    if (buf) {
-      doc.font(ARABIC_FONT);
-      return;
-    }
-  }
-  doc.font(bold ? 'Helvetica-Bold' : 'Helvetica');
+  doc.font(fontFor({ bold, arabic: lang === 'ar' }));
 }
 
 /**
@@ -200,14 +167,8 @@ export async function generateContractPdf(input: ContractPdfInput): Promise<Buff
   // a French/English contract — common in Algeria). Amiri covers both scripts.
   const bodyArabic = isAr || hasArabic(body);
 
+  // makeDoc() already registers every embedded face (DejaVu Serif + Amiri).
   const doc = makeDoc();
-  // Register the Arabic font on this document (no-op fallback if unreadable).
-  if (bodyArabic) {
-    const buf = loadArabicFont();
-    if (buf) {
-      try { doc.registerFont(ARABIC_FONT, buf); } catch { /* fall back to Helvetica */ }
-    }
-  }
 
   // ── Letterhead header (company info + logo) ──
   drawContractHeader(doc, incubator, logoBuffer, lang);
@@ -237,8 +198,7 @@ export async function generateContractPdf(input: ContractPdfInput): Promise<Buff
 
   // ── Body (rendered template) ──
   doc.moveDown(1.6);
-  if (bodyArabic && loadArabicFont()) doc.font(ARABIC_FONT);
-  else setFont(doc, lang, false);
+  doc.font(fontFor({ arabic: bodyArabic }));
   doc
     .fillColor('#27272a')
     .fontSize(11)
