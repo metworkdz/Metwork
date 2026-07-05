@@ -28,6 +28,7 @@ import {
   bookingProviderCancelledEmailHtml,
   withdrawalRequestedEmailHtml,
   withdrawalProcessedEmailHtml,
+  withdrawalApprovedEmailHtml,
   consultationConfirmationEmailHtml,
   consultationPayLinkEmailHtml,
   consultationRequestReceivedEmailHtml,
@@ -607,6 +608,44 @@ export function sendWithdrawalProcessedEmail(
     .catch((err: Error) =>
       // eslint-disable-next-line no-console
       console.error(`${banner} Resend withdrawal-processed email failed →`, err.message),
+    );
+}
+
+/**
+ * Approval notice for a MANUAL withdrawal (bank transfer / CCP / cheque),
+ * localised en/fr/ar. Fire-and-forget like every sender here — an email
+ * failure never propagates into the approval money path.
+ */
+export function sendWithdrawalApprovedEmail(
+  email: string,
+  opts: {
+    name: string;
+    amount: number;
+    method: 'bank_transfer' | 'ccp' | 'cheque' | null;
+    adminNote?: string | null;
+  },
+  lang: 'en' | 'fr' | 'ar' = 'fr',
+): void {
+  const fmtAmt = `${opts.amount.toLocaleString('fr-DZ')} DZD`;
+  const subject =
+    lang === 'fr' ? `Retrait traité — ${fmtAmt}`
+    : lang === 'ar' ? `تمت معالجة السحب — ${fmtAmt}`
+    : `Withdrawal processed — ${fmtAmt}`;
+
+  sendResendEmail({
+    to: email,
+    subject,
+    html: withdrawalApprovedEmailHtml(opts, lang),
+  })
+    .then((sent) => {
+      if (!sent) {
+        // eslint-disable-next-line no-console
+        console.log(`${banner} EMAIL (withdrawal-approved/${opts.method ?? 'legacy'}) → ${email} :: ${opts.amount} DZD`);
+      }
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Resend withdrawal-approved email failed →`, err.message),
     );
 }
 

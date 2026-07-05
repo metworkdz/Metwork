@@ -28,6 +28,8 @@ import {
   type MentorLedgerTxnRecord,
   type MentorWalletRecord,
   type MentorWithdrawalRecord,
+  type PayoutAccount,
+  type WithdrawalMethod,
 } from '@/server/db/store';
 import { computeMentorPromoSplit, type MentorEarningSplit } from '@/server/payments/mentor-commission';
 
@@ -372,6 +374,10 @@ export async function requestMentorWithdrawal(input: {
   mentorId: string;
   amount: number;
   accountDetails: string;
+  /** Structured manual-payout method (bank_transfer / ccp / cheque). Null on legacy free-text requests. */
+  method?: WithdrawalMethod | null;
+  /** Payout account frozen onto the request at creation (null for cheque). */
+  destinationAccountSnapshot?: PayoutAccount | null;
 }): Promise<RequestWithdrawalResult> {
   const { mentorId, accountDetails } = input;
   const amount = Math.round(input.amount);
@@ -414,6 +420,8 @@ export async function requestMentorWithdrawal(input: {
       accountDetails,
       status: 'PENDING',
       holdTxnId: hold.id,
+      method: input.method ?? null,
+      destinationAccountSnapshot: input.destinationAccountSnapshot ?? null,
       createdAt: now,
       updatedAt: now,
     };
@@ -425,7 +433,7 @@ export async function requestMentorWithdrawal(input: {
 
 export type ResolveWithdrawalResult =
   | { ok: true; request: MentorWithdrawalRecord }
-  | { ok: false; reason: 'NOT_FOUND' | 'ALREADY_RESOLVED' | 'WALLET_FROZEN' };
+  | { ok: false; reason: 'NOT_FOUND' | 'ALREADY_RESOLVED' | 'WALLET_FROZEN'; request?: MentorWithdrawalRecord };
 
 /**
  * Admin resolves a withdrawal:
@@ -433,19 +441,24 @@ export type ResolveWithdrawalResult =
  *              COMPLETED (money already left AVAILABLE at request time).
  *   REJECTED — refund: the held amount is returned to AVAILABLE, the hold is
  *              marked REVERSED, and a REVERSAL ledger entry is written.
- * Idempotent: only PENDING requests transition.
+ * Idempotent: only PENDING requests transition. ALREADY_RESOLVED carries the
+ * record so the caller can treat a repeated identical action as a replay.
  */
 export async function resolveMentorWithdrawal(input: {
   id: string;
   status: 'APPROVED' | 'REJECTED';
   adminNote?: string | null;
+  /** Admin who processed the request (audit). */
+  processedByAdminId?: string | null;
+  /** Proof of the manual transfer (from /api/upload), settable at approval. */
+  receiptUrl?: string | null;
 }): Promise<ResolveWithdrawalResult> {
   const { id, status } = input;
 
   return db.update<ResolveWithdrawalResult>((d) => {
     const request = (d.mentorWithdrawals ?? []).find((r) => r.id === id);
     if (!request) return { ok: false, reason: 'NOT_FOUND' };
-    if (request.status !== 'PENDING') return { ok: false, reason: 'ALREADY_RESOLVED' };
+    if (request.status !== 'PENDING') return { ok: false, reason: 'ALREADY_RESOLVED', request };
 
     const wallet = ensureMentorWallet(d, request.mentorId);
     const hold = (d.mentorLedgerTxns ?? []).find((t) => t.id === request.holdTxnId);
@@ -457,11 +470,9 @@ export async function resolveMentorWithdrawal(input: {
         hold.completedAt = now;
       }
       request.status = 'APPROVED';
-      // Manual approval: admin wired the funds externally. Record the method and
-      // clear any stale SlickPay state from a prior failed attempt.
-      request.payoutMethod = 'MANUAL';
-      request.payoutStatus = null;
-      request.payoutFailureReason = null;
+      request.approvedAt = now;
+      request.processedByAdminId = input.processedByAdminId ?? null;
+      if (input.receiptUrl != null) request.receiptUrl = input.receiptUrl;
       request.adminNote = input.adminNote ?? null;
       request.updatedAt = now;
       return { ok: true, request };
@@ -493,6 +504,7 @@ export async function resolveMentorWithdrawal(input: {
     });
     request.status = 'REJECTED';
     request.refundTxnId = refund.id;
+    request.processedByAdminId = input.processedByAdminId ?? null;
     request.adminNote = input.adminNote ?? null;
     request.updatedAt = now;
     return { ok: true, request };

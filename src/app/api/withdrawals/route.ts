@@ -2,30 +2,41 @@
  * POST /api/withdrawals — request a wallet withdrawal
  * GET  /api/withdrawals — list the caller's withdrawal requests
  *
- * On POST: amount is immediately deducted from wallet (held in escrow).
- * Admin approves (external transfer, no further action needed in app)
- * or rejects (wallet refunded).
+ * On POST the amount is immediately held in escrow (single balance path in
+ * src/server/withdrawals/service.ts). The requester picks a method:
+ *   bank_transfer / ccp — requires a saved payout account of the matching
+ *                         type; it is snapshotted onto the request.
+ *   cheque              — no account needed.
+ * Legacy clients that send free-text `accountDetails` (no method) keep
+ * working. Admin later approves (manual external transfer) or rejects
+ * (wallet refunded).
  */
-import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiSession, requireApprovedApiSession } from '@/server/auth/api-guards';
-import { db, type TransactionRecord, type WithdrawalRequestRecord } from '@/server/db/store';
+import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { sendWithdrawalRequestedEmail } from '@/server/notifications/mock';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { track } from '@/lib/analytics';
-import { getPlatformConfig, isMonthlyFlatActive } from '@/server/incubator/service';
+import { createWithdrawalRequest } from '@/server/withdrawals/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const createSchema = z.object({
-  /** Integer DZD. Min 500, max 1 000 000. */
-  amount: z.number().int().min(500).max(1_000_000),
-  /** Free-text payment details (CCP / BaridiMob / bank account). Max 500 chars. */
-  accountDetails: z.string().min(5).max(500),
-});
+const createSchema = z
+  .object({
+    /** Integer DZD. Min 500, max 1 000 000. */
+    amount: z.number().int().min(500).max(1_000_000),
+    /** How the requester wants the funds. Absent = legacy free-text request. */
+    method: z.enum(['bank_transfer', 'ccp', 'cheque']).optional(),
+    /** Legacy free-text payment details. Required when no method is given. */
+    accountDetails: z.string().min(5).max(500).optional(),
+  })
+  .refine((v) => v.method !== undefined || v.accountDetails !== undefined, {
+    message: 'Either method or accountDetails is required',
+    path: ['method'],
+  });
 
 export async function POST(req: NextRequest) {
   const guard = await requireApprovedApiSession();
@@ -51,101 +62,52 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
-  // Monthly-Pro incubator owners must keep at least one month's subscription fee
-  // in their wallet so the billing cron can always renew. Fetched outside the
-  // critical section; the plan check itself happens inside the atomic update.
-  const monthlyFee = (await getPlatformConfig()).flatMonthlyPrice;
-
-  const result = await db.update((d) => {
-    // Ensure wallet exists and has sufficient funds
-    let wallet = d.wallets.find((w) => w.userId === guard.user.id);
-    if (!wallet) {
-      return { ok: false, reason: 'INSUFFICIENT_FUNDS', balance: 0, required: input.amount } as const;
-    }
-    if (wallet.status === 'FROZEN') {
-      return { ok: false, reason: 'WALLET_FROZEN' } as const;
-    }
-    if (wallet.balance < input.amount) {
-      return { ok: false, reason: 'INSUFFICIENT_FUNDS', balance: wallet.balance, required: input.amount } as const;
-    }
-
-    // Minimum-balance guard for monthly-Pro incubator owners only. Annual Pro
-    // and commission incubators (and all other users) are unaffected.
-    const ownedIncubator = (d.incubators ?? []).find(
-      (inc) => inc.managerId === guard.user.id || inc.email === guard.user.email,
-    );
-    if (ownedIncubator && isMonthlyFlatActive(ownedIncubator)) {
-      if (wallet.balance - input.amount < monthlyFee) {
-        return {
-          ok: false,
-          reason: 'MIN_BALANCE',
-          balance: wallet.balance,
-          minBalance: monthlyFee,
-        } as const;
-      }
-    }
-
-    const now = new Date().toISOString();
-
-    // Deduct from wallet immediately (escrow)
-    wallet.balance -= input.amount;
-    wallet.updatedAt = now;
-
-    const holdTx: TransactionRecord = {
-      id: randomUUID(),
-      walletId: wallet.id,
-      userId: guard.user.id,
-      type: 'PAYOUT',
-      amount: -input.amount,
-      balanceAfter: wallet.balance,
-      status: 'PENDING',
-      description: `Withdrawal request — ${input.amount.toLocaleString()} DZD`,
-      reference: `withdrawal-hold-${randomUUID().slice(0, 8)}`,
-      provider: 'internal',
-      providerTxnId: null,
-      metadata: { accountDetails: input.accountDetails },
-      createdAt: now,
-      completedAt: null,
-    };
-    d.transactions.push(holdTx);
-
-    const request: WithdrawalRequestRecord = {
-      id: randomUUID(),
-      userId: guard.user.id,
-      amount: input.amount,
-      accountDetails: input.accountDetails,
-      status: 'PENDING',
-      holdTransactionId: holdTx.id,
-      createdAt: now,
-      updatedAt: now,
-    };
-    d.withdrawalRequests.push(request);
-
-    return { ok: true, request, wallet } as const;
+  const result = await createWithdrawalRequest({
+    targetType: 'user',
+    targetId: guard.user.id,
+    amount: input.amount,
+    method: input.method ?? null,
+    legacyAccountDetails: input.accountDetails,
   });
 
   if (!result.ok) {
-    if (result.reason === 'WALLET_FROZEN') {
-      return jsonError(409, 'WALLET_FROZEN', 'Wallet is frozen');
+    switch (result.reason) {
+      case 'WALLET_FROZEN':
+        return jsonError(409, 'WALLET_FROZEN', 'Wallet is frozen');
+      case 'NO_PAYOUT_ACCOUNT':
+        return jsonError(
+          422,
+          'NO_PAYOUT_ACCOUNT',
+          result.requiredType === 'bank'
+            ? 'Add a bank payout account (RIB) before requesting a bank transfer.'
+            : 'Add a CCP payout account (RIP) before requesting a CCP transfer.',
+          { requiredType: result.requiredType },
+        );
+      case 'MIN_BALANCE':
+        return jsonError(
+          422,
+          'MIN_BALANCE',
+          `As a monthly Pro incubator, you must keep at least ${result.minBalance.toLocaleString()} DZD (one month's subscription) in your wallet.`,
+          { balance: result.balance, minBalance: result.minBalance },
+        );
+      case 'INSUFFICIENT_FUNDS':
+        return jsonError(422, 'INSUFFICIENT_FUNDS', 'Insufficient wallet balance', {
+          balance: result.available,
+          required: result.required,
+        });
+      case 'BELOW_MINIMUM':
+        return jsonError(422, 'BELOW_MINIMUM', `Minimum withdrawal is ${result.minimum} DZD.`);
+      default:
+        // INVALID_AMOUNT / INVALID_ACCOUNT_DETAILS / TARGET_NOT_FOUND — all
+        // pre-validated above (zod + session), kept as a defensive fallback.
+        return jsonError(422, 'INVALID_REQUEST', 'Invalid withdrawal request');
     }
-    if (result.reason === 'MIN_BALANCE') {
-      return jsonError(
-        422,
-        'MIN_BALANCE',
-        `As a monthly Pro incubator, you must keep at least ${result.minBalance.toLocaleString()} DZD (one month's subscription) in your wallet.`,
-        { balance: result.balance, minBalance: result.minBalance },
-      );
-    }
-    return jsonError(422, 'INSUFFICIENT_FUNDS', 'Insufficient wallet balance', {
-      balance: result.balance,
-      required: result.required,
-    });
   }
 
   sendWithdrawalRequestedEmail(guard.user.email, {
     userName: guard.user.fullName ?? guard.user.email,
     amount: input.amount,
-    accountDetails: input.accountDetails,
+    accountDetails: result.request.accountDetails,
   });
 
   // Analytics: withdrawal_requested is a key engagement signal for mentors

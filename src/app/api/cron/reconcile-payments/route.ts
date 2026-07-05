@@ -15,7 +15,6 @@ import { reconcilePendingTopUps } from '@/server/wallet/service';
 import { reconcilePendingCardBookings } from '@/server/bookings/card-payment';
 import { reconcilePendingGuestConsultations } from '@/server/consultations/guest-payment';
 import { reconcilePendingPaymentLinks } from '@/server/payments/payment-links';
-import { reconcilePendingPayouts } from '@/server/payouts/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,11 +36,10 @@ async function run(): Promise<Response> {
   const card = await reconcilePendingCardBookings();
   const guest = await reconcilePendingGuestConsultations();
   const paymentLinks = await reconcilePendingPaymentLinks();
-  const payouts = await reconcilePendingPayouts();
   const durationMs = Date.now() - startedAt;
   // eslint-disable-next-line no-console
-  console.info('[cron] reconcile-payments: finished', { topups, card, guest, paymentLinks, payouts, durationMs });
-  return NextResponse.json({ ok: true, topups, card, guest, paymentLinks, payouts, durationMs });
+  console.info('[cron] reconcile-payments: finished', { topups, card, guest, paymentLinks, durationMs });
+  return NextResponse.json({ ok: true, topups, card, guest, paymentLinks, durationMs });
 }
 
 export async function POST(req: Request): Promise<Response> {

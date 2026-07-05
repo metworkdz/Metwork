@@ -198,7 +198,7 @@ export function EmailOtpSignIn() {
             <label className="flex cursor-pointer items-center gap-2 text-xs text-white/60">
               <input
                 type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)}
-                disabled={busy} className="size-4 accent-[#2ECC71]"
+                disabled={busy} className="size-4 accent-[#30a735]"
               />
               {ta('rememberDevice')}
             </label>

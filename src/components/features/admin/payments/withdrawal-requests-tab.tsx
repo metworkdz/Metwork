@@ -1,13 +1,15 @@
 'use client';
 
 /**
- * Withdrawal Requests tab — user + mentor requests merged into one list with
- * colour-coded status pills. [Process] opens the New Transfer modal pre-filled
- * with the requester + requested amount; [Reject] refunds the held amount.
+ * Withdrawal Requests — user + mentor requests merged into one list with
+ * colour-coded status pills. [Approve] settles the escrow hold after the admin
+ * has moved the money manually (bank wire / CCP / cheque); [Reject] refunds
+ * the held amount. Both PATCH the existing admin endpoints (idempotent
+ * server-side, so a double-click can never double-debit).
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Banknote, Send, XCircle } from 'lucide-react';
+import { Banknote, CheckCircle2, XCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,35 +22,34 @@ import {
 } from '@/components/ui/dialog';
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { cn } from '@/lib/utils';
-import type { BankAccountMasked, PayoutPill, RequestRow } from './types';
-import { formatAmount, formatDate, payoutPillOf, MODAL_CONTENT_CLASS } from './types';
-
-interface WithdrawalRequestsTabProps {
-  refreshKey: number;
-  onProcess: (row: RequestRow) => void;
-}
+import type { RequestRow, StatusPillKind } from './types';
+import { formatAmount, formatDate, statusPillOf, MODAL_CONTENT_CLASS } from './types';
 
 interface RawUserRow {
   id: string; userId: string; userName: string; amount: number; balance: number;
-  status: RequestRow['status']; payoutStatus?: RequestRow['payoutStatus']; payoutFailureReason?: string | null;
-  bankAccount: BankAccountMasked | null; createdAt: string;
+  status: RequestRow['status']; method?: RequestRow['method'];
+  destinationAccountSnapshot?: RequestRow['destinationAccountSnapshot'];
+  accountDetails: string; receiptUrl?: string | null; createdAt: string;
 }
 interface RawMentorRow {
   id: string; mentorId: string; mentorName: string; amount: number; availableBalance: number;
-  status: RequestRow['status']; payoutStatus?: RequestRow['payoutStatus']; payoutFailureReason?: string | null;
-  bankAccount: BankAccountMasked | null; createdAt: string;
+  status: RequestRow['status']; method?: RequestRow['method'];
+  destinationAccountSnapshot?: RequestRow['destinationAccountSnapshot'];
+  accountDetails: string; receiptUrl?: string | null; createdAt: string;
 }
 
-export function WithdrawalRequestsTab({ refreshKey, onProcess }: WithdrawalRequestsTabProps) {
+type Action = { kind: 'approve' | 'reject'; row: RequestRow };
+
+export function WithdrawalRequestsTab() {
   const t = useTranslations('admin.payments');
   const [rows, setRows] = useState<RequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [rejecting, setRejecting] = useState<RequestRow | null>(null);
+  const [action, setAction] = useState<Action | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
-  const [rejectError, setRejectError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -63,13 +64,15 @@ export function WithdrawalRequestsTab({ refreshKey, onProcess }: WithdrawalReque
       const merged: RequestRow[] = [
         ...u.items.map((r): RequestRow => ({
           id: r.id, targetType: 'user', targetId: r.userId, name: r.userName, amount: r.amount,
-          balance: r.balance, status: r.status, payoutStatus: r.payoutStatus, payoutFailureReason: r.payoutFailureReason,
-          bankAccount: r.bankAccount, createdAt: r.createdAt,
+          balance: r.balance, status: r.status, method: r.method,
+          destinationAccountSnapshot: r.destinationAccountSnapshot,
+          accountDetails: r.accountDetails, receiptUrl: r.receiptUrl, createdAt: r.createdAt,
         })),
         ...m.items.map((r): RequestRow => ({
           id: r.id, targetType: 'mentor', targetId: r.mentorId, name: r.mentorName, amount: r.amount,
-          balance: r.availableBalance, status: r.status, payoutStatus: r.payoutStatus, payoutFailureReason: r.payoutFailureReason,
-          bankAccount: r.bankAccount, createdAt: r.createdAt,
+          balance: r.availableBalance, status: r.status, method: r.method,
+          destinationAccountSnapshot: r.destinationAccountSnapshot,
+          accountDetails: r.accountDetails, receiptUrl: r.receiptUrl, createdAt: r.createdAt,
         })),
       ].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       setRows(merged);
@@ -80,29 +83,38 @@ export function WithdrawalRequestsTab({ refreshKey, onProcess }: WithdrawalReque
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load, refreshKey]);
+  useEffect(() => { void load(); }, [load]);
 
-  async function submitReject() {
-    if (!rejecting) return;
+  function open(kind: Action['kind'], row: RequestRow) {
+    setAction({ kind, row });
+    setNote('');
+    setActionError(null);
+  }
+
+  async function submit() {
+    if (!action) return;
     setBusy(true);
-    setRejectError(null);
+    setActionError(null);
     try {
-      const base = rejecting.targetType === 'user' ? '/api/admin/withdrawals' : '/api/admin/mentor-withdrawals';
-      const res = await fetch(`${base}/${rejecting.id}`, {
+      const base = action.row.targetType === 'user' ? '/api/admin/withdrawals' : '/api/admin/mentor-withdrawals';
+      const res = await fetch(`${base}/${action.row.id}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'REJECTED', adminNote: note || undefined }),
+        body: JSON.stringify({
+          status: action.kind === 'approve' ? 'APPROVED' : 'REJECTED',
+          adminNote: note || undefined,
+        }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
-        throw new Error(d.error?.message ?? 'Reject failed');
+        throw new Error(d.error?.message ?? 'Action failed');
       }
-      setRejecting(null);
+      setAction(null);
       setNote('');
       await load();
     } catch (err) {
-      setRejectError(err instanceof Error ? err.message : 'Reject failed');
+      setActionError(err instanceof Error ? err.message : 'Action failed');
     } finally {
       setBusy(false);
     }
@@ -110,6 +122,8 @@ export function WithdrawalRequestsTab({ refreshKey, onProcess }: WithdrawalReque
 
   if (loading) return <Card><CardContent className="h-40 animate-pulse" /></Card>;
   if (error) return <Card><CardContent className="p-6 text-sm text-destructive">{error}</CardContent></Card>;
+
+  const isApprove = action?.kind === 'approve';
 
   return (
     <>
@@ -130,6 +144,7 @@ export function WithdrawalRequestsTab({ refreshKey, onProcess }: WithdrawalReque
                     <TableRow>
                       <TableHead>{t('requests.colUser')}</TableHead>
                       <TableHead className="text-end">{t('requests.colAmount')}</TableHead>
+                      <TableHead>{t('requests.colMethod')}</TableHead>
                       <TableHead>{t('requests.colStatus')}</TableHead>
                       <TableHead>{t('requests.colDate')}</TableHead>
                       <TableHead className="w-44" />
@@ -140,9 +155,10 @@ export function WithdrawalRequestsTab({ refreshKey, onProcess }: WithdrawalReque
                       <TableRow key={`${r.targetType}-${r.id}`}>
                         <TableCell className="font-medium">{r.name}</TableCell>
                         <TableCell className="text-end font-medium tabular-nums">{formatAmount(r.amount)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{methodLabel(r, t)}</TableCell>
                         <TableCell><StatusPill row={r} t={t} /></TableCell>
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDate(r.createdAt)}</TableCell>
-                        <TableCell><RowActions row={r} onProcess={onProcess} onReject={setRejecting} t={t} /></TableCell>
+                        <TableCell><RowActions row={r} onAct={open} t={t} /></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -161,7 +177,8 @@ export function WithdrawalRequestsTab({ refreshKey, onProcess }: WithdrawalReque
                       <StatusPill row={r} t={t} />
                       <span className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</span>
                     </div>
-                    <div className="mt-3"><RowActions row={r} onProcess={onProcess} onReject={setRejecting} t={t} stacked /></div>
+                    <p className="mt-1 text-xs text-muted-foreground">{methodLabel(r, t)}</p>
+                    <div className="mt-3"><RowActions row={r} onAct={open} t={t} stacked /></div>
                   </div>
                 ))}
               </div>
@@ -170,13 +187,23 @@ export function WithdrawalRequestsTab({ refreshKey, onProcess }: WithdrawalReque
         </CardContent>
       </Card>
 
-      {/* Reject confirmation */}
-      <Dialog open={rejecting !== null} onOpenChange={(o) => { if (!o) setRejecting(null); }}>
+      {/* Approve / Reject confirmation */}
+      <Dialog open={action !== null} onOpenChange={(o) => { if (!o) setAction(null); }}>
         <DialogContent className={cn('max-w-sm', MODAL_CONTENT_CLASS)}>
           <DialogHeader>
-            <DialogTitle>{t('requests.rejectTitle')}</DialogTitle>
-            <DialogDescription>{t('requests.rejectBody', { amount: formatAmount(rejecting?.amount ?? 0) })}</DialogDescription>
+            <DialogTitle>{isApprove ? t('requests.approveTitle') : t('requests.rejectTitle')}</DialogTitle>
+            <DialogDescription>
+              {isApprove
+                ? t('requests.approveBody', { amount: formatAmount(action?.row.amount ?? 0) })
+                : t('requests.rejectBody', { amount: formatAmount(action?.row.amount ?? 0) })}
+            </DialogDescription>
           </DialogHeader>
+          {isApprove && action && (
+            <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+              <p className="text-xs font-medium text-muted-foreground">{t('requests.destination')}</p>
+              <p className="mt-1 break-all">{action.row.accountDetails || methodLabel(action.row, t)}</p>
+            </div>
+          )}
           <Textarea
             className="text-sm"
             rows={2}
@@ -184,10 +211,12 @@ export function WithdrawalRequestsTab({ refreshKey, onProcess }: WithdrawalReque
             value={note}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNote(e.target.value)}
           />
-          {rejectError && <p className="text-xs text-destructive">{rejectError}</p>}
+          {actionError && <p className="text-xs text-destructive">{actionError}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejecting(null)} disabled={busy}>{t('cancel')}</Button>
-            <Button variant="destructive" loading={busy} onClick={submitReject}>{t('requests.reject')}</Button>
+            <Button variant="outline" onClick={() => setAction(null)} disabled={busy}>{t('cancel')}</Button>
+            <Button variant={isApprove ? 'default' : 'destructive'} loading={busy} onClick={submit}>
+              {isApprove ? t('requests.approve') : t('requests.reject')}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -195,45 +224,36 @@ export function WithdrawalRequestsTab({ refreshKey, onProcess }: WithdrawalReque
   );
 }
 
-const PILL_VARIANT: Record<PayoutPill, 'success' | 'warning' | 'danger' | 'outline'> = {
+function methodLabel(r: RequestRow, t: ReturnType<typeof useTranslations>): string {
+  return r.method ? t(`requests.methodLabel.${r.method}`) : t('requests.methodLabel.legacy');
+}
+
+const PILL_VARIANT: Record<StatusPillKind, 'success' | 'warning' | 'outline'> = {
   requested: 'warning',
-  processing: 'outline',
-  sent: 'success',
-  failed: 'danger',
+  approved: 'success',
   rejected: 'outline',
 };
 
 function StatusPill({ row, t }: { row: RequestRow; t: ReturnType<typeof useTranslations> }) {
-  const pill = payoutPillOf(row);
-  return (
-    <div className="space-y-1">
-      <Badge variant={PILL_VARIANT[pill]}>{t(`requests.pill.${pill}`)}</Badge>
-      {pill === 'failed' && row.payoutFailureReason && (
-        <p className="max-w-[22ch] truncate text-[11px] text-muted-foreground" title={row.payoutFailureReason}>
-          {row.payoutFailureReason}
-        </p>
-      )}
-    </div>
-  );
+  const pill = statusPillOf(row);
+  return <Badge variant={PILL_VARIANT[pill]}>{t(`requests.pill.${pill}`)}</Badge>;
 }
 
 function RowActions({
-  row, onProcess, onReject, t, stacked,
+  row, onAct, t, stacked,
 }: {
   row: RequestRow;
-  onProcess: (r: RequestRow) => void;
-  onReject: (r: RequestRow) => void;
+  onAct: (kind: 'approve' | 'reject', row: RequestRow) => void;
   t: ReturnType<typeof useTranslations>;
   stacked?: boolean;
 }) {
-  const actionable = row.status === 'PENDING' && row.payoutStatus !== 'PROCESSING';
-  if (!actionable) return null;
+  if (row.status !== 'PENDING') return null;
   return (
     <div className={cn('flex gap-2', stacked && 'grid grid-cols-2')}>
-      <Button variant="default" size="sm" onClick={() => onProcess(row)}>
-        <Send className="size-3.5" /> {row.payoutStatus === 'FAILED' ? t('requests.retry') : t('requests.process')}
+      <Button variant="default" size="sm" onClick={() => onAct('approve', row)}>
+        <CheckCircle2 className="size-3.5" /> {t('requests.approve')}
       </Button>
-      <Button variant="outline" size="sm" className="text-destructive" onClick={() => onReject(row)}>
+      <Button variant="outline" size="sm" className="text-destructive" onClick={() => onAct('reject', row)}>
         <XCircle className="size-3.5" /> {t('requests.reject')}
       </Button>
     </div>

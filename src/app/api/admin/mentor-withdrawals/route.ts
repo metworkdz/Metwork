@@ -6,7 +6,6 @@
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { json } from '@/server/http/json';
-import { maskRib } from '@/server/payouts/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,28 +17,25 @@ export async function GET() {
   const data = await db.read();
   const mentorsById = new Map((data.mentors ?? []).map((m) => [m.id, m]));
 
+  // The full destinationAccountSnapshot ships as-is: this is an ADMIN-only
+  // endpoint and the admin needs the complete RIB/RIP to wire the money.
   const items = (data.mentorWithdrawals ?? [])
     .slice()
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map((w) => {
       const mentor = mentorsById.get(w.mentorId);
       const wallet = (data.mentorWallets ?? []).find((x) => x.mentorId === w.mentorId);
-      const ba = mentor?.payoutBankAccount ?? null;
       return {
         ...w,
         mentorName: mentor?.fullName ?? 'Unknown',
         mentorEmail: mentor?.email ?? '',
         availableBalance: wallet?.availableBalance ?? 0,
-        bankAccount: ba
-          ? { title: ba.title, firstname: ba.firstname, lastname: ba.lastname, address: ba.address, ribMasked: maskRib(ba.rib) }
-          : null,
       };
     });
 
   const totalSent = items
     .filter((r) => r.status === 'APPROVED')
     .reduce((s, r) => s + r.amount, 0);
-  const totalSlickpayFees = items.reduce((s, r) => s + (r.payoutFee ?? 0), 0);
 
-  return json({ items, total: items.length, totalSent, totalSlickpayFees });
+  return json({ items, total: items.length, totalSent });
 }

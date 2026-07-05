@@ -139,14 +139,12 @@ export interface UserRecord {
   /** Optional short description / bio. */
   businessDescription?: string | null;
 
-  // ─── Payout bank account (admin payouts) ────────────────────────────────
-  // Additive & nullable. Set by an admin via the Payments dashboard; reused for
-  // every SlickPay payout to this user. See [[PayoutBankAccount]].
+  // ─── Payout account (manual withdrawals) ────────────────────────────────
+  // Additive & nullable. The destination for bank/ccp withdrawal requests; it
+  // is snapshotted onto each request at creation time. See [[PayoutAccount]].
 
-  /** Bank account on file for payouts (RIB + holder details). */
-  payoutBankAccount?: PayoutBankAccount | null;
-  /** SlickPay beneficiary uuid (from the accounts endpoint) — cached after first registration. */
-  slickpayBeneficiaryUuid?: string | null;
+  /** Payout account on file (RIB or CCP RIP + holder name). */
+  payoutAccount?: PayoutAccount | null;
 }
 
 export interface SessionRecord {
@@ -1666,13 +1664,11 @@ export interface MentorRecord {
   /** ISO timestamp the PIN was last set/changed. */
   pinSetAt?: string | null;
 
-  // ─── Payout bank account (admin payouts) ────────────────────────────────
+  // ─── Payout account (manual withdrawals) ────────────────────────────────
   // Additive & nullable. Mirrors UserRecord — consultants are payable too.
 
-  /** Bank account on file for payouts (RIB + holder details). */
-  payoutBankAccount?: PayoutBankAccount | null;
-  /** SlickPay beneficiary uuid — cached after first registration. */
-  slickpayBeneficiaryUuid?: string | null;
+  /** Payout account on file (RIB or CCP RIP + holder name). */
+  payoutAccount?: PayoutAccount | null;
 }
 
 /* ─────────────────── CRM — Clients ─────────────────── */
@@ -2044,85 +2040,41 @@ export interface InvestmentRecord {
 export type WithdrawalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 /**
- * How an approved withdrawal is paid out:
- *   MANUAL   — admin wires the funds externally (CCP/BaridiMob/bank) and clicks
- *              approve; the escrow hold is settled immediately.
- *   SLICKPAY — automated disbursement to a registered RIB via the SlickPay
- *              `users/transfers` API; the hold settles only once SlickPay
- *              confirms `completed=1` ("sent").
+ * How a withdrawal is paid out. Withdrawals are settled MANUALLY by an admin
+ * (bank wire, CCP transfer, or a cheque handed over) — there is no automated
+ * disbursement provider on this path.
  */
-export type PayoutMethod = 'MANUAL' | 'SLICKPAY';
+export type WithdrawalMethod = 'bank_transfer' | 'ccp' | 'cheque';
 
 /**
- * Lifecycle of a SlickPay disbursement. Absent/null = not started (MANUAL or
- * still awaiting an admin decision).
- *   PROCESSING — claimed + sent to SlickPay, awaiting "sent" confirmation. The
- *                escrow hold stays reserved; the wallet is NOT yet settled.
- *   SENT       — SlickPay confirmed completed=1; the hold is settled out.
- *   FAILED     — SlickPay rejected / errored. The hold stays reserved (money
- *                untouched); the admin can retry SlickPay or reject to refund.
+ * A payable target's payout account on file (UserRecord / MentorRecord).
+ * `accountNumber` is a 20-digit Algerian RIB when accountType === 'bank', or a
+ * 20-digit Algérie Poste RIP when accountType === 'ccp'.
  */
-export type PayoutDispatchStatus = 'PROCESSING' | 'SENT' | 'FAILED';
-
-/**
- * Beneficiary bank details for an automated SlickPay payout. Entered/confirmed
- * by the admin at approval time (admin-entered ⇒ approved). `rib` is an Algerian
- * 20-digit RIB.
- */
-export interface PayoutBeneficiary {
-  rib: string;
-  firstname: string;
-  lastname: string;
-  address: string;
+export interface PayoutAccount {
+  accountType: 'bank' | 'ccp';
+  accountNumber: string;
+  holderName: string;
 }
 
 /**
- * A payable target's bank account "on file" — registered once with SlickPay and
- * reused for every payout. Lives on the UserRecord / MentorRecord. `rib` is a
- * 20-digit Algerian RIB; it is only ever surfaced to the client masked.
- */
-export interface PayoutBankAccount {
-  title: string;
-  firstname: string;
-  lastname: string;
-  address: string;
-  rib: string;
-}
-
-/**
- * SlickPay disbursement fields shared by user-wallet and mentor-ledger payouts.
+ * Manual-payout fields shared by user-wallet and mentor-ledger withdrawals.
  * Every field is optional/nullable so existing records keep working untouched.
  */
 export interface PayoutFields {
-  /** How the payout was/will be settled. Set by admin at resolution. */
-  payoutMethod?: PayoutMethod | null;
-  /** SlickPay disbursement lifecycle (only when payoutMethod === 'SLICKPAY'). */
-  payoutStatus?: PayoutDispatchStatus | null;
-  /** SlickPay transfer id (their reference) — set once the transfer is created. */
-  payoutProviderRef?: string | null;
-  /** SlickPay beneficiary account uuid created for the RIB. */
-  payoutAccountUuid?: string | null;
-  /** Idempotency key stamped when a SlickPay disbursement is first claimed. */
-  payoutIdempotencyKey?: string | null;
-  /** SlickPay fee (DZD) the platform paid on this transfer — accounting only. */
-  payoutFee?: number | null;
-  /** Failure reason when payoutStatus === 'FAILED'. */
-  payoutFailureReason?: string | null;
-  /** Structured beneficiary RIB used for the SlickPay payout. */
-  beneficiary?: PayoutBeneficiary | null;
-  /** True once the RIB is approved/entered by the admin (gates SlickPay send). */
-  ribApproved?: boolean | null;
-  /** Admin who initiated/processed this payout (audit). */
-  payoutCreatedByAdminId?: string | null;
-  /** SlickPay confirmation/redirect URL, when the transfer needs interactive validation. */
-  payoutRedirectUrl?: string | null;
+  /** How the requester wants the funds. Null on legacy (free-text) requests. */
+  method?: WithdrawalMethod | null;
   /**
-   * How the payout originated:
-   *   USER_REQUEST — the user/mentor requested a withdrawal; admin processed it.
-   *   ADMIN_DIRECT — admin initiated the transfer from the Users tab (a withdrawal
-   *                  request is auto-created + reserved at send time).
+   * The payout account frozen onto the request at creation time, so a later
+   * account edit can never redirect an in-flight withdrawal. Null for cheque.
    */
-  payoutSource?: 'USER_REQUEST' | 'ADMIN_DIRECT' | null;
+  destinationAccountSnapshot?: PayoutAccount | null;
+  /** Proof of the manual transfer (uploaded via /api/upload). Optional. */
+  receiptUrl?: string | null;
+  /** Admin who approved/rejected this request (audit). */
+  processedByAdminId?: string | null;
+  /** Set when the request transitions to APPROVED. */
+  approvedAt?: string | null;
 }
 
 export interface WithdrawalRequestRecord extends PayoutFields {
