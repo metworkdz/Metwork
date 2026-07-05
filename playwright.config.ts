@@ -87,6 +87,22 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      // Invoicing suite — legal invoices (engine math, numbering, templates,
+      // immutability), invoicing settings, entreprise/personne physique client
+      // form, domiciliation price guard. SERIAL & state-sharing (one JSON doc,
+      // per-year invoice counters) — run with `--workers=1`. Retries disabled
+      // so a flake never double-issues an invoice against the shared doc.
+      //   npx playwright test --project=invoices --workers=1
+      name: 'invoices',
+      testMatch: ['**/invoice-*.spec.ts', '**/domiciliation-price.spec.ts'],
+      retries: 0,
+      timeout: 90_000,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authStatePath('incubator'),
+      },
+    },
+    {
       // Instant-book consultation suite (P1–P7). API-driven specs build their own
       // role contexts via the saved storage states, so this project needs no
       // storageState of its own. The UI i18n smoke runs here too. SERIAL by
