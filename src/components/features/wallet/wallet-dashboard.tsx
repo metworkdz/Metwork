@@ -107,7 +107,7 @@ export function WalletDashboard() {
         />
       </div>
 
-      <WithdrawalForm />
+      <WithdrawalForm onBalanceChange={() => void refresh(true)} />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

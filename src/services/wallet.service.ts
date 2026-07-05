@@ -12,6 +12,19 @@ import type {
   TransactionType,
   Wallet,
 } from '@/types/wallet';
+import type { PayoutAccount, WithdrawalMethod, WithdrawalStatus } from '@/server/db/store';
+
+/** A withdrawal request as returned by /api/withdrawals. */
+export interface WithdrawalRequestDto {
+  id: string;
+  amount: number;
+  accountDetails: string;
+  status: WithdrawalStatus;
+  method?: WithdrawalMethod | null;
+  destinationAccountSnapshot?: PayoutAccount | null;
+  adminNote?: string | null;
+  createdAt: string;
+}
 
 interface ListTransactionsParams {
   page?: number;
@@ -88,5 +101,27 @@ export const walletService = {
    */
   async charge(input: ChargeWalletInput): Promise<ChargeWalletResponse> {
     return apiClient.post<ChargeWalletResponse>('/wallet/payments', input);
+  },
+
+  /** The caller's saved payout account (RIB/RIP destination), or null. */
+  async getPayoutAccount(): Promise<{ payoutAccount: PayoutAccount | null }> {
+    return apiClient.get<{ payoutAccount: PayoutAccount | null }>('/payout-account');
+  },
+
+  /** Create/replace the saved payout account. Server validates the 20-digit rule. */
+  async savePayoutAccount(input: PayoutAccount): Promise<{ payoutAccount: PayoutAccount }> {
+    return apiClient.put<{ payoutAccount: PayoutAccount }>('/payout-account', input);
+  },
+
+  /** The caller's withdrawal requests, newest first. */
+  async listWithdrawals(): Promise<{ items: WithdrawalRequestDto[]; total: number }> {
+    return apiClient.get<{ items: WithdrawalRequestDto[]; total: number }>('/withdrawals');
+  },
+
+  /** Request a withdrawal (balance is held immediately). */
+  async requestWithdrawal(input: { amount: number; method: WithdrawalMethod }): Promise<{
+    withdrawalRequest: WithdrawalRequestDto;
+  }> {
+    return apiClient.post<{ withdrawalRequest: WithdrawalRequestDto }>('/withdrawals', input);
   },
 };

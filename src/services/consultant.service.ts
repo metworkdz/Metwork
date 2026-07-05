@@ -105,9 +105,17 @@ export interface ConsultantWithdrawal {
   amount: number;
   accountDetails: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  method?: 'bank_transfer' | 'ccp' | 'cheque' | null;
   adminNote?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Saved payout destination (bank RIB or CCP RIP — both 20 digits). */
+export interface ConsultantPayoutAccount {
+  accountType: 'bank' | 'ccp';
+  accountNumber: string;
+  holderName: string;
 }
 
 export const consultantService = {
@@ -179,6 +187,11 @@ export const consultantService = {
 
   earnings: () => apiClient.get<ConsultantEarnings>('/consultant/earnings'),
   withdrawals: () => apiClient.get<{ items: ConsultantWithdrawal[]; total: number }>('/consultant/withdrawals'),
-  requestWithdrawal: (body: { amount: number; accountDetails: string }) =>
+  requestWithdrawal: (body: { amount: number; method: 'bank_transfer' | 'ccp' | 'cheque' }) =>
     apiClient.post<{ withdrawal: ConsultantWithdrawal }>('/consultant/withdrawals', body),
+
+  payoutAccount: () =>
+    apiClient.get<{ payoutAccount: ConsultantPayoutAccount | null }>('/consultant/payout-account'),
+  savePayoutAccount: (body: ConsultantPayoutAccount) =>
+    apiClient.put<{ payoutAccount: ConsultantPayoutAccount }>('/consultant/payout-account', body),
 };

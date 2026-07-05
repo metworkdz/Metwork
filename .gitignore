@@ -65,3 +65,6 @@ docker-compose.override.yml
 # Claude Code — worktrees and session files (never commit these)
 .claude/worktrees/
 SESSION_*.md
+
+# e2e email observability sink (USE_LOCAL_DB only)
+.e2e-emails.jsonl

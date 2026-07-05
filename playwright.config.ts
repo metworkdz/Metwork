@@ -116,5 +116,20 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
       },
     },
+    {
+      // Manual withdrawal — requester UI (payout-account gate, RIB/RIP form) +
+      // a hydration guard on the pages this feature touched. Default session is
+      // the entrepreneur `builder` (a clean wallet not used by the api
+      // withdrawal spec); the admin-payments hydration case overrides the
+      // session per-describe. PRECONDITION: freshly-seeded DB (builder starts
+      // with no payout account). Run: `--project=withdrawals-ui`.
+      name: 'withdrawals-ui',
+      testMatch: '**/withdrawal-ui.spec.ts',
+      retries: 0,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authStatePath('builder'),
+      },
+    },
   ],
 });

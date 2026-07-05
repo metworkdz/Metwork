@@ -1129,6 +1129,88 @@ export function withdrawalProcessedEmailHtml(opts: {
   `);
 }
 
+/**
+ * Sent when an admin approves a manual withdrawal (bank transfer / CCP /
+ * cheque). Localised (en/fr/ar); the copy reflects the chosen method.
+ * `method` null = legacy request without a structured method → generic
+ * "registered account" wording.
+ */
+export function withdrawalApprovedEmailHtml(
+  opts: {
+    name: string;
+    amount: number;
+    method: 'bank_transfer' | 'ccp' | 'cheque' | null;
+    adminNote?: string | null;
+  },
+  lang: 'en' | 'fr' | 'ar' = 'fr',
+): string {
+  const fmtAmt = `${opts.amount.toLocaleString('fr-DZ')} DZD`;
+
+  const L =
+    lang === 'fr'
+      ? {
+          title: 'Retrait traité ✅',
+          greeting: `Bonjour <strong>${opts.name}</strong>,`,
+          processed: `Votre demande de retrait de <strong>${fmtAmt}</strong> a été traitée.`,
+          byMethod: {
+            bank_transfer:
+              'Les fonds seront disponibles sur votre compte bancaire dans un délai de 3 jours ouvrables.',
+            ccp: 'Les fonds seront disponibles sur votre compte CCP dans un délai de 3 jours ouvrables.',
+            cheque: 'Votre chèque sera disponible dans un délai de 3 jours ouvrables.',
+            fallback:
+              'Les fonds seront disponibles sur le compte que vous avez choisi dans un délai de 3 jours ouvrables.',
+          },
+          noteLabel: 'Note',
+          footer: 'Pour toute question, contactez notre équipe support.',
+        }
+      : lang === 'ar'
+        ? {
+            title: 'تمت معالجة طلب السحب ✅',
+            greeting: `مرحبًا <strong>${opts.name}</strong>،`,
+            processed: `تمت معالجة طلب السحب الخاص بك بقيمة <strong>${fmtAmt}</strong>.`,
+            byMethod: {
+              bank_transfer: 'ستكون الأموال متاحة في حسابك البنكي في غضون 3 أيام عمل.',
+              ccp: 'ستكون الأموال متاحة في حسابك البريدي الجاري (CCP) في غضون 3 أيام عمل.',
+              cheque: 'سيكون الشيك الخاص بك جاهزًا في غضون 3 أيام عمل.',
+              fallback: 'ستكون الأموال متاحة في الحساب الذي اخترته في غضون 3 أيام عمل.',
+            },
+            noteLabel: 'ملاحظة',
+            footer: 'لأي استفسار، يرجى التواصل مع فريق الدعم.',
+          }
+        : {
+            title: 'Withdrawal processed ✅',
+            greeting: `Hi <strong>${opts.name}</strong>,`,
+            processed: `Your withdrawal request for <strong>${fmtAmt}</strong> has been processed.`,
+            byMethod: {
+              bank_transfer:
+                'The funds will be available in your bank account within 3 business days.',
+              ccp: 'The funds will be available in your CCP account within 3 business days.',
+              cheque: 'Your cheque will be ready within 3 business days.',
+              fallback:
+                'The funds will be available in your chosen account within 3 business days.',
+            },
+            noteLabel: 'Note',
+            footer: 'If you have questions, please contact our support team.',
+          };
+
+  const methodLine = opts.method ? L.byMethod[opts.method] : L.byMethod.fallback;
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+  return layout(`
+    <div dir="${dir}">
+    ${h1(L.title)}
+    ${p(L.greeting)}
+    ${p(`${L.processed} ${methodLine}`)}
+    ${opts.adminNote ? `
+    <div style="background:#f9fafb;border:1px solid #e4e4e7;border-radius:8px;padding:16px 20px;margin:20px 0;">
+      <p style="margin:0 0 4px;font-size:13px;color:#71717a;font-weight:600;">${L.noteLabel}</p>
+      <p style="margin:0;font-size:14px;color:#3f3f46;">${opts.adminNote}</p>
+    </div>` : ''}
+    ${p(`<span style="color:#71717a;font-size:13px;">${L.footer}</span>`)}
+    </div>
+  `);
+}
+
 export function withdrawalRequestedEmailHtml(opts: {
   userName: string;
   amount: number;
