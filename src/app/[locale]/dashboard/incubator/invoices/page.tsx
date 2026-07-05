@@ -1,8 +1,8 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
-import { InvoicesManager } from '@/components/features/incubator/invoices-manager';
-import { db, type BookingRecord } from '@/server/db/store';
+import { InvoicesTabs } from '@/components/features/incubator/invoices-tabs';
+import { db, type BookingRecord, type InvoiceRecord } from '@/server/db/store';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -24,8 +24,21 @@ export default async function IncubatorInvoicesPage({ params }: PageProps) {
   const data = await db.read();
   const incubator = data.incubators.find((i) => i.managerId === user.id);
 
-  let bookings: BookingWithCustomer[] = [];
+  let invoices: InvoiceRecord[] = [];
+  let receipts: BookingWithCustomer[] = [];
+  let legalComplete = false;
+
   if (incubator) {
+    legalComplete = Boolean(
+      incubator.name &&
+      (incubator.commercialRegNumber ?? incubator.registrationNumber) &&
+      incubator.nif,
+    );
+
+    invoices = (data.invoices ?? [])
+      .filter((i) => i.incubatorId === incubator.id)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
     const ownedSpaceIds = new Set(
       (data.spaces ?? []).filter((s) => s.incubatorId === incubator.id).map((s) => s.id),
     );
@@ -33,7 +46,7 @@ export default async function IncubatorInvoicesPage({ params }: PageProps) {
       (data.programs ?? []).filter((p) => p.incubatorId === incubator.id).map((p) => p.id),
     );
 
-    bookings = data.bookings
+    receipts = data.bookings
       .filter(
         (b) =>
           b.status !== 'CANCELLED' &&
@@ -60,7 +73,11 @@ export default async function IncubatorInvoicesPage({ params }: PageProps) {
         title={t('incubator.invoices.title')}
         subtitle={t('incubator.invoices.subtitle')}
       />
-      <InvoicesManager initial={bookings} />
+      <InvoicesTabs
+        invoices={invoices}
+        receipts={receipts}
+        legalComplete={legalComplete}
+      />
     </div>
   );
 }

@@ -17703,6 +17703,8 @@
       "updatedAt": "2026-06-19T23:45:45.634Z"
     }
   ],
+  "deskBookings": [],
+  "domiciliationRequests": [],
   "clients": [
     {
       "id": "f698c8b9-3cbb-4d83-8d50-b405d4812e05",
@@ -17714,7 +17716,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T22:56:56.986Z",
-      "updatedAt": "2026-06-19T22:56:56.986Z"
+      "updatedAt": "2026-06-19T22:56:56.986Z",
+      "clientType": "INDIVIDUAL"
     },
     {
       "id": "63e6b8a7-9897-46b5-b2d8-801cd4cfc586",
@@ -17726,7 +17729,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T22:56:57.549Z",
-      "updatedAt": "2026-06-19T22:56:57.549Z"
+      "updatedAt": "2026-06-19T22:56:57.549Z",
+      "clientType": "INDIVIDUAL"
     },
     {
       "id": "2d8d9ee4-33b7-479a-9517-ea45990b6f93",
@@ -17738,7 +17742,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T22:56:58.467Z",
-      "updatedAt": "2026-06-19T22:56:58.467Z"
+      "updatedAt": "2026-06-19T22:56:58.467Z",
+      "clientType": "INDIVIDUAL"
     },
     {
       "id": "c99d6118-7a82-4b75-960d-d2e91c9b1a78",
@@ -17750,7 +17755,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T22:57:09.602Z",
-      "updatedAt": "2026-06-19T22:57:09.602Z"
+      "updatedAt": "2026-06-19T22:57:09.602Z",
+      "clientType": "INDIVIDUAL"
     },
     {
       "id": "a0fe43de-97e4-4367-97b3-ed4243876b9a",
@@ -17762,7 +17768,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T23:01:39.767Z",
-      "updatedAt": "2026-06-19T23:01:39.767Z"
+      "updatedAt": "2026-06-19T23:01:39.767Z",
+      "clientType": "INDIVIDUAL"
     },
     {
       "id": "66d29a16-6f70-478b-9c17-3af2851934db",
@@ -17774,7 +17781,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T23:01:40.080Z",
-      "updatedAt": "2026-06-19T23:01:40.080Z"
+      "updatedAt": "2026-06-19T23:01:40.080Z",
+      "clientType": "INDIVIDUAL"
     },
     {
       "id": "ce63dc67-bec1-43a8-bce8-b089352ff141",
@@ -17786,7 +17794,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T23:01:40.545Z",
-      "updatedAt": "2026-06-19T23:01:40.545Z"
+      "updatedAt": "2026-06-19T23:01:40.545Z",
+      "clientType": "INDIVIDUAL"
     },
     {
       "id": "5f679091-26b3-4607-a3d4-efc181d3d07d",
@@ -17798,7 +17807,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T23:02:06.541Z",
-      "updatedAt": "2026-06-19T23:02:06.541Z"
+      "updatedAt": "2026-06-19T23:02:06.541Z",
+      "clientType": "INDIVIDUAL"
     },
     {
       "id": "ff890df4-5efb-4544-8a2d-5e0da0467d5b",
@@ -17810,7 +17820,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T23:02:06.778Z",
-      "updatedAt": "2026-06-19T23:02:06.778Z"
+      "updatedAt": "2026-06-19T23:02:06.778Z",
+      "clientType": "INDIVIDUAL"
     },
     {
       "id": "06815514-46e2-442f-8147-87787b023953",
@@ -17822,7 +17833,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T23:02:07.799Z",
-      "updatedAt": "2026-06-19T23:02:07.799Z"
+      "updatedAt": "2026-06-19T23:02:07.799Z",
+      "clientType": "INDIVIDUAL"
     },
     {
       "id": "898356e7-77aa-46ef-8026-a0d9664d1829",
@@ -17834,7 +17846,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T23:39:30.671Z",
-      "updatedAt": "2026-06-19T23:39:30.671Z"
+      "updatedAt": "2026-06-19T23:39:30.671Z",
+      "clientType": "INDIVIDUAL"
     },
     {
       "id": "55ef61da-94d8-4b5e-baa4-4f8cda617bf0",
@@ -17846,7 +17859,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T23:39:31.240Z",
-      "updatedAt": "2026-06-19T23:39:31.240Z"
+      "updatedAt": "2026-06-19T23:39:31.240Z",
+      "clientType": "INDIVIDUAL"
     },
     {
       "id": "0138fa45-45b0-46d7-b1fb-78657cd703bf",
@@ -17858,7 +17872,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T23:39:33.199Z",
-      "updatedAt": "2026-06-19T23:39:33.199Z"
+      "updatedAt": "2026-06-19T23:39:33.199Z",
+      "clientType": "INDIVIDUAL"
     },
     {
       "id": "0b5738d3-2d5b-464d-9bf0-f5bd6fab7ee4",
@@ -17870,7 +17885,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T23:41:04.866Z",
-      "updatedAt": "2026-06-19T23:41:04.866Z"
+      "updatedAt": "2026-06-19T23:41:04.866Z",
+      "clientType": "INDIVIDUAL"
     },
     {
       "id": "57ac6e53-dd28-4506-9615-3c620b32eb47",
@@ -17882,7 +17898,8 @@
       "companyName": null,
       "notes": null,
       "createdAt": "2026-06-19T23:41:07.200Z",
-      "updatedAt": "2026-06-19T23:41:07.200Z"
+      "updatedAt": "2026-06-19T23:41:07.200Z",
+      "clientType": "INDIVIDUAL"
     }
   ],
   "services": [
@@ -17951,6 +17968,7 @@
     }
   ],
   "contractTemplates": [],
+  "invoices": [],
   "expenses": [],
   "income": [],
   "landingContent": null,
@@ -23184,7 +23202,8 @@
   "meta": {
     "promoCodesSeeded": true,
     "demoMentorsRemoved": true,
-    "businessRoleMigrated": true
+    "businessRoleMigrated": true,
+    "invoiceClientTypeMigrated": true
   },
   "mentorAccessTokens": [],
   "incubatorProfiles": [

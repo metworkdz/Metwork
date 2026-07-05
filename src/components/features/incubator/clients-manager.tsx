@@ -5,17 +5,6 @@ import { useTranslations } from 'next-intl';
 import { Loader2, Pencil, Trash2, UsersRound } from 'lucide-react';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { ClientFormDialog } from './client-form-dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 interface ClientRow {
   id: string;
@@ -25,6 +14,13 @@ interface ClientRow {
   idCardNumber: string | null;
   companyName: string | null;
   notes: string | null;
+  clientType?: 'COMPANY' | 'INDIVIDUAL';
+  legalName?: string | null;
+  address?: string | null;
+  rc?: string | null;
+  nif?: string | null;
+  nis?: string | null;
+  ai?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,17 +31,10 @@ export function ClientsManager() {
   const [loading, setLoading]       = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Edit dialog state
-  const [editing, setEditing]     = useState<ClientRow | null>(null);
-  const [editOpen, setEditOpen]   = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [editError, setEditError]   = useState<string | null>(null);
-  const [fullName, setFullName]   = useState('');
-  const [email, setEmail]         = useState('');
-  const [phone, setPhone]         = useState('');
-  const [idCard, setIdCard]       = useState('');
-  const [company, setCompany]     = useState('');
-  const [notes, setNotes]         = useState('');
+  // Edit dialog state — reuses ClientFormDialog (controlled) so edits get the
+  // same Entreprise / Personne physique billing fields as creation.
+  const [editing, setEditing]   = useState<ClientRow | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   async function fetchClients() {
     setLoading(true);
@@ -66,52 +55,7 @@ export function ClientsManager() {
 
   function openEdit(row: ClientRow) {
     setEditing(row);
-    setFullName(row.fullName);
-    setEmail(row.email ?? '');
-    setPhone(row.phone ?? '');
-    setIdCard(row.idCardNumber ?? '');
-    setCompany(row.companyName ?? '');
-    setNotes(row.notes ?? '');
-    setEditError(null);
     setEditOpen(true);
-  }
-
-  async function handleSaveEdit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!editing) return;
-    setEditError(null);
-    setSubmitting(true);
-    try {
-      const res = await fetch(`/api/incubator/clients/${editing.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fullName:     fullName.trim(),
-          email:        email.trim() || undefined,
-          phone:        phone.trim() || undefined,
-          idCardNumber: idCard.trim() || null,
-          companyName:  company.trim() || null,
-          notes:        notes.trim() || null,
-        }),
-      });
-      if (!res.ok) {
-        // API error envelope: { error: { code, message, details: { fieldErrors } } }
-        const d = await res.json().catch(() => ({})) as {
-          error?: { message?: string; details?: { fieldErrors?: Record<string, string[]> } };
-        };
-        const fieldReason = Object.values(d.error?.details?.fieldErrors ?? {})
-          .flat()
-          .find(Boolean);
-        setEditError(fieldReason ?? d.error?.message ?? 'Failed to save.');
-        return;
-      }
-      setEditOpen(false);
-      void fetchClients();
-    } catch {
-      setEditError('Network error — try again.');
-    } finally {
-      setSubmitting(false);
-    }
   }
 
   async function handleDelete(row: ClientRow) {
@@ -126,10 +70,14 @@ export function ClientsManager() {
       label: t('colClient'),
       render: (r) => (
         <div>
-          <div className="font-medium">{r.fullName}</div>
-          {r.companyName && (
-            <div className="text-xs text-muted-foreground">{r.companyName}</div>
-          )}
+          <div className="font-medium">
+            {r.clientType === 'COMPANY' ? (r.legalName ?? r.companyName ?? r.fullName) : r.fullName}
+          </div>
+          {r.clientType === 'COMPANY'
+            ? <div className="text-xs text-muted-foreground">{r.fullName}</div>
+            : r.companyName && (
+                <div className="text-xs text-muted-foreground">{r.companyName}</div>
+              )}
         </div>
       ),
     },
@@ -148,7 +96,9 @@ export function ClientsManager() {
       key: 'idCard',
       label: t('colIdCard'),
       render: (r) => (
-        <span className="text-sm text-muted-foreground">{r.idCardNumber ?? '—'}</span>
+        <span className="text-sm text-muted-foreground">
+          {r.clientType === 'COMPANY' ? (r.nif ?? '—') : (r.idCardNumber ?? '—')}
+        </span>
       ),
     },
     {
@@ -182,64 +132,16 @@ export function ClientsManager() {
 
   return (
     <>
-      {/* Edit dialog — controlled from the manager */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('editTitle')}</DialogTitle>
-            <DialogDescription>{t('editDescription')}</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={(e) => void handleSaveEdit(e)} className="space-y-3 py-2">
-            <div>
-              <Label htmlFor="ec-name">{t('labelFullName')}</Label>
-              <Input id="ec-name" className="mt-1" value={fullName}
-                onChange={(e) => setFullName(e.target.value)} required minLength={2} maxLength={120} />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="ec-email">{t('labelEmail')}</Label>
-                <Input id="ec-email" type="email" className="mt-1" value={email}
-                  onChange={(e) => setEmail(e.target.value)} placeholder="optional" />
-              </div>
-              <div>
-                <Label htmlFor="ec-phone">{t('labelPhone')}</Label>
-                <Input id="ec-phone" type="tel" className="mt-1" value={phone}
-                  onChange={(e) => setPhone(e.target.value)} placeholder="optional" />
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="ec-id">{t('labelIdCard')}</Label>
-                <Input id="ec-id" className="mt-1" value={idCard}
-                  onChange={(e) => setIdCard(e.target.value)} placeholder="optional" />
-              </div>
-              <div>
-                <Label htmlFor="ec-company">{t('labelCompany')}</Label>
-                <Input id="ec-company" className="mt-1" value={company}
-                  onChange={(e) => setCompany(e.target.value)} placeholder="optional" />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="ec-notes">{t('labelNotes')}</Label>
-              <textarea
-                id="ec-notes"
-                className="mt-1 min-h-[70px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                maxLength={500}
-              />
-            </div>
-            {editError && (
-              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                {editError}
-              </div>
-            )}
-            <DialogFooter>
-              <Button type="submit" loading={submitting}>{t('saveChanges')}</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Edit dialog — the shared client form in controlled mode */}
+      {editing && (
+        <ClientFormDialog
+          key={editing.id}
+          client={editing}
+          open={editOpen}
+          onOpenChange={(v) => { setEditOpen(v); if (!v) setEditing(null); }}
+          onSaved={() => { setEditOpen(false); setEditing(null); void fetchClients(); }}
+        />
+      )}
 
       <ListingManagementTable
         rows={rows}

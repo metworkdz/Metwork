@@ -23,7 +23,18 @@ const createSchema = z.object({
   idCardNumber: z.string().max(30).optional().nullable(),
   companyName:  z.string().max(120).optional().nullable(),
   notes:        z.string().max(2000).optional().nullable(),
-});
+  // Invoice billing profile (additive — legacy callers omit them).
+  clientType:   z.enum(['COMPANY', 'INDIVIDUAL']).optional(),
+  legalName:    z.string().max(200).optional().nullable(),
+  address:      z.string().max(500).optional().nullable(),
+  rc:           z.string().max(100).optional().nullable(),
+  nif:          z.string().max(100).optional().nullable(),
+  nis:          z.string().max(100).optional().nullable(),
+  ai:           z.string().max(100).optional().nullable(),
+}).refine(
+  (v) => v.clientType !== 'COMPANY' || !!v.legalName?.trim(),
+  { message: 'legalName is required for a COMPANY client', path: ['legalName'] },
+);
 
 export async function GET() {
   const guard = await requireApiRole(['INCUBATOR']);
@@ -81,6 +92,13 @@ export async function POST(req: NextRequest) {
       idCardNumber: input.idCardNumber ?? null,
       companyName:  input.companyName ?? null,
       notes:        input.notes ?? null,
+      clientType:   input.clientType ?? (input.companyName ? 'COMPANY' : 'INDIVIDUAL'),
+      legalName:    input.legalName?.trim() || null,
+      address:      input.address?.trim() || null,
+      rc:           input.rc?.trim() || null,
+      nif:          input.nif?.trim() || null,
+      nis:          input.nis?.trim() || null,
+      ai:           input.ai?.trim() || null,
       createdAt:    now,
       updatedAt:    now,
     };

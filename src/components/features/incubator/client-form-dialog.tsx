@@ -4,13 +4,19 @@
  * Dialog for creating or editing a client record.
  * POST /api/incubator/clients  — create
  * PATCH /api/incubator/clients/:id — edit
+ *
+ * A client is either an "Entreprise" (COMPANY — invoiced with its legal
+ * identifiers: raison sociale, RC, NIF, NIS, AI) or a "Personne physique"
+ * (INDIVIDUAL). The toggle drives which billing fields are shown; both keep
+ * the base contact fields used across the CRM, manual bookings and invoices.
  */
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { PlusCircle } from 'lucide-react';
+import { Building2, PlusCircle, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +27,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
+type ClientType = 'COMPANY' | 'INDIVIDUAL';
+
 interface ClientValues {
   id: string;
   fullName: string;
@@ -29,6 +37,14 @@ interface ClientValues {
   idCardNumber: string | null;
   companyName: string | null;
   notes: string | null;
+  /** Billing profile — optional so legacy callers keep compiling. */
+  clientType?: ClientType;
+  legalName?: string | null;
+  address?: string | null;
+  rc?: string | null;
+  nif?: string | null;
+  nis?: string | null;
+  ai?: string | null;
 }
 
 /** Shape of the client record returned by POST /api/incubator/clients. */
@@ -40,6 +56,13 @@ export interface CreatedClient {
   idCardNumber: string | null;
   companyName: string | null;
   notes: string | null;
+  clientType?: ClientType;
+  legalName?: string | null;
+  address?: string | null;
+  rc?: string | null;
+  nif?: string | null;
+  nis?: string | null;
+  ai?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -84,28 +107,45 @@ export function ClientFormDialog({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [clientType, setClientType] = useState<ClientType>('COMPANY');
   const [fullName, setFullName] = useState('');
   const [email, setEmail]       = useState('');
   const [phone, setPhone]       = useState('');
   const [idCard, setIdCard]     = useState('');
-  const [company, setCompany]   = useState('');
   const [notes, setNotes]       = useState('');
+  const [legalName, setLegalName] = useState('');
+  const [address, setAddress]     = useState('');
+  const [rc, setRc]   = useState('');
+  const [nif, setNif] = useState('');
+  const [nis, setNis] = useState('');
+  const [ai, setAi]   = useState('');
+
+  const isCompany = clientType === 'COMPANY';
 
   // Populate form when editing
   useEffect(() => {
     if (open && client) {
+      setClientType(client.clientType ?? (client.companyName ? 'COMPANY' : 'INDIVIDUAL'));
       setFullName(client.fullName);
       setEmail(client.email ?? '');
       setPhone(client.phone ?? '');
       setIdCard(client.idCardNumber ?? '');
-      setCompany(client.companyName ?? '');
       setNotes(client.notes ?? '');
+      setLegalName(client.legalName ?? client.companyName ?? '');
+      setAddress(client.address ?? '');
+      setRc(client.rc ?? '');
+      setNif(client.nif ?? '');
+      setNis(client.nis ?? '');
+      setAi(client.ai ?? '');
     }
   }, [open, client]);
 
   function reset() {
+    setClientType('COMPANY');
     setFullName(''); setEmail(''); setPhone('');
-    setIdCard(''); setCompany(''); setNotes('');
+    setIdCard(''); setNotes('');
+    setLegalName(''); setAddress('');
+    setRc(''); setNif(''); setNis(''); setAi('');
     setError(null);
   }
 
@@ -116,6 +156,9 @@ export function ClientFormDialog({
     try {
       const url    = isEdit ? `/api/incubator/clients/${client!.id}` : '/api/incubator/clients';
       const method = isEdit ? 'PATCH' : 'POST';
+      // For a COMPANY, keep companyName in sync with the legal name so every
+      // legacy surface (manual bookings, CRM list) keeps displaying it.
+      const trimmedLegal = legalName.trim();
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -124,8 +167,15 @@ export function ClientFormDialog({
           email:        email.trim() || undefined,
           phone:        phone.trim() || undefined,
           idCardNumber: idCard.trim() || null,
-          companyName:  company.trim() || null,
+          companyName:  isCompany ? (trimmedLegal || null) : null,
           notes:        notes.trim() || null,
+          clientType,
+          legalName:    isCompany ? (trimmedLegal || null) : null,
+          address:      address.trim() || null,
+          rc:           isCompany ? (rc.trim() || null) : null,
+          nif:          isCompany ? (nif.trim() || null) : null,
+          nis:          isCompany ? (nis.trim() || null) : null,
+          ai:           isCompany ? (ai.trim() || null) : null,
         }),
       });
       if (!res.ok) {
@@ -167,7 +217,7 @@ export function ClientFormDialog({
         </DialogTrigger>
       )}
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? t('titleEdit') : t('titleNew')}</DialogTitle>
           <DialogDescription>
@@ -175,9 +225,47 @@ export function ClientFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3 py-2">
+        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4 py-2">
+          {/* ── Entreprise | Personne physique ── */}
+          <div className="grid grid-cols-2 gap-1.5 rounded-lg border border-border bg-muted/40 p-1.5">
+            {(['COMPANY', 'INDIVIDUAL'] as const).map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setClientType(type)}
+                className={cn(
+                  'flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                  clientType === type
+                    ? 'bg-background text-primary shadow-sm border border-primary/30'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {type === 'COMPANY'
+                  ? <Building2 className="size-4" />
+                  : <UserRound className="size-4" />}
+                {type === 'COMPANY' ? t('typeCompany') : t('typeIndividual')}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Identity ── */}
+          {isCompany && (
+            <div>
+              <Label htmlFor="c-legal">{t('labelLegalName')}</Label>
+              <Input
+                id="c-legal"
+                className="mt-1"
+                value={legalName}
+                onChange={(e) => setLegalName(e.target.value)}
+                required
+                maxLength={200}
+                placeholder={t('legalNamePlaceholder')}
+              />
+            </div>
+          )}
+
           <div>
-            <Label htmlFor="c-name">{t('labelFullName')}</Label>
+            <Label htmlFor="c-name">{isCompany ? t('labelContactName') : t('labelFullName')}</Label>
             <Input
               id="c-name"
               className="mt-1"
@@ -189,6 +277,54 @@ export function ClientFormDialog({
             />
           </div>
 
+          <div>
+            <Label htmlFor="c-address">{t('labelAddress')}</Label>
+            <Input
+              id="c-address"
+              className="mt-1"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              maxLength={500}
+              placeholder={t('optional')}
+            />
+          </div>
+
+          {/* ── Legal identifiers (Entreprise) ── */}
+          {isCompany && (
+            <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('sectionLegalIds')}
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="c-rc">{t('labelRc')}</Label>
+                  <Input id="c-rc" className="mt-1" value={rc}
+                    onChange={(e) => setRc(e.target.value)} maxLength={100}
+                    placeholder={t('optional')} />
+                </div>
+                <div>
+                  <Label htmlFor="c-nif">{t('labelNif')}</Label>
+                  <Input id="c-nif" className="mt-1" value={nif}
+                    onChange={(e) => setNif(e.target.value)} maxLength={100}
+                    placeholder={t('optional')} />
+                </div>
+                <div>
+                  <Label htmlFor="c-nis">{t('labelNis')}</Label>
+                  <Input id="c-nis" className="mt-1" value={nis}
+                    onChange={(e) => setNis(e.target.value)} maxLength={100}
+                    placeholder={t('optional')} />
+                </div>
+                <div>
+                  <Label htmlFor="c-ai">{t('labelAi')}</Label>
+                  <Input id="c-ai" className="mt-1" value={ai}
+                    onChange={(e) => setAi(e.target.value)} maxLength={100}
+                    placeholder={t('optional')} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Contact ── */}
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label htmlFor="c-email">{t('labelEmail')}</Label>
@@ -214,7 +350,7 @@ export function ClientFormDialog({
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          {!isCompany && (
             <div>
               <Label htmlFor="c-id">{t('labelIdCard')}</Label>
               <Input
@@ -225,17 +361,7 @@ export function ClientFormDialog({
                 placeholder={t('optional')}
               />
             </div>
-            <div>
-              <Label htmlFor="c-company">{t('labelCompany')}</Label>
-              <Input
-                id="c-company"
-                className="mt-1"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                placeholder={t('optional')}
-              />
-            </div>
-          </div>
+          )}
 
           <div>
             <Label htmlFor="c-notes">{t('labelNotes')}</Label>

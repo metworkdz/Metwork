@@ -10,12 +10,20 @@ import { Loader2, UserCircle, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
-interface ClientHit {
+export interface ClientHit {
   id: string;
   fullName: string;
   email: string;
   phone: string;
   companyName: string | null;
+  /** Billing profile — present on records saved since the invoices feature. */
+  clientType?: 'COMPANY' | 'INDIVIDUAL';
+  legalName?: string | null;
+  address?: string | null;
+  rc?: string | null;
+  nif?: string | null;
+  nis?: string | null;
+  ai?: string | null;
 }
 
 interface ClientSelectorProps {

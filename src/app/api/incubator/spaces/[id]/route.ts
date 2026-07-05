@@ -11,6 +11,7 @@ import {
   cleanDeskNames,
   validateDeskNames,
   validateDomiciliationSlots,
+  validateDomiciliationPrice,
 } from '@/server/spaces/category-fields';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -102,6 +103,9 @@ export async function PATCH(
     if (nextCategory === 'DOMICILIATION') {
       const nextSlots = input.domiciliationSlots !== undefined ? input.domiciliationSlots : s.domiciliationSlots;
       categoryError = validateDomiciliationSlots(nextSlots);
+      if (categoryError) return 'INVALID_CATEGORY';
+      // Monthly price is mandatory for domiciliation (validated on merged state).
+      categoryError = validateDomiciliationPrice(nextMonth);
       if (categoryError) return 'INVALID_CATEGORY';
     }
 

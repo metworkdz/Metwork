@@ -160,3 +160,58 @@ describe('B) add client — POST /api/incubator/clients', () => {
     expect((await db.read()).clients).toHaveLength(1);
   });
 });
+
+describe('C) client billing profile (invoices) — clientType + legal fields', () => {
+  it('round-trips the COMPANY billing fields', async () => {
+    const { POST } = await import('@/app/api/incubator/clients/route');
+    const res = await POST(clientsReq({
+      fullName: 'Yacine Benali',
+      clientType: 'COMPANY',
+      legalName: 'SARL TechNova',
+      address: 'Bab Ezzouar, Alger',
+      rc: '16/00-1234567B26',
+      nif: '002616123456789',
+      nis: '002616123456780',
+      ai: '16123456789',
+    }));
+    expect(res.status).toBe(201);
+    const client = await res.json();
+    expect(client.clientType).toBe('COMPANY');
+    expect(client.legalName).toBe('SARL TechNova');
+    expect(client.rc).toBe('16/00-1234567B26');
+    expect(client.nif).toBe('002616123456789');
+    expect(client.nis).toBe('002616123456780');
+    expect(client.ai).toBe('16123456789');
+  });
+
+  it('rejects a COMPANY without a legalName', async () => {
+    const { POST } = await import('@/app/api/incubator/clients/route');
+    const res = await POST(clientsReq({ fullName: 'Contact Only', clientType: 'COMPANY' }));
+    expect(res.status).toBe(422); // fromZod → 422 VALIDATION_ERROR
+  });
+
+  it('defaults clientType from companyName when omitted (legacy callers)', async () => {
+    const { POST } = await import('@/app/api/incubator/clients/route');
+    const company = await (await POST(clientsReq({ fullName: 'Legacy Co', companyName: 'Old SARL' }))).json();
+    expect(company.clientType).toBe('COMPANY');
+    const person = await (await POST(clientsReq({ fullName: 'Legacy Person' }))).json();
+    expect(person.clientType).toBe('INDIVIDUAL');
+  });
+
+  it('PATCH updates the billing fields', async () => {
+    const { POST } = await import('@/app/api/incubator/clients/route');
+    const { PATCH } = await import('@/app/api/incubator/clients/[id]/route');
+    const created = await (await POST(clientsReq({ fullName: 'Amina Cherif' }))).json();
+
+    const req = new NextRequest(`http://localhost/api/incubator/clients/${created.id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ clientType: 'INDIVIDUAL', address: 'Oran', phone: '0770112233' }),
+    });
+    const res = await PATCH(req, { params: Promise.resolve({ id: created.id }) });
+    expect(res.status).toBe(200);
+    const updated = (await db.read()).clients.find((c) => c.id === created.id);
+    expect(updated?.clientType).toBe('INDIVIDUAL');
+    expect(updated?.address).toBe('Oran');
+  });
+});

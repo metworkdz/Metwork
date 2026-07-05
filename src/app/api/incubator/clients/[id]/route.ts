@@ -19,6 +19,14 @@ const patchSchema = z.object({
   idCardNumber: z.string().max(30).nullable().optional(),
   companyName:  z.string().max(120).nullable().optional(),
   notes:        z.string().max(2000).nullable().optional(),
+  // Invoice billing profile (additive — legacy callers omit them).
+  clientType:   z.enum(['COMPANY', 'INDIVIDUAL']).optional(),
+  legalName:    z.string().max(200).nullable().optional(),
+  address:      z.string().max(500).nullable().optional(),
+  rc:           z.string().max(100).nullable().optional(),
+  nif:          z.string().max(100).nullable().optional(),
+  nis:          z.string().max(100).nullable().optional(),
+  ai:           z.string().max(100).nullable().optional(),
 });
 
 export async function PATCH(
@@ -54,6 +62,13 @@ export async function PATCH(
     if (input.idCardNumber !== undefined) c.idCardNumber = input.idCardNumber;
     if (input.companyName  !== undefined) c.companyName  = input.companyName;
     if (input.notes        !== undefined) c.notes        = input.notes;
+    if (input.clientType   !== undefined) c.clientType   = input.clientType;
+    if (input.legalName    !== undefined) c.legalName    = input.legalName;
+    if (input.address      !== undefined) c.address      = input.address;
+    if (input.rc           !== undefined) c.rc           = input.rc;
+    if (input.nif          !== undefined) c.nif          = input.nif;
+    if (input.nis          !== undefined) c.nis          = input.nis;
+    if (input.ai           !== undefined) c.ai           = input.ai;
     c.updatedAt = new Date().toISOString();
     return c;
   });

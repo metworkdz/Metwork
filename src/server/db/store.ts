@@ -638,6 +638,32 @@ export interface IncubatorRecord {
   registrationNumber?: string | null;
   /** Tax identification number (NIF in Algeria). */
   nif?: string | null;
+  /**
+   * Invoice header + settings — additive & nullable. `nis` / `ai` complete the
+   * Algerian legal header (RC/NIF already exist above); `contactEmail`,
+   * `contactPhone` and the existing `website` feed the invoice footer.
+   */
+  nis?: string | null;
+  /** Article d'Imposition (printed as "Art N" on invoices). */
+  ai?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  /** Default VAT % applied to new invoices. Null/unset ⇒ 19. */
+  defaultVatRate?: number | null;
+  /** Preferred invoice PDF template. Null/unset ⇒ 'CLASSIC'. */
+  invoiceTemplate?: InvoiceTemplate | null;
+  /**
+   * Bank details printed on VIREMENT invoices (required to issue one).
+   * bankRib = the 20-digit Algerian RIB / account number.
+   */
+  bankName?: string | null;
+  bankRib?: string | null;
+  /**
+   * Per-year invoice sequence counters, e.g. { "2026": 12 } — the last seq
+   * issued for that year. Mutated ONLY inside db.update() via
+   * allocateInvoiceNumber() so concurrent creates can't collide.
+   */
+  invoiceCounters?: Record<string, number> | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1660,6 +1686,23 @@ export interface ClientRecord {
   idCardNumber: string | null;
   companyName: string | null;
   notes: string | null;
+  /**
+   * Invoice billing profile — additive & nullable (legacy records lack them).
+   * `clientType` is backfilled by the one-time `invoiceClientTypeMigrated`
+   * migration: COMPANY when a companyName exists, else INDIVIDUAL.
+   */
+  clientType?: 'COMPANY' | 'INDIVIDUAL';
+  /** Company legal / registered name (raison sociale). */
+  legalName?: string | null;
+  address?: string | null;
+  /** Registre de Commerce. */
+  rc?: string | null;
+  /** Numéro d'Identification Fiscale. */
+  nif?: string | null;
+  /** Numéro d'Identification Statistique. */
+  nis?: string | null;
+  /** Article d'Imposition. */
+  ai?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1718,6 +1761,94 @@ export interface ContractTemplateRecord {
   body: string;
   /** Drives PDF font/direction: 'ar' renders RTL with an embedded Arabic font. */
   language: 'fr' | 'en' | 'ar';
+  createdAt: string;
+  updatedAt: string;
+}
+
+/* ─────────────────── Invoices ─────────────────── */
+
+/** PDF template an invoice is rendered with. */
+export type InvoiceTemplate = 'CLASSIC' | 'GREEN_BAND' | 'MINIMAL';
+
+/** Accepted payment modes printed on the invoice. Timbre applies to ESPECE only. */
+export type InvoicePaymentMethod = 'ESPECE' | 'CHEQUE' | 'VIREMENT';
+
+export interface InvoiceLine {
+  designation: string;
+  quantity: number;
+  /** Unit price hors taxes, DZD. */
+  unitPriceHt: number;
+}
+
+/**
+ * A legal invoice issued by an incubator. Invoices are IMMUTABLE once issued:
+ * the issuer + client legal blocks, the totals and the amount-in-words are
+ * frozen at issue time so later edits to the incubator profile or the client
+ * record never mutate a past invoice. The only allowed transition is
+ * status → 'CANCELLED' (cancel + reissue is the legal correction path).
+ *
+ * All money fields are computed by src/server/invoices/engine.ts — the single
+ * canonical module. UI and PDF layers read them verbatim, never recompute.
+ *
+ * Additive collection — legacy DB documents lack `invoices` and resolve to []
+ * via the empty-merge.
+ */
+export interface InvoiceRecord {
+  id: string;
+  incubatorId: string;
+  /** Display number, "NN/YYYY" (e.g. "01/2026"). Unique per incubator. */
+  number: string;
+  year: number;
+  seq: number;
+  /** ISO timestamp the invoice was issued. */
+  issuedAt: string;
+  /** Link to ClientRecord — null for ad-hoc (draft) recipients. */
+  clientId: string | null;
+  /** Recipient legal block, frozen at issue time. */
+  clientSnapshot: {
+    clientType: 'COMPANY' | 'INDIVIDUAL';
+    name: string;
+    legalName?: string | null;
+    address?: string | null;
+    rc?: string | null;
+    nif?: string | null;
+    nis?: string | null;
+    ai?: string | null;
+    phone?: string | null;
+    email?: string | null;
+  };
+  /** Issuer legal header, frozen at issue time. */
+  issuerSnapshot: {
+    name: string;
+    address?: string | null;
+    rc?: string | null;
+    nif?: string | null;
+    nis?: string | null;
+    ai?: string | null;
+    logoUrl?: string | null;
+    website?: string | null;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
+    /** Frozen bank details — rendered on the PDF when paymentMethod is VIREMENT. */
+    bankName?: string | null;
+    bankRib?: string | null;
+  };
+  lines: InvoiceLine[];
+  /** VAT %, e.g. 19. */
+  vatRate: number;
+  paymentMethod: InvoicePaymentMethod;
+  template: InvoiceTemplate;
+  /** Computed by the engine at issue time and stored — never recomputed. */
+  totals: {
+    ht: number;
+    tva: number;
+    ttc: number;
+    timbre: number;
+    net: number;
+  };
+  /** French words for `totals.net`, frozen (e.g. "VINGT HUIT MILLE … DINARS"). */
+  amountInWords: string;
+  status: 'ISSUED' | 'CANCELLED';
   createdAt: string;
   updatedAt: string;
 }
@@ -2326,6 +2457,8 @@ interface DbShape {
   services: ServiceRecord[];
   /** Reusable, incubator-owned contract templates (filled per booking → PDF). */
   contractTemplates: ContractTemplateRecord[];
+  /** Legal invoices issued by incubators — immutable snapshots (see InvoiceRecord). */
+  invoices: InvoiceRecord[];
   /** Manual and imported expense operations. */
   expenses: ExpenseRecord[];
   /** Manual and imported income operations (separate from platform bookings). */
@@ -2396,6 +2529,8 @@ interface DbShape {
     demoMentorsRemoved?: boolean;
     /** Set once legacy TRAINER-role users are migrated to the BUSINESS role. */
     businessRoleMigrated?: boolean;
+    /** Set once legacy clients have clientType backfilled (COMPANY when companyName set). */
+    invoiceClientTypeMigrated?: boolean;
     platformConfig?: PlatformConfig;
     /** ISO timestamp — set once the one-time per-space → per-incubator partner migration runs. */
     partnerPerIncubatorMigratedAt?: string;
@@ -2429,6 +2564,7 @@ const empty: DbShape = {
   clients: [],
   services: [],
   contractTemplates: [],
+  invoices: [],
   expenses: [],
   income: [],
   landingContent: null,
@@ -2580,6 +2716,19 @@ async function applyOneTimeMigrations(): Promise<void> {
       }
     }
     cache!.meta = { ...(cache!.meta ?? {}), businessRoleMigrated: true };
+    changed = true;
+  }
+
+  // Backfill ClientRecord.clientType for records that predate invoicing:
+  // COMPANY when a companyName is present, INDIVIDUAL otherwise. Records
+  // created after this feature set clientType explicitly. Idempotent via flag.
+  if (!cache!.meta?.invoiceClientTypeMigrated) {
+    for (const c of cache!.clients ?? []) {
+      if (c.clientType == null) {
+        c.clientType = c.companyName ? 'COMPANY' : 'INDIVIDUAL';
+      }
+    }
+    cache!.meta = { ...(cache!.meta ?? {}), invoiceClientTypeMigrated: true };
     changed = true;
   }
 

@@ -1,6 +1,7 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
+import { IncubatorProfileForm } from '@/components/features/incubator/incubator-profile-form';
 import { SubscriptionManager } from '@/components/features/incubator/subscription-manager';
 import { DeleteAccountSection } from '@/components/features/settings/delete-account-section';
 import { db } from '@/server/db/store';
@@ -38,8 +39,16 @@ export default async function IncubatorSettingsPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        title="Settings"
-        subtitle="Manage your subscription plan and billing preferences."
+        title={t('incubator.settings.title')}
+        subtitle={t('incubator.settings.subtitle')}
+      />
+      {/* Profile + Legal & Billing + Invoicing. The subscription plan is
+          managed by SubscriptionManager below, so the form's own tier
+          section stays hidden. */}
+      <IncubatorProfileForm
+        incubator={incubator}
+        user={{ id: user.id, fullName: user.fullName, email: user.email, avatarUrl: user.avatarUrl }}
+        showSubscriptionTier={false}
       />
       <SubscriptionManager />
       <DeleteAccountSection />

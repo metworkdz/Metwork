@@ -7,7 +7,8 @@
  */
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Building2, Upload, Globe, CreditCard, FileText } from 'lucide-react';
+import { Building2, Upload, Globe, CreditCard, FileText, ReceiptText } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +18,7 @@ import {
   SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { AvatarUpload } from '@/components/shared/avatar-upload';
-import type { IncubatorRecord, UserRecord } from '@/server/db/store';
+import type { IncubatorRecord, InvoiceTemplate, UserRecord } from '@/server/db/store';
 
 interface Props {
   incubator: IncubatorRecord;
@@ -43,6 +44,14 @@ export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = t
     address: incubator.address ?? '',
     commercialRegNumber: incubator.commercialRegNumber ?? '',
     nif: incubator.nif ?? '',
+    nis: incubator.nis ?? '',
+    ai: incubator.ai ?? '',
+    bankName: incubator.bankName ?? '',
+    bankRib: incubator.bankRib ?? '',
+    contactEmail: incubator.contactEmail ?? '',
+    contactPhone: incubator.contactPhone ?? '',
+    defaultVatRate: String(incubator.defaultVatRate ?? 19),
+    invoiceTemplate: (incubator.invoiceTemplate ?? 'CLASSIC') as InvoiceTemplate,
     fullName: user.fullName,
     avatarUrl: user.avatarUrl ?? '',
   });
@@ -91,6 +100,16 @@ export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = t
           address: form.address.trim() || null,
           commercialRegNumber: form.commercialRegNumber.trim() || null,
           nif: form.nif.trim() || null,
+          nis: form.nis.trim() || null,
+          ai: form.ai.trim() || null,
+          bankName: form.bankName.trim() || null,
+          bankRib: form.bankRib.trim() || null,
+          contactEmail: form.contactEmail.trim() || null,
+          contactPhone: form.contactPhone.trim() || null,
+          defaultVatRate: form.defaultVatRate.trim() !== '' && Number.isFinite(Number(form.defaultVatRate))
+            ? Number(form.defaultVatRate)
+            : null,
+          invoiceTemplate: form.invoiceTemplate,
           fullName: form.fullName.trim(),
           avatarUrl: form.avatarUrl.trim() || null,
         }),
@@ -272,6 +291,97 @@ export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = t
                 placeholder={t('nifPlaceholder')} />
             </div>
           </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="inc-nis">{t('labelNis')}</Label>
+              <Input id="inc-nis" value={form.nis}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, nis: e.target.value }))}
+                placeholder={t('nisPlaceholder')} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="inc-ai">{t('labelAi')}</Label>
+              <Input id="inc-ai" value={form.ai}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, ai: e.target.value }))}
+                placeholder={t('aiPlaceholder')} />
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="inc-bank-name">{t('labelBankName')}</Label>
+              <Input id="inc-bank-name" value={form.bankName}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, bankName: e.target.value }))}
+                placeholder={t('bankNamePlaceholder')} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="inc-bank-rib">{t('labelBankRib')}</Label>
+              <Input id="inc-bank-rib" value={form.bankRib}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, bankRib: e.target.value }))}
+                placeholder={t('bankRibPlaceholder')} />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">{t('bankHint')}</p>
+        </CardContent>
+      </Card>
+
+      {/* Invoicing — footer contact, default VAT, PDF template */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ReceiptText className="size-4" /> {t('sectionInvoicing')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="inc-contact-email">{t('labelContactEmail')}</Label>
+              <Input id="inc-contact-email" type="email" value={form.contactEmail}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, contactEmail: e.target.value }))}
+                placeholder={t('contactEmailPlaceholder')} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="inc-contact-phone">{t('labelContactPhone')}</Label>
+              <Input id="inc-contact-phone" type="tel" value={form.contactPhone}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, contactPhone: e.target.value }))}
+                placeholder={t('contactPhonePlaceholder')} />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">{t('contactHint')}</p>
+
+          <div className="max-w-[160px] space-y-1.5">
+            <Label htmlFor="inc-vat">{t('labelDefaultVat')}</Label>
+            <Input id="inc-vat" type="number" min="0" max="100" step="any" value={form.defaultVatRate}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, defaultVatRate: e.target.value }))} />
+            <p className="text-xs text-muted-foreground">{t('defaultVatHint')}</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t('labelInvoiceTemplate')}</Label>
+            <div className="grid max-w-md grid-cols-3 gap-3">
+              {(['CLASSIC', 'GREEN_BAND', 'MINIMAL'] as const).map((tpl) => (
+                <button
+                  key={tpl}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, invoiceTemplate: tpl }))}
+                  className={cn(
+                    'group rounded-lg border-2 p-2 text-start transition-colors',
+                    form.invoiceTemplate === tpl
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/40',
+                  )}
+                  aria-pressed={form.invoiceTemplate === tpl}
+                >
+                  <InvoiceTemplateThumb template={tpl} />
+                  <p className={cn(
+                    'mt-1.5 text-center text-xs font-medium',
+                    form.invoiceTemplate === tpl ? 'text-primary' : 'text-muted-foreground',
+                  )}>
+                    {t(`template${tpl === 'CLASSIC' ? 'Classic' : tpl === 'GREEN_BAND' ? 'GreenBand' : 'Minimal'}`)}
+                  </p>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">{t('invoiceTemplateHint')}</p>
+          </div>
         </CardContent>
       </Card>
 
@@ -322,6 +432,89 @@ export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = t
           {t('saveChanges')}
         </Button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Pure-CSS miniature of each invoice PDF template, used by the template
+ * chooser. Mirrors the real layouts: CLASSIC = letterhead + centered title
+ * rule; GREEN_BAND = full-width brand band; MINIMAL = hairlines + whitespace.
+ */
+function InvoiceTemplateThumb({ template }: { template: InvoiceTemplate }) {
+  const line = 'rounded-full bg-muted-foreground/30';
+  return (
+    <div className="aspect-[3/4] w-full overflow-hidden rounded-md border border-border bg-background p-1.5">
+      {template === 'GREEN_BAND' ? (
+        <div className="flex h-full flex-col gap-1">
+          <div className="flex h-1/5 items-center justify-end rounded-sm bg-primary px-1">
+            <div className="h-1 w-1/3 rounded-full bg-white/90" />
+          </div>
+          <div className="flex gap-1">
+            <div className="flex-1 space-y-0.5">
+              <div className={cn(line, 'h-0.5 w-4/5')} />
+              <div className={cn(line, 'h-0.5 w-3/5')} />
+            </div>
+            <div className="flex-1 space-y-0.5">
+              <div className={cn(line, 'h-0.5 w-4/5')} />
+              <div className={cn(line, 'h-0.5 w-3/5')} />
+            </div>
+          </div>
+          <div className="mt-auto space-y-0.5">
+            <div className={cn(line, 'h-0.5 w-full')} />
+            <div className={cn(line, 'h-0.5 w-full')} />
+            <div className="ms-auto h-1 w-1/3 rounded-full bg-primary/70" />
+          </div>
+        </div>
+      ) : template === 'MINIMAL' ? (
+        <div className="flex h-full flex-col gap-1.5">
+          <div className="flex items-start justify-between">
+            <div className="size-2 rounded-sm bg-muted-foreground/25" />
+            <div className={cn(line, 'h-1 w-2/5')} />
+          </div>
+          <div className="h-px w-full bg-foreground/50" />
+          <div className="flex gap-1">
+            <div className="flex-1 space-y-0.5">
+              <div className={cn(line, 'h-0.5 w-4/5')} />
+              <div className={cn(line, 'h-0.5 w-3/5')} />
+            </div>
+            <div className="flex-1 space-y-0.5">
+              <div className={cn(line, 'h-0.5 w-4/5')} />
+              <div className={cn(line, 'h-0.5 w-3/5')} />
+            </div>
+          </div>
+          <div className="h-px w-full bg-foreground/50" />
+          <div className="mt-auto space-y-0.5">
+            <div className={cn(line, 'h-0.5 w-full')} />
+            <div className="ms-auto h-1 w-1/3 rounded-full bg-primary/70" />
+          </div>
+        </div>
+      ) : (
+        <div className="flex h-full flex-col gap-1">
+          <div className="flex items-start justify-between">
+            <div className="size-2.5 rounded-sm bg-primary/60" />
+            <div className="space-y-0.5">
+              <div className={cn(line, 'h-0.5 w-6')} />
+              <div className={cn(line, 'h-0.5 w-5')} />
+              <div className={cn(line, 'h-0.5 w-6')} />
+            </div>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <div className="h-px flex-1 bg-muted-foreground/40" />
+            <div className={cn(line, 'h-1 w-1/4 bg-foreground/60')} />
+            <div className="h-px flex-1 bg-muted-foreground/40" />
+          </div>
+          <div className="space-y-0.5">
+            <div className={cn(line, 'h-0.5 w-1/2')} />
+            <div className={cn(line, 'h-0.5 w-2/5')} />
+          </div>
+          <div className="mt-auto space-y-0.5">
+            <div className={cn(line, 'h-0.5 w-full')} />
+            <div className={cn(line, 'h-0.5 w-full')} />
+            <div className="ms-auto h-1 w-1/3 rounded-full bg-primary/70" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

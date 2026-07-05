@@ -32,6 +32,10 @@ export const FONT = {
   bold: 'Body-Bold',
   italic: 'Body-Italic',
   arabic: 'Arabic',
+  /** Space Grotesk — brand face used by invoice PDFs (receipts keep DejaVu). */
+  grotesk: 'Grotesk',
+  groteskMedium: 'Grotesk-Medium',
+  groteskBold: 'Grotesk-Bold',
 } as const;
 
 const FILES: Record<string, string> = {
@@ -39,6 +43,9 @@ const FILES: Record<string, string> = {
   [FONT.bold]: 'DejaVuSerif-Bold.ttf',
   [FONT.italic]: 'DejaVuSerif-Italic.ttf',
   [FONT.arabic]: 'Amiri-Regular.ttf',
+  [FONT.grotesk]: 'SpaceGrotesk-Regular.ttf',
+  [FONT.groteskMedium]: 'SpaceGrotesk-Medium.ttf',
+  [FONT.groteskBold]: 'SpaceGrotesk-Bold.ttf',
 };
 
 /** Read + cache a font file once. Null-safe: a missing file just skips that face. */
@@ -89,4 +96,15 @@ export function fontFor(opts: { bold?: boolean; italic?: boolean; arabic?: boole
   if (opts.bold) return FONT.bold;
   if (opts.italic) return FONT.italic;
   return FONT.body;
+}
+
+/**
+ * Invoice face (Space Grotesk). Arabic text (e.g. a client name) falls back to
+ * Amiri — Grotesk has no Arabic coverage.
+ */
+export function invoiceFontFor(opts: { bold?: boolean; medium?: boolean; arabic?: boolean } = {}): string {
+  if (opts.arabic) return FONT.arabic;
+  if (opts.bold) return FONT.groteskBold;
+  if (opts.medium) return FONT.groteskMedium;
+  return FONT.grotesk;
 }

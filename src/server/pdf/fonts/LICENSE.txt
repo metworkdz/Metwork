@@ -185,3 +185,11 @@ has requested that any alterations which yield different font metrics be
 given a different name.
 
 $Id$
+
+Space Grotesk (SpaceGrotesk-Regular.ttf, SpaceGrotesk-Medium.ttf, SpaceGrotesk-Bold.ttf)
+-----------------------------------------------------------------------------------------
+Copyright 2020 The Space Grotesk Project Authors
+(https://github.com/floriankarsten/space-grotesk)
+Licensed under the SIL Open Font License, Version 1.1
+(https://scripts.sil.org/OFL). Static instances of the variable font, vendored
+for invoice PDF generation.

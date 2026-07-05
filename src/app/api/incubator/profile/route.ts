@@ -24,6 +24,16 @@ const patchSchema = z.object({
   address: z.string().max(500).nullable().optional(),
   commercialRegNumber: z.string().max(100).nullable().optional(),
   nif: z.string().max(100).nullable().optional(),
+  nis: z.string().max(100).nullable().optional(),
+  ai: z.string().max(100).nullable().optional(),
+  // Bank details — printed on VIREMENT invoices
+  bankName: z.string().max(120).nullable().optional(),
+  bankRib: z.string().max(40).nullable().optional(),
+  // Invoicing settings — footer contact + defaults for new invoices
+  contactEmail: z.string().email().max(200).nullable().optional(),
+  contactPhone: z.string().max(30).nullable().optional(),
+  defaultVatRate: z.number().min(0).max(100).nullable().optional(),
+  invoiceTemplate: z.enum(['CLASSIC', 'GREEN_BAND', 'MINIMAL']).nullable().optional(),
   // User-level fields
   fullName: z.string().min(2).max(120).optional(),
   avatarUrl: z.string().url().nullable().optional(),
@@ -80,6 +90,14 @@ export async function PATCH(req: NextRequest) {
     if (input.address !== undefined) incubator.address = input.address ?? null;
     if (input.commercialRegNumber !== undefined) incubator.commercialRegNumber = input.commercialRegNumber ?? null;
     if (input.nif !== undefined) incubator.nif = input.nif ?? null;
+    if (input.nis !== undefined) incubator.nis = input.nis ?? null;
+    if (input.ai !== undefined) incubator.ai = input.ai ?? null;
+    if (input.bankName !== undefined) incubator.bankName = input.bankName ?? null;
+    if (input.bankRib !== undefined) incubator.bankRib = input.bankRib ?? null;
+    if (input.contactEmail !== undefined) incubator.contactEmail = input.contactEmail ?? null;
+    if (input.contactPhone !== undefined) incubator.contactPhone = input.contactPhone ?? null;
+    if (input.defaultVatRate !== undefined) incubator.defaultVatRate = input.defaultVatRate ?? null;
+    if (input.invoiceTemplate !== undefined) incubator.invoiceTemplate = input.invoiceTemplate ?? null;
     if (input.subscriptionTier !== undefined) incubator.subscriptionTier = input.subscriptionTier;
     incubator.updatedAt = now;
 

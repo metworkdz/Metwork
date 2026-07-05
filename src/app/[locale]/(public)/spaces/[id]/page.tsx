@@ -210,10 +210,21 @@ export default async function SpaceDetailPage({ params }: PageProps) {
         <div className="lg:col-span-2">
           <div className="sticky top-20 space-y-4 rounded-2xl border border-border bg-card p-6">
             {isDomiciliation ? (
-              <DomiciliationRequestPanel
-                spaceId={space.id}
-                availability={domAvailability ?? { total: 0, used: 0, available: 0 }}
-              />
+              <>
+                {space.pricePerMonth != null && (
+                  <div className="flex items-baseline justify-between border-b border-border pb-4">
+                    <span className="text-sm text-muted-foreground">{t('domPriceLabel')}</span>
+                    <span className="text-lg font-semibold tabular-nums">
+                      {formatCurrency(space.pricePerMonth, locale as Locale)}
+                      <span className="ms-1 text-xs font-normal text-muted-foreground">{t('domPriceSuffix')}</span>
+                    </span>
+                  </div>
+                )}
+                <DomiciliationRequestPanel
+                  spaceId={space.id}
+                  availability={domAvailability ?? { total: 0, used: 0, available: 0 }}
+                />
+              </>
             ) : (
               <>
                 {PricesBlock}

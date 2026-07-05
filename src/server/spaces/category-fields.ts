@@ -34,3 +34,15 @@ export function validateDomiciliationSlots(slots: number | null | undefined): st
   }
   return null;
 }
+
+/**
+ * Validate the monthly domiciliation price (stored in `pricePerMonth`, integer
+ * DZD). Domiciliation is request-based but must always advertise a monthly
+ * price. Returns null when valid, else a message.
+ */
+export function validateDomiciliationPrice(price: number | null | undefined): string | null {
+  if (price == null || !Number.isInteger(price) || price < 1) {
+    return 'Domiciliation requires a monthly price greater than 0';
+  }
+  return null;
+}

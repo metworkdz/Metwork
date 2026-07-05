@@ -17,6 +17,7 @@ import {
   cleanDeskNames,
   validateDeskNames,
   validateDomiciliationSlots,
+  validateDomiciliationPrice,
 } from '@/server/spaces/category-fields';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -124,6 +125,9 @@ export async function POST(req: NextRequest) {
   if (input.category === 'DOMICILIATION') {
     const slotError = validateDomiciliationSlots(input.domiciliationSlots);
     if (slotError) return jsonError(400, 'INVALID_SLOTS', slotError);
+    // Domiciliation carries no per-unit booking price but must set a monthly price.
+    const priceError = validateDomiciliationPrice(input.pricePerMonth);
+    if (priceError) return jsonError(400, 'INVALID_PRICE', priceError);
   }
   // Coworking capacity is the desk count — keep the two from diverging.
   const capacity = input.category === 'COWORKING' ? deskNames.length : input.capacity;

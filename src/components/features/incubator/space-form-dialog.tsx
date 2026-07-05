@@ -258,6 +258,8 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
     if (isDomiciliation) {
       const slots = parseInt(domiciliationSlots, 10);
       if (!Number.isInteger(slots) || slots < 1) { setError(t('errorSlots')); return; }
+      // Domiciliation advertises a mandatory monthly price (stored in pricePerMonth).
+      if (monthVal == null || monthVal < 1) { setError(t('errorDomiciliationPrice')); return; }
     }
 
     setSubmitting(true);
@@ -458,14 +460,21 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
             </div>
           )}
 
-          {/* ── DOMICILIATION: address slots ────────────────────────────── */}
+          {/* ── DOMICILIATION: address slots + monthly price ────────────── */}
           {isDomiciliation && (
             <div className="rounded-lg border border-border bg-muted/30 p-3">
               <p className="text-sm font-medium">{t('domiciliationLabel')}</p>
-              <div className="mt-2 w-40">
-                <Label htmlFor="s-slots" className="text-xs text-muted-foreground">{t('domiciliationSlots')}</Label>
-                <Input id="s-slots" type="number" min="1" className="mt-1" value={domiciliationSlots}
-                  onChange={(e) => setDomiciliationSlots(e.target.value)} placeholder="0" />
+              <div className="mt-2 flex flex-wrap gap-3">
+                <div className="w-40">
+                  <Label htmlFor="s-slots" className="text-xs text-muted-foreground">{t('domiciliationSlots')}</Label>
+                  <Input id="s-slots" type="number" min="1" className="mt-1" value={domiciliationSlots}
+                    onChange={(e) => setDomiciliationSlots(e.target.value)} placeholder="0" />
+                </div>
+                <div className="w-40">
+                  <Label htmlFor="s-dom-price" className="text-xs text-muted-foreground">{t('domiciliationPrice')}</Label>
+                  <Input id="s-dom-price" type="number" min="1" className="mt-1" value={pricePerMonth}
+                    onChange={(e) => setPricePerMonth(e.target.value)} placeholder="0" />
+                </div>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">{t('domiciliationInfo')}</p>
             </div>
