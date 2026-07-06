@@ -66,9 +66,10 @@ test.describe.serial('Manual withdrawal flow', () => {
   /* ─── 2. Payout account: bank/ccp save with the right type; invalid rejected;
    *        method must match the saved account type. ─── */
   test('payout account — bank + ccp save with the right type; invalid rejected; method gate', async () => {
-    // Invalid number (not 20 digits) → 422.
+    // Invalid number (15 digits — passes the length schema but not the
+    // 20-digit RIB/RIP rule) → 422 INVALID_ACCOUNT_NUMBER.
     const bad = await putUserPayoutAccount(explorer, {
-      accountType: 'bank', accountNumber: '12345', holderName: 'QA Explorer',
+      accountType: 'bank', accountNumber: '123456789012345', holderName: 'QA Explorer',
     });
     expect(bad.status(), `invalid RIB → ${await dump(bad)}`).toBe(422);
     expect(await errCode(bad)).toBe('INVALID_ACCOUNT_NUMBER');

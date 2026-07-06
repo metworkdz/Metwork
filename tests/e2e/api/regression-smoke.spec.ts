@@ -16,7 +16,6 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 import {
   roleContext,
-  createSpace,
   bookSpace,
   walletBalance,
   topUp,
@@ -24,38 +23,22 @@ import {
   utcWindow,
   findBookingByRef,
   clientRef,
+  SEED,
 } from './_helpers';
-import {
-  mintConsultantContext,
-  setupMentorAvailability,
-  nextUniqueSlot,
-  instantBook,
-} from './_consult-helpers';
-
-const ALL_WEEK = [0, 1, 2, 3, 4, 5, 6];
+import { nextUniqueSlot, instantBook } from './_consult-helpers';
 
 test.describe.serial('Regression smoke — payments, bookings, consultation still work', () => {
-  let inc: APIRequestContext;
-  let admin: APIRequestContext;
   let founder: APIRequestContext;
   let builder: APIRequestContext;
-  let consultant: APIRequestContext;
 
   test.beforeAll(async () => {
-    inc = await roleContext('incubator');
-    admin = await roleContext('admin');
     founder = await roleContext('founder');
     builder = await roleContext('builder');
-    ({ ctx: consultant } = await mintConsultantContext(admin));
-    await setupMentorAvailability(consultant, { minNoticeHours: 1, bufferMinutes: 0 });
   });
 
   test.afterAll(async () => {
-    await inc.dispose();
-    await admin.dispose();
     await founder.dispose();
     await builder.dispose();
-    await consultant.dispose();
   });
 
   // 8. SlickPay collection — top-up settles synchronously and credits the wallet.
@@ -66,15 +49,16 @@ test.describe.serial('Regression smoke — payments, bookings, consultation stil
     expect(await walletBalance(builder), 'credit persisted').toBe(before + 6000);
   });
 
-  // 9a. Bookings — an ONLINE space booking charges the wallet by the exact total.
+  // 9a. Bookings — an ONLINE space booking charges the wallet by the exact
+  //     total. Books the seeded HOUR-priced coworking space (Mon–Fri, 09–18)
+  //     to stay independent of the evolving space-creation schema.
   test('bookings still work: an ONLINE space booking charges the wallet by the server total', async () => {
-    const space = await createSpace(inc, { pricePerHour: 500, workingDays: ALL_WEEK });
-    const day = futureWeekdayUtc(18);
+    const day = futureWeekdayUtc(18); // a weekday (matches the seed's Mon–Fri)
     const { startsAt, endsAt } = utcWindow(day, 9, 11); // 2h → 1000 DZD
     const ref = clientRef('smoke-book');
 
     const before = await walletBalance(builder);
-    const res = await bookSpace(builder, space.id, 'HOUR', startsAt, endsAt, 'ONLINE', ref);
+    const res = await bookSpace(builder, SEED.spaceId, 'HOUR', startsAt, endsAt, 'ONLINE', ref);
     expect(res.status(), `book → ${res.status()} ${await res.text()}`).toBe(201);
     const body = await res.json();
 
@@ -83,7 +67,9 @@ test.describe.serial('Regression smoke — payments, bookings, consultation stil
     expect(findBookingByRef(ref), 'booking persisted in server state').toBeTruthy();
   });
 
-  // 9b. Consultation — an instant-book still confirms (the consultation flow).
+  // 9b. Consultation — an instant-book still confirms against the seeded
+  //     mentor's availability (no re-config needed; the consultation project
+  //     covers the deeper lifecycle).
   test('consultation still works: an instant-book confirms', async () => {
     const slot = nextUniqueSlot();
     const res = await instantBook(founder, { ...slot, durationMinutes: 60 });
