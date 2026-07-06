@@ -14,13 +14,20 @@
  * clear error and never advances the step.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { CheckCircle2, KeyRound, Mail, ShieldCheck, UserPlus } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { CheckCircle2, FileText, KeyRound, Mail, ShieldCheck, UserPlus } from 'lucide-react';
 import { ApiClientError } from '@/lib/api-client';
 import { consultantService } from '@/services/consultant.service';
-import { AppLogo, BrandButton, CP_GLOW, CP_GREEN, ErrorBanner, cpInputClass } from './shared';
+import { algerianCities, getCityName } from '@/config/cities';
+import { consultationFields, getConsultationFieldLabel } from '@/config/consultation-fields';
+import {
+  AppLogo, BrandButton, CP_GLOW, CP_GREEN, ErrorBanner, calLocale, cpInputClass,
+  uploadConsultantFile,
+} from './shared';
 
-type Step = 'email' | 'signup' | 'code' | 'setPin';
+type Step = 'email' | 'signup' | 'code' | 'cv' | 'setPin';
+
+const MAX_CV_BYTES = 5 * 1024 * 1024;
 
 function BrandHeader({ tagline }: { tagline: string }) {
   return (
@@ -51,10 +58,18 @@ export function EmailOtpSignIn() {
   const [resendIn, setResendIn] = useState(0);
 
   /* Self-signup form state */
+  const locale = calLocale(useLocale());
   const [fullName, setFullName] = useState('');
   const [position, setPosition] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
+  const [field, setField] = useState('');
+  /* CV is held client-side until the OTP verify mints a session — the upload
+     endpoint is session-guarded, so the file goes up right after verification. */
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [cvFieldError, setCvFieldError] = useState<string | null>(null);
+  const [cvUploadError, setCvUploadError] = useState<string | null>(null);
+  const [pinAlreadySet, setPinAlreadySet] = useState(false);
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -67,6 +82,7 @@ export function EmailOtpSignIn() {
   const mapErr = useCallback((err: unknown): string => {
     if (err instanceof ApiClientError) {
       switch (err.code) {
+        case 'NO_ACCOUNT': return t('errorNoAccount');
         case 'INVALID_OTP': return t('errorInvalidOtp');
         case 'OTP_EXPIRED': return t('errorOtpExpired');
         case 'OTP_LOCKED': return t('errorOtpLocked');
@@ -106,6 +122,7 @@ export function EmailOtpSignIn() {
         email: email.trim(),
         phone: phone.trim(),
         city: city.trim() || null,
+        field: field || null,
       });
       setStep('code');
       setResendIn(30);
@@ -116,13 +133,54 @@ export function EmailOtpSignIn() {
     }
   }
 
+  function onCvChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setCvFieldError(null);
+    const file = e.target.files?.[0] ?? null;
+    if (!file) { setCvFile(null); return; }
+    if (file.type !== 'application/pdf') { setCvFile(null); setCvFieldError(ts('cvTypeError')); return; }
+    if (file.size > MAX_CV_BYTES) { setCvFile(null); setCvFieldError(ts('cvSizeError')); return; }
+    setCvFile(file);
+  }
+
+  /** After the CV step (or when there is none): first sign-in sets a PIN. */
+  const afterVerify = useCallback((pinSet: boolean) => {
+    if (pinSet) done();
+    else setStep('setPin');
+  }, [done]);
+
+  /**
+   * Upload the CV using the freshly-minted session. Non-blocking by design: a
+   * failure keeps the file in memory and offers retry/skip — the account and
+   * session are already safe, and the portal has a CV re-upload in the profile.
+   */
+  async function uploadCv(pinSet: boolean) {
+    if (!cvFile) { afterVerify(pinSet); return; }
+    setBusy(true); setCvUploadError(null);
+    try {
+      await uploadConsultantFile(cvFile, 'cv');
+      setCvFile(null);
+      afterVerify(pinSet);
+    } catch (err) {
+      setCvUploadError(err instanceof Error ? err.message : ts('cvUploadFailed'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function verify(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setError(null);
     try {
       const res = await consultantService.verifyOtp(email.trim(), code.trim());
-      if (res.pinSet) done();
-      else setStep('setPin');
+      setPinAlreadySet(res.pinSet);
+      if (cvFile) {
+        // Signup path with a pending CV — session now exists, upload it.
+        setStep('cv');
+        setBusy(false);
+        void uploadCv(res.pinSet);
+        return;
+      }
+      afterVerify(res.pinSet);
     } catch (err) {
       setError(mapErr(err));
     } finally {
@@ -225,21 +283,57 @@ export function EmailOtpSignIn() {
                 placeholder="+213 555 00 00 00" dir="ltr" disabled={busy}
                 className={cpInputClass}
               />
+              <p className="text-[11px] text-white/40">{ts('phoneCountryCodeHint')}</p>
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="cp-su-city" className="text-xs font-medium text-white/70">
-                {ts('cityLabel')} <span className="font-normal text-white/40">{ts('optionalHint')}</span>
-              </label>
-              <input
-                id="cp-su-city" type="text" maxLength={120} value={city}
+              <label htmlFor="cp-su-city" className="text-xs font-medium text-white/70">{ts('cityLabel')}</label>
+              <select
+                id="cp-su-city" required value={city}
                 onChange={(e) => setCity(e.target.value)}
                 disabled={busy} className={cpInputClass}
+              >
+                <option value="" disabled className="bg-[#0D0D0D]">{ts('cityPlaceholder')}</option>
+                {algerianCities.map((c) => (
+                  // Stored value is the French display name — consistent with
+                  // every existing mentor record (rendered raw on profiles).
+                  <option key={c.code} value={c.nameFr} className="bg-[#0D0D0D]">
+                    {getCityName(c.code, locale)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="cp-su-field" className="text-xs font-medium text-white/70">{ts('fieldLabel')}</label>
+              <select
+                id="cp-su-field" required value={field}
+                onChange={(e) => setField(e.target.value)}
+                disabled={busy} className={cpInputClass}
+              >
+                <option value="" disabled className="bg-[#0D0D0D]">{ts('fieldPlaceholder')}</option>
+                {consultationFields.map((f) => (
+                  <option key={f.code} value={f.code} className="bg-[#0D0D0D]">
+                    {getConsultationFieldLabel(f.code, locale)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="cp-su-cv" className="text-xs font-medium text-white/70">{ts('cvLabel')}</label>
+              <input
+                id="cp-su-cv" type="file" accept="application/pdf" required
+                onChange={onCvChange} disabled={busy}
+                className={`${cpInputClass} h-auto cursor-pointer py-2.5 file:me-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white`}
               />
+              <p className="text-[11px] text-white/40">{ts('cvHint')}</p>
+              {cvFieldError && <p className="text-[11px] text-red-400">{cvFieldError}</p>}
             </div>
             <p className="text-[11px] leading-relaxed text-white/40">{ts('reviewNote')}</p>
             <BrandButton
               type="submit" loading={busy}
-              disabled={fullName.trim().length < 2 || position.trim().length < 2 || !email.trim() || phone.trim().length < 6}
+              disabled={
+                fullName.trim().length < 2 || position.trim().length < 2 || !email.trim() ||
+                phone.trim().length < 6 || !city || !field || !cvFile
+              }
               className="w-full"
             >
               {ts('submit')}
@@ -295,6 +389,35 @@ export function EmailOtpSignIn() {
               </button>
             </div>
           </form>
+        )}
+
+        {step === 'cv' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-white">
+              <FileText className="size-4" style={{ color: CP_GREEN }} /> {ts('cvStepHeading')}
+            </div>
+            {cvUploadError ? (
+              <>
+                <ErrorBanner message={cvUploadError} />
+                <p className="text-sm text-white/50">{ts('cvUploadFailedDesc')}</p>
+                <BrandButton
+                  type="button" loading={busy} className="w-full"
+                  onClick={() => void uploadCv(pinAlreadySet)}
+                >
+                  {ts('cvRetry')}
+                </BrandButton>
+                <button
+                  type="button" disabled={busy}
+                  onClick={() => { setCvFile(null); setCvUploadError(null); afterVerify(pinAlreadySet); }}
+                  className="w-full text-center text-xs text-white/45 underline-offset-2 hover:text-white/70 hover:underline"
+                >
+                  {ts('cvSkip')}
+                </button>
+              </>
+            ) : (
+              <p className="text-sm text-white/50">{ts('cvUploading')}</p>
+            )}
+          </div>
         )}
 
         {step === 'setPin' && (

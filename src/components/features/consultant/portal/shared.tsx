@@ -173,6 +173,28 @@ export function Spinner({ className }: { className?: string }) {
   );
 }
 
+/**
+ * POST a file to the consultant self-upload endpoint (session-guarded).
+ * Shared by the profile editor and the signup CV step — one upload path.
+ */
+export async function uploadConsultantFile(file: File, kind: 'avatar' | 'cv'): Promise<string> {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('kind', kind);
+  const res = await fetch('/api/consultant/upload', {
+    method: 'POST',
+    credentials: 'include',
+    body: fd,
+  });
+  let data: unknown = null;
+  try { data = await res.json(); } catch { /* handled below */ }
+  if (!res.ok) {
+    const errBody = data as { error?: { message?: string } } | null;
+    throw new Error(errBody?.error?.message ?? `Upload failed (${res.status})`);
+  }
+  return (data as { url: string }).url;
+}
+
 /** Inline error banner. */
 export function ErrorBanner({ message }: { message: string }) {
   return (

@@ -87,6 +87,32 @@ export async function verifyConsultantOtp(
   return verifyOtp(OTP_KEY_PREFIX + mentorId, code);
 }
 
+/* ─────────────────────── Phone verification (SMS OTP) ─────────────────────── */
+
+/**
+ * Separate key namespace from the sign-in OTP: verifying a phone can never
+ * consume (or be satisfied by) a login code. Same hashed-at-rest, single-use,
+ * 10-min-expiry, attempt-lockout machinery.
+ */
+const PHONE_OTP_KEY_PREFIX = 'mentor-phone:';
+
+/** Issue a phone-verification OTP for an authenticated consultant. */
+export async function issueConsultantPhoneOtp(mentorId: string): Promise<{ code: string }> {
+  const { code } = await issueOtp(PHONE_OTP_KEY_PREFIX + mentorId);
+  return { code };
+}
+
+/**
+ * Verify a phone-verification OTP. On success the caller flips
+ * `phoneVerified` — this helper only checks the code.
+ */
+export async function verifyConsultantPhoneOtp(
+  mentorId: string,
+  code: string,
+): Promise<OtpVerifyResult> {
+  return verifyOtp(PHONE_OTP_KEY_PREFIX + mentorId, code);
+}
+
 /* ─────────────────────────── Session ─────────────────────────── */
 
 export interface IssuedConsultantSession {

@@ -37,7 +37,10 @@ import {
   resolveMentorIdByDeviceToken,
   revokeMentorDeviceToken,
   isValidPinFormat,
+  issueConsultantPhoneOtp,
+  verifyConsultantPhoneOtp,
 } from '@/server/mentors/access';
+import { updateMentor } from '@/server/mentors/service';
 
 const MENTOR_A: MentorRecord = {
   id: 'm-a', fullName: 'Mentor A', position: 'Advisor', imageUrl: '',
@@ -229,5 +232,50 @@ describe('remembered device tokens', () => {
     const device = await issueMentorDeviceToken('m-a');
     await db.update((d) => { d.mentors = d.mentors.filter((m) => m.id !== 'm-a'); });
     expect(await resolveMentorIdByDeviceToken(device.token)).toBeNull();
+  });
+});
+
+describe('phone verification OTP', () => {
+  it('issues and verifies a phone OTP once (single-use)', async () => {
+    const { code } = await issueConsultantPhoneOtp('m-a');
+    expect(code).toMatch(/^\d{6}$/);
+    expect((await verifyConsultantPhoneOtp('m-a', code)).ok).toBe(true);
+    // Single-use: the same code cannot be replayed.
+    expect((await verifyConsultantPhoneOtp('m-a', code)).ok).toBe(false);
+  });
+
+  it('is namespace-isolated from the sign-in OTP', async () => {
+    const login = await issueConsultantOtp('a@example.com');
+    const phone = await issueConsultantPhoneOtp('m-a');
+    // A login code never satisfies phone verification, and vice versa —
+    // even for the same mentor and even when the codes coincidentally match.
+    if (login!.code !== phone.code) {
+      expect((await verifyConsultantPhoneOtp('m-a', login!.code)).ok).toBe(false);
+      expect((await verifyConsultantOtp('m-a', phone.code)).ok).toBe(false);
+    }
+    // Each namespace still verifies its own code.
+    expect((await verifyConsultantPhoneOtp('m-a', phone.code)).ok).toBe(true);
+    expect((await verifyConsultantOtp('m-a', login!.code)).ok).toBe(true);
+  });
+
+  it('is scoped per mentor', async () => {
+    const { code } = await issueConsultantPhoneOtp('m-a');
+    expect((await verifyConsultantPhoneOtp('m-b', code)).ok).toBe(false);
+  });
+});
+
+describe('phone change resets verification', () => {
+  it('updateMentor flips phoneVerified off when the number changes, keeps it when unchanged', async () => {
+    await db.update((d) => {
+      const m = d.mentors.find((x) => x.id === 'm-a')!;
+      m.phone = '+213555000000';
+      m.phoneVerified = true;
+    });
+    // Unrelated edit — verification survives.
+    const same = await updateMentor('m-a', { phone: '+213555000000', bio: 'hello' });
+    expect(same.ok && same.mentor.phoneVerified).toBe(true);
+    // New number — verification is invalidated.
+    const changed = await updateMentor('m-a', { phone: '+213666000000' });
+    expect(changed.ok && changed.mentor.phoneVerified).toBe(false);
   });
 });

@@ -67,9 +67,19 @@ export interface Mentor {
   phone?: string | null;
   /** Consultant's city — PUBLIC (shown pre-booking for in-person sessions). */
   city?: string | null;
+  /** Consultation domain (e.g. "Fiscalité") — PUBLIC. Distinct from `topics` tags. */
+  field?: string | null;
+  /**
+   * Canonical profile picture. Always populated by the serializer
+   * (falls back to `imageUrl` for legacy records) — prefer this over
+   * `imageUrl` in new UI.
+   */
+  avatarUrl?: string | null;
   /** Per-session fee in DZD. 0 or absent = free. */
   consultationFee?: number;
   createdAt: string;
+  /** ISO timestamp of the last mutation. Absent on untouched legacy records. */
+  updatedAt?: string;
 
   // ─── Availability (Airbnb-style scheduling) — all optional for back-compat ───
   /** Recurring weekly template, mentor's local time. */
@@ -109,6 +119,12 @@ export interface Mentor {
   approvalRejectionReason?: string | null;
   /** Uploaded CV URL (PRIVATE — consultant-self / admin DTO only). */
   cvUrl?: string | null;
+  /** Record origin (PRIVATE — consultant-self / admin DTO only). Absent ⇒ 'ADMIN'. */
+  source?: 'ADMIN' | 'SELF';
+  /** Public-list visibility (PRIVATE DTO only; the public list is already filtered). */
+  publiclyListed?: boolean;
+  /** Phone verification state (PRIVATE — consultant-self / admin DTO only). */
+  phoneVerified?: boolean;
 }
 
 export interface MentorInput {

@@ -20,7 +20,21 @@
       "reviewNote": "By creating an account you agree to be contacted about your application. Your profile stays private until approved.",
       "submit": "Create account",
       "alreadyHaveAccount": "Already have an account?",
-      "backToSignIn": "Sign in"
+      "backToSignIn": "Sign in",
+      "phoneCountryCodeHint": "International format with country code (e.g. +213…).",
+      "cityPlaceholder": "Select your wilaya",
+      "fieldLabel": "Consultation domain",
+      "fieldPlaceholder": "Select your domain",
+      "cvLabel": "CV (PDF)",
+      "cvHint": "PDF only, 5 MB max.",
+      "cvTypeError": "The CV must be a PDF file.",
+      "cvSizeError": "The file exceeds 5 MB.",
+      "cvStepHeading": "Uploading your CV",
+      "cvUploading": "Uploading your CV…",
+      "cvUploadFailed": "The CV upload failed.",
+      "cvUploadFailedDesc": "Your account is created. You can retry now or upload your CV later from your profile.",
+      "cvRetry": "Retry",
+      "cvSkip": "Continue without CV (you can upload it from your profile)"
     },
     "approval": {
       "pendingTitle": "Your profile is under review",
@@ -59,7 +73,8 @@
       "errorOtpLocked": "Too many attempts. Request a new code.",
       "errorRateLimited": "Too many requests. Please wait a few minutes and try again.",
       "errorGeneric": "Something went wrong. Please try again.",
-      "secureNote": "Secure access — a one-time code, no password to remember."
+      "secureNote": "Secure access — a one-time code, no password to remember.",
+      "errorNoAccount": "No account is linked to this email. Create an account."
     },
     "profile": {
       "uploadPhoto": "Change photo",
@@ -273,6 +288,31 @@
     "hero": {
       "withdraw": "Withdraw",
       "editHours": "Edit hours"
+    },
+    "phoneVerify": {
+      "tagline": "Phone number verification",
+      "heading": "Verify your number",
+      "introDesc": "We'll text a 6-digit code to the phone number on your account.",
+      "sendCode": "Send code by SMS",
+      "secureNote": "Single-use code, valid for 10 minutes.",
+      "codeSent": "Code sent by SMS",
+      "codeLabel": "Verification code",
+      "verify": "Verify",
+      "back": "Back",
+      "resend": "Resend code",
+      "resendCountdown": "Resend in {seconds}s",
+      "backToDashboard": "Back to dashboard",
+      "verifiedTitle": "Number verified",
+      "verifiedDesc": "Your phone number is confirmed.",
+      "alreadyVerified": "This number is already verified.",
+      "errorNoPhone": "No phone number on your account. Add one from your profile.",
+      "errorInvalidOtp": "Invalid or expired code.",
+      "errorOtpExpired": "This code has expired. Request a new one.",
+      "errorOtpLocked": "Too many attempts. Request a new code.",
+      "errorRateLimited": "Too many requests. Try again later.",
+      "errorGeneric": "Something went wrong. Please try again.",
+      "bannerTitle": "Phone number not verified",
+      "bannerBody": "Verify your number by SMS to secure your account."
     }
   },
   "common": {
@@ -3730,7 +3770,20 @@
       "revoke": "Revoke access",
       "revoked": "Access revoked. The previous link no longer works.",
       "linkError": "Couldn't generate the link. Please try again.",
-      "copyFailed": "Couldn't copy automatically — select the link and copy it manually."
+      "copyFailed": "Couldn't copy automatically — select the link and copy it manually.",
+      "reviewApplication": "Review application",
+      "reviewDialogTitle": "Consultant application",
+      "reviewDialogDescription": "{name}'s file — check the details and CV before deciding.",
+      "reviewFullName": "Full name",
+      "reviewPosition": "Position",
+      "reviewEmail": "Email",
+      "reviewPhone": "Phone",
+      "reviewPhoneVerified": "Verified",
+      "reviewPhoneUnverified": "Not verified",
+      "reviewCity": "Wilaya",
+      "reviewField": "Domain",
+      "reviewOpenCv": "Open CV (PDF)",
+      "reviewNoCv": "No CV uploaded."
     },
     "mentorAvailability": {
       "title": "Availability",

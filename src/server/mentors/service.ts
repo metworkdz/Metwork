@@ -3,7 +3,7 @@ import { db, type MentorRecord } from '@/server/db/store';
 import type { CreateMentorInput, UpdateMentorInput, MentorAvailabilityPatch } from './schemas';
 import { DEFAULT_AVAILABILITY_TIMEZONE } from '@/types/mentor';
 import { slugify, uniqueSlug } from '@/lib/slugify';
-import { isMentorApproved } from '@/lib/mentor-approval';
+import { isMentorApproved, isMentorPubliclyListed } from '@/lib/mentor-approval';
 
 /**
  * Derive a unique slug for a mentor from their full name, avoiding collisions
@@ -57,12 +57,14 @@ export async function listMentors(): Promise<MentorRecord[]> {
 
 /**
  * Canonical PUBLIC mentor list — the only list resolver public surfaces may
- * use. Hides non-APPROVED consultants (self-signups pending admin review).
- * Legacy admin-added mentors lack `approvalStatus` and are grandfathered as
- * APPROVED by `isMentorApproved`, so nothing existing ever disappears.
+ * use. Shows ADMIN-sourced, APPROVED, publicly-listed mentors only:
+ * self-signed-up consultants never appear here (even after approval — they
+ * are reachable solely via their direct slug link). Legacy admin-added
+ * mentors lack all three fields and are grandfathered as listed by
+ * `isMentorPubliclyListed`, so nothing existing ever disappears.
  */
 export async function listPublicMentors(): Promise<MentorRecord[]> {
-  return (await listMentors()).filter(isMentorApproved);
+  return (await listMentors()).filter(isMentorPubliclyListed);
 }
 
 export async function findMentorById(id: string): Promise<MentorRecord | null> {
@@ -112,12 +114,17 @@ export async function createMentor(input: CreateMentorInput): Promise<MentorReco
       city: input.city?.trim() || null,
       consultationFee: input.consultationFee ?? 0,
       createdAt: now,
+      updatedAt: now,
       minNoticeHours: input.minNoticeHours ?? null,
       bufferMinutes: input.bufferMinutes ?? null,
       topics: normalizeTopics(input.topics),
       ratePer30: input.ratePer30 ?? null,
       ratePer60: input.ratePer60 ?? null,
       freeIntroEnabled: input.freeIntroEnabled ?? null,
+      source: 'ADMIN',
+      approvalStatus: 'APPROVED',
+      publiclyListed: true,
+      avatarUrl: input.imageUrl.trim(),
     };
     d.mentors.push(record);
     return record;
@@ -144,6 +151,7 @@ export async function createSelfSignupMentor(input: {
   phone: string;
   city?: string | null;
   bio?: string | null;
+  field?: string | null;
 }): Promise<SelfSignupResult> {
   const now = new Date().toISOString();
   const id = randomUUID();
@@ -160,16 +168,23 @@ export async function createSelfSignupMentor(input: {
       position: input.position.trim(),
       // Placeholder avatar until the consultant uploads one from the portal.
       imageUrl: '/assets/profilelogogreen.png',
+      avatarUrl: '/assets/profilelogogreen.png',
       slug: deriveMentorSlug(fullName, id, d.mentors),
       bio: input.bio?.trim() || null,
       linkedinUrl: null,
       email,
       phone: input.phone.trim(),
+      phoneVerified: false,
       city: input.city?.trim() || null,
+      field: input.field?.trim() || null,
       consultationFee: 0,
       createdAt: now,
+      updatedAt: now,
       approvalStatus: 'PENDING',
       source: 'SELF',
+      // Self-signups are NEVER on public list surfaces, even once approved —
+      // clients reach them via the direct slug/booking link only.
+      publiclyListed: false,
     };
     d.mentors.push(record);
     return { ok: true, mentor: record };
@@ -192,11 +207,21 @@ export async function updateMentor(
     // stable so shared profile URLs never break after an edit.
     if (!m.slug) m.slug = deriveMentorSlug(m.fullName, m.id, d.mentors);
     if (patch.position !== undefined) m.position = patch.position.trim();
-    if (patch.imageUrl !== undefined) m.imageUrl = patch.imageUrl.trim();
+    if (patch.imageUrl !== undefined) {
+      m.imageUrl = patch.imageUrl.trim();
+      // avatarUrl is the canonical picture; keep it in lockstep so both the
+      // legacy imageUrl readers and the avatar resolver see the same image.
+      m.avatarUrl = m.imageUrl;
+    }
     if (patch.bio !== undefined) m.bio = patch.bio?.trim() || null;
     if (patch.linkedinUrl !== undefined) m.linkedinUrl = patch.linkedinUrl?.trim() || null;
     if (patch.email !== undefined) m.email = patch.email?.trim() || null;
-    if (patch.phone !== undefined) m.phone = patch.phone?.trim() || null;
+    if (patch.phone !== undefined) {
+      const nextPhone = patch.phone?.trim() || null;
+      // A different number invalidates the previous SMS verification.
+      if (nextPhone !== (m.phone ?? null)) m.phoneVerified = false;
+      m.phone = nextPhone;
+    }
     if (patch.city !== undefined) m.city = patch.city?.trim() || null;
     if (patch.consultationFee !== undefined) m.consultationFee = patch.consultationFee;
     if (patch.minNoticeHours !== undefined) m.minNoticeHours = patch.minNoticeHours;
@@ -205,6 +230,7 @@ export async function updateMentor(
     if (patch.ratePer30 !== undefined) m.ratePer30 = patch.ratePer30;
     if (patch.ratePer60 !== undefined) m.ratePer60 = patch.ratePer60;
     if (patch.freeIntroEnabled !== undefined) m.freeIntroEnabled = patch.freeIntroEnabled;
+    m.updatedAt = new Date().toISOString();
     return { ok: true, mentor: m };
   });
 }
@@ -230,6 +256,7 @@ export async function updateMentorMeetingDefaults(
     if (patch.defaultMeetingLink !== undefined) m.defaultMeetingLink = patch.defaultMeetingLink?.trim() || null;
     if (patch.defaultMeetingAddress !== undefined) m.defaultMeetingAddress = patch.defaultMeetingAddress?.trim() || null;
     if (patch.defaultMeetingMapsLink !== undefined) m.defaultMeetingMapsLink = patch.defaultMeetingMapsLink?.trim() || null;
+    m.updatedAt = new Date().toISOString();
     return { ok: true, mentor: m };
   });
 }
@@ -255,6 +282,7 @@ export async function updateMentorAvailability(
       }));
     m.blockedDates = Array.from(new Set(patch.blockedDates)).sort();
     m.availabilityTimezone = patch.availabilityTimezone?.trim() || DEFAULT_AVAILABILITY_TIMEZONE;
+    m.updatedAt = new Date().toISOString();
     return { ok: true, mentor: m };
   });
 }
