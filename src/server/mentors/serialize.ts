@@ -50,5 +50,9 @@ export function toMentorPrivateDto(m: MentorRecord): Mentor {
     phone: m.phone ?? null,
     defaultMeetingAddress: m.defaultMeetingAddress ?? null,
     defaultMeetingMapsLink: m.defaultMeetingMapsLink ?? null,
+    // Approval gate — absent ⇒ APPROVED (legacy admin-added mentors).
+    approvalStatus: m.approvalStatus ?? 'APPROVED',
+    approvalRejectionReason: m.approvalRejectionReason ?? null,
+    cvUrl: m.cvUrl ?? null,
   };
 }

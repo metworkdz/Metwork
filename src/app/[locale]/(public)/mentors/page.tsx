@@ -6,7 +6,7 @@ import { Container } from '@/components/ui/container';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MentorsDirectory } from '@/components/features/mentors/mentors-directory';
-import { listMentors } from '@/server/mentors/service';
+import { listPublicMentors } from '@/server/mentors/service';
 import { toMentorDto } from '@/server/mentors/serialize';
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +26,7 @@ export default async function MentorsPage({ params }: PageProps) {
   setRequestLocale(locale);
 
   const [mentors, t] = await Promise.all([
-    listMentors().then((list) => list.map(toMentorDto)),
+    listPublicMentors().then((list) => list.map(toMentorDto)),
     getTranslations('pages.mentors'),
   ]);
 

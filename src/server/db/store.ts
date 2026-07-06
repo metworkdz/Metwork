@@ -729,7 +729,9 @@ export type AuditAction =
   | 'WITHDRAWAL_REJECTED'
   | 'PAYOUT_BANK_ACCOUNT_SET'
   | 'PAYOUT_SENT'
-  | 'ACCOUNT_DELETED';
+  | 'ACCOUNT_DELETED'
+  | 'MENTOR_APPROVED'
+  | 'MENTOR_REJECTED';
 
 export interface AuditLogRecord {
   id: string;
@@ -1669,6 +1671,25 @@ export interface MentorRecord {
 
   /** Payout account on file (RIB or CCP RIP + holder name). */
   payoutAccount?: PayoutAccount | null;
+
+  // ─── Self-signup + admin approval (consultant portal) ───────────────────
+  // All additive & optional. Admin-added mentors predate these fields and are
+  // grandfathered as APPROVED/ADMIN by `getMentorApprovalStatus` — they keep
+  // working (and stay publicly visible) unchanged.
+
+  /**
+   * Approval state for self-signed-up consultants. Mirrors the account gate
+   * (PENDING | APPROVED | REJECTED). Absent ⇒ APPROVED (legacy admin-added
+   * mentors were implicitly vetted). Only APPROVED mentors are listed
+   * publicly / bookable.
+   */
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  /** Rejection reason shown to the consultant. Set only when REJECTED. */
+  approvalRejectionReason?: string | null;
+  /** Record origin: 'ADMIN' (dashboard-created) | 'SELF' (portal signup). Absent ⇒ 'ADMIN'. */
+  source?: 'ADMIN' | 'SELF';
+  /** Uploaded CV/resume URL (Cloudinary or /uploads fallback). PRIVATE — admin review only. */
+  cvUrl?: string | null;
 }
 
 /* ─────────────────── CRM — Clients ─────────────────── */

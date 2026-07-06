@@ -30,6 +30,7 @@ import {
   type WalletRecord,
 } from '@/server/db/store';
 import { findMentorById } from '@/server/mentors/service';
+import { isMentorApproved } from '@/lib/mentor-approval';
 import { computeConsultationCharge, type ConsultationChargeBreakdown } from './pricing';
 import { computeBookableSlots } from '@/server/mentors/availability';
 import { lockSlot, releaseSlot } from '@/server/mentors/slot-lock';
@@ -253,7 +254,10 @@ export async function createInstantBooking(
   input: CreateInstantBookingInput,
 ): Promise<CreateInstantBookingResult> {
   const mentor = await findMentorById(input.mentorId);
-  if (!mentor) return { ok: false, reason: 'MENTOR_NOT_FOUND' };
+  // Non-APPROVED consultants (pending/rejected self-signups) are not bookable —
+  // collapse to NOT_FOUND, exactly like the public profile route. This gates
+  // NEW bookings only; settlement paths for existing bookings are untouched.
+  if (!mentor || !isMentorApproved(mentor)) return { ok: false, reason: 'MENTOR_NOT_FOUND' };
 
   const isGuest = !input.actor;
   const charge = computeConsultationCharge({

@@ -5,7 +5,7 @@ import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { db } from '@/server/db/store';
-import { DEFAULT_COMMISSION_RULES } from '@/server/admin/settings-defaults';
+import { resolveMentorCommissionRates } from '@/server/payments/mentor-commission';
 import { getConsultationRevenueSummary } from '@/server/mentors/revenue';
 
 interface PageProps {
@@ -27,12 +27,13 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
   const revenue = await getConsultationRevenueSummary();
   const subsidyByMentor = new Map(revenue.perMentor.map((m) => [m.mentorId, m]));
 
-  // Find the mentor consultation commission rate
-  const consultationRule =
-    data.commissionRules.find((r) => r.transactionType === 'MENTOR_CONSULTATION' && r.isActive) ??
-    DEFAULT_COMMISSION_RULES.find((r) => r.transactionType === 'MENTOR_CONSULTATION');
-  const platformRate = consultationRule?.rate ?? 0.30;
-  const mentorRate   = 1 - platformRate;
+  // Commission rates are tiered by record origin: standard (admin-added /
+  // legacy) mentors vs self-signed-up consultants (20 % default). Both rates
+  // come from the SAME resolver settlement uses, so this page always previews
+  // what the ledger will actually do. Configurable on the Commissions page.
+  const standardRates = resolveMentorCommissionRates(data.commissionRules);
+  const selfRates = resolveMentorCommissionRates(data.commissionRules, { source: 'SELF' });
+  const { platformRate, mentorRate } = standardRates;
 
   const bookings = data.mentorBookings ?? [];
   const approved  = bookings.filter((b) => b.status === 'APPROVED');
@@ -43,6 +44,11 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
     id: string;
     name: string;
     fee: number;
+    /** 'SELF' = portal self-signup (new-consultant rate). */
+    source: 'ADMIN' | 'SELF';
+    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    platformRate: number;
+    mentorRate: number;
     total: number;
     approved: number;
     pending: number;
@@ -54,10 +60,16 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
 
   const statMap = new Map<string, MentorStat>();
   for (const m of data.mentors ?? []) {
+    const source = m.source === 'SELF' ? 'SELF' as const : 'ADMIN' as const;
+    const rates = source === 'SELF' ? selfRates : standardRates;
     statMap.set(m.id, {
       id:             m.id,
       name:           m.fullName,
       fee:            m.consultationFee ?? 0,
+      source,
+      approvalStatus: m.approvalStatus ?? 'APPROVED',
+      platformRate:   rates.platformRate,
+      mentorRate:     rates.mentorRate,
       total:          0,
       approved:       0,
       pending:        0,
@@ -83,8 +95,9 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
       stat.approved++;
       const gross = b.amountCharged ?? stat.fee;
       stat.grossRevenue   += gross;
-      stat.platformCut    += Math.round(gross * platformRate);
-      stat.mentorEarnings += Math.round(gross * mentorRate);
+      // Per-mentor rate (standard vs self-signup tier).
+      stat.platformCut    += Math.round(gross * stat.platformRate);
+      stat.mentorEarnings += Math.round(gross * stat.mentorRate);
     } else if (PENDING.has(b.status)) {
       stat.pending++;
     } else {
@@ -104,7 +117,12 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
     <div className="space-y-6">
       <DashboardPageHeader
         title={t('admin.mentorRevenue.title')}
-        subtitle={t('admin.mentorRevenue.subtitle', { platformRate: Math.round(platformRate * 100), mentorRate: Math.round(mentorRate * 100) })}
+        subtitle={t('admin.mentorRevenue.subtitleDual', {
+          platformRate: Math.round(platformRate * 100),
+          mentorRate: Math.round(mentorRate * 100),
+          selfPlatformRate: Math.round(selfRates.platformRate * 100),
+          selfMentorRate: Math.round(selfRates.mentorRate * 100),
+        })}
         action={<TrendingUp className="size-5 text-muted-foreground" />}
       />
 
@@ -172,10 +190,11 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
                   <tr className="border-b border-border/60 bg-muted/30">
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Mentor</th>
                     <th className="px-4 py-3 text-right font-medium text-muted-foreground">Fee / session</th>
+                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">{t('admin.mentorRevenue.commissionCol')}</th>
                     <th className="px-4 py-3 text-right font-medium text-muted-foreground">Sessions</th>
                     <th className="px-4 py-3 text-right font-medium text-muted-foreground">Gross revenue</th>
-                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">Platform ({Math.round(platformRate * 100)}%)</th>
-                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">Mentor ({Math.round(mentorRate * 100)}%)</th>
+                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">Platform</th>
+                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">Mentor</th>
                     <th className="px-4 py-3 text-right font-medium text-muted-foreground">{t('admin.mentorRevenue.promoSubsidyShort')}</th>
                     <th className="px-4 py-3 text-center font-medium text-muted-foreground">Status</th>
                   </tr>
@@ -183,9 +202,24 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
                 <tbody>
                   {stats.map((m) => (
                     <tr key={m.id} className="border-b border-border/40 last:border-0 hover:bg-muted/20">
-                      <td className="px-4 py-3 font-medium">{m.name}</td>
+                      <td className="px-4 py-3 font-medium">
+                        {m.name}
+                        {m.source === 'SELF' && (
+                          <Badge variant="info" className="ms-2 text-[10px]">
+                            {t('admin.mentorRevenue.selfSignupBadge')}
+                          </Badge>
+                        )}
+                        {m.approvalStatus === 'PENDING' && (
+                          <Badge variant="warning" className="ms-2 text-[10px]">
+                            {t('admin.mentorRevenue.pendingApprovalBadge')}
+                          </Badge>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-right tabular-nums">
                         {m.fee > 0 ? fmt(m.fee) : <span className="text-muted-foreground">Free</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                        {Math.round(m.platformRate * 100)}%
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums">
                         <span className="font-semibold text-foreground">{m.approved}</span>
@@ -218,7 +252,7 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
                 {stats.length > 1 && (
                   <tfoot>
                     <tr className="border-t-2 border-border bg-muted/30 font-semibold">
-                      <td className="px-4 py-3" colSpan={3}>Total</td>
+                      <td className="px-4 py-3" colSpan={4}>Total</td>
                       <td className="px-4 py-3 text-right tabular-nums">{fmt(totalGross)}</td>
                       <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{fmt(totalPlatform)}</td>
                       <td className="px-4 py-3 text-right tabular-nums text-emerald-700">{fmt(totalMentor)}</td>

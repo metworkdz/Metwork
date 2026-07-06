@@ -187,11 +187,14 @@ export function ConsultationsPanel({
 
   // Show the prominent quota card only for paid tiers that grant free sessions.
   const showQuotaCard = !!membershipCode && freeQuota > 0;
-  const tierLabel = membershipCode === 'ENTREPRENEUR'
-    ? t('tierBuilder')
-    : membershipCode === 'STARTUP'
-      ? t('tierFounder')
-      : '';
+  // Both naming systems map to the same display tiers: old membershipCode
+  // (ENTREPRENEUR/STARTUP) and new membershipTier (BUILDER/FOUNDER).
+  const tierLabel =
+    membershipCode === 'ENTREPRENEUR' || membershipCode === 'BUILDER'
+      ? t('tierBuilder')
+      : membershipCode === 'STARTUP' || membershipCode === 'FOUNDER'
+        ? t('tierFounder')
+        : '';
   const resetDateLabel = quotaResetISO
     ? formatDate(quotaResetISO, locale, { dateStyle: 'long' })
     : '';
@@ -202,6 +205,10 @@ export function ConsultationsPanel({
   const [message,  setMessage]  = useState('');
   const [duration, setDuration] = useState<number>(60);
   const [promoResult, setPromoResult] = useState<PromoResult | null>(null);
+  const [useFreeCredit, setUseFreeCredit] = useState(false);
+  // Free credits consumed in this client session (optimistic) — keeps the
+  // dialog honest after a successful free booking without a server round-trip.
+  const [freeUsedThisSession, setFreeUsedThisSession] = useState(0);
 
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState<string | null>(null);
@@ -212,11 +219,15 @@ export function ConsultationsPanel({
   } | null>(null);
 
   /* Derived pricing */
+  const remainingNow   = Math.max(0, remaining - freeUsedThisSession);
   const selectedMentor = mentors.find((m) => m.id === selectedMentorId);
   const feePerHour     = selectedMentor?.consultationFee ?? 0;
   const basePrice      = computePrice(feePerHour, duration);
-  const discountAmt    = promoResult ? promoResult.discountAmount : 0;
-  const finalPrice     = promoResult ? promoResult.finalAmount : basePrice;
+  // A free monthly credit collapses the whole charge to 0 (promo suppressed) —
+  // mirrors the server-authoritative math in computeConsultationCharge.
+  const applyFreeCredit = useFreeCredit && remainingNow > 0 && basePrice > 0;
+  const discountAmt    = applyFreeCredit ? 0 : (promoResult ? promoResult.discountAmount : 0);
+  const finalPrice     = applyFreeCredit ? 0 : (promoResult ? promoResult.finalAmount : basePrice);
   const isFree         = feePerHour === 0 || finalPrice === 0;
 
   function openDialog() {
@@ -225,6 +236,9 @@ export function ConsultationsPanel({
     setMessage('');
     setDuration(60);
     setPromoResult(null);
+    // Members with a free session left expect it applied by default — same
+    // behaviour as the public booking dialog.
+    setUseFreeCredit(remaining - freeUsedThisSession > 0);
     setError(null);
     setSuccess(null);
     setDialogOpen(true);
@@ -266,8 +280,10 @@ export function ConsultationsPanel({
             phone:   phone.trim(),
             message: message.trim(),
             durationMinutes: duration,
-            promoCode: promoResult?.code ?? null,
-            useFreeCredit: false,
+            // Promo is suppressed when a free credit applies (charge is already 0).
+            promoCode: applyFreeCredit ? null : (promoResult?.code ?? null),
+            // The server re-validates the quota — this flag is only a request.
+            useFreeCredit: applyFreeCredit,
             locale,
           }),
         });
@@ -282,6 +298,7 @@ export function ConsultationsPanel({
         }
         const mentor = mentors.find((m) => m.id === selectedMentorId);
         setSuccess({ mentorName: mentor?.fullName ?? 'the mentor', finalPrice, isFree });
+        if (applyFreeCredit) setFreeUsedThisSession((n) => n + 1);
         const now = new Date().toISOString();
         setBookings((prev) => [
           {
@@ -638,6 +655,36 @@ export function ConsultationsPanel({
                   </Select>
                 </div>
 
+                {/* Free-consultation credit — apply this month's quota.
+                    Hidden entirely when 0 remaining (avoids confusing disabled state). */}
+                {feePerHour > 0 && remainingNow > 0 && (
+                  <label
+                    className={cn(
+                      'flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 text-sm transition-colors',
+                      applyFreeCredit
+                        ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950'
+                        : 'border-border hover:border-primary/40',
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={applyFreeCredit}
+                      onChange={(e) => setUseFreeCredit(e.target.checked)}
+                      disabled={saving}
+                      className="mt-0.5 size-4 shrink-0 accent-emerald-600"
+                    />
+                    <span className="flex-1">
+                      <span className="flex items-center gap-2 font-semibold">
+                        <Sparkles className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                        {t('useFreeCreditLabel')}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        {t('useFreeCreditRemaining', { remaining: remainingNow, quota: freeQuota })}
+                      </span>
+                    </span>
+                  </label>
+                )}
+
                 {/* Price breakdown — only shown when mentor has a fee */}
                 {feePerHour > 0 && (
                   <div className="rounded-lg border border-border/60 bg-muted/10 px-3.5 py-3 space-y-1.5">
@@ -650,6 +697,12 @@ export function ConsultationsPanel({
                       </span>
                       <span className="tabular-nums font-medium">{formatDZD(basePrice)}</span>
                     </div>
+                    {applyFreeCredit && (
+                      <div className="flex justify-between text-sm text-emerald-700 dark:text-emerald-400">
+                        <span>{t('freeCreditApplied')}</span>
+                        <span className="tabular-nums">− {formatDZD(basePrice)}</span>
+                      </div>
+                    )}
                     {promoResult && discountAmt > 0 && (
                       <div className="flex justify-between text-sm text-emerald-700 dark:text-emerald-400">
                         <span>{t('promoCodeDiscount')}</span>
@@ -659,7 +712,11 @@ export function ConsultationsPanel({
                     <div className={cn(
                       'flex justify-between text-sm font-semibold border-t border-border/60 pt-1.5 mt-1.5',
                     )}>
-                      <span>{finalPrice === 0 ? t('freePromoApplied') : tCommon('total')}</span>
+                      <span>
+                        {finalPrice === 0
+                          ? (applyFreeCredit ? t('freeCreditApplied') : t('freePromoApplied'))
+                          : tCommon('total')}
+                      </span>
                       <span className={cn('tabular-nums', finalPrice === 0 && 'text-emerald-700 dark:text-emerald-400')}>
                         {finalPrice === 0 ? tCommon('free') : formatDZD(finalPrice)}
                       </span>
@@ -670,8 +727,8 @@ export function ConsultationsPanel({
                   </div>
                 )}
 
-                {/* Promo code */}
-                {basePrice > 0 && (
+                {/* Promo code — pointless when a free credit already zeroes the charge */}
+                {basePrice > 0 && !applyFreeCredit && (
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">
                       {t('labelPromoCode')} <span className="font-normal">{t('optionalHint')}</span>

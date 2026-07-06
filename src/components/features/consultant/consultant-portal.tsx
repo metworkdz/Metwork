@@ -10,9 +10,9 @@
  * requireConsultant-guarded /api/consultant/* endpoints. No client storage.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
-  ArrowUpRight, CalendarClock, CalendarDays, Loader2, LogOut, ShieldOff, TrendingUp, User, Wallet,
+  ArrowUpRight, CalendarClock, CalendarDays, Check, Copy, Link2, Loader2, LogOut, ShieldOff, TrendingUp, User, Wallet,
 } from 'lucide-react';
 import { consultantService, type ConsultantMe, type ConsultantMentor } from '@/services/consultant.service';
 import { cn } from '@/lib/utils';
@@ -77,8 +77,30 @@ function Dashboard({
   onSignedOut: () => void;
 }) {
   const t = useTranslations('consultantPortal');
+  const locale = useLocale();
   const [tab, setTab] = useState<Tab>('consultations');
   const [menuOpen, setMenuOpen] = useState(false);
+
+  /* Public profile link — the page clients book from. slug is stable; pre-slug
+     records fall back to the id (the public route resolves both). */
+  const profilePath = `/${locale}/mentors/${me.mentor.slug ?? me.mentor.id}`;
+  const [linkCopied, setLinkCopied] = useState(false);
+  async function copyProfileLink() {
+    const url = `${window.location.origin}${profilePath}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Clipboard API unavailable (http / older WebView) — legacy fallback.
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  }
 
   async function signOut(forgetDevice: boolean) {
     setMenuOpen(false);
@@ -127,6 +149,23 @@ function Dashboard({
       </header>
 
       <main className="flex-1 px-4 pb-28 pt-4">
+        {/* Approval-status notice — self-signups awaiting / refused review.
+            Legacy mentors have no approvalStatus and never see this. */}
+        {me.mentor.approvalStatus === 'PENDING' && (
+          <div className="mb-4 rounded-2xl border border-amber-400/25 bg-amber-400/[0.08] px-4 py-3">
+            <p className="text-sm font-semibold text-amber-300">{t('approval.pendingTitle')}</p>
+            <p className="mt-1 text-xs leading-relaxed text-amber-200/70">{t('approval.pendingBody')}</p>
+          </div>
+        )}
+        {me.mentor.approvalStatus === 'REJECTED' && (
+          <div className="mb-4 rounded-2xl border border-red-400/25 bg-red-400/[0.08] px-4 py-3">
+            <p className="text-sm font-semibold text-red-300">{t('approval.rejectedTitle')}</p>
+            <p className="mt-1 text-xs leading-relaxed text-red-200/70">
+              {me.mentor.approvalRejectionReason?.trim() || t('approval.rejectedBody')}
+            </p>
+          </div>
+        )}
+
         {/* Account hero */}
         <div className="relative mb-6 overflow-hidden rounded-3xl border border-white/[0.08] p-5" style={{ backgroundImage: CP_GLOW }}>
           <div className="flex items-center gap-3">
@@ -135,6 +174,37 @@ function Dashboard({
               <p className="truncate text-sm font-semibold text-white">{me.mentor.fullName}</p>
               <p className="truncate text-xs text-white/45">{me.mentor.position}</p>
             </div>
+          </div>
+
+          {/* Public profile link — clients book from this page. */}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => void copyProfileLink()}
+              className="flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-start transition-colors hover:bg-white/[0.08]"
+            >
+              <Link2 className="size-3.5 shrink-0" style={{ color: CP_GREEN }} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[10px] uppercase tracking-wider text-white/40">
+                  {t('publicLink.label')}
+                </span>
+                <span className="block truncate text-xs text-white/75" dir="ltr">
+                  {profilePath}
+                </span>
+              </span>
+              {linkCopied ? (
+                <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium" style={{ color: CP_GREEN }}>
+                  <Check className="size-3.5" /> {t('publicLink.copied')}
+                </span>
+              ) : (
+                <span className="flex shrink-0 items-center gap-1 text-[11px] text-white/50">
+                  <Copy className="size-3.5" /> {t('publicLink.copy')}
+                </span>
+              )}
+            </button>
+            {me.mentor.approvalStatus === 'PENDING' && (
+              <p className="mt-1.5 text-[11px] text-amber-300/80">{t('publicLink.pendingHint')}</p>
+            )}
           </div>
 
           <div className="mt-5">

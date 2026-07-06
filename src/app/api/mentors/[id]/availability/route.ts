@@ -19,6 +19,7 @@ import { db } from '@/server/db/store';
 import { json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { computeBookableSlots } from '@/server/mentors/availability';
+import { isMentorApproved } from '@/lib/mentor-approval';
 import { DEFAULT_AVAILABILITY_TIMEZONE } from '@/types/mentor';
 
 export const runtime = 'nodejs';
@@ -70,7 +71,10 @@ export async function GET(
   const { id } = await params;
   const data = await db.read();
   const mentor = (data.mentors ?? []).find((m) => m.id === id);
-  if (!mentor) return jsonError(404, 'MENTOR_NOT_FOUND', 'Mentor not found');
+  // Public route — non-APPROVED self-signups 404 like missing mentors.
+  if (!mentor || !isMentorApproved(mentor)) {
+    return jsonError(404, 'MENTOR_NOT_FOUND', 'Mentor not found');
+  }
 
   const timezone = mentor.availabilityTimezone ?? DEFAULT_AVAILABILITY_TIMEZONE;
   const bookings = (data.mentorBookings ?? []).filter((b) => b.mentorId === id);

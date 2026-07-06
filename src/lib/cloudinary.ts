@@ -25,16 +25,24 @@ export function isSupportedMime(type: string): boolean {
   return ALLOWED_TYPES.has(type);
 }
 
+/** Document types accepted for CV/resume uploads (consultant portal). */
+const ALLOWED_DOCUMENT_TYPES = new Set(['application/pdf']);
+
+export function isSupportedDocumentMime(type: string): boolean {
+  return ALLOWED_DOCUMENT_TYPES.has(type);
+}
+
 export async function uploadBuffer(
   buffer: Buffer,
-  options: { folder?: string; publicId?: string } = {},
+  options: { folder?: string; publicId?: string; resourceType?: 'image' | 'raw' } = {},
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: options.folder ?? 'metwork',
         public_id: options.publicId,
-        resource_type: 'image',
+        // 'raw' for non-image documents (PDF CVs); default stays 'image'.
+        resource_type: options.resourceType ?? 'image',
         overwrite: true,
       },
       (err, result) => {

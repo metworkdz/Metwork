@@ -14,7 +14,7 @@ import { Container } from '@/components/ui/container';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MentorProfileBooking } from '@/components/features/mentors/mentor-profile-booking';
-import { findMentorBySlugOrId } from '@/server/mentors/service';
+import { findPublicMentorBySlugOrId } from '@/server/mentors/service';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
 import { toMentorDto } from '@/server/mentors/serialize';
 import { safeLinkedinUrl } from '@/lib/linkedin';
@@ -31,7 +31,7 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params;
   setRequestLocale(locale);
-  const mentor = await findMentorBySlugOrId(slug);
+  const mentor = await findPublicMentorBySlugOrId(slug);
   if (!mentor) return { title: 'Mentor not found' };
 
   const description =
@@ -58,7 +58,7 @@ export default async function MentorProfilePage({ params }: PageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
 
-  const record = await findMentorBySlugOrId(slug);
+  const record = await findPublicMentorBySlugOrId(slug);
   if (!record) notFound();
   const mentor = toMentorDto(record);
 

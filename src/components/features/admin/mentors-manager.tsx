@@ -11,8 +11,9 @@
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { CalendarClock, MoreVertical, Pencil, Plus, Trash2, UserPlus } from 'lucide-react';
+import { CalendarClock, CheckCircle2, MoreVertical, Pencil, Plus, Trash2, UserPlus, XCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -46,6 +47,12 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [availabilityFor, setAvailabilityFor] = useState<Mentor | null>(null);
 
+  /* Consultant approval review (self-signups) */
+  const [rejecting, setRejecting] = useState<Mentor | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [approvalBusy, setApprovalBusy] = useState(false);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
+
   function openCreate() {
     setEditing(null);
     setFormOpen(true);
@@ -64,6 +71,35 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
       next[idx] = saved;
       return next;
     });
+  }
+
+  async function approve(m: Mentor) {
+    setApprovalBusy(true);
+    setApprovalError(null);
+    try {
+      const saved = await mentorsService.setApproval(m.id, 'APPROVED');
+      onSaved(saved);
+    } catch (err) {
+      setApprovalError(err instanceof Error ? err.message : t('approvalFailed'));
+    } finally {
+      setApprovalBusy(false);
+    }
+  }
+
+  async function confirmReject() {
+    if (!rejecting || !rejectReason.trim()) return;
+    setApprovalBusy(true);
+    setApprovalError(null);
+    try {
+      const saved = await mentorsService.setApproval(rejecting.id, 'REJECTED', rejectReason.trim());
+      onSaved(saved);
+      setRejecting(null);
+      setRejectReason('');
+    } catch (err) {
+      setApprovalError(err instanceof Error ? err.message : t('approvalFailed'));
+    } finally {
+      setApprovalBusy(false);
+    }
   }
 
   async function confirmDelete() {
@@ -97,6 +133,12 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
         </Button>
       </div>
 
+      {approvalError && !rejecting && (
+        <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {approvalError}
+        </p>
+      )}
+
       {mentors.length === 0 ? (
         <Card>
           <InlineEmptyState
@@ -116,6 +158,18 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
           {mentors.map((m) => (
             <div key={m.id} className="relative">
               <LandingMentorCard mentor={m} hoverable={false} />
+              {/* Approval state — only self-signups carry PENDING/REJECTED;
+                  legacy admin-added mentors are APPROVED and show no badge. */}
+              {m.approvalStatus === 'PENDING' && (
+                <Badge variant="warning" className="absolute start-2 top-2">
+                  {t('approvalPending')}
+                </Badge>
+              )}
+              {m.approvalStatus === 'REJECTED' && (
+                <Badge variant="danger" className="absolute start-2 top-2">
+                  {t('approvalRejected')}
+                </Badge>
+              )}
               <div className="absolute end-2 top-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -129,6 +183,21 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    {m.approvalStatus !== 'APPROVED' && m.approvalStatus !== undefined && (
+                      <DropdownMenuItem onSelect={() => void approve(m)} disabled={approvalBusy}>
+                        <CheckCircle2 />
+                        {t('approve')}
+                      </DropdownMenuItem>
+                    )}
+                    {m.approvalStatus === 'PENDING' && (
+                      <DropdownMenuItem
+                        onSelect={() => { setRejecting(m); setRejectReason(''); setApprovalError(null); }}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <XCircle />
+                        {t('reject')}
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onSelect={() => openEdit(m)}>
                       <Pencil />
                       {t('edit')}
@@ -170,6 +239,54 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
         mentor={availabilityFor}
         onSaved={onSaved}
       />
+
+      {/* Reject-consultant dialog — a reason is required (emailed to the applicant) */}
+      <Dialog
+        open={rejecting !== null}
+        onOpenChange={(open) => {
+          if (!open && !approvalBusy) {
+            setRejecting(null);
+            setRejectReason('');
+            setApprovalError(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t('rejectDialogTitle')}</DialogTitle>
+            <DialogDescription>
+              {rejecting ? t('rejectDialogDescription', { name: rejecting.fullName }) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <textarea
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            rows={3}
+            maxLength={2000}
+            placeholder={t('rejectReasonPlaceholder')}
+            disabled={approvalBusy}
+            className="flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+          />
+          {approvalError && (
+            <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {approvalError}
+            </p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejecting(null)} disabled={approvalBusy}>
+              {t('cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              loading={approvalBusy}
+              disabled={!rejectReason.trim()}
+              onClick={confirmReject}
+            >
+              {t('reject')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={deleting !== null}

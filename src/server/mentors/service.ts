@@ -3,6 +3,7 @@ import { db, type MentorRecord } from '@/server/db/store';
 import type { CreateMentorInput, UpdateMentorInput, MentorAvailabilityPatch } from './schemas';
 import { DEFAULT_AVAILABILITY_TIMEZONE } from '@/types/mentor';
 import { slugify, uniqueSlug } from '@/lib/slugify';
+import { isMentorApproved } from '@/lib/mentor-approval';
 
 /**
  * Derive a unique slug for a mentor from their full name, avoiding collisions
@@ -54,6 +55,16 @@ export async function listMentors(): Promise<MentorRecord[]> {
   return [...mentors].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
+/**
+ * Canonical PUBLIC mentor list — the only list resolver public surfaces may
+ * use. Hides non-APPROVED consultants (self-signups pending admin review).
+ * Legacy admin-added mentors lack `approvalStatus` and are grandfathered as
+ * APPROVED by `isMentorApproved`, so nothing existing ever disappears.
+ */
+export async function listPublicMentors(): Promise<MentorRecord[]> {
+  return (await listMentors()).filter(isMentorApproved);
+}
+
 export async function findMentorById(id: string): Promise<MentorRecord | null> {
   const data = await db.read();
   return (data.mentors ?? []).find((m) => m.id === id) ?? null;
@@ -71,6 +82,16 @@ export async function findMentorBySlugOrId(slugOrId: string): Promise<MentorReco
     mentors.find((m) => m.id === slugOrId) ??
     null
   );
+}
+
+/**
+ * Public variant of `findMentorBySlugOrId` — resolves to null for
+ * non-APPROVED consultants so pending/rejected self-signups 404 on the
+ * public profile route instead of leaking.
+ */
+export async function findPublicMentorBySlugOrId(slugOrId: string): Promise<MentorRecord | null> {
+  const mentor = await findMentorBySlugOrId(slugOrId);
+  return mentor && isMentorApproved(mentor) ? mentor : null;
 }
 
 export async function createMentor(input: CreateMentorInput): Promise<MentorRecord> {
@@ -100,6 +121,58 @@ export async function createMentor(input: CreateMentorInput): Promise<MentorReco
     };
     d.mentors.push(record);
     return record;
+  });
+}
+
+export type SelfSignupResult =
+  | { ok: true; mentor: MentorRecord }
+  | { ok: false; reason: 'EMAIL_IN_USE' };
+
+/**
+ * Consultant self-signup: create a PENDING mentor record. The email dedupe
+ * happens atomically inside the same document update as the insert, so two
+ * concurrent signups (or a race with an admin create) can never produce two
+ * mentors sharing a login email — the OTP flow resolves mentors BY email.
+ *
+ * The record starts hidden: `approvalStatus: 'PENDING'` keeps it off every
+ * public surface (list/profile/booking) until an admin approves it.
+ */
+export async function createSelfSignupMentor(input: {
+  fullName: string;
+  position: string;
+  email: string;
+  phone: string;
+  city?: string | null;
+  bio?: string | null;
+}): Promise<SelfSignupResult> {
+  const now = new Date().toISOString();
+  const id = randomUUID();
+  const fullName = input.fullName.trim();
+  const email = input.email.trim().toLowerCase();
+  return db.update<SelfSignupResult>((d) => {
+    const taken = (d.mentors ?? []).some(
+      (m) => (m.email ?? '').trim().toLowerCase() === email,
+    );
+    if (taken) return { ok: false, reason: 'EMAIL_IN_USE' };
+    const record: MentorRecord = {
+      id,
+      fullName,
+      position: input.position.trim(),
+      // Placeholder avatar until the consultant uploads one from the portal.
+      imageUrl: '/assets/profilelogogreen.png',
+      slug: deriveMentorSlug(fullName, id, d.mentors),
+      bio: input.bio?.trim() || null,
+      linkedinUrl: null,
+      email,
+      phone: input.phone.trim(),
+      city: input.city?.trim() || null,
+      consultationFee: 0,
+      createdAt: now,
+      approvalStatus: 'PENDING',
+      source: 'SELF',
+    };
+    d.mentors.push(record);
+    return { ok: true, mentor: record };
   });
 }
 
