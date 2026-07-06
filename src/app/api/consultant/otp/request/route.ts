@@ -2,9 +2,11 @@
  * POST /api/consultant/otp/request  { email }
  *
  * Step 1 of the consultant (mentor) email → OTP sign-in. Emails a 6-digit code
- * to the address an admin assigned to the mentor record. ALWAYS returns a
- * generic 200 — the response and timing are identical whether or not the email
- * matches a mentor (enumeration protection). Rate-limited per IP and per email.
+ * to the consultant's address. An unknown email returns an explicit
+ * `NO_ACCOUNT` error so the login page can steer the visitor to the
+ * self-signup branch — the enumeration reveal is a deliberate product
+ * decision for this self-serve portal (rate limits still apply per IP and
+ * per email, so bulk probing stays expensive).
  *
  * Reuses the existing OTP infrastructure (`@/server/auth/otp`, hashed at rest,
  * single-use, 10-min expiry, attempt lockout) and the existing OTP email sender.
@@ -57,13 +59,15 @@ export async function POST(req: NextRequest) {
     return jsonError(429, 'RATE_LIMITED', 'Too many requests. Please try again later.');
   }
 
-  // Always issues (matched → real mentor key, unmatched → sentinel) so timing
-  // does not leak whether the email exists.
   const issued = await issueConsultantOtp(email);
-  if (issued && issued.mentor.email) {
+  if (!issued) {
+    // Explicit signal — the login UI shows "no account for this email" with a
+    // create-account CTA. Admin mentors (found email) are unaffected.
+    return jsonError(404, 'NO_ACCOUNT', 'No consultant account is linked to this email.');
+  }
+  if (issued.mentor.email) {
     sendOtpEmail(issued.mentor.email, issued.code);
   }
 
-  // Generic response — never reveal whether the email matched a consultant.
   return json({ ok: true });
 }

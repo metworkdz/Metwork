@@ -17,8 +17,12 @@ export interface ConsultantMentor {
   email: string | null;
   /** Consultant WhatsApp/contact phone (private — consultant-self DTO only). */
   phone?: string | null;
+  /** True once the phone was SMS-verified (private). Absent ⇒ not verified. */
+  phoneVerified?: boolean;
   /** Consultant's city (public). */
   city?: string | null;
+  /** Consultation domain code (see `src/config/consultation-fields.ts`). */
+  field?: string | null;
   consultationFee?: number;
   defaultMeetingMode?: 'ONLINE' | 'OFFLINE';
   defaultMeetingLink?: string | null;
@@ -136,6 +140,7 @@ export const consultantService = {
     email: string;
     phone: string;
     city?: string | null;
+    field?: string | null;
   }) => apiClient.post<{ ok: true }>('/consultant/signup', body),
 
   // ── Email → OTP sign-in (untrusted device / first sign-in) ──
@@ -143,6 +148,11 @@ export const consultantService = {
     apiClient.post<{ ok: true }>('/consultant/otp/request', { email }),
   verifyOtp: (email: string, code: string) =>
     apiClient.post<{ ok: true; pinSet: boolean }>('/consultant/otp/verify', { email, code }),
+
+  // ── Phone verification via SMS OTP (session-guarded) ──
+  requestPhoneOtp: () => apiClient.post<{ ok: true }>('/consultant/phone/request', {}),
+  verifyPhoneOtp: (code: string) =>
+    apiClient.post<{ ok: true }>('/consultant/phone/verify', { code }),
 
   logout: (forgetDevice?: boolean) =>
     apiClient.post<{ ok: true }>('/consultant/logout', { forgetDevice: Boolean(forgetDevice) }),

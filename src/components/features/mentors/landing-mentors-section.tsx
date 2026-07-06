@@ -7,12 +7,12 @@
 import { getTranslations } from 'next-intl/server';
 import { Container } from '@/components/ui/container';
 import { Badge } from '@/components/ui/badge';
-import { listMentors } from '@/server/mentors/service';
+import { listPublicMentors } from '@/server/mentors/service';
 import { toMentorDto } from '@/server/mentors/serialize';
 import { MentorsCarousel } from './mentors-carousel';
 
 export async function LandingMentorsSection() {
-  const mentors = (await listMentors()).map(toMentorDto);
+  const mentors = (await listPublicMentors()).map(toMentorDto);
   if (mentors.length === 0) return null;
 
   const t = await getTranslations('mentors.landing');

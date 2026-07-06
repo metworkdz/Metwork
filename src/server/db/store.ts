@@ -1690,6 +1690,26 @@ export interface MentorRecord {
   source?: 'ADMIN' | 'SELF';
   /** Uploaded CV/resume URL (Cloudinary or /uploads fallback). PRIVATE — admin review only. */
   cvUrl?: string | null;
+  /**
+   * Whether the mentor appears on public LIST surfaces (mentors page, landing
+   * carousel, `GET /api/mentors`). Absent ⇒ true for ADMIN-sourced records
+   * (grandfathered), while SELF-sourced records are NEVER publicly listed —
+   * even after approval — only reachable via their direct slug link. The
+   * single gate is `isMentorPubliclyListed` in `@/lib/mentor-approval`.
+   */
+  publiclyListed?: boolean;
+  /** True once the consultant's phone was verified (OTP). Absent ⇒ false. PRIVATE. */
+  phoneVerified?: boolean;
+  /** Consultation domain (e.g. "Fiscalité", "Marketing"). Single headline field, distinct from `topics` tags. */
+  field?: string | null;
+  /**
+   * Canonical profile picture URL. Absent ⇒ fall back to `imageUrl` (legacy
+   * mentors-page image). Resolution happens in ONE place: `toMentorDto`.
+   * Writes keep both in sync so older readers of `imageUrl` stay correct.
+   */
+  avatarUrl?: string | null;
+  /** ISO timestamp of the last mutation. Absent on records untouched since the field shipped. */
+  updatedAt?: string;
 }
 
 /* ─────────────────── CRM — Clients ─────────────────── */

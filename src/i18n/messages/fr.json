@@ -20,7 +20,21 @@
       "reviewNote": "En créant un compte, vous acceptez d'être contacté au sujet de votre candidature. Votre profil reste privé jusqu'à son approbation.",
       "submit": "Créer le compte",
       "alreadyHaveAccount": "Vous avez déjà un compte ?",
-      "backToSignIn": "Se connecter"
+      "backToSignIn": "Se connecter",
+      "phoneCountryCodeHint": "Format international avec indicatif pays (ex. +213…).",
+      "cityPlaceholder": "Sélectionnez votre wilaya",
+      "fieldLabel": "Domaine de consultation",
+      "fieldPlaceholder": "Sélectionnez votre domaine",
+      "cvLabel": "CV (PDF)",
+      "cvHint": "PDF uniquement, 5 Mo maximum.",
+      "cvTypeError": "Le CV doit être un fichier PDF.",
+      "cvSizeError": "Le fichier dépasse 5 Mo.",
+      "cvStepHeading": "Envoi de votre CV",
+      "cvUploading": "Envoi de votre CV en cours…",
+      "cvUploadFailed": "L'envoi du CV a échoué.",
+      "cvUploadFailedDesc": "Votre compte est bien créé. Vous pouvez réessayer maintenant ou envoyer votre CV plus tard depuis votre profil.",
+      "cvRetry": "Réessayer",
+      "cvSkip": "Continuer sans CV (envoi possible depuis le profil)"
     },
     "approval": {
       "pendingTitle": "Votre profil est en cours d'examen",
@@ -59,7 +73,8 @@
       "errorOtpLocked": "Trop de tentatives. Demandez un nouveau code.",
       "errorRateLimited": "Trop de demandes. Veuillez patienter quelques minutes et réessayer.",
       "errorGeneric": "Une erreur s'est produite. Veuillez réessayer.",
-      "secureNote": "Accès sécurisé — un code à usage unique, aucun mot de passe à retenir."
+      "secureNote": "Accès sécurisé — un code à usage unique, aucun mot de passe à retenir.",
+      "errorNoAccount": "Aucun compte lié à cet e-mail. Créez un compte."
     },
     "profile": {
       "uploadPhoto": "Changer la photo",
@@ -273,6 +288,31 @@
     "hero": {
       "withdraw": "Retirer",
       "editHours": "Modifier les heures"
+    },
+    "phoneVerify": {
+      "tagline": "Vérification du numéro de téléphone",
+      "heading": "Vérifiez votre numéro",
+      "introDesc": "Nous enverrons un code à 6 chiffres par SMS au numéro enregistré sur votre compte.",
+      "sendCode": "Envoyer le code par SMS",
+      "secureNote": "Code à usage unique, valable 10 minutes.",
+      "codeSent": "Code envoyé par SMS",
+      "codeLabel": "Code de vérification",
+      "verify": "Vérifier",
+      "back": "Retour",
+      "resend": "Renvoyer le code",
+      "resendCountdown": "Renvoyer dans {seconds}s",
+      "backToDashboard": "Retour au tableau de bord",
+      "verifiedTitle": "Numéro vérifié",
+      "verifiedDesc": "Votre numéro de téléphone est confirmé.",
+      "alreadyVerified": "Ce numéro est déjà vérifié.",
+      "errorNoPhone": "Aucun numéro de téléphone sur votre compte. Ajoutez-en un depuis votre profil.",
+      "errorInvalidOtp": "Code invalide ou expiré.",
+      "errorOtpExpired": "Ce code a expiré. Demandez-en un nouveau.",
+      "errorOtpLocked": "Trop de tentatives. Demandez un nouveau code.",
+      "errorRateLimited": "Trop de demandes. Réessayez plus tard.",
+      "errorGeneric": "Une erreur est survenue. Réessayez.",
+      "bannerTitle": "Numéro de téléphone non vérifié",
+      "bannerBody": "Vérifiez votre numéro par SMS pour sécuriser votre compte."
     }
   },
   "common": {
@@ -3730,7 +3770,20 @@
       "revoke": "Révoquer l'accès",
       "revoked": "Accès révoqué. L'ancien lien ne fonctionne plus.",
       "linkError": "Impossible de générer le lien. Veuillez réessayer.",
-      "copyFailed": "Copie automatique impossible — sélectionnez le lien et copiez-le manuellement."
+      "copyFailed": "Copie automatique impossible — sélectionnez le lien et copiez-le manuellement.",
+      "reviewApplication": "Voir la candidature",
+      "reviewDialogTitle": "Candidature consultant",
+      "reviewDialogDescription": "Dossier de {name} — vérifiez les informations et le CV avant de décider.",
+      "reviewFullName": "Nom complet",
+      "reviewPosition": "Poste",
+      "reviewEmail": "E-mail",
+      "reviewPhone": "Téléphone",
+      "reviewPhoneVerified": "Vérifié",
+      "reviewPhoneUnverified": "Non vérifié",
+      "reviewCity": "Wilaya",
+      "reviewField": "Domaine",
+      "reviewOpenCv": "Ouvrir le CV (PDF)",
+      "reviewNoCv": "Aucun CV envoyé."
     },
     "mentorAvailability": {
       "title": "Disponibilités",

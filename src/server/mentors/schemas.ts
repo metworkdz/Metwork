@@ -58,6 +58,8 @@ export const consultantSignupSchema = z.object({
     .refine((v) => /^\+?[0-9\s().-]{6,30}$/.test(v), { message: 'invalidPhone' }),
   city: cityField,
   bio: z.string().max(2000).optional().nullable(),
+  /** Consultation domain (e.g. "Fiscalité"). Optional & additive. */
+  field: z.string().max(160).optional().nullable(),
 });
 export type ConsultantSignupInput = z.infer<typeof consultantSignupSchema>;
 

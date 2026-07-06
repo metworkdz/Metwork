@@ -12,7 +12,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  ArrowUpRight, CalendarClock, CalendarDays, Check, Copy, Link2, Loader2, LogOut, ShieldOff, TrendingUp, User, Wallet,
+  ArrowUpRight, CalendarClock, CalendarDays, Check, ChevronRight, Copy, Link2, Loader2, LogOut,
+  MessageSquareText, ShieldOff, TrendingUp, User, Wallet,
 } from 'lucide-react';
 import { consultantService, type ConsultantMe, type ConsultantMentor } from '@/services/consultant.service';
 import { cn } from '@/lib/utils';
@@ -164,6 +165,22 @@ function Dashboard({
               {me.mentor.approvalRejectionReason?.trim() || t('approval.rejectedBody')}
             </p>
           </div>
+        )}
+
+        {/* Phone not verified — tap-through to the SMS OTP page. Shown for any
+            consultant with a phone on file that hasn't been SMS-verified. */}
+        {Boolean(me.mentor.phone) && me.mentor.phoneVerified !== true && (
+          <a
+            href="/mentordashboard/verify-phone"
+            className="mb-4 flex items-center gap-3 rounded-2xl border border-amber-400/25 bg-amber-400/[0.08] px-4 py-3 transition-colors hover:bg-amber-400/[0.14]"
+          >
+            <MessageSquareText className="size-4 shrink-0 text-amber-300" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-amber-300">{t('phoneVerify.bannerTitle')}</span>
+              <span className="mt-0.5 block text-xs leading-relaxed text-amber-200/70">{t('phoneVerify.bannerBody')}</span>
+            </span>
+            <ChevronRight className="size-4 shrink-0 text-amber-300/70 rtl:rotate-180" />
+          </a>
         )}
 
         {/* Account hero */}

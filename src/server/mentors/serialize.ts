@@ -20,8 +20,13 @@ export function toMentorDto(m: MentorRecord): Mentor {
     // City is PUBLIC (shown pre-booking for in-person sessions). Phone and the
     // exact in-person address are PRIVATE — see `toMentorPrivateDto`.
     city: m.city ?? null,
+    field: m.field ?? null,
+    // Canonical avatar resolution — the ONE place avatarUrl falls back to the
+    // legacy mentors-page image, so every consumer sees the same picture.
+    avatarUrl: m.avatarUrl ?? m.imageUrl,
     consultationFee: m.consultationFee,
     createdAt: m.createdAt,
+    updatedAt: m.updatedAt,
     weeklyAvailability: m.weeklyAvailability ?? [],
     blockedDates: m.blockedDates ?? [],
     availabilityTimezone: m.availabilityTimezone ?? 'Africa/Algiers',
@@ -54,5 +59,8 @@ export function toMentorPrivateDto(m: MentorRecord): Mentor {
     approvalStatus: m.approvalStatus ?? 'APPROVED',
     approvalRejectionReason: m.approvalRejectionReason ?? null,
     cvUrl: m.cvUrl ?? null,
+    source: m.source ?? 'ADMIN',
+    publiclyListed: m.publiclyListed ?? m.source !== 'SELF',
+    phoneVerified: m.phoneVerified ?? false,
   };
 }

@@ -12,6 +12,11 @@ import type { ApprovalStatus } from '@/types/auth';
 
 type MentorApprovalShape = { approvalStatus?: ApprovalStatus | null };
 
+type MentorListingShape = MentorApprovalShape & {
+  source?: 'ADMIN' | 'SELF';
+  publiclyListed?: boolean;
+};
+
 /**
  * Resolve a mentor's effective approval state. Absent field ⇒ APPROVED
  * (legacy admin-added mentors were implicitly vetted at creation).
@@ -20,7 +25,20 @@ export function getMentorApprovalStatus(mentor: MentorApprovalShape): ApprovalSt
   return mentor.approvalStatus ?? 'APPROVED';
 }
 
-/** Whether the mentor is publicly listable / bookable. */
+/** Whether the mentor is approved (bookable / reachable via direct slug link). */
 export function isMentorApproved(mentor: MentorApprovalShape): boolean {
   return getMentorApprovalStatus(mentor) === 'APPROVED';
+}
+
+/**
+ * Whether the mentor appears on public LIST surfaces (mentors page, landing
+ * carousel, `GET /api/mentors`). Stricter than `isMentorApproved`:
+ * self-signed-up consultants are NEVER listed — even once approved — and are
+ * only reachable via their direct slug/booking link. Absent fields ⇒ legacy
+ * admin-added mentor ⇒ listed, so nothing existing ever disappears.
+ */
+export function isMentorPubliclyListed(mentor: MentorListingShape): boolean {
+  if (mentor.source === 'SELF') return false;
+  if (mentor.publiclyListed === false) return false;
+  return isMentorApproved(mentor);
 }
