@@ -1,37 +1,45 @@
 /**
- * Per-role nav-activity source registry — the SINGLE place that defines what
- * each dashboard nav badge counts. Purely read-only over the store document;
- * no source here ever mutates data.
+ * Notification source registry — the SINGLE definition of what each activity
+ * count means, per role. Purely read-only over the store document; no source
+ * here ever mutates data.
  *
- * Every source is keyed by the nav item's `href` from `dashboardNavByRole`
- * (see `@/config/navigation`) so badges attach to nav surfaces by a stable key.
+ * Each source declares:
+ *  - `key`   — stable source key ('approvals', 'users', …). This is what the
+ *              seen map (`UserRecord.notificationsSeen`) and the API speak.
+ *              Keys may repeat across roles with DISJOINT `roles` sets (a
+ *              user has exactly one role, so 'bookings' can mean the admin
+ *              queue for admins and the owned-items queue for incubators).
+ *  - `roles` — which roles see the source.
+ *  - `mode`  — 'view' (default): "N new since notificationsSeen[key]" — never
+ *              seen ⇒ counts from the beginning; clears once the surface is
+ *              opened (markSeen). 'pending': "N items currently actionable" —
+ *              independent of seen; only clears when the records change state.
+ *  - `href`  — the dashboard nav item this source attaches to (badge UI).
+ *  - `count(ctx)` → integer for the current user.
  *
- * Two counting styles coexist:
- *  - STATUS sources ("N items need action", e.g. PENDING approvals) — the
- *    badge persists until the underlying status changes; visiting the page
- *    does not clear it.
- *  - SINCE-LAST-SEEN sources ("N new since you last looked") — compared
- *    against `user.navLastSeen[navKey]` (ISO strings compare lexicographically,
- *    same convention as the rest of the codebase). Visiting the page marks the
- *    key seen and the badge clears.
+ * ISO datetimes compare lexicographically (same convention as the rest of
+ * the codebase), so `createdAt > seen` string compares are correct.
  *
- * Documented approximation: entrepreneur "status change" sources use
- * `updatedAt > createdAt` as the mutation signal — the badge means
- * "something changed on one of your records", not a per-event feed.
+ * Documented approximation: entrepreneur 'view' sources over own records use
+ * `updatedAt > createdAt` as the mutation signal — the count means "something
+ * changed on one of your records", not a per-event feed.
  */
 import type { db, UserRecord } from '@/server/db/store';
+import type { UserRole } from '@/types/auth';
 import { getApprovalStatus, isApprovalGatedRole } from '@/lib/approval-guard';
 import { getMentorApprovalStatus } from '@/lib/mentor-approval';
 
 /** The whole store document, as returned by `db.read()`. */
 export type StoreDoc = Awaited<ReturnType<typeof db.read>>;
 
+export type SourceMode = 'view' | 'pending';
+
 /** Per-request context shared by every source of a role (computed once). */
 export interface BadgeContext {
   data: StoreDoc;
   user: UserRecord;
-  /** ISO "last seen" for a nav key. '' (sorts before everything) = never. */
-  lastSeenOf: (navKey: string) => string;
+  /** ISO "seen" stamp for a source key. '' (sorts before everything) = never. */
+  seenOf: (key: string) => string;
   /** Resolved for INCUBATOR role only: the incubator managed by this user. */
   incubatorId: string | null;
   /** Item ids owned by that incubator (spaces / programs / events). */
@@ -40,19 +48,29 @@ export interface BadgeContext {
   ownedEventIds: Set<string>;
 }
 
-export interface ActivitySource {
-  /** Stable nav key — MUST equal the item's `href` in `dashboardNavByRole`. */
-  navKey: string;
+export interface NotificationSource {
+  /** Stable source key — what the seen map and the API speak. */
+  key: string;
+  /** Roles that see this source. */
+  roles: readonly UserRole[];
+  /** Counting semantics — 'view' is the default (see module doc). */
+  mode: SourceMode;
+  /** Dashboard nav href this source's badge attaches to. */
+  href: string;
   /** Pure count of "new / actionable" records for this surface. */
   count: (ctx: BadgeContext) => number;
 }
 
-/* ────────────────────────────── ADMIN ────────────────────────────── */
+/* ────────────────────────────── Registry ────────────────────────────── */
 
-const adminSources: ActivitySource[] = [
+export const NOTIFICATION_SOURCES: readonly NotificationSource[] = [
+  /* ── ADMIN ──────────────────────────────────────────────────────────── */
   {
     // Unified account approvals (INCUBATOR / INVESTOR / BUSINESS in PENDING).
-    navKey: '/dashboard/admin/approvals',
+    key: 'approvals',
+    roles: ['ADMIN'],
+    mode: 'pending',
+    href: '/dashboard/admin/approvals',
     count: ({ data }) =>
       (data.users ?? []).filter(
         (u) => isApprovalGatedRole(u.role) && getApprovalStatus(u) === 'PENDING',
@@ -60,12 +78,18 @@ const adminSources: ActivitySource[] = [
   },
   {
     // Incubator records awaiting activation.
-    navKey: '/dashboard/admin/incubators',
+    key: 'incubators',
+    roles: ['ADMIN'],
+    mode: 'pending',
+    href: '/dashboard/admin/incubators',
     count: ({ data }) => (data.incubators ?? []).filter((i) => i.status === 'PENDING').length,
   },
   {
     // Self-signed-up consultants awaiting approval.
-    navKey: '/dashboard/admin/mentors',
+    key: 'consultants',
+    roles: ['ADMIN'],
+    mode: 'pending',
+    href: '/dashboard/admin/mentors',
     count: ({ data }) =>
       (data.mentors ?? []).filter(
         (m) => m.source === 'SELF' && getMentorApprovalStatus(m) === 'PENDING',
@@ -73,54 +97,72 @@ const adminSources: ActivitySource[] = [
   },
   {
     // Consultation booking requests awaiting admin action.
-    navKey: '/dashboard/admin/mentor-bookings',
+    key: 'consultations',
+    roles: ['ADMIN'],
+    mode: 'pending',
+    href: '/dashboard/admin/mentor-bookings',
     count: ({ data }) =>
       (data.mentorBookings ?? []).filter((b) => b.status === 'PENDING').length,
   },
   {
-    // Space/program/event bookings awaiting approval (mirrors the page's stat).
-    navKey: '/dashboard/admin/bookings',
+    // Space/program/event bookings awaiting approval (mirrors the page stat).
+    key: 'bookings',
+    roles: ['ADMIN'],
+    mode: 'pending',
+    href: '/dashboard/admin/bookings',
     count: ({ data }) => (data.bookings ?? []).filter((b) => b.status === 'PENDING').length,
   },
   {
     // New user signups since the admin last opened the Users page.
-    navKey: '/dashboard/admin/users',
-    count: ({ data, lastSeenOf }) => {
-      const seen = lastSeenOf('/dashboard/admin/users');
+    key: 'users',
+    roles: ['ADMIN'],
+    mode: 'view',
+    href: '/dashboard/admin/users',
+    count: ({ data, seenOf }) => {
+      const seen = seenOf('users');
       return (data.users ?? []).filter((u) => u.createdAt > seen).length;
     },
   },
   {
     // Contact-form submissions not yet marked handled.
-    navKey: '/dashboard/admin/contacts',
+    key: 'contacts',
+    roles: ['ADMIN'],
+    mode: 'pending',
+    href: '/dashboard/admin/contacts',
     count: ({ data }) =>
       (data.contactSubmissions ?? []).filter((c) => c.handled !== true).length,
   },
   {
     // Investor → startup contact requests awaiting review.
-    navKey: '/dashboard/admin/investor-contacts',
+    key: 'investor-contacts',
+    roles: ['ADMIN'],
+    mode: 'pending',
+    href: '/dashboard/admin/investor-contacts',
     count: ({ data }) =>
       (data.investorContacts ?? []).filter((c) => c.status === 'PENDING').length,
   },
   {
     // Manual payout queue: pending withdrawals on BOTH ledgers.
-    navKey: '/dashboard/admin/payments',
+    key: 'withdrawals',
+    roles: ['ADMIN'],
+    mode: 'pending',
+    href: '/dashboard/admin/payments',
     count: ({ data }) =>
       (data.withdrawalRequests ?? []).filter((w) => w.status === 'PENDING').length +
       (data.mentorWithdrawals ?? []).filter((w) => w.status === 'PENDING').length,
   },
-];
 
-/* ──────────────────────────── INCUBATOR ──────────────────────────── */
-/* All sources scope through the resolved incubator; when the user manages
- * no incubator every count is 0 (guarded by `incubatorId === null`).      */
-
-const incubatorSources: ActivitySource[] = [
+  /* ── INCUBATOR (scoped through the resolved incubator; counts are 0 when
+   *    the user manages no incubator) ─────────────────────────────────── */
   {
     // Bookings needing action on owned items: awaiting approval, awaiting
     // cash collection — plus new online desk reservations since last seen
-    // (desk bookings have no nav home of their own; folded here by design).
-    navKey: '/dashboard/incubator/bookings',
+    // (desk bookings have no nav home of their own; folded here by design,
+    // which is why this 'pending' source also consults the seen stamp).
+    key: 'bookings',
+    roles: ['INCUBATOR'],
+    mode: 'pending',
+    href: '/dashboard/incubator/bookings',
     count: (ctx) => {
       if (!ctx.incubatorId) return 0;
       const owned = (itemKind: string, itemId: string) =>
@@ -133,7 +175,7 @@ const incubatorSources: ActivitySource[] = [
           (b.status === 'PENDING' ||
             (b.status === 'CONFIRMED' && b.paymentStatus === 'AWAITING_CASH')),
       ).length;
-      const seen = ctx.lastSeenOf('/dashboard/incubator/bookings');
+      const seen = ctx.seenOf('bookings');
       const newDesks = (ctx.data.deskBookings ?? []).filter(
         (d) =>
           d.incubatorId === ctx.incubatorId &&
@@ -146,7 +188,10 @@ const incubatorSources: ActivitySource[] = [
   },
   {
     // Domiciliation requests awaiting first contact.
-    navKey: '/dashboard/incubator/domiciliation',
+    key: 'domiciliation',
+    roles: ['INCUBATOR'],
+    mode: 'pending',
+    href: '/dashboard/incubator/domiciliation',
     count: (ctx) =>
       ctx.incubatorId
         ? (ctx.data.domiciliationRequests ?? []).filter(
@@ -156,10 +201,13 @@ const incubatorSources: ActivitySource[] = [
   },
   {
     // New CRM clients since last seen.
-    navKey: '/dashboard/incubator/clients',
+    key: 'clients',
+    roles: ['INCUBATOR'],
+    mode: 'view',
+    href: '/dashboard/incubator/clients',
     count: (ctx) => {
       if (!ctx.incubatorId) return 0;
-      const seen = ctx.lastSeenOf('/dashboard/incubator/clients');
+      const seen = ctx.seenOf('clients');
       return (ctx.data.clients ?? []).filter(
         (c) => c.incubatorId === ctx.incubatorId && c.createdAt > seen,
       ).length;
@@ -168,10 +216,13 @@ const incubatorSources: ActivitySource[] = [
   {
     // New program registrations since last seen (registrations have no nav
     // item of their own; attached to Programs by design).
-    navKey: '/dashboard/incubator/programs',
+    key: 'programs',
+    roles: ['INCUBATOR'],
+    mode: 'view',
+    href: '/dashboard/incubator/programs',
     count: (ctx) => {
       if (!ctx.incubatorId) return 0;
-      const seen = ctx.lastSeenOf('/dashboard/incubator/programs');
+      const seen = ctx.seenOf('programs');
       return (ctx.data.registrations ?? []).filter(
         (r) =>
           r.incubatorId === ctx.incubatorId &&
@@ -183,10 +234,13 @@ const incubatorSources: ActivitySource[] = [
   },
   {
     // New event registrations since last seen (same design as programs).
-    navKey: '/dashboard/incubator/events',
+    key: 'events',
+    roles: ['INCUBATOR'],
+    mode: 'view',
+    href: '/dashboard/incubator/events',
     count: (ctx) => {
       if (!ctx.incubatorId) return 0;
-      const seen = ctx.lastSeenOf('/dashboard/incubator/events');
+      const seen = ctx.seenOf('events');
       return (ctx.data.registrations ?? []).filter(
         (r) =>
           r.incubatorId === ctx.incubatorId &&
@@ -196,28 +250,29 @@ const incubatorSources: ActivitySource[] = [
       ).length;
     },
   },
-];
 
-/* ─────────────────────────── ENTREPRENEUR ────────────────────────── */
-/* "News" for an entrepreneur = one of THEIR records was mutated after it
- * was created (status change by an admin/incubator), or a new wallet event
- * appeared. `updatedAt > createdAt` filters out records the user just
- * created themselves.                                                     */
-
-const entrepreneurSources: ActivitySource[] = [
+  /* ── ENTREPRENEUR ("news" = one of THEIR records was mutated after it was
+   *    created — status change by an admin/incubator — or a new wallet
+   *    ledger entry appeared) ──────────────────────────────────────────── */
   {
-    navKey: '/dashboard/entrepreneur/bookings',
-    count: ({ data, user, lastSeenOf }) => {
-      const seen = lastSeenOf('/dashboard/entrepreneur/bookings');
+    key: 'bookings',
+    roles: ['ENTREPRENEUR'],
+    mode: 'view',
+    href: '/dashboard/entrepreneur/bookings',
+    count: ({ data, user, seenOf }) => {
+      const seen = seenOf('bookings');
       return (data.bookings ?? []).filter(
         (b) => b.userId === user.id && b.updatedAt > b.createdAt && b.updatedAt > seen,
       ).length;
     },
   },
   {
-    navKey: '/dashboard/entrepreneur/consultations',
-    count: ({ data, user, lastSeenOf }) => {
-      const seen = lastSeenOf('/dashboard/entrepreneur/consultations');
+    key: 'consultations',
+    roles: ['ENTREPRENEUR'],
+    mode: 'view',
+    href: '/dashboard/entrepreneur/consultations',
+    count: ({ data, user, seenOf }) => {
+      const seen = seenOf('consultations');
       return (data.mentorBookings ?? []).filter(
         (b) => b.userId === user.id && b.updatedAt > b.createdAt && b.updatedAt > seen,
       ).length;
@@ -226,9 +281,12 @@ const entrepreneurSources: ActivitySource[] = [
   {
     // New wallet ledger entries since last seen (transactions are immutable
     // and carry no updatedAt — new rows are the only usable signal).
-    navKey: '/dashboard/entrepreneur/wallet',
-    count: ({ data, user, lastSeenOf }) => {
-      const seen = lastSeenOf('/dashboard/entrepreneur/wallet');
+    key: 'wallet',
+    roles: ['ENTREPRENEUR'],
+    mode: 'view',
+    href: '/dashboard/entrepreneur/wallet',
+    count: ({ data, user, seenOf }) => {
+      const seen = seenOf('wallet');
       return (data.transactions ?? []).filter(
         (t) => t.userId === user.id && t.createdAt > seen,
       ).length;
@@ -236,16 +294,14 @@ const entrepreneurSources: ActivitySource[] = [
   },
 ];
 
-/* ─────────────────────────── Registry ────────────────────────────── */
+/* ────────────────────────────── Lookups ────────────────────────────── */
 
-/** Roles without badge sources simply get an empty list (no badges). */
-export const activitySourcesByRole: Record<string, ActivitySource[]> = {
-  ADMIN: adminSources,
-  INCUBATOR: incubatorSources,
-  ENTREPRENEUR: entrepreneurSources,
-};
+/** Sources visible to a role. Roles without sources get []. */
+export function sourcesForRole(role: string): NotificationSource[] {
+  return NOTIFICATION_SOURCES.filter((s) => (s.roles as readonly string[]).includes(role));
+}
 
-/** Nav keys registered for a role — used to validate mark-seen writes. */
-export function navKeysForRole(role: string): string[] {
-  return (activitySourcesByRole[role] ?? []).map((s) => s.navKey);
+/** Source keys registered for a role — used to validate mark-seen writes. */
+export function sourceKeysForRole(role: string): string[] {
+  return sourcesForRole(role).map((s) => s.key);
 }

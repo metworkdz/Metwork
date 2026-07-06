@@ -1,14 +1,20 @@
 /**
- * Nav activity badges — registry counts per role, last-seen semantics, the
- * single permitted write (markNavSeen key-merge), and graceful degradation.
+ * Notification counts engine — per-role registry counts, view/pending
+ * semantics, the single permitted write (markSeen key-merge), and graceful
+ * degradation.
  *
- * READ-ONLY GUARANTEE under test: getNavBadges never mutates the store and
- * never throws; markNavSeen only touches the caller's navLastSeen map.
+ * READ-ONLY GUARANTEE under test: getNotificationCounts never mutates the
+ * store and never throws; markSeen only touches the caller's
+ * notificationsSeen map.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { db } from '@/server/db/store';
-import { getNavBadges, markNavSeen } from '@/server/notifications/nav-badges';
-import { navKeysForRole } from '@/server/notifications/activity-sources';
+import { getNotificationCounts, markSeen } from '@/server/notifications/counts';
+import {
+  NOTIFICATION_SOURCES,
+  sourcesForRole,
+  sourceKeysForRole,
+} from '@/server/notifications/activity-sources';
 
 const T0 = '2026-07-01T10:00:00.000Z';
 const T1 = '2026-07-02T10:00:00.000Z';
@@ -40,22 +46,50 @@ async function seed(mutate: (d: any) => void) {
   await db.update((d) => mutate(d as any));
 }
 
-describe('navKeysForRole', () => {
-  it('returns registered keys per role and [] for roles without sources', () => {
-    expect(navKeysForRole('ADMIN')).toContain('/dashboard/admin/approvals');
-    expect(navKeysForRole('INCUBATOR')).toContain('/dashboard/incubator/bookings');
-    expect(navKeysForRole('ENTREPRENEUR')).toContain('/dashboard/entrepreneur/wallet');
-    expect(navKeysForRole('INVESTOR')).toEqual([]);
-    expect(navKeysForRole('BUSINESS')).toEqual([]);
+describe('registry shape', () => {
+  it('exposes role-scoped sources with stable keys and modes', () => {
+    expect(sourceKeysForRole('ADMIN')).toEqual([
+      'approvals',
+      'incubators',
+      'consultants',
+      'consultations',
+      'bookings',
+      'users',
+      'contacts',
+      'investor-contacts',
+      'withdrawals',
+    ]);
+    expect(sourceKeysForRole('INCUBATOR')).toEqual([
+      'bookings',
+      'domiciliation',
+      'clients',
+      'programs',
+      'events',
+    ]);
+    expect(sourceKeysForRole('ENTREPRENEUR')).toEqual(['bookings', 'consultations', 'wallet']);
+    expect(sourceKeysForRole('INVESTOR')).toEqual([]);
+    expect(sourceKeysForRole('BUSINESS')).toEqual([]);
+  });
+
+  it('keys are unique within each role and every source has a valid mode + href', () => {
+    for (const role of ['ADMIN', 'INCUBATOR', 'ENTREPRENEUR']) {
+      const keys = sourceKeysForRole(role);
+      expect(new Set(keys).size).toBe(keys.length);
+    }
+    for (const s of NOTIFICATION_SOURCES) {
+      expect(['view', 'pending']).toContain(s.mode);
+      expect(s.href.startsWith('/dashboard/')).toBe(true);
+      expect(s.roles.length).toBeGreaterThan(0);
+    }
   });
 });
 
-describe('getNavBadges — ADMIN', () => {
+describe('getNotificationCounts — ADMIN', () => {
   beforeEach(async () => {
     await seed((d) => {
       d.users.push(
         user('admin-1', 'ADMIN'),
-        // Pending gated-role account → approvals badge
+        // Pending gated-role account → approvals count
         user('inv-1', 'INVESTOR', { approvalStatus: 'PENDING' }),
         // Approved gated account → not counted
         user('inc-mgr', 'INCUBATOR', { approvalStatus: 'APPROVED' }),
@@ -86,41 +120,35 @@ describe('getNavBadges — ADMIN', () => {
     });
   });
 
-  it('counts each admin source with its page predicate', async () => {
-    const badges = await getNavBadges('admin-1');
-    expect(badges['/dashboard/admin/approvals']).toBe(1);
-    expect(badges['/dashboard/admin/incubators']).toBe(1);
-    expect(badges['/dashboard/admin/mentors']).toBe(1); // SELF+PENDING only
-    expect(badges['/dashboard/admin/mentor-bookings']).toBe(1); // PENDING only
-    expect(badges['/dashboard/admin/contacts']).toBe(1); // unhandled only
-    expect(badges['/dashboard/admin/investor-contacts']).toBe(1);
-    expect(badges['/dashboard/admin/payments']).toBe(2); // both ledgers, PENDING only
-    // 3 users seeded, admin never opened /users → all count as new
-    expect(badges['/dashboard/admin/users']).toBe(3);
+  it('counts each admin source with its page predicate (zeros included)', async () => {
+    const counts = await getNotificationCounts('admin-1');
+    expect(counts).toEqual({
+      approvals: 1,
+      incubators: 1,
+      consultants: 1, // SELF+PENDING only
+      consultations: 1, // PENDING only
+      bookings: 0, // present even at zero
+      users: 3, // never seen → all signups count
+      contacts: 1, // unhandled only
+      'investor-contacts': 1,
+      withdrawals: 2, // both ledgers, PENDING only
+    });
   });
 
-  it('last-seen filters the users feed; statuses are unaffected by it', async () => {
+  it("'view' respects the seen stamp; 'pending' ignores it", async () => {
     await seed((d) => {
-      d.users.find((u: { id: string }) => u.id === 'admin-1')!.navLastSeen = {
-        '/dashboard/admin/users': T1,
+      d.users.find((u: { id: string }) => u.id === 'admin-1')!.notificationsSeen = {
+        users: T1,
       };
       d.users.push(user('late-1', 'ENTREPRENEUR', { createdAt: T2 }));
     });
-    const badges = await getNavBadges('admin-1');
-    expect(badges['/dashboard/admin/users']).toBe(1); // only the T2 signup
-    expect(badges['/dashboard/admin/approvals']).toBe(1); // status-based unchanged
-  });
-
-  it('omits zero-count keys', async () => {
-    await seed((d) => {
-      d.contactSubmissions.forEach((c: { handled?: boolean }) => (c.handled = true));
-    });
-    const badges = await getNavBadges('admin-1');
-    expect(badges).not.toHaveProperty('/dashboard/admin/contacts');
+    const counts = await getNotificationCounts('admin-1');
+    expect(counts.users).toBe(1); // only the T2 signup
+    expect(counts.approvals).toBe(1); // pending-mode unchanged
   });
 });
 
-describe('getNavBadges — INCUBATOR scoping', () => {
+describe('getNotificationCounts — INCUBATOR scoping', () => {
   beforeEach(async () => {
     await seed((d) => {
       d.users.push(user('mgr-1', 'INCUBATOR'), user('mgr-2', 'INCUBATOR'));
@@ -141,7 +169,7 @@ describe('getNavBadges — INCUBATOR scoping', () => {
         { id: 'b-3', userId: null, itemKind: 'SPACE', itemId: 'sp-2', itemName: 'Other', vendorName: 'Other', city: 'Algiers', unit: 'DAY', quantity: 1, startsAt: T1, endsAt: T1, totalAmount: 100, status: 'PENDING', clientReference: 'r3', transactionId: null, createdAt: T0, updatedAt: T0 },
       );
       d.deskBookings.push(
-        // Mine, online, new → folded into bookings badge
+        // Mine, online, new → folded into the bookings count
         { id: 'dk-1', spaceId: 'sp-1', incubatorId: 'inc-1', deskName: 'D1', date: '2026-07-05', userId: 'u-1', clientName: null, clientPhone: null, status: 'CONFIRMED', source: 'online', bookingId: null, expiryReminderSentAt: null, createdAt: T1 },
         // Mine but offline (manual) → not "news"
         { id: 'dk-2', spaceId: 'sp-1', incubatorId: 'inc-1', deskName: 'D2', date: '2026-07-05', userId: null, clientName: 'walk-in', clientPhone: null, status: 'CONFIRMED', source: 'offline', bookingId: null, expiryReminderSentAt: null, createdAt: T1 },
@@ -161,21 +189,29 @@ describe('getNavBadges — INCUBATOR scoping', () => {
   });
 
   it('scopes every count to the managed incubator', async () => {
-    const badges = await getNavBadges('mgr-1');
-    expect(badges['/dashboard/incubator/bookings']).toBe(3); // b-1 + b-2 + dk-1
-    expect(badges['/dashboard/incubator/domiciliation']).toBe(1); // dom-1 only
-    expect(badges['/dashboard/incubator/clients']).toBe(1);
-    expect(badges['/dashboard/incubator/programs']).toBe(1); // rg-1
-    expect(badges).not.toHaveProperty('/dashboard/incubator/events'); // rg-2 cancelled
+    const counts = await getNotificationCounts('mgr-1');
+    expect(counts).toEqual({
+      bookings: 3, // b-1 + b-2 + dk-1
+      domiciliation: 1, // dom-1 only
+      clients: 1,
+      programs: 1, // rg-1
+      events: 0, // rg-2 cancelled
+    });
   });
 
-  it('returns {} for an INCUBATOR user managing no incubator', async () => {
+  it('returns all-zero counts for an INCUBATOR user managing no incubator', async () => {
     await seed((d) => d.users.push(user('mgr-3', 'INCUBATOR')));
-    expect(await getNavBadges('mgr-3')).toEqual({});
+    expect(await getNotificationCounts('mgr-3')).toEqual({
+      bookings: 0,
+      domiciliation: 0,
+      clients: 0,
+      programs: 0,
+      events: 0,
+    });
   });
 });
 
-describe('getNavBadges — ENTREPRENEUR', () => {
+describe('getNotificationCounts — ENTREPRENEUR', () => {
   beforeEach(async () => {
     await seed((d) => {
       d.users.push(user('ent-1', 'ENTREPRENEUR'));
@@ -198,53 +234,77 @@ describe('getNavBadges — ENTREPRENEUR', () => {
   });
 
   it('counts status changes and new wallet entries only', async () => {
-    const badges = await getNavBadges('ent-1');
-    expect(badges['/dashboard/entrepreneur/bookings']).toBe(1); // b-chg only
-    expect(badges['/dashboard/entrepreneur/consultations']).toBe(1);
-    expect(badges['/dashboard/entrepreneur/wallet']).toBe(1); // own txn only
+    const counts = await getNotificationCounts('ent-1');
+    expect(counts).toEqual({ bookings: 1, consultations: 1, wallet: 1 });
   });
 
-  it('clears since-last-seen sources once the surface was seen', async () => {
-    await markNavSeen('ent-1', '/dashboard/entrepreneur/bookings');
-    await markNavSeen('ent-1', '/dashboard/entrepreneur/wallet');
-    const badges = await getNavBadges('ent-1');
-    expect(badges).not.toHaveProperty('/dashboard/entrepreneur/bookings');
-    expect(badges).not.toHaveProperty('/dashboard/entrepreneur/wallet');
-    expect(badges['/dashboard/entrepreneur/consultations']).toBe(1); // untouched key
+  it("markSeen zeroes a 'view' source on the next fetch (DoD flow)", async () => {
+    await markSeen('ent-1', 'bookings');
+    await markSeen('ent-1', 'wallet');
+    const counts = await getNotificationCounts('ent-1');
+    expect(counts).toEqual({ bookings: 0, consultations: 1, wallet: 0 });
   });
 });
 
-describe('markNavSeen — the single permitted write', () => {
-  it('key-merges into navLastSeen and touches nothing else', async () => {
+describe('markSeen — the single permitted write', () => {
+  it('key-merges into notificationsSeen, returns the stamp, touches nothing else', async () => {
     await seed((d) => {
-      d.users.push(user('u-1', 'ENTREPRENEUR', { navLastSeen: { '/dashboard/entrepreneur/wallet': T0 } }));
+      d.users.push(user('u-1', 'ENTREPRENEUR', { notificationsSeen: { wallet: T0 } }));
     });
-    await markNavSeen('u-1', '/dashboard/entrepreneur/bookings');
+    const seenAt = await markSeen('u-1', 'bookings');
+    expect(seenAt).toBeTruthy();
     const data = await db.read();
     const u = data.users.find((x) => x.id === 'u-1')!;
     // Sibling key preserved (merge, not replace)
-    expect(u.navLastSeen?.['/dashboard/entrepreneur/wallet']).toBe(T0);
-    expect(u.navLastSeen?.['/dashboard/entrepreneur/bookings']).toBeTruthy();
+    expect(u.notificationsSeen?.wallet).toBe(T0);
+    expect(u.notificationsSeen?.bookings).toBe(seenAt);
     // No other field mutated
     expect(u.updatedAt).toBe(T0);
     expect(u.status).toBe('ACTIVE');
   });
 
-  it('is a no-op for an unknown user', async () => {
-    await expect(markNavSeen('ghost', '/dashboard/admin/users')).resolves.toBeUndefined();
+  it('returns null for an unknown user (no write applied)', async () => {
+    expect(await markSeen('ghost', 'users')).toBeNull();
   });
 });
 
 describe('graceful degradation', () => {
   it('returns {} for unknown users and roles without sources', async () => {
     await seed((d) => d.users.push(user('biz-1', 'BUSINESS')));
-    expect(await getNavBadges('nobody')).toEqual({});
-    expect(await getNavBadges('biz-1')).toEqual({});
+    expect(await getNotificationCounts('nobody')).toEqual({});
+    expect(await getNotificationCounts('biz-1')).toEqual({});
+  });
+
+  it('a failing source contributes 0 without failing the response', async () => {
+    await seed((d) => {
+      d.users.push(user('ent-2', 'ENTREPRENEUR'));
+      // Poison one collection (non-array, non-null so the `?? []` guard
+      // doesn't save it) so only that source's count throws.
+      d.transactions = 42;
+    });
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const counts = await getNotificationCounts('ent-2');
+    expect(counts.wallet).toBe(0);
+    expect(counts).toHaveProperty('bookings');
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
   });
 
   it('returns {} when the store read fails (never throws)', async () => {
-    const spy = vi.spyOn(db, 'read').mockRejectedValueOnce(new Error('boom'));
-    await expect(getNavBadges('admin-1')).resolves.toEqual({});
-    spy.mockRestore();
+    const readSpy = vi.spyOn(db, 'read').mockRejectedValueOnce(new Error('boom'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(getNotificationCounts('admin-1')).resolves.toEqual({});
+    readSpy.mockRestore();
+    errSpy.mockRestore();
+  });
+});
+
+describe('sourcesForRole', () => {
+  it('never leaks another role’s source despite shared keys', () => {
+    const adminBookings = sourcesForRole('ADMIN').find((s) => s.key === 'bookings')!;
+    const incBookings = sourcesForRole('INCUBATOR').find((s) => s.key === 'bookings')!;
+    expect(adminBookings.href).toBe('/dashboard/admin/bookings');
+    expect(incBookings.href).toBe('/dashboard/incubator/bookings');
+    expect(adminBookings).not.toBe(incBookings);
   });
 });

@@ -146,15 +146,17 @@ export interface UserRecord {
   /** Payout account on file (RIB or CCP RIP + holder name). */
   payoutAccount?: PayoutAccount | null;
 
-  // ─── Nav activity badges (read-only feature; this is its ONLY write) ────
+  // ─── Notification counts (read-only feature; this is its ONLY write) ────
   /**
-   * Per-nav-surface "last seen" map, keyed by the dashboard nav item's href
-   * (e.g. '/dashboard/admin/approvals') → ISO datetime of when the user last
-   * opened that surface. Additive & nullable — absent key or absent map means
-   * "never seen" (every matching record counts as new). Written by key-merge
-   * only, never map replacement, so concurrent tabs can't clobber siblings.
+   * Per-source "seen" map for the activity-count engine, keyed by the stable
+   * source key (e.g. 'approvals', 'users' — see NOTIFICATION_SOURCES in
+   * `@/server/notifications/activity-sources`) → ISO datetime of when the
+   * user last opened that surface. Additive & nullable — absent key or absent
+   * map means "never seen" ('view'-mode sources count from the beginning).
+   * Written by key-merge only, never map replacement, so concurrent tabs
+   * can't clobber sibling keys.
    */
-  navLastSeen?: Record<string, string> | null;
+  notificationsSeen?: Record<string, string> | null;
 }
 
 export interface SessionRecord {
