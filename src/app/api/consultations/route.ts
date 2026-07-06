@@ -6,42 +6,33 @@
 import { requireApiSession } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { json } from '@/server/http/json';
-import { CONSULTATION_QUOTA, getEffectiveMembershipCode } from '@/server/memberships/service';
+import { getUserConsultationQuota } from '@/server/memberships/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-function currentQuotaMonth(): string {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-}
 
 export async function GET() {
   const guard = await requireApiSession();
   if (!guard.ok) return guard.response;
 
   const userId = guard.user.id;
-  const effectiveCode = getEffectiveMembershipCode(guard.user);
-  const freeQuota = CONSULTATION_QUOTA[effectiveCode] ?? 0;
-  const quotaMonth = currentQuotaMonth();
 
-  const data = await db.read();
+  // Single source of truth for the monthly free-session quota — the same
+  // resolver the instant-book write path and the dashboard page use.
+  const [data, quota] = await Promise.all([
+    db.read(),
+    getUserConsultationQuota(userId),
+  ]);
+
   const all = (data.mentorConsultations ?? [])
     .filter((c) => c.userId === userId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-  const usedThisMonth = all.filter(
-    (c) =>
-      c.quotaMonth === quotaMonth &&
-      c.chargeType === 'FREE_QUOTA' &&
-      c.status !== 'CANCELLED',
-  ).length;
-
   return json({
     items: all,
     total: all.length,
-    freeQuota,
-    freeSessionsUsed: usedThisMonth,
-    freeSessionsRemaining: Math.max(0, freeQuota - usedThisMonth),
+    freeQuota: quota.quota,
+    freeSessionsUsed: quota.used,
+    freeSessionsRemaining: quota.remaining,
   });
 }

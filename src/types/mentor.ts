@@ -101,6 +101,14 @@ export interface Mentor {
   ratePer60?: number | null;
   /** True if a free introductory session is offered. */
   freeIntroEnabled?: boolean | null;
+
+  // ─── Self-signup approval (consultant-self / admin DTO only) ───
+  /** Approval state. Absent ⇒ APPROVED (legacy admin-added mentors). */
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  /** Rejection reason shown to the consultant (REJECTED only). */
+  approvalRejectionReason?: string | null;
+  /** Uploaded CV URL (PRIVATE — consultant-self / admin DTO only). */
+  cvUrl?: string | null;
 }
 
 export interface MentorInput {

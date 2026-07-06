@@ -6,7 +6,7 @@ import type { NextRequest } from 'next/server';
 import { ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { createMentorSchema } from '@/server/mentors/schemas';
-import { createMentor, listMentors } from '@/server/mentors/service';
+import { createMentor, listPublicMentors } from '@/server/mentors/service';
 import { toMentorDto, toMentorPrivateDto } from '@/server/mentors/serialize';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -14,7 +14,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const mentors = await listMentors();
+  const mentors = await listPublicMentors();
   return json({
     items: mentors.map(toMentorDto),
     total: mentors.length,

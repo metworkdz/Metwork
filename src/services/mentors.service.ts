@@ -30,6 +30,18 @@ export const mentorsService = {
     );
   },
 
+  /** Admin-only: approve or reject a consultant (self-signup review). */
+  async setApproval(
+    id: string,
+    status: 'APPROVED' | 'REJECTED',
+    reason?: string,
+  ): Promise<Mentor> {
+    return apiClient.patch<Mentor>(
+      `/admin/mentors/${encodeURIComponent(id)}/approval`,
+      { status, ...(reason ? { reason } : {}) },
+    );
+  },
+
   /**
    * Upload an image. Uses native fetch + FormData (the typed apiClient is
    * JSON-only). Returns the public URL the admin can paste into the

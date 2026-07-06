@@ -42,6 +42,25 @@ export type CreateMentorInput = z.infer<typeof createMentorSchema>;
 export const updateMentorSchema = createMentorSchema.partial();
 export type UpdateMentorInput = z.infer<typeof updateMentorSchema>;
 
+/**
+ * Consultant self-signup (public, unauthenticated). Deliberately minimal —
+ * the consultant completes bio/rates/availability from the portal after
+ * signing in; the admin reviews before anything goes public. Phone is
+ * REQUIRED here (unlike the admin form): it is the portal's WhatsApp
+ * notification recipient.
+ */
+export const consultantSignupSchema = z.object({
+  fullName: z.string().min(2).max(120),
+  position: z.string().min(2).max(160),
+  email: z.string().email().max(200),
+  phone: z
+    .string()
+    .refine((v) => /^\+?[0-9\s().-]{6,30}$/.test(v), { message: 'invalidPhone' }),
+  city: cityField,
+  bio: z.string().max(2000).optional().nullable(),
+});
+export type ConsultantSignupInput = z.infer<typeof consultantSignupSchema>;
+
 /* ─────────────────────────── Availability ─────────────────────────── */
 
 const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'invalidTime' });

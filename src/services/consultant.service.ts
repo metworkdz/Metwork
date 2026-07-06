@@ -10,6 +10,8 @@ export interface ConsultantMentor {
   id: string;
   fullName: string;
   position: string;
+  /** Avatar URL (self-uploadable from the portal). */
+  imageUrl?: string;
   email: string | null;
   /** Consultant WhatsApp/contact phone (private — consultant-self DTO only). */
   phone?: string | null;
@@ -34,6 +36,10 @@ export interface ConsultantMentor {
   availabilityTimezone?: string;
   minNoticeHours?: number | null;
   bufferMinutes?: number | null;
+  // Self-signup approval gate (absent ⇒ APPROVED for legacy mentors)
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvalRejectionReason?: string | null;
+  cvUrl?: string | null;
 }
 
 export interface ConsultantWalletDto {
@@ -120,6 +126,15 @@ export interface ConsultantPayoutAccount {
 
 export const consultantService = {
   me: () => apiClient.get<ConsultantMe>('/consultant/me'),
+
+  // ── Self-signup (public) — creates a PENDING account + sends a sign-in OTP ──
+  signup: (body: {
+    fullName: string;
+    position: string;
+    email: string;
+    phone: string;
+    city?: string | null;
+  }) => apiClient.post<{ ok: true }>('/consultant/signup', body),
 
   // ── Email → OTP sign-in (untrusted device / first sign-in) ──
   requestOtp: (email: string) =>

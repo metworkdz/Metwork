@@ -6,15 +6,34 @@
  * fee is admin-controlled (not editable here). Saves via PATCH
  * /api/consultant/profile.
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { CheckCircle2, Plus, Sparkles, X } from 'lucide-react';
+import { CheckCircle2, FileText, ImageUp, Loader2, Plus, Sparkles, X } from 'lucide-react';
 import { ApiClientError } from '@/lib/api-client';
 import { consultantService, type ConsultantMentor } from '@/services/consultant.service';
 import { cn } from '@/lib/utils';
 import {
-  BrandButton, CP_GREEN, ErrorBanner, Field, SectionCard, SectionHeading, cpInputClass,
+  BrandButton, CP_GREEN, ErrorBanner, Field, GhostButton, SectionCard, SectionHeading, cpInputClass,
 } from './shared';
+
+/** POST a file to the consultant self-upload endpoint. */
+async function uploadConsultantFile(file: File, kind: 'avatar' | 'cv'): Promise<string> {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('kind', kind);
+  const res = await fetch('/api/consultant/upload', {
+    method: 'POST',
+    credentials: 'include',
+    body: fd,
+  });
+  let data: unknown = null;
+  try { data = await res.json(); } catch { /* handled below */ }
+  if (!res.ok) {
+    const errBody = data as { error?: { message?: string } } | null;
+    throw new Error(errBody?.error?.message ?? `Upload failed (${res.status})`);
+  }
+  return (data as { url: string }).url;
+}
 
 export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; onSaved: (m: ConsultantMentor) => void }) {
   const t = useTranslations('consultantPortal.profile');
@@ -35,6 +54,33 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /* Avatar / CV self-upload (non-blocking: a failed upload only shows an
+     error — the profile fields and record are never touched). */
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const cvInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUrl, setAvatarUrl] = useState(mentor.imageUrl ?? '');
+  const [cvUrl, setCvUrl] = useState(mentor.cvUrl ?? '');
+  const [uploading, setUploading] = useState<'avatar' | 'cv' | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  async function handleUpload(kind: 'avatar' | 'cv', file: File | undefined) {
+    if (!file) return;
+    setUploading(kind); setUploadError(null);
+    try {
+      const url = await uploadConsultantFile(file, kind);
+      if (kind === 'avatar') setAvatarUrl(url);
+      else setCvUrl(url);
+      onSaved({ ...mentor, ...(kind === 'avatar' ? { imageUrl: url } : { cvUrl: url }) });
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : t('errorGeneric'));
+    } finally {
+      setUploading(null);
+      // Allow re-selecting the same file after a failure.
+      if (kind === 'avatar' && avatarInputRef.current) avatarInputRef.current.value = '';
+      if (kind === 'cv' && cvInputRef.current) cvInputRef.current.value = '';
+    }
+  }
 
   function addTopic() {
     const v = topicDraft.trim();
@@ -76,6 +122,50 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
     <section>
       <SectionHeading title={t('aboutHeading')} />
       <SectionCard className="space-y-5">
+        {/* Avatar + CV self-upload */}
+        <div className="flex items-center gap-4">
+          {/* eslint-disable-next-line @next/next/no-img-element -- portal avatar preview, arbitrary remote/dev-upload source */}
+          <img
+            src={avatarUrl || '/assets/profilelogogreen.png'}
+            alt={mentor.fullName}
+            className="size-16 shrink-0 rounded-2xl border border-white/10 object-cover"
+          />
+          <div className="min-w-0 flex-1 space-y-2">
+            <input
+              ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+              onChange={(e) => void handleUpload('avatar', e.target.files?.[0])}
+              className="hidden" aria-hidden
+            />
+            <input
+              ref={cvInputRef} type="file" accept="application/pdf"
+              onChange={(e) => void handleUpload('cv', e.target.files?.[0])}
+              className="hidden" aria-hidden
+            />
+            <div className="flex flex-wrap gap-2">
+              <GhostButton
+                type="button" disabled={uploading !== null}
+                onClick={() => avatarInputRef.current?.click()}
+              >
+                {uploading === 'avatar'
+                  ? <Loader2 className="size-3.5 animate-spin" />
+                  : <ImageUp className="size-3.5" />} {t('uploadPhoto')}
+              </GhostButton>
+              <GhostButton
+                type="button" disabled={uploading !== null}
+                onClick={() => cvInputRef.current?.click()}
+              >
+                {uploading === 'cv'
+                  ? <Loader2 className="size-3.5 animate-spin" />
+                  : <FileText className="size-3.5" />} {cvUrl ? t('replaceCv') : t('uploadCv')}
+              </GhostButton>
+            </div>
+            <p className="text-[11px] text-white/40">
+              {cvUrl ? t('cvOnFile') : t('uploadHint')}
+            </p>
+          </div>
+        </div>
+        {uploadError && <ErrorBanner message={uploadError} />}
+
         {/* Contact — phone is mandatory (WhatsApp recipient) + public city */}
         <Field label={t('phoneLabel')} hint={t('phoneHint')} htmlFor="cp-phone">
           <input

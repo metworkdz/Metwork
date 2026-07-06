@@ -15,12 +15,12 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { CheckCircle2, KeyRound, Mail, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, KeyRound, Mail, ShieldCheck, UserPlus } from 'lucide-react';
 import { ApiClientError } from '@/lib/api-client';
 import { consultantService } from '@/services/consultant.service';
 import { AppLogo, BrandButton, CP_GLOW, CP_GREEN, ErrorBanner, cpInputClass } from './shared';
 
-type Step = 'email' | 'code' | 'setPin';
+type Step = 'email' | 'signup' | 'code' | 'setPin';
 
 function BrandHeader({ tagline }: { tagline: string }) {
   return (
@@ -39,6 +39,7 @@ function BrandHeader({ tagline }: { tagline: string }) {
 export function EmailOtpSignIn() {
   const t = useTranslations('consultantPortal.signin');
   const ta = useTranslations('consultantPortal.access');
+  const ts = useTranslations('consultantPortal.signup');
 
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
@@ -48,6 +49,12 @@ export function EmailOtpSignIn() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
+
+  /* Self-signup form state */
+  const [fullName, setFullName] = useState('');
+  const [position, setPosition] = useState('');
+  const [phone, setPhone] = useState('');
+  const [city, setCity] = useState('');
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -80,6 +87,29 @@ export function EmailOtpSignIn() {
     } catch (err) {
       // A real failure (rate limit / server) stays put with a clear message —
       // the step never advances on a send that didn't go through.
+      setError(mapErr(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitSignup(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true); setError(null);
+    try {
+      // Generic 200 whether the email is new (PENDING account created) or
+      // already a consultant (a sign-in OTP is sent instead) — both continue
+      // to the same code step.
+      await consultantService.signup({
+        fullName: fullName.trim(),
+        position: position.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        city: city.trim() || null,
+      });
+      setStep('code');
+      setResendIn(30);
+    } catch (err) {
       setError(mapErr(err));
     } finally {
       setBusy(false);
@@ -138,6 +168,93 @@ export function EmailOtpSignIn() {
             </BrandButton>
             <p className="flex items-center justify-center gap-1.5 text-[11px] text-white/40">
               <ShieldCheck className="size-3.5" /> {t('secureNote')}
+            </p>
+            <p className="text-center text-xs text-white/45">
+              {ts('noAccountYet')}{' '}
+              <button
+                type="button"
+                onClick={() => { setStep('signup'); setError(null); }}
+                disabled={busy}
+                className="font-medium underline-offset-2 hover:underline"
+                style={{ color: CP_GREEN }}
+              >
+                {ts('createAccountCta')}
+              </button>
+            </p>
+          </form>
+        )}
+
+        {step === 'signup' && (
+          <form onSubmit={submitSignup} className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-white">
+              <UserPlus className="size-4" style={{ color: CP_GREEN }} /> {ts('heading')}
+            </div>
+            <p className="text-sm text-white/50">{ts('subtitle')}</p>
+            {error && <ErrorBanner message={error} />}
+            <div className="space-y-1.5">
+              <label htmlFor="cp-su-name" className="text-xs font-medium text-white/70">{ts('fullNameLabel')}</label>
+              <input
+                id="cp-su-name" type="text" required minLength={2} maxLength={120}
+                value={fullName} onChange={(e) => setFullName(e.target.value)}
+                disabled={busy} className={cpInputClass}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="cp-su-position" className="text-xs font-medium text-white/70">{ts('positionLabel')}</label>
+              <input
+                id="cp-su-position" type="text" required minLength={2} maxLength={160}
+                value={position} onChange={(e) => setPosition(e.target.value)}
+                placeholder={ts('positionPlaceholder')}
+                disabled={busy} className={cpInputClass}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="cp-su-email" className="text-xs font-medium text-white/70">{t('emailLabel')}</label>
+              <input
+                id="cp-su-email" type="email" required value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t('emailPlaceholder')} dir="ltr" disabled={busy}
+                className={cpInputClass}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="cp-su-phone" className="text-xs font-medium text-white/70">{ts('phoneLabel')}</label>
+              <input
+                id="cp-su-phone" type="tel" required value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+213 555 00 00 00" dir="ltr" disabled={busy}
+                className={cpInputClass}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="cp-su-city" className="text-xs font-medium text-white/70">
+                {ts('cityLabel')} <span className="font-normal text-white/40">{ts('optionalHint')}</span>
+              </label>
+              <input
+                id="cp-su-city" type="text" maxLength={120} value={city}
+                onChange={(e) => setCity(e.target.value)}
+                disabled={busy} className={cpInputClass}
+              />
+            </div>
+            <p className="text-[11px] leading-relaxed text-white/40">{ts('reviewNote')}</p>
+            <BrandButton
+              type="submit" loading={busy}
+              disabled={fullName.trim().length < 2 || position.trim().length < 2 || !email.trim() || phone.trim().length < 6}
+              className="w-full"
+            >
+              {ts('submit')}
+            </BrandButton>
+            <p className="text-center text-xs text-white/45">
+              {ts('alreadyHaveAccount')}{' '}
+              <button
+                type="button"
+                onClick={() => { setStep('email'); setError(null); }}
+                disabled={busy}
+                className="font-medium underline-offset-2 hover:underline"
+                style={{ color: CP_GREEN }}
+              >
+                {ts('backToSignIn')}
+              </button>
             </p>
           </form>
         )}

@@ -450,6 +450,133 @@ export async function sendInvestorRejectionEmail(opts: {
   return delivered;
 }
 
+/* ─────────────── Consultant (mentor) approval / rejection ─────────────── */
+
+const CONSULTANT_APPROVAL_COPY: Record<EmailLang, (name: string) => IncubatorApprovalCopy> = {
+  en: (name) => ({
+    subject: 'Your Metwork consultant profile is approved',
+    heading: `Welcome aboard, ${name}! 🎉`,
+    intro:
+      'Your consultant profile has been approved. You are now visible on the Metwork mentors page ' +
+      'and clients can book consultations with you.',
+    next: 'Here\'s what to do next:',
+    bullets: [
+      'Complete your bio, expertise and photo from the portal',
+      'Set your weekly availability so clients can pick a slot',
+      'Add your payout account to withdraw your earnings',
+    ],
+    cta: 'Open the consultant portal',
+    footer: 'Need help getting started? Reply to this email and our team will guide you.',
+  }),
+  fr: (name) => ({
+    subject: 'Votre profil consultant Metwork a été approuvé',
+    heading: `Bienvenue, ${name} ! 🎉`,
+    intro:
+      'Votre profil consultant a été approuvé. Vous êtes désormais visible sur la page mentors de ' +
+      'Metwork et les clients peuvent réserver des consultations avec vous.',
+    next: 'Voici les prochaines étapes :',
+    bullets: [
+      'Complétez votre bio, vos expertises et votre photo depuis le portail',
+      'Définissez vos disponibilités hebdomadaires pour permettre la réservation',
+      'Ajoutez votre compte de paiement pour retirer vos gains',
+    ],
+    cta: 'Accéder au portail consultant',
+    footer: 'Besoin d\'aide pour démarrer ? Répondez à cet e-mail et notre équipe vous accompagnera.',
+  }),
+  ar: (name) => ({
+    subject: 'تمت الموافقة على ملفك كمستشار في Metwork',
+    heading: `مرحبًا بك، ${name}! 🎉`,
+    intro:
+      'تمت الموافقة على ملفك كمستشار. أصبحت الآن ظاهرًا في صفحة المرشدين على Metwork ويمكن للعملاء ' +
+      'حجز استشارات معك.',
+    next: 'إليك الخطوات التالية:',
+    bullets: [
+      'أكمل نبذتك ومجالات خبرتك وصورتك من البوابة',
+      'حدّد أوقات توفرك الأسبوعية ليتمكن العملاء من الحجز',
+      'أضف حساب الدفع الخاص بك لسحب أرباحك',
+    ],
+    cta: 'فتح بوابة المستشار',
+    footer: 'هل تحتاج مساعدة للبدء؟ رد على هذا البريد وسيرشدك فريقنا.',
+  }),
+};
+
+const CONSULTANT_REJECTION_COPY: Record<EmailLang, (name: string) => RejectionCopy> = {
+  en: (name) => ({
+    subject: 'Your Metwork consultant application — more information needed',
+    heading: `Update on your application, ${name}`,
+    intro:
+      'Thank you for applying to become a consultant on Metwork. After review, your profile has ' +
+      'not been approved yet.',
+    reasonLabel: 'Reason',
+    next:
+      'You can provide more information by replying to this email — we will review your application again.',
+    footer: 'Questions? Just reply to this email and our team will help.',
+  }),
+  fr: (name) => ({
+    subject: 'Votre candidature consultant Metwork — informations complémentaires requises',
+    heading: `Mise à jour concernant votre candidature, ${name}`,
+    intro:
+      'Merci d\'avoir postulé pour devenir consultant sur Metwork. Après examen, votre profil n\'a ' +
+      'pas encore été approuvé.',
+    reasonLabel: 'Motif',
+    next:
+      'Vous pouvez fournir plus d\'informations en répondant à cet e-mail — nous réexaminerons votre candidature.',
+    footer: 'Des questions ? Répondez simplement à cet e-mail et notre équipe vous aidera.',
+  }),
+  ar: (name) => ({
+    subject: 'طلبك كمستشار في Metwork — مطلوب معلومات إضافية',
+    heading: `تحديث بخصوص طلبك، ${name}`,
+    intro:
+      'شكرًا لتقدمك لتصبح مستشارًا في Metwork. بعد المراجعة، لم تتم الموافقة على ملفك بعد.',
+    reasonLabel: 'السبب',
+    next:
+      'يمكنك تقديم مزيد من المعلومات بالرد على هذا البريد — وسنراجع طلبك مرة أخرى.',
+    footer: 'هل لديك أسئلة؟ رد على هذا البريد وسيساعدك فريقنا.',
+  }),
+};
+
+/** Send the consultant-approval email (consultant locale, default fr). */
+export async function sendConsultantApprovalEmail(opts: {
+  to: string;
+  consultantName: string;
+  lang?: EmailLang;
+}): Promise<boolean> {
+  const lang = normalizeEmailLang(opts.lang);
+  const c = CONSULTANT_APPROVAL_COPY[lang](opts.consultantName);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/mentordashboard`;
+  const html = layout(`
+    <div dir="${dir}">
+    ${h1(c.heading)}
+    ${p(c.intro)}
+    ${p(c.next)}
+    <ul style="margin:0 0 20px;padding:0 20px;color:#3f3f46;font-size:15px;line-height:2;">
+      ${c.bullets.map((b) => `<li>${b}</li>`).join('')}
+    </ul>
+    ${button(portalUrl, c.cta)}
+    ${p(`<span style="color:#71717a;font-size:13px;">${c.footer}</span>`)}
+    </div>
+  `);
+  const delivered = await sendResendEmail({ to: opts.to, subject: c.subject, html });
+  if (!delivered) console.log('[email/consultant-approval]', { to: opts.to, subject: c.subject });
+  return delivered;
+}
+
+/** Send the consultant-rejection email (consultant locale, default fr). */
+export async function sendConsultantRejectionEmail(opts: {
+  to: string;
+  consultantName: string;
+  reason: string;
+  lang?: EmailLang;
+}): Promise<boolean> {
+  const lang = normalizeEmailLang(opts.lang);
+  const c = CONSULTANT_REJECTION_COPY[lang](opts.consultantName);
+  const html = rejectionEmailHtml(c, opts.reason, lang);
+  const delivered = await sendResendEmail({ to: opts.to, subject: c.subject, html });
+  if (!delivered) console.log('[email/consultant-rejection]', { to: opts.to, subject: c.subject });
+  return delivered;
+}
+
 /* ─────────────── Business approval / rejection (admin gate) ─────────────── */
 // Neutral copy for the BUSINESS role (trainer / training centre / company) —
 // avoids the incubator-specific "coworking spaces" wording.

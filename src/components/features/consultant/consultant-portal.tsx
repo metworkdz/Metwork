@@ -127,6 +127,23 @@ function Dashboard({
       </header>
 
       <main className="flex-1 px-4 pb-28 pt-4">
+        {/* Approval-status notice — self-signups awaiting / refused review.
+            Legacy mentors have no approvalStatus and never see this. */}
+        {me.mentor.approvalStatus === 'PENDING' && (
+          <div className="mb-4 rounded-2xl border border-amber-400/25 bg-amber-400/[0.08] px-4 py-3">
+            <p className="text-sm font-semibold text-amber-300">{t('approval.pendingTitle')}</p>
+            <p className="mt-1 text-xs leading-relaxed text-amber-200/70">{t('approval.pendingBody')}</p>
+          </div>
+        )}
+        {me.mentor.approvalStatus === 'REJECTED' && (
+          <div className="mb-4 rounded-2xl border border-red-400/25 bg-red-400/[0.08] px-4 py-3">
+            <p className="text-sm font-semibold text-red-300">{t('approval.rejectedTitle')}</p>
+            <p className="mt-1 text-xs leading-relaxed text-red-200/70">
+              {me.mentor.approvalRejectionReason?.trim() || t('approval.rejectedBody')}
+            </p>
+          </div>
+        )}
+
         {/* Account hero */}
         <div className="relative mb-6 overflow-hidden rounded-3xl border border-white/[0.08] p-5" style={{ backgroundImage: CP_GLOW }}>
           <div className="flex items-center gap-3">

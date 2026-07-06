@@ -13,6 +13,7 @@ import {
   updateMentor,
 } from '@/server/mentors/service';
 import { toMentorDto, toMentorPrivateDto } from '@/server/mentors/serialize';
+import { isMentorApproved } from '@/lib/mentor-approval';
 import { fromZod, json, jsonError, noContent } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -24,7 +25,10 @@ export async function GET(
 ) {
   const { id } = await params;
   const mentor = await findMentorById(id);
-  if (!mentor) return jsonError(404, 'MENTOR_NOT_FOUND', 'Mentor not found');
+  // Public route — pending/rejected self-signups 404 like missing mentors.
+  if (!mentor || !isMentorApproved(mentor)) {
+    return jsonError(404, 'MENTOR_NOT_FOUND', 'Mentor not found');
+  }
   return json(toMentorDto(mentor));
 }
 

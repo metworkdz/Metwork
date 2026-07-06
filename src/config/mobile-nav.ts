@@ -32,7 +32,9 @@ const primaryTabHrefsByRole: Record<UserRole, string[]> = {
   ENTREPRENEUR: [
     '/dashboard/entrepreneur',
     '/dashboard/entrepreneur/bookings',
-    '/dashboard/entrepreneur/marketplace',
+    // Center tab — consultations promoted from the "More" sheet so booking a
+    // session is one tap away (marketplace moved to the overflow sheet).
+    '/dashboard/entrepreneur/consultations',
     '/dashboard/entrepreneur/wallet',
   ],
   INVESTOR: [
