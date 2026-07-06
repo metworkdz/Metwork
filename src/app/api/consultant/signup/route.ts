@@ -2,17 +2,18 @@
  * POST /api/consultant/signup  { fullName, position, email, phone, city?, bio? }
  *
  * Public consultant self-signup. Creates a PENDING mentor record (hidden from
- * every public surface until an admin approves it) and emails a sign-in OTP so
- * the new consultant can enter the portal immediately and complete their
- * profile while awaiting review.
+ * every public surface until an admin approves it) and sends a sign-in OTP —
+ * across WhatsApp + SMS (the phone is collected here) and email — so the new
+ * consultant can enter the portal immediately and complete their profile while
+ * awaiting review.
  *
  * ALWAYS returns a generic 200 — whether the email was new (record created) or
  * already belonged to a consultant (no record created; a sign-in OTP is issued
  * for the existing account instead). This makes signup enumeration-safe AND
  * gives "I already have an account" users a working path instead of an error.
  *
- * Non-blocking delivery: the record is persisted BEFORE the OTP email is sent,
- * and the send is fire-and-forget. If the email fails, the account still
+ * Non-blocking delivery: the record is persisted BEFORE the OTP is sent, and
+ * every channel is fire-and-forget. If one (or all) fail, the account still
  * exists — the login page's "resend code" path recovers it.
  */
 import type { NextRequest } from 'next/server';
@@ -23,7 +24,7 @@ import { consultantSignupSchema } from '@/server/mentors/schemas';
 import { createSelfSignupMentor } from '@/server/mentors/service';
 import { issueConsultantOtp } from '@/server/mentors/access';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
-import { sendOtpEmail } from '@/server/notifications/mock';
+import { sendConsultantOtp } from '@/server/notifications/mock';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -66,11 +67,13 @@ export async function POST(req: NextRequest) {
   // for that account — same generic response either way.
   await createSelfSignupMentor({ ...input, email });
 
-  // Issue + send the OTP (fire-and-forget — never blocks the signup result;
-  // enumeration-equalized inside issueConsultantOtp).
+  // Issue + send the OTP across all channels (fire-and-forget — never blocks
+  // the signup result; enumeration-equalized inside issueConsultantOtp). The
+  // just-created record carries the phone, so WhatsApp/SMS deliver alongside
+  // email — email deliverability alone is unreliable.
   const issued = await issueConsultantOtp(email);
-  if (issued && issued.mentor.email) {
-    sendOtpEmail(issued.mentor.email, issued.code);
+  if (issued) {
+    sendConsultantOtp({ email: issued.mentor.email, phone: issued.mentor.phone, code: issued.code });
   }
 
   return json({ ok: true });

@@ -1,15 +1,16 @@
 /**
  * POST /api/consultant/otp/request  { email }
  *
- * Step 1 of the consultant (mentor) email → OTP sign-in. Emails a 6-digit code
- * to the consultant's address. An unknown email returns an explicit
- * `NO_ACCOUNT` error so the login page can steer the visitor to the
- * self-signup branch — the enumeration reveal is a deliberate product
- * decision for this self-serve portal (rate limits still apply per IP and
- * per email, so bulk probing stays expensive).
+ * Step 1 of the consultant (mentor) sign-in. Sends a 6-digit code across every
+ * available channel (WhatsApp + SMS when a phone is on record, plus email) via
+ * the canonical `sendConsultantOtp` — email deliverability alone is unreliable.
+ * An unknown email returns an explicit `NO_ACCOUNT` error so the login page can
+ * steer the visitor to the self-signup branch — the enumeration reveal is a
+ * deliberate product decision for this self-serve portal (rate limits still
+ * apply per IP and per email, so bulk probing stays expensive).
  *
  * Reuses the existing OTP infrastructure (`@/server/auth/otp`, hashed at rest,
- * single-use, 10-min expiry, attempt lockout) and the existing OTP email sender.
+ * single-use, 10-min expiry, attempt lockout).
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
@@ -17,7 +18,7 @@ import { fromZod, json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { issueConsultantOtp } from '@/server/mentors/access';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
-import { sendOtpEmail } from '@/server/notifications/mock';
+import { sendConsultantOtp } from '@/server/notifications/mock';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -65,9 +66,9 @@ export async function POST(req: NextRequest) {
     // create-account CTA. Admin mentors (found email) are unaffected.
     return jsonError(404, 'NO_ACCOUNT', 'No consultant account is linked to this email.');
   }
-  if (issued.mentor.email) {
-    sendOtpEmail(issued.mentor.email, issued.code);
-  }
+  // Deliver on every channel (WhatsApp/SMS when a phone is on record + email),
+  // so a delayed or spam-filtered email is no longer a dead end.
+  sendConsultantOtp({ email: issued.mentor.email, phone: issued.mentor.phone, code: issued.code });
 
   return json({ ok: true });
 }

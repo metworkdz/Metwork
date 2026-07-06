@@ -27,23 +27,41 @@ interface SendOptions {
 }
 
 /**
- * Send an email via Resend. Returns false when Resend is not
- * configured (no API key) so the caller can fall back to console.log.
+ * Send an email via Resend. Returns false when Resend is not configured (no
+ * API key) OR when Resend REJECTS the send, so the caller can fall back to
+ * console.log and the failure is visible.
+ *
+ * The Resend SDK resolves with `{ data, error }` and does NOT throw on API
+ * errors (quota/rate limit, restricted key, unverified domain, invalid
+ * recipient). Treating that as success silently drops OTP emails — so the
+ * `error` field is inspected explicitly here.
  */
 export async function sendResendEmail(opts: SendOptions): Promise<boolean> {
   const r = getResend();
   if (!r) return false;
-  await r.emails.send({
-    from:        from(),
-    to:          opts.to,
-    subject:     opts.subject,
-    html:        opts.html,
-    attachments: opts.attachments?.map((a) => ({
-      filename: a.filename,
-      content:  a.content.toString('base64'),
-    })),
-  });
-  return true;
+  try {
+    const { error } = await r.emails.send({
+      from:        from(),
+      to:          opts.to,
+      subject:     opts.subject,
+      html:        opts.html,
+      attachments: opts.attachments?.map((a) => ({
+        filename: a.filename,
+        content:  a.content.toString('base64'),
+      })),
+    });
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.error(`[notify] Resend rejected email to ${opts.to} → ${error.name}: ${error.message}`);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    // Network/unexpected throw — surface it and let the caller fall back.
+    // eslint-disable-next-line no-console
+    console.error(`[notify] Resend threw sending to ${opts.to} →`, err instanceof Error ? err.message : err);
+    return false;
+  }
 }
 
 /* ─────────────────────────── HTML templates ─────────────────────────── */
