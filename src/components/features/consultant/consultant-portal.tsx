@@ -172,7 +172,7 @@ function Dashboard({
                 className="flex flex-col items-center gap-1 py-2.5"
               >
                 <span className={cn('grid h-8 w-12 place-items-center rounded-full transition-colors',
-                  active ? 'bg-[#2ECC71]/15' : '')}>
+                  active ? 'bg-[#30a735]/15' : '')}>
                   <Icon className={cn('size-5 transition-colors', active ? '' : 'text-white/40')}
                     style={active ? { color: CP_GREEN } : undefined} />
                 </span>
