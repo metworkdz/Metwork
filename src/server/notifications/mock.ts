@@ -126,6 +126,27 @@ export function sendOtpEmail(email: string, code: string): void {
     );
 }
 
+/**
+ * Canonical consultant sign-in OTP delivery — the ONE place consultant
+ * signup and email→OTP sign-in route their code through, so both stay in sync.
+ *
+ * Fires every available channel best-effort (email deliverability in Algeria
+ * is unreliable, so a single channel isn't enough): WhatsApp (primary, via the
+ * approved template) and SMS when a phone is on record, plus email always.
+ * Each channel is independent and self-logs its own failure — one dead channel
+ * never blocks the others, and the code always reaches at least one.
+ */
+export function sendConsultantOtp(opts: { email?: string | null; phone?: string | null; code: string }): void {
+  const phone = opts.phone?.trim();
+  if (phone) {
+    // WhatsApp is the reliable channel for Algerian numbers; SMS backs it up.
+    sendOtpWhatsApp(phone, opts.code);
+    sendOtpSms(phone, opts.code);
+  }
+  const email = opts.email?.trim();
+  if (email) sendOtpEmail(email, opts.code);
+}
+
 /* ─────────────────────────── Email ─────────────────────────── */
 
 export function sendWelcomeEmail(opts: {
