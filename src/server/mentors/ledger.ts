@@ -155,9 +155,14 @@ export async function creditPendingEarning(input: {
 
   return db.update<CreditPendingEarningResult>((d) => {
     const wallet = ensureMentorWallet(d, mentorId);
+    // Rate tier by record origin: SELF (portal signup, 20 % default rule) vs
+    // legacy/admin-added (standard rule). Resolved inside the same atomic
+    // update so the split and the mentor read the same document version.
+    const mentorSource = (d.mentors ?? []).find((m) => m.id === mentorId)?.source ?? null;
     const promo = computeMentorPromoSplit(
       { basePrice, collectedAmount: grossAmount },
       d.commissionRules,
+      { source: mentorSource },
     );
     // Shape kept MentorEarningSplit-compatible for existing consumers: gross =
     // what was collected, platformCommission = the (signed) platform share.

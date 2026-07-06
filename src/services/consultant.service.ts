@@ -12,6 +12,8 @@ export interface ConsultantMentor {
   position: string;
   /** Avatar URL (self-uploadable from the portal). */
   imageUrl?: string;
+  /** Public profile slug — powers /mentors/{slug}. Absent on pre-slug records (fall back to id). */
+  slug?: string;
   email: string | null;
   /** Consultant WhatsApp/contact phone (private — consultant-self DTO only). */
   phone?: string | null;

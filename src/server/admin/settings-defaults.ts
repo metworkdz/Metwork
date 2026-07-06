@@ -46,4 +46,13 @@ export const DEFAULT_COMMISSION_RULES = [
     isActive:        true,
     updatedAt:       new Date(0).toISOString(),
   },
+  {
+    id:              'rule_mentor_consultation_self',
+    name:            'New consultant commission (self-signup)',
+    transactionType: 'MENTOR_CONSULTATION_SELF',
+    rate:            0.20,
+    description:     'Platform commission on consultations by self-signed-up consultants (20%). They receive the remaining 80%. Admin-added mentors keep the standard mentor rate.',
+    isActive:        true,
+    updatedAt:       new Date(0).toISOString(),
+  },
 ] as const;

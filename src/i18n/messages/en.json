@@ -1,5 +1,11 @@
 {
   "consultantPortal": {
+    "publicLink": {
+      "label": "Your public booking link",
+      "copy": "Copy",
+      "copied": "Copied!",
+      "pendingHint": "Your link goes live as soon as your profile is approved — share it with clients then."
+    },
     "signup": {
       "noAccountYet": "New consultant?",
       "createAccountCta": "Create an account",
@@ -2337,6 +2343,10 @@
           "subtitle": "{count} pending — review and connect investors with founders."
         },
         "mentorRevenue": {
+          "subtitleDual": "Standard mentors: platform keeps {platformRate}% / mentor {mentorRate}% · Self-signup consultants: platform {selfPlatformRate}% / consultant {selfMentorRate}%. Rates configurable on the Commissions page.",
+          "commissionCol": "Commission",
+          "selfSignupBadge": "Self-signup",
+          "pendingApprovalBadge": "Pending approval",
           "title": "Mentor revenue",
           "subtitle": "Platform keeps {platformRate}% · Mentors receive {mentorRate}%. Commission rate configurable in the Commissions page.",
           "revenueTitle": "Consultation revenue & subsidies",

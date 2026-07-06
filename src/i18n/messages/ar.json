@@ -1,5 +1,11 @@
 {
   "consultantPortal": {
+    "publicLink": {
+      "label": "رابط الحجز العام الخاص بك",
+      "copy": "نسخ",
+      "copied": "تم النسخ!",
+      "pendingHint": "سيصبح رابطك فعالًا فور الموافقة على ملفك — شاركه بعدها مع عملائك."
+    },
     "signup": {
       "noAccountYet": "مستشار جديد؟",
       "createAccountCta": "إنشاء حساب",
@@ -2337,6 +2343,10 @@
           "subtitle": "{count} قيد الانتظار — راجع وربط المستثمرين بالمؤسسين."
         },
         "mentorRevenue": {
+          "subtitleDual": "المرشدون القياسيون: تأخذ المنصة {platformRate}% / المرشد {mentorRate}% · المستشارون المسجلون ذاتيًا: المنصة {selfPlatformRate}% / المستشار {selfMentorRate}%. المعدلات قابلة للضبط في صفحة العمولات.",
+          "commissionCol": "العمولة",
+          "selfSignupBadge": "تسجيل ذاتي",
+          "pendingApprovalBadge": "قيد الموافقة",
           "title": "إيرادات المرشدين",
           "subtitle": "المنصة تأخذ {platformRate}% · المرشدون يحصلون على {mentorRate}%. معدل العمولة قابل للضبط في صفحة العمولات.",
           "revenueTitle": "إيرادات الاستشارات والدعم",

@@ -1,5 +1,11 @@
 {
   "consultantPortal": {
+    "publicLink": {
+      "label": "Votre lien public de réservation",
+      "copy": "Copier",
+      "copied": "Copié !",
+      "pendingHint": "Votre lien sera actif dès l'approbation de votre profil — partagez-le ensuite avec vos clients."
+    },
     "signup": {
       "noAccountYet": "Nouveau consultant ?",
       "createAccountCta": "Créer un compte",
@@ -2337,6 +2343,10 @@
           "subtitle": "{count} en attente — examinez et connectez les investisseurs avec les fondateurs."
         },
         "mentorRevenue": {
+          "subtitleDual": "Mentors standards : la plateforme conserve {platformRate}% / mentor {mentorRate}% · Consultants auto-inscrits : plateforme {selfPlatformRate}% / consultant {selfMentorRate}%. Taux configurables sur la page Commissions.",
+          "commissionCol": "Commission",
+          "selfSignupBadge": "Auto-inscrit",
+          "pendingApprovalBadge": "En attente de validation",
           "title": "Revenus mentors",
           "subtitle": "La plateforme conserve {platformRate}% · Les mentors reçoivent {mentorRate}%. Taux configurable sur la page Commissions.",
           "revenueTitle": "Revenus et subventions des consultations",

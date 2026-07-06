@@ -18,13 +18,20 @@ export default async function AdminCommissionsPage({ params }: PageProps) {
   const t = await getTranslations('pages.dashboard');
   await requireRole(['ADMIN']);
 
-  // Seed default rules on first visit if the collection is empty
+  // Seed default rules on first visit if the collection is empty, and
+  // additively backfill any default rule TYPE a later release introduced
+  // (e.g. MENTOR_CONSULTATION_SELF) — existing rules are never modified.
   const data = await db.read();
   let rules = data.commissionRules;
-  if (rules.length === 0) {
+  const missingDefault = DEFAULT_COMMISSION_RULES.some(
+    (def) => !rules.some((r) => r.transactionType === def.transactionType),
+  );
+  if (missingDefault) {
     rules = await db.update((store) => {
-      if (store.commissionRules.length === 0) {
-        store.commissionRules.push(...DEFAULT_COMMISSION_RULES.map((r) => ({ ...r })));
+      for (const def of DEFAULT_COMMISSION_RULES) {
+        if (!store.commissionRules.some((r) => r.transactionType === def.transactionType)) {
+          store.commissionRules.push({ ...def });
+        }
       }
       return store.commissionRules;
     });
