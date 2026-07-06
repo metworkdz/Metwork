@@ -475,7 +475,8 @@
     "dashboard": "Dashboard",
     "logout": "Log out",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "badgeNewActivity": "{count, plural, one {# new activity} other {# new activities}}"
   },
   "footer": {
     "tagline": "Building Algeria's startup future, together.",
@@ -3854,6 +3855,23 @@
       "newSignupsDescription": "Allow new users to register. Disable to pause user growth.",
       "paymentsLabel": "Payments",
       "paymentsDescription": "Allow wallet top-ups and booking payments. Disable during maintenance.",
+      "sectionLanding": "Landing pages",
+      "sectionLandingDescription": "Hidden sections disappear from the public menu and their pages return a 404.",
+      "landingToggleDescription": "Visible on the public site.",
+      "landing": {
+        "programs": "Programs",
+        "events": "Events",
+        "spaces": "Spaces",
+        "mentors": "Mentors",
+        "academy": "Academy",
+        "incubators": "Incubators",
+        "investors": "Investors",
+        "startups": "Startup marketplace",
+        "consultant": "Consultant",
+        "pricing": "Memberships",
+        "about": "About",
+        "contact": "Contact"
+      },
       "saveSettings": "Save settings",
       "settingsSaved": "Settings saved.",
       "saveFailed": "Save failed",

@@ -12,6 +12,11 @@ import {
 } from 'lucide-react';
 import { Container } from '@/components/ui/container';
 import { AcademyNotifyForm } from '@/components/features/academy/academy-notify-form';
+import { assertLandingVisible } from '@/lib/landing-visibility';
+
+// ISR so the admin landing-visibility toggle propagates without a redeploy
+// (page stays statically delivered; re-rendered at most once per minute).
+export const revalidate = 60;
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -45,6 +50,8 @@ const TRACK_ICONS = [Rocket, TrendingUp, ShieldCheck, Megaphone] as const;
 const PILLAR_ICONS = [Users, BookOpen, Sparkles] as const;
 
 export default async function AcademyPage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('academy');
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.academy');

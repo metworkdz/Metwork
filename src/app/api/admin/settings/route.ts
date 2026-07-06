@@ -9,6 +9,7 @@ import { requireApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { DEFAULT_PLATFORM_SETTINGS } from '@/server/admin/settings-defaults';
+import { LANDING_SECTIONS } from '@/config/landing-sections';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,8 @@ const schema = z.object({
   maintenanceMode:  z.boolean().optional(),
   signupsEnabled:   z.boolean().optional(),
   paymentsEnabled:  z.boolean().optional(),
+  /** Public landing-section toggles — only known section ids accepted. */
+  landingVisibility: z.record(z.enum(LANDING_SECTIONS), z.boolean()).optional(),
 });
 
 export async function GET() {

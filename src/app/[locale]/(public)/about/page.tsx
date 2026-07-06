@@ -6,6 +6,11 @@ import { Container } from '@/components/ui/container';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { siteConfig } from '@/config/site';
+import { assertLandingVisible } from '@/lib/landing-visibility';
+
+// ISR so the admin landing-visibility toggle propagates without a redeploy
+// (page stays statically delivered; re-rendered at most once per minute).
+export const revalidate = 60;
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -27,6 +32,8 @@ const STATS = [
 ] as const;
 
 export default async function AboutPage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('about');
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.about');

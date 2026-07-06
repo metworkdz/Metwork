@@ -9,6 +9,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { listStartups } from '@/server/startups/service';
 import { toStartupDto } from '@/server/startups/serialize';
 import { getServerSession } from '@/lib/session';
+import { assertLandingVisible } from '@/lib/landing-visibility';
+
+// ISR so the admin landing-visibility toggle propagates without a redeploy
+// (page stays statically delivered; re-rendered at most once per minute).
+export const revalidate = 60;
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -30,6 +35,8 @@ function formatDZD(amount: number): string {
 }
 
 export default async function StartupsPage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('startups');
   const { locale } = await params;
   setRequestLocale(locale);
 

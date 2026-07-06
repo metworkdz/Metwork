@@ -26,9 +26,10 @@
         "node_modules/next/dist/bin/next",
         "dev"
       ],
-      "port": 3000,
+      "port": 3999,
       "env": {
-        "USE_LOCAL_DB": "true"
+        "USE_LOCAL_DB": "true",
+        "API_INTERNAL_URL": "http://localhost:3999/api"
       }
     }
   ]

@@ -145,6 +145,16 @@ export interface UserRecord {
 
   /** Payout account on file (RIB or CCP RIP + holder name). */
   payoutAccount?: PayoutAccount | null;
+
+  // ─── Nav activity badges (read-only feature; this is its ONLY write) ────
+  /**
+   * Per-nav-surface "last seen" map, keyed by the dashboard nav item's href
+   * (e.g. '/dashboard/admin/approvals') → ISO datetime of when the user last
+   * opened that surface. Additive & nullable — absent key or absent map means
+   * "never seen" (every matching record counts as new). Written by key-merge
+   * only, never map replacement, so concurrent tabs can't clobber siblings.
+   */
+  navLastSeen?: Record<string, string> | null;
 }
 
 export interface SessionRecord {
@@ -773,6 +783,13 @@ export interface PlatformSettingsRecord {
   maintenanceMode: boolean;
   signupsEnabled: boolean;
   paymentsEnabled: boolean;
+  /**
+   * Public landing-section visibility, keyed by section id (see
+   * LANDING_SECTIONS in `@/lib/landing-visibility`). Additive & nullable —
+   * a missing map or missing key means VISIBLE. `false` hides the section
+   * from the public nav AND 404s its routes server-side.
+   */
+  landingVisibility?: Record<string, boolean> | null;
   updatedAt: string;
 }
 

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { MentorsDirectory } from '@/components/features/mentors/mentors-directory';
 import { listPublicMentors } from '@/server/mentors/service';
 import { toMentorDto } from '@/server/mentors/serialize';
+import { assertLandingVisible } from '@/lib/landing-visibility';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,8 @@ export const metadata: Metadata = {
 };
 
 export default async function MentorsPage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('mentors');
   const { locale } = await params;
   setRequestLocale(locale);
 

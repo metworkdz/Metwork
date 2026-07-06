@@ -475,7 +475,8 @@
     "dashboard": "لوحة التحكم",
     "logout": "تسجيل الخروج",
     "openMenu": "فتح القائمة",
-    "closeMenu": "إغلاق القائمة"
+    "closeMenu": "إغلاق القائمة",
+    "badgeNewActivity": "{count, plural, zero {لا نشاط جديد} one {نشاط جديد واحد} two {نشاطان جديدان} few {# أنشطة جديدة} many {# نشاطاً جديداً} other {# نشاط جديد}}"
   },
   "footer": {
     "tagline": "نبني مستقبل الشركات الناشئة في الجزائر، معًا.",
@@ -3854,6 +3855,23 @@
       "newSignupsDescription": "السماح للمستخدمين الجدد بالتسجيل. قم بالتعطيل لإيقاف النمو مؤقتاً.",
       "paymentsLabel": "المدفوعات",
       "paymentsDescription": "السماح بشحن المحفظة ومدفوعات الحجز. قم بالتعطيل خلال فترة الصيانة.",
+      "sectionLanding": "الصفحات العامة",
+      "sectionLandingDescription": "الأقسام المخفية تختفي من القائمة العامة وتعرض صفحاتها خطأ 404.",
+      "landingToggleDescription": "ظاهر على الموقع العام.",
+      "landing": {
+        "programs": "البرامج",
+        "events": "الفعاليات",
+        "spaces": "المساحات",
+        "mentors": "المرشدون",
+        "academy": "الأكاديمية",
+        "incubators": "الحاضنات",
+        "investors": "المستثمرون",
+        "startups": "سوق الشركات الناشئة",
+        "consultant": "المستشار",
+        "pricing": "الاشتراكات",
+        "about": "من نحن",
+        "contact": "اتصل بنا"
+      },
       "saveSettings": "حفظ الإعدادات",
       "settingsSaved": "تم حفظ الإعدادات.",
       "saveFailed": "فشل الحفظ",

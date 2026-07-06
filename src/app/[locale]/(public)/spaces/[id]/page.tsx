@@ -20,6 +20,7 @@ import { categoryLabel } from '@/components/features/spaces/space-meta';
 import type { SpaceCategory } from '@/types/domain';
 import { formatCurrency } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
+import { assertLandingVisible } from '@/lib/landing-visibility';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +54,8 @@ function amenityIcon(name: string): LucideIcon {
 }
 
 export default async function SpaceDetailPage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('spaces');
   const { locale, id } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('spaces.detail');

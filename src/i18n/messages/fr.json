@@ -475,7 +475,8 @@
     "dashboard": "Tableau de bord",
     "logout": "Se déconnecter",
     "openMenu": "Ouvrir le menu",
-    "closeMenu": "Fermer le menu"
+    "closeMenu": "Fermer le menu",
+    "badgeNewActivity": "{count, plural, one {# nouvelle activité} other {# nouvelles activités}}"
   },
   "footer": {
     "tagline": "Construisons ensemble l'avenir startup de l'Algérie.",
@@ -3854,6 +3855,23 @@
       "newSignupsDescription": "Permettre aux nouveaux utilisateurs de s'inscrire. Désactiver pour mettre en pause la croissance.",
       "paymentsLabel": "Paiements",
       "paymentsDescription": "Autoriser les recharges de portefeuille et les paiements de réservation. Désactiver pendant la maintenance.",
+      "sectionLanding": "Pages publiques",
+      "sectionLandingDescription": "Les sections masquées disparaissent du menu public et leurs pages renvoient une erreur 404.",
+      "landingToggleDescription": "Visible sur le site public.",
+      "landing": {
+        "programs": "Programmes",
+        "events": "Événements",
+        "spaces": "Espaces",
+        "mentors": "Mentors",
+        "academy": "Académie",
+        "incubators": "Incubateurs",
+        "investors": "Investisseurs",
+        "startups": "Marketplace startups",
+        "consultant": "Consultant",
+        "pricing": "Abonnements",
+        "about": "À propos",
+        "contact": "Contact"
+      },
       "saveSettings": "Enregistrer les paramètres",
       "settingsSaved": "Paramètres enregistrés.",
       "saveFailed": "Échec de la sauvegarde",

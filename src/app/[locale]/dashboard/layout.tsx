@@ -6,12 +6,21 @@ import { DashboardTopbar } from '@/components/layout/dashboard-topbar';
 import { MobileDashboardHeader } from '@/components/layout/mobile-dashboard-header';
 import { MobileTabBar } from '@/components/layout/mobile-tab-bar';
 import { PendingApprovalBanner } from '@/components/shared/pending-approval-banner';
+import { NavBadgesProvider } from '@/hooks/use-nav-badges';
+import { getNavBadges } from '@/server/notifications/nav-badges';
+import { navKeysForRole } from '@/server/notifications/activity-sources';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [user, locale] = await Promise.all([getServerSession(), getLocale()]);
   if (!user) redirect(`/${locale}/login`);
 
+  // Server-computed badge seed — never throws (returns {} on any failure),
+  // so a broken count can never block the dashboard from rendering. The
+  // client provider revalidates after hydration.
+  const initialBadges = await getNavBadges(user.id);
+
   return (
+    <NavBadgesProvider initialBadges={initialBadges} navKeys={navKeysForRole(user.role)}>
     <div className="flex min-h-screen bg-muted/20">
       <DashboardSidebar role={user.role} />
       <div className="flex min-w-0 flex-1 flex-col">
@@ -30,5 +39,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <MobileTabBar role={user.role} />
       </div>
     </div>
+    </NavBadgesProvider>
   );
 }

@@ -17,15 +17,22 @@ import { Logo } from './logo';
 import { LocaleSwitcher } from './locale-switcher';
 import { UserMenu } from './user-menu';
 import { publicNavItems } from '@/config/navigation';
+import { filterPublicNavItems, type LandingVisibility } from '@/config/landing-sections';
 import { useAuth } from '@/components/providers/auth-provider';
 import { cn } from '@/lib/utils';
 
-export function Navbar() {
+interface NavbarProps {
+  /** Admin-toggled landing sections (server-resolved). {} = all visible. */
+  landingVisibility?: LandingVisibility;
+}
+
+export function Navbar({ landingVisibility = {} }: NavbarProps) {
   const t = useTranslations();
   const pathname = usePathname();
   const { isAuthenticated, user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navItems = filterPublicNavItems(publicNavItems, landingVisibility);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -51,7 +58,7 @@ export function Navbar() {
 
             {/* Desktop nav */}
             <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
-              {publicNavItems.map((item) => {
+              {navItems.map((item) => {
                 if (item.children) {
                   const active = item.children.some((c) => pathname === c.href);
                   return (
@@ -143,7 +150,7 @@ export function Navbar() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="flex h-full w-full max-w-xs flex-col px-0 sm:max-w-sm">
-                <MobileNav onNavigate={() => setMobileOpen(false)} />
+                <MobileNav items={navItems} onNavigate={() => setMobileOpen(false)} />
               </SheetContent>
             </Sheet>
           </div>
@@ -153,7 +160,13 @@ export function Navbar() {
   );
 }
 
-function MobileNav({ onNavigate }: { onNavigate: () => void }) {
+function MobileNav({
+  items,
+  onNavigate,
+}: {
+  items: typeof publicNavItems;
+  onNavigate: () => void;
+}) {
   const t = useTranslations();
   const pathname = usePathname();
   const { isAuthenticated, user } = useAuth();
@@ -165,7 +178,7 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
       </div>
       <nav className="flex-1 overflow-y-auto px-4">
         <ul className="space-y-1">
-          {publicNavItems.map((item) => {
+          {items.map((item) => {
             if (item.children) {
               return (
                 <li key={item.labelKey} className="pt-2">

@@ -103,6 +103,8 @@ const config: Config = {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
         arabic: ['var(--font-cairo)', 'system-ui', 'sans-serif'],
         display: ['var(--font-display)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
+        /** Nav activity badge numerals (design system). */
+        grotesk: ['var(--font-grotesk)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         'display-xl': ['4.5rem', { lineHeight: '1.05', letterSpacing: '-0.03em', fontWeight: '600' }],

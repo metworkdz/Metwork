@@ -3,7 +3,9 @@
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/routing';
 import { Logo } from '@/components/layout/logo';
+import { NavBadge } from '@/components/layout/nav-badge';
 import { dashboardNavByRole } from '@/config/navigation';
+import { useNavBadges } from '@/hooks/use-nav-badges';
 import { cn } from '@/lib/utils';
 import type { UserRole } from '@/types/auth';
 
@@ -15,6 +17,7 @@ export function DashboardSidebar({ role }: DashboardSidebarProps) {
   const t = useTranslations();
   const pathname = usePathname();
   const items = dashboardNavByRole[role];
+  const { badges } = useNavBadges();
 
   return (
     <aside className="hidden w-64 shrink-0 border-e border-border bg-background lg:block">
@@ -53,6 +56,11 @@ export function DashboardSidebar({ role }: DashboardSidebarProps) {
                 >
                   {Icon && <Icon className="size-4" />}
                   <span>{t(item.labelKey)}</span>
+                  <NavBadge
+                    count={badges[item.href] ?? 0}
+                    label={t('nav.badgeNewActivity', { count: badges[item.href] ?? 0 })}
+                    className="ms-auto"
+                  />
                 </Link>
               </li>
             );

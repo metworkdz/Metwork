@@ -15,6 +15,11 @@ import { Container } from '@/components/ui/container';
 import { StartupCard } from '@/components/features/startups/startup-card';
 import { listStartups } from '@/server/startups/service';
 import { toStartupDto } from '@/server/startups/serialize';
+import { assertLandingVisible } from '@/lib/landing-visibility';
+
+// ISR so the admin landing-visibility toggle propagates without a redeploy
+// (page stays statically delivered; re-rendered at most once per minute).
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'Invest in Algeria — Metwork',
@@ -29,6 +34,8 @@ interface PageProps {
 const REASON_ICONS = [Globe, Users, TrendingUp, ShieldCheck, BarChart3, Building2] as const;
 
 export default async function InvestorsPage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('investors');
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.investors');
