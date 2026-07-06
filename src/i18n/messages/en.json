@@ -4,7 +4,9 @@
       "label": "Your public booking link",
       "copy": "Copy",
       "copied": "Copied!",
-      "pendingHint": "Your link goes live as soon as your profile is approved — share it with clients then."
+      "pendingHint": "Your link goes live as soon as your profile is approved — share it with clients then.",
+      "shareWhatsApp": "Share on WhatsApp",
+      "shareMessage": "Book a consultation with me on Metwork:"
     },
     "signup": {
       "noAccountYet": "New consultant?",
@@ -34,13 +36,21 @@
       "cvUploadFailed": "The CV upload failed.",
       "cvUploadFailedDesc": "Your account is created. You can retry now or upload your CV later from your profile.",
       "cvRetry": "Retry",
-      "cvSkip": "Continue without CV (you can upload it from your profile)"
+      "cvSkip": "Continue without CV (you can upload it from your profile)",
+      "step1": "Your details",
+      "step2": "Verification",
+      "step3": "PIN code",
+      "cvDropTitle": "Add your CV (PDF)",
+      "cvSelected": "file ready",
+      "cvRemove": "Remove file"
     },
     "approval": {
       "pendingTitle": "Your profile is under review",
       "pendingBody": "Our team is reviewing your application. Complete your profile and availability now — your public page and bookings unlock as soon as you're approved.",
       "rejectedTitle": "Your application was not approved",
-      "rejectedBody": "Please contact our team for more information."
+      "rejectedBody": "Please contact our team for more information.",
+      "approvedTitle": "Account approved",
+      "approvedBody": "Your profile is validated. Share your link to receive bookings."
     },
     "title": "Consultant portal",
     "nav": {
@@ -4503,5 +4513,32 @@
       "errorPhoneExists": "An account with this phone number already exists — please log in instead.",
       "errorGeneric": "We couldn't create your account. Please try again."
     }
+  },
+  "consultantLanding": {
+    "heroBadge": "For consultants & mentors",
+    "heroTitle": "Offer your consultations. We handle the rest.",
+    "heroSubtitle": "Create your consultant profile, share your link, and receive paid bookings — scheduling, payments, and reminders included.",
+    "ctaCreate": "Create my account",
+    "ctaSignIn": "Sign in",
+    "howTitle": "How it works",
+    "howSubtitle": "Four simple steps, no technical skills needed.",
+    "stepLabel": "Step {number}",
+    "step1Title": "Create your account",
+    "step1Body": "Name, phone, consultation domain, and your CV. Five minutes is all it takes.",
+    "step2Title": "Our team reviews",
+    "step2Body": "We check every profile to keep the service trustworthy. You're notified as soon as you're approved.",
+    "step3Title": "Share your link",
+    "step3Body": "Your personal booking page — share it on WhatsApp, LinkedIn, or by email.",
+    "step4Title": "Receive bookings",
+    "step4Body": "Clients pick a slot and pay online. Track your earnings from your dashboard.",
+    "benefitsTitle": "Why Metwork",
+    "benefit1Title": "Visibility",
+    "benefit1Body": "A professional profile behind one simple link — no website to build.",
+    "benefit2Title": "Payments handled",
+    "benefit2Body": "Secure online payment (CIB / Edahabia). Earnings paid out to your account.",
+    "benefit3Title": "You stay in control",
+    "benefit3Body": "Your availability, your rates, your terms. Change them anytime.",
+    "finalTitle": "Ready to offer your consultations?",
+    "finalSubtitle": "Join the consultants growing their practice with Metwork."
   }
 }

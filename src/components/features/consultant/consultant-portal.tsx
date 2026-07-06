@@ -12,8 +12,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  ArrowUpRight, CalendarClock, CalendarDays, Check, ChevronRight, Copy, Link2, Loader2, LogOut,
-  MessageSquareText, ShieldOff, TrendingUp, User, Wallet,
+  ArrowUpRight, BadgeCheck, CalendarClock, CalendarDays, Check, ChevronRight, Copy, Link2, Loader2, LogOut,
+  MessageSquareText, Share2, ShieldOff, TrendingUp, User, Wallet,
 } from 'lucide-react';
 import { consultantService, type ConsultantMe, type ConsultantMentor } from '@/services/consultant.service';
 import { cn } from '@/lib/utils';
@@ -167,6 +167,18 @@ function Dashboard({
           </div>
         )}
 
+        {/* Approved confirmation — self-signups only (a permanent green banner
+            would be noise for legacy admin-added mentors). */}
+        {me.mentor.source === 'SELF' && me.mentor.approvalStatus === 'APPROVED' && (
+          <div className="mb-4 flex items-center gap-3 rounded-2xl border border-[#30a735]/30 bg-[#30a735]/[0.10] px-4 py-3">
+            <BadgeCheck className="size-5 shrink-0" style={{ color: CP_GREEN }} />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold" style={{ color: CP_GREEN }}>{t('approval.approvedTitle')}</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-white/60">{t('approval.approvedBody')}</p>
+            </div>
+          </div>
+        )}
+
         {/* Phone not verified — tap-through to the SMS OTP page. Shown for any
             consultant with a phone on file that hasn't been SMS-verified. */}
         {Boolean(me.mentor.phone) && me.mentor.phoneVerified !== true && (
@@ -219,6 +231,16 @@ function Dashboard({
                 </span>
               )}
             </button>
+            {/* Share on WhatsApp — the channel every consultant already uses. */}
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`${t('publicLink.shareMessage')} ${typeof window !== 'undefined' ? window.location.origin : ''}${profilePath}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#30a735]/35 bg-[#30a735]/[0.10] px-3 text-sm font-medium transition-colors hover:bg-[#30a735]/[0.18]"
+              style={{ color: CP_GREEN }}
+            >
+              <Share2 className="size-4" /> {t('publicLink.shareWhatsApp')}
+            </a>
             {me.mentor.approvalStatus === 'PENDING' && (
               <p className="mt-1.5 text-[11px] text-amber-300/80">{t('publicLink.pendingHint')}</p>
             )}

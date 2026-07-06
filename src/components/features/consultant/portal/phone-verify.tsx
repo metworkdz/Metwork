@@ -15,7 +15,8 @@ import { useTranslations } from 'next-intl';
 import { ArrowLeft, BadgeCheck, MessageSquareText, ShieldCheck } from 'lucide-react';
 import { ApiClientError } from '@/lib/api-client';
 import { consultantService, type ConsultantMe } from '@/services/consultant.service';
-import { AppLogo, BrandButton, CP_GLOW, CP_GREEN, ErrorBanner, Spinner, cpInputClass } from './shared';
+import { AppLogo, BrandButton, CP_GLOW, CP_GREEN, ErrorBanner, Spinner } from './shared';
+import { OtpCodeInput } from './otp-code-input';
 
 type Step = 'intro' | 'code' | 'done';
 
@@ -153,15 +154,10 @@ export function PhoneVerify() {
               <p className="font-medium text-white">{t('codeSent')}</p>
               <p dir="ltr" className="text-sm text-white/50">{phone}</p>
             </div>
-            <div className="space-y-1.5">
-              <label htmlFor="cp-phone-code" className="text-xs font-medium text-white/70">{t('codeLabel')}</label>
-              <input
-                id="cp-phone-code" inputMode="numeric" autoComplete="one-time-code" dir="ltr"
-                value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="••••••" disabled={busy}
-                className={`${cpInputClass} text-center text-lg tracking-[0.4em]`}
-              />
-            </div>
+            <OtpCodeInput
+              value={code} onChange={setCode} disabled={busy}
+              label={t('codeLabel')} idPrefix="cp-phone-code"
+            />
             {error && <ErrorBanner message={error} />}
             <BrandButton type="submit" loading={busy} disabled={code.trim().length < 6} className="w-full">
               {t('verify')}

@@ -14,20 +14,53 @@
  * clear error and never advances the step.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { CheckCircle2, FileText, KeyRound, Mail, ShieldCheck, UserPlus } from 'lucide-react';
+import { CheckCircle2, FileText, KeyRound, Mail, ShieldCheck, UploadCloud, UserPlus, X } from 'lucide-react';
 import { ApiClientError } from '@/lib/api-client';
 import { consultantService } from '@/services/consultant.service';
 import { algerianCities, getCityName } from '@/config/cities';
 import { consultationFields, getConsultationFieldLabel } from '@/config/consultation-fields';
 import {
-  AppLogo, BrandButton, CP_GLOW, CP_GREEN, ErrorBanner, calLocale, cpInputClass,
+  AppLogo, BrandButton, CP_GLOW, CP_GREEN, ErrorBanner, GhostButton, calLocale, cpInputClass,
   uploadConsultantFile,
 } from './shared';
+import { OtpCodeInput } from './otp-code-input';
 
 type Step = 'email' | 'signup' | 'code' | 'cv' | 'setPin';
 
 const MAX_CV_BYTES = 5 * 1024 * 1024;
+
+/**
+ * "1 Infos → 2 Code → 3 PIN" indicator, shown only during self-registration
+ * so a first-time visitor always knows where they are. Login stays clean.
+ */
+function StepIndicator({ current, labels }: { current: 1 | 2 | 3; labels: [string, string, string] }) {
+  return (
+    <ol className="flex items-center justify-center gap-1.5" aria-label={labels[current - 1]}>
+      {labels.map((label, i) => {
+        const n = (i + 1) as 1 | 2 | 3;
+        const active = n === current;
+        const done = n < current;
+        return (
+          <li key={label} className="flex items-center gap-1.5">
+            {i > 0 && <span aria-hidden className="h-px w-4 bg-white/15" />}
+            <span
+              aria-current={active ? 'step' : undefined}
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                active ? 'text-[#0D0D0D]' : done ? 'text-white/80' : 'text-white/40'
+              }`}
+              style={active ? { backgroundColor: CP_GREEN } : undefined}
+            >
+              <span className="tabular-nums">{n}</span>
+              <span className={active ? '' : 'hidden sm:inline'}>{label}</span>
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 function BrandHeader({ tagline }: { tagline: string }) {
   return (
@@ -48,7 +81,12 @@ export function EmailOtpSignIn() {
   const ta = useTranslations('consultantPortal.access');
   const ts = useTranslations('consultantPortal.signup');
 
-  const [step, setStep] = useState<Step>('email');
+  // /consultant/login?signup=1 (landing-page CTA) opens directly on the form.
+  const startOnSignup = useSearchParams().get('signup') === '1';
+  const [step, setStep] = useState<Step>(startOnSignup ? 'signup' : 'email');
+  /* True while the visitor is in the self-registration flow (drives the step
+     indicator on the shared code/PIN screens). */
+  const [signupFlow, setSignupFlow] = useState(startOnSignup);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [pin, setPin] = useState('');
@@ -213,7 +251,7 @@ export function EmailOtpSignIn() {
             <p className="text-sm text-white/50">{t('emailSubtitle')}</p>
             {error && <ErrorBanner message={error} />}
             <div className="space-y-1.5">
-              <label htmlFor="cp-email" className="text-xs font-medium text-white/70">{t('emailLabel')}</label>
+              <label htmlFor="cp-email" className="text-sm font-medium text-white/80">{t('emailLabel')}</label>
               <input
                 id="cp-email" type="email" required value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -224,33 +262,36 @@ export function EmailOtpSignIn() {
             <BrandButton type="submit" loading={busy} disabled={!email.trim()} className="w-full">
               {t('sendCode')}
             </BrandButton>
-            <p className="flex items-center justify-center gap-1.5 text-[11px] text-white/40">
+            <p className="flex items-center justify-center gap-1.5 text-xs text-white/50">
               <ShieldCheck className="size-3.5" /> {t('secureNote')}
             </p>
-            <p className="text-center text-xs text-white/45">
-              {ts('noAccountYet')}{' '}
-              <button
-                type="button"
-                onClick={() => { setStep('signup'); setError(null); }}
-                disabled={busy}
-                className="font-medium underline-offset-2 hover:underline"
-                style={{ color: CP_GREEN }}
-              >
-                {ts('createAccountCta')}
-              </button>
-            </p>
+            <div className="flex items-center gap-3" aria-hidden>
+              <span className="h-px flex-1 bg-white/10" />
+              <span className="text-xs text-white/40">{ts('noAccountYet')}</span>
+              <span className="h-px flex-1 bg-white/10" />
+            </div>
+            <GhostButton
+              type="button"
+              onClick={() => { setStep('signup'); setSignupFlow(true); setError(null); }}
+              disabled={busy}
+              className="w-full"
+            >
+              <UserPlus className="size-4" style={{ color: CP_GREEN }} />
+              {ts('createAccountCta')}
+            </GhostButton>
           </form>
         )}
 
         {step === 'signup' && (
           <form onSubmit={submitSignup} className="space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-white">
+            <StepIndicator current={1} labels={[ts('step1'), ts('step2'), ts('step3')]} />
+            <div className="flex items-center gap-2 text-base font-medium text-white">
               <UserPlus className="size-4" style={{ color: CP_GREEN }} /> {ts('heading')}
             </div>
             <p className="text-sm text-white/50">{ts('subtitle')}</p>
             {error && <ErrorBanner message={error} />}
             <div className="space-y-1.5">
-              <label htmlFor="cp-su-name" className="text-xs font-medium text-white/70">{ts('fullNameLabel')}</label>
+              <label htmlFor="cp-su-name" className="text-sm font-medium text-white/80">{ts('fullNameLabel')}</label>
               <input
                 id="cp-su-name" type="text" required minLength={2} maxLength={120}
                 value={fullName} onChange={(e) => setFullName(e.target.value)}
@@ -258,7 +299,7 @@ export function EmailOtpSignIn() {
               />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="cp-su-position" className="text-xs font-medium text-white/70">{ts('positionLabel')}</label>
+              <label htmlFor="cp-su-position" className="text-sm font-medium text-white/80">{ts('positionLabel')}</label>
               <input
                 id="cp-su-position" type="text" required minLength={2} maxLength={160}
                 value={position} onChange={(e) => setPosition(e.target.value)}
@@ -267,7 +308,7 @@ export function EmailOtpSignIn() {
               />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="cp-su-email" className="text-xs font-medium text-white/70">{t('emailLabel')}</label>
+              <label htmlFor="cp-su-email" className="text-sm font-medium text-white/80">{t('emailLabel')}</label>
               <input
                 id="cp-su-email" type="email" required value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -276,7 +317,7 @@ export function EmailOtpSignIn() {
               />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="cp-su-phone" className="text-xs font-medium text-white/70">{ts('phoneLabel')}</label>
+              <label htmlFor="cp-su-phone" className="text-sm font-medium text-white/80">{ts('phoneLabel')}</label>
               <input
                 id="cp-su-phone" type="tel" required value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -286,7 +327,7 @@ export function EmailOtpSignIn() {
               <p className="text-[11px] text-white/40">{ts('phoneCountryCodeHint')}</p>
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="cp-su-city" className="text-xs font-medium text-white/70">{ts('cityLabel')}</label>
+              <label htmlFor="cp-su-city" className="text-sm font-medium text-white/80">{ts('cityLabel')}</label>
               <select
                 id="cp-su-city" required value={city}
                 onChange={(e) => setCity(e.target.value)}
@@ -303,7 +344,7 @@ export function EmailOtpSignIn() {
               </select>
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="cp-su-field" className="text-xs font-medium text-white/70">{ts('fieldLabel')}</label>
+              <label htmlFor="cp-su-field" className="text-sm font-medium text-white/80">{ts('fieldLabel')}</label>
               <select
                 id="cp-su-field" required value={field}
                 onChange={(e) => setField(e.target.value)}
@@ -318,14 +359,45 @@ export function EmailOtpSignIn() {
               </select>
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="cp-su-cv" className="text-xs font-medium text-white/70">{ts('cvLabel')}</label>
-              <input
-                id="cp-su-cv" type="file" accept="application/pdf" required
-                onChange={onCvChange} disabled={busy}
-                className={`${cpInputClass} h-auto cursor-pointer py-2.5 file:me-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white`}
-              />
-              <p className="text-[11px] text-white/40">{ts('cvHint')}</p>
-              {cvFieldError && <p className="text-[11px] text-red-400">{cvFieldError}</p>}
+              <span className="block text-sm font-medium text-white/80">{ts('cvLabel')}</span>
+              {cvFile ? (
+                <div className="flex items-center gap-3 rounded-2xl border border-[#30a735]/40 bg-[#30a735]/[0.08] px-3.5 py-3">
+                  <FileText className="size-5 shrink-0" style={{ color: CP_GREEN }} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-white">{cvFile.name}</span>
+                    <span className="block text-xs text-white/50">
+                      {(cvFile.size / (1024 * 1024)).toFixed(1)} MB — {ts('cvSelected')}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setCvFile(null); setCvFieldError(null); }}
+                    disabled={busy}
+                    aria-label={ts('cvRemove')}
+                    className="flex size-10 shrink-0 items-center justify-center rounded-xl text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              ) : (
+                <label
+                  htmlFor="cp-su-cv"
+                  className={`flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl border border-dashed px-4 py-6 text-center transition-colors ${
+                    cvFieldError
+                      ? 'border-red-400/50 bg-red-400/[0.06]'
+                      : 'border-white/20 bg-white/[0.03] hover:border-[#30a735]/50 hover:bg-white/[0.05]'
+                  }`}
+                >
+                  <UploadCloud className="size-6" style={{ color: CP_GREEN }} />
+                  <span className="text-sm font-medium text-white">{ts('cvDropTitle')}</span>
+                  <span className="text-xs text-white/50">{ts('cvHint')}</span>
+                  <input
+                    id="cp-su-cv" type="file" accept="application/pdf" className="sr-only"
+                    onChange={onCvChange} disabled={busy}
+                  />
+                </label>
+              )}
+              {cvFieldError && <p className="text-sm text-red-400">{cvFieldError}</p>}
             </div>
             <p className="text-[11px] leading-relaxed text-white/40">{ts('reviewNote')}</p>
             <BrandButton
@@ -338,11 +410,11 @@ export function EmailOtpSignIn() {
             >
               {ts('submit')}
             </BrandButton>
-            <p className="text-center text-xs text-white/45">
+            <p className="text-center text-sm text-white/50">
               {ts('alreadyHaveAccount')}{' '}
               <button
                 type="button"
-                onClick={() => { setStep('email'); setError(null); }}
+                onClick={() => { setStep('email'); setSignupFlow(false); setError(null); }}
                 disabled={busy}
                 className="font-medium underline-offset-2 hover:underline"
                 style={{ color: CP_GREEN }}
@@ -355,35 +427,32 @@ export function EmailOtpSignIn() {
 
         {step === 'code' && (
           <form onSubmit={verify} className="space-y-4">
+            {signupFlow && <StepIndicator current={2} labels={[ts('step1'), ts('step2'), ts('step3')]} />}
             <div className="space-y-2 text-center">
               <CheckCircle2 className="mx-auto size-9" style={{ color: CP_GREEN }} />
-              <p className="font-medium text-white">{t('codeSent')}</p>
-              <p className="text-sm text-white/50">{t('codeSentDesc')}</p>
+              <p className="text-base font-medium text-white">{t('codeSent')}</p>
+              <p className="text-sm text-white/60">{t('codeSentDesc')}</p>
             </div>
-            <div className="space-y-1.5">
-              <label htmlFor="cp-code" className="text-xs font-medium text-white/70">{t('codeLabel')}</label>
-              <input
-                id="cp-code" inputMode="numeric" autoComplete="one-time-code" dir="ltr"
-                value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder={t('codePlaceholder')} disabled={busy}
-                className={`${cpInputClass} text-center text-lg tracking-[0.4em]`}
-              />
-            </div>
+            <OtpCodeInput
+              value={code} onChange={setCode} disabled={busy}
+              label={t('codeLabel')} idPrefix="cp-code"
+            />
             {error && <ErrorBanner message={error} />}
             <BrandButton type="submit" loading={busy} disabled={code.trim().length < 6} className="w-full">
               {t('verify')}
             </BrandButton>
-            <div className="flex items-center justify-between text-[11px]">
+            <div className="flex items-center justify-between text-xs">
               <button
-                type="button" onClick={() => { setStep('email'); setCode(''); setError(null); }}
-                className="text-white/45 underline-offset-2 hover:text-white/70 hover:underline" disabled={busy}
+                type="button" onClick={() => { setStep('email'); setSignupFlow(false); setCode(''); setError(null); }}
+                className="min-h-12 text-white/50 underline-offset-2 hover:text-white/80 hover:underline" disabled={busy}
               >
                 {t('changeEmail')}
               </button>
               <button
                 type="button" onClick={() => void requestCode(false)}
                 disabled={busy || resendIn > 0}
-                className="text-white/45 underline-offset-2 hover:text-white/70 hover:underline disabled:no-underline disabled:hover:text-white/45"
+                className="min-h-12 font-medium underline-offset-2 hover:underline disabled:no-underline disabled:text-white/45"
+                style={{ color: resendIn > 0 || busy ? undefined : CP_GREEN }}
               >
                 {resendIn > 0 ? t('resendCountdown', { seconds: resendIn }) : t('resend')}
               </button>
@@ -393,7 +462,8 @@ export function EmailOtpSignIn() {
 
         {step === 'cv' && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-white">
+            {signupFlow && <StepIndicator current={2} labels={[ts('step1'), ts('step2'), ts('step3')]} />}
+            <div className="flex items-center gap-2 text-base font-medium text-white">
               <FileText className="size-4" style={{ color: CP_GREEN }} /> {ts('cvStepHeading')}
             </div>
             {cvUploadError ? (
@@ -422,12 +492,13 @@ export function EmailOtpSignIn() {
 
         {step === 'setPin' && (
           <form onSubmit={savePin} className="space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-white">
+            {signupFlow && <StepIndicator current={3} labels={[ts('step1'), ts('step2'), ts('step3')]} />}
+            <div className="flex items-center gap-2 text-base font-medium text-white">
               <KeyRound className="size-4" style={{ color: CP_GREEN }} /> {ta('setHeading')}
             </div>
             <p className="text-sm text-white/50">{ta('setSubtitle')}</p>
             <div className="space-y-1.5">
-              <label htmlFor="cp-pin" className="text-xs font-medium text-white/70">{ta('pinLabel')}</label>
+              <label htmlFor="cp-pin" className="text-sm font-medium text-white/80">{ta('pinLabel')}</label>
               <input
                 id="cp-pin" inputMode="numeric" autoComplete="off" dir="ltr"
                 value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}

@@ -71,7 +71,7 @@ export function BrandButton({
       {...props}
       disabled={disabled || loading}
       className={cn(
-        'inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-semibold',
+        'inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-base font-semibold',
         'text-[#04130b] transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#30a735]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0D0D0D]',
         className,
@@ -90,7 +90,7 @@ export function GhostButton({ children, className, ...props }: React.ButtonHTMLA
     <button
       {...props}
       className={cn(
-        'inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.04] px-4 text-sm font-medium text-white/85',
+        'inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.04] px-4 text-base font-medium text-white/85',
         'transition-all hover:bg-white/[0.08] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none',
         className,
       )}
@@ -240,7 +240,7 @@ export function FlowSheet({
   );
 }
 
-/** Shared input classes for the dark branded surface. */
+/** Shared input classes for the dark branded surface. 48px tall / 16px type — comfortable tap targets. */
 export const cpInputClass =
-  'flex h-11 w-full rounded-2xl border border-white/12 bg-white/[0.045] px-3.5 text-sm text-white placeholder:text-white/35 ' +
+  'flex h-12 w-full rounded-2xl border border-white/12 bg-white/[0.045] px-3.5 text-base text-white placeholder:text-white/35 ' +
   'transition-colors focus-visible:outline-none focus-visible:border-[#30a735]/50 focus-visible:ring-2 focus-visible:ring-[#30a735]/25 disabled:opacity-50';

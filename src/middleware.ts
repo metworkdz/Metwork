@@ -37,6 +37,21 @@ function stripLocale(pathname: string): { locale: string | null; path: string } 
 export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Rebranded consultant login URL: `/consultant/login` serves the exact same
+  // login page as `/mentordashboard/login` (rewrite — the URL the visitor sees
+  // stays `/consultant/login`). `/consultant` itself is the public landing page
+  // and flows through next-intl below like any other public route.
+  if (pathname === '/consultant/login') {
+    const supported = routing.locales as readonly string[];
+    const cookieLocale = req.cookies.get(CONSULTANT_LOCALE_COOKIE)?.value;
+    const portalLocale = cookieLocale && supported.includes(cookieLocale)
+      ? cookieLocale
+      : PORTAL_DEFAULT_LOCALE;
+    const url = req.nextUrl.clone();
+    url.pathname = `/${portalLocale}/mentordashboard/login`;
+    return NextResponse.rewrite(url);
+  }
+
   // Prefix-free consultant portal: rewrite `/mentordashboard…` to its localized
   // route so the URL stays its own PWA scope. Bypasses next-intl + the auth
   // guards (the portal self-guards via the session-scoped /api/consultant/*).

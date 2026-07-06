@@ -4,7 +4,9 @@
       "label": "Votre lien public de réservation",
       "copy": "Copier",
       "copied": "Copié !",
-      "pendingHint": "Votre lien sera actif dès l'approbation de votre profil — partagez-le ensuite avec vos clients."
+      "pendingHint": "Votre lien sera actif dès l'approbation de votre profil — partagez-le ensuite avec vos clients.",
+      "shareWhatsApp": "Partager sur WhatsApp",
+      "shareMessage": "Réservez une consultation avec moi sur Metwork :"
     },
     "signup": {
       "noAccountYet": "Nouveau consultant ?",
@@ -34,13 +36,21 @@
       "cvUploadFailed": "L'envoi du CV a échoué.",
       "cvUploadFailedDesc": "Votre compte est bien créé. Vous pouvez réessayer maintenant ou envoyer votre CV plus tard depuis votre profil.",
       "cvRetry": "Réessayer",
-      "cvSkip": "Continuer sans CV (envoi possible depuis le profil)"
+      "cvSkip": "Continuer sans CV (envoi possible depuis le profil)",
+      "step1": "Vos informations",
+      "step2": "Vérification",
+      "step3": "Code PIN",
+      "cvDropTitle": "Ajoutez votre CV (PDF)",
+      "cvSelected": "fichier prêt",
+      "cvRemove": "Retirer le fichier"
     },
     "approval": {
       "pendingTitle": "Votre profil est en cours d'examen",
       "pendingBody": "Notre équipe examine votre candidature. Complétez dès maintenant votre profil et vos disponibilités — votre page publique et les réservations seront activées dès votre approbation.",
       "rejectedTitle": "Votre candidature n'a pas été approuvée",
-      "rejectedBody": "Veuillez contacter notre équipe pour plus d'informations."
+      "rejectedBody": "Veuillez contacter notre équipe pour plus d'informations.",
+      "approvedTitle": "Compte approuvé",
+      "approvedBody": "Votre profil est validé. Partagez votre lien pour recevoir des réservations."
     },
     "title": "Espace consultant",
     "nav": {
@@ -4503,5 +4513,32 @@
       "errorPhoneExists": "Un compte avec ce numéro de téléphone existe déjà — veuillez vous connecter.",
       "errorGeneric": "Nous n'avons pas pu créer votre compte. Veuillez réessayer."
     }
+  },
+  "consultantLanding": {
+    "heroBadge": "Pour les consultants & mentors",
+    "heroTitle": "Proposez vos consultations. On s'occupe du reste.",
+    "heroSubtitle": "Créez votre profil de consultant, partagez votre lien, et recevez des réservations payées — agenda, paiements et rappels inclus.",
+    "ctaCreate": "Créer mon compte",
+    "ctaSignIn": "Se connecter",
+    "howTitle": "Comment ça marche",
+    "howSubtitle": "Quatre étapes simples, aucune compétence technique requise.",
+    "stepLabel": "Étape {number}",
+    "step1Title": "Créez votre compte",
+    "step1Body": "Nom, téléphone, domaine de consultation et votre CV. Cinq minutes suffisent.",
+    "step2Title": "Notre équipe valide",
+    "step2Body": "Nous vérifions chaque profil pour garantir la qualité du service. Vous êtes prévenu dès l'approbation.",
+    "step3Title": "Partagez votre lien",
+    "step3Body": "Votre page de réservation personnelle, à partager sur WhatsApp, LinkedIn ou par e-mail.",
+    "step4Title": "Recevez vos réservations",
+    "step4Body": "Vos clients choisissent un créneau et paient en ligne. Vous suivez vos gains depuis votre tableau de bord.",
+    "benefitsTitle": "Pourquoi Metwork",
+    "benefit1Title": "De la visibilité",
+    "benefit1Body": "Votre profil professionnel accessible via un lien simple, sans site web à créer.",
+    "benefit2Title": "Paiements gérés",
+    "benefit2Body": "Paiement en ligne sécurisé (CIB / Edahabia). Vos gains sont versés sur votre compte.",
+    "benefit3Title": "Vous gardez le contrôle",
+    "benefit3Body": "Vos disponibilités, vos tarifs, vos conditions. Modifiables à tout moment.",
+    "finalTitle": "Prêt à proposer vos consultations ?",
+    "finalSubtitle": "Rejoignez les consultants qui développent leur activité avec Metwork."
   }
 }

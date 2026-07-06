@@ -46,6 +46,8 @@ export interface ConsultantMentor {
   approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   approvalRejectionReason?: string | null;
   cvUrl?: string | null;
+  /** Record origin. Absent ⇒ 'ADMIN' (legacy admin-added mentor). */
+  source?: 'ADMIN' | 'SELF';
 }
 
 export interface ConsultantWalletDto {
