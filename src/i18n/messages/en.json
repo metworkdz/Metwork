@@ -3858,6 +3858,10 @@
       "sectionLanding": "Landing pages",
       "sectionLandingDescription": "Hidden sections disappear from the public menu and their pages return a 404.",
       "landingToggleDescription": "Visible on the public site.",
+      "hideConfirmTitle": "Hide \"{page}\"?",
+      "hideConfirmDescription": "The link will disappear from the public menu and the page will return a 404 error once saved. You can show it again at any time.",
+      "hideConfirmCancel": "Cancel",
+      "hideConfirmAction": "Hide page",
       "landing": {
         "programs": "Programs",
         "events": "Events",

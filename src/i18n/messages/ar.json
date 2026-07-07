@@ -3858,6 +3858,10 @@
       "sectionLanding": "الصفحات العامة",
       "sectionLandingDescription": "الأقسام المخفية تختفي من القائمة العامة وتعرض صفحاتها خطأ 404.",
       "landingToggleDescription": "ظاهر على الموقع العام.",
+      "hideConfirmTitle": "إخفاء «{page}»؟",
+      "hideConfirmDescription": "سيختفي الرابط من القائمة العامة وستعرض الصفحة خطأ 404 بعد الحفظ. يمكنك إظهارها مجدداً في أي وقت.",
+      "hideConfirmCancel": "إلغاء",
+      "hideConfirmAction": "إخفاء الصفحة",
       "landing": {
         "programs": "البرامج",
         "events": "الفعاليات",

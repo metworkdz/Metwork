@@ -16,6 +16,9 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  // Gate here too: metadata resolves before the first byte, so a hidden section
+  // returns a real 404 status (the page-body gate alone streams 200 + 404 UI).
+  await assertLandingVisible('events');
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.events');

@@ -9,6 +9,14 @@ import { useTranslations } from 'next-intl';
 import { Save } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -60,6 +68,8 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
   const [error,   setError]   = useState<string | null>(null);
+  /** Landing section awaiting hide confirmation (hiding is destructive-ish: nav link + 404). */
+  const [pendingHide, setPendingHide] = useState<LandingSection | null>(null);
 
   function set<K extends keyof PlatformSettingsRecord>(k: K, v: PlatformSettingsRecord[K]) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -77,6 +87,12 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
       landingVisibility: { ...(f.landingVisibility ?? {}), [section]: visible },
     }));
     setSaved(false);
+  }
+
+  /** Showing is instant; hiding asks for confirmation first. */
+  function requestSectionToggle(section: LandingSection, visible: boolean) {
+    if (visible) setSectionVisible(section, true);
+    else setPendingHide(section);
   }
 
   async function save() {
@@ -168,7 +184,7 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
               label={t(`landing.${section}`)}
               description={t('landingToggleDescription')}
               checked={isSectionVisible(section)}
-              onChange={(v) => setSectionVisible(section, v)}
+              onChange={(v) => requestSectionToggle(section, v)}
             />
           ))}
         </CardContent>
@@ -188,6 +204,32 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
           {t('lastUpdated', { date: new Date(form.updatedAt).toLocaleString() })}
         </p>
       )}
+
+      {/* Hide-section confirmation — hiding removes the nav link AND 404s the page */}
+      <Dialog open={pendingHide !== null} onOpenChange={(open) => { if (!open) setPendingHide(null); }}>
+        <DialogContent showClose={false}>
+          <DialogHeader>
+            <DialogTitle>
+              {pendingHide && t('hideConfirmTitle', { page: t(`landing.${pendingHide}`) })}
+            </DialogTitle>
+            <DialogDescription>{t('hideConfirmDescription')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingHide(null)}>
+              {t('hideConfirmCancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (pendingHide) setSectionVisible(pendingHide, false);
+                setPendingHide(null);
+              }}
+            >
+              {t('hideConfirmAction')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

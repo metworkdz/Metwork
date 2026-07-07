@@ -21,11 +21,16 @@ import { assertLandingVisible } from '@/lib/landing-visibility';
 // (page stays statically delivered; re-rendered at most once per minute).
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'Invest in Algeria — Metwork',
-  description:
-    'Discover high-potential Algerian startups. Connect with founders, review opportunities, and invest in the next generation of African tech.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  // Gate here too: metadata resolves before the first byte, so a hidden section
+  // returns a real 404 status (the page-body gate alone streams 200 + 404 UI).
+  await assertLandingVisible('investors');
+  return {
+    title: 'Invest in Algeria — Metwork',
+    description:
+      'Discover high-potential Algerian startups. Connect with founders, review opportunities, and invest in the next generation of African tech.',
+  };
+}
 
 interface PageProps {
   params: Promise<{ locale: string }>;

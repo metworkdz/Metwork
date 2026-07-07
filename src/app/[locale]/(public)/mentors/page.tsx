@@ -16,11 +16,16 @@ interface PageProps {
   params: Promise<{ locale: string }>;
 }
 
-export const metadata: Metadata = {
-  title: 'Mentors — Metwork',
-  description:
-    'Meet our experienced trainers and industry experts who guide the next generation of Algerian startups. Book a consultation today.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  // Gate here too: metadata resolves before the first byte, so a hidden section
+  // returns a real 404 status (the page-body gate alone streams 200 + 404 UI).
+  await assertLandingVisible('mentors');
+  return {
+    title: 'Mentors — Metwork',
+    description:
+      'Meet our experienced trainers and industry experts who guide the next generation of Algerian startups. Book a consultation today.',
+  };
+}
 
 export default async function MentorsPage({ params }: PageProps) {
   // Landing-visibility gate — 404s server-side when the admin hides this section.

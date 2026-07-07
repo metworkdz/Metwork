@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { setRequestLocale } from 'next-intl/server';
 import { assertLandingVisible } from '@/lib/landing-visibility';
 import { ContactClient } from './contact-client';
@@ -8,6 +9,13 @@ export const revalidate = 60;
 
 interface PageProps {
   params: Promise<{ locale: string }>;
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  // Gate here too: metadata resolves before the first byte, so a hidden section
+  // returns a real 404 status (the page-body gate alone streams 200 + 404 UI).
+  await assertLandingVisible('contact');
+  return {};
 }
 
 /**
