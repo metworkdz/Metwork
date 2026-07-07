@@ -5,7 +5,7 @@ import { Link, usePathname } from '@/i18n/routing';
 import { Logo } from '@/components/layout/logo';
 import { NavBadge } from '@/components/layout/nav-badge';
 import { dashboardNavByRole } from '@/config/navigation';
-import { useNavBadges } from '@/hooks/use-nav-badges';
+import { useNotificationCounts } from '@/hooks/use-notification-counts';
 import { cn } from '@/lib/utils';
 import type { UserRole } from '@/types/auth';
 
@@ -17,7 +17,7 @@ export function DashboardSidebar({ role }: DashboardSidebarProps) {
   const t = useTranslations();
   const pathname = usePathname();
   const items = dashboardNavByRole[role];
-  const { badges } = useNavBadges();
+  const { badges } = useNotificationCounts();
 
   return (
     <aside className="hidden w-64 shrink-0 border-e border-border bg-background lg:block">

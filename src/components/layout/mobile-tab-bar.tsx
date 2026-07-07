@@ -7,7 +7,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { LocaleSwitcher } from '@/components/layout/locale-switcher';
 import { NavBadge } from '@/components/layout/nav-badge';
 import { getMobilePrimaryTabs, getMobileMoreItems, MORE_NAV } from '@/config/mobile-nav';
-import { useNavBadges } from '@/hooks/use-nav-badges';
+import { useNotificationCounts } from '@/hooks/use-notification-counts';
 import { cn } from '@/lib/utils';
 import type { UserRole } from '@/types/auth';
 import type { NavItem } from '@/config/navigation';
@@ -29,7 +29,7 @@ export function MobileTabBar({ role }: MobileTabBarProps) {
   const tabs = getMobilePrimaryTabs(role);
   const moreItems = getMobileMoreItems(role);
   const homeHref = `/dashboard/${role.toLowerCase()}`;
-  const { badges } = useNavBadges();
+  const { badges } = useNotificationCounts();
   // Aggregate for the collapsed state: everything hidden inside the More sheet.
   const moreBadgeTotal = moreItems.reduce((sum, i) => sum + (badges[i.href] ?? 0), 0);
 
