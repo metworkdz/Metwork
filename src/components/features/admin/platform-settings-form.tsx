@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { LANDING_SECTIONS, type LandingSection } from '@/config/landing-sections';
 import type { PlatformSettingsRecord } from '@/server/db/store';
 
 interface ToggleRowProps {
@@ -62,6 +63,19 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
 
   function set<K extends keyof PlatformSettingsRecord>(k: K, v: PlatformSettingsRecord[K]) {
     setForm((f) => ({ ...f, [k]: v }));
+    setSaved(false);
+  }
+
+  /** Missing map / missing key ⇒ visible (backward-compatible default). */
+  function isSectionVisible(section: LandingSection): boolean {
+    return form.landingVisibility?.[section] !== false;
+  }
+
+  function setSectionVisible(section: LandingSection, visible: boolean) {
+    setForm((f) => ({
+      ...f,
+      landingVisibility: { ...(f.landingVisibility ?? {}), [section]: visible },
+    }));
     setSaved(false);
   }
 
@@ -138,6 +152,25 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
             checked={form.paymentsEnabled}
             onChange={(v) => set('paymentsEnabled', v)}
           />
+        </CardContent>
+      </Card>
+
+      {/* Landing sections — hidden sections vanish from the public nav AND 404 */}
+      <Card>
+        <CardHeader>
+          <p className="font-medium">{t('sectionLanding')}</p>
+          <p className="text-xs text-muted-foreground">{t('sectionLandingDescription')}</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {LANDING_SECTIONS.map((section) => (
+            <ToggleRow
+              key={section}
+              label={t(`landing.${section}`)}
+              description={t('landingToggleDescription')}
+              checked={isSectionVisible(section)}
+              onChange={(v) => setSectionVisible(section, v)}
+            />
+          ))}
         </CardContent>
       </Card>
 

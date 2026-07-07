@@ -7,6 +7,7 @@ import { ProgramsExplorer } from '@/components/features/programs/programs-explor
 import { listPrograms } from '@/server/bookings/program-catalog';
 import { getProgramAttendance } from '@/server/bookings/service';
 import { algerianCities } from '@/config/cities';
+import { assertLandingVisible } from '@/lib/landing-visibility';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ProgramsPage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('programs');
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.programs');

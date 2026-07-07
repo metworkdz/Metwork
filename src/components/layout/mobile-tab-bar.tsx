@@ -5,7 +5,9 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/routing';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { LocaleSwitcher } from '@/components/layout/locale-switcher';
+import { NavBadge } from '@/components/layout/nav-badge';
 import { getMobilePrimaryTabs, getMobileMoreItems, MORE_NAV } from '@/config/mobile-nav';
+import { useNotificationCounts } from '@/hooks/use-notification-counts';
 import { cn } from '@/lib/utils';
 import type { UserRole } from '@/types/auth';
 import type { NavItem } from '@/config/navigation';
@@ -27,6 +29,9 @@ export function MobileTabBar({ role }: MobileTabBarProps) {
   const tabs = getMobilePrimaryTabs(role);
   const moreItems = getMobileMoreItems(role);
   const homeHref = `/dashboard/${role.toLowerCase()}`;
+  const { badges } = useNotificationCounts();
+  // Aggregate for the collapsed state: everything hidden inside the More sheet.
+  const moreBadgeTotal = moreItems.reduce((sum, i) => sum + (badges[i.href] ?? 0), 0);
 
   const isActive = (href: string) =>
     pathname === href || (href !== homeHref && pathname.startsWith(href));
@@ -46,7 +51,13 @@ export function MobileTabBar({ role }: MobileTabBarProps) {
         <ul className="mx-auto grid max-w-md grid-cols-5">
           {tabs.map((item) => (
             <li key={item.href}>
-              <TabLink item={item} active={isActive(item.href)} label={t(item.labelKey)} />
+              <TabLink
+                item={item}
+                active={isActive(item.href)}
+                label={t(item.labelKey)}
+                badgeCount={badges[item.href] ?? 0}
+                badgeLabel={t('nav.badgeNewActivity', { count: badges[item.href] ?? 0 })}
+              />
             </li>
           ))}
           <li>
@@ -60,9 +71,16 @@ export function MobileTabBar({ role }: MobileTabBarProps) {
                 moreActive ? 'text-primary-600' : 'text-muted-foreground',
               )}
             >
-              {MORE_NAV.icon && (
-                <MORE_NAV.icon className="size-[1.375rem]" strokeWidth={moreActive ? 2.5 : 2} />
-              )}
+              <span className="relative">
+                {MORE_NAV.icon && (
+                  <MORE_NAV.icon className="size-[1.375rem]" strokeWidth={moreActive ? 2.5 : 2} />
+                )}
+                <NavBadge
+                  count={moreBadgeTotal}
+                  label={t('nav.badgeNewActivity', { count: moreBadgeTotal })}
+                  className="absolute -top-1.5 -end-2.5"
+                />
+              </span>
               <span className="leading-none">{t(MORE_NAV.labelKey)}</span>
             </button>
           </li>
@@ -91,7 +109,14 @@ export function MobileTabBar({ role }: MobileTabBarProps) {
                         : 'text-muted-foreground hover:bg-accent hover:text-foreground',
                     )}
                   >
-                    {Icon && <Icon className="size-5" />}
+                    <span className="relative">
+                      {Icon && <Icon className="size-5" />}
+                      <NavBadge
+                        count={badges[item.href] ?? 0}
+                        label={t('nav.badgeNewActivity', { count: badges[item.href] ?? 0 })}
+                        className="absolute -top-1.5 -end-2.5"
+                      />
+                    </span>
                     <span className="line-clamp-1 leading-tight">{t(item.labelKey)}</span>
                   </Link>
                 </li>
@@ -108,7 +133,19 @@ export function MobileTabBar({ role }: MobileTabBarProps) {
   );
 }
 
-function TabLink({ item, active, label }: { item: NavItem; active: boolean; label: string }) {
+function TabLink({
+  item,
+  active,
+  label,
+  badgeCount,
+  badgeLabel,
+}: {
+  item: NavItem;
+  active: boolean;
+  label: string;
+  badgeCount: number;
+  badgeLabel: string;
+}) {
   const Icon = item.icon;
   return (
     <Link
@@ -119,7 +156,10 @@ function TabLink({ item, active, label }: { item: NavItem; active: boolean; labe
         active ? 'text-primary-600' : 'text-muted-foreground',
       )}
     >
-      {Icon && <Icon className="size-[1.375rem]" strokeWidth={active ? 2.5 : 2} />}
+      <span className="relative">
+        {Icon && <Icon className="size-[1.375rem]" strokeWidth={active ? 2.5 : 2} />}
+        <NavBadge count={badgeCount} label={badgeLabel} className="absolute -top-1.5 -end-2.5" />
+      </span>
       <span className="leading-none">{label}</span>
     </Link>
   );

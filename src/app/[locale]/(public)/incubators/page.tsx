@@ -13,6 +13,11 @@ import {
 import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/container';
 import { Button } from '@/components/ui/button';
+import { assertLandingVisible } from '@/lib/landing-visibility';
+
+// ISR so the admin landing-visibility toggle propagates without a redeploy
+// (page stays statically delivered; re-rendered at most once per minute).
+export const revalidate = 60;
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -28,6 +33,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 const FEATURE_ICONS = [Building2, CalendarRange, Users, ReceiptText, BarChart3, Network] as const;
 
 export default async function IncubatorsPage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('incubators');
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.incubators');

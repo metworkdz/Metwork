@@ -21,6 +21,7 @@ import { safeLinkedinUrl } from '@/lib/linkedin';
 import { DURATION_OPTIONS, computePrice } from '@/lib/consultation-pricing';
 import { formatCurrency } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
+import { assertLandingVisible } from '@/lib/landing-visibility';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +56,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function MentorProfilePage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('mentors');
   const { locale, slug } = await params;
   setRequestLocale(locale);
 

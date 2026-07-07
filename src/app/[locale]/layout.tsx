@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Cairo, Plus_Jakarta_Sans } from 'next/font/google';
+import { Inter, Cairo, Plus_Jakarta_Sans, Space_Grotesk } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { Providers } from '@/components/providers';
@@ -27,6 +27,14 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   variable: '--font-display',
   display: 'swap',
   weight: ['500', '600', '700', '800'],
+});
+
+// Nav badge numerals only (design system: red badge counts use Space Grotesk).
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-grotesk',
+  display: 'swap',
+  weight: ['500', '700'],
 });
 
 export function generateStaticParams() {
@@ -137,7 +145,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
-      <body className={cn(inter.variable, cairo.variable, plusJakartaSans.variable, 'min-h-screen bg-background font-sans')}>
+      <body className={cn(inter.variable, cairo.variable, plusJakartaSans.variable, spaceGrotesk.variable, 'min-h-screen bg-background font-sans')}>
         <Providers locale={locale} messages={messages} initialUser={sessionUser}>
           {children}
         </Providers>

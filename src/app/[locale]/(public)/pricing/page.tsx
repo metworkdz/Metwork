@@ -12,6 +12,11 @@ import {
 import { membershipTiers, incubatorSubscriptionTiers } from '@/config/memberships';
 import { formatCurrency } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
+import { assertLandingVisible } from '@/lib/landing-visibility';
+
+// ISR so the admin landing-visibility toggle propagates without a redeploy
+// (page stays statically delivered; re-rendered at most once per minute).
+export const revalidate = 60;
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -25,6 +30,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function PricingPage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('pricing');
   const { locale } = await params;
   setRequestLocale(locale);
   const lang = locale as Locale;

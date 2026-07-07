@@ -3,11 +3,24 @@ import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/container';
 import { Logo } from './logo';
 import { footerNavGroups } from '@/config/navigation';
+import { isPathVisible, type LandingVisibility } from '@/config/landing-sections';
 import { siteConfig } from '@/config/site';
 
-export function Footer() {
+interface FooterProps {
+  /** Admin-toggled landing sections (server-resolved). {} = all visible. */
+  landingVisibility?: LandingVisibility;
+}
+
+export function Footer({ landingVisibility = {} }: FooterProps) {
   const t = useTranslations();
   const year = new Date().getFullYear();
+  // Hide links to hidden sections; drop a group when all its links are hidden.
+  const groups = footerNavGroups
+    .map((group) => ({
+      ...group,
+      links: group.links.filter((link) => isPathVisible(link.href, landingVisibility)),
+    }))
+    .filter((group) => group.links.length > 0);
 
   return (
     <footer className="mt-24 border-t border-border bg-muted/30">
@@ -28,7 +41,7 @@ export function Footer() {
 
           {/* Link groups */}
           <div className="grid grid-cols-2 gap-8 md:col-span-7 md:grid-cols-3">
-            {footerNavGroups.map((group) => (
+            {groups.map((group) => (
               <div key={group.titleKey}>
                 <h3 className="text-sm font-semibold text-foreground">{t(group.titleKey)}</h3>
                 <ul className="mt-4 space-y-3">

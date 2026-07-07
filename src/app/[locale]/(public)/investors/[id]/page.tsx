@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { findStartupById } from '@/server/startups/service';
 import { toStartupDto } from '@/server/startups/serialize';
 import { db } from '@/server/db/store';
+import { assertLandingVisible } from '@/lib/landing-visibility';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +38,8 @@ function formatDZD(amount: number): string {
 }
 
 export default async function StartupDetailPage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('investors');
   const { locale, id } = await params;
   setRequestLocale(locale);
 

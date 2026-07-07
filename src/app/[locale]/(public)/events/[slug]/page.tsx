@@ -19,6 +19,7 @@ import { ImageCarousel } from '@/components/shared/image-carousel';
 import { readSession } from '@/server/auth/session';
 import { formatCurrency, formatDate } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
+import { assertLandingVisible } from '@/lib/landing-visibility';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +44,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function EventDetailPage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('events');
   const { locale, slug } = await params;
   setRequestLocale(locale);
 

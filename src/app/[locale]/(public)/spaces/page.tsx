@@ -3,6 +3,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { SpacesPageClient } from '@/components/features/spaces/spaces-page-client';
 import { listSpaces } from '@/server/bookings/space-catalog';
 import { algerianCities } from '@/config/cities';
+import { assertLandingVisible } from '@/lib/landing-visibility';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function SpacesPage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('spaces');
   const { locale } = await params;
   setRequestLocale(locale);
 

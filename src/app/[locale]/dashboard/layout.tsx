@@ -6,12 +6,22 @@ import { DashboardTopbar } from '@/components/layout/dashboard-topbar';
 import { MobileDashboardHeader } from '@/components/layout/mobile-dashboard-header';
 import { MobileTabBar } from '@/components/layout/mobile-tab-bar';
 import { PendingApprovalBanner } from '@/components/shared/pending-approval-banner';
+import { NotificationCountsProvider } from '@/hooks/use-notification-counts';
+import { getNotificationCounts } from '@/server/notifications/counts';
+import { sourcesForRole } from '@/server/notifications/activity-sources';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [user, locale] = await Promise.all([getServerSession(), getLocale()]);
   if (!user) redirect(`/${locale}/login`);
 
+  // Server-computed counts seed — never throws (returns {} on any failure),
+  // so a broken count can never block the dashboard from rendering. The
+  // client provider revalidates after hydration.
+  const initialCounts = await getNotificationCounts(user.id);
+  const sources = sourcesForRole(user.role).map(({ key, href, mode }) => ({ key, href, mode }));
+
   return (
+    <NotificationCountsProvider initialCounts={initialCounts} sources={sources}>
     <div className="flex min-h-screen bg-muted/20">
       <DashboardSidebar role={user.role} />
       <div className="flex min-w-0 flex-1 flex-col">
@@ -30,5 +40,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <MobileTabBar role={user.role} />
       </div>
     </div>
+    </NotificationCountsProvider>
   );
 }

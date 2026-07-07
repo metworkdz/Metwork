@@ -5,6 +5,11 @@ import {
 } from 'lucide-react';
 import { Container } from '@/components/ui/container';
 import { Badge } from '@/components/ui/badge';
+import { assertLandingVisible } from '@/lib/landing-visibility';
+
+// ISR so the admin landing-visibility toggle propagates without a redeploy
+// (page stays statically delivered; re-rendered at most once per minute).
+export const revalidate = 60;
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -23,6 +28,8 @@ export const metadata: Metadata = {
  * anchors, not the localized Link).
  */
 export default async function ConsultantLandingPage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('consultant');
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('consultantLanding');

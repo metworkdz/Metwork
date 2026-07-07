@@ -9,6 +9,7 @@ import { EventsExplorer } from '@/components/features/events/events-explorer';
 import { listEvents } from '@/server/bookings/event-catalog';
 import { getEventAttendance } from '@/server/bookings/service';
 import { algerianCities } from '@/config/cities';
+import { assertLandingVisible } from '@/lib/landing-visibility';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -22,6 +23,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function EventsPage({ params }: PageProps) {
+  // Landing-visibility gate — 404s server-side when the admin hides this section.
+  await assertLandingVisible('events');
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.events');

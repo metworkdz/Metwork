@@ -145,6 +145,18 @@ export interface UserRecord {
 
   /** Payout account on file (RIB or CCP RIP + holder name). */
   payoutAccount?: PayoutAccount | null;
+
+  // ─── Notification counts (read-only feature; this is its ONLY write) ────
+  /**
+   * Per-source "seen" map for the activity-count engine, keyed by the stable
+   * source key (e.g. 'approvals', 'users' — see NOTIFICATION_SOURCES in
+   * `@/server/notifications/activity-sources`) → ISO datetime of when the
+   * user last opened that surface. Additive & nullable — absent key or absent
+   * map means "never seen" ('view'-mode sources count from the beginning).
+   * Written by key-merge only, never map replacement, so concurrent tabs
+   * can't clobber sibling keys.
+   */
+  notificationsSeen?: Record<string, string> | null;
 }
 
 export interface SessionRecord {
@@ -773,6 +785,13 @@ export interface PlatformSettingsRecord {
   maintenanceMode: boolean;
   signupsEnabled: boolean;
   paymentsEnabled: boolean;
+  /**
+   * Public landing-section visibility, keyed by section id (see
+   * LANDING_SECTIONS in `@/lib/landing-visibility`). Additive & nullable —
+   * a missing map or missing key means VISIBLE. `false` hides the section
+   * from the public nav AND 404s its routes server-side.
+   */
+  landingVisibility?: Record<string, boolean> | null;
   updatedAt: string;
 }
 
