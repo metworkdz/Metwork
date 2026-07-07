@@ -16,11 +16,16 @@ interface PageProps {
   params: Promise<{ locale: string }>;
 }
 
-export const metadata: Metadata = {
-  title: 'About us — Metwork',
-  description:
-    "Learn about EURL METWORK — the company building Algeria's unified startup ecosystem, connecting entrepreneurs, investors, and incubators.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  // Gate here too: metadata resolves before the first byte, so a hidden section
+  // returns a real 404 status (the page-body gate alone streams 200 + 404 UI).
+  await assertLandingVisible('about');
+  return {
+    title: 'About us — Metwork',
+    description:
+      "Learn about EURL METWORK — the company building Algeria's unified startup ecosystem, connecting entrepreneurs, investors, and incubators.",
+  };
+}
 
 const VALUE_ICONS = [Target, Users, Zap] as const;
 

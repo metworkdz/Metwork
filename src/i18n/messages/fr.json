@@ -3858,6 +3858,10 @@
       "sectionLanding": "Pages publiques",
       "sectionLandingDescription": "Les sections masquées disparaissent du menu public et leurs pages renvoient une erreur 404.",
       "landingToggleDescription": "Visible sur le site public.",
+      "hideConfirmTitle": "Masquer « {page} » ?",
+      "hideConfirmDescription": "Le lien disparaîtra du menu public et la page renverra une erreur 404 après l'enregistrement. Vous pourrez la réafficher à tout moment.",
+      "hideConfirmCancel": "Annuler",
+      "hideConfirmAction": "Masquer la page",
       "landing": {
         "programs": "Programmes",
         "events": "Événements",

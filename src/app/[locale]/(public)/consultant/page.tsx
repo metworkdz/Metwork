@@ -15,11 +15,16 @@ interface PageProps {
   params: Promise<{ locale: string }>;
 }
 
-export const metadata: Metadata = {
-  title: 'Consultants — Metwork',
-  description:
-    'Offer paid consultations on Metwork: create your consultant profile, share your booking link, and get paid — visibility, scheduling, and payments handled.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  // Gate here too: metadata resolves before the first byte, so a hidden section
+  // returns a real 404 status (the page-body gate alone streams 200 + 404 UI).
+  await assertLandingVisible('consultant');
+  return {
+    title: 'Consultants — Metwork',
+    description:
+      'Offer paid consultations on Metwork: create your consultant profile, share your booking link, and get paid — visibility, scheduling, and payments handled.',
+  };
+}
 
 /**
  * Public landing page for the consultant offering (/{locale}/consultant).
