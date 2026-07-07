@@ -40,6 +40,7 @@ import { creditPendingEarning } from '@/server/mentors/ledger';
 import { resolveSettledStatus } from './lifecycle';
 import { sendConsultationReadyOnce } from '@/server/notifications/consultation-ready';
 import { sendBookingNotificationOnce } from '@/server/notifications/booking-notification';
+import { sendConsultationReceivedOnce } from '@/server/notifications/consultation-received';
 
 /** Pay tokens live for 7 days — long enough to finish a hosted checkout. */
 const PAY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -349,9 +350,12 @@ export async function createInstantBooking(
     if (!result.replayed) await creditMentorForSettledBooking(result.booking);
     // Settled booking now occupies the slot — the transient hold can go.
     if (slotLocked) await releaseSlot(bookingId);
-    // Notify the consultant of the new booking (once), and the client if READY.
+    // Notify the consultant of the new booking (once) and the client: full
+    // meeting details when READY, otherwise a "request received" acknowledgment
+    // (each self-deduped, so replays never re-send).
     if (!result.replayed) void sendBookingNotificationOnce(result.booking.id);
     if (result.booking.status === 'READY') void sendConsultationReadyOnce(result.booking.id);
+    else void sendConsultationReceivedOnce(result.booking.id);
     return { ok: true, mode: 'confirmed', booking: result.booking, replayed: result.replayed };
   }
 
@@ -372,6 +376,9 @@ export async function createInstantBooking(
       d.mentorBookings.push(booking);
       return { booking, replayed: false };
     });
+    // Acknowledge the request by email right away (self-deduped) — the guest
+    // hears from us even before completing the hosted checkout.
+    void sendConsultationReceivedOnce(result.booking.id);
     return {
       ok: true,
       mode: 'awaiting_payment',
@@ -442,6 +449,7 @@ export async function createInstantBooking(
     if (slotLocked) await releaseSlot(bookingId);
     void sendBookingNotificationOnce(created.booking.id);
     if (created.booking.status === 'READY') void sendConsultationReadyOnce(created.booking.id);
+    else void sendConsultationReceivedOnce(created.booking.id);
     return { ok: true, mode: 'confirmed', booking: created.booking, replayed: false };
   }
 
@@ -562,6 +570,7 @@ export async function settleMemberTopUp(token: string): Promise<SettleMemberResu
     await releaseSlot(claim.booking.id);
     void sendBookingNotificationOnce(claim.booking.id);
     if (claim.booking.status === 'READY') void sendConsultationReadyOnce(claim.booking.id);
+    else void sendConsultationReceivedOnce(claim.booking.id);
   }
   return { state: claim.booking.paymentStatus === 'PAID' ? 'CONFIRMED' : 'AWAITING_PAYMENT', booking: claim.booking };
 }

@@ -6,6 +6,7 @@
 export {
   sendWhatsAppOTP,
   sendSMSOTP,
+  sendSMSMessage,
   sendWhatsAppMessage,
   sendWhatsAppNewBookingTemplate,
 } from '@/lib/infobip';

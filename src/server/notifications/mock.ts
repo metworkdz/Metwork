@@ -11,7 +11,7 @@
  */
 
 import { recordE2eEmail } from './e2e-email-sink';
-import { sendWhatsAppOTP, sendSMSOTP, sendWhatsAppMessage, sendWhatsAppNewBookingTemplate } from './sms';
+import { sendWhatsAppOTP, sendSMSOTP, sendSMSMessage, sendWhatsAppMessage, sendWhatsAppNewBookingTemplate } from './sms';
 import {
   sendResendEmail,
   otpEmailHtml,
@@ -20,6 +20,7 @@ import {
   passwordResetEmailHtml,
   consultationReadyEmailHtml,
   consultantNewBookingEmailHtml,
+  consultantSessionReminderEmailHtml,
   contactNotificationHtml,
   bookingReceiptEmailHtml,
   bookingConfirmedWithQrEmailHtml,
@@ -251,7 +252,11 @@ export function sendConsultationReadyEmail(input: MentorConfirmationInput): void
       console.error(`${banner} Consultation ready email failed →`, err.message),
     );
 
-  // WhatsApp nudge — fire-and-forget.
+  // WhatsApp nudge → SMS fallback — both fire-and-forget. Business-initiated
+  // free-form WhatsApp only delivers inside a 24h service window the client
+  // rarely has open, so a rejected WhatsApp send cascades to plain SMS (no
+  // template restriction) — the client always gets the meeting details on
+  // their phone, not just by email.
   if (booking.userPhone) {
     const linkPart = booking.meetingMode === 'ONLINE' && booking.meetingLink
       ? `\n${isFr ? 'Lien' : 'Link'}: ${booking.meetingLink}`
@@ -265,10 +270,14 @@ export function sendConsultationReadyEmail(input: MentorConfirmationInput): void
       `${isFr ? 'Consultant' : 'Consultant'}: ${mentor.fullName}` +
       linkPart;
     if (process.env.SMS_PROVIDER === 'infobip') {
-      sendWhatsAppMessage(booking.userPhone, waText).catch((err: Error) =>
+      sendWhatsAppMessage(booking.userPhone, waText).catch((waErr: Error) => {
         // eslint-disable-next-line no-console
-        console.error(`${banner} WhatsApp consult ready failed →`, err.message),
-      );
+        console.error(`${banner} WhatsApp consult ready failed → ${waErr.message} — falling back to SMS`);
+        sendSMSMessage(booking.userPhone, waText).catch((smsErr: Error) =>
+          // eslint-disable-next-line no-console
+          console.error(`${banner} SMS consult ready fallback failed →`, smsErr.message),
+        );
+      });
     } else {
       // eslint-disable-next-line no-console
       console.log(`${banner} WHATSAPP (consult-ready) → ${booking.userPhone} :: ${waText.slice(0, 80)}…`);
@@ -361,6 +370,60 @@ export function sendConsultantNewBookingEmail(input: {
       console.log(`${banner} WHATSAPP (new-booking) → ${mentor.phone} :: ${firstName} ${date} ${time} ${duration} ${type} ref=${bookingRef}`);
     }
   }
+}
+
+/**
+ * Pre-session reminder to the CONSULTANT — the meeting details (or an "add
+ * your link" warning for AWAITING_LINK bookings) as the session approaches.
+ * Fire-and-forget; dedup is the caller's job (the consultation-reminders cron
+ * claims `consultantReminderSentAt`). Defaults to French like every other
+ * consultant notice.
+ */
+export function sendConsultantSessionReminderEmail(input: {
+  booking: MentorConfirmationInput['booking'];
+  mentor: MentorConfirmationInput['mentor'];
+  portalUrl: string;
+  lang?: 'en' | 'fr';
+}): void {
+  const { booking, mentor, portalUrl } = input;
+  const lang = input.lang ?? 'fr';
+  const isFr = lang === 'fr';
+
+  if (!mentor.email) {
+    // eslint-disable-next-line no-console
+    console.log(`${banner} CONSULT REMINDER skipped — no email on mentor record (id=${mentor.id})`);
+    return;
+  }
+
+  sendResendEmail({
+    to: mentor.email,
+    subject: isFr
+      ? 'Rappel — votre consultation approche — Metwork'
+      : 'Reminder — your consultation is coming up — Metwork',
+    html: consultantSessionReminderEmailHtml({
+      consultantName: mentor.fullName,
+      when: bookingWhen(booking) || null,
+      durationMinutes: booking.durationMinutes ?? null,
+      meetingMode: booking.meetingMode ?? null,
+      meetingLink: booking.meetingLink ?? null,
+      meetingAddress: booking.meetingAddress ?? null,
+      awaitingLink: booking.status === 'AWAITING_LINK',
+      portalUrl,
+      lang,
+    }),
+  })
+    .then((sent) => {
+      if (!sent)
+        // eslint-disable-next-line no-console
+        console.log(`${banner} CONSULT REMINDER (no Resend) → ${mentor.email} :: booking=${booking.id.slice(0, 8)}`);
+      else
+        // eslint-disable-next-line no-console
+        console.log(`${banner} CONSULT REMINDER sent → ${mentor.email} :: booking=${booking.id.slice(0, 8)}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Consultant session-reminder email failed →`, err.message),
+    );
 }
 
 /** Minimal branded HTML wrapper for the lightweight P3 lifecycle notices. */

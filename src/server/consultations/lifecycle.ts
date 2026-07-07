@@ -94,10 +94,23 @@ export async function setBookingMeetingLink(input: {
     if (booking.status !== 'AWAITING_LINK' && booking.status !== 'READY') {
       return { ok: false, reason: 'WRONG_STATE' };
     }
+    const nextLink = input.mode === 'ONLINE' ? link : null;
+    const nextAddress = input.mode === 'OFFLINE' ? address : null;
+    const nextMapsLink = input.mode === 'OFFLINE' ? mapsLink : null;
+    // When the meeting details actually CHANGE on an already-notified booking,
+    // clear the dedup stamp so the client is re-notified with the corrected
+    // details — a stale link in their inbox is worse than a second email.
+    // Re-saving identical details keeps the stamp (no duplicate send).
+    const changed =
+      booking.meetingMode !== input.mode ||
+      (booking.meetingLink ?? null) !== nextLink ||
+      (booking.meetingAddress ?? null) !== nextAddress ||
+      (booking.meetingMapsLink ?? null) !== nextMapsLink;
+    if (changed && booking.linkSentAt) booking.linkSentAt = null;
     booking.meetingMode = input.mode;
-    booking.meetingLink = input.mode === 'ONLINE' ? link : null;
-    booking.meetingAddress = input.mode === 'OFFLINE' ? address : null;
-    booking.meetingMapsLink = input.mode === 'OFFLINE' ? mapsLink : null;
+    booking.meetingLink = nextLink;
+    booking.meetingAddress = nextAddress;
+    booking.meetingMapsLink = nextMapsLink;
     booking.status = 'READY';
     booking.updatedAt = new Date().toISOString();
     return { ok: true, booking };

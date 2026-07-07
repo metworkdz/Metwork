@@ -1533,6 +1533,19 @@ export interface MentorBookingRecord {
    */
   confirmationEmailSentAt?: string | null;
   /**
+   * Dedup stamp: set once the "request received" acknowledgment email has been
+   * dispatched to the CLIENT (fired when a booking is created/settled without
+   * immediate meeting details — READY bookings get the session-ready email
+   * instead). Distinct from `confirmationEmailSentAt` (guest payment receipt).
+   */
+  requestReceivedEmailSentAt?: string | null;
+  /**
+   * Dedup stamp: set once the pre-session reminder email (meeting link /
+   * "add your link" nudge) has been dispatched to the CONSULTANT by the
+   * consultation-reminders cron. One reminder per booking, ever.
+   */
+  consultantReminderSentAt?: string | null;
+  /**
    * Locale the guest used when requesting (en|fr|ar). Drives the pay-link
    * email language and the locale segment of the public pay URL. Absent on
    * registered bookings (their language comes from the user record).

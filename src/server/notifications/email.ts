@@ -840,6 +840,53 @@ export function consultantNewBookingEmailHtml(params: {
   `);
 }
 
+/**
+ * Pre-session reminder to the CONSULTANT (sent by the consultation-reminders
+ * cron as the session approaches). Includes the meeting details when set, or a
+ * clear "add your meeting link" warning when the booking is still AWAITING_LINK.
+ */
+export function consultantSessionReminderEmailHtml(params: {
+  consultantName: string;
+  when: string | null;
+  durationMinutes: number | null;
+  meetingMode: 'ONLINE' | 'OFFLINE' | null;
+  meetingLink: string | null;
+  meetingAddress: string | null;
+  awaitingLink: boolean;
+  portalUrl: string;
+  lang: 'en' | 'fr';
+}): string {
+  const isFr = params.lang === 'fr';
+  const typeLabel =
+    params.meetingMode === 'ONLINE' ? (isFr ? 'En ligne' : 'Online')
+    : params.meetingMode === 'OFFLINE' ? (isFr ? 'En présentiel' : 'In person')
+    : null;
+  const details = [
+    params.when ? `${isFr ? 'Date' : 'Date'} : ${params.when}` : null,
+    params.durationMinutes ? `${isFr ? 'Durée' : 'Duration'} : ${params.durationMinutes} min` : null,
+    typeLabel ? `${isFr ? 'Type' : 'Type'} : ${typeLabel}` : null,
+    params.meetingLink ? `${isFr ? 'Lien de la réunion' : 'Meeting link'} : <a href="${params.meetingLink}" style="color:#30a735;">${params.meetingLink}</a>` : null,
+    params.meetingAddress ? `${isFr ? 'Adresse' : 'Address'} : ${params.meetingAddress}` : null,
+  ].filter(Boolean).join('<br />');
+
+  return layout(`
+    ${h1(isFr ? 'Rappel — consultation à venir' : 'Reminder — upcoming consultation')}
+    ${p(isFr
+      ? `Bonjour ${params.consultantName}, votre consultation approche.`
+      : `Hello ${params.consultantName}, your consultation is coming up.`)}
+    ${details ? p(`<span style="color:#3f3f46;">${details}</span>`) : ''}
+    ${params.awaitingLink
+      ? p(`<span style="color:#92400e;font-weight:600;">${isFr
+          ? '⚠ Aucun lien de réunion n’est encore défini pour cette session. Ajoutez-le depuis votre espace consultant pour que votre client puisse vous rejoindre.'
+          : '⚠ No meeting link is set for this session yet. Add it from your consultant portal so your client can join.'}</span>`)
+      : ''}
+    ${button(params.portalUrl, isFr ? 'Ouvrir mon espace consultant' : 'Open my consultant portal')}
+    ${p(`<span style="color:#71717a;font-size:13px;">${isFr
+      ? 'Les coordonnées du client sont disponibles dans votre espace consultant, protégé par votre code PIN.'
+      : 'The client’s contact details are available in your consultant portal, protected by your PIN.'}</span>`)}
+  `);
+}
+
 /** Sent to the user when their booking is created (awaiting incubator approval). */
 export function bookingPendingEmailHtml(opts: {
   customerName: string;
@@ -1817,8 +1864,8 @@ export function consultationRequestReceivedEmailHtml(params: ConsultRequestParam
   const greeting = isFr ? `Bonjour ${clientName},` : `Hello ${clientName},`;
   const title    = isFr ? 'Demande de consultation reçue' : 'Consultation request received';
   const body     = isFr
-    ? `Votre demande de consultation avec <strong>${mentorName}</strong> a bien été reçue et est en attente de validation. Vous serez notifié(e) par email dès qu'elle sera traitée.`
-    : `Your consultation request with <strong>${mentorName}</strong> has been received and is pending review. You will be notified by email once it has been processed.`;
+    ? `Votre demande de consultation avec <strong>${mentorName}</strong> a bien été reçue. Vous recevrez très prochainement un email avec la suite : les détails de la rencontre (lien ou adresse), ou le lien de paiement si un paiement est requis.`
+    : `Your consultation request with <strong>${mentorName}</strong> has been received. You will shortly get a follow-up email with next steps: the meeting details (link or address), or the payment link if payment is required.`;
 
   const slotRow = (consultationDate && consultationTime)
     ? `<tr>
@@ -1843,7 +1890,7 @@ export function consultationRequestReceivedEmailHtml(params: ConsultRequestParam
         <td style="padding:8px 12px;font-size:13px;color:#09090b;font-weight:500;">${reference.slice(0, 8).toUpperCase()}</td>
       </tr>
     </table>
-    ${p(`<span style="color:#71717a;font-size:13px;">${isFr ? 'Statut : En attente de validation' : 'Status: Pending review'}</span>`)}
+    ${p(`<span style="color:#71717a;font-size:13px;">${isFr ? 'Statut : Demande reçue' : 'Status: Request received'}</span>`)}
   `);
 }
 

@@ -219,10 +219,12 @@ export async function sendWhatsAppNewBookingTemplate(
 }
 
 /**
- * Send OTP via SMS using the Infobip SMS text/advanced API.
- * Throws on API error so the caller can fall back to another channel.
+ * Send any custom text message via SMS (Infobip text/advanced API). Unlike
+ * business-initiated WhatsApp, SMS needs no pre-approved template — it is the
+ * reliable fallback for transactional notices (e.g. meeting details).
+ * Throws on API error so the caller can fall back gracefully.
  */
-export async function sendSMSOTP(phone: string, code: string): Promise<void> {
+export async function sendSMSMessage(phone: string, text: string): Promise<void> {
   const cfg = getConfig();
   if (!cfg) throw new Error('Infobip not configured: INFOBIP_BASE_URL, INFOBIP_API_KEY, INFOBIP_SENDER required');
 
@@ -238,7 +240,7 @@ export async function sendSMSOTP(phone: string, code: string): Promise<void> {
         {
           from: cfg.smsSender,
           destinations: [{ to: phone }],
-          text: OTP_MSG(code),
+          text,
         },
       ],
     }),
@@ -248,4 +250,12 @@ export async function sendSMSOTP(phone: string, code: string): Promise<void> {
     const body = await res.text().catch(() => '');
     throw new Error(`Infobip SMS error ${res.status}: ${body}`);
   }
+}
+
+/**
+ * Send OTP via SMS using the Infobip SMS text/advanced API.
+ * Throws on API error so the caller can fall back to another channel.
+ */
+export async function sendSMSOTP(phone: string, code: string): Promise<void> {
+  return sendSMSMessage(phone, OTP_MSG(code));
 }
