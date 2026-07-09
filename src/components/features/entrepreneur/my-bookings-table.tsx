@@ -42,7 +42,11 @@ export function MyBookingsTable({ initial, locale }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const canCancel = (b: BookingRecord) =>
-    b.status === 'PENDING' || b.status === 'CONFIRMED';
+    b.status === 'PENDING' ||
+    b.status === 'CONFIRMED' ||
+    // Request-mode bookings can be withdrawn before payment (nothing charged).
+    b.status === 'AWAITING_APPROVAL' ||
+    b.status === 'APPROVED_UNPAID';
 
   async function confirmCancel() {
     if (!cancelling) return;
@@ -67,10 +71,24 @@ export function MyBookingsTable({ initial, locale }: Props) {
     }
   }
 
-  const upcoming = rows.filter((b) => b.status === 'CONFIRMED' || b.status === 'PENDING').length;
+  const upcoming = rows.filter(
+    (b) =>
+      b.status === 'CONFIRMED' ||
+      b.status === 'PENDING' ||
+      b.status === 'AWAITING_APPROVAL' ||
+      b.status === 'APPROVED_UNPAID',
+  ).length;
   const past     = rows.filter((b) => b.status === 'COMPLETED' || b.status === 'CANCELLED').length;
   const totalSpent = rows
-    .filter((b) => b.status !== 'CANCELLED' && b.status !== 'REFUNDED')
+    // Unpaid states carry no spend: cash intents and request-mode bookings
+    // (awaiting approval / approved-unpaid) have not moved any money yet.
+    .filter(
+      (b) =>
+        b.status !== 'CANCELLED' &&
+        b.status !== 'REFUNDED' &&
+        b.status !== 'AWAITING_APPROVAL' &&
+        b.status !== 'APPROVED_UNPAID',
+    )
     .reduce((s, b) => s + b.totalAmount, 0);
 
   return (

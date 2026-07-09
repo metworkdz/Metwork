@@ -45,6 +45,8 @@ const patchSchema = z.object({
     minQty:  z.number().int().positive(),
     percent: z.number().int().min(1).max(99),
   })).max(20).optional(),
+  /** Reservation mode; null clears back to the legacy flow. */
+  reservationMode: z.enum(['INSTANT', 'REQUEST']).nullable().optional(),
   // Category-specific fields (validated against the merged category below).
   deskNames:       z.array(z.string().max(60)).max(500).optional(),
   officePhotos:    z.array(z.string().url()).max(5).optional(),
@@ -151,6 +153,9 @@ export async function PATCH(
     if (input.capacity !== undefined) s.capacity = input.capacity;
     if (input.amenities !== undefined) s.amenities = input.amenities;
     if (input.durationDiscounts !== undefined) s.durationDiscounts = input.durationDiscounts;
+    // Snapshot semantics: changing the mode only affects FUTURE bookings —
+    // in-flight bookings carry their own reservationMode copy.
+    if (input.reservationMode !== undefined) s.reservationMode = input.reservationMode ?? undefined;
 
     // Category-specific fields. Desk count drives coworking capacity so the two
     // can't diverge.

@@ -69,6 +69,8 @@ export interface Space {
    * booking form can preview the server-applied discount. Empty/absent = none.
    */
   durationDiscounts?: { unit: 'HOUR' | 'DAY'; minQty: number; percent: number }[];
+  /** How the space accepts reservations. Unset = legacy pay-then-approve flow. */
+  reservationMode?: 'INSTANT' | 'REQUEST';
 
   // ─── Category-specific extensions (additive & optional) ────────────────
   /** COWORKING: individually named/numbered desks, each independently bookable. */
@@ -200,10 +202,15 @@ export interface Startup {
 export type BookingStatus =
   | 'PENDING'
   | 'PENDING_PAYMENT'
+  | 'AWAITING_APPROVAL'
+  | 'APPROVED_UNPAID'
   | 'CONFIRMED'
   | 'CANCELLED'
   | 'COMPLETED'
   | 'REFUNDED';
+
+/** Mirrors SpaceReservationMode in src/server/db/store.ts. Unset = legacy flow. */
+export type SpaceReservationMode = 'INSTANT' | 'REQUEST';
 
 export interface Booking {
   id: string;

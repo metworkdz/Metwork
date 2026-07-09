@@ -16,7 +16,7 @@ import type {
   SpaceRecord,
   UserRecord,
 } from '@/server/db/store';
-import { bookingHoldsSeat } from '@/server/bookings/status';
+import { bookingCountsAsRevenue } from '@/server/bookings/status';
 
 export type ContractLang = 'fr' | 'en' | 'ar';
 
@@ -179,9 +179,10 @@ export function resolveContractVariables(ctx: ResolveContext): Record<ContractVa
     amountPaid = settled ? booking.onlinePaidAmount ?? total : 0;
     amountDue = settled ? 0 : total;
   } else {
-    // Wallet or manual booking (no card paymentMode): a seat-holding booking has
-    // been paid (wallet debit / incubator-confirmed); an unpaid intent has not.
-    const paid = bookingHoldsSeat(booking);
+    // Wallet or manual booking (no card paymentMode): revenue-counting means
+    // paid (wallet debit / incubator-confirmed). NOT the seat-hold rule —
+    // REQUEST-mode bookings soft-hold a seat while still unpaid.
+    const paid = bookingCountsAsRevenue(booking);
     amountPaid = paid ? total : 0;
     amountDue = paid ? 0 : total;
   }

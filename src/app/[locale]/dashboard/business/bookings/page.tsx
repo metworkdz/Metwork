@@ -99,10 +99,16 @@ export default async function BusinessBookingsPage({ params }: PageProps) {
   }
 
   const upcoming        = rows.filter((r) => r.status === 'CONFIRMED' || r.status === 'PENDING').length;
-  const awaitingPayment = rows.filter((r) => r.status === 'PENDING_PAYMENT').length;
+  const awaitingPayment = rows.filter((r) => r.status === 'PENDING_PAYMENT' || r.status === 'APPROVED_UNPAID').length;
   const thisMonth       = new Date().toISOString().slice(0, 7);
   const grossThisMonth  = rows
-    .filter((r) => r.createdAt?.startsWith(thisMonth) && r.status !== 'CANCELLED' && r.status !== 'REFUNDED')
+    // Request-mode bookings that have not been paid yet carry no revenue.
+    .filter((r) =>
+      r.createdAt?.startsWith(thisMonth) &&
+      r.status !== 'CANCELLED' &&
+      r.status !== 'REFUNDED' &&
+      r.status !== 'AWAITING_APPROVAL' &&
+      r.status !== 'APPROVED_UNPAID')
     .reduce((s, r) => s + r.totalAmount, 0);
 
   const fmtRange = (startsAt: string, endsAt: string) => {

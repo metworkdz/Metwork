@@ -393,7 +393,29 @@ export interface PaymentLinkRecord {
 
 /* ─────────────────────────── Bookings ─────────────────────────── */
 
-export type BookingStatus = 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'REFUNDED';
+/**
+ * Booking lifecycle.
+ * Additive REQUEST-mode states (Airbnb-style "request to book"):
+ * - 'AWAITING_APPROVAL' — request created, NO money moved, seat soft-held
+ *   until the incubator approves/declines or the request expires.
+ * - 'APPROVED_UNPAID'   — incubator approved; payment link active; still no
+ *   money moved. Transitions to CONFIRMED on payment, or CANCELLED on expiry.
+ * Expiry is represented as CANCELLED + declineReason ('approval_expired' /
+ * 'payment_expired') — no separate EXPIRED status.
+ */
+export type BookingStatus = 'PENDING' | 'PENDING_PAYMENT' | 'AWAITING_APPROVAL' | 'APPROVED_UNPAID' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'REFUNDED';
+
+/**
+ * How a space accepts reservations.
+ * - 'INSTANT' — pay at reservation, auto-confirmed (incubator credited
+ *   immediately, no manual approval step).
+ * - 'REQUEST' — free reservation request; incubator approves first, then the
+ *   client pays via a tokenized payment link.
+ * UNSET = legacy behavior preserved exactly: pay-at-reservation into escrow
+ * (status PENDING), incubator approval confirms + credits. Modes are opt-in
+ * per space.
+ */
+export type SpaceReservationMode = 'INSTANT' | 'REQUEST';
 export type BookingItemKind = 'SPACE' | 'PROGRAM' | 'EVENT';
 export type BookingUnit = 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH';
 /**
@@ -570,6 +592,25 @@ export interface BookingRecord {
   paymentProviderRef?: string | null;
   /** Locale to render the hosted-checkout return + receipts in. */
   bookingLocale?: string | null;
+
+  /* ── REQUEST-mode reservation (approve-then-pay) — all additive ────────
+   * Present only on bookings created against a space with a reservationMode
+   * set. Legacy bookings leave every field undefined and behave exactly as
+   * before. */
+
+  /**
+   * Space's reservation mode SNAPSHOTTED at creation, so a later change of
+   * the space setting never mutates an in-flight booking's lifecycle.
+   */
+  reservationMode?: SpaceReservationMode;
+  /** Set when the incubator approves a REQUEST booking (idempotency guard). */
+  approvedAt?: string | null;
+  /** Set when the wallet charge settles (idempotency guard — set = no-op replay). */
+  paidAt?: string | null;
+  /** SHA-256 hex of the single-use payment-link token (raw token only in email). */
+  paymentLinkTokenHash?: string | null;
+  /** ISO expiry of the payment link; past it the booking is swept to CANCELLED. */
+  paymentLinkExpiresAt?: string | null;
 
   createdAt: string;
   updatedAt: string;
@@ -904,6 +945,11 @@ export interface SpaceRecord {
    * manual-booking amount). Additive & nullable — defaults to no discount.
    */
   durationDiscounts?: { unit: 'HOUR' | 'DAY'; minQty: number; percent: number }[];
+  /**
+   * How this space accepts reservations (see SpaceReservationMode). Additive &
+   * nullable — UNSET keeps the legacy pay-escrow-then-approve flow untouched.
+   */
+  reservationMode?: SpaceReservationMode;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

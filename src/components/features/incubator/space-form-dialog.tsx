@@ -50,6 +50,7 @@ interface SpaceFormDialogProps {
     cashDepositType?: 'FIXED' | 'PERCENT'; cashDepositValue?: number;
     workingDays?: number[]; openingTime?: string; closingTime?: string;
     durationDiscounts?: DurationDiscount[];
+    reservationMode?: 'INSTANT' | 'REQUEST' | null;
     deskNames?: string[];
     officePhotos?: string[]; officeSize?: number | null; officeFloor?: string | null;
     officeAmenities?: string[];
@@ -98,6 +99,8 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
   const [capacity, setCapacity] = useState('10');
   const [amenities, setAmenities] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
+  // '' = legacy flow (existing spaces keep their behavior until a mode is picked).
+  const [reservationMode, setReservationMode] = useState<'' | 'INSTANT' | 'REQUEST'>('');
   const [depositType, setDepositType] = useState<'FIXED' | 'PERCENT'>('PERCENT');
   const [depositValue, setDepositValue] = useState('10');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
@@ -142,6 +145,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
       setCapacity(initialData.capacity != null ? String(initialData.capacity) : '10');
       setAmenities((initialData.amenities ?? []).join(', '));
       setAcceptedMethods(initialData.acceptedPaymentMethods ?? ['ONLINE', 'CASH']);
+      setReservationMode(initialData.reservationMode ?? '');
       setDepositType(initialData.cashDepositType ?? 'PERCENT');
       setDepositValue(initialData.cashDepositValue != null ? String(initialData.cashDepositValue) : '10');
       setImageUrls(
@@ -181,6 +185,7 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
     setCashPricePerHour(''); setCashPricePerHalfDay(''); setCashPricePerDay(''); setCashPricePerMonth('');
     setCapacity('10'); setAmenities('');
     setAcceptedMethods(['ONLINE', 'CASH']);
+    setReservationMode('');
     setDepositType('PERCENT'); setDepositValue('10');
     setImageUrls([]);
     setWorkingDays([1, 2, 3, 4, 5]); setOpeningTime('09:00'); setClosingTime('18:00');
@@ -287,6 +292,8 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
           capacity:      Number(capacity),
           amenities:     amenities.split(',').map((s) => s.trim()).filter(Boolean),
           acceptedPaymentMethods: acceptedMethods,
+          // Omit when untouched so an existing space keeps its legacy flow.
+          ...(reservationMode ? { reservationMode } : {}),
           ...(acceptedMethods.includes('CASH')
             ? { cashDepositType: depositType, cashDepositValue: Number(depositValue) }
             : { cashDepositType: null, cashDepositValue: null }),
@@ -662,6 +669,38 @@ export function SpaceFormDialog({ onCreated, editId, initialData, open: openProp
               })}
             </div>
           </div>
+
+          {/* Booking approval — Instant Book vs Request to Book (per-space) */}
+          {isBookable && (
+            <div>
+              <p className="text-sm font-medium">{t('labelReservationMode')}</p>
+              <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+                {(['INSTANT', 'REQUEST'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setReservationMode(m)}
+                    className={cn(
+                      'rounded-lg border px-3 py-2.5 text-start text-sm transition-colors',
+                      reservationMode === m
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-border text-muted-foreground hover:border-primary/40',
+                    )}
+                  >
+                    <span className="block font-medium">
+                      {m === 'INSTANT' ? t('modeInstant') : t('modeRequest')}
+                    </span>
+                    <span className="mt-0.5 block text-xs opacity-80">
+                      {m === 'INSTANT' ? t('modeInstantHint') : t('modeRequestHint')}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {!reservationMode && (
+                <p className="mt-1.5 text-xs text-muted-foreground">{t('modeLegacyHint')}</p>
+              )}
+            </div>
+          )}
 
           {acceptedMethods.includes('CASH') && (
             <div className="rounded-lg border border-border bg-muted/30 p-3">

@@ -125,11 +125,54 @@ export function BookingSuccessPanel({
   const locale = useLocale() as Locale;
   const t = useTranslations('spaces.booking');
   const isCash = booking.paymentMethod === 'manual';
+  // Request-to-Book: nothing was charged; the host must approve first.
+  const isRequest = booking.status === 'AWAITING_APPROVAL';
   const fmtDt  = (iso: string) =>
     new Date(iso).toLocaleString('en-GB', {
       dateStyle: 'medium',
       timeStyle: 'short',
     });
+
+  if (isRequest) {
+    return (
+      <div className="rounded-lg border border-border bg-muted/40 p-5">
+        <div className="flex items-start gap-3">
+          <Clock className="size-5 shrink-0 text-primary" />
+          <div className="min-w-0 flex-1">
+            <p className="text-base font-semibold text-foreground">{t('requestSentTitle')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t('requestSentMessage')}</p>
+            <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-foreground">
+              <div>
+                <dt className="text-muted-foreground">{t('reference')}</dt>
+                <dd className="font-mono">{booking.id.slice(0, 8)}…</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">{t('amountAfterApproval')}</dt>
+                <dd className="font-medium tabular-nums">{formatCurrency(booking.totalAmount, locale)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">{t('from')}</dt>
+                <dd className="font-medium">{fmtDt(booking.startsAt)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">{t('to')}</dt>
+                <dd className="font-medium">{fmtDt(booking.endsAt)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">{t('status')}</dt>
+                <dd className="font-medium">{t('awaitingApproval')}</dd>
+              </div>
+            </dl>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button asChild size="sm">
+                <Link href="/dashboard/entrepreneur/bookings">{t('viewBookings')}</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn(
@@ -250,17 +293,22 @@ export function SpaceBookingForm({
     space.cashDepositType != null && space.cashDepositValue != null;
   const onlineOffered = acceptedMethods.includes('ONLINE');
   const cashOffered = acceptedMethods.includes('CASH');
+  // "Request to Book" listing: the reservation itself is free (approve-then-pay)
+  // and always goes through the request path — direct card checkout would
+  // bypass the host's approval, so those options are hidden.
+  const isRequestMode = space.reservationMode === 'REQUEST';
 
   // Build the available direct-payment choices from what the listing accepts.
   // ONLINE → card-full + wallet; CASH → 50/50 split (deposit by card, rest cash).
   const payOptions = useMemo<PayChoice[]>(() => {
+    if (isRequestMode) return isAuthed ? ['WALLET'] : [];
     const opts: PayChoice[] = [];
     if (onlineOffered) opts.push('CARD_FULL');
     if (cashOffered) opts.push('CARD_SPLIT');
     // The Metwork wallet is account-only — guests pay by card (full or split).
     if (onlineOffered && isAuthed) opts.push('WALLET');
     return opts;
-  }, [onlineOffered, cashOffered, isAuthed]);
+  }, [onlineOffered, cashOffered, isAuthed, isRequestMode]);
 
   const [payChoice, setPayChoice] = useState<PayChoice>(payOptions[0] ?? 'CARD_FULL');
   // Keep the selection valid if the available options change.
@@ -283,9 +331,10 @@ export function SpaceBookingForm({
     return bookingRef.current;
   }, []);
 
-  // Network Pass eligibility
+  // Network Pass eligibility (a pass confirms instantly, so it is not offered
+  // on Request-to-Book listings — the host must approve first).
   const userTier = user ? resolveTier(user) : 'EXPLORER';
-  const canUsePass = isAuthed && user !== null && userTier !== 'EXPLORER' && (space.isPartnerInNetwork ?? false);
+  const canUsePass = isAuthed && user !== null && userTier !== 'EXPLORER' && (space.isPartnerInNetwork ?? false) && !isRequestMode;
   const passCredits = user?.networkCredits ?? 0;
   const passCreditsMax = user?.networkCreditsMax ?? 0;
   const passResetDate = user?.networkCreditsResetDate
@@ -387,8 +436,10 @@ export function SpaceBookingForm({
 
   const cashDeposit = isSplit ? splitDepositPreview : null;
   const cashBalance = isSplit ? splitBalancePreview : null;
+  // A request-to-book reservation charges nothing at submit, so a low balance
+  // never blocks it — payment happens after the host approves.
   const insufficient =
-    isWallet && isAuthed && balance != null && finalTotal > 0 && balance < finalTotal;
+    !isRequestMode && isWallet && isAuthed && balance != null && finalTotal > 0 && balance < finalTotal;
 
   // Hourly + half-day bookings are single-day — keep end date pinned to start.
   useEffect(() => {
@@ -487,6 +538,14 @@ export function SpaceBookingForm({
     setError(null);
     if (!validRange) {
       setError({ code: 'INVALID_RANGE', message: t('endAfterStart') });
+      return;
+    }
+    // Request-to-Book requires an account (the request itself is free): send
+    // the visitor to signup/login and back to this listing — the card-intent
+    // carrier below would route them into a checkout that bypasses approval.
+    if (isRequestMode) {
+      const nextPath = `/spaces/${space.id}`;
+      router.push(`${dest === 'signup' ? '/signup' : '/login'}?next=${encodeURIComponent(nextPath)}`);
       return;
     }
     setGuestSubmitting(true);
@@ -982,6 +1041,8 @@ export function SpaceBookingForm({
         >
           {submitting
             ? t('submitting')
+            : isRequestMode
+            ? t('requestToBook')
             : useNetworkPass || finalTotal === 0
             ? t('submitFree')
             : isCardFull
@@ -990,6 +1051,9 @@ export function SpaceBookingForm({
             ? t('payDeposit', { amount: formatCurrency(splitDepositPreview ?? finalTotal, locale) })
             : t('submitOnline', { amount: formatCurrency(finalTotal, locale) })}
         </Button>
+      )}
+      {isAuthed && isRequestMode && !insufficient && (
+        <p className="text-center text-xs text-muted-foreground">{t('requestModeHint')}</p>
       )}
     </form>
   );

@@ -950,7 +950,9 @@
       "markCashPaid": "Mark cash paid",
       "awaitingPayment": "Awaiting payment",
       "filterAwaitingPayment": "Awaiting payment",
-      "cancelUnpaid": "Cancel"
+      "cancelUnpaid": "Cancel",
+      "filterAwaitingApproval": "Awaiting approval",
+      "filterApprovedUnpaid": "Approved — unpaid"
     },
     "clients": {
       "editTitle": "Edit client",
@@ -1607,7 +1609,13 @@
         "storage": "Storage",
         "naturalLight": "Natural light",
         "kitchenAccess": "Kitchen access"
-      }
+      },
+      "labelReservationMode": "Booking approval",
+      "modeInstant": "Instant Book",
+      "modeInstantHint": "Guests pay at booking and are confirmed immediately.",
+      "modeRequest": "Request to Book",
+      "modeRequestHint": "You approve each request first; the guest pays after approval.",
+      "modeLegacyHint": "Current setting: guests pay at booking, then you confirm each one (existing behavior)."
     },
     "availability": {
       "title": "Availability — {name}",
@@ -1806,6 +1814,36 @@
       "subtotal": "Subtotal",
       "depositBase": "Deposit",
       "platformFee": "Platform fee"
+    },
+    "bookingRequestPay": {
+      "payableTitle": "Complete your booking",
+      "payableDesc": "Your request was approved. Pay from your wallet to confirm the reservation.",
+      "item": "Booking",
+      "provider": "Provider",
+      "from": "From",
+      "to": "To",
+      "amountDue": "Amount due",
+      "walletBalance": "Wallet balance",
+      "payNow": "Pay now",
+      "paying": "Processing…",
+      "paidJustNow": "Payment confirmed — your booking is confirmed!",
+      "loginToPay": "Log in to pay",
+      "topUp": "Top up your wallet",
+      "topUpHint": "Your balance doesn't cover this booking. Top up, then come back to this page.",
+      "errorExpired": "This payment link has expired.",
+      "errorGeneric": "Something went wrong. Please try again.",
+      "expiresOn": "Payment link valid until {date}",
+      "confirmedTitle": "Booking confirmed",
+      "confirmedDesc": "This booking is paid and confirmed. A confirmation email is on its way.",
+      "expiredTitle": "Link expired",
+      "expiredDesc": "The payment window for this booking has passed and the reservation was released.",
+      "declinedTitle": "Booking cancelled",
+      "declinedDesc": "This booking request was declined or cancelled, so there is nothing to pay.",
+      "wrongAccountTitle": "Wrong account",
+      "wrongAccountDesc": "This payment link belongs to another account. Log in with the account that made the request.",
+      "invalidTitle": "Link not found",
+      "invalidDesc": "This payment link is invalid. Please check the link from your email.",
+      "backHome": "Back to home"
     },
     "programs": {
       "title": "Programs",
@@ -2214,7 +2252,15 @@
           "cancelUnpaid": "Cancel",
           "cancelling": "Cancelling…",
           "confirmCancel": "Confirm",
-          "keep": "Keep"
+          "keep": "Keep",
+          "approve": "Approve",
+          "approving": "Approving…",
+          "decline": "Decline",
+          "declining": "Declining…",
+          "confirmDecline": "Confirm decline",
+          "reasonSpaceUnavailable": "Space unavailable",
+          "reasonSpaceClosed": "Space closed",
+          "reasonOther": "Other"
         },
         "members": {
           "title": "Members",
@@ -2847,7 +2893,13 @@
       "methodWalletSub": "{amount} available",
       "errorContact": "Please enter a valid name, email, and phone number.",
       "errorDateUnavailable": "The selected date(s) are not available for booking.",
-      "errorAlreadyBooked": "You already have an active booking for this space."
+      "errorAlreadyBooked": "You already have an active booking for this space.",
+      "requestToBook": "Request to book",
+      "requestModeHint": "You won't be charged now — you pay after the host approves your request.",
+      "requestSentTitle": "Request sent",
+      "requestSentMessage": "The host has been notified. You'll receive a payment link by email once your request is approved — nothing has been charged.",
+      "amountAfterApproval": "Due after approval",
+      "awaitingApproval": "Awaiting approval"
     },
     "scheduler": {
       "noAvailabilityThisMonth": "No availability this month",
@@ -3234,7 +3286,9 @@
       "colDate": "Date",
       "colStatus": "Status",
       "colAmount": "Amount",
-      "free": "Free"
+      "free": "Free",
+      "awaitingApproval": "Awaiting approval",
+      "approvedUnpaid": "Approved — unpaid"
     },
     "memberships": {
       "searchPlaceholder": "Search by name or email…",

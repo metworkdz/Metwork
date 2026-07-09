@@ -60,6 +60,8 @@ const createSpaceSchema = z.object({
     minQty:  z.number().int().positive(),
     percent: z.number().int().min(1).max(99),
   })).max(20).default([]),
+  /** Reservation mode. Omitted = legacy pay-escrow-then-approve flow. */
+  reservationMode: z.enum(['INSTANT', 'REQUEST']).optional(),
   /** COWORKING — individually named desks (validated per-category below). */
   deskNames:       z.array(z.string().max(60)).max(500).optional(),
   /** PRIVATE_OFFICE — gallery + metadata. */
@@ -168,6 +170,7 @@ export async function POST(req: NextRequest) {
       openingTime:            input.openingTime,
       closingTime:            input.closingTime,
       durationDiscounts:      input.durationDiscounts,
+      reservationMode:        input.reservationMode,
       // Category-specific fields — only the active category's fields are stored.
       deskNames:              deskNames,
       officePhotos:           input.category === 'PRIVATE_OFFICE' ? (input.officePhotos ?? []) : [],

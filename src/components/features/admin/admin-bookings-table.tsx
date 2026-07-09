@@ -20,6 +20,9 @@ type BookingRow = BookingRecord & { customerName: string; customerEmail: string 
 
 const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'danger' | 'default' | 'outline'> = {
   PENDING: 'warning',
+  PENDING_PAYMENT: 'warning',
+  AWAITING_APPROVAL: 'outline',
+  APPROVED_UNPAID: 'warning',
   CONFIRMED: 'success',
   CANCELLED: 'danger',
   COMPLETED: 'default',
@@ -55,10 +58,18 @@ export function AdminBookingsTable({ initial }: Props) {
     return true;
   });
 
-  const pending = initial.filter((b) => b.status === 'PENDING').length;
+  const pending = initial.filter((b) => b.status === 'PENDING' || b.status === 'AWAITING_APPROVAL').length;
   const confirmed = initial.filter((b) => b.status === 'CONFIRMED').length;
   const gross = initial
-    .filter((b) => b.status !== 'CANCELLED' && b.status !== 'REFUNDED')
+    // Exclude unpaid states: cancelled/refunded plus request-mode bookings
+    // that have not been paid yet (no money moved).
+    .filter(
+      (b) =>
+        b.status !== 'CANCELLED' &&
+        b.status !== 'REFUNDED' &&
+        b.status !== 'AWAITING_APPROVAL' &&
+        b.status !== 'APPROVED_UNPAID',
+    )
     .reduce((s, b) => s + b.totalAmount, 0);
 
   return (
@@ -84,6 +95,8 @@ export function AdminBookingsTable({ initial }: Props) {
           <SelectContent>
             <SelectItem value="ALL">{t('allStatuses')}</SelectItem>
             <SelectItem value="PENDING">{t('pending')}</SelectItem>
+            <SelectItem value="AWAITING_APPROVAL">{t('awaitingApproval')}</SelectItem>
+            <SelectItem value="APPROVED_UNPAID">{t('approvedUnpaid')}</SelectItem>
             <SelectItem value="CONFIRMED">{t('confirmed')}</SelectItem>
             <SelectItem value="CANCELLED">{t('cancelled')}</SelectItem>
             <SelectItem value="COMPLETED">{t('completed')}</SelectItem>
@@ -148,7 +161,11 @@ export function AdminBookingsTable({ initial }: Props) {
                       </TableCell>
                       <TableCell>
                         <Badge variant={STATUS_VARIANT[b.status] ?? 'outline'}>
-                          {b.status.charAt(0) + b.status.slice(1).toLowerCase()}
+                          {b.status === 'AWAITING_APPROVAL'
+                            ? t('awaitingApproval')
+                            : b.status === 'APPROVED_UNPAID'
+                            ? t('approvedUnpaid')
+                            : b.status.charAt(0) + b.status.slice(1).toLowerCase()}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-end tabular-nums font-medium text-sm">

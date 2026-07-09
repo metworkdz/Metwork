@@ -2576,3 +2576,239 @@ export function membershipWelcomeEmailHtml(params: MembershipWelcomeEmailParams)
     ${p('<span style="color:#71717a;font-size:13px;">Credits are non-transferable and do not roll over. Questions? Reply to this email.</span>')}
   `);
 }
+
+/* ─────────── REQUEST-mode space reservations (approve-then-pay) ───────────
+ * Four templates for the Airbnb-style "Request to Book" flow:
+ *   1. bookingRequestReceivedEmailHtml   — client: request sent, host reviewing.
+ *   2. incubatorBookingRequestEmailHtml  — incubator: new request to approve.
+ *   3. bookingApprovedPayEmailHtml       — client: approved, pay via link.
+ *   4. bookingPaidIncubatorEmailHtml     — incubator: booking paid & confirmed.
+ * All tri-lingual (en/fr/ar) with RTL for Arabic, same conventions as the
+ * incubator-approval template above.
+ */
+
+/** Localized date-time for reservation emails ("9 juil. 2026, 14:00"). */
+function fmtBookingDate(iso: string, lang: EmailLang): string {
+  const locale = lang === 'ar' ? 'ar-DZ' : lang === 'en' ? 'en-GB' : 'fr-FR';
+  try {
+    return new Date(iso).toLocaleString(locale, {
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function fmtDzd(amount: number): string {
+  return `${amount.toLocaleString('fr-DZ')} DZD`;
+}
+
+/** Shared key→value details block (space, dates, amount). */
+function bookingDetailsTable(rows: Array<[string, string]>): string {
+  const tr = rows
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:6px 12px;font-size:13px;color:#71717a;white-space:nowrap;">${k}</td>` +
+        `<td style="padding:6px 12px;font-size:13px;color:#09090b;font-weight:600;">${v}</td></tr>`,
+    )
+    .join('');
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;background:#f9fafb;border:1px solid #e4e4e7;border-radius:8px;">${tr}</table>`;
+}
+
+const RESERVATION_LABELS: Record<EmailLang, { space: string; from: string; to: string; amount: string; client: string }> = {
+  en: { space: 'Space', from: 'From', to: 'To', amount: 'Amount', client: 'Client' },
+  fr: { space: 'Espace', from: 'Du', to: 'Au', amount: 'Montant', client: 'Client' },
+  ar: { space: 'المساحة', from: 'من', to: 'إلى', amount: 'المبلغ', client: 'العميل' },
+};
+
+export function bookingRequestReceivedEmailHtml(opts: {
+  customerName: string;
+  itemName: string;
+  vendorName: string;
+  startsAt: string;
+  endsAt: string;
+  totalAmount: number;
+  lang?: EmailLang;
+}): string {
+  const lang = normalizeEmailLang(opts.lang);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const L = RESERVATION_LABELS[lang];
+  const copy = {
+    en: {
+      heading: 'Request sent — awaiting host approval',
+      intro: `Hi ${opts.customerName}, your booking request for <strong>${opts.itemName}</strong> was sent to ${opts.vendorName}. <strong>Nothing has been charged.</strong> You will only pay after the host approves your request.`,
+      footer: 'We will email you as soon as the host responds. If the request is not approved, nothing is charged.',
+    },
+    fr: {
+      heading: 'Demande envoyée — en attente d’approbation',
+      intro: `Bonjour ${opts.customerName}, votre demande de réservation pour <strong>${opts.itemName}</strong> a été envoyée à ${opts.vendorName}. <strong>Aucun montant n’a été débité.</strong> Vous ne paierez qu’après l’approbation de votre demande.`,
+      footer: 'Nous vous écrirons dès que l’hôte aura répondu. Si la demande n’est pas approuvée, rien ne sera débité.',
+    },
+    ar: {
+      heading: 'تم إرسال الطلب — في انتظار موافقة المضيف',
+      intro: `مرحباً ${opts.customerName}، تم إرسال طلب حجزك لـ <strong>${opts.itemName}</strong> إلى ${opts.vendorName}. <strong>لم يتم خصم أي مبلغ.</strong> لن تدفع إلا بعد موافقة المضيف على طلبك.`,
+      footer: 'سنراسلك فور رد المضيف. إذا لم تتم الموافقة على الطلب، فلن يتم خصم أي مبلغ.',
+    },
+  }[lang];
+
+  return layout(`
+    <div dir="${dir}">
+    ${h1(copy.heading)}
+    ${p(copy.intro)}
+    ${bookingDetailsTable([
+      [L.space, opts.itemName],
+      [L.from, fmtBookingDate(opts.startsAt, lang)],
+      [L.to, fmtBookingDate(opts.endsAt, lang)],
+      [L.amount, fmtDzd(opts.totalAmount)],
+    ])}
+    ${p(`<span style="color:#71717a;font-size:13px;">${copy.footer}</span>`)}
+    </div>
+  `);
+}
+
+export function incubatorBookingRequestEmailHtml(opts: {
+  incubatorName: string;
+  customerName: string;
+  itemName: string;
+  startsAt: string;
+  endsAt: string;
+  totalAmount: number;
+  dashboardUrl: string;
+  lang?: EmailLang;
+}): string {
+  const lang = normalizeEmailLang(opts.lang);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const L = RESERVATION_LABELS[lang];
+  const copy = {
+    en: {
+      heading: 'New booking request awaiting your approval',
+      intro: `${opts.customerName} requested to book <strong>${opts.itemName}</strong>. The slot is held for them while you decide — approve to send them a payment link, or decline to release it.`,
+      cta: 'Review the request',
+    },
+    fr: {
+      heading: 'Nouvelle demande de réservation à approuver',
+      intro: `${opts.customerName} a demandé à réserver <strong>${opts.itemName}</strong>. Le créneau est retenu pendant votre décision — approuvez pour lui envoyer un lien de paiement, ou refusez pour le libérer.`,
+      cta: 'Examiner la demande',
+    },
+    ar: {
+      heading: 'طلب حجز جديد في انتظار موافقتك',
+      intro: `طلب ${opts.customerName} حجز <strong>${opts.itemName}</strong>. الموعد محجوز مؤقتاً حتى تقرر — وافق لإرسال رابط الدفع، أو ارفض لتحرير الموعد.`,
+      cta: 'مراجعة الطلب',
+    },
+  }[lang];
+
+  return layout(`
+    <div dir="${dir}">
+    ${h1(copy.heading)}
+    ${p(copy.intro)}
+    ${bookingDetailsTable([
+      [L.client, opts.customerName],
+      [L.space, opts.itemName],
+      [L.from, fmtBookingDate(opts.startsAt, lang)],
+      [L.to, fmtBookingDate(opts.endsAt, lang)],
+      [L.amount, fmtDzd(opts.totalAmount)],
+    ])}
+    ${button(opts.dashboardUrl, copy.cta)}
+    </div>
+  `);
+}
+
+export function bookingApprovedPayEmailHtml(opts: {
+  customerName: string;
+  itemName: string;
+  vendorName: string;
+  startsAt: string;
+  endsAt: string;
+  totalAmount: number;
+  payUrl: string;
+  expiresAt: string;
+  lang?: EmailLang;
+}): string {
+  const lang = normalizeEmailLang(opts.lang);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const L = RESERVATION_LABELS[lang];
+  const expires = fmtBookingDate(opts.expiresAt, lang);
+  const copy = {
+    en: {
+      heading: 'Your booking is approved — complete payment',
+      intro: `Good news ${opts.customerName}! ${opts.vendorName} approved your request for <strong>${opts.itemName}</strong>. Complete the payment to confirm your reservation.`,
+      cta: 'Pay now',
+      expiry: `This payment link expires on <strong>${expires}</strong>. After that the reservation is released.`,
+    },
+    fr: {
+      heading: 'Réservation approuvée — finalisez le paiement',
+      intro: `Bonne nouvelle ${opts.customerName} ! ${opts.vendorName} a approuvé votre demande pour <strong>${opts.itemName}</strong>. Finalisez le paiement pour confirmer votre réservation.`,
+      cta: 'Payer maintenant',
+      expiry: `Ce lien de paiement expire le <strong>${expires}</strong>. Passé ce délai, la réservation sera libérée.`,
+    },
+    ar: {
+      heading: 'تمت الموافقة على حجزك — أكمل الدفع',
+      intro: `خبر سار ${opts.customerName}! وافق ${opts.vendorName} على طلبك لـ <strong>${opts.itemName}</strong>. أكمل الدفع لتأكيد حجزك.`,
+      cta: 'ادفع الآن',
+      expiry: `تنتهي صلاحية رابط الدفع في <strong>${expires}</strong>. بعد ذلك سيتم تحرير الحجز.`,
+    },
+  }[lang];
+
+  return layout(`
+    <div dir="${dir}">
+    ${h1(copy.heading)}
+    ${p(copy.intro)}
+    ${bookingDetailsTable([
+      [L.space, opts.itemName],
+      [L.from, fmtBookingDate(opts.startsAt, lang)],
+      [L.to, fmtBookingDate(opts.endsAt, lang)],
+      [L.amount, fmtDzd(opts.totalAmount)],
+    ])}
+    ${button(opts.payUrl, copy.cta)}
+    ${p(`<span style="color:#71717a;font-size:13px;">${copy.expiry}</span>`)}
+    </div>
+  `);
+}
+
+export function bookingPaidIncubatorEmailHtml(opts: {
+  incubatorName: string;
+  customerName: string;
+  itemName: string;
+  startsAt: string;
+  endsAt: string;
+  totalAmount: number;
+  dashboardUrl: string;
+  lang?: EmailLang;
+}): string {
+  const lang = normalizeEmailLang(opts.lang);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const L = RESERVATION_LABELS[lang];
+  const copy = {
+    en: {
+      heading: 'Booking paid & confirmed',
+      intro: `${opts.customerName} completed the payment for <strong>${opts.itemName}</strong>. The booking is now confirmed and your wallet has been credited.`,
+      cta: 'View your bookings',
+    },
+    fr: {
+      heading: 'Réservation payée et confirmée',
+      intro: `${opts.customerName} a finalisé le paiement pour <strong>${opts.itemName}</strong>. La réservation est confirmée et votre portefeuille a été crédité.`,
+      cta: 'Voir vos réservations',
+    },
+    ar: {
+      heading: 'تم دفع الحجز وتأكيده',
+      intro: `أكمل ${opts.customerName} دفع <strong>${opts.itemName}</strong>. تم تأكيد الحجز وإضافة المبلغ إلى محفظتك.`,
+      cta: 'عرض حجوزاتك',
+    },
+  }[lang];
+
+  return layout(`
+    <div dir="${dir}">
+    ${h1(copy.heading)}
+    ${p(copy.intro)}
+    ${bookingDetailsTable([
+      [L.client, opts.customerName],
+      [L.space, opts.itemName],
+      [L.from, fmtBookingDate(opts.startsAt, lang)],
+      [L.to, fmtBookingDate(opts.endsAt, lang)],
+      [L.amount, fmtDzd(opts.totalAmount)],
+    ])}
+    ${button(opts.dashboardUrl, copy.cta)}
+    </div>
+  `);
+}

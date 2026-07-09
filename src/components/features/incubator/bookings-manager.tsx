@@ -33,6 +33,8 @@ type BookingWithCustomer = BookingRecord & {
 const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'danger' | 'default' | 'outline'> = {
   PENDING: 'warning',
   PENDING_PAYMENT: 'warning',
+  AWAITING_APPROVAL: 'outline',
+  APPROVED_UNPAID: 'warning',
   CONFIRMED: 'success',
   CANCELLED: 'danger',
   COMPLETED: 'default',
@@ -53,7 +55,7 @@ interface Props {
 }
 
 type SourceFilter = 'ALL' | 'online' | 'offline';
-type StatusFilter = 'ALL' | 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+type StatusFilter = 'ALL' | 'PENDING' | 'PENDING_PAYMENT' | 'AWAITING_APPROVAL' | 'APPROVED_UNPAID' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
 
 export function BookingsManager({ initial, incubator, spaces, programs }: Props) {
   const t = useTranslations('incubator.bookings');
@@ -161,6 +163,8 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
             <SelectItem value="ALL">{t('filterAllStatuses')}</SelectItem>
             <SelectItem value="PENDING">{t('filterPending')}</SelectItem>
             <SelectItem value="PENDING_PAYMENT">{t('filterAwaitingPayment')}</SelectItem>
+            <SelectItem value="AWAITING_APPROVAL">{t('filterAwaitingApproval')}</SelectItem>
+            <SelectItem value="APPROVED_UNPAID">{t('filterApprovedUnpaid')}</SelectItem>
             <SelectItem value="CONFIRMED">{t('filterConfirmed')}</SelectItem>
             <SelectItem value="CANCELLED">{t('filterCancelled')}</SelectItem>
             <SelectItem value="COMPLETED">{t('filterCompleted')}</SelectItem>
@@ -238,6 +242,10 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                           <Badge variant={STATUS_VARIANT[b.status] ?? 'outline'}>
                             {b.status === 'PENDING_PAYMENT'
                               ? t('awaitingPayment')
+                              : b.status === 'AWAITING_APPROVAL'
+                              ? t('filterAwaitingApproval')
+                              : b.status === 'APPROVED_UNPAID'
+                              ? t('filterApprovedUnpaid')
                               : b.status.charAt(0) + b.status.slice(1).toLowerCase()}
                           </Badge>
                           {awaitingCash && (
@@ -275,7 +283,7 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                             {b.itemKind === 'SPACE' && (
                               <DownloadContractButton bookingId={b.id} templates={b.contractTemplates ?? []} />
                             )}
-                            {b.status === 'PENDING' && (
+                            {(b.status === 'PENDING' || b.status === 'AWAITING_APPROVAL') && (
                               <>
                                 <Button size="icon" variant="ghost" title="Confirm"
                                   className="text-green-600 hover:text-green-700"
@@ -307,7 +315,8 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                                 <XCircle className="size-3.5" /> {t('cancelUnpaid')}
                               </Button>
                             )}
-                            {b.status !== 'PENDING' && b.status !== 'CANCELLED' && (
+                            {b.status !== 'PENDING' && b.status !== 'CANCELLED' &&
+                              b.status !== 'AWAITING_APPROVAL' && b.status !== 'APPROVED_UNPAID' && (
                               <Button size="icon" variant="ghost" title="View receipt"
                                 onClick={() => setReceiptBookingId(b.id)}>
                                 <ReceiptText className="size-4" />

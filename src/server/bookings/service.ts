@@ -561,6 +561,61 @@ export async function createSpaceBooking(
       return { ok: true, replayed: false, booking, transaction: tx, wallet };
     }
 
+    // ── REQUEST mode (approve-then-pay): reserve without charging ───────
+    // The space is configured "Request to Book": create the booking as
+    // AWAITING_APPROVAL with NO wallet debit and NO incubator credit. The
+    // seat is soft-held (bookingHoldsSeat) so overlap detection can never
+    // approve two users for the same slot. Money moves only later, in
+    // POST /api/bookings/[id]/pay, after the incubator approves.
+    if (spaceRec?.reservationMode === 'REQUEST') {
+      const now = new Date().toISOString();
+      // Freeze the promo-discounted total now (and burn the use) so the
+      // amount the client is asked to pay after approval can never drift.
+      if (promoCodeId) consumePromoCode(d.promoCodes ?? [], promoCodeId);
+      const booking: BookingRecord = {
+        id: bookingId,
+        userId: args.userId,
+        itemKind: 'SPACE',
+        itemId: space.id,
+        itemName: space.name,
+        vendorName: space.incubatorName,
+        city: space.city,
+        unit: args.unit,
+        quantity,
+        startsAt: args.startsAt,
+        endsAt,
+        totalAmount: total,
+        status: 'AWAITING_APPROVAL',
+        reservationMode: 'REQUEST',
+        clientReference: args.clientReference,
+        transactionId: null,
+        paymentMethod: 'wallet',
+        createdAt: now,
+        updatedAt: now,
+      };
+      commitDeskHold();
+      d.bookings.push(booking);
+      // Placeholder zero transaction (not stored) so the route shape stays
+      // consistent — mirrors the cash path.
+      const tx: TransactionRecord = {
+        id: randomUUID(),
+        walletId: wallet.id,
+        userId: args.userId,
+        type: 'PAYMENT',
+        amount: 0,
+        balanceAfter: wallet.balance,
+        status: 'PENDING',
+        description: `Booking request — ${space.name}`,
+        reference: args.clientReference,
+        provider: 'internal',
+        providerTxnId: null,
+        metadata: { bookingItemKind: 'SPACE', bookingItemId: space.id, reservationMode: 'REQUEST' },
+        createdAt: now,
+        completedAt: null,
+      };
+      return { ok: true, replayed: false, booking, transaction: tx, wallet };
+    }
+
     // ── Online path ─────────────────────────────────────────────────────
     if (wallet.status === 'FROZEN') {
       return { ok: false, reason: 'WALLET_FROZEN' };
@@ -658,6 +713,48 @@ export async function createSpaceBooking(
     };
     commitDeskHold();
     d.bookings.push(booking);
+
+    // ── INSTANT mode: auto-confirm + credit the incubator, same critical
+    // section as the debit above so the two movements can never disagree.
+    // Same accounting as the manual-approve path (full amount, PAYOUT tx,
+    // reference `payout-${booking.id}`), just without the approval step.
+    // If the incubator/manager can't be resolved, the booking stays on the
+    // legacy PENDING escrow so the manual approval flow settles it.
+    if (spaceRec?.reservationMode === 'INSTANT') {
+      const incubator = d.incubators.find((i) => i.id === spaceRec.incubatorId);
+      if (incubator?.managerId) {
+        booking.status = 'CONFIRMED';
+        booking.reservationMode = 'INSTANT';
+        booking.paidAt = now;
+        if (total > 0) {
+          let incubatorWallet = d.wallets.find((w) => w.userId === incubator.managerId);
+          if (!incubatorWallet) {
+            incubatorWallet = newWallet(incubator.managerId);
+            d.wallets.push(incubatorWallet);
+          }
+          if (incubatorWallet.status !== 'FROZEN') {
+            incubatorWallet.balance += total;
+            incubatorWallet.updatedAt = now;
+            d.transactions.push({
+              id: randomUUID(),
+              walletId: incubatorWallet.id,
+              userId: incubator.managerId,
+              type: 'PAYOUT',
+              amount: total,
+              balanceAfter: incubatorWallet.balance,
+              status: 'COMPLETED',
+              description: `Booking revenue — ${booking.itemName}`,
+              reference: `payout-${booking.id}`,
+              provider: 'internal',
+              providerTxnId: null,
+              metadata: { bookingId: booking.id, customerId: booking.userId, reservationMode: 'INSTANT' },
+              createdAt: now,
+              completedAt: now,
+            });
+          }
+        }
+      }
+    }
 
     return { ok: true, replayed: false, booking, transaction: tx, wallet };
   });

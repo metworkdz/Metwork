@@ -190,6 +190,8 @@ export interface SpaceOpts {
   deskNames?: string[];
   /** DOMICILIATION address-slot count. */
   domiciliationSlots?: number;
+  /** Reservation mode. Omit for the legacy pay-escrow-then-approve flow. */
+  reservationMode?: 'INSTANT' | 'REQUEST';
 }
 
 /** Create a space fixture as the incubator. Returns the full SpaceRecord (has `id` UUID). */
@@ -223,6 +225,7 @@ export async function createSpace(
       ...(opts.cashDepositValue !== undefined ? { cashDepositValue: opts.cashDepositValue } : {}),
       ...(opts.deskNames ? { deskNames: opts.deskNames } : {}),
       ...(opts.domiciliationSlots !== undefined ? { domiciliationSlots: opts.domiciliationSlots } : {}),
+      ...(opts.reservationMode ? { reservationMode: opts.reservationMode } : {}),
     },
   });
   expect(res.status(), `createSpace failed → ${res.status()} ${await res.text()}`).toBe(201);
@@ -434,6 +437,58 @@ export function findBookingByRef(ref: string): BookingView | undefined {
 /** Find a booking by its pay token (card/guest hosted-checkout intent). */
 export function findBookingByPayToken(token: string): BookingView | undefined {
   return readLocalDb().bookings.find((b) => b.payToken === token);
+}
+
+/**
+ * Read the REQUEST-mode approval pay link for a booking from the e2e email
+ * sink (`.e2e-emails.jsonl`, written by the notifier under USE_LOCAL_DB).
+ * The DB stores only the token's SHA-256 hash, so the raw link is observable
+ * ONLY via the recorded would-be email — exactly like a real client.
+ * Returns the LAST recorded link (a re-approve must not mint a new one).
+ */
+export function lastPayLinkFor(bookingId: string): { payUrl: string; token: string } | undefined {
+  const dbPath = process.env.LOCAL_DB_PATH ?? '.local-db.json';
+  const sink = `${dbPath.slice(0, dbPath.lastIndexOf('/') + 1)}.e2e-emails.jsonl`;
+  let raw: string;
+  try {
+    raw = fs.readFileSync(sink, 'utf8');
+  } catch {
+    return undefined;
+  }
+  const lines = raw.trim().split('\n');
+  for (let i = lines.length - 1; i >= 0; i--) {
+    try {
+      const rec = JSON.parse(lines[i]!) as { kind?: string; bookingId?: string; payUrl?: string };
+      if (rec.kind === 'booking-approved-pay-link' && rec.bookingId === bookingId && rec.payUrl) {
+        const token = new URL(rec.payUrl).searchParams.get('token') ?? '';
+        return { payUrl: rec.payUrl, token };
+      }
+    } catch { /* skip malformed line */ }
+  }
+  return undefined;
+}
+
+/** Count e2e-sink emails of a kind for a booking (idempotency assertions). */
+export function countSinkEmails(kind: string, bookingId: string): number {
+  const dbPath = process.env.LOCAL_DB_PATH ?? '.local-db.json';
+  const sink = `${dbPath.slice(0, dbPath.lastIndexOf('/') + 1)}.e2e-emails.jsonl`;
+  let raw: string;
+  try {
+    raw = fs.readFileSync(sink, 'utf8');
+  } catch {
+    return 0;
+  }
+  return raw
+    .trim()
+    .split('\n')
+    .filter((l) => {
+      try {
+        const rec = JSON.parse(l) as { kind?: string; bookingId?: string };
+        return rec.kind === kind && rec.bookingId === bookingId;
+      } catch {
+        return false;
+      }
+    }).length;
 }
 
 /** Read the caller's wallet balance (in DZD). */

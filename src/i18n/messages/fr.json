@@ -950,7 +950,9 @@
       "markCashPaid": "Marquer payé",
       "awaitingPayment": "En attente de paiement",
       "filterAwaitingPayment": "En attente de paiement",
-      "cancelUnpaid": "Annuler"
+      "cancelUnpaid": "Annuler",
+      "filterAwaitingApproval": "En attente d'approbation",
+      "filterApprovedUnpaid": "Approuvée — impayée"
     },
     "clients": {
       "editTitle": "Modifier le client",
@@ -1607,7 +1609,13 @@
         "storage": "Rangement",
         "naturalLight": "Lumière naturelle",
         "kitchenAccess": "Accès cuisine"
-      }
+      },
+      "labelReservationMode": "Approbation des réservations",
+      "modeInstant": "Réservation instantanée",
+      "modeInstantHint": "Les clients paient à la réservation et sont confirmés immédiatement.",
+      "modeRequest": "Réservation sur demande",
+      "modeRequestHint": "Vous approuvez chaque demande ; le client paie après votre approbation.",
+      "modeLegacyHint": "Réglage actuel : les clients paient à la réservation, puis vous confirmez chacune (comportement existant)."
     },
     "availability": {
       "title": "Disponibilité — {name}",
@@ -1806,6 +1814,36 @@
       "subtotal": "Sous-total",
       "depositBase": "Acompte",
       "platformFee": "Frais de plateforme"
+    },
+    "bookingRequestPay": {
+      "payableTitle": "Finalisez votre réservation",
+      "payableDesc": "Votre demande a été approuvée. Payez depuis votre portefeuille pour confirmer la réservation.",
+      "item": "Réservation",
+      "provider": "Prestataire",
+      "from": "Du",
+      "to": "Au",
+      "amountDue": "Montant à payer",
+      "walletBalance": "Solde du portefeuille",
+      "payNow": "Payer maintenant",
+      "paying": "Traitement…",
+      "paidJustNow": "Paiement confirmé — votre réservation est confirmée !",
+      "loginToPay": "Se connecter pour payer",
+      "topUp": "Recharger mon portefeuille",
+      "topUpHint": "Votre solde ne couvre pas cette réservation. Rechargez, puis revenez sur cette page.",
+      "errorExpired": "Ce lien de paiement a expiré.",
+      "errorGeneric": "Une erreur est survenue. Veuillez réessayer.",
+      "expiresOn": "Lien de paiement valable jusqu'au {date}",
+      "confirmedTitle": "Réservation confirmée",
+      "confirmedDesc": "Cette réservation est payée et confirmée. Un e-mail de confirmation est en route.",
+      "expiredTitle": "Lien expiré",
+      "expiredDesc": "Le délai de paiement de cette réservation est dépassé et le créneau a été libéré.",
+      "declinedTitle": "Réservation annulée",
+      "declinedDesc": "Cette demande de réservation a été refusée ou annulée : il n'y a rien à payer.",
+      "wrongAccountTitle": "Mauvais compte",
+      "wrongAccountDesc": "Ce lien de paiement appartient à un autre compte. Connectez-vous avec le compte qui a fait la demande.",
+      "invalidTitle": "Lien introuvable",
+      "invalidDesc": "Ce lien de paiement est invalide. Vérifiez le lien reçu par e-mail.",
+      "backHome": "Retour à l'accueil"
     },
     "programs": {
       "title": "Programmes",
@@ -2214,7 +2252,15 @@
           "cancelUnpaid": "Annuler",
           "cancelling": "Annulation…",
           "confirmCancel": "Confirmer",
-          "keep": "Garder"
+          "keep": "Garder",
+          "approve": "Approuver",
+          "approving": "Approbation…",
+          "decline": "Refuser",
+          "declining": "Refus…",
+          "confirmDecline": "Confirmer le refus",
+          "reasonSpaceUnavailable": "Espace indisponible",
+          "reasonSpaceClosed": "Espace fermé",
+          "reasonOther": "Autre"
         },
         "members": {
           "title": "Membres",
@@ -2847,7 +2893,13 @@
       "methodWalletSub": "{amount} disponible",
       "errorContact": "Veuillez saisir un nom, un e-mail et un numéro de téléphone valides.",
       "errorDateUnavailable": "Les dates sélectionnées ne sont pas disponibles à la réservation.",
-      "errorAlreadyBooked": "Vous avez déjà une réservation active pour cet espace."
+      "errorAlreadyBooked": "Vous avez déjà une réservation active pour cet espace.",
+      "requestToBook": "Demander à réserver",
+      "requestModeHint": "Aucun débit maintenant — vous payez après l'approbation de l'hôte.",
+      "requestSentTitle": "Demande envoyée",
+      "requestSentMessage": "L'hôte a été notifié. Vous recevrez un lien de paiement par e-mail dès que votre demande sera approuvée — rien n'a été débité.",
+      "amountAfterApproval": "À payer après approbation",
+      "awaitingApproval": "En attente d'approbation"
     },
     "scheduler": {
       "noAvailabilityThisMonth": "Aucune disponibilité ce mois-ci",
@@ -3234,7 +3286,9 @@
       "colDate": "Date",
       "colStatus": "Statut",
       "colAmount": "Montant",
-      "free": "Gratuit"
+      "free": "Gratuit",
+      "awaitingApproval": "En attente d'approbation",
+      "approvedUnpaid": "Approuvée — impayée"
     },
     "memberships": {
       "searchPlaceholder": "Rechercher par nom ou email…",

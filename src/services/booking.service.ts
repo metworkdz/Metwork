@@ -131,6 +131,22 @@ export const bookingService = {
     );
   },
 
+  /**
+   * Settle an APPROVED_UNPAID request-to-book reservation from the wallet.
+   * `token` is the single-use credential from the approval email link.
+   * Throws ApiClientError INSUFFICIENT_FUNDS with details.needsTopUp on a
+   * short balance (no state change server-side).
+   */
+  async payRequestBooking(
+    bookingId: string,
+    token: string,
+  ): Promise<{ booking: BookingDto; replayed: boolean; alreadyPaid: boolean }> {
+    return apiClient.post<{ booking: BookingDto; replayed: boolean; alreadyPaid: boolean }>(
+      `/bookings/${encodeURIComponent(bookingId)}/pay`,
+      { token },
+    );
+  },
+
   async applyToProgram(programId: string, input: ApplyOrRegisterInput): Promise<ApplyOrRegisterResponse> {
     return apiClient.post<ApplyOrRegisterResponse>(
       `/programs/${encodeURIComponent(programId)}/apply`,

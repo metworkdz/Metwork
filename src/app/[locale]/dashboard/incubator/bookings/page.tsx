@@ -16,6 +16,7 @@ import { BookingStatusBadge } from '@/components/features/booking/booking-status
 import { StatCard } from '@/components/shared/stat-card';
 import { ManualBookingDialog } from '@/components/features/incubator/manual-booking-dialog';
 import { CancelUnpaidButton } from '@/components/features/incubator/cancel-unpaid-button';
+import { RequestApprovalButtons } from '@/components/features/incubator/request-approval-buttons';
 import { BookingRowActions } from '@/components/features/incubator/booking-row-actions';
 import { DownloadContractButton } from '@/components/features/incubator/download-contract-button';
 import { applicableTemplates } from '@/server/contracts/service';
@@ -130,7 +131,9 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
   }
 
   const upcoming        = rows.filter((r) => r.status === 'CONFIRMED' || r.status === 'PENDING').length;
-  const awaitingPayment = rows.filter((r) => r.status === 'PENDING_PAYMENT').length;
+  // APPROVED_UNPAID request bookings are, like PENDING_PAYMENT intents, awaiting
+  // the client's payment — surface them under the same stat.
+  const awaitingPayment = rows.filter((r) => r.status === 'PENDING_PAYMENT' || r.status === 'APPROVED_UNPAID').length;
   const thisMonth       = new Date().toISOString().slice(0, 7);
   // This-month payments: only settled/paid bookings count. Awaiting-payment
   // (PENDING_PAYMENT) intents are excluded via the shared rule — they're surfaced
@@ -253,6 +256,9 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                             )}
                             {b.status === 'PENDING_PAYMENT' && (
                               <CancelUnpaidButton bookingId={b.id} />
+                            )}
+                            {b.status === 'AWAITING_APPROVAL' && (
+                              <RequestApprovalButtons bookingId={b.id} />
                             )}
                             {b.isManual && (
                               <BookingRowActions

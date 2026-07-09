@@ -17,7 +17,14 @@ import { toTransactionDto, toWalletDto } from '@/server/wallet/serialize';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { db } from '@/server/db/store';
 import { findIncubatorById } from '@/server/incubator/service';
-import { sendBookingReceiptEmail, sendAdminOrderNotification } from '@/server/notifications/mock';
+import {
+  sendBookingReceiptEmail,
+  sendAdminOrderNotification,
+  sendBookingConfirmedWithQrEmail,
+  sendBookingRequestReceivedEmail,
+  sendIncubatorBookingRequestEmail,
+} from '@/server/notifications/mock';
+import { createNotification } from '@/server/notifications/create-notification';
 import { validatePromoCode } from '@/server/promo-codes/service';
 import { getSpaceDiscountForUser } from '@/server/memberships/service';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
@@ -142,8 +149,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Send receipt email on first successful booking only (idempotency guard via replayed flag)
-  if (!result.replayed) {
-    void (async () => {
+  const notifyAfterCreate = !result.replayed
+    ? (async () => {
       try {
         const data  = await db.read();
         const user  = data.users.find((u) => u.id === guard.user.id);
@@ -154,18 +161,71 @@ export async function POST(req: NextRequest) {
         const incubator = space ? await findIncubatorById(space.incubatorId) : null;
         if (!incubator) return;
 
-        const lang = user.locale === 'en' ? 'en' : 'fr';
-        sendBookingReceiptEmail({
-          booking:     result.booking,
-          clientName:  user.fullName,
-          clientEmail: user.email,
-          incubator,
-          lang,
-        });
+        const lang = user.locale === 'en' ? 'en' : user.locale === 'ar' ? 'ar' : 'fr';
 
-        // Notify admin of new booking
+        if (result.booking.status === 'AWAITING_APPROVAL') {
+          // REQUEST mode: no money moved — send "request sent" to the client
+          // and "request awaiting approval" (email + in-app) to the incubator
+          // instead of a payment receipt.
+          const details = {
+            bookingId:   result.booking.id,
+            itemName:    result.booking.itemName,
+            vendorName:  result.booking.vendorName,
+            startsAt:    result.booking.startsAt,
+            endsAt:      result.booking.endsAt,
+            totalAmount: result.booking.totalAmount,
+          };
+          sendBookingRequestReceivedEmail(user.email, {
+            customerName: user.fullName,
+            details,
+            lang,
+          });
+          sendIncubatorBookingRequestEmail(incubator, {
+            customerName: user.fullName,
+            details,
+            lang: 'fr',
+          });
+          if (incubator.managerId) {
+            await createNotification({
+              userId: incubator.managerId,
+              type: 'GENERAL',
+              title: 'New booking request',
+              body: `${user.fullName} requested to book "${result.booking.itemName}". Approve or decline in your bookings dashboard.`,
+              href: '/dashboard/incubator/bookings',
+            });
+          }
+        } else {
+          sendBookingReceiptEmail({
+            booking:     result.booking,
+            clientName:  user.fullName,
+            clientEmail: user.email,
+            incubator,
+            lang: lang === 'ar' ? 'fr' : lang,
+          });
+
+          // INSTANT mode auto-confirms with no approval step, so the
+          // "confirmed" email (QR + receipt) is sent at creation time —
+          // the incubator PATCH that normally sends it never runs.
+          if (result.booking.reservationMode === 'INSTANT' && result.booking.status === 'CONFIRMED') {
+            sendBookingConfirmedWithQrEmail(user.email, {
+              customerName: user.fullName,
+              bookingId:    result.booking.id,
+              itemName:     result.booking.itemName,
+              itemKind:     result.booking.itemKind,
+              vendorName:   result.booking.vendorName,
+              city:         result.booking.city,
+              startsAt:     result.booking.startsAt,
+              endsAt:       result.booking.endsAt,
+              totalAmount:  result.booking.totalAmount,
+              createdAt:    result.booking.createdAt,
+            });
+          }
+        }
+
+        // Notify admin of new booking (or new booking request)
         const paymentLabel =
-          result.booking.paymentMethod === 'wallet' ? 'En ligne (portefeuille)'
+          result.booking.status === 'AWAITING_APPROVAL' ? 'Demande (paiement après approbation)'
+          : result.booking.paymentMethod === 'wallet' ? 'En ligne (portefeuille)'
           : result.booking.paymentMethod === 'manual' ? 'Espèces sur place'
           : result.booking.paymentMethod === 'NETWORK_PASS' ? 'Network Pass'
           : result.booking.paymentMethod ?? '—';
@@ -180,7 +240,15 @@ export async function POST(req: NextRequest) {
           paymentMethod: paymentLabel,
         });
       } catch { /* receipt errors must never break the booking response */ }
-    })();
+    })()
+    : null;
+  // REQUEST bookings: AWAIT delivery — a serverless lambda can freeze right
+  // after the response, dropping void-fired work, and the incubator's
+  // "new request" email/notification is what drives the approval flow.
+  // Legacy paths keep their original fire-and-forget timing untouched.
+  if (notifyAfterCreate) {
+    if (result.booking.status === 'AWAITING_APPROVAL') await notifyAfterCreate;
+    else void notifyAfterCreate;
   }
 
   // Analytics: only fire on NEW bookings, never on idempotent replays —

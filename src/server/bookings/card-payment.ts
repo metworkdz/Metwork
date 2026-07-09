@@ -124,7 +124,9 @@ export type CreateCardBookingReason =
   | 'CAPACITY_EXCEEDED'
   | 'DEADLINE_PASSED'
   | 'EVENT_PASSED'
-  | 'ALREADY_BOOKED';
+  | 'ALREADY_BOOKED'
+  /** Request-to-Book space: card checkout would bypass the host's approval. */
+  | 'RESERVATION_REQUIRES_APPROVAL';
 
 export type CreateCardBookingResult =
   | { ok: true; replayed: boolean; booking: BookingRecord; token: string }
@@ -231,6 +233,9 @@ function resolveTarget(
     const t = input.target;
     const rec = (data.spaces ?? []).find((s) => s.id === t.spaceId);
     if (!rec || !rec.isActive || !activeInc(rec.incubatorId)) return { ok: false, reason: 'ITEM_NOT_FOUND' };
+    // Request-to-Book listings settle via the approve-then-pay wallet flow;
+    // a direct card intent would confirm the seat without host approval.
+    if (rec.reservationMode === 'REQUEST') return { ok: false, reason: 'RESERVATION_REQUIRES_APPROVAL' };
 
     const price = unitPrice(rec, t.unit, priceMode);
     if (price == null) {

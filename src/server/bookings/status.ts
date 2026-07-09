@@ -6,11 +6,12 @@
  * is safe to import from server routes, the attendance/availability engine, AND
  * client components.
  *
- * The seat-hold rule and the revenue rule are intentionally the SAME exclusion
- * set: a booking that is CANCELLED, REFUNDED, or still awaiting payment
- * (PENDING_PAYMENT) holds no seat and counts toward no financial figure. Only
- * once it settles (CONFIRMED / COMPLETED) or is a paid/escrowed wallet booking
- * (PENDING) does it occupy capacity and count as revenue.
+ * The seat-hold rule and the revenue rule share the CANCELLED / REFUNDED /
+ * PENDING_PAYMENT exclusion: such a booking holds no seat and counts toward no
+ * financial figure. They diverge ONLY on the REQUEST-mode states
+ * (AWAITING_APPROVAL / APPROVED_UNPAID): those soft-hold the seat — so two
+ * users can never both get approved for one slot — but count as NO revenue,
+ * because no money has moved yet.
  */
 import type { BookingItemKind, BookingStatus } from '@/server/db/store';
 
@@ -26,25 +27,37 @@ export function isAwaitingPayment(b: HasStatus): boolean {
 }
 
 /**
- * Does this booking count toward seats taken AND toward financial figures?
+ * Does this booking count toward financial figures (revenue, monthly totals)?
  *
- * Excludes the three "no value yet / no value anymore" states:
- *   - CANCELLED / REFUNDED — gone.
- *   - PENDING_PAYMENT      — awaiting payment, holds nothing.
- *
- * Mirrors the long-standing inline checks in `attendance.ts` and
- * `availability.ts`; centralised here so analytics can't drift from seat-hold.
+ * Excludes the "no money / no value anymore" states:
+ *   - CANCELLED / REFUNDED               — gone.
+ *   - PENDING_PAYMENT                    — awaiting payment, holds nothing.
+ *   - AWAITING_APPROVAL / APPROVED_UNPAID — REQUEST-mode: nothing paid yet.
  */
 export function bookingCountsAsRevenue(b: HasStatus): boolean {
+  return (
+    b.status !== 'CANCELLED' &&
+    b.status !== 'REFUNDED' &&
+    b.status !== 'PENDING_PAYMENT' &&
+    b.status !== 'AWAITING_APPROVAL' &&
+    b.status !== 'APPROVED_UNPAID'
+  );
+}
+
+/**
+ * Does this booking occupy capacity (overlap / attendance / desk gates)?
+ *
+ * Broader than revenue: REQUEST-mode bookings (AWAITING_APPROVAL /
+ * APPROVED_UNPAID) soft-hold the seat while unpaid, so overlap detection
+ * can never approve two users for the same slot.
+ */
+export function bookingHoldsSeat(b: HasStatus): boolean {
   return (
     b.status !== 'CANCELLED' &&
     b.status !== 'REFUNDED' &&
     b.status !== 'PENDING_PAYMENT'
   );
 }
-
-/** Alias: the seat-hold rule is identical to the revenue rule. */
-export const bookingHoldsSeat = bookingCountsAsRevenue;
 
 /**
  * Public guest checkout (no Metwork account) is allowed ONLY for programs.

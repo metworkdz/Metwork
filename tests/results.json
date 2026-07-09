@@ -160,6 +160,38 @@
           "**/consultation-i18n.spec.ts"
         ],
         "timeout": 45000
+      },
+      {
+        "outputDir": "/Users/macbookpro/Downloads/metwork/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "space-reservation-modes",
+        "name": "space-reservation-modes",
+        "testDir": "/Users/macbookpro/Downloads/metwork/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/api/space-reservation-modes.spec.ts"
+        ],
+        "timeout": 90000
+      },
+      {
+        "outputDir": "/Users/macbookpro/Downloads/metwork/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "withdrawals-ui",
+        "name": "withdrawals-ui",
+        "testDir": "/Users/macbookpro/Downloads/metwork/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/withdrawal-ui.spec.ts"
+        ],
+        "timeout": 45000
       }
     ],
     "quiet": false,
@@ -196,13 +228,13 @@
   },
   "suites": [
     {
-      "title": "domiciliation-price.spec.ts",
-      "file": "domiciliation-price.spec.ts",
+      "title": "api/space-reservation-modes.spec.ts",
+      "file": "api/space-reservation-modes.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "rejects a DOMICILIATION space with NO monthly price",
+          "title": "INSTANT: debit at reservation, auto-confirmed, incubator credited, no approval step",
           "ok": true,
           "tags": [],
           "tests": [
@@ -210,19 +242,19 @@
               "timeout": 90000,
               "annotations": [],
               "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
+              "projectId": "space-reservation-modes",
+              "projectName": "space-reservation-modes",
               "results": [
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6042,
+                  "duration": 5620,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-05T13:31:14.451Z",
+                  "startTime": "2026-07-09T21:21:54.612Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -230,13 +262,13 @@
               "status": "expected"
             }
           ],
-          "id": "257b628f53ba0ce6986e-276f82ec68780c409812",
-          "file": "domiciliation-price.spec.ts",
-          "line": 45,
+          "id": "bb15cedefc5efa8f1ecb-1d27264d1bf0649618ba",
+          "file": "api/space-reservation-modes.spec.ts",
+          "line": 62,
           "column": 5
         },
         {
-          "title": "rejects a DOMICILIATION space with a 0 monthly price",
+          "title": "REQUEST: no debit until approval, then payment link, then confirmed (idempotent)",
           "ok": true,
           "tags": [],
           "tests": [
@@ -244,19 +276,19 @@
               "timeout": 90000,
               "annotations": [],
               "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
+              "projectId": "space-reservation-modes",
+              "projectName": "space-reservation-modes",
               "results": [
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 155,
+                  "duration": 6270,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-05T13:31:20.755Z",
+                  "startTime": "2026-07-09T21:22:02.128Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -264,13 +296,13 @@
               "status": "expected"
             }
           ],
-          "id": "257b628f53ba0ce6986e-3ac4fb0e2518eb4ba8f7",
-          "file": "domiciliation-price.spec.ts",
-          "line": 51,
+          "id": "bb15cedefc5efa8f1ecb-153a70659199629a840d",
+          "file": "api/space-reservation-modes.spec.ts",
+          "line": 82,
           "column": 5
         },
         {
-          "title": "accepts a DOMICILIATION space with a positive monthly price (control)",
+          "title": "REQUEST: insufficient balance returns needsTopUp with NO state change",
           "ok": true,
           "tags": [],
           "tests": [
@@ -278,19 +310,19 @@
               "timeout": 90000,
               "annotations": [],
               "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
+              "projectId": "space-reservation-modes",
+              "projectName": "space-reservation-modes",
               "results": [
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3957,
+                  "duration": 686,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-05T13:31:20.941Z",
+                  "startTime": "2026-07-09T21:22:08.417Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -298,13 +330,13 @@
               "status": "expected"
             }
           ],
-          "id": "257b628f53ba0ce6986e-726d3088516d5f580dbd",
-          "file": "domiciliation-price.spec.ts",
-          "line": 57,
+          "id": "bb15cedefc5efa8f1ecb-3489c921214105d560f5",
+          "file": "api/space-reservation-modes.spec.ts",
+          "line": 155,
           "column": 5
         },
         {
-          "title": "UI: the DOMICILIATION category exposes the mandatory price input",
+          "title": "REQUEST: decline releases the seat, no charge",
           "ok": true,
           "tags": [],
           "tests": [
@@ -312,19 +344,19 @@
               "timeout": 90000,
               "annotations": [],
               "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
+              "projectId": "space-reservation-modes",
+              "projectName": "space-reservation-modes",
               "results": [
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 16221,
+                  "duration": 950,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-05T13:31:24.934Z",
+                  "startTime": "2026-07-09T21:22:09.119Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -332,139 +364,13 @@
               "status": "expected"
             }
           ],
-          "id": "257b628f53ba0ce6986e-de1a872ca845c709da36",
-          "file": "domiciliation-price.spec.ts",
-          "line": 68,
-          "column": 5
-        }
-      ]
-    },
-    {
-      "title": "invoice-create-company.spec.ts",
-      "file": "invoice-create-company.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "entreprise invoice: dialog client + 2 lines + Virement → totals, no timbre, PDF",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 17781,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:31:41.519Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "0e9d99885063e363e72c-938a749af080950ad95f",
-          "file": "invoice-create-company.spec.ts",
-          "line": 44,
-          "column": 5
-        }
-      ]
-    },
-    {
-      "title": "invoice-create-individual.spec.ts",
-      "file": "invoice-create-individual.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "personne physique invoice: Chèque → no timbre, INDIVIDUAL client block",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 8469,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:03.090Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "d54bc272d4afc85e8838-8b2448bb0d56dba31ac2",
-          "file": "invoice-create-individual.spec.ts",
-          "line": 25,
-          "column": 5
-        }
-      ]
-    },
-    {
-      "title": "invoice-immutability.spec.ts",
-      "file": "invoice-immutability.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "cancel: PATCH status CANCELLED → 200, status flips, and is idempotent",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 110,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:11.759Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "514305037da3c9a1759c-5ef597466f2afc43046e",
-          "file": "invoice-immutability.spec.ts",
-          "line": 31,
+          "id": "bb15cedefc5efa8f1ecb-719a49c55b5ba930f393",
+          "file": "api/space-reservation-modes.spec.ts",
+          "line": 187,
           "column": 5
         },
         {
-          "title": "no other transition: PATCH status ISSUED is rejected",
+          "title": "legacy (unset mode): behavior untouched — escrow debit at booking, PENDING status",
           "ok": true,
           "tags": [],
           "tests": [
@@ -472,19 +378,19 @@
               "timeout": 90000,
               "annotations": [],
               "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
+              "projectId": "space-reservation-modes",
+              "projectName": "space-reservation-modes",
               "results": [
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 109,
+                  "duration": 543,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-05T13:32:12.040Z",
+                  "startTime": "2026-07-09T21:22:10.089Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -492,561 +398,19 @@
               "status": "expected"
             }
           ],
-          "id": "514305037da3c9a1759c-327cfa42233e349c4030",
-          "file": "invoice-immutability.spec.ts",
-          "line": 46,
+          "id": "bb15cedefc5efa8f1ecb-ce996bae617e435398fe",
+          "file": "api/space-reservation-modes.spec.ts",
+          "line": 217,
           "column": 5
-        },
-        {
-          "title": "no field edits: smuggled changes on PATCH are ignored, record unchanged",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 158,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:12.162Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "514305037da3c9a1759c-76e457a115297917ab74",
-          "file": "invoice-immutability.spec.ts",
-          "line": 57,
-          "column": 5
-        },
-        {
-          "title": "UI: the invoices list shows the cancelled badge for this number",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 4748,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:12.332Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "514305037da3c9a1759c-3413f9d8f03fb1eef8a5",
-          "file": "invoice-immutability.spec.ts",
-          "line": 83,
-          "column": 5
-        }
-      ]
-    },
-    {
-      "title": "invoice-numbering.spec.ts",
-      "file": "invoice-numbering.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "two invoices in a row get consecutive numbers, no gap",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 96,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:17.111Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "6c7fa85b29cc3827b1d9-b3f7bc207c42d0b2c6eb",
-          "file": "invoice-numbering.spec.ts",
-          "line": 25,
-          "column": 5
-        }
-      ]
-    },
-    {
-      "title": "invoice-settings.spec.ts",
-      "file": "invoice-settings.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "defaultVatRate 9 + GREEN_BAND prefill the create form",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 5355,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:17.307Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "31c0f8fd5b39b5f06e35-b6cc44f9abdb3293f9f9",
-          "file": "invoice-settings.spec.ts",
-          "line": 31,
-          "column": 5
-        }
-      ]
-    },
-    {
-      "title": "invoice-stamp-duty.spec.ts",
-      "file": "invoice-stamp-duty.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "Espèce TTC 10000 → timbre 100 (1% mid-bracket)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 51,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:22.867Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "5d39f826aa06a13d3f45-47b2343a46427e850f8b",
-          "file": "invoice-stamp-duty.spec.ts",
-          "line": 38,
-          "column": 7
-        },
-        {
-          "title": "Espèce TTC 30000 → timbre 300 (1% at the 30 000 boundary)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 56,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:23.017Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "5d39f826aa06a13d3f45-743b1141e32ad5412a07",
-          "file": "invoice-stamp-duty.spec.ts",
-          "line": 38,
-          "column": 7
-        },
-        {
-          "title": "Espèce TTC 30001 → timbre 450 (1.5% just above 30 000)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 53,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:23.087Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "5d39f826aa06a13d3f45-83f193f474923feb1d06",
-          "file": "invoice-stamp-duty.spec.ts",
-          "line": 38,
-          "column": 7
-        },
-        {
-          "title": "Espèce TTC 60000 → timbre 900 (1.5% mid-bracket)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 68,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:23.153Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "5d39f826aa06a13d3f45-41f507e275d7d6f65925",
-          "file": "invoice-stamp-duty.spec.ts",
-          "line": 38,
-          "column": 7
-        },
-        {
-          "title": "Espèce TTC 100000 → timbre 1500 (1.5% at the 100 000 boundary)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 61,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:23.241Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "5d39f826aa06a13d3f45-b18583769fd6cc2b9e27",
-          "file": "invoice-stamp-duty.spec.ts",
-          "line": 38,
-          "column": 7
-        },
-        {
-          "title": "Espèce TTC 100001 → timbre 2000 (2% just above 100 000)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 52,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:23.315Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "5d39f826aa06a13d3f45-aa15e05c5983f6f1b9e1",
-          "file": "invoice-stamp-duty.spec.ts",
-          "line": 38,
-          "column": 7
-        },
-        {
-          "title": "Espèce TTC 250000 → timbre 5000 (2% mid-bracket)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 51,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:23.382Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "5d39f826aa06a13d3f45-7ba1a19911f62ea24dd2",
-          "file": "invoice-stamp-duty.spec.ts",
-          "line": 38,
-          "column": 7
-        },
-        {
-          "title": "UI: the Droit de timbre row appears when Espèce is selected",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 4827,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:23.446Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "5d39f826aa06a13d3f45-79a0528f11ee67f23fef",
-          "file": "invoice-stamp-duty.spec.ts",
-          "line": 51,
-          "column": 5
-        }
-      ]
-    },
-    {
-      "title": "invoice-templates.spec.ts",
-      "file": "invoice-templates.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "default template CLASSIC → invoice stores it and its PDF renders",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 294,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:28.319Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "c1086114ec1d472e98ba-a80a380916f1255e1c5e",
-          "file": "invoice-templates.spec.ts",
-          "line": 28,
-          "column": 7
-        },
-        {
-          "title": "default template GREEN_BAND → invoice stores it and its PDF renders",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 299,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:28.695Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "c1086114ec1d472e98ba-84fdebfd7fda5d3754b6",
-          "file": "invoice-templates.spec.ts",
-          "line": 28,
-          "column": 7
-        },
-        {
-          "title": "default template MINIMAL → invoice stores it and its PDF renders",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "invoices",
-              "projectName": "invoices",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 363,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-05T13:32:29.007Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "c1086114ec1d472e98ba-3384c756e07691fd94a9",
-          "file": "invoice-templates.spec.ts",
-          "line": 28,
-          "column": 7
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-07-05T13:30:23.782Z",
-    "duration": 125883.139,
-    "expected": 23,
+    "startTime": "2026-07-09T21:21:17.858Z",
+    "duration": 52864.257,
+    "expected": 5,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

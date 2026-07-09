@@ -124,6 +124,8 @@ export async function POST(req: NextRequest) {
         return jsonError(409, 'EVENT_PASSED', 'This event has already taken place', result.detail);
       case 'ALREADY_BOOKED':
         return jsonError(409, 'ALREADY_BOOKED', 'You already have an active booking for this listing', result.detail);
+      case 'RESERVATION_REQUIRES_APPROVAL':
+        return jsonError(422, 'RESERVATION_REQUIRES_APPROVAL', 'This space uses Request to Book — send a booking request and pay after the host approves');
       default:
         return jsonError(400, 'BOOKING_FAILED', 'Could not create the booking');
     }

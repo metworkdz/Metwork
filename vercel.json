@@ -39,6 +39,10 @@
     {
       "path": "/api/cron/consultation-reminders",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/space-expiry",
+      "schedule": "0 */2 * * *"
     }
   ]
 }

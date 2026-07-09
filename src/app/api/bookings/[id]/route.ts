@@ -31,7 +31,15 @@ export async function PATCH(
     const booking = store.bookings.find((b) => b.id === id);
     if (!booking) return 'NOT_FOUND' as const;
     if (booking.userId !== guard.user.id) return 'FORBIDDEN' as const;
-    if (booking.status !== 'PENDING' && booking.status !== 'CONFIRMED') {
+    // REQUEST-mode bookings can also be withdrawn by the owner before payment
+    // (AWAITING_APPROVAL / APPROVED_UNPAID). No refund applies — nothing was
+    // charged yet on those states.
+    if (
+      booking.status !== 'PENDING' &&
+      booking.status !== 'CONFIRMED' &&
+      booking.status !== 'AWAITING_APPROVAL' &&
+      booking.status !== 'APPROVED_UNPAID'
+    ) {
       return 'NOT_CANCELLABLE' as const;
     }
 
@@ -40,9 +48,17 @@ export async function PATCH(
     booking.status = 'CANCELLED';
     booking.updatedAt = now;
 
+    // Release any desk/office holds this booking placed so the availability
+    // calendar frees up immediately (same rule as the incubator cancel path).
+    for (const desk of store.deskBookings ?? []) {
+      if (desk.bookingId === booking.id && desk.status !== 'CANCELLED') {
+        desk.status = 'CANCELLED';
+      }
+    }
+
     // Refund when the booking was still PENDING (incubator hasn't been credited).
     if (wasStatus === 'PENDING' && booking.totalAmount > 0) {
-      let wallet = store.wallets.find((w) => w.userId === booking.userId);
+      const wallet = store.wallets.find((w) => w.userId === booking.userId);
       if (wallet && wallet.status !== 'FROZEN') {
         wallet.balance += booking.totalAmount;
         wallet.updatedAt = now;

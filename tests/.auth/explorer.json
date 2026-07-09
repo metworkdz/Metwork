@@ -12,10 +12,10 @@
     },
     {
       "name": "metwork_session",
-      "value": "hC8qEAn0ndja7mPhGMTnBWF685SNkJz9hjG6GtpdW-o",
+      "value": "G7QTgFb-VtmL0Jocsx62g7QLzayATu99jUUGTRF5vQk",
       "domain": "localhost",
       "path": "/",
-      "expires": 1783863070.563549,
+      "expires": 1784236912.404996,
       "httpOnly": true,
       "secure": false,
       "sameSite": "Lax"

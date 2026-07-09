@@ -18,6 +18,7 @@
  */
 import type { NextRequest } from 'next/server';
 import { checkAndSendExpiryReminders } from '@/server/spaces/expiry-notifier';
+import { sweepExpiredRequestBookings } from '@/server/bookings/request-expiry';
 import { json } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -34,7 +35,10 @@ export async function GET(req: NextRequest) {
 
   try {
     const { sent, checked } = await checkAndSendExpiryReminders();
-    return json({ sent, checked });
+    // REQUEST-mode reservations: expire stale AWAITING_APPROVAL requests and
+    // lapsed APPROVED_UNPAID payment links (idempotent; no money moves).
+    const { expired } = await sweepExpiredRequestBookings();
+    return json({ sent, checked, expired });
   } catch (err) {
     console.error('[cron/space-expiry] failed', err);
     return json({ error: 'EXPIRY_CHECK_FAILED' }, { status: 500 });

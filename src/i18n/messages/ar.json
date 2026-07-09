@@ -950,7 +950,9 @@
       "markCashPaid": "تأكيد الدفع نقدًا",
       "awaitingPayment": "بانتظار الدفع",
       "filterAwaitingPayment": "بانتظار الدفع",
-      "cancelUnpaid": "إلغاء"
+      "cancelUnpaid": "إلغاء",
+      "filterAwaitingApproval": "في انتظار الموافقة",
+      "filterApprovedUnpaid": "موافَق عليه — غير مدفوع"
     },
     "clients": {
       "editTitle": "تعديل العميل",
@@ -1607,7 +1609,13 @@
         "storage": "تخزين",
         "naturalLight": "إضاءة طبيعية",
         "kitchenAccess": "الوصول إلى المطبخ"
-      }
+      },
+      "labelReservationMode": "الموافقة على الحجوزات",
+      "modeInstant": "حجز فوري",
+      "modeInstantHint": "يدفع العملاء عند الحجز ويتم التأكيد فوراً.",
+      "modeRequest": "حجز بطلب مسبق",
+      "modeRequestHint": "توافق على كل طلب أولاً؛ يدفع العميل بعد الموافقة.",
+      "modeLegacyHint": "الإعداد الحالي: يدفع العملاء عند الحجز ثم تؤكد كل حجز بنفسك (السلوك الحالي)."
     },
     "availability": {
       "title": "التوفّر — {name}",
@@ -1806,6 +1814,36 @@
       "subtotal": "المجموع الفرعي",
       "depositBase": "العربون",
       "platformFee": "رسوم المنصة"
+    },
+    "bookingRequestPay": {
+      "payableTitle": "أكمل حجزك",
+      "payableDesc": "تمت الموافقة على طلبك. ادفع من محفظتك لتأكيد الحجز.",
+      "item": "الحجز",
+      "provider": "المزوّد",
+      "from": "من",
+      "to": "إلى",
+      "amountDue": "المبلغ المستحق",
+      "walletBalance": "رصيد المحفظة",
+      "payNow": "ادفع الآن",
+      "paying": "جارٍ المعالجة…",
+      "paidJustNow": "تم الدفع — تم تأكيد حجزك!",
+      "loginToPay": "سجّل الدخول للدفع",
+      "topUp": "اشحن محفظتك",
+      "topUpHint": "رصيدك لا يغطي هذا الحجز. اشحن المحفظة ثم عد إلى هذه الصفحة.",
+      "errorExpired": "انتهت صلاحية رابط الدفع هذا.",
+      "errorGeneric": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+      "expiresOn": "رابط الدفع صالح حتى {date}",
+      "confirmedTitle": "تم تأكيد الحجز",
+      "confirmedDesc": "تم دفع هذا الحجز وتأكيده. رسالة التأكيد في طريقها إليك.",
+      "expiredTitle": "انتهت صلاحية الرابط",
+      "expiredDesc": "انتهت مهلة الدفع لهذا الحجز وتم تحرير الموعد.",
+      "declinedTitle": "تم إلغاء الحجز",
+      "declinedDesc": "تم رفض طلب الحجز هذا أو إلغاؤه، فلا يوجد ما يُدفع.",
+      "wrongAccountTitle": "حساب غير صحيح",
+      "wrongAccountDesc": "رابط الدفع هذا يخص حساباً آخر. سجّل الدخول بالحساب الذي قدّم الطلب.",
+      "invalidTitle": "الرابط غير موجود",
+      "invalidDesc": "رابط الدفع هذا غير صالح. تحقق من الرابط الوارد في بريدك الإلكتروني.",
+      "backHome": "العودة إلى الرئيسية"
     },
     "programs": {
       "title": "البرامج",
@@ -2214,7 +2252,15 @@
           "cancelUnpaid": "إلغاء",
           "cancelling": "جارٍ الإلغاء…",
           "confirmCancel": "تأكيد",
-          "keep": "إبقاء"
+          "keep": "إبقاء",
+          "approve": "موافقة",
+          "approving": "جارٍ الموافقة…",
+          "decline": "رفض",
+          "declining": "جارٍ الرفض…",
+          "confirmDecline": "تأكيد الرفض",
+          "reasonSpaceUnavailable": "المساحة غير متاحة",
+          "reasonSpaceClosed": "المساحة مغلقة",
+          "reasonOther": "أخرى"
         },
         "members": {
           "title": "الأعضاء",
@@ -2847,7 +2893,13 @@
       "methodWalletSub": "{amount} متاح",
       "errorContact": "يرجى إدخال اسم وبريد إلكتروني ورقم هاتف صالح.",
       "errorDateUnavailable": "التواريخ المحددة غير متاحة للحجز.",
-      "errorAlreadyBooked": "لديك حجز نشط بالفعل لهذا الفضاء."
+      "errorAlreadyBooked": "لديك حجز نشط بالفعل لهذا الفضاء.",
+      "requestToBook": "طلب الحجز",
+      "requestModeHint": "لن يتم خصم أي مبلغ الآن — تدفع بعد موافقة المضيف على طلبك.",
+      "requestSentTitle": "تم إرسال الطلب",
+      "requestSentMessage": "تم إشعار المضيف. ستصلك رسالة برابط الدفع فور الموافقة على طلبك — لم يتم خصم أي مبلغ.",
+      "amountAfterApproval": "المبلغ بعد الموافقة",
+      "awaitingApproval": "في انتظار الموافقة"
     },
     "scheduler": {
       "noAvailabilityThisMonth": "لا توجد مواعيد متاحة هذا الشهر",
@@ -3234,7 +3286,9 @@
       "colDate": "التاريخ",
       "colStatus": "الحالة",
       "colAmount": "المبلغ",
-      "free": "مجاني"
+      "free": "مجاني",
+      "awaitingApproval": "في انتظار الموافقة",
+      "approvedUnpaid": "موافَق عليه — غير مدفوع"
     },
     "memberships": {
       "searchPlaceholder": "ابحث بالاسم أو البريد الإلكتروني…",

@@ -243,6 +243,7 @@ export function SpacesManager() {
             openingTime: editingSpace.openingTime ?? '09:00',
             closingTime: editingSpace.closingTime ?? '18:00',
             durationDiscounts: editingSpace.durationDiscounts ?? [],
+            reservationMode: editingSpace.reservationMode ?? null,
             deskNames: editingSpace.deskNames ?? [],
             officePhotos: editingSpace.officePhotos ?? [],
             officeSize: editingSpace.officeSize,

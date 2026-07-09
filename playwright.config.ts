@@ -117,6 +117,20 @@ export default defineConfig({
       },
     },
     {
+      // Space reservation modes (Airbnb-style INSTANT / REQUEST) — API-driven
+      // money-movement assertions (debit/credit/idempotency) + pay-link flow
+      // via the e2e email sink. SERIAL & state-sharing — run with `--workers=1`.
+      // Retries disabled so a flake never re-runs side-effectful wallet moves.
+      //   npx playwright test --project=space-reservation-modes --workers=1
+      name: 'space-reservation-modes',
+      testMatch: '**/api/space-reservation-modes.spec.ts',
+      retries: 0,
+      timeout: 90_000,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
       // Manual withdrawal — requester UI (payout-account gate, RIB/RIP form) +
       // a hydration guard on the pages this feature touched. Default session is
       // the entrepreneur `builder` (a clean wallet not used by the api

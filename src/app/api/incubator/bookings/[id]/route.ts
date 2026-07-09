@@ -22,7 +22,14 @@ import {
   sendBookingDeclinedEmail,
   sendBookingUpdatedEmail,
   sendBookingProviderCancelledEmail,
+  sendBookingApprovedPayEmail,
+  sendBookingCancelledUnpaidEmail,
 } from '@/server/notifications/mock';
+import {
+  PAYMENT_LINK_TTL_HOURS,
+  newPaymentLinkToken,
+  hashPaymentLinkToken,
+} from '@/server/bookings/request-mode';
 
 type StoreData = Parameters<Parameters<typeof db.update>[0]>[0];
 
@@ -130,11 +137,45 @@ export async function PATCH(
     // Can't confirm a booking that's already confirmed (idempotent CONFIRM is ok though)
     if (booking.status === 'CONFIRMED' && input.status === 'CONFIRMED') {
       const user = booking.userId ? d.users.find((u) => u.id === booking.userId) : null;
-      return { ...booking, customerName: user?.fullName ?? booking.clientName ?? 'Unknown', customerEmail: user?.email ?? booking.clientEmail ?? '', customerPhone: user?.phone ?? booking.clientPhone ?? '' };
+      return { ...booking, customerName: user?.fullName ?? booking.clientName ?? 'Unknown', customerEmail: user?.email ?? booking.clientEmail ?? '', customerPhone: user?.phone ?? booking.clientPhone ?? '', customerLocale: user?.locale ?? 'fr', requestApproval: null };
+    }
+
+    // ── REQUEST-mode approve: AWAITING_APPROVAL → APPROVED_UNPAID ───────────
+    // No money moves here. A payment-link token is minted (hash stored, raw
+    // token returned so the caller can email it), and the incubator is only
+    // credited later when the client pays via POST /api/bookings/[id]/pay.
+    if (booking.reservationMode === 'REQUEST' && input.status === 'CONFIRMED' && !booking.paidAt) {
+      const user = booking.userId ? d.users.find((u) => u.id === booking.userId) : null;
+      const base = {
+        customerName:   user?.fullName ?? booking.clientName ?? 'Unknown',
+        customerEmail:  user?.email ?? booking.clientEmail ?? '',
+        customerPhone:  user?.phone ?? booking.clientPhone ?? '',
+        customerLocale: user?.locale ?? 'fr',
+      };
+      // Idempotent re-approve: keep the original link + expiry, send nothing new.
+      if (booking.status === 'APPROVED_UNPAID') {
+        return { ...booking, ...base, requestApproval: null };
+      }
+      if (booking.status !== 'AWAITING_APPROVAL') return 'ALREADY_FINAL';
+      const now = new Date().toISOString();
+      const rawToken = newPaymentLinkToken();
+      booking.status = 'APPROVED_UNPAID';
+      booking.approvedAt = now;
+      booking.paymentLinkTokenHash = hashPaymentLinkToken(rawToken);
+      booking.paymentLinkExpiresAt = new Date(Date.now() + PAYMENT_LINK_TTL_HOURS * 3_600_000).toISOString();
+      booking.updatedAt = now;
+      return {
+        ...booking,
+        ...base,
+        requestApproval: { rawToken, expiresAt: booking.paymentLinkExpiresAt },
+      };
     }
 
     const now = new Date().toISOString();
     const previousStatus = booking.status;
+    // REQUEST-mode booking that was never paid: cancelling it moves no money
+    // (nothing was ever debited, the incubator was never credited).
+    const requestUnpaid = booking.reservationMode === 'REQUEST' && !booking.paidAt;
     booking.status = input.status;
     booking.updatedAt = now;
     if (input.status === 'CANCELLED' && input.declineReason) {
@@ -245,7 +286,7 @@ export async function PATCH(
         };
         d.transactions.push(payoutTx);
       }
-    } else if (!isManual && booking.userId && input.status === 'CANCELLED' && booking.totalAmount > 0) {
+    } else if (!isManual && !requestUnpaid && booking.userId && input.status === 'CANCELLED' && booking.totalAmount > 0) {
       // Refund user wallet
       const userWallet = ensureWallet(d, booking.userId);
       if (userWallet.status !== 'FROZEN') {
@@ -303,6 +344,8 @@ export async function PATCH(
       customerName: user?.fullName ?? booking.clientName ?? 'Unknown',
       customerEmail: user?.email ?? booking.clientEmail ?? '',
       customerPhone: user?.phone ?? booking.clientPhone ?? '',
+      customerLocale: user?.locale ?? 'fr',
+      requestApproval: null as null | { rawToken: string; expiresAt: string },
     };
   });
 
@@ -311,8 +354,89 @@ export async function PATCH(
   if (result === 'FORBIDDEN') return jsonError(403, 'FORBIDDEN', 'Not your booking');
   if (result === 'ALREADY_FINAL') return jsonError(409, 'ALREADY_FINAL', 'Booking is already in a final state');
 
-  // Fire-and-forget: send notification emails + in-app (skip for offline bookings with no platform user)
-  void (async () => {
+  // Send notification emails + in-app (skip for offline bookings with no
+  // platform user). Legacy transitions keep their fire-and-forget timing;
+  // REQUEST-mode transitions are AWAITED below — a serverless lambda can
+  // freeze after the response and drop void-fired work, and the pay-link
+  // email IS the client's only way to complete a request booking.
+  const notifyAfterPatch = (async () => {
+    // ── REQUEST-mode approve: send the tokenized pay link, NOT the confirmed
+    // email (the booking is APPROVED_UNPAID — nothing has been paid yet).
+    // An idempotent re-approve has requestApproval === null and sends nothing.
+    if (input.status === 'CONFIRMED' && result.status === 'APPROVED_UNPAID') {
+      if (result.requestApproval && result.customerEmail) {
+        const locale =
+          result.customerLocale === 'en' ? 'en'
+          : result.customerLocale === 'ar' ? 'ar'
+          : 'fr';
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz';
+        const payUrl = `${appUrl}/${locale}/booking/${result.id}/pay?token=${result.requestApproval.rawToken}`;
+        sendBookingApprovedPayEmail(result.customerEmail, {
+          customerName: result.customerName,
+          details: {
+            bookingId:   result.id,
+            itemName:    result.itemName,
+            vendorName:  result.vendorName,
+            startsAt:    result.startsAt,
+            endsAt:      result.endsAt,
+            totalAmount: result.totalAmount,
+          },
+          payUrl,
+          expiresAt: result.requestApproval.expiresAt,
+          lang: locale,
+        });
+        if (result.userId) {
+          await createNotification({
+            userId: result.userId,
+            type: 'BOOKING_PENDING_PAYMENT',
+            title: 'Booking approved — complete payment',
+            body: `Your request for "${result.itemName}" was approved. Complete the payment from the link we emailed you to confirm it.`,
+            href: '/dashboard/entrepreneur/bookings',
+          });
+        }
+      }
+      return;
+    }
+
+    // ── REQUEST-mode decline before payment: nothing was charged, so use the
+    // unpaid-cancellation copy (no refund line) alongside the reason.
+    if (input.status === 'CANCELLED' && result.reservationMode === 'REQUEST' && !result.paidAt) {
+      if (result.customerEmail) {
+        if (input.declineReason) {
+          sendBookingDeclinedEmail(result.customerEmail, {
+            customerName: result.customerName,
+            bookingId: result.id,
+            itemName: result.itemName,
+            itemKind: result.itemKind,
+            vendorName: result.vendorName,
+            totalAmount: 0, // nothing was paid — suppresses the refund line
+            declineReason: input.declineReason,
+          });
+        } else {
+          const locale =
+            result.customerLocale === 'en' ? 'en'
+            : result.customerLocale === 'ar' ? 'ar'
+            : 'fr';
+          sendBookingCancelledUnpaidEmail(result.customerEmail, {
+            customerName: result.customerName,
+            bookingId: result.id,
+            itemName: result.itemName,
+            vendorName: result.vendorName,
+          }, locale);
+        }
+      }
+      if (result.userId) {
+        await createNotification({
+          userId: result.userId,
+          type: 'BOOKING_CANCELLED',
+          title: 'Booking request declined',
+          body: `Your booking request for "${result.itemName}" was declined. Nothing was charged.`,
+          href: '/dashboard/entrepreneur/bookings',
+        });
+      }
+      return;
+    }
+
     if (input.status === 'CONFIRMED') {
       if (result.customerEmail) {
         sendBookingConfirmedWithQrEmail(result.customerEmail, {
@@ -360,8 +484,18 @@ export async function PATCH(
       }
     }
   })();
+  if (result.reservationMode === 'REQUEST') {
+    try { await notifyAfterPatch; } catch { /* never break the transition response */ }
+  } else {
+    void notifyAfterPatch;
+  }
 
-  return json({ booking: result });
+  // Never expose the raw payment-link token (or its stored hash) to the
+  // incubator — the link is the CLIENT's credential, delivered by email only.
+  const bookingResponse: Record<string, unknown> = { ...result };
+  delete bookingResponse.requestApproval;
+  delete bookingResponse.paymentLinkTokenHash;
+  return json({ booking: bookingResponse });
 }
 
 /* ── PUT — edit a manual/offline booking ── */

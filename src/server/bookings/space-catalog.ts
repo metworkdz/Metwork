@@ -46,6 +46,7 @@ function fromRecord(r: import('@/server/db/store').SpaceRecord): Space {
     openingTime:  r.openingTime  ?? DEFAULT_OPENING_TIME,
     closingTime:  r.closingTime  ?? DEFAULT_CLOSING_TIME,
     durationDiscounts: r.durationDiscounts ?? [],
+    reservationMode:   r.reservationMode,
     deskNames:          r.deskNames ?? [],
     officePhotos:       r.officePhotos ?? [],
     officeSize:         r.officeSize ?? null,

@@ -42,7 +42,12 @@ import {
   mentorSessionConfirmedEmailHtml,
   paymentLinkReceiptEmailHtml,
   paymentLinkPaidEmailHtml,
+  bookingRequestReceivedEmailHtml,
+  incubatorBookingRequestEmailHtml,
+  bookingApprovedPayEmailHtml,
+  bookingPaidIncubatorEmailHtml,
   type AdminOrderNotifParams,
+  type EmailLang,
 } from './email';
 import {
   generateBookingReceiptPdf,
@@ -1571,5 +1576,198 @@ export function sendAdminConsultationNotification(input: MentorConfirmationInput
     .catch((err: Error) =>
       // eslint-disable-next-line no-console
       console.error(`${banner} Admin consultation notification failed →`, err.message),
+    );
+}
+
+/* ─────────── REQUEST-mode space reservations (approve-then-pay) ─────────── */
+
+/** Shared booking details every REQUEST-mode reservation email needs. */
+export interface ReservationEmailDetails {
+  bookingId: string;
+  itemName: string;
+  vendorName: string;
+  startsAt: string;
+  endsAt: string;
+  totalAmount: number;
+}
+
+/**
+ * Client email — "Request sent, awaiting host approval". Fire-and-forget.
+ */
+export function sendBookingRequestReceivedEmail(
+  to: string,
+  opts: { customerName: string; details: ReservationEmailDetails; lang?: EmailLang },
+): void {
+  const { customerName, details, lang } = opts;
+  const subject =
+    lang === 'en' ? `Request sent — ${details.itemName}`
+    : lang === 'ar' ? `تم إرسال الطلب — ${details.itemName}`
+    : `Demande envoyée — ${details.itemName}`;
+
+  recordE2eEmail('booking-request-received', { to, bookingId: details.bookingId });
+  sendResendEmail({
+    to,
+    subject,
+    html: bookingRequestReceivedEmailHtml({
+      customerName,
+      itemName: details.itemName,
+      vendorName: details.vendorName,
+      startsAt: details.startsAt,
+      endsAt: details.endsAt,
+      totalAmount: details.totalAmount,
+      lang,
+    }),
+  })
+    .then((sent) => {
+      // eslint-disable-next-line no-console
+      console.log(`${banner} BOOKING REQUEST RECEIVED ${sent ? 'sent' : '(no Resend)'} → ${to} :: ${details.bookingId}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Booking request-received email failed →`, err.message),
+    );
+}
+
+/**
+ * Incubator email — "New booking request awaiting approval" + dashboard link.
+ * Skipped silently when the incubator record has no email. Fire-and-forget.
+ */
+export function sendIncubatorBookingRequestEmail(
+  incubator: IncubatorRecord,
+  opts: { customerName: string; details: ReservationEmailDetails; lang?: EmailLang },
+): void {
+  const { customerName, details, lang } = opts;
+  const to = incubator.email;
+  if (!to) {
+    // eslint-disable-next-line no-console
+    console.log(`${banner} BOOKING REQUEST INCUBATOR NOTIF skipped — no email on incubator record (id=${incubator.id})`);
+    return;
+  }
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/incubator/bookings`;
+  const subject =
+    lang === 'en' ? `New booking request — ${details.itemName}`
+    : lang === 'ar' ? `طلب حجز جديد — ${details.itemName}`
+    : `Nouvelle demande de réservation — ${details.itemName}`;
+
+  recordE2eEmail('booking-request-incubator', { to, bookingId: details.bookingId });
+  sendResendEmail({
+    to,
+    subject,
+    html: incubatorBookingRequestEmailHtml({
+      incubatorName: incubator.name,
+      customerName,
+      itemName: details.itemName,
+      startsAt: details.startsAt,
+      endsAt: details.endsAt,
+      totalAmount: details.totalAmount,
+      dashboardUrl,
+      lang,
+    }),
+  })
+    .then((sent) => {
+      // eslint-disable-next-line no-console
+      console.log(`${banner} BOOKING REQUEST INCUBATOR NOTIF ${sent ? 'sent' : '(no Resend)'} → ${to} :: ${details.bookingId}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Booking request incubator email failed →`, err.message),
+    );
+}
+
+/**
+ * Client email — "Your booking is approved, complete payment" with the
+ * tokenized pay link. Fire-and-forget. The raw pay URL is recorded in the
+ * e2e sink (USE_LOCAL_DB only) so tests can retrieve it — the DB stores only
+ * the token's SHA-256 hash.
+ */
+export function sendBookingApprovedPayEmail(
+  to: string,
+  opts: {
+    customerName: string;
+    details: ReservationEmailDetails;
+    payUrl: string;
+    expiresAt: string;
+    lang?: EmailLang;
+  },
+): void {
+  const { customerName, details, payUrl, expiresAt, lang } = opts;
+  const subject =
+    lang === 'en' ? `Booking approved — complete payment — ${details.itemName}`
+    : lang === 'ar' ? `تمت الموافقة على الحجز — أكمل الدفع — ${details.itemName}`
+    : `Réservation approuvée — finalisez le paiement — ${details.itemName}`;
+
+  recordE2eEmail('booking-approved-pay-link', { to, bookingId: details.bookingId, payUrl });
+  sendResendEmail({
+    to,
+    subject,
+    html: bookingApprovedPayEmailHtml({
+      customerName,
+      itemName: details.itemName,
+      vendorName: details.vendorName,
+      startsAt: details.startsAt,
+      endsAt: details.endsAt,
+      totalAmount: details.totalAmount,
+      payUrl,
+      expiresAt,
+      lang,
+    }),
+  })
+    .then((sent) => {
+      if (!sent)
+        // eslint-disable-next-line no-console
+        console.log(`${banner} BOOKING PAY LINK (no Resend) → ${to} :: ${payUrl}`);
+      else
+        // eslint-disable-next-line no-console
+        console.log(`${banner} BOOKING PAY LINK sent → ${to} :: ${details.bookingId}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Booking approved pay-link email failed →`, err.message),
+    );
+}
+
+/**
+ * Incubator email — "Booking paid & confirmed" once the client settles a
+ * REQUEST-mode reservation. Skipped when the record has no email.
+ */
+export function sendBookingPaidIncubatorEmail(
+  incubator: IncubatorRecord,
+  opts: { customerName: string; details: ReservationEmailDetails; lang?: EmailLang },
+): void {
+  const { customerName, details, lang } = opts;
+  const to = incubator.email;
+  if (!to) {
+    // eslint-disable-next-line no-console
+    console.log(`${banner} BOOKING PAID INCUBATOR NOTIF skipped — no email on incubator record (id=${incubator.id})`);
+    return;
+  }
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/incubator/bookings`;
+  const subject =
+    lang === 'en' ? `Booking paid & confirmed — ${details.itemName}`
+    : lang === 'ar' ? `تم دفع الحجز وتأكيده — ${details.itemName}`
+    : `Réservation payée et confirmée — ${details.itemName}`;
+
+  recordE2eEmail('booking-paid-incubator', { to, bookingId: details.bookingId });
+  sendResendEmail({
+    to,
+    subject,
+    html: bookingPaidIncubatorEmailHtml({
+      incubatorName: incubator.name,
+      customerName,
+      itemName: details.itemName,
+      startsAt: details.startsAt,
+      endsAt: details.endsAt,
+      totalAmount: details.totalAmount,
+      dashboardUrl,
+      lang,
+    }),
+  })
+    .then((sent) => {
+      // eslint-disable-next-line no-console
+      console.log(`${banner} BOOKING PAID INCUBATOR NOTIF ${sent ? 'sent' : '(no Resend)'} → ${to} :: ${details.bookingId}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Booking paid incubator email failed →`, err.message),
     );
 }
