@@ -296,20 +296,48 @@ export async function createInstantBooking(
     );
     if (!replay) {
       const mentorBookings = (snap.mentorBookings ?? []).filter((b) => b.mentorId === mentor.id);
-      const slots = computeBookableSlots(
-        mentor,
-        input.consultationDate,
-        input.consultationDate,
-        mentorBookings,
-        { slotLocks: snap.mentorSlotLocks ?? [] },
-      );
-      const bookable = slots.some(
-        (s) =>
-          s.date === input.consultationDate &&
-          s.start === input.consultationTime &&
-          s.available,
-      );
-      if (!bookable) return { ok: false, reason: 'SLOT_NOT_BOOKABLE' };
+      const hasPublishedAgenda = (mentor.weeklyAvailability ?? []).some((d) => d.slots.length > 0);
+      if (hasPublishedAgenda) {
+        // Published agenda → the shared bookable-slots validator is the single
+        // source of truth (template − bookings − buffer − min-notice − locks).
+        const slots = computeBookableSlots(
+          mentor,
+          input.consultationDate,
+          input.consultationDate,
+          mentorBookings,
+          { slotLocks: snap.mentorSlotLocks ?? [] },
+        );
+        const bookable = slots.some(
+          (s) =>
+            s.date === input.consultationDate &&
+            s.start === input.consultationTime &&
+            s.available,
+        );
+        if (!bookable) return { ok: false, reason: 'SLOT_NOT_BOOKABLE' };
+      } else {
+        // No published agenda (manual-mode booking): the template check would
+        // reject EVERY time, so enforce the same guarantees directly —
+        // min-notice, blocked dates, and no overlap with an existing session.
+        const minNotice = mentor.minNoticeHours != null ? mentor.minNoticeHours : 24;
+        const startMs = Date.parse(`${input.consultationDate}T${input.consultationTime}:00+01:00`);
+        if (Number.isNaN(startMs) || startMs < Date.now() + Math.max(0, minNotice) * 3_600_000) {
+          return { ok: false, reason: 'SLOT_NOT_BOOKABLE' };
+        }
+        if ((mentor.blockedDates ?? []).includes(input.consultationDate)) {
+          return { ok: false, reason: 'SLOT_NOT_BOOKABLE' };
+        }
+        const endMs = startMs + input.durationMinutes * 60_000;
+        const ACTIVE = new Set(['PENDING_PAYMENT', 'AWAITING_LINK', 'READY', 'CONFIRMED', 'APPROVED', 'AWAITING_PAYMENT', 'PENDING']);
+        const overlapping = mentorBookings.some((b) => {
+          if (!ACTIVE.has(b.status)) return false;
+          if (b.consultationDate !== input.consultationDate || !b.consultationTime) return false;
+          const bStart = Date.parse(`${b.consultationDate}T${b.consultationTime}:00+01:00`);
+          if (Number.isNaN(bStart)) return false;
+          const bEnd = bStart + (b.durationMinutes ?? 60) * 60_000;
+          return startMs < bEnd && bStart < endMs;
+        });
+        if (overlapping) return { ok: false, reason: 'SLOT_NOT_BOOKABLE' };
+      }
 
       const lock = await lockSlot({
         bookingId,
@@ -352,10 +380,11 @@ export async function createInstantBooking(
     if (slotLocked) await releaseSlot(bookingId);
     // Notify the consultant of the new booking (once) and the client: full
     // meeting details when READY, otherwise a "request received" acknowledgment
-    // (each self-deduped, so replays never re-send).
-    if (!result.replayed) void sendBookingNotificationOnce(result.booking.id);
-    if (result.booking.status === 'READY') void sendConsultationReadyOnce(result.booking.id);
-    else void sendConsultationReceivedOnce(result.booking.id);
+    // (each self-deduped, so replays never re-send). AWAITED — unawaited sends
+    // are killed when the serverless response returns.
+    if (!result.replayed) await sendBookingNotificationOnce(result.booking.id);
+    if (result.booking.status === 'READY') await sendConsultationReadyOnce(result.booking.id);
+    else await sendConsultationReceivedOnce(result.booking.id);
     return { ok: true, mode: 'confirmed', booking: result.booking, replayed: result.replayed };
   }
 
@@ -378,7 +407,7 @@ export async function createInstantBooking(
     });
     // Acknowledge the request by email right away (self-deduped) — the guest
     // hears from us even before completing the hosted checkout.
-    void sendConsultationReceivedOnce(result.booking.id);
+    await sendConsultationReceivedOnce(result.booking.id);
     return {
       ok: true,
       mode: 'awaiting_payment',
@@ -447,9 +476,9 @@ export async function createInstantBooking(
     await creditMentorForSettledBooking(created.booking);
     // Settled booking now occupies the slot — the transient hold can go.
     if (slotLocked) await releaseSlot(bookingId);
-    void sendBookingNotificationOnce(created.booking.id);
-    if (created.booking.status === 'READY') void sendConsultationReadyOnce(created.booking.id);
-    else void sendConsultationReceivedOnce(created.booking.id);
+    await sendBookingNotificationOnce(created.booking.id);
+    if (created.booking.status === 'READY') await sendConsultationReadyOnce(created.booking.id);
+    else await sendConsultationReceivedOnce(created.booking.id);
     return { ok: true, mode: 'confirmed', booking: created.booking, replayed: false };
   }
 
@@ -568,9 +597,9 @@ export async function settleMemberTopUp(token: string): Promise<SettleMemberResu
     await creditMentorForSettledBooking(claim.booking);
     // Settled booking now occupies the slot — drop the transient hold.
     await releaseSlot(claim.booking.id);
-    void sendBookingNotificationOnce(claim.booking.id);
-    if (claim.booking.status === 'READY') void sendConsultationReadyOnce(claim.booking.id);
-    else void sendConsultationReceivedOnce(claim.booking.id);
+    await sendBookingNotificationOnce(claim.booking.id);
+    if (claim.booking.status === 'READY') await sendConsultationReadyOnce(claim.booking.id);
+    else await sendConsultationReceivedOnce(claim.booking.id);
   }
   return { state: claim.booking.paymentStatus === 'PAID' ? 'CONFIRMED' : 'AWAITING_PAYMENT', booking: claim.booking };
 }

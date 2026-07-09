@@ -302,7 +302,7 @@
     "phoneVerify": {
       "tagline": "Vérification du numéro de téléphone",
       "heading": "Vérifiez votre numéro",
-      "introDesc": "Nous enverrons un code à 6 chiffres par SMS au numéro enregistré sur votre compte.",
+      "introDesc": "Nous enverrons un code à 6 chiffres sur WhatsApp au numéro enregistré sur votre compte.",
       "sendCode": "Envoyer le code par SMS",
       "secureNote": "Code à usage unique, valable 10 minutes.",
       "codeSent": "Code envoyé par SMS",
@@ -322,7 +322,11 @@
       "errorRateLimited": "Trop de demandes. Réessayez plus tard.",
       "errorGeneric": "Une erreur est survenue. Réessayez.",
       "bannerTitle": "Numéro de téléphone non vérifié",
-      "bannerBody": "Vérifiez votre numéro par SMS pour sécuriser votre compte."
+      "bannerBody": "Vérifiez votre numéro par SMS pour sécuriser votre compte.",
+      "sendCodeWhatsApp": "Recevoir le code sur WhatsApp",
+      "codeSentWhatsApp": "Code envoyé sur WhatsApp",
+      "codeSentSms": "Code envoyé par SMS",
+      "fallbackSms": "Message WhatsApp non reçu ? Recevoir le code par SMS"
     }
   },
   "common": {
@@ -3794,7 +3798,10 @@
       "reviewCity": "Wilaya",
       "reviewField": "Domaine",
       "reviewOpenCv": "Ouvrir le CV (PDF)",
-      "reviewNoCv": "Aucun CV envoyé."
+      "reviewNoCv": "Aucun CV envoyé.",
+      "publish": "Publier sur le site",
+      "unpublish": "Retirer du site public",
+      "publishedBadge": "Publié"
     },
     "mentorAvailability": {
       "title": "Disponibilités",
@@ -4178,7 +4185,7 @@
       "noTimeSelected": "Aucun horaire sélectionné",
       "scheduledForDate": "{date}",
       "scheduledForDateTime": "{date} · {time}",
-      "noAvailabilityNote": "Ce mentor n'a pas encore publié de disponibilités. Vous pouvez tout de même envoyer une demande et nous conviendrons d'un horaire par e-mail.",
+      "noAvailabilityNote": "Ce consultant n'a pas encore publié son agenda. Choisissez la date et l'heure qui vous conviennent : la rencontre sera confirmée par le consultant.",
       "chooseTitle": "Réserver une consultation",
       "chooseSubtitle": "Continuez en tant qu'invité, ou connectez-vous pour utiliser votre portefeuille, vos crédits gratuits et vos réductions membre.",
       "guestOptionTitle": "Continuer en tant qu'invité",
@@ -4215,7 +4222,8 @@
       "pickTime": "Créneaux disponibles",
       "pickDateFirst": "Sélectionnez une date pour voir les créneaux disponibles.",
       "loadingTimes": "Chargement des créneaux…",
-      "timezoneNote": "Horaires affichés en {timezone}"
+      "timezoneNote": "Horaires affichés en {timezone}",
+      "manualTimeNote": "Choisissez l'horaire qui vous convient — le consultant confirmera la rencontre après votre réservation."
     },
     "profile": {
       "backLink": "Tous les mentors",

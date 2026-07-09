@@ -38,7 +38,7 @@
     },
     {
       "path": "/api/cron/consultation-reminders",
-      "schedule": "0 * * * *"
+      "schedule": "*/15 * * * *"
     }
   ]
 }

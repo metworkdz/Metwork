@@ -134,12 +134,13 @@ async function markPaidAndConfirm(
     await releaseSlot(claim.booking.id);
     // Instant-book bookings that settled into READY: notify the client the
     // session is ready (deduped via linkSentAt). AWAITING_LINK waits for a link.
+    // AWAITED — unawaited sends are killed when the serverless response returns.
     if (settled && claim.booking.status === 'READY') {
-      void sendConsultationReadyOnce(claim.booking.id);
+      await sendConsultationReadyOnce(claim.booking.id);
     }
     // Notify the consultant of the new booking — once (instant-book only).
     if (claim.booking.instantBook === true) {
-      void sendBookingNotificationOnce(claim.booking.id);
+      await sendBookingNotificationOnce(claim.booking.id);
     }
     // Both-party confirmation emails + PDF receipt — sent exactly once.
     await sendGuestConfirmationOnce(claim.booking.id);

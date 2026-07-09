@@ -30,6 +30,14 @@ export const mentorsService = {
     );
   },
 
+  /** Admin-only: publish/unpublish a consultant on the public mentors page. */
+  async setPublished(id: string, publiclyListed: boolean): Promise<Mentor> {
+    return apiClient.patch<Mentor>(
+      `/admin/mentors/${encodeURIComponent(id)}/visibility`,
+      { publiclyListed },
+    );
+  },
+
   /** Admin-only: approve or reject a consultant (self-signup review). */
   async setApproval(
     id: string,

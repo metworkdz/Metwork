@@ -31,6 +31,9 @@ export async function sendGuestConfirmationOnce(bookingId: string): Promise<void
 
   const lang: 'en' | 'fr' = claim.booking.guestLocale === 'en' ? 'en' : 'fr';
   // Client gets the confirmation + PDF receipt; mentor gets the session notice.
-  sendConsultationConfirmationEmail({ booking: claim.booking, mentor, lang });
-  sendMentorSessionConfirmedEmail({ booking: claim.booking, mentor, lang });
+  // Awaited — unawaited sends die when the serverless response returns.
+  await Promise.allSettled([
+    sendConsultationConfirmationEmail({ booking: claim.booking, mentor, lang }),
+    sendMentorSessionConfirmedEmail({ booking: claim.booking, mentor, lang }),
+  ]);
 }

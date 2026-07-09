@@ -1,12 +1,14 @@
 /**
- * Pre-session consultant reminders — driven by the consultation-reminders cron.
+ * Pre-session reminders — driven by the consultation-reminders cron.
  *
- * Scans settled instant-book consultations (READY or AWAITING_LINK) whose
- * session starts within the next REMINDER_WINDOW_HOURS and emails the
- * CONSULTANT the meeting details (or an "add your meeting link" warning for
- * AWAITING_LINK — arguably the more important reminder). One reminder per
- * booking, ever: the `consultantReminderSentAt` stamp is claimed atomically in
- * a single store mutation, so overlapping cron runs never double-send.
+ * Two passes over settled instant-book consultations, each with its own
+ * atomic one-shot claim so overlapping cron runs never double-send:
+ *   • CONSULTANT (24h before, READY or AWAITING_LINK): the meeting details, or
+ *     an "add your meeting link" warning — arguably the more important nudge.
+ *     Claim stamp: `consultantReminderSentAt`.
+ *   • CLIENT (1h before, READY only — a reminder without meeting details would
+ *     just confuse): email + WhatsApp→SMS with the link / address.
+ *     Claim stamp: `clientReminderSentAt`.
  *
  * Schedule resolution mirrors the notification helpers: `scheduledAt` when
  * present, else consultationDate+consultationTime interpreted as
@@ -14,10 +16,15 @@
  */
 import { db, type MentorBookingRecord } from '@/server/db/store';
 import { findMentorById } from '@/server/mentors/service';
-import { sendConsultantSessionReminderEmail } from '@/server/notifications/mock';
+import {
+  sendConsultantSessionReminderEmail,
+  sendClientSessionReminderEmail,
+} from '@/server/notifications/mock';
 
-/** Remind when the session starts within this many hours. */
+/** Remind the CONSULTANT when the session starts within this many hours. */
 export const REMINDER_WINDOW_HOURS = 24;
+/** Remind the CLIENT when the session starts within this many hours. */
+export const CLIENT_REMINDER_WINDOW_HOURS = 1;
 
 /** States that still have a session ahead of them. */
 const REMINDABLE = new Set(['READY', 'AWAITING_LINK']);
@@ -42,33 +49,43 @@ export function bookingStartMs(
 }
 
 export interface ReminderRunResult {
-  /** Bookings claimed by this run (reminder dispatched). */
+  /** Consultant reminders dispatched by this run. */
   sent: number;
+  /** Client 1h reminders dispatched by this run. */
+  clientSent: number;
   /** Claimed bookings whose mentor record was missing (nothing sent). */
   skippedNoMentor: number;
 }
 
 /**
- * Claim + dispatch all due consultant reminders. Idempotent: a second run over
- * the same data claims nothing.
+ * Claim + dispatch all due reminders (consultant 24h pass + client 1h pass).
+ * Idempotent: a second run over the same data claims nothing. Every send is
+ * awaited — the cron lambda must not return before delivery.
  */
 export async function sendConsultationRemindersDue(now = new Date()): Promise<ReminderRunResult> {
   const nowMs = now.getTime();
-  const horizonMs = nowMs + REMINDER_WINDOW_HOURS * 60 * 60_000;
+  const consultantHorizonMs = nowMs + REMINDER_WINDOW_HOURS * 60 * 60_000;
+  const clientHorizonMs = nowMs + CLIENT_REMINDER_WINDOW_HOURS * 60 * 60_000;
 
-  // Single atomic claim pass: stamp every due booking and collect it.
-  const due = await db.update<MentorBookingRecord[]>((d) => {
-    const claimed: MentorBookingRecord[] = [];
+  // Single atomic claim pass: stamp every due booking (both passes) and
+  // collect who to notify.
+  const due = await db.update<{ consultant: MentorBookingRecord[]; client: MentorBookingRecord[] }>((d) => {
+    const claimed = { consultant: [] as MentorBookingRecord[], client: [] as MentorBookingRecord[] };
     for (const b of d.mentorBookings ?? []) {
       if (b.instantBook !== true) continue;
       if (!REMINDABLE.has(b.status)) continue;
-      if (b.consultantReminderSentAt) continue;
       const startMs = bookingStartMs(b);
-      if (startMs === null) continue;
-      // Due = starts after now (not already past) and within the window.
-      if (startMs <= nowMs || startMs > horizonMs) continue;
-      b.consultantReminderSentAt = new Date(nowMs).toISOString();
-      claimed.push(b);
+      if (startMs === null || startMs <= nowMs) continue;
+
+      if (!b.consultantReminderSentAt && startMs <= consultantHorizonMs) {
+        b.consultantReminderSentAt = new Date(nowMs).toISOString();
+        claimed.consultant.push(b);
+      }
+      // Client pass: READY only — the reminder's whole point is the link/address.
+      if (!b.clientReminderSentAt && b.status === 'READY' && startMs <= clientHorizonMs) {
+        b.clientReminderSentAt = new Date(nowMs).toISOString();
+        claimed.client.push(b);
+      }
     }
     return claimed;
   });
@@ -76,12 +93,23 @@ export async function sendConsultationRemindersDue(now = new Date()): Promise<Re
   const base = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '');
   const portalUrl = `${base}/mentordashboard`;
 
+  let sent = 0;
+  let clientSent = 0;
   let skippedNoMentor = 0;
-  for (const booking of due) {
+
+  for (const booking of due.consultant) {
     const mentor = await findMentorById(booking.mentorId);
     if (!mentor) { skippedNoMentor++; continue; }
-    sendConsultantSessionReminderEmail({ booking, mentor, portalUrl });
+    await sendConsultantSessionReminderEmail({ booking, mentor, portalUrl });
+    sent++;
+  }
+  for (const booking of due.client) {
+    const mentor = await findMentorById(booking.mentorId);
+    if (!mentor) { skippedNoMentor++; continue; }
+    const lang: 'en' | 'fr' = booking.guestLocale === 'en' ? 'en' : 'fr';
+    await sendClientSessionReminderEmail({ booking, mentor, lang });
+    clientSent++;
   }
 
-  return { sent: due.length - skippedNoMentor, skippedNoMentor };
+  return { sent, clientSent, skippedNoMentor };
 }

@@ -73,7 +73,8 @@ export async function POST(req: NextRequest) {
   // email — email deliverability alone is unreliable.
   const issued = await issueConsultantOtp(email);
   if (issued) {
-    sendConsultantOtp({ email: issued.mentor.email, phone: issued.mentor.phone, code: issued.code });
+    // Awaited: on Vercel an unawaited send is killed when the response returns.
+    await sendConsultantOtp({ email: issued.mentor.email, phone: issued.mentor.phone, code: issued.code });
   }
 
   return json({ ok: true });

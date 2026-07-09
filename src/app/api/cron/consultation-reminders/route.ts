@@ -1,11 +1,14 @@
 /**
  * Vercel Cron — Consultation pre-session reminders (consultant).
  *
- * Schedule: `0 * * * *` (hourly). Emails the consultant the meeting details
- * (or an "add your meeting link" warning for AWAITING_LINK bookings) for every
- * settled instant-book consultation starting within the next 24 hours. One
- * reminder per booking, ever — the claim is atomic, so overlapping runs never
- * double-send. Secured by the same `CRON_SECRET` as the other cron routes.
+ * Schedule: every 15 minutes (see vercel.json — the client pass targets "1h
+ * before", so an hourly tick would be too coarse). Two passes, each one-shot
+ * per booking via an atomic claim, so overlapping runs never double-send:
+ *   • consultant: meeting details (or "add your meeting link" warning) for
+ *     sessions starting within 24h;
+ *   • client: email + WhatsApp→SMS with the meeting details for READY sessions
+ *     starting within 1h.
+ * Secured by the same `CRON_SECRET` as the other cron routes.
  */
 import { NextResponse } from 'next/server';
 import { sendConsultationRemindersDue } from '@/server/notifications/consultation-reminder';
@@ -35,6 +38,7 @@ export async function GET(req: Request): Promise<Response> {
   return NextResponse.json({
     ok: true,
     sent: result.sent,
+    clientSent: result.clientSent,
     skippedNoMentor: result.skippedNoMentor,
   });
 }

@@ -11,7 +11,7 @@
  */
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { CalendarClock, CheckCircle2, FileSearch, FileText, MoreVertical, Pencil, Plus, Trash2, UserPlus, XCircle } from 'lucide-react';
+import { CalendarClock, CheckCircle2, EyeOff, FileSearch, FileText, Globe, MoreVertical, Pencil, Plus, Trash2, UserPlus, XCircle } from 'lucide-react';
 import { getConsultationFieldLabel } from '@/config/consultation-fields';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -82,6 +82,20 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
     setApprovalError(null);
     try {
       const saved = await mentorsService.setApproval(m.id, 'APPROVED');
+      onSaved(saved);
+    } catch (err) {
+      setApprovalError(err instanceof Error ? err.message : t('approvalFailed'));
+    } finally {
+      setApprovalBusy(false);
+    }
+  }
+
+  /** Publish/unpublish a consultant on the public mentors page. */
+  async function togglePublished(m: Mentor) {
+    setApprovalBusy(true);
+    setApprovalError(null);
+    try {
+      const saved = await mentorsService.setPublished(m.id, !(m.publiclyListed ?? m.source !== 'SELF'));
       onSaved(saved);
     } catch (err) {
       setApprovalError(err instanceof Error ? err.message : t('approvalFailed'));
@@ -174,6 +188,12 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
                   {t('approvalRejected')}
                 </Badge>
               )}
+              {/* Self-signup published to the public mentors page by an admin. */}
+              {m.source === 'SELF' && m.approvalStatus === 'APPROVED' && m.publiclyListed === true && (
+                <Badge variant="success" className="absolute start-2 top-2">
+                  {t('publishedBadge')}
+                </Badge>
+              )}
               <div className="absolute end-2 top-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -191,6 +211,14 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
                       <DropdownMenuItem onSelect={() => { setReviewing(m); setApprovalError(null); }}>
                         <FileSearch />
                         {t('reviewApplication')}
+                      </DropdownMenuItem>
+                    )}
+                    {/* Publish/unpublish a SELF consultant on the public page —
+                        only offered once the profile is approved. */}
+                    {m.source === 'SELF' && m.approvalStatus === 'APPROVED' && (
+                      <DropdownMenuItem onSelect={() => void togglePublished(m)} disabled={approvalBusy}>
+                        {m.publiclyListed === true ? <EyeOff /> : <Globe />}
+                        {m.publiclyListed === true ? t('unpublish') : t('publish')}
                       </DropdownMenuItem>
                     )}
                     {m.approvalStatus !== 'APPROVED' && m.approvalStatus !== undefined && (

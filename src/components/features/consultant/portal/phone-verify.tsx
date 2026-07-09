@@ -30,6 +30,9 @@ export function PhoneVerify() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
+  /* Which channel carried the last code — WhatsApp by default; the consultant
+     can explicitly fall back to SMS when the WhatsApp message doesn't arrive. */
+  const [channel, setChannel] = useState<'whatsapp' | 'sms'>('whatsapp');
 
   useEffect(() => {
     let cancelled = false;
@@ -62,15 +65,17 @@ export function PhoneVerify() {
     return t('errorGeneric');
   }, [t]);
 
-  async function requestCode(advance: boolean) {
+  async function requestCode(advance: boolean, via: 'whatsapp' | 'sms' = 'whatsapp') {
     setBusy(true); setError(null);
     try {
-      await consultantService.requestPhoneOtp();
+      await consultantService.requestPhoneOtp(via);
+      setChannel(via);
       if (advance) setStep('code');
       setResendIn(30);
+      setCode('');
     } catch (err) {
-      // A failed SMS send costs nothing — stay put with a clear message and
-      // let the consultant retry; nothing about the account changes.
+      // A failed send costs nothing — stay put with a clear message and let
+      // the consultant retry; nothing about the account changes.
       setError(mapErr(err));
     } finally {
       setBusy(false);
@@ -134,8 +139,8 @@ export function PhoneVerify() {
               {phone}
             </p>
             {error && <ErrorBanner message={error} />}
-            <BrandButton type="button" loading={busy} className="w-full" onClick={() => void requestCode(true)}>
-              {t('sendCode')}
+            <BrandButton type="button" loading={busy} className="w-full" onClick={() => void requestCode(true, 'whatsapp')}>
+              {t('sendCodeWhatsApp')}
             </BrandButton>
             <p className="flex items-center justify-center gap-1.5 text-[11px] text-white/40">
               <ShieldCheck className="size-3.5" /> {t('secureNote')}
@@ -151,7 +156,9 @@ export function PhoneVerify() {
           <form onSubmit={verify} className="space-y-4">
             <div className="space-y-2 text-center">
               <MessageSquareText className="mx-auto size-9" style={{ color: CP_GREEN }} />
-              <p className="font-medium text-white">{t('codeSent')}</p>
+              <p className="font-medium text-white">
+                {channel === 'whatsapp' ? t('codeSentWhatsApp') : t('codeSentSms')}
+              </p>
               <p dir="ltr" className="text-sm text-white/50">{phone}</p>
             </div>
             <OtpCodeInput
@@ -170,13 +177,25 @@ export function PhoneVerify() {
                 {t('back')}
               </button>
               <button
-                type="button" onClick={() => void requestCode(false)}
+                type="button" onClick={() => void requestCode(false, channel)}
                 disabled={busy || resendIn > 0}
                 className="text-white/45 underline-offset-2 hover:text-white/70 hover:underline disabled:no-underline disabled:hover:text-white/45"
               >
                 {resendIn > 0 ? t('resendCountdown', { seconds: resendIn }) : t('resend')}
               </button>
             </div>
+            {/* WhatsApp didn't arrive → explicit SMS fallback (new code, same verify). */}
+            {channel === 'whatsapp' && (
+              <button
+                type="button"
+                onClick={() => void requestCode(false, 'sms')}
+                disabled={busy || resendIn > 0}
+                className="w-full text-center text-xs font-medium underline-offset-2 hover:underline disabled:text-white/40 disabled:no-underline"
+                style={{ color: busy || resendIn > 0 ? undefined : CP_GREEN }}
+              >
+                {t('fallbackSms')}
+              </button>
+            )}
           </form>
         )}
       </div>

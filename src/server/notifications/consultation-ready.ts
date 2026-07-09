@@ -26,5 +26,7 @@ export async function sendConsultationReadyOnce(bookingId: string): Promise<void
   const mentor = await findMentorById(claim.booking.mentorId);
   if (!mentor) return;
   const lang: 'en' | 'fr' = claim.booking.guestLocale === 'en' ? 'en' : 'fr';
-  sendConsultationReadyEmail({ booking: claim.booking, mentor, lang });
+  // Awaited: on Vercel the lambda freezes once the response is sent — an
+  // unawaited send would be killed and the claim stamp burned with no email.
+  await sendConsultationReadyEmail({ booking: claim.booking, mentor, lang });
 }

@@ -79,3 +79,50 @@ export async function setMentorApproval(
 
   return result;
 }
+
+export interface SetMentorPublishedInput {
+  mentorId: string;
+  /** true → show on the public mentors page; false → hide from lists. */
+  publiclyListed: boolean;
+  admin: { id: string; email: string };
+}
+
+export type SetMentorPublishedResult =
+  | { ok: true; mentor: MentorRecord }
+  | { ok: false; reason: 'NOT_FOUND' | 'NOT_APPROVED' };
+
+/**
+ * Admin publish/unpublish: put a consultant on (or remove them from) the
+ * public mentors page. The ONLY way a self-signed-up consultant becomes
+ * publicly listed — the visibility gate (`isMentorPubliclyListed`) hides
+ * SELF records unless `publiclyListed === true`. Publishing requires an
+ * APPROVED profile; unpublishing is always allowed. Idempotent.
+ */
+export async function setMentorPublished(
+  input: SetMentorPublishedInput,
+): Promise<SetMentorPublishedResult> {
+  const result = await db.update<SetMentorPublishedResult>((d) => {
+    const mentor = (d.mentors ?? []).find((m) => m.id === input.mentorId);
+    if (!mentor) return { ok: false, reason: 'NOT_FOUND' };
+    // Never surface an unreviewed profile on the public site.
+    const approved = (mentor.approvalStatus ?? 'APPROVED') === 'APPROVED';
+    if (input.publiclyListed && !approved) return { ok: false, reason: 'NOT_APPROVED' };
+    mentor.publiclyListed = input.publiclyListed;
+    mentor.updatedAt = new Date().toISOString();
+    return { ok: true, mentor };
+  });
+
+  if (!result.ok) return result;
+
+  // Audit (fire-and-forget — never blocks the response).
+  void appendAuditLog({
+    adminId: input.admin.id,
+    adminEmail: input.admin.email,
+    action: input.publiclyListed ? 'MENTOR_PUBLISHED' : 'MENTOR_UNPUBLISHED',
+    targetType: 'mentor',
+    targetId: input.mentorId,
+    details: {},
+  });
+
+  return result;
+}

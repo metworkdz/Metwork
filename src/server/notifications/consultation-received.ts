@@ -31,5 +31,6 @@ export async function sendConsultationReceivedOnce(bookingId: string): Promise<v
   const mentor = await findMentorById(claim.booking.mentorId);
   if (!mentor) return;
   const lang: 'en' | 'fr' = claim.booking.guestLocale === 'en' ? 'en' : 'fr';
-  sendConsultationRequestReceivedEmail({ booking: claim.booking, mentor, lang });
+  // Awaited — unawaited sends die when the serverless response returns.
+  await sendConsultationRequestReceivedEmail({ booking: claim.booking, mentor, lang });
 }

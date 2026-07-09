@@ -151,8 +151,9 @@ export const consultantService = {
   verifyOtp: (email: string, code: string) =>
     apiClient.post<{ ok: true; pinSet: boolean }>('/consultant/otp/verify', { email, code }),
 
-  // ── Phone verification via SMS OTP (session-guarded) ──
-  requestPhoneOtp: () => apiClient.post<{ ok: true }>('/consultant/phone/request', {}),
+  // ── Phone verification via WhatsApp (default) / SMS OTP (session-guarded) ──
+  requestPhoneOtp: (channel: 'whatsapp' | 'sms' = 'whatsapp') =>
+    apiClient.post<{ ok: true; channel: 'whatsapp' | 'sms' }>('/consultant/phone/request', { channel }),
   verifyPhoneOtp: (code: string) =>
     apiClient.post<{ ok: true }>('/consultant/phone/verify', { code }),
 

@@ -1,25 +1,33 @@
 /**
- * POST /api/consultant/phone/request
+ * POST /api/consultant/phone/request  { channel? }
  *
- * Step 1 of consultant phone verification. Sends a 6-digit SMS OTP (Infobip)
- * to the phone on the consultant's own record. Session-guarded — there is no
- * enumeration surface; the rate limits only bound SMS spend.
+ * Step 1 of consultant phone verification. Sends a 6-digit OTP to the phone on
+ * the consultant's own record — via WHATSAPP by default (the approved
+ * `metwork_otp` auth template; SMS delivery to Algerian numbers is unreliable),
+ * or via SMS when the consultant explicitly asks (`channel: 'sms'` — the
+ * "I didn't get the WhatsApp message" fallback in the UI). Session-guarded —
+ * no enumeration surface; the rate limits only bound messaging spend.
  *
- * Non-blocking rule: the SMS send is fire-and-forget (same pattern as every
- * OTP sender) — a carrier failure never corrupts state; the consultant simply
- * taps "resend". Reuses the shared OTP machinery (hashed at rest, single-use,
- * 10-min expiry, attempt lockout) under the `mentor-phone:` key namespace.
+ * A carrier failure never corrupts state; the consultant simply requests the
+ * other channel. Reuses the shared OTP machinery (hashed at rest, single-use,
+ * 10-min expiry, attempt lockout) under the `mentor-phone:` key namespace —
+ * both channels verify against the same code.
  */
 import type { NextRequest } from 'next/server';
-import { json, jsonError } from '@/server/http/json';
+import { z, ZodError } from 'zod';
+import { fromZod, json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { requireConsultant, issueConsultantPhoneOtp } from '@/server/mentors/access';
 import { findMentorById } from '@/server/mentors/service';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
-import { sendOtpSms } from '@/server/notifications/mock';
+import { sendOtpSms, sendOtpWhatsApp } from '@/server/notifications/mock';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const schema = z.object({
+  channel: z.enum(['whatsapp', 'sms']).optional(),
+});
 
 function getClientIp(req: NextRequest): string {
   return (
@@ -34,6 +42,16 @@ export async function POST(req: NextRequest) {
   const guard = await requireConsultant();
   if (!guard.ok) return guard.response;
 
+  // Body is optional (legacy clients send none) — default channel: WhatsApp.
+  let channel: 'whatsapp' | 'sms' = 'whatsapp';
+  try {
+    const body: unknown = await req.json();
+    channel = schema.parse(body).channel ?? 'whatsapp';
+  } catch (err) {
+    if (err instanceof ZodError) return fromZod(err);
+    // Empty/no-JSON body → keep the default channel.
+  }
+
   const mentor = await findMentorById(guard.mentorId);
   if (!mentor) return jsonError(404, 'NOT_FOUND', 'Consultant not found');
   const phone = mentor.phone?.trim();
@@ -41,7 +59,7 @@ export async function POST(req: NextRequest) {
   if (mentor.phoneVerified) return jsonError(409, 'ALREADY_VERIFIED', 'This phone number is already verified.');
 
   const ip = getClientIp(req);
-  // SMS costs money — bound per consultant and per IP.
+  // Messaging costs money — bound per consultant and per IP.
   if (!(await checkRateLimitDistributed(`consultant-phone-otp:mentor:${guard.mentorId}`, 5, 60 * 60_000))) {
     return jsonError(429, 'RATE_LIMITED', 'Too many requests. Please try again later.');
   }
@@ -50,7 +68,11 @@ export async function POST(req: NextRequest) {
   }
 
   const { code } = await issueConsultantPhoneOtp(guard.mentorId);
-  sendOtpSms(phone, code);
+  // Awaited: on Vercel an unawaited send is killed when the response returns.
+  // Each request re-issues (the previous code is invalidated by design), so
+  // whichever channel the consultant last asked for carries the valid code.
+  if (channel === 'sms') await sendOtpSms(phone, code);
+  else await sendOtpWhatsApp(phone, code);
 
-  return json({ ok: true });
+  return json({ ok: true, channel });
 }

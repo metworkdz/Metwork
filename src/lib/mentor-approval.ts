@@ -33,12 +33,14 @@ export function isMentorApproved(mentor: MentorApprovalShape): boolean {
 /**
  * Whether the mentor appears on public LIST surfaces (mentors page, landing
  * carousel, `GET /api/mentors`). Stricter than `isMentorApproved`:
- * self-signed-up consultants are NEVER listed — even once approved — and are
- * only reachable via their direct slug/booking link. Absent fields ⇒ legacy
- * admin-added mentor ⇒ listed, so nothing existing ever disappears.
+ * self-signed-up consultants are hidden BY DEFAULT — even once approved —
+ * and only reachable via their direct slug/booking link, UNLESS an admin
+ * explicitly publishes them (`publiclyListed: true`, the "add to the public
+ * mentors page" action). Absent fields ⇒ legacy admin-added mentor ⇒ listed,
+ * so nothing existing ever disappears. Approval is always required.
  */
 export function isMentorPubliclyListed(mentor: MentorListingShape): boolean {
-  if (mentor.source === 'SELF') return false;
   if (mentor.publiclyListed === false) return false;
+  if (mentor.source === 'SELF' && mentor.publiclyListed !== true) return false;
   return isMentorApproved(mentor);
 }

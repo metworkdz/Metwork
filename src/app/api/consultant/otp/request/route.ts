@@ -67,8 +67,9 @@ export async function POST(req: NextRequest) {
     return jsonError(404, 'NO_ACCOUNT', 'No consultant account is linked to this email.');
   }
   // Deliver on every channel (WhatsApp/SMS when a phone is on record + email),
-  // so a delayed or spam-filtered email is no longer a dead end.
-  sendConsultantOtp({ email: issued.mentor.email, phone: issued.mentor.phone, code: issued.code });
+  // so a delayed or spam-filtered email is no longer a dead end. Awaited: on
+  // Vercel an unawaited send is killed when the response returns.
+  await sendConsultantOtp({ email: issued.mentor.email, phone: issued.mentor.phone, code: issued.code });
 
   return json({ ok: true });
 }

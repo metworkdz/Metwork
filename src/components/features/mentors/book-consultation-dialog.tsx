@@ -618,7 +618,9 @@ export function BookConsultationDialog({
                   >
                     {t('cancel')}
                   </Button>
-                  <Button type="button" onClick={() => setStep('details')}>
+                  {/* Date AND start time are both required before the details/
+                      price step — a booking without a time can't be scheduled. */}
+                  <Button type="button" disabled={!consultDate || !consultTime} onClick={() => setStep('details')}>
                     {t('continue')}
                     <ChevronRight className="size-4 rtl:rotate-180" />
                   </Button>

@@ -116,7 +116,9 @@ export async function setBookingMeetingLink(input: {
     return { ok: true, booking };
   });
   // Notify the client that the session is ready (deduped via linkSentAt).
-  if (result.ok) void sendConsultationReadyOnce(result.booking.id);
+  // AWAITED: fire-and-forget promises are killed when the serverless response
+  // returns — this is exactly how approval emails were getting lost.
+  if (result.ok) await sendConsultationReadyOnce(result.booking.id);
   return result;
 }
 

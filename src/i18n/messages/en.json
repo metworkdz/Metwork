@@ -302,7 +302,7 @@
     "phoneVerify": {
       "tagline": "Phone number verification",
       "heading": "Verify your number",
-      "introDesc": "We'll text a 6-digit code to the phone number on your account.",
+      "introDesc": "We'll send a 6-digit code on WhatsApp to the phone number on your account.",
       "sendCode": "Send code by SMS",
       "secureNote": "Single-use code, valid for 10 minutes.",
       "codeSent": "Code sent by SMS",
@@ -322,7 +322,11 @@
       "errorRateLimited": "Too many requests. Try again later.",
       "errorGeneric": "Something went wrong. Please try again.",
       "bannerTitle": "Phone number not verified",
-      "bannerBody": "Verify your number by SMS to secure your account."
+      "bannerBody": "Verify your number by SMS to secure your account.",
+      "sendCodeWhatsApp": "Get the code on WhatsApp",
+      "codeSentWhatsApp": "Code sent on WhatsApp",
+      "codeSentSms": "Code sent by SMS",
+      "fallbackSms": "Didn't get the WhatsApp message? Get the code by SMS"
     }
   },
   "common": {
@@ -3794,7 +3798,10 @@
       "reviewCity": "Wilaya",
       "reviewField": "Domain",
       "reviewOpenCv": "Open CV (PDF)",
-      "reviewNoCv": "No CV uploaded."
+      "reviewNoCv": "No CV uploaded.",
+      "publish": "Publish on the site",
+      "unpublish": "Remove from public site",
+      "publishedBadge": "Published"
     },
     "mentorAvailability": {
       "title": "Availability",
@@ -4178,7 +4185,7 @@
       "noTimeSelected": "No specific time selected",
       "scheduledForDate": "{date}",
       "scheduledForDateTime": "{date} · {time}",
-      "noAvailabilityNote": "This mentor hasn't published availability yet. You can still send a request and we'll coordinate a time by email.",
+      "noAvailabilityNote": "This consultant hasn't published their agenda yet. Pick the date and time that suit you — the meeting will be confirmed by the consultant.",
       "chooseTitle": "Book a consultation",
       "chooseSubtitle": "Continue as a guest, or sign in to use your wallet, free credits, and member discounts.",
       "guestOptionTitle": "Continue as a guest",
@@ -4215,7 +4222,8 @@
       "pickTime": "Available times",
       "pickDateFirst": "Select a date to see available times.",
       "loadingTimes": "Loading times…",
-      "timezoneNote": "Times shown in {timezone}"
+      "timezoneNote": "Times shown in {timezone}",
+      "manualTimeNote": "Pick the time that suits you — the consultant will confirm the meeting after your booking."
     },
     "profile": {
       "backLink": "All mentors",

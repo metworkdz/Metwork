@@ -302,7 +302,7 @@
     "phoneVerify": {
       "tagline": "التحقق من رقم الهاتف",
       "heading": "تحقق من رقمك",
-      "introDesc": "سنرسل رمزًا من 6 أرقام عبر رسالة نصية إلى الرقم المسجل في حسابك.",
+      "introDesc": "سنرسل رمزًا من 6 أرقام عبر واتساب إلى الرقم المسجل في حسابك.",
       "sendCode": "إرسال الرمز عبر SMS",
       "secureNote": "رمز يُستخدم مرة واحدة وصالح لمدة 10 دقائق.",
       "codeSent": "تم إرسال الرمز عبر SMS",
@@ -322,7 +322,11 @@
       "errorRateLimited": "طلبات كثيرة جدًا. حاول لاحقًا.",
       "errorGeneric": "حدث خطأ. حاول مرة أخرى.",
       "bannerTitle": "رقم الهاتف غير مُتحقق منه",
-      "bannerBody": "تحقق من رقمك عبر SMS لتأمين حسابك."
+      "bannerBody": "تحقق من رقمك عبر SMS لتأمين حسابك.",
+      "sendCodeWhatsApp": "استلام الرمز عبر واتساب",
+      "codeSentWhatsApp": "تم إرسال الرمز عبر واتساب",
+      "codeSentSms": "تم إرسال الرمز عبر SMS",
+      "fallbackSms": "لم تصلك رسالة واتساب؟ استلم الرمز عبر SMS"
     }
   },
   "common": {
@@ -3794,7 +3798,10 @@
       "reviewCity": "الولاية",
       "reviewField": "المجال",
       "reviewOpenCv": "فتح السيرة الذاتية (PDF)",
-      "reviewNoCv": "لم يتم رفع سيرة ذاتية."
+      "reviewNoCv": "لم يتم رفع سيرة ذاتية.",
+      "publish": "النشر على الموقع",
+      "unpublish": "الإزالة من الموقع العام",
+      "publishedBadge": "منشور"
     },
     "mentorAvailability": {
       "title": "التوفر",
@@ -4178,7 +4185,7 @@
       "noTimeSelected": "لم يتم تحديد وقت",
       "scheduledForDate": "{date}",
       "scheduledForDateTime": "{date} · {time}",
-      "noAvailabilityNote": "لم ينشر هذا الموجّه أوقات توفّره بعد. يمكنك إرسال طلب وسنتفق على موعد عبر البريد الإلكتروني.",
+      "noAvailabilityNote": "لم ينشر هذا المستشار جدوله بعد. اختر التاريخ والوقت المناسبين لك — سيؤكد المستشار الموعد.",
       "chooseTitle": "حجز استشارة",
       "chooseSubtitle": "تابع كضيف، أو سجّل الدخول لاستخدام محفظتك ورصيدك المجاني وخصومات الأعضاء.",
       "guestOptionTitle": "المتابعة كضيف",
@@ -4215,7 +4222,8 @@
       "pickTime": "الأوقات المتاحة",
       "pickDateFirst": "اختر تاريخًا لعرض الأوقات المتاحة.",
       "loadingTimes": "جارٍ تحميل الأوقات…",
-      "timezoneNote": "الأوقات معروضة بتوقيت {timezone}"
+      "timezoneNote": "الأوقات معروضة بتوقيت {timezone}",
+      "manualTimeNote": "اختر الوقت الذي يناسبك — سيؤكد المستشار الموعد بعد حجزك."
     },
     "profile": {
       "backLink": "كل الموجّهين",

@@ -18,6 +18,8 @@ import {
   REMINDER_WINDOW_HOURS,
 } from '@/server/notifications/consultation-reminder';
 import { setBookingMeetingLink } from '@/server/consultations/lifecycle';
+import { listPublicMentors } from '@/server/mentors/service';
+import { setMentorPublished } from '@/server/mentors/approval';
 
 const MENTOR: MentorRecord = {
   id: 'm-notif-1',
@@ -160,6 +162,8 @@ describe('sendConsultationRemindersDue', () => {
     const run1 = await sendConsultationRemindersDue(NOW);
     expect(run1.sent).toBe(3);
     expect(run1.skippedNoMentor).toBe(0);
+    // None of the fixtures start within 1h → no client reminders yet.
+    expect(run1.clientSent).toBe(0);
 
     for (const id of ['r1', 'r2', 'r9']) {
       expect((await getBooking(id)).consultantReminderSentAt).toBeTruthy();
@@ -171,6 +175,35 @@ describe('sendConsultationRemindersDue', () => {
     // Idempotent: a second run claims nothing.
     const run2 = await sendConsultationRemindersDue(NOW);
     expect(run2.sent).toBe(0);
+    expect(run2.clientSent).toBe(0);
+  });
+
+  it('sends the client 1h reminder only for READY bookings inside the 1h window', async () => {
+    await seed([
+      // Due for the CLIENT (and the consultant 24h pass): READY, starts in 30 min.
+      makeBooking({ id: 'c1', status: 'READY', meetingMode: 'ONLINE', meetingLink: 'https://meet.example/c1', scheduledAt: inHours(0.5) }),
+      // NOT due for the client (no meeting details) — consultant still nudged.
+      makeBooking({ id: 'c2', status: 'AWAITING_LINK', scheduledAt: inHours(0.5) }),
+      // NOT due for the client yet (outside the 1h window).
+      makeBooking({ id: 'c3', status: 'READY', meetingMode: 'ONLINE', meetingLink: 'https://meet.example/c3', scheduledAt: inHours(3) }),
+    ]);
+
+    const run1 = await sendConsultationRemindersDue(NOW);
+    expect(run1.clientSent).toBe(1);
+    expect(run1.sent).toBe(3); // all three get the consultant 24h reminder
+
+    expect((await getBooking('c1')).clientReminderSentAt).toBeTruthy();
+    expect((await getBooking('c2')).clientReminderSentAt).toBeFalsy();
+    expect((await getBooking('c3')).clientReminderSentAt).toBeFalsy();
+
+    // c3 becomes due once inside the window — and c1 never re-sends.
+    const later = new Date(NOW.getTime() + 2.5 * 3_600_000);
+    const run2 = await sendConsultationRemindersDue(later);
+    expect(run2.clientSent).toBe(1);
+    expect((await getBooking('c3')).clientReminderSentAt).toBeTruthy();
+
+    const run3 = await sendConsultationRemindersDue(later);
+    expect(run3.clientSent).toBe(0);
   });
 
   it('bookingStartMs resolves scheduledAt first, then Algiers date+time', () => {
@@ -180,5 +213,45 @@ describe('sendConsultationRemindersDue', () => {
     expect(bookingStartMs({ scheduledAt: null, consultationDate: '2026-03-10', consultationTime: '13:00' }))
       .toBe(Date.parse('2026-03-10T12:00:00.000Z'));
     expect(bookingStartMs({ scheduledAt: null, consultationDate: null, consultationTime: null })).toBeNull();
+  });
+});
+
+describe('admin publish gate (isMentorPubliclyListed + setMentorPublished)', () => {
+  it('an admin-published SELF consultant appears in the public list; default SELF stays hidden', async () => {
+    await db.update((d) => {
+      d.mentors = [
+        { ...MENTOR, id: 'm-legacy' }, // legacy admin mentor (no flags) → listed
+        { ...MENTOR, id: 'm-self-hidden', source: 'SELF', approvalStatus: 'APPROVED', publiclyListed: false },
+        { ...MENTOR, id: 'm-self-published', source: 'SELF', approvalStatus: 'APPROVED', publiclyListed: true },
+        { ...MENTOR, id: 'm-self-pending', source: 'SELF', approvalStatus: 'PENDING', publiclyListed: false },
+      ];
+    });
+    const publicIds = (await listPublicMentors()).map((m) => m.id).sort();
+    expect(publicIds).toEqual(['m-legacy', 'm-self-published']);
+  });
+
+  it('setMentorPublished publishes approved consultants, refuses pending, and unpublishes', async () => {
+    await db.update((d) => {
+      d.mentors = [
+        { ...MENTOR, id: 'm-a', source: 'SELF', approvalStatus: 'APPROVED', publiclyListed: false },
+        { ...MENTOR, id: 'm-p', source: 'SELF', approvalStatus: 'PENDING', publiclyListed: false },
+      ];
+      d.auditLogs = [];
+    });
+    const admin = { id: 'admin-1', email: 'admin@example.com' };
+
+    const pub = await setMentorPublished({ mentorId: 'm-a', publiclyListed: true, admin });
+    expect(pub.ok && pub.mentor.publiclyListed).toBe(true);
+    expect((await listPublicMentors()).some((m) => m.id === 'm-a')).toBe(true);
+
+    // A pending profile can never be published.
+    const pend = await setMentorPublished({ mentorId: 'm-p', publiclyListed: true, admin });
+    expect(pend.ok).toBe(false);
+    if (!pend.ok) expect(pend.reason).toBe('NOT_APPROVED');
+
+    // Unpublish removes it from the public list again.
+    const unpub = await setMentorPublished({ mentorId: 'm-a', publiclyListed: false, admin });
+    expect(unpub.ok && unpub.mentor.publiclyListed).toBe(false);
+    expect((await listPublicMentors()).some((m) => m.id === 'm-a')).toBe(false);
   });
 });

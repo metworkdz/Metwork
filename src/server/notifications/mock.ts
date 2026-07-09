@@ -60,57 +60,61 @@ const banner = '\x1b[36m[notify]\x1b[0m';
 /**
  * Send OTP via WhatsApp (Infobip primary channel).
  * Falls back to console.log when INFOBIP_* vars are not set.
+ * Returns the send promise (self-catching, never rejects) so serverless
+ * callers can await actual delivery before the lambda freezes.
  */
-export function sendOtpWhatsApp(phone: string, code: string): void {
+export function sendOtpWhatsApp(phone: string, code: string): Promise<void> {
   if (process.env.NODE_ENV !== 'production') {
     // eslint-disable-next-line no-console
     console.log(`${banner} WHATSAPP → ${phone} :: code = ${code}`);
   }
 
   if (process.env.SMS_PROVIDER === 'infobip') {
-    sendWhatsAppOTP(phone, code).catch((err: Error) =>
+    return sendWhatsAppOTP(phone, code).catch((err: Error) =>
       // eslint-disable-next-line no-console
       console.error(`${banner} Infobip WhatsApp failed →`, err.message),
     );
-    return;
   }
 
   if (process.env.NODE_ENV === 'production') {
     // eslint-disable-next-line no-console
     console.log(`${banner} WHATSAPP (mock) → ${phone} :: code = ${code}`);
   }
+  return Promise.resolve();
 }
 
 /**
- * Send OTP via SMS (Infobip fallback channel).
+ * Send OTP via SMS (Infobip fallback channel). Returns the self-catching send
+ * promise — see sendOtpWhatsApp.
  */
-export function sendOtpSms(phone: string, code: string): void {
+export function sendOtpSms(phone: string, code: string): Promise<void> {
   if (process.env.NODE_ENV !== 'production') {
     // eslint-disable-next-line no-console
     console.log(`${banner} SMS → ${phone} :: code = ${code}`);
   }
 
   if (process.env.SMS_PROVIDER === 'infobip') {
-    sendSMSOTP(phone, code).catch((err: Error) =>
+    return sendSMSOTP(phone, code).catch((err: Error) =>
       // eslint-disable-next-line no-console
       console.error(`${banner} Infobip SMS failed →`, err.message),
     );
-    return;
   }
 
   if (process.env.NODE_ENV === 'production') {
     // eslint-disable-next-line no-console
     console.log(`${banner} SMS (mock) → ${phone} :: code = ${code}`);
   }
+  return Promise.resolve();
 }
 
 /**
  * Send OTP via email (Resend).  Used as a reliable fallback when SMS
  * cannot be trusted (carrier geo-filtering, test environments, etc.).
- * Falls back to console.log when Resend is not configured.
+ * Falls back to console.log when Resend is not configured. Returns the
+ * self-catching send promise — see sendOtpWhatsApp.
  */
-export function sendOtpEmail(email: string, code: string): void {
-  sendResendEmail({
+export function sendOtpEmail(email: string, code: string): Promise<void> {
+  return sendResendEmail({
     to: email,
     subject: `${code} is your Metwork verification code`,
     html: otpEmailHtml(code),
@@ -136,16 +140,21 @@ export function sendOtpEmail(email: string, code: string): void {
  * approved template) and SMS when a phone is on record, plus email always.
  * Each channel is independent and self-logs its own failure — one dead channel
  * never blocks the others, and the code always reaches at least one.
+ *
+ * AWAITABLE — and the consultant routes DO await it: on Vercel the lambda
+ * freezes once the response is sent, so unawaited sends silently die.
  */
-export function sendConsultantOtp(opts: { email?: string | null; phone?: string | null; code: string }): void {
+export async function sendConsultantOtp(opts: { email?: string | null; phone?: string | null; code: string }): Promise<void> {
+  const sends: Array<Promise<unknown>> = [];
   const phone = opts.phone?.trim();
   if (phone) {
     // WhatsApp is the reliable channel for Algerian numbers; SMS backs it up.
-    sendOtpWhatsApp(phone, opts.code);
-    sendOtpSms(phone, opts.code);
+    sends.push(sendOtpWhatsApp(phone, opts.code));
+    sends.push(sendOtpSms(phone, opts.code));
   }
   const email = opts.email?.trim();
-  if (email) sendOtpEmail(email, opts.code);
+  if (email) sends.push(sendOtpEmail(email, opts.code));
+  await Promise.allSettled(sends);
 }
 
 /* ─────────────────────────── Email ─────────────────────────── */
@@ -214,15 +223,53 @@ export function sendPasswordResetEmail(email: string, link: string): void {
 }
 
 /**
- * Tell the client their paid consultation is READY (meeting format confirmed).
- * Email + WhatsApp, both fire-and-forget. Dedup is handled by the caller
- * (sendConsultationReadyOnce claims `linkSentAt`).
+ * Deliver a client-facing text on the phone: WhatsApp first, cascading to
+ * plain SMS when WhatsApp is rejected (business-initiated free-form WhatsApp
+ * only delivers inside a 24h service window the client rarely has open; SMS
+ * has no template restriction). Self-catching — never throws. AWAITABLE so
+ * serverless routes can hold the response until the send actually happened.
  */
-export function sendConsultationReadyEmail(input: MentorConfirmationInput): void {
+function deliverClientText(phone: string, text: string, tag: string): Promise<void> {
+  if (process.env.SMS_PROVIDER !== 'infobip') {
+    // eslint-disable-next-line no-console
+    console.log(`${banner} WHATSAPP (${tag}) → ${phone} :: ${text.slice(0, 80)}…`);
+    return Promise.resolve();
+  }
+  return sendWhatsAppMessage(phone, text).catch((waErr: Error) => {
+    // eslint-disable-next-line no-console
+    console.error(`${banner} WhatsApp ${tag} failed → ${waErr.message} — falling back to SMS`);
+    return sendSMSMessage(phone, text).catch((smsErr: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} SMS ${tag} fallback failed →`, smsErr.message),
+    );
+  });
+}
+
+/** Human meeting-details block for client phone texts (link or address). */
+function meetingDetailsText(booking: MentorConfirmationInput['booking'], isFr: boolean): string {
+  return booking.meetingMode === 'ONLINE' && booking.meetingLink
+    ? `\n${isFr ? 'Lien' : 'Link'}: ${booking.meetingLink}`
+    : booking.meetingMode === 'OFFLINE'
+    ? `\n${isFr ? 'Format : en présentiel' : 'Format: in person'}` +
+      (booking.meetingAddress ? `\n${isFr ? 'Adresse' : 'Address'}: ${booking.meetingAddress}` : '') +
+      (booking.meetingMapsLink ? `\nGoogle Maps: ${booking.meetingMapsLink}` : '')
+    : '';
+}
+
+/**
+ * Tell the client their paid consultation is READY (meeting format confirmed).
+ * Email + WhatsApp→SMS cascade. Dedup is handled by the caller
+ * (sendConsultationReadyOnce claims `linkSentAt`).
+ *
+ * AWAITABLE (and awaited by the once-sender): on Vercel the lambda freezes as
+ * soon as the response is sent, killing fire-and-forget promises — awaiting is
+ * what guarantees the client actually gets the email. Never throws.
+ */
+export async function sendConsultationReadyEmail(input: MentorConfirmationInput): Promise<void> {
   const { booking, mentor, lang } = input;
   const isFr = lang === 'fr';
 
-  sendResendEmail({
+  const emailSend = sendResendEmail({
     to: booking.userEmail,
     subject: isFr
       ? `Votre consultation est prête — ${mentor.fullName}`
@@ -252,37 +299,15 @@ export function sendConsultationReadyEmail(input: MentorConfirmationInput): void
       console.error(`${banner} Consultation ready email failed →`, err.message),
     );
 
-  // WhatsApp nudge → SMS fallback — both fire-and-forget. Business-initiated
-  // free-form WhatsApp only delivers inside a 24h service window the client
-  // rarely has open, so a rejected WhatsApp send cascades to plain SMS (no
-  // template restriction) — the client always gets the meeting details on
-  // their phone, not just by email.
-  if (booking.userPhone) {
-    const linkPart = booking.meetingMode === 'ONLINE' && booking.meetingLink
-      ? `\n${isFr ? 'Lien' : 'Link'}: ${booking.meetingLink}`
-      : booking.meetingMode === 'OFFLINE'
-      ? `\n${isFr ? 'Format : en présentiel' : 'Format: in person'}` +
-        (booking.meetingAddress ? `\n${isFr ? 'Adresse' : 'Address'}: ${booking.meetingAddress}` : '') +
-        (booking.meetingMapsLink ? `\nGoogle Maps: ${booking.meetingMapsLink}` : '')
-      : '';
-    const waText =
-      (isFr ? '✅ Metwork — Consultation prête\n' : '✅ Metwork — Consultation ready\n') +
-      `${isFr ? 'Consultant' : 'Consultant'}: ${mentor.fullName}` +
-      linkPart;
-    if (process.env.SMS_PROVIDER === 'infobip') {
-      sendWhatsAppMessage(booking.userPhone, waText).catch((waErr: Error) => {
-        // eslint-disable-next-line no-console
-        console.error(`${banner} WhatsApp consult ready failed → ${waErr.message} — falling back to SMS`);
-        sendSMSMessage(booking.userPhone, waText).catch((smsErr: Error) =>
-          // eslint-disable-next-line no-console
-          console.error(`${banner} SMS consult ready fallback failed →`, smsErr.message),
-        );
-      });
-    } else {
-      // eslint-disable-next-line no-console
-      console.log(`${banner} WHATSAPP (consult-ready) → ${booking.userPhone} :: ${waText.slice(0, 80)}…`);
-    }
-  }
+  const waText =
+    (isFr ? '✅ Metwork — Consultation prête\n' : '✅ Metwork — Consultation ready\n') +
+    `${isFr ? 'Consultant' : 'Consultant'}: ${mentor.fullName}` +
+    meetingDetailsText(booking, isFr);
+  const phoneSend = booking.userPhone
+    ? deliverClientText(booking.userPhone, waText, 'consult-ready')
+    : Promise.resolve();
+
+  await Promise.allSettled([emailSend, phoneSend]);
 }
 
 /** Split a booking's schedule into a localized date + time pair (fallback '—'). */
@@ -310,20 +335,21 @@ function bookingDateParts(
  * PII in either channel. Both fire-and-forget; dedup is the caller's job
  * (sendBookingNotificationOnce claims `bookingNotifiedAt`). Defaults to French.
  */
-export function sendConsultantNewBookingEmail(input: {
+export async function sendConsultantNewBookingEmail(input: {
   booking: MentorConfirmationInput['booking'];
   mentor: MentorConfirmationInput['mentor'];
   portalUrl: string;
   lang?: 'en' | 'fr';
-}): void {
+}): Promise<void> {
   const { booking, mentor, portalUrl } = input;
   const lang = input.lang ?? 'fr';
   const isFr = lang === 'fr';
   const meetingMode = booking.meetingMode ?? null;
+  const sends: Array<Promise<unknown>> = [];
 
   // ── Email (skipped silently when the mentor has no email on file) ──────────
   if (mentor.email) {
-    sendResendEmail({
+    sends.push(sendResendEmail({
       to: mentor.email,
       subject: isFr ? 'Nouvelle consultation réservée — Metwork' : 'New consultation booked — Metwork',
       html: consultantNewBookingEmailHtml({
@@ -346,7 +372,7 @@ export function sendConsultantNewBookingEmail(input: {
       .catch((err: Error) =>
         // eslint-disable-next-line no-console
         console.error(`${banner} Consultant new-booking email failed →`, err.message),
-      );
+      ));
   } else {
     // eslint-disable-next-line no-console
     console.log(`${banner} CONSULT NEW BOOKING email skipped — no email on mentor record (id=${mentor.id})`);
@@ -361,30 +387,32 @@ export function sendConsultantNewBookingEmail(input: {
     // Fills the template's URL button → https://metwork.dz/c/{bookingRef}. Required.
     const bookingRef = booking.id;
     if (process.env.SMS_PROVIDER === 'infobip') {
-      sendWhatsAppNewBookingTemplate(mentor.phone, { firstName, date, time, duration, type, bookingRef }).catch((err: Error) =>
+      sends.push(sendWhatsAppNewBookingTemplate(mentor.phone, { firstName, date, time, duration, type, bookingRef }).catch((err: Error) =>
         // eslint-disable-next-line no-console
         console.error(`${banner} WhatsApp new-booking template failed →`, err.message),
-      );
+      ));
     } else {
       // eslint-disable-next-line no-console
       console.log(`${banner} WHATSAPP (new-booking) → ${mentor.phone} :: ${firstName} ${date} ${time} ${duration} ${type} ref=${bookingRef}`);
     }
   }
+
+  await Promise.allSettled(sends);
 }
 
 /**
  * Pre-session reminder to the CONSULTANT — the meeting details (or an "add
  * your link" warning for AWAITING_LINK bookings) as the session approaches.
- * Fire-and-forget; dedup is the caller's job (the consultation-reminders cron
- * claims `consultantReminderSentAt`). Defaults to French like every other
- * consultant notice.
+ * Awaitable & self-catching; dedup is the caller's job (the
+ * consultation-reminders cron claims `consultantReminderSentAt`). Defaults to
+ * French like every other consultant notice.
  */
-export function sendConsultantSessionReminderEmail(input: {
+export async function sendConsultantSessionReminderEmail(input: {
   booking: MentorConfirmationInput['booking'];
   mentor: MentorConfirmationInput['mentor'];
   portalUrl: string;
   lang?: 'en' | 'fr';
-}): void {
+}): Promise<void> {
   const { booking, mentor, portalUrl } = input;
   const lang = input.lang ?? 'fr';
   const isFr = lang === 'fr';
@@ -395,7 +423,7 @@ export function sendConsultantSessionReminderEmail(input: {
     return;
   }
 
-  sendResendEmail({
+  await sendResendEmail({
     to: mentor.email,
     subject: isFr
       ? 'Rappel — votre consultation approche — Metwork'
@@ -424,6 +452,59 @@ export function sendConsultantSessionReminderEmail(input: {
       // eslint-disable-next-line no-console
       console.error(`${banner} Consultant session-reminder email failed →`, err.message),
     );
+}
+
+/**
+ * Pre-session reminder to the CLIENT — 1h before the session, with the meeting
+ * link / address. Email + WhatsApp→SMS cascade, awaitable & self-catching;
+ * dedup is the caller's job (the cron claims `clientReminderSentAt`). Language
+ * follows the booking locale like every other client notice.
+ */
+export async function sendClientSessionReminderEmail(input: MentorConfirmationInput): Promise<void> {
+  const { booking, mentor, lang } = input;
+  const isFr = lang === 'fr';
+  const { date, time } = bookingDateParts(booking, isFr);
+
+  const emailSend = sendResendEmail({
+    to: booking.userEmail,
+    subject: isFr
+      ? `Rappel — votre consultation avec ${mentor.fullName} commence bientôt`
+      : `Reminder — your consultation with ${mentor.fullName} starts soon`,
+    html: consultationReadyEmailHtml({
+      clientName: booking.userName,
+      mentorName: mentor.fullName,
+      meetingMode: booking.meetingMode ?? null,
+      meetingLink: booking.meetingLink ?? null,
+      meetingAddress: booking.meetingAddress ?? null,
+      meetingMapsLink: booking.meetingMapsLink ?? null,
+      scheduledAt: booking.scheduledAt ?? null,
+      durationMinutes: booking.durationMinutes ?? null,
+      lang,
+    }),
+  })
+    .then((sent) => {
+      if (!sent)
+        // eslint-disable-next-line no-console
+        console.log(`${banner} CLIENT REMINDER (no Resend) → ${booking.userEmail} :: booking=${booking.id.slice(0, 8)}`);
+      else
+        // eslint-disable-next-line no-console
+        console.log(`${banner} CLIENT REMINDER sent → ${booking.userEmail} :: booking=${booking.id.slice(0, 8)}`);
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Client session-reminder email failed →`, err.message),
+    );
+
+  const waText =
+    (isFr ? '⏰ Metwork — Rappel : votre consultation commence bientôt\n' : '⏰ Metwork — Reminder: your consultation starts soon\n') +
+    `${isFr ? 'Consultant' : 'Consultant'}: ${mentor.fullName}` +
+    (date !== '—' ? `\n${isFr ? 'Date' : 'Date'}: ${date} ${time !== '—' ? time : ''}`.trimEnd() : '') +
+    meetingDetailsText(booking, isFr);
+  const phoneSend = booking.userPhone
+    ? deliverClientText(booking.userPhone, waText, 'client-reminder')
+    : Promise.resolve();
+
+  await Promise.allSettled([emailSend, phoneSend]);
 }
 
 /** Minimal branded HTML wrapper for the lightweight P3 lifecycle notices. */
@@ -1021,7 +1102,7 @@ export function sendPaymentLinkPaidIncubatorEmail(input: {
  * Generate a consultation confirmation PDF and email it to the requester.
  * Fire-and-forget — never blocks the booking route.
  */
-export function sendConsultationConfirmationEmail(input: MentorConfirmationInput): void {
+export async function sendConsultationConfirmationEmail(input: MentorConfirmationInput): Promise<void> {
   const { booking, mentor, lang } = input;
   const isFr = lang === 'fr';
 
@@ -1039,7 +1120,7 @@ export function sendConsultationConfirmationEmail(input: MentorConfirmationInput
     : (feePerHour > 0 ? feePerHour : 0);
 
   // FIX: BUG-1 — decouple email from PDF: send email even if PDF generation fails
-  generateMentorConfirmationPdf(input)
+  const emailSend = generateMentorConfirmationPdf(input)
     .then(
       (pdfBuffer) =>
         // PDF succeeded — send with attachment
@@ -1096,7 +1177,8 @@ export function sendConsultationConfirmationEmail(input: MentorConfirmationInput
       console.error(`${banner} Consultation confirmation email failed →`, err.message),
     );
 
-  // WhatsApp notification — fire-and-forget, never blocks
+  // WhatsApp notification (SMS cascade) — self-catching, awaited below.
+  let phoneSend: Promise<void> = Promise.resolve();
   if (booking.userPhone) {
     const dur = booking.durationMinutes ? `${booking.durationMinutes} min` : '';
     const slot = booking.scheduledAt
@@ -1116,16 +1198,10 @@ export function sendConsultationConfirmationEmail(input: MentorConfirmationInput
       linkPart +
       `\n\nVotre PDF de confirmation vous a été envoyé par email.`;
 
-    if (process.env.SMS_PROVIDER === 'infobip') {
-      sendWhatsAppMessage(booking.userPhone, waText).catch((err: Error) =>
-        // eslint-disable-next-line no-console
-        console.error(`${banner} WhatsApp consult confirm failed →`, err.message),
-      );
-    } else {
-      // eslint-disable-next-line no-console
-      console.log(`${banner} WHATSAPP (consult-confirm) → ${booking.userPhone} :: ${waText.slice(0, 80)}…`);
-    }
+    phoneSend = deliverClientText(booking.userPhone, waText, 'consult-confirm');
   }
+
+  await Promise.allSettled([emailSend, phoneSend]);
 }
 
 /**
@@ -1200,14 +1276,14 @@ export function sendConsultationPayLinkEmail(input: {
  * Notify the client that their consultation request was received (PENDING — not yet confirmed).
  * Replaces the previous "confirmation" email that was wrongly sent at booking time.
  */
-export function sendConsultationRequestReceivedEmail(input: MentorConfirmationInput): void {
+export async function sendConsultationRequestReceivedEmail(input: MentorConfirmationInput): Promise<void> {
   const { booking, mentor, lang } = input;
   const isFr = lang === 'fr';
   const subject = isFr
     ? `Demande reçue – consultation avec ${mentor.fullName}`
     : `Request received – consultation with ${mentor.fullName}`;
 
-  sendResendEmail({
+  await sendResendEmail({
     to:      booking.userEmail,
     subject,
     html:    consultationRequestReceivedEmailHtml({
@@ -1423,7 +1499,7 @@ export function sendAdminNewBusinessNotification(params: {
  * Sent alongside the client's confirmation email.
  * Skipped silently when the MentorRecord has no email address.
  */
-export function sendMentorSessionConfirmedEmail(input: MentorConfirmationInput): void {
+export async function sendMentorSessionConfirmedEmail(input: MentorConfirmationInput): Promise<void> {
   const { booking, mentor } = input;
 
   if (!mentor.email) {
@@ -1432,7 +1508,7 @@ export function sendMentorSessionConfirmedEmail(input: MentorConfirmationInput):
     return;
   }
 
-  sendResendEmail({
+  await sendResendEmail({
     to:      mentor.email,
     subject: `Session confirmed — ${booking.userName} (${booking.id.slice(0, 8).toUpperCase()})`,
     html:    mentorSessionConfirmedEmailHtml({

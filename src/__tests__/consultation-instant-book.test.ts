@@ -461,3 +461,54 @@ describe('instant-book is the only flow (P7b)', () => {
     expect(isInstantBookEnabled()).toBe(true);
   });
 });
+
+describe('manual-mode slot gate (no published agenda)', () => {
+  beforeEach(() => seed(50_000));
+
+  const isoDay = (daysAhead: number) => {
+    const d = new Date(Date.now() + daysAhead * 86_400_000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  it('accepts a manual date+time beyond the min-notice window', async () => {
+    const res = await createInstantBooking(baseInput({
+      consultationDate: isoDay(3), consultationTime: '10:00',
+    }));
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.booking.consultationDate).toBe(isoDay(3));
+      expect(res.booking.consultationTime).toBe('10:00');
+    }
+  });
+
+  it('rejects a manual time inside the 24h min-notice window', async () => {
+    // Today at any hour is always < 24h away (and yesterday-proof): use now+1h.
+    const soon = new Date(Date.now() + 60 * 60_000);
+    const date = `${soon.getFullYear()}-${String(soon.getMonth() + 1).padStart(2, '0')}-${String(soon.getDate()).padStart(2, '0')}`;
+    const time = `${String(soon.getHours()).padStart(2, '0')}:00`;
+    const res = await createInstantBooking(baseInput({ consultationDate: date, consultationTime: time }));
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe('SLOT_NOT_BOOKABLE');
+  });
+
+  it('rejects an overlapping manual time and a blocked date', async () => {
+    const day = isoDay(4);
+    const first = await createInstantBooking(baseInput({ consultationDate: day, consultationTime: '14:00' }));
+    expect(first.ok).toBe(true);
+
+    // 14:30 overlaps the settled 60-min 14:00 session.
+    const overlap = await createInstantBooking(baseInput({ consultationDate: day, consultationTime: '14:30' }));
+    expect(overlap.ok).toBe(false);
+    if (!overlap.ok) expect(overlap.reason).toBe('SLOT_NOT_BOOKABLE');
+
+    // Blocked date → rejected outright.
+    const blockedDay = isoDay(5);
+    await db.update((d) => {
+      const m = d.mentors.find((x) => x.id === MENTOR.id)!;
+      m.blockedDates = [blockedDay];
+    });
+    const blocked = await createInstantBooking(baseInput({ consultationDate: blockedDay, consultationTime: '10:00' }));
+    expect(blocked.ok).toBe(false);
+    if (!blocked.ok) expect(blocked.reason).toBe('SLOT_NOT_BOOKABLE');
+  });
+});

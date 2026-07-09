@@ -743,7 +743,9 @@ export type AuditAction =
   | 'PAYOUT_SENT'
   | 'ACCOUNT_DELETED'
   | 'MENTOR_APPROVED'
-  | 'MENTOR_REJECTED';
+  | 'MENTOR_REJECTED'
+  | 'MENTOR_PUBLISHED'
+  | 'MENTOR_UNPUBLISHED';
 
 export interface AuditLogRecord {
   id: string;
@@ -1545,6 +1547,12 @@ export interface MentorBookingRecord {
    * consultation-reminders cron. One reminder per booking, ever.
    */
   consultantReminderSentAt?: string | null;
+  /**
+   * Dedup stamp: set once the 1h-before reminder (email + WhatsApp→SMS with
+   * the meeting details) has been dispatched to the CLIENT by the
+   * consultation-reminders cron. One reminder per booking, ever.
+   */
+  clientReminderSentAt?: string | null;
   /**
    * Locale the guest used when requesting (en|fr|ar). Drives the pay-link
    * email language and the locale segment of the public pay URL. Absent on
