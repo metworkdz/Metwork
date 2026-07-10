@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { Container } from '@/components/ui/container';
 import { Badge } from '@/components/ui/badge';
+import { Link } from '@/i18n/routing';
 import { assertLandingVisible } from '@/lib/landing-visibility';
 
 // ISR so the admin landing-visibility toggle propagates without a redeploy
@@ -87,6 +88,14 @@ export default async function ConsultantLandingPage({ params }: PageProps) {
                 {t('ctaSignIn')}
               </a>
             </div>
+            {/* Contact Us — internal localized route, so next-intl Link (not a
+                raw <a>); reuses the outline CTA style used above on this page. */}
+            <Link
+              href="/contact"
+              className="mt-4 inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-background px-6 text-base font-medium text-foreground transition-colors hover:bg-muted/50"
+            >
+              {t('ctaContact')}
+            </Link>
           </div>
         </Container>
       </section>
