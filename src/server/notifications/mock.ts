@@ -48,6 +48,7 @@ import {
   bookingPaidIncubatorEmailHtml,
   type AdminOrderNotifParams,
   type EmailLang,
+  normalizeEmailLang,
 } from './email';
 import {
   generateBookingReceiptPdf,
@@ -251,12 +252,17 @@ function deliverClientText(phone: string, text: string, tag: string): Promise<vo
 }
 
 /** Human meeting-details block for client phone texts (link or address). */
-function meetingDetailsText(booking: MentorConfirmationInput['booking'], isFr: boolean): string {
+function meetingDetailsText(booking: MentorConfirmationInput['booking'], lang: EmailLang): string {
+  const L = {
+    en: { link: 'Link', inPerson: 'Format: in person', address: 'Address' },
+    fr: { link: 'Lien', inPerson: 'Format : en présentiel', address: 'Adresse' },
+    ar: { link: 'الرابط', inPerson: 'النوع: حضوري', address: 'العنوان' },
+  }[lang];
   return booking.meetingMode === 'ONLINE' && booking.meetingLink
-    ? `\n${isFr ? 'Lien' : 'Link'}: ${booking.meetingLink}`
+    ? `\n${L.link}: ${booking.meetingLink}`
     : booking.meetingMode === 'OFFLINE'
-    ? `\n${isFr ? 'Format : en présentiel' : 'Format: in person'}` +
-      (booking.meetingAddress ? `\n${isFr ? 'Adresse' : 'Address'}: ${booking.meetingAddress}` : '') +
+    ? `\n${L.inPerson}` +
+      (booking.meetingAddress ? `\n${L.address}: ${booking.meetingAddress}` : '') +
       (booking.meetingMapsLink ? `\nGoogle Maps: ${booking.meetingMapsLink}` : '')
     : '';
 }
@@ -270,15 +276,20 @@ function meetingDetailsText(booking: MentorConfirmationInput['booking'], isFr: b
  * soon as the response is sent, killing fire-and-forget promises — awaiting is
  * what guarantees the client actually gets the email. Never throws.
  */
-export async function sendConsultationReadyEmail(input: MentorConfirmationInput): Promise<void> {
-  const { booking, mentor, lang } = input;
-  const isFr = lang === 'fr';
+export async function sendConsultationReadyEmail(
+  input: Omit<MentorConfirmationInput, 'lang'> & { lang: EmailLang },
+): Promise<void> {
+  const { booking, mentor } = input;
+  const lang = normalizeEmailLang(input.lang);
+  const subject = {
+    en: `Your consultation is ready — ${mentor.fullName}`,
+    fr: `Votre consultation est prête — ${mentor.fullName}`,
+    ar: `استشارتك جاهزة — ${mentor.fullName}`,
+  }[lang];
 
   const emailSend = sendResendEmail({
     to: booking.userEmail,
-    subject: isFr
-      ? `Votre consultation est prête — ${mentor.fullName}`
-      : `Your consultation is ready — ${mentor.fullName}`,
+    subject,
     html: consultationReadyEmailHtml({
       clientName: booking.userName,
       mentorName: mentor.fullName,
@@ -287,6 +298,8 @@ export async function sendConsultationReadyEmail(input: MentorConfirmationInput)
       meetingAddress: booking.meetingAddress ?? null,
       meetingMapsLink: booking.meetingMapsLink ?? null,
       scheduledAt: booking.scheduledAt ?? null,
+      consultationDate: booking.consultationDate ?? null,
+      consultationTime: booking.consultationTime ?? null,
       durationMinutes: booking.durationMinutes ?? null,
       lang,
     }),
@@ -304,10 +317,13 @@ export async function sendConsultationReadyEmail(input: MentorConfirmationInput)
       console.error(`${banner} Consultation ready email failed →`, err.message),
     );
 
-  const waText =
-    (isFr ? '✅ Metwork — Consultation prête\n' : '✅ Metwork — Consultation ready\n') +
-    `${isFr ? 'Consultant' : 'Consultant'}: ${mentor.fullName}` +
-    meetingDetailsText(booking, isFr);
+  const waHeader = {
+    en: '✅ Metwork — Consultation ready\n',
+    fr: '✅ Metwork — Consultation prête\n',
+    ar: '✅ Metwork — الاستشارة جاهزة\n',
+  }[lang];
+  const consultantLabel = { en: 'Consultant', fr: 'Consultant', ar: 'المستشار' }[lang];
+  const waText = waHeader + `${consultantLabel}: ${mentor.fullName}` + meetingDetailsText(booking, lang);
   const phoneSend = booking.userPhone
     ? deliverClientText(booking.userPhone, waText, 'consult-ready')
     : Promise.resolve();
@@ -318,9 +334,9 @@ export async function sendConsultationReadyEmail(input: MentorConfirmationInput)
 /** Split a booking's schedule into a localized date + time pair (fallback '—'). */
 function bookingDateParts(
   booking: MentorConfirmationInput['booking'],
-  isFr: boolean,
+  lang: EmailLang,
 ): { date: string; time: string } {
-  const loc = isFr ? 'fr-DZ' : 'en-GB';
+  const loc = lang === 'ar' ? 'ar-DZ' : lang === 'en' ? 'en-GB' : 'fr-DZ';
   if (booking.scheduledAt) {
     const d = new Date(booking.scheduledAt);
     if (!Number.isNaN(d.getTime())) {
@@ -344,11 +360,10 @@ export async function sendConsultantNewBookingEmail(input: {
   booking: MentorConfirmationInput['booking'];
   mentor: MentorConfirmationInput['mentor'];
   portalUrl: string;
-  lang?: 'en' | 'fr';
+  lang?: EmailLang;
 }): Promise<void> {
   const { booking, mentor, portalUrl } = input;
-  const lang = input.lang ?? 'fr';
-  const isFr = lang === 'fr';
+  const lang = normalizeEmailLang(input.lang);
   const meetingMode = booking.meetingMode ?? null;
   const sends: Array<Promise<unknown>> = [];
 
@@ -356,10 +371,16 @@ export async function sendConsultantNewBookingEmail(input: {
   if (mentor.email) {
     sends.push(sendResendEmail({
       to: mentor.email,
-      subject: isFr ? 'Nouvelle consultation réservée — Metwork' : 'New consultation booked — Metwork',
+      subject: {
+        en: 'New consultation booked — Metwork',
+        fr: 'Nouvelle consultation réservée — Metwork',
+        ar: 'حجز استشارة جديدة — Metwork',
+      }[lang],
       html: consultantNewBookingEmailHtml({
         consultantName: mentor.fullName,
-        when: bookingWhen(booking) || null,
+        scheduledAt: booking.scheduledAt ?? null,
+        consultationDate: booking.consultationDate ?? null,
+        consultationTime: booking.consultationTime ?? null,
         durationMinutes: booking.durationMinutes ?? null,
         meetingMode,
         portalUrl,
@@ -385,7 +406,7 @@ export async function sendConsultantNewBookingEmail(input: {
 
   // ── WhatsApp (best-effort UTILITY template) ────────────────────────────────
   if (mentor.phone) {
-    const { date, time } = bookingDateParts(booking, true /* template is French */);
+    const { date, time } = bookingDateParts(booking, 'fr' /* WhatsApp template is French */);
     const firstName = mentor.fullName.trim().split(/\s+/)[0] || mentor.fullName;
     const duration = booking.durationMinutes ? `${booking.durationMinutes} min` : '—';
     const type = meetingMode === 'ONLINE' ? 'En ligne' : meetingMode === 'OFFLINE' ? 'En présentiel' : '—';
@@ -468,7 +489,7 @@ export async function sendConsultantSessionReminderEmail(input: {
 export async function sendClientSessionReminderEmail(input: MentorConfirmationInput): Promise<void> {
   const { booking, mentor, lang } = input;
   const isFr = lang === 'fr';
-  const { date, time } = bookingDateParts(booking, isFr);
+  const { date, time } = bookingDateParts(booking, lang);
 
   const emailSend = sendResendEmail({
     to: booking.userEmail,
@@ -504,7 +525,7 @@ export async function sendClientSessionReminderEmail(input: MentorConfirmationIn
     (isFr ? '⏰ Metwork — Rappel : votre consultation commence bientôt\n' : '⏰ Metwork — Reminder: your consultation starts soon\n') +
     `${isFr ? 'Consultant' : 'Consultant'}: ${mentor.fullName}` +
     (date !== '—' ? `\n${isFr ? 'Date' : 'Date'}: ${date} ${time !== '—' ? time : ''}`.trimEnd() : '') +
-    meetingDetailsText(booking, isFr);
+    meetingDetailsText(booking, lang);
   const phoneSend = booking.userPhone
     ? deliverClientText(booking.userPhone, waText, 'client-reminder')
     : Promise.resolve();
