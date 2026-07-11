@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * Profile editor — bio, expertise topics, the display-only 30/60-min rates, the
- * free-intro toggle, and the instant-book meeting defaults. The live per-hour
- * fee is admin-controlled (not editable here). Saves via PATCH
- * /api/consultant/profile.
+ * Profile editor — bio, expertise topics, the live per-hour rate, the
+ * free-intro toggle, and the instant-book meeting defaults. The hourly rate
+ * writes the canonical `consultationFee` (same field the admin form writes and
+ * the charge engine reads). Saves via PATCH /api/consultant/profile.
  */
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -25,8 +25,9 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
   const [bio, setBio] = useState(mentor.bio ?? '');
   const [topics, setTopics] = useState<string[]>(mentor.topics ?? []);
   const [topicDraft, setTopicDraft] = useState('');
-  const [rate30, setRate30] = useState(mentor.ratePer30 != null ? String(mentor.ratePer30) : '');
-  const [rate60, setRate60] = useState(mentor.ratePer60 != null ? String(mentor.ratePer60) : '');
+  const [fee, setFee] = useState(
+    mentor.consultationFee && mentor.consultationFee > 0 ? String(mentor.consultationFee) : '',
+  );
   const [freeIntro, setFreeIntro] = useState(Boolean(mentor.freeIntroEnabled));
   const [mode, setMode] = useState<'ONLINE' | 'OFFLINE'>(mentor.defaultMeetingMode ?? 'ONLINE');
   const [link, setLink] = useState(mentor.defaultMeetingLink ?? '');
@@ -83,8 +84,7 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
         city: city.trim() || null,
         bio: bio.trim() || null,
         topics,
-        ratePer30: rate30 === '' ? null : Math.max(0, Math.round(Number(rate30))),
-        ratePer60: rate60 === '' ? null : Math.max(0, Math.round(Number(rate60))),
+        consultationFee: fee === '' ? 0 : Math.max(0, Math.round(Number(fee))),
         freeIntroEnabled: freeIntro,
         defaultMeetingMode: mode,
         defaultMeetingLink: mode === 'ONLINE' ? (link.trim() || null) : null,
@@ -200,20 +200,14 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
           </div>
         </Field>
 
-        {/* Rates */}
+        {/* Hourly rate — the live fee clients are charged (pro-rated by duration) */}
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-white/45">{t('ratesHeading')}</p>
           <p className="text-[11px] text-white/40">{t('ratesHint')}</p>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label={t('rate30Label')} htmlFor="cp-r30">
-              <input id="cp-r30" type="number" inputMode="numeric" min={0} value={rate30} dir="ltr"
-                onChange={(e) => setRate30(e.target.value)} disabled={saving} className={cpInputClass} placeholder="0" />
-            </Field>
-            <Field label={t('rate60Label')} htmlFor="cp-r60">
-              <input id="cp-r60" type="number" inputMode="numeric" min={0} value={rate60} dir="ltr"
-                onChange={(e) => setRate60(e.target.value)} disabled={saving} className={cpInputClass} placeholder="0" />
-            </Field>
-          </div>
+          <Field label={t('hourlyRateLabel')} htmlFor="cp-fee">
+            <input id="cp-fee" type="number" inputMode="numeric" min={0} value={fee} dir="ltr"
+              onChange={(e) => setFee(e.target.value)} disabled={saving} className={cpInputClass} placeholder="0" />
+          </Field>
         </div>
 
         {/* Free intro */}

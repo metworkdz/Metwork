@@ -4,10 +4,11 @@
  * Exercises the new thin, requireConsultant-guarded routes end-to-end against
  * the in-memory DB with a mocked cookie jar (same pattern as the access tests):
  *   • PATCH /api/consultant/availability — weekly template + notice/buffer
- *   • PATCH /api/consultant/profile       — bio/topics/rates/free-intro
+ *   • PATCH /api/consultant/profile       — bio/topics/hourly rate/free-intro
  *   • GET   /api/consultant/earnings      — the display-only summary
- * plus the validation rules and the money-safety invariant (the live per-hour
- * consultationFee is never editable from the portal).
+ * plus the validation rules. The consultant now controls their OWN live
+ * per-hour `consultationFee` here (Option A) — the canonical field the admin
+ * form writes and the charge engine reads.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -91,13 +92,12 @@ describe('PATCH /api/consultant/availability', () => {
 });
 
 describe('PATCH /api/consultant/profile', () => {
-  it('saves bio/topics/rates/free-intro and leaves the live fee untouched', async () => {
+  it('saves bio/topics/free-intro and the consultant-set hourly rate (canonical consultationFee)', async () => {
     await signIn('m-1');
     const res = await patchProfile(jsonReq({
       bio: '  Helping founders scale.  ',
       topics: ['Fundraising', 'fundraising', 'GTM'],
-      ratePer30: 3000,
-      ratePer60: 5500,
+      consultationFee: 12000,
       freeIntroEnabled: true,
     }) as never);
     expect(res.status).toBe(200);
@@ -105,18 +105,19 @@ describe('PATCH /api/consultant/profile', () => {
     const m = (await db.read()).mentors.find((x) => x.id === 'm-1')!;
     expect(m.bio).toBe('Helping founders scale.');
     expect(m.topics).toEqual(['Fundraising', 'GTM']); // trimmed + de-duped
-    expect(m.ratePer30).toBe(3000);
-    expect(m.ratePer60).toBe(5500);
     expect(m.freeIntroEnabled).toBe(true);
-    // Money-safety: the per-hour charged fee is never editable here.
-    expect(m.consultationFee).toBe(8000);
+    // Option A: the consultant controls their OWN live per-hour rate.
+    expect(m.consultationFee).toBe(12000);
   });
 
-  it('ignores an attempt to set consultationFee (not in the schema)', async () => {
+  it('ignores the retired per-session rate fields (stripped by the schema)', async () => {
     await signIn('m-1');
-    await patchProfile(jsonReq({ consultationFee: 99999, bio: 'x' }) as never);
+    await patchProfile(jsonReq({ ratePer30: 3000, ratePer60: 5500, bio: 'x' }) as never);
     const m = (await db.read()).mentors.find((x) => x.id === 'm-1')!;
+    // Unknown keys are dropped; the seeded fee stays untouched (not zeroed).
     expect(m.consultationFee).toBe(8000);
+    expect(m.ratePer30).toBeUndefined();
+    expect(m.ratePer60).toBeUndefined();
   });
 });
 

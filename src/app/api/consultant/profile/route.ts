@@ -2,12 +2,15 @@
  * PATCH /api/consultant/profile — self-service profile editor.
  *
  * Accepts the consultant-editable profile fields: bio, expertise topics, the
- * display-only 30/60-min rates, the free-intro flag, and the instant-book
- * meeting defaults (mode + online link). The live per-hour `consultationFee`
- * is NOT editable here — it stays admin-controlled (it drives live charges).
+ * live per-hour `consultationFee`, the free-intro flag, and the instant-book
+ * meeting defaults (mode + online link). The consultant sets their OWN hourly
+ * rate here; it writes the SAME canonical `consultationFee` the admin form
+ * writes and the charge engine reads, so the public profile + booking dialogs
+ * reflect the true price.
  *
  * Profile fields route through the existing `updateMentor`; meeting defaults
- * through `updateMentorMeetingDefaults`. No new financial logic.
+ * through `updateMentorMeetingDefaults`. No new financial logic — the pro-rata
+ * `computePrice` / `computeConsultationCharge` math is unchanged.
  */
 import type { NextRequest } from 'next/server';
 import { ZodError } from 'zod';

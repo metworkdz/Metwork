@@ -43,23 +43,10 @@ import { cn } from '@/lib/utils';
 import type { MentorBookingRecord, MentorBookingStatus, MentorRecord } from '@/server/db/store';
 import type { DaySlot } from '@/types/mentor';
 import type { Locale } from '@/i18n/config';
-
-/* ─── Duration options (mirrors BookConsultationDialog) ─── */
-
-const DURATION_OPTIONS = [
-  { value: 30,  label: '30 min' },
-  { value: 60,  label: '1 hour' },
-  { value: 90,  label: '1 h 30' },
-  { value: 120, label: '2 hours' },
-  { value: 150, label: '2 h 30' },
-  { value: 180, label: '3 hours' },
-];
-
-/** Compute session price from hourly rate and duration. Returns 0 for free mentors. */
-function computePrice(feePerHour: number, durationMinutes: number): number {
-  if (!feePerHour || feePerHour <= 0) return 0;
-  return Math.round((durationMinutes / 60) * feePerHour);
-}
+// Canonical duration options, pro-rata price, and price-state resolver — one
+// source of truth shared with BookConsultationDialog and the public profile
+// (replaces this panel's former local copies so the two never drift).
+import { DURATION_OPTIONS, computePrice, resolveMentorPricing } from '@/lib/consultation-pricing';
 
 function formatDZD(amount: number): string {
   return `${amount.toLocaleString('fr-DZ')} DZD`;
@@ -221,7 +208,7 @@ export function ConsultationsPanel({
   /* Derived pricing */
   const remainingNow   = Math.max(0, remaining - freeUsedThisSession);
   const selectedMentor = mentors.find((m) => m.id === selectedMentorId);
-  const feePerHour     = selectedMentor?.consultationFee ?? 0;
+  const { feePerHour, isPriced } = resolveMentorPricing(selectedMentor ?? {});
   const basePrice      = computePrice(feePerHour, duration);
   // A free monthly credit collapses the whole charge to 0 (promo suppressed) —
   // mirrors the server-authoritative math in computeConsultationCharge.
@@ -654,6 +641,13 @@ export function ConsultationsPanel({
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Unpriced mentor — say so plainly rather than implying "free". */}
+                {selectedMentor && !isPriced && (
+                  <p className="rounded-lg border border-amber-300/60 bg-amber-50 px-3.5 py-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-950/40 dark:text-amber-300">
+                    {t('pricingNotSet')}
+                  </p>
+                )}
 
                 {/* Free-consultation credit — apply this month's quota.
                     Hidden entirely when 0 remaining (avoids confusing disabled state). */}

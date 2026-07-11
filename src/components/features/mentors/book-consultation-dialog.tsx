@@ -50,7 +50,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { safeUUID } from '@/lib/safe-uuid';
-import { DURATION_OPTIONS, computePrice } from '@/lib/consultation-pricing';
+import { DURATION_OPTIONS, computePrice, resolveMentorPricing } from '@/lib/consultation-pricing';
 import type { Mentor } from '@/types/mentor';
 
 export { DURATION_OPTIONS };
@@ -191,8 +191,10 @@ export function BookConsultationDialog({
     : 0;
   const tierDiscountPercent  = Math.round(tierDiscountFraction * 100);
 
-  // Derived pricing
-  const feePerHour   = mentor?.consultationFee ?? 0;
+  // Derived pricing — resolved through the ONE canonical helper (shared with the
+  // public profile + the dashboard panel) so the price never renders as a silent
+  // "free" when the mentor simply hasn't set a rate yet.
+  const { feePerHour, isPriced } = resolveMentorPricing(mentor ?? {});
   const basePrice    = computePrice(feePerHour, duration);
   const applyFreeCredit = useFreeCredit && freeRemaining > 0 && basePrice > 0;
   const tierDiscountAmt = !applyFreeCredit && tierDiscountFraction > 0
@@ -748,6 +750,13 @@ export function BookConsultationDialog({
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Unpriced mentor — say so plainly rather than implying "free". */}
+              {mentor && !isPriced && (
+                <div className="rounded-lg border border-amber-300/60 bg-amber-50 px-3.5 py-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-950/40 dark:text-amber-300">
+                  {t('pricingNotSet')}
+                </div>
+              )}
 
               {/* Free-consultation credit — checkbox to apply this month's quota.
                   Hidden entirely when 0 remaining (avoids confusing disabled state). */}
