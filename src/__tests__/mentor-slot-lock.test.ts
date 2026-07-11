@@ -6,12 +6,28 @@
  * release is idempotent, and expired locks free the slot.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { db } from '@/server/db/store';
+import { db, type MentorBookingRecord } from '@/server/db/store';
 import { lockSlot, releaseSlot, isSlotLocked } from '@/server/mentors/slot-lock';
 
 beforeEach(async () => {
-  await db.update((d) => { d.mentorSlotLocks = []; });
+  // lockSlot now also reads mentorBookings, so clear both for isolation.
+  await db.update((d) => { d.mentorSlotLocks = []; d.mentorBookings = []; });
 });
+
+/** Seed one mentor booking (defaults: a seat-holding READY 09:00–10:00). */
+function seedBooking(over: Partial<MentorBookingRecord> = {}): Promise<unknown> {
+  return db.update((d) => {
+    d.mentorBookings = [
+      ...(d.mentorBookings ?? []),
+      {
+        id: 'existing', mentorId: 'm1', userId: null, userName: 'C', userEmail: 'c@x.io',
+        userPhone: '0', message: '', status: 'READY', adminNote: null,
+        consultationDate: '2026-06-15', consultationTime: '09:00', durationMinutes: 60,
+        createdAt: '', updatedAt: '', ...over,
+      } as MentorBookingRecord,
+    ];
+  });
+}
 
 describe('lockSlot', () => {
   it('locks a free slot and reports it locked', async () => {
@@ -68,5 +84,38 @@ describe('releaseSlot & expiry', () => {
     // The expired one was swept.
     const data = await db.read();
     expect(data.mentorSlotLocks.filter((l) => l.bookingId === 'b1')).toHaveLength(0);
+  });
+});
+
+describe('lockSlot — booking-aware conflict (atomic reservation)', () => {
+  it('rejects a lock overlapping a seat-holding booking', async () => {
+    await seedBooking({ status: 'READY' });
+    const res = await lockSlot({ bookingId: 'new', mentorId: 'm1', date: '2026-06-15', startTime: '09:00', durationMinutes: 60 });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe('SLOT_TAKEN');
+  });
+
+  it('rejects a partially-overlapping longer session against a booking', async () => {
+    await seedBooking({ status: 'CONFIRMED', consultationTime: '10:00' }); // 10:00–11:00
+    // A 90-min hold at 09:00 runs 09:00–10:30 → overlaps 10:00–11:00.
+    const res = await lockSlot({ bookingId: 'new', mentorId: 'm1', date: '2026-06-15', startTime: '09:00', durationMinutes: 90 });
+    expect(res.ok).toBe(false);
+  });
+
+  it('ignores a PENDING_PAYMENT / CANCELLED booking (no seat held)', async () => {
+    await seedBooking({ status: 'PENDING_PAYMENT' });
+    const a = await lockSlot({ bookingId: 'new', mentorId: 'm1', date: '2026-06-15', startTime: '09:00', durationMinutes: 60 });
+    expect(a.ok).toBe(true);
+
+    await db.update((d) => { d.mentorSlotLocks = []; d.mentorBookings = []; });
+    await seedBooking({ status: 'CANCELLED' });
+    const b = await lockSlot({ bookingId: 'new2', mentorId: 'm1', date: '2026-06-15', startTime: '09:00', durationMinutes: 60 });
+    expect(b.ok).toBe(true);
+  });
+
+  it("does not treat the lock's own booking as a conflict (idempotent settle path)", async () => {
+    await seedBooking({ id: 'self', status: 'PENDING_PAYMENT' });
+    const res = await lockSlot({ bookingId: 'self', mentorId: 'm1', date: '2026-06-15', startTime: '09:00', durationMinutes: 60 });
+    expect(res.ok).toBe(true);
   });
 });

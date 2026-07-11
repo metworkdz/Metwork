@@ -19,11 +19,30 @@
  * All date math is anchored to UTC so the weekday of a "YYYY-MM-DD" string is
  * independent of the host machine's timezone (determinism over wall-clock).
  */
-import type { MentorRecord, MentorBookingRecord, MentorSlotLockRecord } from '@/server/db/store';
+import type { MentorRecord, MentorBookingRecord, MentorBookingStatus, MentorSlotLockRecord } from '@/server/db/store';
 import type { DaySlot, BookableSlot } from '@/types/mentor';
 
 /** Default per-booking duration (minutes) when a booking has a date but no explicit duration. */
 const DEFAULT_BOOKING_MINUTES = 60;
+
+/**
+ * Statuses that do NOT hold a mentor slot: rejected/cancelled sessions and the
+ * unpaid pay-first intents (PENDING_PAYMENT / AWAITING_PAYMENT). An unpaid intent
+ * is held only by the short-lived slot-LOCK (10 min) during checkout, so an
+ * abandoned checkout frees the hour instead of burning it. Mirrors the
+ * space/program `bookingHoldsSeat` rule so the two subsystems can't diverge.
+ */
+const NON_SEAT_HOLDING: ReadonlySet<MentorBookingStatus> = new Set<MentorBookingStatus>([
+  'REJECTED',
+  'CANCELLED',
+  'PENDING_PAYMENT',
+  'AWAITING_PAYMENT',
+]);
+
+/** True when a booking with this status occupies its slot (overlap / seat-hold). */
+export function mentorBookingHoldsSeat(status: MentorBookingStatus): boolean {
+  return !NON_SEAT_HOLDING.has(status);
+}
 
 /** Engine defaults applied when a mentor leaves the booking-policy fields unset. */
 const DEFAULT_MIN_NOTICE_HOURS = 24;
@@ -264,7 +283,7 @@ function occupiedIntervals(
 
   for (const b of bookings) {
     if (b.mentorId !== mentorId) continue;
-    if (b.status === 'REJECTED' || b.status === 'CANCELLED') continue;
+    if (!mentorBookingHoldsSeat(b.status)) continue;
     if (b.consultationDate !== date) continue;
     const startMin = b.consultationTime ? toMinutes(b.consultationTime) : NaN;
     if (Number.isNaN(startMin)) {
@@ -339,6 +358,115 @@ export function computeBookableSlots(
         startMs >= earliestMs &&
         !occupied.some((iv) => overlaps(start, end, iv.start, iv.end));
       out.push({ date, start: s.start, end: s.end, available });
+    }
+  }
+  return out;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Hourly slot generator (single canonical function)
+ *
+ * `computeHourlySlots` is the ONE function the public availability API, the
+ * booking write-gate, and reschedule call to enumerate a mentor's concrete,
+ * hour-aligned start times for a date + duration. On top of the weekly template
+ * it applies the same subtractions as `computeBookableSlots` (seat-holding
+ * bookings + buffer, active slot-locks, the min-notice window), but at
+ * per-hour granularity:
+ *
+ *   • candidate starts are WHOLE HOURS only (09:00, 10:00, …) — never :30/:45,
+ *     regardless of duration;
+ *   • a start is `available:false` (shown greyed, never omitted) when the
+ *     session would run past the window end, overlaps a booking/lock, falls
+ *     inside the min-notice window, or the date is blocked.
+ *
+ * Owns no I/O — records are passed in, keeping it deterministic + unit-testable.
+ * ════════════════════════════════════════════════════════════════════════ */
+
+/** "HH:MM" for a minutes-since-midnight value. */
+function minutesToHHMM(min: number): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(Math.floor(min / 60))}:${pad(min % 60)}`;
+}
+
+export function computeHourlySlots(
+  mentor: BookablePolicyMentor,
+  date: string,
+  durationMinutes: number,
+  bookings: readonly MentorBookingRecord[] = [],
+  options: BookableSlotsOptions = {},
+): BookableSlot[] {
+  if (!ISO_DATE_RE.test(date)) return [];
+  const dur =
+    Number.isFinite(durationMinutes) && durationMinutes > 0
+      ? Math.round(durationMinutes)
+      : DEFAULT_BOOKING_MINUTES;
+
+  const wd = weekdayOf(date);
+  if (wd < 0) return [];
+  const dayTemplate = (mentor.weeklyAvailability ?? []).find((d) => d.weekday === wd);
+  if (!dayTemplate || dayTemplate.slots.length === 0) return [];
+
+  const nowMs = options.nowMs ?? Date.now();
+  const slotLocks = options.slotLocks ?? [];
+  const tz = mentor.availabilityTimezone || DEFAULT_TIMEZONE;
+  const minNotice = mentor.minNoticeHours != null ? mentor.minNoticeHours : DEFAULT_MIN_NOTICE_HOURS;
+  const buffer = mentor.bufferMinutes != null ? mentor.bufferMinutes : DEFAULT_BUFFER_MINUTES;
+  const earliestMs = nowMs + Math.max(0, minNotice) * 60 * 60 * 1000;
+
+  const isBlocked = (mentor.blockedDates ?? []).includes(date);
+  const occupied = isBlocked
+    ? []
+    : occupiedIntervals(mentor.id, date, bookings, slotLocks, nowMs, Math.max(0, buffer));
+
+  const ranges = dayTemplate.slots
+    .map((s) => ({ start: toMinutes(s.start), end: toMinutes(s.end) }))
+    .filter(({ start, end }) => !Number.isNaN(start) && !Number.isNaN(end) && end > start)
+    .sort((a, b) => a.start - b.start);
+
+  const seen = new Set<number>();
+  const out: BookableSlot[] = [];
+  for (const { start: rStart, end: rEnd } of ranges) {
+    // First whole hour at or after the window start, then step by the hour.
+    for (let h = Math.ceil(rStart / 60) * 60; h < rEnd; h += 60) {
+      if (seen.has(h)) continue; // de-dupe a start shared by overlapping ranges
+      seen.add(h);
+      const end = h + dur;
+      const startMs = zonedWallToUtcMs(date, minutesToHHMM(h), tz);
+      const available =
+        !isBlocked &&
+        end <= rEnd && // the whole session fits inside the window
+        startMs >= earliestMs && // min-notice
+        !occupied.some((iv) => overlaps(h, end, iv.start, iv.end)); // free of bookings/locks
+      out.push({ date, start: minutesToHHMM(h), end: minutesToHHMM(end), available });
+    }
+  }
+  return out.sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
+}
+
+/**
+ * Dates in [fromDate, toDate] that have at least one AVAILABLE hourly slot at
+ * `durationMinutes` — powers the date-dot calendar. Range-bounded + tz-aware,
+ * so a date only lights up when a concrete hour is actually bookable.
+ */
+export function computeAvailableDatesHourly(
+  mentor: BookablePolicyMentor,
+  fromDate: string,
+  toDate: string,
+  durationMinutes: number,
+  bookings: readonly MentorBookingRecord[] = [],
+  options: BookableSlotsOptions = {},
+): string[] {
+  const fromMs = dateToUtcMs(fromDate);
+  const toMs = dateToUtcMs(toDate);
+  if (Number.isNaN(fromMs) || Number.isNaN(toMs) || toMs < fromMs) return [];
+
+  const DAY = 24 * 60 * 60 * 1000;
+  const out: string[] = [];
+  let count = 0;
+  for (let ms = fromMs; ms <= toMs && count < MAX_RANGE_DAYS; ms += DAY, count++) {
+    const date = utcMsToDate(ms);
+    if (computeHourlySlots(mentor, date, durationMinutes, bookings, options).some((s) => s.available)) {
+      out.push(date);
     }
   }
   return out;

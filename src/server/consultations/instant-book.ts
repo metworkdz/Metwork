@@ -32,7 +32,7 @@ import {
 import { findMentorById } from '@/server/mentors/service';
 import { isMentorApproved } from '@/lib/mentor-approval';
 import { computeConsultationCharge, type ConsultationChargeBreakdown } from './pricing';
-import { computeBookableSlots } from '@/server/mentors/availability';
+import { computeHourlySlots, mentorBookingHoldsSeat } from '@/server/mentors/availability';
 import { lockSlot, releaseSlot } from '@/server/mentors/slot-lock';
 import { getTopUp, initiateTopUp } from '@/server/wallet/service';
 import { consumePromoCode } from '@/server/promo-codes/service';
@@ -288,6 +288,12 @@ export async function createInstantBooking(
   // settlement / provider failure (and self-expires after its TTL).
   let slotLocked = false;
   if (input.consultationDate && input.consultationTime) {
+    // Hour-alignment is a hard rule — a start is always on the hour (09:00,
+    // 10:00, …), never :30/:45, regardless of duration. Reject anything else
+    // before touching the store.
+    if (!/^\d{2}:00$/.test(input.consultationTime)) {
+      return { ok: false, reason: 'SLOT_NOT_BOOKABLE' };
+    }
     const snap = await db.read();
     const replay = (snap.mentorBookings ?? []).find((b) =>
       isGuest
@@ -298,26 +304,22 @@ export async function createInstantBooking(
       const mentorBookings = (snap.mentorBookings ?? []).filter((b) => b.mentorId === mentor.id);
       const hasPublishedAgenda = (mentor.weeklyAvailability ?? []).some((d) => d.slots.length > 0);
       if (hasPublishedAgenda) {
-        // Published agenda → the shared bookable-slots validator is the single
-        // source of truth (template − bookings − buffer − min-notice − locks).
-        const slots = computeBookableSlots(
+        // Published agenda → the canonical hourly-slot validator is the single
+        // source of truth (template − seat-holding bookings − buffer − min-notice
+        // − locks), evaluated for THIS duration.
+        const slots = computeHourlySlots(
           mentor,
           input.consultationDate,
-          input.consultationDate,
+          input.durationMinutes,
           mentorBookings,
           { slotLocks: snap.mentorSlotLocks ?? [] },
         );
-        const bookable = slots.some(
-          (s) =>
-            s.date === input.consultationDate &&
-            s.start === input.consultationTime &&
-            s.available,
-        );
+        const bookable = slots.some((s) => s.start === input.consultationTime && s.available);
         if (!bookable) return { ok: false, reason: 'SLOT_NOT_BOOKABLE' };
       } else {
         // No published agenda (manual-mode booking): the template check would
         // reject EVERY time, so enforce the same guarantees directly —
-        // min-notice, blocked dates, and no overlap with an existing session.
+        // min-notice, blocked dates, and no overlap with a seat-holding session.
         const minNotice = mentor.minNoticeHours != null ? mentor.minNoticeHours : 24;
         const startMs = Date.parse(`${input.consultationDate}T${input.consultationTime}:00+01:00`);
         if (Number.isNaN(startMs) || startMs < Date.now() + Math.max(0, minNotice) * 3_600_000) {
@@ -327,9 +329,8 @@ export async function createInstantBooking(
           return { ok: false, reason: 'SLOT_NOT_BOOKABLE' };
         }
         const endMs = startMs + input.durationMinutes * 60_000;
-        const ACTIVE = new Set(['PENDING_PAYMENT', 'AWAITING_LINK', 'READY', 'CONFIRMED', 'APPROVED', 'AWAITING_PAYMENT', 'PENDING']);
         const overlapping = mentorBookings.some((b) => {
-          if (!ACTIVE.has(b.status)) return false;
+          if (!mentorBookingHoldsSeat(b.status)) return false;
           if (b.consultationDate !== input.consultationDate || !b.consultationTime) return false;
           const bStart = Date.parse(`${b.consultationDate}T${b.consultationTime}:00+01:00`);
           if (Number.isNaN(bStart)) return false;

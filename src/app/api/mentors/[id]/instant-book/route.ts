@@ -162,7 +162,7 @@ export async function POST(
   if (!result.ok) {
     if (result.reason === 'MENTOR_NOT_FOUND') return jsonError(404, 'NOT_FOUND', 'Mentor not found');
     if (result.reason === 'SLOT_NOT_BOOKABLE') {
-      return jsonError(409, 'SLOT_NOT_BOOKABLE', 'That time slot is no longer available. Please pick another.');
+      return jsonError(409, 'SLOT_UNAVAILABLE', 'That time slot is no longer available. Please pick another.');
     }
     if (result.reason === 'WALLET_FROZEN') {
       return jsonError(403, 'WALLET_FROZEN', 'Your wallet is currently frozen. Please contact support.');

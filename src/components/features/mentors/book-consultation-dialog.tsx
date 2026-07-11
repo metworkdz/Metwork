@@ -63,6 +63,8 @@ interface BookConsultationDialogProps {
   initialDate?: string | null;
   /** Pre-seed the start time ("HH:MM") when opened from the profile scheduler (additive). */
   initialTime?: string | null;
+  /** Pre-seed the session duration (minutes) from the profile scheduler (additive). */
+  initialDuration?: number;
   /**
    * When true, submit through the instant-book, pay-first flow (no admin
    * approval): members pay from wallet (or SlickPay top-up), guests pay online.
@@ -108,6 +110,7 @@ export function BookConsultationDialog({
   onOpenChange,
   initialDate = null,
   initialTime = null,
+  initialDuration = 60,
   instantBookEnabled = false,
 }: BookConsultationDialogProps) {
   const { user } = useAuth();
@@ -232,13 +235,14 @@ export function BookConsultationDialog({
   // start on the schedule step so the user picks a time first.
   useEffect(() => {
     if (!open) return;
+    setDuration(initialDuration);
     if (initialDate) {
       setConsultDate(initialDate);
       setConsultTime(initialTime ?? '');
       setStep('details');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialDate, initialTime]);
+  }, [open, initialDate, initialTime, initialDuration]);
 
   /** Real-time promo code validation — calls /api/promo-codes/validate */
   const validatePromo = useCallback(async () => {
@@ -595,14 +599,48 @@ export function BookConsultationDialog({
             </DialogHeader>
 
             {step === 'schedule' ? (
-              /* ── Step 1: pick a date, then a time (Airbnb-style) ── */
+              /* ── Step 1: pick a duration, then a date, then an hour ── */
               <div className="space-y-4">
+                {/* Duration first — availability is duration-aware (a longer
+                    session greys out starts that would run past a window end). */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="bc-dur-sched" className="flex items-center gap-1 text-xs">
+                    <Timer className="size-3.5" /> {t('durationLabel')}
+                  </Label>
+                  <Select
+                    value={String(duration)}
+                    onValueChange={(v) => {
+                      setDuration(Number(v));
+                      setConsultTime(''); // which hour starts fit depends on duration
+                      if (promoState === 'valid') { setPromoState('idle'); setPromoDiscount(0); setPromoFixed(0); }
+                    }}
+                    disabled={formState === 'submitting'}
+                  >
+                    <SelectTrigger id="bc-dur-sched" className="text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {DURATION_OPTIONS.map((opt) => {
+                        const price = computePrice(feePerHour, opt.value);
+                        return (
+                          <SelectItem key={opt.value} value={String(opt.value)}>
+                            <span className="flex items-center justify-between gap-6">
+                              <span>{opt.label}</span>
+                              {feePerHour > 0 && (
+                                <span className="text-xs text-muted-foreground tabular-nums">{formatDZD(price)}</span>
+                              )}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <MentorScheduler
                   mentorId={mentor.id}
                   selectedDate={consultDate || null}
                   onSelectDate={(d) => { setConsultDate(d); setConsultTime(''); }}
                   selectedTime={consultTime || null}
                   onSelectTime={(slot: DaySlot) => setConsultTime(slot.start)}
+                  durationMinutes={duration}
                   locale={schedulerLocale}
                   onAvailabilityResolved={(has) => setHasAvailability(has)}
                 />
@@ -710,46 +748,8 @@ export function BookConsultationDialog({
                 />
               </div>
 
-              {/* Duration — drives dynamic pricing */}
-              <div className="space-y-1.5">
-                <Label htmlFor="bc-dur" className="flex items-center gap-1 text-xs">
-                  <Timer className="size-3.5" /> {t('durationLabel')}
-                </Label>
-                <Select
-                  value={String(duration)}
-                  onValueChange={(v) => {
-                    setDuration(Number(v));
-                    // Invalidate promo if base price changes
-                    if (promoState === 'valid') {
-                      setPromoState('idle');
-                      setPromoDiscount(0);
-                      setPromoFixed(0);
-                    }
-                  }}
-                  disabled={formState === 'submitting'}
-                >
-                  <SelectTrigger id="bc-dur" className="text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DURATION_OPTIONS.map((opt) => {
-                      const price = computePrice(feePerHour, opt.value);
-                      return (
-                        <SelectItem key={opt.value} value={String(opt.value)}>
-                          <span className="flex items-center justify-between gap-6">
-                            <span>{opt.label}</span>
-                            {feePerHour > 0 && (
-                              <span className="text-xs text-muted-foreground tabular-nums">
-                                {formatDZD(price)}
-                              </span>
-                            )}
-                          </span>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Duration is chosen on the schedule step (availability is
+                  duration-aware); the summary + price breakdown below reflect it. */}
 
               {/* Unpriced mentor — say so plainly rather than implying "free". */}
               {mentor && !isPriced && (
