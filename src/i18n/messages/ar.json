@@ -4209,6 +4209,7 @@
       "done": "تم",
       "fullNameLabel": "الاسم الكامل",
       "fullNamePlaceholder": "اسمك الكامل",
+      "bookingAsLabel": "الحجز باسم",
       "emailLabel": "البريد الإلكتروني",
       "phoneLabel": "الهاتف",
       "messageLabel": "بماذا تحتاج إلى مساعدة؟",

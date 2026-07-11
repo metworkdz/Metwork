@@ -28,9 +28,14 @@ export const dynamic = 'force-dynamic';
 const MIN_ADVANCE_HOURS = 24;
 
 const schema = z.object({
-  name:    z.string().min(2).max(120),
-  email:   z.string().email().max(200),
-  phone:   z.string().min(6).max(30),
+  // Contact identity is resolved server-side from the authenticated account
+  // (see below). These stay accepted-but-optional so an older client that still
+  // posts them — or the dashboard panel that sends an edited phone — keeps
+  // working, while the new dialog can omit them entirely. Bounds only; the
+  // strict shape checks are unnecessary because the session is authoritative.
+  name:    z.string().max(120).optional().nullable(),
+  email:   z.string().max(200).optional().nullable(),
+  phone:   z.string().max(30).optional().nullable(),
   message: z.string().min(10).max(1000),
   consultationDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   consultationTime: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
@@ -139,12 +144,22 @@ export async function POST(
     }
   }
 
+  // Resolve the client's contact identity server-side from their account. The
+  // new booking UI no longer asks a logged-in user to retype these; we fill from
+  // the authenticated session. Fill-when-absent (not override): a client that
+  // still supplies a value — e.g. the dashboard panel's editable phone — keeps
+  // it. Empty string only if the account somehow lacks a field (safe fallback,
+  // never a hard failure).
+  const resolvedName  = input.name?.trim()  || user.fullName || '';
+  const resolvedEmail = input.email?.trim() || user.email    || '';
+  const resolvedPhone = input.phone?.trim() || user.phone    || '';
+
   const result = await createInstantBooking({
     mentorId,
     actor: user ? { id: user.id, membershipDiscountFraction } : null,
-    name:    input.name,
-    email:   input.email,
-    phone:   input.phone,
+    name:    resolvedName,
+    email:   resolvedEmail,
+    phone:   resolvedPhone,
     message: input.message,
     durationMinutes:  input.durationMinutes,
     consultationDate: input.consultationDate ?? null,

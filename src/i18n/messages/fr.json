@@ -4209,6 +4209,7 @@
       "done": "Terminer",
       "fullNameLabel": "Nom complet",
       "fullNamePlaceholder": "Votre nom complet",
+      "bookingAsLabel": "Réservation au nom de",
       "emailLabel": "E-mail",
       "phoneLabel": "Téléphone",
       "messageLabel": "De quoi avez-vous besoin ?",

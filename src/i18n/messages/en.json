@@ -4209,6 +4209,7 @@
       "done": "Done",
       "fullNameLabel": "Full name",
       "fullNamePlaceholder": "Your full name",
+      "bookingAsLabel": "Booking as",
       "emailLabel": "Email",
       "phoneLabel": "Phone",
       "messageLabel": "What do you need help with?",
