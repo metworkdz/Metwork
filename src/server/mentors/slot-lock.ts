@@ -15,6 +15,7 @@
  * module only provides the helpers + concurrency guarantees.
  */
 import { db, type MentorSlotLockRecord } from '@/server/db/store';
+import { mentorBookingHoldsSeat } from '@/server/mentors/availability';
 
 /** Default hold window — long enough to complete a hosted checkout. */
 export const DEFAULT_LOCK_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -79,14 +80,33 @@ export async function lockSlot(input: LockSlotInput): Promise<LockSlotResult> {
     // Drop expired locks globally so the table doesn't grow unbounded.
     d.mentorSlotLocks = d.mentorSlotLocks.filter((l) => new Date(l.expiresAt).getTime() > now);
 
-    // Conflict check: another booking holding an overlapping slot for this mentor/date.
-    const conflict = d.mentorSlotLocks.some((l) => {
+    // Conflict check (i): another booking holding an overlapping unexpired lock.
+    const lockConflict = d.mentorSlotLocks.some((l) => {
       if (l.bookingId === input.bookingId) return false; // our own hold — not a conflict
       if (l.mentorId !== input.mentorId || l.date !== input.date) return false;
       const iv = lockInterval(l);
       return iv ? overlaps(candidate.start, candidate.end, iv.start, iv.end) : false;
     });
-    if (conflict) return { ok: false, reason: 'SLOT_TAKEN' };
+    if (lockConflict) return { ok: false, reason: 'SLOT_TAKEN' };
+
+    // Conflict check (ii): an already-persisted seat-holding booking overlapping
+    // this slot. Reading `d.mentorBookings` inside the SAME atomic mutation makes
+    // the acquisition a complete reservation — it closes the window between a
+    // caller's pre-read availability check and this lock, so two payers can never
+    // both land on a time even if the first settled between the other's read and
+    // its lock. A null-time legacy booking occupies its whole day.
+    const bookingConflict = (d.mentorBookings ?? []).some((b) => {
+      if (b.id === input.bookingId) return false; // our own booking — not a conflict
+      if (b.mentorId !== input.mentorId) return false;
+      if (!mentorBookingHoldsSeat(b.status)) return false;
+      if (b.consultationDate !== input.date) return false;
+      if (!b.consultationTime) return true; // whole-day legacy hold
+      const bStart = toMinutes(b.consultationTime);
+      if (Number.isNaN(bStart)) return false;
+      const bDur = b.durationMinutes && b.durationMinutes > 0 ? b.durationMinutes : 60;
+      return overlaps(candidate.start, candidate.end, bStart, bStart + bDur);
+    });
+    if (bookingConflict) return { ok: false, reason: 'SLOT_TAKEN' };
 
     // Refresh our own hold if present, else create it.
     const existing = d.mentorSlotLocks.find((l) => l.bookingId === input.bookingId);

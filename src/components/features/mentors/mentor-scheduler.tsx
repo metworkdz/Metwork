@@ -28,6 +28,12 @@ interface MentorSchedulerProps {
   onSelectDate: (date: string) => void;
   selectedTime: string | null;
   onSelectTime: (slot: DaySlot) => void;
+  /**
+   * Session length (minutes) the slots are computed for. Availability is
+   * duration-aware: a longer session greys out hour starts that would run past
+   * a window end. Defaults to 60.
+   */
+  durationMinutes?: number;
   locale?: SchedulerLocale;
   /** Notifies the parent once we know whether this mentor has any published availability. */
   onAvailabilityResolved?: (hasAvailability: boolean) => void;
@@ -36,6 +42,11 @@ interface MentorSchedulerProps {
 
 function pad2(n: number): string {
   return String(n).padStart(2, '0');
+}
+
+/** "HH:MM" from minutes-since-midnight. */
+function minToHHMM(min: number): string {
+  return `${pad2(Math.floor(min / 60))}:${pad2(min % 60)}`;
 }
 
 function todayISO(): string {
@@ -50,23 +61,26 @@ function monthBounds(month: string): { from: string; to: string } {
   return { from: `${month}-01`, to: `${month}-${pad2(last)}` };
 }
 
+/** Manual-mode window (mentor local time) when no agenda is published. */
+const MANUAL_WINDOW_START = 8 * 60; // 08:00
+const MANUAL_WINDOW_END = 20 * 60; // 20:00
+
 /**
  * Manual-mode fallback slots for consultants who haven't published an agenda:
- * every 30 min from 08:00 to 19:30 (mentor local time). Starts inside the
- * 24h min-notice window are shown disabled; the server re-validates anyway.
+ * HOUR-ALIGNED starts (08:00, 09:00, …) inside an 08:00–20:00 window, in the
+ * mentor's local time. Duration-aware — a start whose session would run past
+ * 20:00, or that falls inside the 24h min-notice window, is shown disabled.
+ * The server re-validates on submit anyway.
  */
-function manualDaySlots(date: string): DaySlot[] {
+function manualDaySlots(date: string, durationMinutes: number): DaySlot[] {
   const minStartMs = Date.now() + 24 * 60 * 60 * 1000;
   const out: DaySlot[] = [];
-  for (let h = 8; h < 20; h++) {
-    for (const m of [0, 30]) {
-      const start = `${pad2(h)}:${pad2(m)}`;
-      const endMinutes = h * 60 + m + 30;
-      const end = `${pad2(Math.floor(endMinutes / 60))}:${pad2(endMinutes % 60)}`;
-      // Algeria is UTC+1 year-round — the fixed offset is exact.
-      const startMs = Date.parse(`${date}T${start}:00+01:00`);
-      out.push({ start, end, available: startMs >= minStartMs });
-    }
+  for (let h = MANUAL_WINDOW_START; h < MANUAL_WINDOW_END; h += 60) {
+    const end = h + durationMinutes;
+    const start = minToHHMM(h);
+    // Algeria is UTC+1 year-round — the fixed offset is exact.
+    const startMs = Date.parse(`${date}T${start}:00+01:00`);
+    out.push({ start, end: minToHHMM(end), available: end <= MANUAL_WINDOW_END && startMs >= minStartMs });
   }
   return out;
 }
@@ -77,6 +91,7 @@ export function MentorScheduler({
   onSelectDate,
   selectedTime,
   onSelectTime,
+  durationMinutes = 60,
   locale = 'en',
   onAvailabilityResolved,
   className,
@@ -97,7 +112,7 @@ export function MentorScheduler({
     let cancelled = false;
     const { from, to } = monthBounds(month);
     setLoadingDates(true);
-    void fetch(`/api/mentors/${mentorId}/availability?from=${from}&to=${to}`)
+    void fetch(`/api/mentors/${mentorId}/availability?from=${from}&to=${to}&durationMinutes=${durationMinutes}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { availableDates?: string[]; timezone?: string } | null) => {
         if (cancelled || !data) return;
@@ -115,7 +130,7 @@ export function MentorScheduler({
     return () => {
       cancelled = true;
     };
-  }, [mentorId, month]);
+  }, [mentorId, month, durationMinutes]);
 
   // Report availability resolution once the first month settles.
   useEffect(() => {
@@ -130,7 +145,7 @@ export function MentorScheduler({
     }
     let cancelled = false;
     setLoadingSlots(true);
-    void fetch(`/api/mentors/${mentorId}/availability?date=${selectedDate}`)
+    void fetch(`/api/mentors/${mentorId}/availability?date=${selectedDate}&durationMinutes=${durationMinutes}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { slots?: DaySlot[] } | null) => {
         if (cancelled || !data) return;
@@ -145,7 +160,7 @@ export function MentorScheduler({
     return () => {
       cancelled = true;
     };
-  }, [mentorId, selectedDate]);
+  }, [mentorId, selectedDate, durationMinutes]);
 
   const handleSelectDate = useCallback(
     (date: string) => {
@@ -199,7 +214,7 @@ export function MentorScheduler({
         ) : manualMode ? (
           <>
             <TimeSlotPicker
-              slots={manualDaySlots(selectedDate)}
+              slots={manualDaySlots(selectedDate, durationMinutes)}
               selected={selectedTime}
               onSelect={onSelectTime}
               locale={locale}

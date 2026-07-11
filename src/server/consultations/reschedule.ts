@@ -15,7 +15,7 @@
  */
 import { db, type MentorBookingRecord } from '@/server/db/store';
 import { findMentorById } from '@/server/mentors/service';
-import { computeBookableSlots, slotToUtcIso } from '@/server/mentors/availability';
+import { computeHourlySlots, slotToUtcIso } from '@/server/mentors/availability';
 import { sendConsultationRescheduledEmail } from '@/server/notifications/mock';
 
 /** Default maximum reschedules per booking (owner default = 2). */
@@ -94,12 +94,13 @@ export async function rescheduleBooking(input: {
     const others = (d.mentorBookings ?? []).filter(
       (b) => b.mentorId === booking.mentorId && b.id !== booking.id,
     );
-    const slots = computeBookableSlots(mentor, input.date, input.date, others, {
+    // Hour-aligned starts only, validated at the booking's own duration.
+    const durationMinutes = booking.durationMinutes && booking.durationMinutes > 0 ? booking.durationMinutes : 60;
+    const slots = computeHourlySlots(mentor, input.date, durationMinutes, others, {
       slotLocks: d.mentorSlotLocks ?? [],
     });
-    const bookable = slots.some(
-      (s) => s.date === input.date && s.start === input.time && s.available,
-    );
+    const bookable =
+      /^\d{2}:00$/.test(input.time) && slots.some((s) => s.start === input.time && s.available);
     if (!bookable) return { ok: false, reason: 'SLOT_NOT_BOOKABLE' };
 
     const now = new Date().toISOString();

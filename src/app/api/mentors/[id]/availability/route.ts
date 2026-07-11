@@ -1,15 +1,17 @@
 /**
  * GET /api/mentors/:id/availability — PUBLIC, read-only.
  *
- * Two query shapes:
- *   ?from=YYYY-MM-DD&to=YYYY-MM-DD  → { availableDates: string[], timezone }
+ * Two query shapes (both accept an optional `durationMinutes`, default 60 —
+ * availability is duration-aware, so a longer session greys out starts that
+ * would run past a window end):
+ *   ?from=YYYY-MM-DD&to=YYYY-MM-DD[&durationMinutes=N] → { availableDates, timezone }
  *       Range is clamped to [today, today + 90 days]; `from` never goes into
  *       the past. Defaults: from = today, to = today + 90.
- *   ?date=YYYY-MM-DD                → { slots: DaySlot[], timezone }
- *       The concrete bookable slots for one day.
+ *   ?date=YYYY-MM-DD[&durationMinutes=N]               → { slots, durationMinutes, timezone }
+ *       The concrete HOUR-ALIGNED bookable slots for one day at that duration.
  *
  * Everything is derived from existing records via the shared, pure
- * `computeBookableSlots` validator in `@/server/mentors/availability` — the SAME
+ * `computeHourlySlots` validator in `@/server/mentors/availability` — the SAME
  * authority the booking write-gate and reschedule use. So the public display
  * subtracts active slot-locks, the min-notice window and the buffer, and never
  * advertises a slot the booking gate would then refuse. No writes, no side effects.
@@ -18,7 +20,7 @@ import type { NextRequest } from 'next/server';
 import { db } from '@/server/db/store';
 import { json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
-import { computeBookableSlots } from '@/server/mentors/availability';
+import { computeHourlySlots, computeAvailableDatesHourly } from '@/server/mentors/availability';
 import { isMentorApproved } from '@/lib/mentor-approval';
 import { DEFAULT_AVAILABILITY_TIMEZONE } from '@/types/mentor';
 
@@ -27,6 +29,14 @@ export const dynamic = 'force-dynamic';
 
 const MAX_RANGE_DAYS = 90;
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const DEFAULT_DURATION = 60;
+
+/** Parse & clamp the optional duration param to the supported 30–180 range. */
+function parseDuration(raw: string | null): number {
+  const n = raw ? parseInt(raw, 10) : NaN;
+  if (!Number.isFinite(n) || n < 30 || n > 180) return DEFAULT_DURATION;
+  return n;
+}
 
 function getClientIp(req: NextRequest): string {
   return (
@@ -78,18 +88,20 @@ export async function GET(
 
   const timezone = mentor.availabilityTimezone ?? DEFAULT_AVAILABILITY_TIMEZONE;
   const bookings = (data.mentorBookings ?? []).filter((b) => b.mentorId === id);
+  const slotLocks = data.mentorSlotLocks ?? [];
   const { searchParams } = new URL(req.url);
+  const durationMinutes = parseDuration(searchParams.get('durationMinutes'));
 
-  // ── Single-day slots ────────────────────────────────────────────────────
+  // ── Single-day HOUR-ALIGNED slots ─────────────────────────────────────────
   const dateParam = searchParams.get('date');
   if (dateParam !== null) {
     if (!ISO_DATE_RE.test(dateParam)) {
       return jsonError(422, 'INVALID_DATE', 'date must be in YYYY-MM-DD format');
     }
-    const slots = computeBookableSlots(mentor, dateParam, dateParam, bookings, {
-      slotLocks: data.mentorSlotLocks ?? [],
+    const slots = computeHourlySlots(mentor, dateParam, durationMinutes, bookings, {
+      slotLocks,
     }).map((s) => ({ start: s.start, end: s.end, available: s.available }));
-    return json({ date: dateParam, slots, timezone });
+    return json({ date: dateParam, durationMinutes, slots, timezone });
   }
 
   // ── Date range → available dates ──────────────────────────────────────────
@@ -112,9 +124,8 @@ export async function GET(
   if (to > maxTo) to = maxTo;
   if (to < from) to = from;
 
-  const bookable = computeBookableSlots(mentor, from, to, bookings, {
-    slotLocks: data.mentorSlotLocks ?? [],
+  const availableDates = computeAvailableDatesHourly(mentor, from, to, durationMinutes, bookings, {
+    slotLocks,
   });
-  const availableDates = [...new Set(bookable.filter((s) => s.available).map((s) => s.date))];
-  return json({ availableDates, from, to, timezone });
+  return json({ availableDates, from, to, durationMinutes, timezone });
 }

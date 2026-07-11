@@ -52,6 +52,23 @@ function formatDZD(amount: number): string {
   return `${amount.toLocaleString('fr-DZ')} DZD`;
 }
 
+/**
+ * Full ISO datetime with the local offset (e.g. "2026-05-20T14:00:00+01:00"),
+ * so the server's 24h-advance check reasons about the intended wall-clock time
+ * rather than flipping to the wrong UTC day near midnight.
+ */
+function buildLocalIso(dateStr: string, timeStr: string): string {
+  const [y = 1970, mo = 1, d = 1] = dateStr.split('-').map(Number);
+  const [h = 0, mi = 0] = timeStr.split(':').map(Number);
+  const local = new Date(y, mo - 1, d, h, mi, 0, 0);
+  const tzMin = -local.getTimezoneOffset();
+  const sign = tzMin >= 0 ? '+' : '-';
+  const abs = Math.abs(tzMin);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const off = `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
+  return `${local.getFullYear()}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}T${pad(local.getHours())}:${pad(local.getMinutes())}:00${off}`;
+}
+
 /* ─── Props ─── */
 
 interface Props {
@@ -191,6 +208,9 @@ export function ConsultationsPanel({
   const [phone,    setPhone]    = useState(userPhone);
   const [message,  setMessage]  = useState('');
   const [duration, setDuration] = useState<number>(60);
+  // Exact chosen slot (date + hour-aligned start) for the new booking.
+  const [bookDate, setBookDate] = useState<string | null>(null);
+  const [bookTime, setBookTime] = useState<string | null>(null);
   const [promoResult, setPromoResult] = useState<PromoResult | null>(null);
   const [useFreeCredit, setUseFreeCredit] = useState(false);
   // Free credits consumed in this client session (optimistic) — keeps the
@@ -222,6 +242,8 @@ export function ConsultationsPanel({
     setPhone(userPhone);
     setMessage('');
     setDuration(60);
+    setBookDate(null);
+    setBookTime(null);
     setPromoResult(null);
     // Members with a free session left expect it applied by default — same
     // behaviour as the public booking dialog.
@@ -231,9 +253,10 @@ export function ConsultationsPanel({
     setDialogOpen(true);
   }
 
-  /** When duration changes, reset any applied promo (base price changed). */
+  /** When duration changes, reset the chosen slot (which hours fit changes) and promo. */
   function handleDurationChange(val: string) {
     setDuration(Number(val));
+    setBookTime(null); // a longer/shorter session changes which starts fit
     setPromoResult(null); // reset so PromoCodeInput remounts fresh
   }
 
@@ -248,6 +271,10 @@ export function ConsultationsPanel({
     }
     if (message.trim().length < 10) {
       setError(t('errorMessageTooShort'));
+      return;
+    }
+    if (!bookDate || !bookTime) {
+      setError(t('errorPickSlot'));
       return;
     }
 
@@ -267,6 +294,9 @@ export function ConsultationsPanel({
             phone:   phone.trim(),
             message: message.trim(),
             durationMinutes: duration,
+            consultationDate: bookDate,
+            consultationTime: bookTime,
+            scheduledAt: buildLocalIso(bookDate, bookTime),
             // Promo is suppressed when a free credit applies (charge is already 0).
             promoCode: applyFreeCredit ? null : (promoResult?.code ?? null),
             // The server re-validates the quota — this flag is only a request.
@@ -292,7 +322,7 @@ export function ConsultationsPanel({
             id: data.id, mentorId: selectedMentorId, userId: null,
             userName, userEmail, userPhone: phone.trim(), message: message.trim(),
             status: (data.status as MentorBookingRecord['status']) ?? 'READY', adminNote: null,
-            consultationDate: null, consultationTime: null, durationMinutes: duration,
+            consultationDate: bookDate, consultationTime: bookTime, durationMinutes: duration,
             appliedPromoCode: promoResult?.code ?? null,
             promoDiscountPercent: promoResult ? promoResult.discountValue : null,
             createdAt: now, updatedAt: now,
@@ -305,66 +335,6 @@ export function ConsultationsPanel({
         setSaving(false);
       }
       return;
-    }
-
-    try {
-      const res = await fetch(`/api/mentors/${selectedMentorId}/book`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          name:             userName,
-          email:            userEmail,
-          phone:            phone.trim(),
-          message:          message.trim(),
-          consultationDate: null,
-          consultationTime: null,
-          durationMinutes:  duration,
-          promoCode:        promoResult?.code ?? null,
-        }),
-      });
-
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
-        throw new Error(d.error?.message ?? t('errorBookingFailed'));
-      }
-
-      const data = await res.json() as { id: string };
-      const mentor = mentors.find((m) => m.id === selectedMentorId);
-
-      setSuccess({
-        mentorName: mentor?.fullName ?? 'the mentor',
-        finalPrice,
-        isFree,
-      });
-
-      /* Optimistic insert with PENDING status */
-      const now = new Date().toISOString();
-      setBookings((prev) => [
-        {
-          id:                   data.id,
-          mentorId:             selectedMentorId,
-          userId:               null,
-          userName,
-          userEmail,
-          userPhone:            phone.trim(),
-          message:              message.trim(),
-          status:               'PENDING' as const,
-          adminNote:            null,
-          consultationDate:     null,
-          consultationTime:     null,
-          durationMinutes:      duration,
-          appliedPromoCode:     promoResult?.code ?? null,
-          promoDiscountPercent: promoResult ? promoResult.discountValue : null,
-          createdAt:            now,
-          updatedAt:            now,
-        },
-        ...prev,
-      ]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('errorGeneric'));
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -521,6 +491,7 @@ export function ConsultationsPanel({
               onSelectDate={(d) => { setResDate(d); setResTime(null); }}
               selectedTime={resTime}
               onSelectTime={(slot: DaySlot) => setResTime(slot.start)}
+              durationMinutes={resBooking.durationMinutes && resBooking.durationMinutes > 0 ? resBooking.durationMinutes : 60}
               locale={schedulerLocale}
             />
           )}
@@ -584,8 +555,10 @@ export function ConsultationsPanel({
                     value={selectedMentorId}
                     onValueChange={(v) => {
                       setSelectedMentorId(v);
-                      // Reset promo when mentor changes (fee may differ)
+                      // Reset promo + chosen slot when mentor changes (fee + agenda differ)
                       setPromoResult(null);
+                      setBookDate(null);
+                      setBookTime(null);
                     }}
                   >
                     <SelectTrigger>
@@ -641,6 +614,25 @@ export function ConsultationsPanel({
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Pick an exact date + hour-aligned slot (duration-aware). */}
+                {selectedMentorId && (
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1">
+                      <Timer className="size-3.5" /> {t('labelPickSlot')}
+                    </Label>
+                    <MentorScheduler
+                      key={selectedMentorId}
+                      mentorId={selectedMentorId}
+                      selectedDate={bookDate}
+                      onSelectDate={(d) => { setBookDate(d); setBookTime(null); }}
+                      selectedTime={bookTime}
+                      onSelectTime={(slot: DaySlot) => setBookTime(slot.start)}
+                      durationMinutes={duration}
+                      locale={schedulerLocale}
+                    />
+                  </div>
+                )}
 
                 {/* Unpriced mentor — say so plainly rather than implying "free". */}
                 {selectedMentor && !isPriced && (
@@ -792,7 +784,7 @@ export function ConsultationsPanel({
                 >
                   {tCommon('cancel')}
                 </Button>
-                <Button loading={saving} onClick={submit}>
+                <Button loading={saving} onClick={submit} disabled={!bookDate || !bookTime}>
                   {feePerHour > 0
                     ? (finalPrice === 0
                         ? t('sendRequestFree')
