@@ -169,8 +169,8 @@ export const consultantService = {
     city?: string | null;
     bio?: string | null;
     topics?: string[];
-    ratePer30?: number | null;
-    ratePer60?: number | null;
+    /** Live per-hour rate (DZD) — the canonical fee the charge engine reads. */
+    consultationFee?: number;
     freeIntroEnabled?: boolean | null;
   }) => apiClient.patch<{ mentor: ConsultantMentor }>('/consultant/profile', body),
 

@@ -18,7 +18,7 @@ import { findPublicMentorBySlugOrId } from '@/server/mentors/service';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
 import { toMentorDto } from '@/server/mentors/serialize';
 import { safeLinkedinUrl } from '@/lib/linkedin';
-import { DURATION_OPTIONS, computePrice } from '@/lib/consultation-pricing';
+import { DURATION_OPTIONS, computePrice, resolveMentorPricing } from '@/lib/consultation-pricing';
 import { formatCurrency } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 import { assertLandingVisible } from '@/lib/landing-visibility';
@@ -70,8 +70,8 @@ export default async function MentorProfilePage({ params }: PageProps) {
 
   const t = await getTranslations('mentors.profile');
   const linkedinHref = safeLinkedinUrl(mentor.linkedinUrl);
-  const feePerHour = mentor.consultationFee ?? 0;
-  const isFree = feePerHour <= 0;
+  // Canonical price resolution — one helper shared with both booking dialogs.
+  const { feePerHour, isPriced, freeIntro } = resolveMentorPricing(mentor);
 
   return (
     <Container className="py-10 sm:py-14">
@@ -152,27 +152,35 @@ export default async function MentorProfilePage({ params }: PageProps) {
           <section>
             <h2 className="text-lg font-semibold tracking-tight">{t('durationsTitle')}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {isFree ? t('freeIntro') : t('hourlyRate', { rate: formatCurrency(feePerHour, locale as Locale) })}
+              {isPriced ? t('hourlyRate', { rate: formatCurrency(feePerHour, locale as Locale) }) : t('pricingNotSet')}
             </p>
-            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-              {DURATION_OPTIONS.map((opt) => {
-                const price = computePrice(feePerHour, opt.value);
-                return (
-                  <li
-                    key={opt.value}
-                    className="flex items-center justify-between rounded-xl border border-border/60 bg-card px-4 py-3 text-sm"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Clock className="size-4 text-muted-foreground" />
-                      {opt.label}
-                    </span>
-                    <span className="font-medium tabular-nums">
-                      {isFree ? t('free') : formatCurrency(price, locale as Locale)}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+            {freeIntro && (
+              <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-primary">
+                <Sparkles className="size-3.5" />
+                {t('freeIntroBadge')}
+              </p>
+            )}
+            {isPriced && (
+              <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                {DURATION_OPTIONS.map((opt) => {
+                  const price = computePrice(feePerHour, opt.value);
+                  return (
+                    <li
+                      key={opt.value}
+                      className="flex items-center justify-between rounded-xl border border-border/60 bg-card px-4 py-3 text-sm"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Clock className="size-4 text-muted-foreground" />
+                        {opt.label}
+                      </span>
+                      <span className="font-medium tabular-nums">
+                        {formatCurrency(price, locale as Locale)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </section>
         </div>
 
@@ -180,11 +188,11 @@ export default async function MentorProfilePage({ params }: PageProps) {
         <div className="lg:col-span-2">
           <div className="sticky top-20 space-y-5 rounded-2xl border border-border bg-card p-6 shadow-sm">
             <div className="border-b border-border pb-4 text-center">
-              <p className="text-3xl font-bold tabular-nums">
-                {isFree ? t('free') : formatCurrency(feePerHour, locale as Locale)}
+              <p className={`font-bold tabular-nums ${isPriced ? 'text-3xl' : 'text-lg'}`}>
+                {isPriced ? formatCurrency(feePerHour, locale as Locale) : t('pricingNotSet')}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {isFree ? t('freeConsultations') : t('perHour')}
+                {isPriced ? t('perHour') : freeIntro ? t('freeIntroBadge') : t('pricingNotSetHint')}
               </p>
             </div>
 

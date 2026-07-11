@@ -170,16 +170,18 @@ export const consultantAvailabilitySchema = availabilityObject
 export type ConsultantAvailabilityPatch = z.infer<typeof consultantAvailabilitySchema>;
 
 /**
- * The consultant's own profile editor: bio, expertise topics, the display-only
- * 30/60-min rates, the free-intro flag, and the instant-book meeting defaults.
- * NOTE: the live per-hour `consultationFee` is intentionally NOT editable here —
- * it stays admin-controlled because it drives what clients are actually charged.
+ * The consultant's own profile editor: bio, expertise topics, the live per-hour
+ * `consultationFee`, the free-intro flag, and the instant-book meeting defaults.
+ * The consultant sets their OWN hourly rate here — it routes through the same
+ * canonical `updateMentor.consultationFee` the admin form writes and the charge
+ * engine reads, so the public profile and booking dialogs reflect the true
+ * price. Sessions are still priced pro-rata by duration (`computePrice`); no
+ * pricing/commission math changes.
  */
 export const consultantProfileSchema = z.object({
   bio: z.string().max(2000).nullable().optional(),
   topics: z.array(z.string().min(1).max(60)).max(20).optional(),
-  ratePer30: z.number().int().min(0).max(1_000_000).nullable().optional(),
-  ratePer60: z.number().int().min(0).max(1_000_000).nullable().optional(),
+  consultationFee: z.number().int().min(0).max(1_000_000).optional(),
   freeIntroEnabled: z.boolean().nullable().optional(),
   // Contact phone (the consultant's WhatsApp recipient) + public city. The
   // portal enforces phone as required client-side; the schema stays lenient so
