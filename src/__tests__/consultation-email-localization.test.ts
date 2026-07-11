@@ -109,7 +109,7 @@ describe('sendConsultationReadyOnce — locale resolution + once guard', () => {
     });
     await sendConsultationReadyOnce('b-loc');
     expect(readySpy).toHaveBeenCalledOnce();
-    expect(readySpy.mock.calls[0][0].lang).toBe('ar');
+    expect(readySpy.mock.calls[0]![0].lang).toBe('ar');
   });
 
   it('falls back to the booking locale for a guest (ar)', async () => {
@@ -119,7 +119,7 @@ describe('sendConsultationReadyOnce — locale resolution + once guard', () => {
       d.mentorBookings = [readyBooking({ userId: null, guestLocale: 'ar' }) as never];
     });
     await sendConsultationReadyOnce('b-loc');
-    expect(readySpy.mock.calls[0][0].lang).toBe('ar');
+    expect(readySpy.mock.calls[0]![0].lang).toBe('ar');
   });
 
   it('sends exactly once (linkSentAt guard preserved)', async () => {

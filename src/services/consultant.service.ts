@@ -143,6 +143,8 @@ export const consultantService = {
     phone: string;
     city?: string | null;
     field?: string | null;
+    /** Data-processing consent (Law 18-07) — must be true; server enforces it too. */
+    acceptPrivacy: boolean;
   }) => apiClient.post<{ ok: true }>('/consultant/signup', body),
 
   // ── Email → OTP sign-in (untrusted device / first sign-in) ──

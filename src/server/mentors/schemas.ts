@@ -60,6 +60,12 @@ export const consultantSignupSchema = z.object({
   bio: z.string().max(2000).optional().nullable(),
   /** Consultation domain (e.g. "Fiscalité"). Optional & additive. */
   field: z.string().max(160).optional().nullable(),
+  /**
+   * Explicit data-processing consent — required by Algerian Law 18-07 (Art. 14).
+   * Must be literally `true`; a missing/false value is rejected with the shared
+   * `privacyRequired` message (same strictness as the entrepreneur signup).
+   */
+  acceptPrivacy: z.literal(true, { errorMap: () => ({ message: 'privacyRequired' }) }),
 });
 export type ConsultantSignupInput = z.infer<typeof consultantSignupSchema>;
 
