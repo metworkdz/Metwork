@@ -147,8 +147,44 @@ export function welcomeEmailHtml(opts: { fullName: string; role: string; dashboa
 export type EmailLang = 'en' | 'fr' | 'ar';
 
 /** Normalize any incoming locale to a supported email locale (default fr). */
-function normalizeEmailLang(lang?: string): EmailLang {
+export function normalizeEmailLang(lang?: string | null): EmailLang {
   return lang === 'en' ? 'en' : lang === 'ar' ? 'ar' : 'fr';
+}
+
+/** Intl locale used to render dates/times per email locale. */
+const EMAIL_LOCALE: Record<EmailLang, string> = { en: 'en-GB', fr: 'fr-DZ', ar: 'ar-DZ' };
+
+/**
+ * Resolve the EXACT confirmed date + start time for display, preferring the
+ * authoritative `consultationDate`/`consultationTime` fields (set at booking
+ * time) and falling back to `scheduledAt` for legacy bookings. The date is
+ * formatted long-form in the email locale; the start time is the mentor-local
+ * "HH:MM" as stored (no timezone reinterpretation). Anchoring the explicit date
+ * at UTC-noon keeps the day stable regardless of the server timezone.
+ */
+export function formatEmailSlot(
+  lang: EmailLang,
+  input: { scheduledAt?: string | null; consultationDate?: string | null; consultationTime?: string | null },
+): { date: string | null; time: string | null } {
+  const loc = EMAIL_LOCALE[lang];
+  if (input.consultationDate) {
+    let date = input.consultationDate;
+    const anchored = new Date(`${input.consultationDate}T12:00:00Z`);
+    if (!Number.isNaN(anchored.getTime())) {
+      date = anchored.toLocaleDateString(loc, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+    }
+    return { date, time: input.consultationTime || null };
+  }
+  if (input.scheduledAt) {
+    const d = new Date(input.scheduledAt);
+    if (!Number.isNaN(d.getTime())) {
+      return {
+        date: d.toLocaleDateString(loc, { year: 'numeric', month: 'long', day: 'numeric' }),
+        time: d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false }),
+      };
+    }
+  }
+  return { date: null, time: null };
 }
 
 interface IncubatorApprovalCopy {
@@ -758,6 +794,45 @@ export function passwordResetEmailHtml(link: string): string {
 }
 
 /** Sent to the client once their paid consultation has a confirmed meeting format (READY). */
+interface ConsultationReadyCopy {
+  heading: string;
+  intro: (client: string, mentor: string) => string;
+  dateLabel: string;
+  timeLabel: string;
+  durationLabel: string;
+  minutes: string;
+  inPerson: string;
+  joinCta: string;
+  orCopy: string;
+  addressLabel: string;
+  mapsCta: string;
+}
+
+/** Localized copy for the client "consultation ready / confirmed" email. */
+const CONSULTATION_READY_COPY: Record<EmailLang, ConsultationReadyCopy> = {
+  en: {
+    heading: 'Your consultation is ready',
+    intro: (c, m) => `Hi ${c}, your session with ${m} is confirmed.`,
+    dateLabel: 'Date', timeLabel: 'Start time', durationLabel: 'Duration', minutes: 'min',
+    inPerson: 'Format: in person', joinCta: 'Join the meeting', orCopy: 'Or copy this link:',
+    addressLabel: 'Address', mapsCta: 'Open in Google Maps',
+  },
+  fr: {
+    heading: 'Votre consultation est prête',
+    intro: (c, m) => `Bonjour ${c}, votre session avec ${m} est confirmée.`,
+    dateLabel: 'Date', timeLabel: 'Heure de début', durationLabel: 'Durée', minutes: 'min',
+    inPerson: 'Format : en présentiel', joinCta: 'Rejoindre la réunion', orCopy: 'Ou copiez ce lien :',
+    addressLabel: 'Adresse', mapsCta: 'Ouvrir dans Google Maps',
+  },
+  ar: {
+    heading: 'استشارتك جاهزة',
+    intro: (c, m) => `مرحبًا ${c}، تم تأكيد جلستك مع ${m}.`,
+    dateLabel: 'التاريخ', timeLabel: 'وقت البدء', durationLabel: 'المدة', minutes: 'دقيقة',
+    inPerson: 'النوع: حضوري', joinCta: 'الانضمام إلى الاجتماع', orCopy: 'أو انسخ هذا الرابط:',
+    addressLabel: 'العنوان', mapsCta: 'فتح في خرائط Google',
+  },
+};
+
 export function consultationReadyEmailHtml(params: {
   clientName: string;
   mentorName: string;
@@ -768,38 +843,41 @@ export function consultationReadyEmailHtml(params: {
   /** Google Maps link for the in-person address (OFFLINE). */
   meetingMapsLink?: string | null;
   scheduledAt: string | null;
+  /** Exact confirmed fields (preferred over scheduledAt when present). */
+  consultationDate?: string | null;
+  consultationTime?: string | null;
   durationMinutes: number | null;
-  lang: 'en' | 'fr';
+  lang: EmailLang;
 }): string {
-  const isFr = params.lang === 'fr';
-  const slot = params.scheduledAt
-    ? new Date(params.scheduledAt).toLocaleString(isFr ? 'fr-DZ' : 'en-GB', { dateStyle: 'long', timeStyle: 'short' })
-    : null;
-  const dur = params.durationMinutes ? `${params.durationMinutes} min` : null;
+  const lang = normalizeEmailLang(params.lang);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const c = CONSULTATION_READY_COPY[lang];
+  const { date, time } = formatEmailSlot(lang, params);
   const details = [
-    slot ? `${isFr ? 'Date' : 'Date'} : ${slot}` : null,
-    dur ? `${isFr ? 'Durée' : 'Duration'} : ${dur}` : null,
-    params.meetingMode === 'OFFLINE' ? (isFr ? 'Format : en présentiel' : 'Format: in person') : null,
+    date ? `${c.dateLabel} : ${date}` : null,
+    time ? `${c.timeLabel} : ${time}` : null,
+    params.durationMinutes ? `${c.durationLabel} : ${params.durationMinutes} ${c.minutes}` : null,
+    params.meetingMode === 'OFFLINE' ? c.inPerson : null,
   ].filter(Boolean).join('<br />');
 
   return layout(`
-    ${h1(isFr ? 'Votre consultation est prête' : 'Your consultation is ready')}
-    ${p(isFr
-      ? `Bonjour ${params.clientName}, votre session avec ${params.mentorName} est confirmée.`
-      : `Hi ${params.clientName}, your session with ${params.mentorName} is confirmed.`)}
+    <div dir="${dir}">
+    ${h1(c.heading)}
+    ${p(c.intro(params.clientName, params.mentorName))}
     ${details ? p(`<span style="color:#3f3f46;">${details}</span>`) : ''}
     ${params.meetingMode === 'ONLINE' && params.meetingLink
-      ? button(params.meetingLink, isFr ? 'Rejoindre la réunion' : 'Join the meeting')
+      ? button(params.meetingLink, c.joinCta)
       : ''}
     ${params.meetingMode === 'ONLINE' && params.meetingLink
-      ? p(`<span style="color:#71717a;font-size:13px;">${isFr ? 'Ou copiez ce lien :' : 'Or copy this link:'}<br /><span style="word-break:break-all;">${params.meetingLink}</span></span>`)
+      ? p(`<span style="color:#71717a;font-size:13px;">${c.orCopy}<br /><span style="word-break:break-all;">${params.meetingLink}</span></span>`)
       : ''}
     ${params.meetingMode === 'OFFLINE' && params.meetingAddress
-      ? p(`<span style="color:#3f3f46;">${isFr ? 'Adresse' : 'Address'} : ${params.meetingAddress}</span>`)
+      ? p(`<span style="color:#3f3f46;">${c.addressLabel} : ${params.meetingAddress}</span>`)
       : ''}
     ${params.meetingMode === 'OFFLINE' && params.meetingMapsLink
-      ? button(params.meetingMapsLink, isFr ? 'Ouvrir dans Google Maps' : 'Open in Google Maps')
+      ? button(params.meetingMapsLink, c.mapsCta)
       : ''}
+    </div>
   `);
 }
 
@@ -808,35 +886,79 @@ export function consultationReadyEmailHtml(params: {
  * only a NON-PII summary (date / duration / format) — the client's contact
  * details live behind the PIN-gated consultant portal, linked via the button.
  */
+interface ConsultantNewBookingCopy {
+  heading: string;
+  intro: (consultant: string) => string;
+  dateLabel: string;
+  timeLabel: string;
+  durationLabel: string;
+  minutes: string;
+  typeLabel: string;
+  online: string;
+  inPerson: string;
+  cta: string;
+  piiNote: string;
+}
+
+/** Localized copy for the consultant "new booking" notification email. */
+const CONSULTANT_NEW_BOOKING_COPY: Record<EmailLang, ConsultantNewBookingCopy> = {
+  en: {
+    heading: 'New consultation booked',
+    intro: (n) => `Hello ${n}, a new consultation has just been booked and confirmed.`,
+    dateLabel: 'Date', timeLabel: 'Start time', durationLabel: 'Duration', minutes: 'min',
+    typeLabel: 'Type', online: 'Online', inPerson: 'In person', cta: 'View the booking',
+    piiNote: 'The client’s contact details are available in your consultant portal, protected by your PIN.',
+  },
+  fr: {
+    heading: 'Nouvelle consultation réservée',
+    intro: (n) => `Bonjour ${n}, une nouvelle consultation vient d'être réservée et confirmée.`,
+    dateLabel: 'Date', timeLabel: 'Heure de début', durationLabel: 'Durée', minutes: 'min',
+    typeLabel: 'Type', online: 'En ligne', inPerson: 'En présentiel', cta: 'Voir la réservation',
+    piiNote: 'Les coordonnées du client sont disponibles dans votre espace consultant, protégé par votre code PIN.',
+  },
+  ar: {
+    heading: 'حجز استشارة جديدة',
+    intro: (n) => `مرحبًا ${n}، تم حجز وتأكيد استشارة جديدة للتو.`,
+    dateLabel: 'التاريخ', timeLabel: 'وقت البدء', durationLabel: 'المدة', minutes: 'دقيقة',
+    typeLabel: 'النوع', online: 'عبر الإنترنت', inPerson: 'حضوري', cta: 'عرض الحجز',
+    piiNote: 'تتوفر بيانات اتصال العميل في مساحة المستشار الخاصة بك، محمية برمزك السري (PIN).',
+  },
+};
+
 export function consultantNewBookingEmailHtml(params: {
   consultantName: string;
-  when: string | null;
+  scheduledAt?: string | null;
+  /** Exact confirmed fields (preferred over scheduledAt when present). */
+  consultationDate?: string | null;
+  consultationTime?: string | null;
   durationMinutes: number | null;
   meetingMode: 'ONLINE' | 'OFFLINE' | null;
   portalUrl: string;
-  lang: 'en' | 'fr';
+  lang: EmailLang;
 }): string {
-  const isFr = params.lang === 'fr';
-  const typeLabel =
-    params.meetingMode === 'ONLINE' ? (isFr ? 'En ligne' : 'Online')
-    : params.meetingMode === 'OFFLINE' ? (isFr ? 'En présentiel' : 'In person')
+  const lang = normalizeEmailLang(params.lang);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const c = CONSULTANT_NEW_BOOKING_COPY[lang];
+  const { date, time } = formatEmailSlot(lang, params);
+  const typeText =
+    params.meetingMode === 'ONLINE' ? c.online
+    : params.meetingMode === 'OFFLINE' ? c.inPerson
     : null;
   const details = [
-    params.when ? `${isFr ? 'Date' : 'Date'} : ${params.when}` : null,
-    params.durationMinutes ? `${isFr ? 'Durée' : 'Duration'} : ${params.durationMinutes} min` : null,
-    typeLabel ? `${isFr ? 'Type' : 'Type'} : ${typeLabel}` : null,
+    date ? `${c.dateLabel} : ${date}` : null,
+    time ? `${c.timeLabel} : ${time}` : null,
+    params.durationMinutes ? `${c.durationLabel} : ${params.durationMinutes} ${c.minutes}` : null,
+    typeText ? `${c.typeLabel} : ${typeText}` : null,
   ].filter(Boolean).join('<br />');
 
   return layout(`
-    ${h1(isFr ? 'Nouvelle consultation réservée' : 'New consultation booked')}
-    ${p(isFr
-      ? `Bonjour ${params.consultantName}, une nouvelle consultation vient d'être réservée et confirmée.`
-      : `Hello ${params.consultantName}, a new consultation has just been booked and confirmed.`)}
+    <div dir="${dir}">
+    ${h1(c.heading)}
+    ${p(c.intro(params.consultantName))}
     ${details ? p(`<span style="color:#3f3f46;">${details}</span>`) : ''}
-    ${button(params.portalUrl, isFr ? 'Voir la réservation' : 'View the booking')}
-    ${p(`<span style="color:#71717a;font-size:13px;">${isFr
-      ? 'Les coordonnées du client sont disponibles dans votre espace consultant, protégé par votre code PIN.'
-      : 'The client’s contact details are available in your consultant portal, protected by your PIN.'}</span>`)}
+    ${button(params.portalUrl, c.cta)}
+    ${p(`<span style="color:#71717a;font-size:13px;">${c.piiNote}</span>`)}
+    </div>
   `);
 }
 

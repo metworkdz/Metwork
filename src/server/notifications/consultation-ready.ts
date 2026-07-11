@@ -10,6 +10,7 @@
 import { db, type MentorBookingRecord } from '@/server/db/store';
 import { findMentorById } from '@/server/mentors/service';
 import { sendConsultationReadyEmail } from '@/server/notifications/mock';
+import { normalizeEmailLang } from '@/server/notifications/email';
 
 export async function sendConsultationReadyOnce(bookingId: string): Promise<void> {
   // Claim the send: only when the booking is READY and hasn't notified yet.
@@ -25,7 +26,14 @@ export async function sendConsultationReadyOnce(bookingId: string): Promise<void
 
   const mentor = await findMentorById(claim.booking.mentorId);
   if (!mentor) return;
-  const lang: 'en' | 'fr' = claim.booking.guestLocale === 'en' ? 'en' : 'fr';
+  // Localize to the CLIENT's SAVED profile locale (registered users) — the
+  // authoritative source — falling back to the booking's request-time locale for
+  // guests. Supports en/fr/ar (was en/fr only, ignoring the saved locale).
+  const data = await db.read();
+  const user = claim.booking.userId
+    ? (data.users ?? []).find((u) => u.id === claim.booking.userId)
+    : null;
+  const lang = normalizeEmailLang(user?.locale ?? claim.booking.guestLocale);
   // Awaited: on Vercel the lambda freezes once the response is sent — an
   // unawaited send would be killed and the claim stamp burned with no email.
   await sendConsultationReadyEmail({ booking: claim.booking, mentor, lang });
