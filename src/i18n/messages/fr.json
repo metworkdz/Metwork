@@ -20,6 +20,8 @@
       "cityLabel": "Ville",
       "optionalHint": "(facultatif)",
       "reviewNote": "En créant un compte, vous acceptez d'être contacté au sujet de votre candidature. Votre profil reste privé jusqu'à son approbation.",
+      "privacyAgreement": "J'accepte la <privacyLink>politique de confidentialité</privacyLink> et consens au traitement de mes données personnelles conformément à la loi algérienne 18-07",
+      "privacyRequired": "Vous devez accepter la politique de confidentialité et le traitement des données pour continuer",
       "submit": "Créer le compte",
       "alreadyHaveAccount": "Vous avez déjà un compte ?",
       "backToSignIn": "Se connecter",

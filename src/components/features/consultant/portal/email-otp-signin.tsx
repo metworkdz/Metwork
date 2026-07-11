@@ -96,12 +96,14 @@ export function EmailOtpSignIn() {
   const [resendIn, setResendIn] = useState(0);
 
   /* Self-signup form state */
-  const locale = calLocale(useLocale());
+  const routeLocale = useLocale();
+  const locale = calLocale(routeLocale);
   const [fullName, setFullName] = useState('');
   const [position, setPosition] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
   const [field, setField] = useState('');
+  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   /* CV is held client-side until the OTP verify mints a session — the upload
      endpoint is session-guarded, so the file goes up right after verification. */
   const [cvFile, setCvFile] = useState<File | null>(null);
@@ -161,6 +163,7 @@ export function EmailOtpSignIn() {
         phone: phone.trim(),
         city: city.trim() || null,
         field: field || null,
+        acceptPrivacy,
       });
       setStep('code');
       setResendIn(30);
@@ -400,11 +403,39 @@ export function EmailOtpSignIn() {
               {cvFieldError && <p className="text-sm text-red-400">{cvFieldError}</p>}
             </div>
             <p className="text-[11px] leading-relaxed text-white/40">{ts('reviewNote')}</p>
+
+            {/* Explicit data-processing consent — Law 18-07 (required) */}
+            <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-white/60">
+              <input
+                type="checkbox"
+                checked={acceptPrivacy}
+                onChange={(e) => setAcceptPrivacy(e.target.checked)}
+                disabled={busy}
+                className="mt-0.5 size-4 shrink-0 rounded border-white/20 bg-transparent"
+                style={{ accentColor: CP_GREEN }}
+              />
+              <span>
+                {ts.rich('privacyAgreement', {
+                  privacyLink: (chunks) => (
+                    <a
+                      href={`/${routeLocale}/privacy-policy`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium underline underline-offset-2"
+                      style={{ color: CP_GREEN }}
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                })}
+              </span>
+            </label>
+
             <BrandButton
               type="submit" loading={busy}
               disabled={
                 fullName.trim().length < 2 || position.trim().length < 2 || !email.trim() ||
-                phone.trim().length < 6 || !city || !field || !cvFile
+                phone.trim().length < 6 || !city || !field || !cvFile || !acceptPrivacy
               }
               className="w-full"
             >

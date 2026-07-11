@@ -1796,6 +1796,14 @@ export interface MentorRecord {
   avatarUrl?: string | null;
   /** ISO timestamp of the last mutation. Absent on records untouched since the field shipped. */
   updatedAt?: string;
+
+  // ─── Data-processing consent (Algerian Law 18-07) ────────────────────────
+  // Captured at self-signup (public form). Both additive & optional: legacy /
+  // admin-created records simply lack them.
+  /** True when the consultant explicitly consented to data processing at signup. */
+  privacyConsent?: boolean;
+  /** ISO timestamp the consent was given (server-stamped). Null/absent ⇒ not recorded. */
+  privacyAcceptedAt?: string | null;
 }
 
 /* ─────────────────── CRM — Clients ─────────────────── */

@@ -185,6 +185,11 @@ export async function createSelfSignupMentor(input: {
       // Self-signups are NEVER on public list surfaces, even once approved —
       // clients reach them via the direct slug/booking link only.
       publiclyListed: false,
+      // Data-processing consent (Law 18-07). The signup schema requires
+      // `acceptPrivacy === true`, so by the time we create the record consent is
+      // validated — stamp it with a server-side timestamp for the audit trail.
+      privacyConsent: true,
+      privacyAcceptedAt: now,
     };
     d.mentors.push(record);
     return { ok: true, mentor: record };

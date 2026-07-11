@@ -20,6 +20,8 @@
       "cityLabel": "City",
       "optionalHint": "(optional)",
       "reviewNote": "By creating an account you agree to be contacted about your application. Your profile stays private until approved.",
+      "privacyAgreement": "I accept the <privacyLink>privacy policy</privacyLink> and consent to the processing of my personal data in accordance with Algerian Law 18-07",
+      "privacyRequired": "You must accept the privacy policy and data processing to continue",
       "submit": "Create account",
       "alreadyHaveAccount": "Already have an account?",
       "backToSignIn": "Sign in",
