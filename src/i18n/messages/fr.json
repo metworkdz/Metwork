@@ -3824,6 +3824,8 @@
       "rejectReasonPlaceholder": "Expliquez ce qui manque ou pourquoi le profil n'a pas été approuvé…",
       "rosterCount": "{count} mentor{count, plural, one {} other {s}} dans le registre",
       "addMentor": "Ajouter un mentor",
+      "exportCsv": "Exporter en CSV",
+      "exportEmails": "Exporter les e-mails",
       "emptyTitle": "Aucun mentor pour l'instant",
       "emptyDescription": "Ajoutez le premier mentor pour alimenter le carrousel de la page d'accueil.",
       "actionsFor": "Actions pour {name}",

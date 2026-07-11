@@ -3824,6 +3824,8 @@
       "rejectReasonPlaceholder": "Explain what is missing or why the profile was not approved…",
       "rosterCount": "{count} mentor{count, plural, one {} other {s}} in the roster",
       "addMentor": "Add mentor",
+      "exportCsv": "Export CSV",
+      "exportEmails": "Export emails",
       "emptyTitle": "No mentors yet",
       "emptyDescription": "Add the first mentor to populate the landing-page carousel.",
       "actionsFor": "Actions for {name}",

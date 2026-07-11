@@ -3824,6 +3824,8 @@
       "rejectReasonPlaceholder": "اشرح ما هو ناقص أو سبب عدم الموافقة على الملف…",
       "rosterCount": "{count} مرشد في القائمة",
       "addMentor": "إضافة مرشد",
+      "exportCsv": "تصدير CSV",
+      "exportEmails": "تصدير البريد الإلكتروني",
       "emptyTitle": "لا يوجد مرشدون بعد",
       "emptyDescription": "أضف أول مرشد لتعبئة الكاروسيل في الصفحة الرئيسية.",
       "actionsFor": "إجراءات لـ {name}",

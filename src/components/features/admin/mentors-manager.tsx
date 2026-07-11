@@ -11,7 +11,7 @@
  */
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { CalendarClock, CheckCircle2, EyeOff, FileSearch, FileText, Globe, MoreVertical, Pencil, Plus, Trash2, UserPlus, XCircle } from 'lucide-react';
+import { CalendarClock, CheckCircle2, Download, EyeOff, FileSearch, FileText, Globe, Mail, MoreVertical, Pencil, Plus, Trash2, UserPlus, XCircle } from 'lucide-react';
 import { getConsultationFieldLabel } from '@/config/consultation-fields';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,11 +32,28 @@ import {
 } from '@/components/ui/dialog';
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { mentorsService } from '@/services/mentors.service';
+import { buildMentorsCsv, buildMentorEmails } from '@/lib/mentor-export';
 import { ApiClientError } from '@/lib/api-client';
 import { MentorFormDialog } from './mentor-form-dialog';
 import { MentorAvailabilityDialog } from './mentor-availability-dialog';
 import { LandingMentorCard } from '@/components/features/mentors/landing-mentor-card';
 import type { Mentor } from '@/types/mentor';
+
+/** Today as YYYY-MM-DD, for export filenames. */
+function todayStamp(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Trigger a client-side file download from an in-memory string (no libraries). */
+function downloadText(content: string, mime: string, filename: string): void {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export function MentorsManager({ initial }: { initial: Mentor[] }) {
   const t = useTranslations('admin.mentorsManager');
@@ -65,6 +82,16 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
   function openEdit(m: Mentor) {
     setEditing(m);
     setFormOpen(true);
+  }
+
+  /** Export the full roster as a CSV (all mentors, not any filtered view). */
+  function exportCsv() {
+    downloadText(buildMentorsCsv(mentors), 'text/csv;charset=utf-8', `metwork-mentors-${todayStamp()}.csv`);
+  }
+
+  /** Export a clean, de-duplicated list of mentor emails. */
+  function exportEmails() {
+    downloadText(buildMentorEmails(mentors), 'text/plain;charset=utf-8', `metwork-mentor-emails-${todayStamp()}.txt`);
   }
 
   function onSaved(saved: Mentor) {
@@ -141,14 +168,24 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-4 rounded-md border border-border/60 bg-muted/30 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-border/60 bg-muted/30 px-4 py-3">
         <p className="text-sm text-muted-foreground">
           {t('rosterCount', { count: mentors.length })}
         </p>
-        <Button size="sm" onClick={openCreate}>
-          <Plus />
-          {t('addMentor')}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={exportCsv}>
+            <Download />
+            {t('exportCsv')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportEmails}>
+            <Mail />
+            {t('exportEmails')}
+          </Button>
+          <Button size="sm" onClick={openCreate}>
+            <Plus />
+            {t('addMentor')}
+          </Button>
+        </div>
       </div>
 
       {approvalError && !rejecting && (
