@@ -9,6 +9,7 @@ import { MentorsDirectory } from '@/components/features/mentors/mentors-director
 import { listPublicMentors } from '@/server/mentors/service';
 import { toMentorDto } from '@/server/mentors/serialize';
 import { assertLandingVisible } from '@/lib/landing-visibility';
+import { isInstantBookEnabled } from '@/server/consultations/instant-book';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,7 +87,7 @@ export default async function MentorsPage({ params }: PageProps) {
       {/* ── Directory grid ── */}
       <section id="mentors" className="scroll-mt-20 py-10 sm:py-20">
         <Container>
-          <MentorsDirectory mentors={mentors} />
+          <MentorsDirectory mentors={mentors} instantBookEnabled={isInstantBookEnabled()} />
         </Container>
       </section>
 

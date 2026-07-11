@@ -688,45 +688,61 @@ export function BookConsultationDialog({
                 </span>
               </button>
 
-              {/* Personal info */}
-              <div className="space-y-1.5">
-                <Label htmlFor="bc-name">{t('fullNameLabel')}</Label>
-                <Input
-                  id="bc-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t('fullNamePlaceholder')}
-                  required
-                  disabled={formState === 'submitting'}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="bc-email">{t('emailLabel')}</Label>
-                  <Input
-                    id="bc-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                    disabled={formState === 'submitting'}
-                  />
+              {/* Personal info — collected only from guests. A logged-in
+                  user's name/email/phone come from their account (filled in
+                  server-side from the session), so we show a read-only
+                  confirmation line instead of asking them to retype it. */}
+              {isGuest ? (
+                <>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="bc-name">{t('fullNameLabel')}</Label>
+                    <Input
+                      id="bc-name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder={t('fullNamePlaceholder')}
+                      required
+                      disabled={formState === 'submitting'}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bc-email">{t('emailLabel')}</Label>
+                      <Input
+                        id="bc-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        required
+                        disabled={formState === 'submitting'}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bc-phone">{t('phoneLabel')}</Label>
+                      <Input
+                        id="bc-phone"
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="+213 555 00 00 00"
+                        required
+                        dir="ltr"
+                        disabled={formState === 'submitting'}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : user && (
+                <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5 text-sm">
+                  <Mail className="size-4 shrink-0 text-primary" />
+                  <span className="min-w-0 flex-1 truncate">
+                    <span className="text-muted-foreground">{t('bookingAsLabel')}: </span>
+                    <span className="font-medium">{user.fullName}</span>
+                    <span className="text-muted-foreground"> · {user.email}</span>
+                  </span>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="bc-phone">{t('phoneLabel')}</Label>
-                  <Input
-                    id="bc-phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+213 555 00 00 00"
-                    required
-                    dir="ltr"
-                    disabled={formState === 'submitting'}
-                  />
-                </div>
-              </div>
+              )}
 
               {/* Message */}
               <div className="space-y-1.5">

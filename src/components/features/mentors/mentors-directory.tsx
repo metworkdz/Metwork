@@ -28,11 +28,19 @@ import type { Mentor } from '@/types/mentor';
 
 interface MentorsDirectoryProps {
   mentors: Mentor[];
+  /**
+   * Route bookings through the instant-book, pay-first flow (resolved server-side
+   * from the parent RSC). Without it the dialog defaults to the legacy
+   * request-then-approve path, whose endpoint is now a retired 410 tombstone —
+   * so a logged-in user booking from the directory would fail. Mirror the mentor
+   * profile / dashboard call-sites.
+   */
+  instantBookEnabled?: boolean;
 }
 
 const ALL = '__all__';
 
-export function MentorsDirectory({ mentors }: MentorsDirectoryProps) {
+export function MentorsDirectory({ mentors, instantBookEnabled = false }: MentorsDirectoryProps) {
   const t = useTranslations('mentors.directory');
   const { user } = useAuth();
   const router = useRouter();
@@ -215,6 +223,7 @@ export function MentorsDirectory({ mentors }: MentorsDirectoryProps) {
         mentor={booking}
         open={booking !== null}
         onOpenChange={(open) => { if (!open) setBooking(null); }}
+        instantBookEnabled={instantBookEnabled}
       />
     </div>
   );
