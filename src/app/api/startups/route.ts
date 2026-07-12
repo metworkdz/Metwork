@@ -6,6 +6,7 @@
 import type { NextRequest } from 'next/server';
 import { ZodError } from 'zod';
 import { requireApiSession } from '@/server/auth/api-guards';
+import { getEffectiveMembershipCode } from '@/server/memberships/service';
 import { createStartupSchema } from '@/server/startups/schemas';
 import { createStartup, listStartups } from '@/server/startups/service';
 import { toStartupDto } from '@/server/startups/serialize';
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
   if (guard.user.role !== 'ENTREPRENEUR') {
     return jsonError(403, 'FORBIDDEN', 'Only entrepreneurs can create startup listings');
   }
-  if (!guard.user.membershipCode) {
+  if (getEffectiveMembershipCode(guard.user) === 'FREE') {
     return jsonError(403, 'MEMBERSHIP_REQUIRED', 'An active startup membership is required');
   }
 
