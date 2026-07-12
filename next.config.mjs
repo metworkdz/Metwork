@@ -110,7 +110,8 @@ const nextConfig = {
               "default-src 'self'",
               scriptSrc,
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https://res.cloudinary.com https://metwork.dz https://*.supabase.co",
+              // api.qrserver.com renders the QR image on the public voucher verify page (plain <img>, no JS dep).
+              "img-src 'self' data: blob: https://res.cloudinary.com https://metwork.dz https://*.supabase.co https://api.qrserver.com",
               "font-src 'self'",
               "connect-src 'self' https://*.sentry.io https://*.supabase.co https://api.resend.com",
               "frame-ancestors 'none'",

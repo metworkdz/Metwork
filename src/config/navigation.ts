@@ -176,6 +176,7 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.investors',     href: '/dashboard/admin/investors',       icon: TrendingUp },
     { labelKey: 'dashboard.memberships',      href: '/dashboard/admin/memberships',          icon: CreditCard },
     { labelKey: 'dashboard.promoCodes',       href: '/dashboard/admin/promo-codes',          icon: Tag        },
+    { labelKey: 'dashboard.perks',            href: '/dashboard/admin/perks',                icon: Gift       },
     { labelKey: 'dashboard.partnerNetwork',   href: '/dashboard/admin/partners',             icon: Network    },
     { labelKey: 'dashboard.partnerPromoCodes',href: '/dashboard/admin/partner-promo-codes',  icon: Tag        },
     { labelKey: 'dashboard.commissions',   href: '/dashboard/admin/commissions',     icon: TrendingUp },

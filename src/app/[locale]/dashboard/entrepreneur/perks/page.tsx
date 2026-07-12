@@ -6,6 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { requireRole } from '@/lib/auth-guards';
 import { getEffectiveMembershipCode } from '@/server/memberships/service';
+import { readSession } from '@/server/auth/session';
+import { listPerksForUser } from '@/server/perks/service';
+import { PartnerPerksGrid } from '@/components/features/entrepreneur/partner-perks-grid';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -95,12 +98,26 @@ export default async function PerksPage({ params }: PageProps) {
 
   const isStartup = effectiveCode === 'STARTUP';
 
+  // Partner Perks — claimable offers, filtered server-side to the user's tier.
+  // listPerksForUser needs the full UserRecord (requireRole returns the
+  // stripped SessionUser); readSession is the pattern other RSCs use for this.
+  const session = await readSession();
+  const partnerPerks = session ? await listPerksForUser(session.user) : [];
+
   return (
     <div className="space-y-6">
       <DashboardPageHeader
         title={t('entrepreneur.perks.title')}
         subtitle={t('entrepreneur.perks.subtitle')}
       />
+
+      {/* Partner perks — claimable partner offers (CODE_POOL / VOUCHER) */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {t('entrepreneur.perks.partnerSection')}
+        </h2>
+        <PartnerPerksGrid perks={partnerPerks} />
+      </section>
 
       {/* ENTREPRENEUR perks — available to ENTREPRENEUR and STARTUP */}
       <section className="space-y-3">

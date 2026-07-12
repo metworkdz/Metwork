@@ -2181,7 +2181,17 @@
         },
         "perks": {
           "title": "Member Perks",
-          "subtitle": "Exclusive benefits included with your membership."
+          "subtitle": "Exclusive benefits included with your membership.",
+          "partnerSection": "Partner perks",
+          "noPartnerPerks": "No partner offers available for your tier yet — check back soon.",
+          "reveal": "Reveal offer",
+          "claimSuccess": "Offer claimed!",
+          "copy": "Copy code",
+          "viewPass": "View my pass",
+          "outOfStock": "Out of stock",
+          "alreadyClaimed": "Already claimed",
+          "tierTooLow": "Upgrade your membership to claim this perk",
+          "claimFailed": "Could not claim — try again"
         },
         "networkPass": {
           "title": "My Metwork Pass",
@@ -2521,6 +2531,10 @@
         "payments": {
           "title": "Payments",
           "subtitle": "Review withdrawal requests and settle them manually (bank transfer, CCP or cheque)."
+        },
+        "perks": {
+          "title": "Partner Perks",
+          "subtitle": "Create partner offers and manage code pools & vouchers."
         }
       }
     },
@@ -2793,6 +2807,21 @@
       "sec10Title": "10. Changes to terms",
       "sec11Title": "11. Governing law & disputes",
       "sec12Title": "12. Contact"
+    },
+    "verify": {
+      "statusActive": "Active",
+      "statusExpired": "Expired",
+      "memberLabel": "Metwork member",
+      "replacedNote": "This pass has been replaced by a newer one.",
+      "passCode": "Pass code",
+      "issuedOn": "Issued on",
+      "memberUntil": "Member until",
+      "qrAlt": "QR code for this pass",
+      "qrHint": "Scan to re-check this pass at any time",
+      "invalidTitle": "This code is not valid",
+      "invalidBody": "No pass was found for this code.",
+      "invalidHint": "Check the code and try again.",
+      "poweredBy": "Verified by"
     }
   },
   "spaces": {
@@ -3980,6 +4009,53 @@
           "rejected": "rejected"
         }
       }
+    },
+    "perks": {
+      "addPerk": "Add perk",
+      "editPerk": "Edit perk",
+      "edit": "Edit",
+      "partnerName": "Partner name",
+      "logoUrl": "Logo URL",
+      "perkTitle": "Title",
+      "titlePlaceholder": "3 months free on the Pro plan",
+      "description": "Description",
+      "fulfillmentType": "Fulfillment",
+      "codePool": "Code pool",
+      "voucher": "Voucher",
+      "minTier": "Minimum tier",
+      "lowStockThreshold": "Low-stock alert threshold",
+      "thresholdHint": "Email the admin when available codes drop below this. Leave empty to disable.",
+      "bulkCodes": "Codes (one per line)",
+      "bulkCodesHint": "Paste partner-issued codes, one per line. Duplicates are skipped.",
+      "addCodes": "Add codes",
+      "codesRequired": "Paste at least one code",
+      "codesAdded": "{added} added, {skipped} duplicates skipped",
+      "codesFailed": "Could not add codes",
+      "create": "Create",
+      "save": "Save",
+      "cancel": "Cancel",
+      "failed": "Something went wrong",
+      "networkError": "Network error — try again",
+      "partnerRequired": "Partner name is required",
+      "titleRequired": "Title is required",
+      "descriptionRequired": "Description is required",
+      "thresholdInvalid": "Threshold must be a positive number",
+      "noPerks": "No perks yet. Create the first one.",
+      "availableCount": "{count} available",
+      "issuedCount": "{count} issued",
+      "lowStock": "Low stock",
+      "manageCodes": "Manage codes",
+      "deactivate": "Deactivate",
+      "activate": "Activate",
+      "codesSubtitle": "{available} available · {assigned} assigned",
+      "backToPerks": "All perks",
+      "noCodes": "No codes in this pool yet.",
+      "colCode": "Code",
+      "colStatus": "Status",
+      "colAssignedTo": "Assigned to",
+      "colAssignedAt": "Assigned on",
+      "statusAvailable": "Available",
+      "statusAssigned": "Assigned"
     }
   },
   "bookings": {

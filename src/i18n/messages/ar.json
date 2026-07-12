@@ -2181,7 +2181,17 @@
         },
         "perks": {
           "title": "امتيازات الأعضاء",
-          "subtitle": "مزايا حصرية مضمّنة في عضويتك."
+          "subtitle": "مزايا حصرية مضمّنة في عضويتك.",
+          "partnerSection": "مزايا الشركاء",
+          "noPartnerPerks": "لا توجد عروض شركاء لعضويتك حاليًا — عد قريبًا.",
+          "reveal": "كشف العرض",
+          "claimSuccess": "تم الحصول على العرض!",
+          "copy": "نسخ الكود",
+          "viewPass": "عرض بطاقتي",
+          "outOfStock": "نفد المخزون",
+          "alreadyClaimed": "تم الحصول عليه",
+          "tierTooLow": "قم بترقية عضويتك للحصول على هذه الميزة",
+          "claimFailed": "تعذّر الحصول — حاول مجددًا"
         },
         "networkPass": {
           "title": "Metwork Pass الخاص بي",
@@ -2521,6 +2531,10 @@
         "payments": {
           "title": "المدفوعات",
           "subtitle": "راجع طلبات السحب وقم بتسويتها يدويًا (تحويل بنكي أو CCP أو شيك)."
+        },
+        "perks": {
+          "title": "مزايا الشركاء",
+          "subtitle": "أنشئ عروض الشركاء وأدر مخزون الأكواد والقسائم."
         }
       }
     },
@@ -2793,6 +2807,21 @@
       "sec10Title": "10. تغييرات الشروط",
       "sec11Title": "11. القانون الحاكم والنزاعات",
       "sec12Title": "12. التواصل"
+    },
+    "verify": {
+      "statusActive": "سارية",
+      "statusExpired": "منتهية",
+      "memberLabel": "عضو Metwork",
+      "replacedNote": "تم استبدال هذه البطاقة ببطاقة أحدث.",
+      "passCode": "رمز البطاقة",
+      "issuedOn": "تاريخ الإصدار",
+      "memberUntil": "العضوية حتى",
+      "qrAlt": "رمز QR لهذه البطاقة",
+      "qrHint": "امسح الرمز لإعادة التحقق من البطاقة في أي وقت",
+      "invalidTitle": "هذا الرمز غير صالح",
+      "invalidBody": "لم يتم العثور على بطاقة بهذا الرمز.",
+      "invalidHint": "تحقق من الرمز وحاول مجددًا.",
+      "poweredBy": "تحقّق بواسطة"
     }
   },
   "spaces": {
@@ -3980,6 +4009,53 @@
           "rejected": "مرفوض"
         }
       }
+    },
+    "perks": {
+      "addPerk": "إضافة ميزة",
+      "editPerk": "تعديل الميزة",
+      "edit": "تعديل",
+      "partnerName": "اسم الشريك",
+      "logoUrl": "رابط الشعار",
+      "perkTitle": "العنوان",
+      "titlePlaceholder": "3 أشهر مجانية على الخطة الاحترافية",
+      "description": "الوصف",
+      "fulfillmentType": "النوع",
+      "codePool": "مخزون أكواد",
+      "voucher": "قسيمة",
+      "minTier": "الحد الأدنى للعضوية",
+      "lowStockThreshold": "حد تنبيه انخفاض المخزون",
+      "thresholdHint": "يُرسل بريد للمشرف عندما تنخفض الأكواد المتاحة تحت هذا الحد. اتركه فارغًا للتعطيل.",
+      "bulkCodes": "الأكواد (كود في كل سطر)",
+      "bulkCodesHint": "الصق أكواد الشريك، كودًا في كل سطر. تُتجاهل التكرارات.",
+      "addCodes": "إضافة الأكواد",
+      "codesRequired": "الصق كودًا واحدًا على الأقل",
+      "codesAdded": "تمت إضافة {added}، وتم تجاهل {skipped} مكررة",
+      "codesFailed": "تعذّرت إضافة الأكواد",
+      "create": "إنشاء",
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "failed": "حدث خطأ ما",
+      "networkError": "خطأ في الشبكة — حاول مجددًا",
+      "partnerRequired": "اسم الشريك مطلوب",
+      "titleRequired": "العنوان مطلوب",
+      "descriptionRequired": "الوصف مطلوب",
+      "thresholdInvalid": "يجب أن يكون الحد رقمًا موجبًا",
+      "noPerks": "لا توجد مزايا بعد. أنشئ الأولى.",
+      "availableCount": "{count} متاحة",
+      "issuedCount": "{count} مُسندة",
+      "lowStock": "مخزون منخفض",
+      "manageCodes": "إدارة الأكواد",
+      "deactivate": "تعطيل",
+      "activate": "تفعيل",
+      "codesSubtitle": "{available} متاحة · {assigned} مُسندة",
+      "backToPerks": "كل المزايا",
+      "noCodes": "لا توجد أكواد في هذا المخزون بعد.",
+      "colCode": "الكود",
+      "colStatus": "الحالة",
+      "colAssignedTo": "أُسند إلى",
+      "colAssignedAt": "تاريخ الإسناد",
+      "statusAvailable": "متاح",
+      "statusAssigned": "مُسند"
     }
   },
   "bookings": {
