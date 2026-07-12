@@ -24,6 +24,118 @@ export function computePrice(feePerHour: number, durationMinutes: number): numbe
   return Math.round((durationMinutes / 60) * feePerHour);
 }
 
+// ---------------------------------------------------------------------------
+// Consultation membership discount — THE single canonical source
+// ---------------------------------------------------------------------------
+
+/**
+ * Automatic consultation discount fraction per membership tier (mirrors the
+ * SPACE_DISCOUNT pattern). Keyed by BOTH the old membershipCode
+ * ('ENTREPRENEUR'/'STARTUP') and the new membershipTier ('BUILDER'/'FOUNDER')
+ * so every caller resolves the same number regardless of which field it holds.
+ *
+ *   Builder / ENTREPRENEUR → 15 % off
+ *   Founder / STARTUP      → 20 % off
+ *
+ * This lives in a client-safe module (no DB imports) so the booking API, the
+ * price-breakdown UIs, and the server pricing helper all consume ONE definition.
+ * `src/server/memberships/service.ts` re-exports it for server callers.
+ */
+export const CONSULTATION_DISCOUNT: Record<string, number> = {
+  ENTREPRENEUR: 0.15, // Builder tier — 15 % off
+  BUILDER:      0.15,
+  STARTUP:      0.2,  // Founder tier — 20 % off
+  FOUNDER:      0.2,
+};
+
+/** Resolve the consultation discount fraction (0–1) for a membership code/tier. */
+export function consultationDiscountFraction(codeOrTier: string | null | undefined): number {
+  if (!codeOrTier) return 0;
+  return CONSULTATION_DISCOUNT[codeOrTier] ?? 0;
+}
+
+/** Which discount source was applied to a consultation charge. */
+export type ConsultationDiscountSource = 'none' | 'tier' | 'promo';
+
+export interface ConsultationChargeInput {
+  /** Mentor's per-hour fee in DZD (0 / absent ⇒ free mentor). */
+  feePerHour: number;
+  /** Session length in minutes. */
+  durationMinutes: number;
+  /** Membership-tier discount fraction (0–1). Members only — 0 for guests. */
+  membershipDiscountFraction?: number;
+  /** Validated promo discount percentage (0–100). Ignored when a fixed amount is given. */
+  promoDiscountPercent?: number;
+  /** Pre-resolved promo discount in DZD (fixed promos / already computed on base). */
+  promoDiscountAmount?: number;
+}
+
+export interface ConsultationChargeBreakdown {
+  /** Pre-discount session price. */
+  basePrice: number;
+  /** DZD removed by the membership tier (0 unless the tier discount won). */
+  tierDiscountAmount: number;
+  /** DZD removed by the promo (0 unless the promo won). */
+  promoDiscountAmount: number;
+  /** Which discount actually applied — 'none' | 'tier' | 'promo'. */
+  appliedSource: ConsultationDiscountSource;
+  /** Final integer DZD to collect (0 for a free mentor / full discount). */
+  gross: number;
+}
+
+/**
+ * THE consultation charge calculation. Single source of truth shared by the
+ * booking API (via `computeConsultationCharge`), the price-breakdown dialogs,
+ * and the dashboard panel.
+ *
+ * No-stacking rule: the membership-tier discount and the promo code do NOT
+ * combine — whichever yields the larger DZD reduction is applied, never both.
+ * Ties go to the membership tier (so an entered-but-not-larger promo is not
+ * consumed). The consultant is always paid on the full base elsewhere; this
+ * only decides what the client is charged.
+ */
+export function resolveConsultationCharge(
+  input: ConsultationChargeInput,
+): ConsultationChargeBreakdown {
+  const basePrice = computePrice(input.feePerHour ?? 0, input.durationMinutes);
+
+  const tierFraction = clampFraction(input.membershipDiscountFraction ?? 0);
+  const tierAmount = Math.round(basePrice * tierFraction);
+
+  const promoRaw =
+    input.promoDiscountAmount != null && input.promoDiscountAmount > 0
+      ? Math.round(input.promoDiscountAmount)
+      : Math.round((basePrice * clampPercent(input.promoDiscountPercent ?? 0)) / 100);
+  const promoAmount = Math.min(Math.max(0, promoRaw), basePrice);
+
+  // Larger discount wins; ties resolve to the tier (membership benefit).
+  let appliedSource: ConsultationDiscountSource = 'none';
+  let tierDiscountAmount = 0;
+  let promoDiscountAmount = 0;
+  if (tierAmount > 0 || promoAmount > 0) {
+    if (promoAmount > tierAmount) {
+      appliedSource = 'promo';
+      promoDiscountAmount = promoAmount;
+    } else {
+      appliedSource = 'tier';
+      tierDiscountAmount = tierAmount;
+    }
+  }
+
+  const gross = Math.max(0, basePrice - tierDiscountAmount - promoDiscountAmount);
+  return { basePrice, tierDiscountAmount, promoDiscountAmount, appliedSource, gross };
+}
+
+function clampFraction(v: number): number {
+  if (!Number.isFinite(v) || v <= 0) return 0;
+  return v > 1 ? 1 : v;
+}
+
+function clampPercent(v: number): number {
+  if (!Number.isFinite(v) || v <= 0) return 0;
+  return v > 100 ? 100 : v;
+}
+
 /**
  * CANONICAL read helper for a mentor's price state — the ONE place the public
  * profile and both booking dialogs resolve pricing so they never drift.

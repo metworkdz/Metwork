@@ -4,18 +4,12 @@ import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { ConsultationsPanel } from '@/components/features/entrepreneur/consultations-panel';
 import { listPublicMentors } from '@/server/mentors/service';
 import { db } from '@/server/db/store';
-import { getEffectiveMembershipCode, getUserConsultationQuota } from '@/server/memberships/service';
+import { getEffectiveMembershipCode, consultationDiscountFraction } from '@/server/memberships/service';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
 import type { Locale } from '@/i18n/config';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
-}
-
-function nextMonthResetISO(): string {
-  const d = new Date();
-  // First day of next month, UTC.
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)).toISOString();
 }
 
 export default async function EntrepreneurConsultationsPage({ params }: PageProps) {
@@ -25,15 +19,14 @@ export default async function EntrepreneurConsultationsPage({ params }: PageProp
   const lang = (await getLocale()) as Locale;
   const user = await requireRole(['ENTREPRENEUR']);
 
-  const [mentors, data, quota] = await Promise.all([
+  const [mentors, data] = await Promise.all([
     listPublicMentors(),
     db.read(),
-    // Single source of truth for the monthly free-session quota — the same
-    // resolver the instant-book write path and GET /api/consultations use.
-    getUserConsultationQuota(user.id),
   ]);
 
   const effectiveCode = getEffectiveMembershipCode(user);
+  // Automatic membership-tier consultation discount (Builder 15 % / Founder 20 %).
+  const discountPercent = Math.round(consultationDiscountFraction(effectiveCode) * 100);
 
   // Booking requests go through the /book route → saved in mentorBookings (PENDING → APPROVED/REJECTED).
   // Old auto-confirmed records from /consult are in mentorConsultations — not shown here any more.
@@ -50,10 +43,7 @@ export default async function EntrepreneurConsultationsPage({ params }: PageProp
       <ConsultationsPanel
         initial={bookings}
         mentors={mentors}
-        freeQuota={quota.quota}
-        freeSessionsUsed={quota.used}
-        freeSessionsRemaining={quota.remaining}
-        quotaResetISO={nextMonthResetISO()}
+        discountPercent={discountPercent}
         membershipCode={effectiveCode === 'FREE' ? null : effectiveCode}
         locale={lang}
         userName={user.fullName}

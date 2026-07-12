@@ -16,7 +16,7 @@ import {
 import { mobileQuickActionsByRole } from '@/config/mobile-nav';
 import { db } from '@/server/db/store';
 import { formatCurrency } from '@/lib/format';
-import { getEffectiveMembershipCode, getUserConsultationQuota } from '@/server/memberships/service';
+import { getEffectiveMembershipCode, consultationDiscountFraction } from '@/server/memberships/service';
 import type { Locale } from '@/i18n/config';
 
 interface PageProps {
@@ -31,10 +31,7 @@ export default async function EntrepreneurDashboard({ params }: PageProps) {
   const lang = (await getLocale()) as Locale;
   const user = await requireRole(['ENTREPRENEUR']);
 
-  const [data, consultationQuota] = await Promise.all([
-    db.read(),
-    getUserConsultationQuota(user.id),
-  ]);
+  const data = await db.read();
 
   // Active / pending bookings
   const activeBookings = data.bookings.filter(
@@ -63,6 +60,8 @@ export default async function EntrepreneurDashboard({ params }: PageProps) {
   // Membership
   const effectiveCode = getEffectiveMembershipCode(user);
   const membershipLabel = effectiveCode === 'FREE' ? 'Free' : effectiveCode.charAt(0) + effectiveCode.slice(1).toLowerCase();
+  // Automatic consultation discount (Builder 15 % / Founder 20 %; 0 for Free).
+  const consultationDiscountPercent = Math.round(consultationDiscountFraction(effectiveCode) * 100);
 
   // Recent bookings (mobile list) — newest first, top 4. Display only.
   const recentBookings = data.bookings
@@ -94,7 +93,7 @@ export default async function EntrepreneurDashboard({ params }: PageProps) {
             { label: t('entrepreneur.overview.statWallet'), value: formatCurrency(balance, lang), icon: Wallet },
             { label: t('entrepreneur.overview.statStartupStatus'), value: startupLabel, hint: myStartup?.name, icon: Rocket },
             { label: t('entrepreneur.overview.statMembership'), value: membershipLabel, icon: CreditCard, tone: 'gold' },
-            { label: t('entrepreneur.overview.statConsultations'), value: `${consultationQuota.remaining} / ${consultationQuota.quota}`, icon: UserCheck, tone: 'blue' },
+            { label: t('entrepreneur.overview.statConsultations'), value: consultationDiscountPercent > 0 ? t('entrepreneur.overview.statConsultationDiscount', { percent: consultationDiscountPercent }) : '—', icon: UserCheck, tone: 'blue' },
           ]}
         />
         <MobileSection
@@ -161,8 +160,8 @@ export default async function EntrepreneurDashboard({ params }: PageProps) {
         />
         <StatCard
           label={t('entrepreneur.overview.statConsultations')}
-          value={`${consultationQuota.remaining} / ${consultationQuota.quota}`}
-          hint={consultationQuota.quota === 0 ? t('entrepreneur.overview.statConsultationHintUpgrade') : t('entrepreneur.overview.statConsultationHintRemaining')}
+          value={consultationDiscountPercent > 0 ? t('entrepreneur.overview.statConsultationDiscount', { percent: consultationDiscountPercent }) : '—'}
+          hint={consultationDiscountPercent === 0 ? t('entrepreneur.overview.statConsultationHintUpgrade') : t('entrepreneur.overview.statConsultationHintDiscount')}
           icon={UserCheck}
         />
       </div>

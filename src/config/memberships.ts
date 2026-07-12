@@ -68,7 +68,7 @@ export type MembershipCode = (typeof membershipTiers)[number]['code'];
 /**
  * Incubator subscription model (the "Pro" plan).
  * Either pay 5000 DZD/month (billed monthly or yearly at 30 % off) OR give
- * 20 % commission per booking. Incubator chooses one and can switch anytime.
+ * 5 % commission per booking. Incubator chooses one and can switch anytime.
  */
 export const incubatorSubscriptionTiers = [
   {
@@ -76,7 +76,7 @@ export const incubatorSubscriptionTiers = [
     nameKey: 'incubator.subscription.commission.name',
     descriptionKey: 'incubator.subscription.commission.description',
     priceMonthly: 0,
-    commissionRate: 0.2, // 20%
+    commissionRate: 0.05, // 5%
   },
   {
     code: 'FLAT',
@@ -92,5 +92,5 @@ export const platformCommissions = {
   /** % Metwork takes from each investment */
   investment: 0.07,
   /** Default % Metwork takes from incubator bookings (when incubator is on COMMISSION plan) */
-  incubatorBooking: 0.2,
+  incubatorBooking: 0.05,
 } as const;

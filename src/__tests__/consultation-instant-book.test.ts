@@ -99,17 +99,22 @@ afterEach(() => {
   delete process.env.MOCK_PAYMENT_MODE;
 });
 
-describe('computeConsultationCharge (pricing parity)', () => {
-  it('pro-rates by duration and applies tier then promo', () => {
+describe('computeConsultationCharge (pricing parity, no stacking)', () => {
+  it('pro-rates by duration and applies the LARGER of tier vs promo (never both)', () => {
     expect(computeConsultationCharge({ feePerHour: 10_000, durationMinutes: 60 }).gross).toBe(10_000);
     expect(computeConsultationCharge({ feePerHour: 10_000, durationMinutes: 30 }).gross).toBe(5_000);
-    // 10000 − 20% tier = 8000, then −50% promo = 4000
-    const both = computeConsultationCharge({
+    // promo (50% = −5000) beats tier (20% = −2000) → gross 5000, promo wins
+    const promoWins = computeConsultationCharge({
       feePerHour: 10_000, durationMinutes: 60, membershipDiscountFraction: 0.2, promoDiscountPercent: 50,
     });
-    expect(both.gross).toBe(4_000);
-    // free credit collapses to 0 regardless of discounts
-    expect(computeConsultationCharge({ feePerHour: 10_000, durationMinutes: 60, useFreeCredit: true }).gross).toBe(0);
+    expect(promoWins.gross).toBe(5_000);
+    expect(promoWins.appliedSource).toBe('promo');
+    // tier (20% = −2000) beats promo (10% = −1000) → gross 8000, tier wins
+    const tierWins = computeConsultationCharge({
+      feePerHour: 10_000, durationMinutes: 60, membershipDiscountFraction: 0.2, promoDiscountPercent: 10,
+    });
+    expect(tierWins.gross).toBe(8_000);
+    expect(tierWins.appliedSource).toBe('tier');
   });
 });
 
@@ -153,17 +158,16 @@ describe('member — wallet funded', () => {
 describe('zero-amount → confirm without payment', () => {
   beforeEach(() => seed(0));
 
-  it('confirms a free-credit booking and writes a FREE_QUOTA consultation row', async () => {
-    const res = await createInstantBooking(baseInput({ useFreeCredit: true, freeQuotaMonth: '2026-06' }));
+  it('confirms a zero-fee (free) mentor booking with no charge', async () => {
+    await db.update((d) => { d.mentors[0]!.consultationFee = 0; });
+    const res = await createInstantBooking(baseInput());
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     expect(res.mode).toBe('confirmed');
     expect(res.booking.amountCharged).toBe(0);
-    expect(res.booking.chargeType).toBe('FREE_QUOTA');
+    expect(res.booking.chargeType).toBe('PAID'); // free quota removed — always PAID
 
     const data = await db.read();
-    const consult = data.mentorConsultations.find((c) => c.bookingId === res.booking.id);
-    expect(consult?.status).toBe('CONFIRMED');
     expect(data.wallets[0]!.balance).toBe(0); // never debited
   });
 
@@ -263,9 +267,10 @@ describe('mentor earnings credit (P4)', () => {
     expect(wallet?.availableBalance).toBe(0); // held until COMPLETED (P5)
   });
 
-  it('does not credit a zero-amount (free-credit) booking', async () => {
+  it('does not credit a free (zero-fee) mentor booking', async () => {
     await seed(0);
-    await createInstantBooking(baseInput({ useFreeCredit: true, freeQuotaMonth: '2026-06' }));
+    await db.update((d) => { d.mentors[0]!.consultationFee = 0; });
+    await createInstantBooking(baseInput());
     const wallet = await getMentorWallet(MENTOR.id);
     expect(wallet?.pendingBalance ?? 0).toBe(0);
   });
