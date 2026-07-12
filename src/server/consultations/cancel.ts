@@ -137,12 +137,17 @@ export async function cancelByConsultant(input: {
     // Notify the client (refund details) — fire-and-forget.
     const mentor = await findMentorById(result.booking.mentorId);
     if (mentor) {
-      const lang: 'en' | 'fr' = result.booking.guestLocale === 'en' ? 'en' : 'fr';
+      // This path is members-only: the account locale is authoritative, with
+      // the booking-time guestLocale as fallback. The sender normalizes to
+      // en/fr/ar (Arabic renders RTL).
+      const user = result.booking.userId
+        ? (await db.read()).users.find((u) => u.id === result.booking.userId)
+        : null;
       try {
         sendConsultationCancelledEmail({
           booking: result.booking,
           mentor,
-          lang,
+          lang: user?.locale ?? result.booking.guestLocale,
           refundedAmount: result.refundedAmount,
         });
       } catch (err) {

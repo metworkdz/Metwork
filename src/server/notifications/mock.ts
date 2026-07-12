@@ -534,9 +534,9 @@ export async function sendClientSessionReminderEmail(input: MentorConfirmationIn
 }
 
 /** Minimal branded HTML wrapper for the lightweight P3 lifecycle notices. */
-function simpleNoticeHtml(title: string, lines: string[]): string {
+function simpleNoticeHtml(title: string, lines: string[], dir: 'ltr' | 'rtl' = 'ltr'): string {
   const body = lines.map((l) => `<p style="margin:0 0 10px;color:#3f3f46;font-size:14px;">${l}</p>`).join('');
-  return `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;margin:0 auto;padding:24px;">
+  return `<div dir="${dir}" style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;margin:0 auto;padding:24px;">
     <h2 style="margin:0 0 16px;color:#18181b;font-size:18px;">${title}</h2>${body}
     <p style="margin:18px 0 0;color:#a1a1aa;font-size:12px;">Metwork</p></div>`;
 }
@@ -606,35 +606,69 @@ export function sendConsultationRescheduledEmail(
   }
 }
 
+/** Localized copy for the consultant-cancelled notice (Arabic renders RTL). */
+const CONSULT_CANCELLED_COPY: Record<
+  EmailLang,
+  {
+    subject: (mentorName: string) => string;
+    hello: (userName: string) => string;
+    cancelled: (mentorName: string) => string;
+    refunded: (amount: string) => string;
+    nothingDue: string;
+    waTitle: string;
+    waRefunded: string;
+  }
+> = {
+  en: {
+    subject: (m) => `Consultation cancelled — ${m}`,
+    hello: (u) => `Hello ${u},`,
+    cancelled: (m) => `Your consultation with ${m} was cancelled by the consultant.`,
+    refunded: (a) => `A refund of <strong>${a} DZD</strong> has been credited to your Metwork wallet.`,
+    nothingDue: `No payment was due for this consultation.`,
+    waTitle: '❌ Metwork — Consultation cancelled',
+    waRefunded: 'Refunded',
+  },
+  fr: {
+    subject: (m) => `Consultation annulée — ${m}`,
+    hello: (u) => `Bonjour ${u},`,
+    cancelled: (m) => `Votre consultation avec ${m} a été annulée par le consultant.`,
+    refunded: (a) => `Un remboursement de <strong>${a} DZD</strong> a été crédité sur votre portefeuille Metwork.`,
+    nothingDue: `Aucun paiement n'était dû pour cette consultation.`,
+    waTitle: '❌ Metwork — Consultation annulée',
+    waRefunded: 'Remboursé',
+  },
+  ar: {
+    subject: (m) => `تم إلغاء الاستشارة — ${m}`,
+    hello: (u) => `مرحباً ${u}،`,
+    cancelled: (m) => `قام المستشار بإلغاء استشارتك مع ${m}.`,
+    refunded: (a) => `تم إرجاع مبلغ <strong>${a} دج</strong> إلى محفظتك على Metwork.`,
+    nothingDue: `لم يكن هناك أي مبلغ مستحق لهذه الاستشارة.`,
+    waTitle: '❌ Metwork — تم إلغاء الاستشارة',
+    waRefunded: 'المبلغ المُرجَع',
+  },
+};
+
 /**
  * Notify the client that the consultant CANCELLED their consultation and the
  * full amount was refunded to their Metwork wallet. Fire-and-forget.
+ * Localized en/fr/ar; any other input locale falls back to fr.
  */
 export function sendConsultationCancelledEmail(
-  input: MentorConfirmationInput & { refundedAmount: number },
+  input: Omit<MentorConfirmationInput, 'lang'> & { lang?: string | null; refundedAmount: number },
 ): void {
-  const { booking, mentor, lang, refundedAmount } = input;
-  const isFr = lang === 'fr';
+  const { booking, mentor, refundedAmount } = input;
+  const lang = normalizeEmailLang(input.lang);
   if (!booking.userEmail) return;
 
-  const subject = isFr
-    ? `Consultation annulée — ${mentor.fullName}`
-    : `Consultation cancelled — ${mentor.fullName}`;
-  const refundLine =
-    refundedAmount > 0
-      ? isFr
-        ? `Un remboursement de <strong>${refundedAmount.toLocaleString()} DZD</strong> a été crédité sur votre portefeuille Metwork.`
-        : `A refund of <strong>${refundedAmount.toLocaleString()} DZD</strong> has been credited to your Metwork wallet.`
-      : isFr
-        ? `Aucun paiement n'était dû pour cette consultation.`
-        : `No payment was due for this consultation.`;
-  const html = simpleNoticeHtml(subject, [
-    isFr ? `Bonjour ${booking.userName},` : `Hello ${booking.userName},`,
-    isFr
-      ? `Votre consultation avec ${mentor.fullName} a été annulée par le consultant.`
-      : `Your consultation with ${mentor.fullName} was cancelled by the consultant.`,
-    refundLine,
-  ]);
+  const c = CONSULT_CANCELLED_COPY[lang];
+  const amount = refundedAmount.toLocaleString();
+  const subject = c.subject(mentor.fullName);
+  const refundLine = refundedAmount > 0 ? c.refunded(amount) : c.nothingDue;
+  const html = simpleNoticeHtml(
+    subject,
+    [c.hello(booking.userName), c.cancelled(mentor.fullName), refundLine],
+    lang === 'ar' ? 'rtl' : 'ltr',
+  );
 
   sendResendEmail({ to: booking.userEmail, subject, html })
     .then((sent) => {
@@ -649,11 +683,8 @@ export function sendConsultationCancelledEmail(
 
   if (booking.userPhone) {
     const waText =
-      (isFr ? '❌ Metwork — Consultation annulée\n' : '❌ Metwork — Consultation cancelled\n') +
-      `${mentor.fullName}` +
-      (refundedAmount > 0
-        ? `\n${isFr ? 'Remboursé' : 'Refunded'}: ${refundedAmount.toLocaleString()} DZD`
-        : '');
+      `${c.waTitle}\n${mentor.fullName}` +
+      (refundedAmount > 0 ? `\n${c.waRefunded}: ${amount} DZD` : '');
     if (process.env.SMS_PROVIDER === 'infobip') {
       sendWhatsAppMessage(booking.userPhone, waText).catch((err: Error) =>
         // eslint-disable-next-line no-console
