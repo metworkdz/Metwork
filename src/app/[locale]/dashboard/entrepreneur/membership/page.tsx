@@ -21,11 +21,20 @@ interface PageProps {
 const tierCopy: Record<string, { name: string; description: string }> = {
   FREE:         { name: 'Explorer',     description: 'Get started, browse the ecosystem.' },
   ENTREPRENEUR: { name: 'Builder',      description: 'Book spaces, join programs, attend events.' },
+  BUILDER:      { name: 'Builder',      description: 'Book spaces, join programs, attend events.' },
   STARTUP:      { name: 'Founder',      description: 'Get listed, raise funds, meet investors.' },
+  FOUNDER:      { name: 'Founder',      description: 'Get listed, raise funds, meet investors.' },
 };
 
 // Tier ranking — higher = more premium. Used to decide upgrade vs downgrade.
-const TIER_RANK: Record<string, number> = { FREE: 0, ENTREPRENEUR: 1, STARTUP: 2 };
+// Keyed by every value getEffectiveMembershipCode can return.
+const TIER_RANK: Record<string, number> = {
+  FREE: 0,
+  ENTREPRENEUR: 1,
+  BUILDER: 1,
+  STARTUP: 2,
+  FOUNDER: 2,
+};
 
 export default async function EntrepreneurMembershipPage({ params }: PageProps) {
   const { locale } = await params;
@@ -35,6 +44,9 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
   const lang = (await getLocale()) as Locale;
   const user = await requireRole(['ENTREPRENEUR']);
   const currentCode = getEffectiveMembershipCode(user);
+  // Rank comparisons (not string equality) so BUILDER/FOUNDER codes match
+  // their ENTREPRENEUR/STARTUP tier cards.
+  const currentRank = TIER_RANK[currentCode] ?? 0;
   const expiresAt = user.membershipExpiresAt;
   const scheduledChange = user.scheduledMembershipChange ?? null;
   const scheduledDate = user.scheduledChangeDate ?? null;
@@ -98,7 +110,7 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
               </p>
             )}
           </div>
-          {currentCode !== 'STARTUP' && (
+          {currentRank < (TIER_RANK.STARTUP ?? 2) && (
             <Badge variant="primary">Upgrade available</Badge>
           )}
         </CardContent>
@@ -107,11 +119,10 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
       {/* Tier cards */}
       <div className="grid gap-4 md:grid-cols-3">
         {membershipTiers.map((tier) => {
-          const isCurrent = tier.code === currentCode;
+          const targetRank = TIER_RANK[tier.code] ?? 0;
+          const isCurrent = targetRank === currentRank;
           const isHighlighted = 'highlighted' in tier && tier.highlighted === true;
           const copy = tierCopy[tier.code] ?? { name: tier.code, description: '' };
-          const currentRank = TIER_RANK[currentCode] ?? 0;
-          const targetRank = TIER_RANK[tier.code] ?? 0;
           const isDowngrade = targetRank < currentRank;
           const isUpgrade = targetRank > currentRank;
           const features = tierFeatures[tier.code] ?? [];
@@ -201,7 +212,7 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
       {/* Promo code preview — shown when an upgrade is available */}
       {(() => {
         const tiers = membershipTiers as ReadonlyArray<{ code: string; priceMonthly: number }>;
-        const currentIdx = tiers.findIndex((t) => t.code === currentCode);
+        const currentIdx = tiers.findIndex((t) => (TIER_RANK[t.code] ?? 0) === currentRank);
         const nextTier = tiers[currentIdx + 1];
         if (!nextTier || nextTier.priceMonthly === 0) return null;
         const nextCopy = tierCopy[nextTier.code] ?? { name: nextTier.code, description: '' };

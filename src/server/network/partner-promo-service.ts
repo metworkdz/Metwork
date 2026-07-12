@@ -489,7 +489,9 @@ export async function applyPromoCode(
     if (user) {
       const tierType = tier === 'FOUNDER' ? 'FOUNDER' : ('BUILDER' as const);
       user.membershipTier = tierType;
-      user.membershipCode = membershipPlan.toLowerCase();
+      // Canonical uppercase — every discount/rank map is keyed 'BUILDER'/'FOUNDER'
+      // (lowercase writes here previously cost these members all tier discounts).
+      user.membershipCode = membershipPlan;
       user.membershipStartDate = startsAt;
       user.membershipRenewalDate = expiresAt;
       user.membershipExpiresAt = expiresAt;
