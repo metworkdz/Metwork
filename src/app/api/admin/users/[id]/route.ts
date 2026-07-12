@@ -128,6 +128,22 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     store.investments          = (store.investments ?? []).filter((i) => i.investorId !== id);
     store.userMemberships      = (store.userMemberships ?? []).filter((m) => m.userId !== id);
     store.notifications        = (store.notifications ?? []).filter((n) => n.userId !== id);
+    store.deskBookings         = (store.deskBookings ?? []).filter((b) => b.userId !== id);
+    store.withdrawalRequests   = (store.withdrawalRequests ?? []).filter((w) => w.userId !== id);
+    store.networkVisits        = (store.networkVisits ?? []).filter((v) => v.userId !== id);
+    store.perkVouchers         = (store.perkVouchers ?? []).filter((v) => v.userId !== id);
+    store.registrations        = (store.registrations ?? []).filter((r) => r.userId !== id);
+
+    // Partner affiliations: release the seat this member held against each
+    // partner's discounted-members cap before dropping the affiliation rows.
+    const affiliations = (store.userPartnerAffiliations ?? []).filter((a) => a.userId === id);
+    for (const a of affiliations) {
+      const partner = (store.partnerMemberships ?? []).find((p) => p.id === a.partnerId);
+      if (partner && typeof partner.discountedMembersCount === 'number') {
+        partner.discountedMembersCount = Math.max(0, partner.discountedMembersCount - 1);
+      }
+    }
+    store.userPartnerAffiliations = (store.userPartnerAffiliations ?? []).filter((a) => a.userId !== id);
 
     // Unlink from incubators (don't delete the incubator itself)
     store.incubators
