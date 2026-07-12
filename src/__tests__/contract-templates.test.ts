@@ -15,7 +15,7 @@ import {
   renderTemplate,
   resolveContractVariables,
 } from '@/server/contracts/variables';
-import { applicableTemplates, templateAppliesToCategory } from '@/server/contracts/service';
+import { templateAppliesToCategory } from '@/server/contracts/service';
 
 // INCUBATOR user mgr-1 ↔ incubator inc-1 (resolved by email).
 vi.mock('@/server/auth/api-guards', () => {

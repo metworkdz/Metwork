@@ -13,10 +13,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import {
-  resetMonthlyCredits,
-  sendExpiryReminders,
-} from '@/server/network/credit-service';
+import { resetMonthlyCredits } from '@/server/network/credit-service';
 
 // Vercel wraps cron invocations as POST requests
 export const runtime = 'nodejs';

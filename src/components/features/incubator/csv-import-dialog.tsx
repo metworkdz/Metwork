@@ -7,7 +7,7 @@
  * and shows an import summary.
  */
 import { useRef, useState } from 'react';
-import { CheckCircle2, FileUp, Loader2, TriangleAlert, X } from 'lucide-react';
+import { CheckCircle2, FileUp, TriangleAlert, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { safeUUID } from '@/lib/safe-uuid';
 import {

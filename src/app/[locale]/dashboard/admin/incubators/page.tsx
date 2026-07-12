@@ -1,4 +1,4 @@
-import { setRequestLocale, getTranslations } from 'next-intl/server';
+import { setRequestLocale } from 'next-intl/server';
 import { Building2 } from 'lucide-react';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
@@ -17,7 +17,6 @@ interface PageProps {
 export default async function AdminIncubatorsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations('pages.dashboard');
   await requireRole(['ADMIN']);
 
   const data = await db.read();

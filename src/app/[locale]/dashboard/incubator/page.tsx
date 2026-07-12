@@ -29,7 +29,6 @@ export const dynamic = 'force-dynamic';
 export default async function IncubatorDashboard({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations('pages.dashboard');
   const tRoot = await getTranslations();
   const user = await requireRole(['INCUBATOR']);
 

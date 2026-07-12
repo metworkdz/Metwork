@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Layers, Loader2, Pencil, PlusCircle, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
+import { Layers, Loader2, Pencil, PlusCircle, ToggleRight, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

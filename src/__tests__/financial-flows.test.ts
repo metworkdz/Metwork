@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { db, type WalletRecord, type WithdrawalRequestRecord, type TransactionRecord } from '@/server/db/store';
+import { db, type WithdrawalRequestRecord, type TransactionRecord } from '@/server/db/store';
 
 const NOW = '2026-06-01T10:00:00.000Z';
 

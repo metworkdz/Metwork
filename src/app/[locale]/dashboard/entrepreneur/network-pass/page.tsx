@@ -54,12 +54,6 @@ export default async function EntrepreneurNetworkPassPage({ params }: PageProps)
       };
     });
 
-  // ── QR code for the membership pass ──────────────────────────────────────
-  // Shows a QR encoding the user's member ID — readable at partner spaces.
-  const qrPayload = encodeURIComponent(`METWORK:PASS:${user.id}`);
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrPayload}&margin=8&color=09090b`;
-  // Human-readable code derived from the user's ID (first 8 hex chars, uppercase)
-  const passCode  = `MNP-${user.id.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
 
   return (
     <div className="space-y-6">
