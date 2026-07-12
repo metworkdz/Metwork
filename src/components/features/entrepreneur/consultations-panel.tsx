@@ -17,7 +17,7 @@
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Clock, UserCheck, Timer, DollarSign, Sparkles, CalendarClock } from 'lucide-react';
+import { Clock, UserCheck, Timer, DollarSign, Tag, CalendarClock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,10 +43,16 @@ import { cn } from '@/lib/utils';
 import type { MentorBookingRecord, MentorBookingStatus, MentorRecord } from '@/server/db/store';
 import type { DaySlot } from '@/types/mentor';
 import type { Locale } from '@/i18n/config';
-// Canonical duration options, pro-rata price, and price-state resolver — one
-// source of truth shared with BookConsultationDialog and the public profile
-// (replaces this panel's former local copies so the two never drift).
-import { DURATION_OPTIONS, computePrice, resolveMentorPricing } from '@/lib/consultation-pricing';
+// Canonical duration options, pro-rata price, price-state resolver, and the ONE
+// consultation charge calculator (no-stacking tier-vs-promo) — shared with
+// BookConsultationDialog, the public profile, and the server pricing helper so
+// they never drift.
+import {
+  DURATION_OPTIONS,
+  computePrice,
+  resolveMentorPricing,
+  resolveConsultationCharge,
+} from '@/lib/consultation-pricing';
 
 function formatDZD(amount: number): string {
   return `${amount.toLocaleString('fr-DZ')} DZD`;
@@ -75,14 +81,8 @@ interface Props {
   /** Existing mentor booking requests for this user, newest first. */
   initial:        MentorBookingRecord[];
   mentors:        MentorRecord[];
-  /** How many free consultations this user's plan includes per month (for display). */
-  freeQuota:      number;
-  /** Free quota already consumed this calendar month. */
-  freeSessionsUsed?:      number;
-  /** Free sessions still available this month. */
-  freeSessionsRemaining?: number;
-  /** ISO timestamp (UTC) when the quota resets — typically the 1st of next month. */
-  quotaResetISO?:         string;
+  /** Automatic membership consultation discount (%). 0 = no discount. */
+  discountPercent: number;
   membershipCode: string | null;
   locale:         Locale;
   /** Pre-filled from the user's profile. */
@@ -117,10 +117,7 @@ function StatusBadge({ status }: { status: MentorBookingStatus }) {
 export function ConsultationsPanel({
   initial,
   mentors,
-  freeQuota,
-  freeSessionsUsed = 0,
-  freeSessionsRemaining,
-  quotaResetISO,
+  discountPercent,
   membershipCode,
   locale,
   userName,
@@ -184,24 +181,15 @@ export function ConsultationsPanel({
     }
   }
 
-  // Compute remaining if not explicitly provided.
-  const remaining = typeof freeSessionsRemaining === 'number'
-    ? freeSessionsRemaining
-    : Math.max(0, freeQuota - freeSessionsUsed);
-
-  // Show the prominent quota card only for paid tiers that grant free sessions.
-  const showQuotaCard = !!membershipCode && freeQuota > 0;
-  // Both naming systems map to the same display tiers: old membershipCode
-  // (ENTREPRENEUR/STARTUP) and new membershipTier (BUILDER/FOUNDER).
+  // Membership tier label for the discount indicator (both naming systems).
   const tierLabel =
     membershipCode === 'ENTREPRENEUR' || membershipCode === 'BUILDER'
       ? t('tierBuilder')
       : membershipCode === 'STARTUP' || membershipCode === 'FOUNDER'
         ? t('tierFounder')
         : '';
-  const resetDateLabel = quotaResetISO
-    ? formatDate(quotaResetISO, locale, { dateStyle: 'long' })
-    : '';
+  // Automatic membership consultation discount (Builder 15 % / Founder 20 %).
+  const showDiscountCard = !!membershipCode && discountPercent > 0;
 
   /* Dialog form state */
   const [selectedMentorId, setSelectedMentorId] = useState('');
@@ -212,10 +200,6 @@ export function ConsultationsPanel({
   const [bookDate, setBookDate] = useState<string | null>(null);
   const [bookTime, setBookTime] = useState<string | null>(null);
   const [promoResult, setPromoResult] = useState<PromoResult | null>(null);
-  const [useFreeCredit, setUseFreeCredit] = useState(false);
-  // Free credits consumed in this client session (optimistic) — keeps the
-  // dialog honest after a successful free booking without a server round-trip.
-  const [freeUsedThisSession, setFreeUsedThisSession] = useState(0);
 
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState<string | null>(null);
@@ -225,17 +209,22 @@ export function ConsultationsPanel({
     isFree: boolean;
   } | null>(null);
 
-  /* Derived pricing */
-  const remainingNow   = Math.max(0, remaining - freeUsedThisSession);
+  /* Derived pricing — the ONE canonical calculator (no-stacking: the larger of
+     the membership-tier discount and the promo wins, never both). */
   const selectedMentor = mentors.find((m) => m.id === selectedMentorId);
   const { feePerHour, isPriced } = resolveMentorPricing(selectedMentor ?? {});
-  const basePrice      = computePrice(feePerHour, duration);
-  // A free monthly credit collapses the whole charge to 0 (promo suppressed) —
-  // mirrors the server-authoritative math in computeConsultationCharge.
-  const applyFreeCredit = useFreeCredit && remainingNow > 0 && basePrice > 0;
-  const discountAmt    = applyFreeCredit ? 0 : (promoResult ? promoResult.discountAmount : 0);
-  const finalPrice     = applyFreeCredit ? 0 : (promoResult ? promoResult.finalAmount : basePrice);
-  const isFree         = feePerHour === 0 || finalPrice === 0;
+  const membershipDiscountFraction = discountPercent > 0 ? discountPercent / 100 : 0;
+  const charge = resolveConsultationCharge({
+    feePerHour,
+    durationMinutes: duration,
+    membershipDiscountFraction,
+    promoDiscountAmount: promoResult ? promoResult.discountAmount : 0,
+  });
+  const basePrice     = charge.basePrice;
+  const finalPrice    = charge.gross;
+  // Only one of tier/promo is ever non-zero (no stacking).
+  const discountAmt   = charge.tierDiscountAmount + charge.promoDiscountAmount;
+  const isFree        = feePerHour === 0 || finalPrice === 0;
 
   function openDialog() {
     setSelectedMentorId(mentors[0]?.id ?? '');
@@ -245,9 +234,6 @@ export function ConsultationsPanel({
     setBookDate(null);
     setBookTime(null);
     setPromoResult(null);
-    // Members with a free session left expect it applied by default — same
-    // behaviour as the public booking dialog.
-    setUseFreeCredit(remaining - freeUsedThisSession > 0);
     setError(null);
     setSuccess(null);
     setDialogOpen(true);
@@ -297,10 +283,9 @@ export function ConsultationsPanel({
             consultationDate: bookDate,
             consultationTime: bookTime,
             scheduledAt: buildLocalIso(bookDate, bookTime),
-            // Promo is suppressed when a free credit applies (charge is already 0).
-            promoCode: applyFreeCredit ? null : (promoResult?.code ?? null),
-            // The server re-validates the quota — this flag is only a request.
-            useFreeCredit: applyFreeCredit,
+            // Server applies the no-stacking rule (tier vs promo). We always send
+            // the entered promo; the server keeps it only if it beats the tier.
+            promoCode: promoResult?.code ?? null,
             locale,
           }),
         });
@@ -315,7 +300,6 @@ export function ConsultationsPanel({
         }
         const mentor = mentors.find((m) => m.id === selectedMentorId);
         setSuccess({ mentorName: mentor?.fullName ?? 'the mentor', finalPrice, isFree });
-        if (applyFreeCredit) setFreeUsedThisSession((n) => n + 1);
         const now = new Date().toISOString();
         setBookings((prev) => [
           {
@@ -340,58 +324,38 @@ export function ConsultationsPanel({
 
   return (
     <div className="space-y-6">
-      {/* Prominent free-quota stat card — only for paid tiers with a free quota */}
-      {showQuotaCard && (
+      {/* Automatic membership consultation-discount card — only for tiers that grant one */}
+      {showDiscountCard && (
         <div className="overflow-hidden rounded-xl border border-primary-200 bg-gradient-to-br from-primary-50 via-primary-50/70 to-background px-5 py-5 shadow-sm dark:border-primary-900/60 dark:from-primary-950/40 dark:via-primary-950/20">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-600 text-white shadow-sm">
-                <Sparkles className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-primary-700 dark:text-primary-300">
-                    {t('label')}
-                  </p>
-                  {tierLabel && (
-                    <Badge variant="primary" className="text-[10px] uppercase tracking-wide">
-                      {tierLabel}
-                    </Badge>
-                  )}
-                </div>
-                <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                  {t('remaining', { remaining, quota: freeQuota })}
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-600 text-white shadow-sm">
+              <Tag className="size-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-primary-700 dark:text-primary-300">
+                  {t('discountCardLabel')}
                 </p>
-                {resetDateLabel && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {remaining === 0
-                      ? t('resetsZero', { date: resetDateLabel })
-                      : t('resets', { date: resetDateLabel })}
-                  </p>
+                {tierLabel && (
+                  <Badge variant="primary" className="text-[10px] uppercase tracking-wide">
+                    {tierLabel}
+                  </Badge>
                 )}
               </div>
-            </div>
-            <div className="rounded-md bg-background/70 px-3 py-2 text-right text-xs text-muted-foreground dark:bg-background/40">
-              <p className="font-medium text-foreground">
-                {t('usedOf', { used: freeSessionsUsed, quota: freeQuota })}
+              <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                {t('discountCardValue', { percent: discountPercent })}
               </p>
-              <p className="mt-0.5">{t('thisMonth')}</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Quota / plan info banner */}
+      {/* Plan info banner */}
       <div className="flex items-center justify-between rounded-md border border-border/60 bg-muted/30 px-4 py-3">
         <div>
           <p className="text-sm font-medium">
-            {freeQuota > 0 ? (
-              <>
-                {t('bannerFreeQuota', {
-                  count: freeQuota,
-                  plural: freeQuota !== 1 ? 's' : '',
-                })}
-              </>
+            {showDiscountCard ? (
+              <>{t('bannerDiscount', { percent: discountPercent })}</>
             ) : membershipCode ? (
               <>{t('bannerAvailableOnRequest')}</>
             ) : (
@@ -641,37 +605,9 @@ export function ConsultationsPanel({
                   </p>
                 )}
 
-                {/* Free-consultation credit — apply this month's quota.
-                    Hidden entirely when 0 remaining (avoids confusing disabled state). */}
-                {feePerHour > 0 && remainingNow > 0 && (
-                  <label
-                    className={cn(
-                      'flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 text-sm transition-colors',
-                      applyFreeCredit
-                        ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950'
-                        : 'border-border hover:border-primary/40',
-                    )}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={applyFreeCredit}
-                      onChange={(e) => setUseFreeCredit(e.target.checked)}
-                      disabled={saving}
-                      className="mt-0.5 size-4 shrink-0 accent-emerald-600"
-                    />
-                    <span className="flex-1">
-                      <span className="flex items-center gap-2 font-semibold">
-                        <Sparkles className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                        {t('useFreeCreditLabel')}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        {t('useFreeCreditRemaining', { remaining: remainingNow, quota: freeQuota })}
-                      </span>
-                    </span>
-                  </label>
-                )}
-
-                {/* Price breakdown — only shown when mentor has a fee */}
+                {/* Price breakdown — only shown when mentor has a fee. The applied
+                    discount is the LARGER of the membership tier and the promo
+                    (no stacking); only the winner is listed. */}
                 {feePerHour > 0 && (
                   <div className="rounded-lg border border-border/60 bg-muted/10 px-3.5 py-3 space-y-1.5">
                     <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
@@ -683,13 +619,13 @@ export function ConsultationsPanel({
                       </span>
                       <span className="tabular-nums font-medium">{formatDZD(basePrice)}</span>
                     </div>
-                    {applyFreeCredit && (
+                    {charge.appliedSource === 'tier' && discountAmt > 0 && (
                       <div className="flex justify-between text-sm text-emerald-700 dark:text-emerald-400">
-                        <span>{t('freeCreditApplied')}</span>
-                        <span className="tabular-nums">− {formatDZD(basePrice)}</span>
+                        <span>{t('tierDiscountLabel', { tier: tierLabel, percent: discountPercent })}</span>
+                        <span className="tabular-nums">− {formatDZD(discountAmt)}</span>
                       </div>
                     )}
-                    {promoResult && discountAmt > 0 && (
+                    {charge.appliedSource === 'promo' && discountAmt > 0 && (
                       <div className="flex justify-between text-sm text-emerald-700 dark:text-emerald-400">
                         <span>{t('promoCodeDiscount')}</span>
                         <span className="tabular-nums">− {formatDZD(discountAmt)}</span>
@@ -699,9 +635,7 @@ export function ConsultationsPanel({
                       'flex justify-between text-sm font-semibold border-t border-border/60 pt-1.5 mt-1.5',
                     )}>
                       <span>
-                        {finalPrice === 0
-                          ? (applyFreeCredit ? t('freeCreditApplied') : t('freePromoApplied'))
-                          : tCommon('total')}
+                        {finalPrice === 0 ? t('freePromoApplied') : tCommon('total')}
                       </span>
                       <span className={cn('tabular-nums', finalPrice === 0 && 'text-emerald-700 dark:text-emerald-400')}>
                         {finalPrice === 0 ? tCommon('free') : formatDZD(finalPrice)}
@@ -713,8 +647,8 @@ export function ConsultationsPanel({
                   </div>
                 )}
 
-                {/* Promo code — pointless when a free credit already zeroes the charge */}
-                {basePrice > 0 && !applyFreeCredit && (
+                {/* Promo code */}
+                {basePrice > 0 && (
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">
                       {t('labelPromoCode')} <span className="font-normal">{t('optionalHint')}</span>

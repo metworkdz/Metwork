@@ -18,7 +18,7 @@ import { z, ZodError } from 'zod';
 import { getServerSession } from '@/lib/session';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { validatePromoCode, promoAppliesToType } from '@/server/promo-codes/service';
-import { getEffectiveMembershipCode, getUserConsultationQuota } from '@/server/memberships/service';
+import { getEffectiveMembershipCode, consultationDiscountFraction } from '@/server/memberships/service';
 import { createInstantBooking, isInstantBookEnabled } from '@/server/consultations/instant-book';
 import { randomUUID } from 'node:crypto';
 
@@ -42,21 +42,9 @@ const schema = z.object({
   scheduledAt:      z.string().datetime({ offset: true }).optional().nullable(),
   durationMinutes:  z.number().int().min(30).max(180),
   promoCode:        z.string().max(50).optional().nullable(),
-  useFreeCredit:    z.boolean().optional(),
   locale:           z.enum(['en', 'fr', 'ar']).optional(),
   clientReference:  z.string().min(8).max(80).optional(),
 });
-
-/**
- * Membership-tier consultation discount fraction. Covers both the old codes
- * (STARTUP/ENTREPRENEUR) and the new tiers (FOUNDER/BUILDER) so the charge
- * honours the discount the booking UI promises for every paying tier.
- */
-function tierDiscountFraction(code: string): number {
-  if (code === 'STARTUP' || code === 'FOUNDER') return 0.2;
-  if (code === 'ENTREPRENEUR' || code === 'BUILDER') return 0.15;
-  return 0;
-}
 
 function appBaseUrl(req: NextRequest): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? req.nextUrl.origin ?? 'http://localhost:3000';
@@ -129,20 +117,12 @@ export async function POST(
     appliedPromoCode = validation.promoCode.code;
   }
 
-  // Member-only: resolve the tier discount + whether a free credit truly applies.
-  let membershipDiscountFraction = 0;
-  let useFreeCredit = false;
-  let freeQuotaMonth: string | null = null;
-  if (user) {
-    membershipDiscountFraction = tierDiscountFraction(getEffectiveMembershipCode(user));
-    if (input.useFreeCredit === true) {
-      const quota = await getUserConsultationQuota(user.id);
-      if (quota.remaining > 0) {
-        useFreeCredit = true;
-        freeQuotaMonth = quota.quotaMonth;
-      }
-    }
-  }
+  // Member-only: resolve the automatic membership-tier consultation discount
+  // (Builder 15 % / Founder 20 %) from the ONE canonical resolver. The pricing
+  // layer decides tier-vs-promo (no stacking) — this just supplies the fraction.
+  const membershipDiscountFraction = user
+    ? consultationDiscountFraction(getEffectiveMembershipCode(user))
+    : 0;
 
   // Resolve the client's contact identity server-side from their account. The
   // new booking UI no longer asks a logged-in user to retype these; we fill from
@@ -167,8 +147,6 @@ export async function POST(
     scheduledAt:      input.scheduledAt ?? null,
     appliedPromoCode,
     promoDiscountPercent,
-    useFreeCredit,
-    freeQuotaMonth,
     locale: input.locale,
     clientReference: input.clientReference ?? randomUUID(),
     appBaseUrl: appBaseUrl(req),

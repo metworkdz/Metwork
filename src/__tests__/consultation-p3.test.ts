@@ -125,7 +125,7 @@ describe('creditPendingEarning — promo subsidy', () => {
   });
 });
 
-describe('createInstantBooking — full promo vs free quota', () => {
+describe('createInstantBooking — full promo subsidy', () => {
   beforeEach(() => seed(50_000));
 
   it('a FULL-PROMO (PAID) booking still pays the consultant; platform subsidises', async () => {
@@ -143,23 +143,6 @@ describe('createInstantBooking — full promo vs free quota', () => {
     expect(res.ok).toBe(true);
     const wallet = await getMentorWallet(MENTOR.id);
     expect(wallet?.pendingBalance).toBe(7_000); // round(10000 * 0.7)
-  });
-
-  it('a FREE_QUOTA booking pays the consultant nothing', async () => {
-    const res = await createInstantBooking({
-      mentorId: MENTOR.id,
-      actor: { id: USER.id, membershipDiscountFraction: 0 },
-      name: 'P3 Member', email: 'p3@example.com', phone: '+213500000999',
-      message: 'Free monthly credit consultation about my MVP.',
-      durationMinutes: 60,
-      useFreeCredit: true,
-      freeQuotaMonth: '2026-06',
-      clientReference: ref(),
-      appBaseUrl: 'http://localhost:3000',
-    });
-    expect(res.ok).toBe(true);
-    const wallet = await getMentorWallet(MENTOR.id);
-    expect(wallet?.pendingBalance ?? 0).toBe(0);
   });
 });
 

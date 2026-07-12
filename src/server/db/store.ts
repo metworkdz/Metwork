@@ -2128,7 +2128,7 @@ export interface PlatformConfig {
    * Legacy flat booking commission (0–1) for COMMISSION-plan incubators.
    * SUPERSEDED by the central commission engine (receiverCommissionRate +
    * payerFeeRate). Kept for backward-compatible reads; no longer the
-   * settlement source. Default 0.20.
+   * settlement source. Default 0.05.
    */
   commissionRate: number;
 
@@ -2162,7 +2162,7 @@ export const defaultPlatformConfig: PlatformConfig = {
   flatMonthlyPrice: 5_000,
   semesterlyMonths: 6,
   yearlyDiscountPercent: 30,
-  commissionRate: 0.20,
+  commissionRate: 0.05,
   receiverCommissionRate: 0.05,
   payerFeeRate: 0.02,
   builderMonthlyCredits: 3,

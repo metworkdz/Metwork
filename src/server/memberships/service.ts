@@ -1,13 +1,22 @@
 /**
- * Membership service — tier logic, quotas, and discounts.
+ * Membership service — tier logic and discounts.
  *
  * Source of truth for:
  *   - Effective membership code (checks expiry)
- *   - Per-tier consultation free quota
  *   - Per-tier space booking discount
+ *   - Per-tier consultation discount (re-exported from the client-safe lib)
  *   - Membership prices
  */
 import { db } from '@/server/db/store';
+import {
+  CONSULTATION_DISCOUNT,
+  consultationDiscountFraction,
+} from '@/lib/consultation-pricing';
+
+// Re-export the canonical consultation-discount constant + resolver so server
+// callers have a single import surface. The definition lives in the client-safe
+// lib (client price-breakdown UIs can't import this DB-backed module).
+export { CONSULTATION_DISCOUNT, consultationDiscountFraction };
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,18 +33,6 @@ export interface MembershipUserLike {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-/**
- * Free monthly consultation quota per membership tier.
- * Keyed by both old membershipCode ('ENTREPRENEUR'/'STARTUP') and
- * new membershipTier ('BUILDER'/'FOUNDER') so both naming systems work.
- */
-export const CONSULTATION_QUOTA: Record<string, number> = {
-  ENTREPRENEUR: 1,
-  STARTUP:      3,
-  BUILDER:      1, // BUILDER = ENTREPRENEUR tier
-  FOUNDER:      3, // FOUNDER = STARTUP tier
-};
 
 /**
  * Space booking discount fraction per membership tier (e.g. 0.20 = 20 % off).
@@ -66,11 +63,6 @@ export const MEMBERSHIP_PRICES: Record<
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function currentQuotaMonth(): string {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-}
 
 /**
  * Return the user's *effective* membership code, taking expiry into account.
@@ -106,36 +98,6 @@ export function getEffectiveMembershipCode(user: MembershipUserLike): string {
 }
 
 /**
- * Get a user's consultation quota usage for the current calendar month.
- */
-export async function getUserConsultationQuota(userId: string): Promise<{
-  quota: number;
-  used: number;
-  remaining: number;
-  quotaMonth: string;
-}> {
-  const data = await db.read();
-  const user = data.users.find((u) => u.id === userId);
-  if (!user) return { quota: 0, used: 0, remaining: 0, quotaMonth: currentQuotaMonth() };
-
-  const effectiveCode = getEffectiveMembershipCode(user);
-  const quota = CONSULTATION_QUOTA[effectiveCode] ?? 0;
-  const month = currentQuotaMonth();
-
-  // Quick consultations are stored in mentorConsultations.
-  // Count FREE_QUOTA sessions used this month (matches the consult route's logic).
-  const used = (data.mentorConsultations ?? []).filter(
-    (c) =>
-      c.userId === userId &&
-      c.quotaMonth === month &&
-      c.chargeType === 'FREE_QUOTA' &&
-      c.status !== 'CANCELLED',
-  ).length;
-
-  return { quota, used, remaining: Math.max(0, quota - used), quotaMonth: month };
-}
-
-/**
  * Compute the space-booking discount percentage for a given user (0 if none).
  */
 export async function getSpaceDiscountForUser(userId: string): Promise<number> {
@@ -144,6 +106,17 @@ export async function getSpaceDiscountForUser(userId: string): Promise<number> {
   if (!user) return 0;
   const effectiveCode = getEffectiveMembershipCode(user);
   return SPACE_DISCOUNT[effectiveCode] ?? 0;
+}
+
+/**
+ * Compute the automatic consultation discount fraction for a given user
+ * (0 if none). Mirrors `getSpaceDiscountForUser` — Builder 15 %, Founder 20 %.
+ */
+export async function getConsultationDiscountForUser(userId: string): Promise<number> {
+  const data = await db.read();
+  const user = data.users.find((u) => u.id === userId);
+  if (!user) return 0;
+  return consultationDiscountFraction(getEffectiveMembershipCode(user));
 }
 
 /**

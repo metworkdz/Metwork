@@ -25,7 +25,6 @@ import { randomUUID } from 'node:crypto';
 import {
   db,
   type MentorBookingRecord,
-  type MentorConsultationRecord,
   type TransactionRecord,
   type WalletRecord,
 } from '@/server/db/store';
@@ -78,10 +77,6 @@ export interface CreateInstantBookingInput {
   /** Pre-validated promo (resolved by the route). */
   appliedPromoCode?: string | null;
   promoDiscountPercent?: number | null;
-  /** Server-authoritative: true only when the member actually has a free credit. */
-  useFreeCredit?: boolean;
-  /** 'YYYY-MM' the free credit is charged against, when useFreeCredit. */
-  freeQuotaMonth?: string | null;
   locale?: 'en' | 'fr' | 'ar';
   /** Idempotency key — replays return the original booking. */
   clientReference: string;
@@ -135,6 +130,11 @@ function baseBooking(
   id?: string,
 ): MentorBookingRecord {
   const isGuest = !input.actor;
+  // No-stacking: the promo is only persisted (and later consumed) when it
+  // actually won against the membership-tier discount. When the tier discount
+  // won — or no discount applied — the entered promo is discarded so it isn't
+  // consumed for a booking it never reduced.
+  const promoWon = charge?.appliedSource === 'promo';
   return {
     id: id ?? randomUUID(),
     mentorId: input.mentorId,
@@ -149,10 +149,10 @@ function baseBooking(
     scheduledAt: input.scheduledAt ?? null,
     status: 'PENDING_PAYMENT',
     adminNote: null,
-    appliedPromoCode: input.appliedPromoCode ?? null,
-    promoDiscountPercent: input.promoDiscountPercent ?? null,
-    chargeType: input.useFreeCredit ? 'FREE_QUOTA' : 'PAID',
-    freeQuotaMonth: input.useFreeCredit ? (input.freeQuotaMonth ?? null) : null,
+    appliedPromoCode: promoWon ? (input.appliedPromoCode ?? null) : null,
+    promoDiscountPercent: promoWon ? (input.promoDiscountPercent ?? null) : null,
+    chargeType: 'PAID',
+    freeQuotaMonth: null,
     transactionId: null,
     refundTransactionId: null,
     clientReference: input.clientReference,
@@ -222,33 +222,6 @@ export async function creditMentorForSettledBooking(
   }
 }
 
-/** Write the FREE_QUOTA consultation row (consumes the monthly credit). */
-function writeFreeQuotaConsultation(
-  d: StoreDraft,
-  booking: MentorBookingRecord,
-  mentorName: string,
-  now: string,
-): void {
-  const consultation: MentorConsultationRecord = {
-    id: randomUUID(),
-    bookingId: booking.id,
-    mentorId: booking.mentorId,
-    mentorName,
-    userId: booking.userId ?? '',
-    chargeType: 'FREE_QUOTA',
-    amountCharged: 0,
-    transactionId: null,
-    status: 'CONFIRMED',
-    quotaMonth: booking.freeQuotaMonth ?? '',
-    message: booking.message,
-    durationMinutes: booking.durationMinutes ?? null,
-    scheduledAt: booking.scheduledAt ?? null,
-    createdAt: now,
-    updatedAt: now,
-  };
-  d.mentorConsultations.push(consultation);
-}
-
 /* ───────────────────────────── Create ───────────────────────────── */
 
 export async function createInstantBooking(
@@ -266,7 +239,6 @@ export async function createInstantBooking(
     durationMinutes: input.durationMinutes,
     membershipDiscountFraction: isGuest ? 0 : input.actor?.membershipDiscountFraction,
     promoDiscountPercent: input.promoDiscountPercent ?? 0,
-    useFreeCredit: input.useFreeCredit,
   });
   const { gross } = charge;
 
@@ -369,13 +341,16 @@ export async function createInstantBooking(
         guestAmountDue: 0,
       }, charge, bookingId);
       d.mentorBookings.push(booking);
-      if (input.useFreeCredit) writeFreeQuotaConsultation(d, booking, mentor.fullName, now);
       return { booking, replayed: false };
     });
-    if (!result.replayed && input.appliedPromoCode) await consumePromoCode(input.appliedPromoCode);
+    // Consume the promo only if it actually won (stored on the booking). A tier
+    // discount that beat the promo leaves appliedPromoCode null → no consumption.
+    if (!result.replayed && result.booking.appliedPromoCode) {
+      await consumePromoCode(result.booking.appliedPromoCode);
+    }
     // Gross is 0 here, but a FULL-PROMO (PAID) booking still pays the consultant
     // on the full base price — the platform absorbs the whole discount. The
-    // helper no-ops for FREE_QUOTA / free-mentor bookings.
+    // helper no-ops for free-mentor bookings.
     if (!result.replayed) await creditMentorForSettledBooking(result.booking);
     // Settled booking now occupies the slot — the transient hold can go.
     if (slotLocked) await releaseSlot(bookingId);
@@ -473,7 +448,7 @@ export async function createInstantBooking(
     return replayResult(created.booking, gross);
   }
   if (created.kind === 'confirmed') {
-    if (input.appliedPromoCode) await consumePromoCode(input.appliedPromoCode);
+    if (created.booking.appliedPromoCode) await consumePromoCode(created.booking.appliedPromoCode);
     await creditMentorForSettledBooking(created.booking);
     // Settled booking now occupies the slot — the transient hold can go.
     if (slotLocked) await releaseSlot(bookingId);
