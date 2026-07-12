@@ -1305,6 +1305,89 @@ export interface UserPartnerAffiliationRecord {
   promoCodeUsed: string;
 }
 
+/* ─────────────────────── Partner Perks ─────────────────────── */
+
+/**
+ * Minimum membership tier required to claim a perk. Reuses the paid-tier
+ * vocabulary of the Network Pass system ('BUILDER' | 'FOUNDER'); the legacy
+ * membershipCode values map through the perks service's single rank table
+ * (ENTREPRENEUR ≡ BUILDER, STARTUP ≡ FOUNDER — see meetsMinTier()).
+ */
+export type PerkMinTier = 'BUILDER' | 'FOUNDER';
+
+/**
+ * How a claimed perk is fulfilled:
+ * - 'CODE_POOL' — partner-issued promo codes bulk-loaded by an admin; a claim
+ *   assigns the first AVAILABLE PromoCodePoolEntryRecord to the user.
+ * - 'VOUCHER'   — Metwork-issued voucher (VoucherRecord) with a public
+ *   verification page; validity is computed LIVE from the holder's current
+ *   membership, never stored.
+ */
+export type PerkFulfillmentType = 'CODE_POOL' | 'VOUCHER';
+
+/**
+ * An admin-created partner perk claimable by Builder+ subscribers.
+ * All logic lives in src/server/perks/service.ts (single canonical module).
+ */
+export interface PerkRecord {
+  id: string;
+  partnerName: string;
+  logoUrl: string | null;
+  title: string;
+  description: string;
+  fulfillmentType: PerkFulfillmentType;
+  minTier: PerkMinTier;
+  /**
+   * CODE_POOL only — when the AVAILABLE count drops below this, an admin
+   * low-stock email fires (once per depletion cycle). Null = never notify.
+   */
+  lowStockThreshold: number | null;
+  /**
+   * ISO datetime of the last low-stock email for the current depletion cycle.
+   * Set inside the claim lock (prevents duplicate sends); cleared back to
+   * null when new codes are added to the pool.
+   */
+  lowStockNotifiedAt: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * One partner-issued promo code in a CODE_POOL perk's pool.
+ * Uniqueness of `code` is enforced per-perk in the service layer.
+ */
+export interface PromoCodePoolEntryRecord {
+  id: string;
+  /** PerkRecord.id. Indexed. */
+  perkId: string;
+  code: string;
+  status: 'AVAILABLE' | 'ASSIGNED';
+  /** UserRecord.id of the claimer. Null while AVAILABLE. */
+  assignedToUserId: string | null;
+  assignedAt: string | null;
+  createdAt: string;
+}
+
+/**
+ * Metwork-issued voucher for a VOUCHER perk. Carries NO expiry — validity is
+ * computed live at verification time from the holder's CURRENT membership
+ * (see verifyVoucher()). Re-claims supersede the previous voucher.
+ */
+export interface VoucherRecord {
+  id: string;
+  /** PerkRecord.id. Indexed. */
+  perkId: string;
+  /** UserRecord.id of the holder. Indexed. */
+  userId: string;
+  /** Short human-typeable code, "MTW-" + 6 alphanumerics. Collision-checked. */
+  code: string;
+  issuedAt: string;
+  /** True once replaced by a newer voucher for the same user+perk. */
+  superseded: boolean;
+  createdAt: string;
+}
+
 /* ─────────────────── Network Pass Check-in Codes ─────────────────── */
 
 /**
@@ -2601,6 +2684,14 @@ interface DbShape {
   /** Per-attempt audit trail for every check-in scan or manual entry. */
   networkCheckInAuditLogs: NetworkCheckInAuditRecord[];
 
+  // ─── Partner Perks ────────────────────────────────────────────────────
+  /** Admin-created partner perks claimable by Builder+ subscribers. */
+  perks: PerkRecord[];
+  /** Partner-issued promo codes backing CODE_POOL perks. */
+  perkPoolEntries: PromoCodePoolEntryRecord[];
+  /** Metwork-issued vouchers backing VOUCHER perks (live-validated). */
+  perkVouchers: VoucherRecord[];
+
   // ─── Registration System ──────────────────────────────────────────────
   /** Custom form field definitions per program or event. */
   registrationFormFields: RegistrationFormFieldRecord[];
@@ -2678,6 +2769,9 @@ const empty: DbShape = {
   userPartnerAffiliations: [],
   networkCheckInCodes: [],
   networkCheckInAuditLogs: [],
+  perks: [],
+  perkPoolEntries: [],
+  perkVouchers: [],
   registrationFormFields: [],
   registrations: [],
   meta: {},
