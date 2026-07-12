@@ -10,7 +10,6 @@ import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Bookmark, BookmarkCheck, CheckCircle2, MessageSquare, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogDescription,
   DialogFooter, DialogHeader, DialogTitle,

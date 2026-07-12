@@ -8,7 +8,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, Check, ExternalLink } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Link } from '@/i18n/routing';
 
 interface Notification {

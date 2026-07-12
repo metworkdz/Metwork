@@ -9,7 +9,7 @@
  *   - One-time-use enforcement (partner)
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createHash } from 'node:crypto';
 import { db } from '@/server/db/store';
 import { lookupAnyPromoCode } from '@/server/promo-codes/lookup';

@@ -216,7 +216,6 @@ function TopUpCard({
   onTopUpComplete: (wallet: Wallet | null) => void;
 }) {
   const t = useTranslations('wallet.dashboard');
-  const locale = useLocale() as Locale;
   const [amount, setAmount] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);

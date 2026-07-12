@@ -7,7 +7,7 @@ import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register'
 import { ChunkErrorRecovery } from '@/components/pwa/chunk-error-recovery';
 import { getServerSession } from '@/lib/session';
 import { siteConfig } from '@/config/site';
-import { locales, getDirection, type Locale } from '@/i18n/config';
+import { locales, getDirection } from '@/i18n/config';
 import { cn } from '@/lib/utils';
 
 const inter = Inter({

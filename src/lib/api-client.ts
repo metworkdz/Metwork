@@ -49,7 +49,7 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { body, skipAuth, locale, headers, ...rest } = options;
+  const { body, skipAuth: _skipAuth, locale, headers, ...rest } = options;
 
   const url = path.startsWith('http') ? path : `${getBaseUrl()}${path}`;
 

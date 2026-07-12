@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { LayoutDashboard, LogOut, Settings, User as UserIcon } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {

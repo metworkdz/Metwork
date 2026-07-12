@@ -274,7 +274,7 @@ export function PromoCodeManager() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [showGenerate, setShowGenerate] = useState(false);
-  const [partnerFilter, setPartnerFilter] = useState('');
+  const [partnerFilter] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);

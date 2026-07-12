@@ -1,4 +1,3 @@
-import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Container } from '@/components/ui/container';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';

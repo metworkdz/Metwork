@@ -18,9 +18,6 @@ import { randomUUID } from 'node:crypto';
 import {
   db,
   type PartnerMembershipRecord,
-  type NetworkVisitRecord,
-  type PartnerPromoCodeRecord,
-  type UserRecord,
 } from '@/server/db/store';
 import { appendAuditLog } from '@/server/audit/service';
 

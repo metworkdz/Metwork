@@ -3,7 +3,6 @@ import { requireRole } from '@/lib/auth-guards';
 import { getOrCreateAdminIncubator } from '@/lib/admin-incubator';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { EventsManager } from '@/components/features/incubator/events-manager';
-import { db } from '@/server/db/store';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -18,12 +17,7 @@ export default async function AdminIncubatorEventsPage({ params }: PageProps) {
   const user = await requireRole(['ADMIN']);
 
   // Ensure the admin incubator record exists (no-op if already created).
-  const incubator = await getOrCreateAdminIncubator(user.id);
-
-  const data = await db.read();
-  const events = (data.events ?? [])
-    .filter((e) => e.incubatorId === incubator.id)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  await getOrCreateAdminIncubator(user.id);
 
   return (
     <div className="space-y-6">
