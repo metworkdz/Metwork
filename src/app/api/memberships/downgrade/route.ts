@@ -30,8 +30,15 @@ const schema = z.object({
   plan: z.enum(['ENTREPRENEUR', 'FREE']),
 });
 
-// Tier rank — higher number = higher tier.
-const TIER_RANK: Record<string, number> = { FREE: 0, ENTREPRENEUR: 1, STARTUP: 2 };
+// Tier rank — higher number = higher tier. Keyed by every value
+// getEffectiveMembershipCode can return (ENTREPRENEUR ≡ BUILDER, STARTUP ≡ FOUNDER).
+const TIER_RANK: Record<string, number> = {
+  FREE: 0,
+  ENTREPRENEUR: 1,
+  BUILDER: 1,
+  STARTUP: 2,
+  FOUNDER: 2,
+};
 
 export async function POST(req: NextRequest) {
   const guard = await requireApiSession();

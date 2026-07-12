@@ -40,7 +40,9 @@ export interface MembershipUserLike {
  */
 export const SPACE_DISCOUNT: Record<string, number> = {
   ENTREPRENEUR: 0.15, // Builder tier — 15 % off
+  BUILDER:      0.15,
   STARTUP:      0.2,  // Founder tier — 20 % off
+  FOUNDER:      0.2,
 };
 
 /**
@@ -87,9 +89,19 @@ export function getEffectiveMembershipCode(user: MembershipUserLike): string {
   if (user.membershipExpiresAt && new Date(user.membershipExpiresAt) <= new Date()) {
     return 'FREE';
   }
-  // Old system: membershipCode ('ENTREPRENEUR' | 'STARTUP')
-  if (user.membershipCode && user.membershipCode !== 'FREE') {
-    return user.membershipCode;
+  // Old system: membershipCode ('ENTREPRENEUR' | 'STARTUP'). Normalized
+  // case-insensitively — the partner-promo path historically wrote
+  // 'builder'/'founder' in lowercase, which must resolve to the same tier.
+  const code = user.membershipCode ? user.membershipCode.toUpperCase() : null;
+  if (code && code !== 'FREE') {
+    if (code === 'ENTREPRENEUR' || code === 'STARTUP' || code === 'BUILDER' || code === 'FOUNDER') {
+      return code;
+    }
+    // Unrecognized code: a recognized tier wins over an opaque legacy value.
+    if (user.membershipTier === 'BUILDER' || user.membershipTier === 'FOUNDER') {
+      return user.membershipTier;
+    }
+    return user.membershipCode as string;
   }
   // New system: membershipTier ('BUILDER' | 'FOUNDER')
   if (user.membershipTier === 'BUILDER') return 'BUILDER';
