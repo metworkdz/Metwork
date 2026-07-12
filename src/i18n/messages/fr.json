@@ -2181,7 +2181,17 @@
         },
         "perks": {
           "title": "Avantages membres",
-          "subtitle": "Avantages exclusifs inclus dans votre abonnement."
+          "subtitle": "Avantages exclusifs inclus dans votre abonnement.",
+          "partnerSection": "Avantages partenaires",
+          "noPartnerPerks": "Aucune offre partenaire pour votre palier pour l'instant — revenez bientôt.",
+          "reveal": "Révéler l'offre",
+          "claimSuccess": "Offre obtenue !",
+          "copy": "Copier le code",
+          "viewPass": "Voir mon pass",
+          "outOfStock": "Stock épuisé",
+          "alreadyClaimed": "Déjà obtenu",
+          "tierTooLow": "Passez au palier supérieur pour obtenir cet avantage",
+          "claimFailed": "Impossible de réclamer — réessayez"
         },
         "networkPass": {
           "title": "Mon Metwork Pass",
@@ -2521,6 +2531,10 @@
         "payments": {
           "title": "Paiements",
           "subtitle": "Examinez les demandes de retrait et réglez-les manuellement (virement bancaire, CCP ou chèque)."
+        },
+        "perks": {
+          "title": "Avantages partenaires",
+          "subtitle": "Créez des offres partenaires et gérez les pools de codes et vouchers."
         }
       }
     },
@@ -2793,6 +2807,21 @@
       "sec10Title": "10. Modifications des conditions",
       "sec11Title": "11. Droit applicable et litiges",
       "sec12Title": "12. Contact"
+    },
+    "verify": {
+      "statusActive": "Actif",
+      "statusExpired": "Expiré",
+      "memberLabel": "Membre Metwork",
+      "replacedNote": "Ce pass a été remplacé par un plus récent.",
+      "passCode": "Code du pass",
+      "issuedOn": "Émis le",
+      "memberUntil": "Membre jusqu'au",
+      "qrAlt": "QR code de ce pass",
+      "qrHint": "Scannez pour revérifier ce pass à tout moment",
+      "invalidTitle": "Ce code n'est pas valide",
+      "invalidBody": "Aucun pass n'a été trouvé pour ce code.",
+      "invalidHint": "Vérifiez le code et réessayez.",
+      "poweredBy": "Vérifié par"
     }
   },
   "spaces": {
@@ -3980,6 +4009,53 @@
           "rejected": "rejeté"
         }
       }
+    },
+    "perks": {
+      "addPerk": "Ajouter un avantage",
+      "editPerk": "Modifier l'avantage",
+      "edit": "Modifier",
+      "partnerName": "Nom du partenaire",
+      "logoUrl": "URL du logo",
+      "perkTitle": "Titre",
+      "titlePlaceholder": "3 mois gratuits sur le plan Pro",
+      "description": "Description",
+      "fulfillmentType": "Type",
+      "codePool": "Pool de codes",
+      "voucher": "Bon (voucher)",
+      "minTier": "Palier minimum",
+      "lowStockThreshold": "Seuil d'alerte de stock",
+      "thresholdHint": "Alerte email admin quand les codes disponibles passent sous ce seuil. Vide = désactivé.",
+      "bulkCodes": "Codes (un par ligne)",
+      "bulkCodesHint": "Collez les codes du partenaire, un par ligne. Les doublons sont ignorés.",
+      "addCodes": "Ajouter les codes",
+      "codesRequired": "Collez au moins un code",
+      "codesAdded": "{added} ajoutés, {skipped} doublons ignorés",
+      "codesFailed": "Impossible d'ajouter les codes",
+      "create": "Créer",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "failed": "Une erreur est survenue",
+      "networkError": "Erreur réseau — réessayez",
+      "partnerRequired": "Le nom du partenaire est requis",
+      "titleRequired": "Le titre est requis",
+      "descriptionRequired": "La description est requise",
+      "thresholdInvalid": "Le seuil doit être un nombre positif",
+      "noPerks": "Aucun avantage pour le moment. Créez le premier.",
+      "availableCount": "{count} disponibles",
+      "issuedCount": "{count} attribués",
+      "lowStock": "Stock faible",
+      "manageCodes": "Gérer les codes",
+      "deactivate": "Désactiver",
+      "activate": "Activer",
+      "codesSubtitle": "{available} disponibles · {assigned} attribués",
+      "backToPerks": "Tous les avantages",
+      "noCodes": "Aucun code dans ce pool pour le moment.",
+      "colCode": "Code",
+      "colStatus": "Statut",
+      "colAssignedTo": "Attribué à",
+      "colAssignedAt": "Attribué le",
+      "statusAvailable": "Disponible",
+      "statusAssigned": "Attribué"
     }
   },
   "bookings": {
