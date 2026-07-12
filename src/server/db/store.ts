@@ -2792,7 +2792,7 @@ function localDbPath(): string {
 
 function localLoad(): DbShape {
   // Node is guaranteed in this path (API routes, seed scripts).
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
   const fs = require('fs') as typeof import('fs');
   const p = localDbPath();
   if (!fs.existsSync(p)) return structuredClone(empty);
@@ -2806,7 +2806,7 @@ function localLoad(): DbShape {
 }
 
 function localPersist(data: DbShape): void {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
   const fs = require('fs') as typeof import('fs');
   fs.writeFileSync(localDbPath(), JSON.stringify(data, null, 2), 'utf8');
 }

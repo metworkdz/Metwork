@@ -223,7 +223,7 @@ export function eachDayInRange(startsAt: string, endsAt: string): string[] {
   if (!Number.isFinite(startMs)) return [];
   const startDate = new Date(startMs).toISOString().slice(0, 10);
 
-  let endMs = toMs(endsAt);
+  const endMs = toMs(endsAt);
   // Exclusive end → inclusive last day is the day containing (end − 1ms). Fall
   // back to a single-day hold when end is missing or not after start.
   const endDate =
