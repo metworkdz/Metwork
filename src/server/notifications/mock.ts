@@ -461,6 +461,9 @@ export async function sendConsultantSessionReminderEmail(input: {
       meetingMode: booking.meetingMode ?? null,
       meetingLink: booking.meetingLink ?? null,
       meetingAddress: booking.meetingAddress ?? null,
+      // The consultant is the host: give them the Zoom start URL (auto-signs
+      // them in as host) instead of the plain join link, when auto-generated.
+      zoomStartUrl: booking.meetingSource === 'auto' ? (booking.zoomStartUrl ?? null) : null,
       awaitingLink: booking.status === 'AWAITING_LINK',
       portalUrl,
       lang,

@@ -1635,6 +1635,20 @@ export interface MentorBookingRecord {
   /** Google Maps link for the in-person address. Null for ONLINE / not-yet-set. */
   meetingMapsLink?: string | null;
   /**
+   * Origin of the current `meetingLink`/`meetingMode`: 'auto' — Zoom API
+   * auto-generated the meeting at settlement (no consultant default set);
+   * 'manual' — the consultant (or admin on their behalf) supplied it via
+   * `setBookingMeetingLink`; 'offline' — in-person, no link involved. Null
+   * for legacy bookings predating auto-generation.
+   */
+  meetingSource?: 'auto' | 'manual' | 'offline' | null;
+  /** Zoom join URL, set alongside `meetingLink` when `meetingSource === 'auto'`. */
+  zoomJoinUrl?: string | null;
+  /** Zoom host start URL (auto-signs the consultant in as host) — 'auto' only. */
+  zoomStartUrl?: string | null;
+  /** Zoom meeting id — checked before creating a meeting to avoid duplicates on retry. */
+  zoomMeetingId?: string | null;
+  /**
    * Set when the session is marked COMPLETED — the transition that releases the
    * consultant's held (PENDING) earning to AVAILABLE.
    */

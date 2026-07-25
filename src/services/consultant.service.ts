@@ -79,6 +79,10 @@ export interface ConsultantBooking {
   meetingLink: string | null;
   meetingAddress?: string | null;
   meetingMapsLink?: string | null;
+  /** 'auto' = Zoom auto-generated at settlement; 'manual' = consultant/admin supplied; 'offline' = in-person. */
+  meetingSource?: 'auto' | 'manual' | 'offline' | null;
+  /** Zoom host start URL — signs the consultant in as host. Only set when meetingSource === 'auto'. */
+  zoomStartUrl?: string | null;
   amountCharged: number;
   completedAt: string | null;
   /** 'guest' | 'registered' — consultant cancel/refund is members-only. */

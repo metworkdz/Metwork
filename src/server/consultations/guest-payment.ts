@@ -24,7 +24,7 @@ import { consumePromoCode } from '@/server/promo-codes/service';
 import { sendGuestConfirmationOnce } from '@/server/notifications/guest-confirm';
 import { creditMentorForSettledBooking } from './instant-book';
 import { releaseSlot } from '@/server/mentors/slot-lock';
-import { resolveSettledStatus } from './lifecycle';
+import { resolveSettledStatusWithZoom, type ResolvedSettledStatusWithZoom } from './lifecycle';
 import { sendConsultationReadyOnce } from '@/server/notifications/consultation-ready';
 import { sendBookingNotificationOnce } from '@/server/notifications/booking-notification';
 
@@ -89,13 +89,31 @@ async function markPaidAndConfirm(
 ): Promise<boolean> {
   // Instant-book bookings settle into the lifecycle state (READY / AWAITING_LINK)
   // resolved from the consultant's meeting defaults; legacy admin-approval guest
-  // bookings simply become CONFIRMED. Resolve outside the lock (needs the mentor).
+  // bookings simply become CONFIRMED. Resolve outside the lock (needs the mentor
+  // / a Zoom API round-trip).
+  //
+  // Guard on `!isSettled(snap)` BEFORE resolving — this function is called
+  // from both the return-page poll and the webhook, which can race or simply
+  // be invoked repeatedly (page reload). Without this guard every repeat call
+  // would create a new orphaned Zoom meeting even though the booking never
+  // changes after the first one claims it.
   const snapshot = await db.read();
   const snap = (snapshot.mentorBookings ?? []).find((b) => b.id === bookingId);
-  const settled =
-    snap?.instantBook === true
-      ? resolveSettledStatus((await findMentorById(snap.mentorId)) ?? {})
-      : null;
+  let settled: ResolvedSettledStatusWithZoom | null = null;
+  if (snap && snap.instantBook === true && !isSettled(snap)) {
+    const mentor = await findMentorById(snap.mentorId);
+    settled = mentor
+      ? await resolveSettledStatusWithZoom({
+          mentor,
+          topic: `Metwork consultation — ${mentor.fullName}`,
+          startTimeIso: snap.consultationDate && snap.consultationTime
+            ? `${snap.consultationDate}T${snap.consultationTime}:00`
+            : null,
+          durationMinutes: snap.durationMinutes ?? 60,
+          existingZoomMeetingId: snap.zoomMeetingId,
+        })
+      : { status: 'AWAITING_LINK', meetingMode: null, meetingLink: null, meetingAddress: null, meetingMapsLink: null, meetingSource: null, zoomJoinUrl: null, zoomStartUrl: null, zoomMeetingId: null };
+  }
 
   const claim = await db.update<{ booking: MentorBookingRecord; claimed: boolean } | null>((d) => {
     const booking = (d.mentorBookings ?? []).find((b) => b.id === bookingId);
@@ -108,6 +126,10 @@ async function markPaidAndConfirm(
       booking.meetingLink     = settled.meetingLink;
       booking.meetingAddress  = settled.meetingAddress;
       booking.meetingMapsLink = settled.meetingMapsLink;
+      booking.meetingSource   = settled.meetingSource;
+      booking.zoomJoinUrl     = settled.zoomJoinUrl;
+      booking.zoomStartUrl    = settled.zoomStartUrl;
+      booking.zoomMeetingId   = settled.zoomMeetingId;
     } else {
       booking.status       = 'CONFIRMED';
     }

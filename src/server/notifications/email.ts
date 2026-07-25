@@ -974,6 +974,8 @@ export function consultantSessionReminderEmailHtml(params: {
   meetingMode: 'ONLINE' | 'OFFLINE' | null;
   meetingLink: string | null;
   meetingAddress: string | null;
+  /** Zoom host start URL (auto-signs the consultant in as host) — shown instead of the plain join link when set. */
+  zoomStartUrl?: string | null;
   awaitingLink: boolean;
   portalUrl: string;
   lang: 'en' | 'fr';
@@ -983,11 +985,16 @@ export function consultantSessionReminderEmailHtml(params: {
     params.meetingMode === 'ONLINE' ? (isFr ? 'En ligne' : 'Online')
     : params.meetingMode === 'OFFLINE' ? (isFr ? 'En présentiel' : 'In person')
     : null;
+  const linkRow = params.zoomStartUrl
+    ? `${isFr ? 'Démarrer la réunion (hôte)' : 'Start meeting (host)'} : <a href="${params.zoomStartUrl}" style="color:#30a735;">${params.zoomStartUrl}</a>`
+    : params.meetingLink
+      ? `${isFr ? 'Lien de la réunion' : 'Meeting link'} : <a href="${params.meetingLink}" style="color:#30a735;">${params.meetingLink}</a>`
+      : null;
   const details = [
     params.when ? `${isFr ? 'Date' : 'Date'} : ${params.when}` : null,
     params.durationMinutes ? `${isFr ? 'Durée' : 'Duration'} : ${params.durationMinutes} min` : null,
     typeLabel ? `${isFr ? 'Type' : 'Type'} : ${typeLabel}` : null,
-    params.meetingLink ? `${isFr ? 'Lien de la réunion' : 'Meeting link'} : <a href="${params.meetingLink}" style="color:#30a735;">${params.meetingLink}</a>` : null,
+    linkRow,
     params.meetingAddress ? `${isFr ? 'Adresse' : 'Address'} : ${params.meetingAddress}` : null,
   ].filter(Boolean).join('<br />');
 

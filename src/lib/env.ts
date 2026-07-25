@@ -89,6 +89,12 @@ const serverSchema = z.object({
    * keep this server-only.
    */
   POSTHOG_SERVER_KEY: z.string().optional(),
+  // Zoom Server-to-Server OAuth app (auto-generated consultation meetings).
+  // All optional — auto-generation is skipped (falls back to the manual
+  // consultant-supplied link) whenever any of the three is absent.
+  ZOOM_ACCOUNT_ID: z.string().optional(),
+  ZOOM_CLIENT_ID: z.string().optional(),
+  ZOOM_CLIENT_SECRET: z.string().optional(),
 });
 
 const clientEnv = {

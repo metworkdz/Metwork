@@ -71,5 +71,7 @@ export async function POST(
     meetingLink: result.booking.meetingLink,
     meetingAddress: result.booking.meetingAddress ?? null,
     meetingMapsLink: result.booking.meetingMapsLink ?? null,
+    meetingSource: result.booking.meetingSource ?? null,
+    zoomStartUrl: result.booking.zoomStartUrl ?? null,
   });
 }

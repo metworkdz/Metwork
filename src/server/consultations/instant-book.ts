@@ -36,7 +36,7 @@ import { lockSlot, releaseSlot } from '@/server/mentors/slot-lock';
 import { getTopUp, initiateTopUp } from '@/server/wallet/service';
 import { consumePromoCode } from '@/server/promo-codes/service';
 import { creditPendingEarning } from '@/server/mentors/ledger';
-import { resolveSettledStatus } from './lifecycle';
+import { resolveSettledStatusWithZoom } from './lifecycle';
 import { sendConsultationReadyOnce } from '@/server/notifications/consultation-ready';
 import { sendBookingNotificationOnce } from '@/server/notifications/booking-notification';
 import { sendConsultationReceivedOnce } from '@/server/notifications/consultation-received';
@@ -247,9 +247,25 @@ export async function createInstantBooking(
   const payToken = randomUUID();
   const payTokenExpiresAt = new Date(Date.now() + PAY_TOKEN_TTL_MS).toISOString();
   // Post-settlement lifecycle state (READY vs AWAITING_LINK) from the
-  // consultant's meeting defaults. `paymentStatus: 'PAID'` remains the settled
-  // marker, so the status value is free to be READY / AWAITING_LINK.
-  const settled = resolveSettledStatus(mentor);
+  // consultant's meeting defaults, auto-filling the gap with a Zoom meeting
+  // when possible. `paymentStatus: 'PAID'` remains the settled marker, so the
+  // status value is free to be READY / AWAITING_LINK.
+  //
+  // Skip Zoom entirely when this call replays an already-created booking
+  // (idempotent retry, e.g. a network-retried submit) — `findReplay` wins
+  // inside the transaction below and this computed `settled` would just be
+  // discarded, so calling Zoom first would only create an orphaned meeting.
+  const preCheck = await db.read();
+  const settled = findReplay(preCheck, input)
+    ? { status: 'AWAITING_LINK' as const, meetingMode: null, meetingLink: null, meetingAddress: null, meetingMapsLink: null, meetingSource: null, zoomJoinUrl: null, zoomStartUrl: null, zoomMeetingId: null }
+    : await resolveSettledStatusWithZoom({
+        mentor,
+        topic: `Metwork consultation — ${mentor.fullName}`,
+        startTimeIso: input.consultationDate && input.consultationTime
+          ? `${input.consultationDate}T${input.consultationTime}:00`
+          : null,
+        durationMinutes: input.durationMinutes,
+      });
 
   // ── Slot validation + concurrency lock ─────────────────────────────────────
   // When a concrete slot was chosen, gate it through the shared bookable-slots
@@ -337,6 +353,10 @@ export async function createInstantBooking(
         meetingLink: settled.meetingLink,
         meetingAddress: settled.meetingAddress,
         meetingMapsLink: settled.meetingMapsLink,
+        meetingSource: settled.meetingSource,
+        zoomJoinUrl: settled.zoomJoinUrl,
+        zoomStartUrl: settled.zoomStartUrl,
+        zoomMeetingId: settled.zoomMeetingId,
         amountCharged: 0,
         guestAmountDue: 0,
       }, charge, bookingId);
@@ -421,6 +441,10 @@ export async function createInstantBooking(
         meetingLink: settled.meetingLink,
         meetingAddress: settled.meetingAddress,
         meetingMapsLink: settled.meetingMapsLink,
+        meetingSource: settled.meetingSource,
+        zoomJoinUrl: settled.zoomJoinUrl,
+        zoomStartUrl: settled.zoomStartUrl,
+        zoomMeetingId: settled.zoomMeetingId,
         amountCharged: gross,
         guestAmountDue: gross,
         transactionId: tx.id,
@@ -538,9 +562,21 @@ export async function settleMemberTopUp(token: string): Promise<SettleMemberResu
 
   const gross = booking.amountCharged ?? booking.guestAmountDue ?? 0;
   const mentor = await findMentorById(booking.mentorId);
+  // The `paymentStatus === 'PAID'` guard above already ensures this only runs
+  // once per booking (repeat calls, e.g. the payer reloading the return page,
+  // short-circuit before reaching here) — safe to call Zoom without an extra
+  // idempotency check.
   const settled = mentor
-    ? resolveSettledStatus(mentor)
-    : ({ status: 'AWAITING_LINK', meetingMode: null, meetingLink: null, meetingAddress: null, meetingMapsLink: null } as const);
+    ? await resolveSettledStatusWithZoom({
+        mentor,
+        topic: `Metwork consultation — ${mentor.fullName}`,
+        startTimeIso: booking.consultationDate && booking.consultationTime
+          ? `${booking.consultationDate}T${booking.consultationTime}:00`
+          : null,
+        durationMinutes: booking.durationMinutes ?? 60,
+        existingZoomMeetingId: booking.zoomMeetingId,
+      })
+    : { status: 'AWAITING_LINK' as const, meetingMode: null, meetingLink: null, meetingAddress: null, meetingMapsLink: null, meetingSource: null, zoomJoinUrl: null, zoomStartUrl: null, zoomMeetingId: null };
 
   const claim = await db.update<{ booking: MentorBookingRecord; claimed: boolean } | null>((d) => {
     const b = (d.mentorBookings ?? []).find((x) => x.id === booking.id);
@@ -562,6 +598,10 @@ export async function settleMemberTopUp(token: string): Promise<SettleMemberResu
     b.meetingLink = settled.meetingLink;
     b.meetingAddress = settled.meetingAddress;
     b.meetingMapsLink = settled.meetingMapsLink;
+    b.meetingSource = settled.meetingSource;
+    b.zoomJoinUrl = settled.zoomJoinUrl;
+    b.zoomStartUrl = settled.zoomStartUrl;
+    b.zoomMeetingId = settled.zoomMeetingId;
     b.transactionId = tx.id;
     b.updatedAt = now;
     return { booking: b, claimed: true };

@@ -22,6 +22,7 @@ import {
 } from '@/server/db/store';
 import { releaseToAvailable } from '@/server/mentors/ledger';
 import { sendConsultationReadyOnce } from '@/server/notifications/consultation-ready';
+import { createZoomMeeting, isZoomConfigured } from '@/server/integrations/zoom';
 
 export type SettledStatus = 'READY' | 'AWAITING_LINK';
 
@@ -59,6 +60,93 @@ export function resolveSettledStatus(
     return { status: 'READY', meetingMode: 'ONLINE', meetingLink: link, meetingAddress: null, meetingMapsLink: null };
   }
   return { status: 'AWAITING_LINK', meetingMode: null, meetingLink: null, meetingAddress: null, meetingMapsLink: null };
+}
+
+export interface ResolvedSettledStatusWithZoom extends ResolvedSettledStatus {
+  meetingSource: 'auto' | 'manual' | 'offline' | null;
+  zoomJoinUrl: string | null;
+  zoomStartUrl: string | null;
+  zoomMeetingId: string | null;
+}
+
+export interface ResolveSettledStatusWithZoomInput {
+  mentor: Pick<
+    MentorRecord,
+    'defaultMeetingMode' | 'defaultMeetingLink' | 'defaultMeetingAddress' | 'defaultMeetingMapsLink' | 'fullName'
+  >;
+  /** Zoom meeting topic (no client PII — mirrors the WhatsApp template's rule). */
+  topic: string;
+  /** "YYYY-MM-DD" + "HH:MM" combined, no UTC offset (Zoom wants local wall-clock time + a timezone). Null when no concrete slot was chosen — Zoom is skipped in that case, same as today's AWAITING_LINK fallback. */
+  startTimeIso: string | null;
+  durationMinutes: number;
+  /** Already-set zoomMeetingId on the booking, if any — guards against creating a duplicate meeting on a retried settlement call. */
+  existingZoomMeetingId?: string | null;
+}
+
+const NO_ZOOM: Pick<ResolvedSettledStatusWithZoom, 'meetingSource' | 'zoomJoinUrl' | 'zoomStartUrl' | 'zoomMeetingId'> = {
+  meetingSource: null,
+  zoomJoinUrl: null,
+  zoomStartUrl: null,
+  zoomMeetingId: null,
+};
+
+/**
+ * `resolveSettledStatus` plus Zoom auto-generation for the one gap it leaves:
+ * an ONLINE-or-unset consultant default with no link. Auto-generation NEVER
+ * overrides a consultant's own default link/address (Option A — a consultant
+ * who already configured their own meeting link keeps it untouched) and never
+ * fills the OFFLINE-without-address gap (Zoom can't produce a physical
+ * address). On any Zoom failure this falls back to the exact same
+ * AWAITING_LINK result `resolveSettledStatus` would have returned — the
+ * consultant supplies a link later via `setBookingMeetingLink`, unchanged.
+ */
+export async function resolveSettledStatusWithZoom(
+  input: ResolveSettledStatusWithZoomInput,
+): Promise<ResolvedSettledStatusWithZoom> {
+  const base = resolveSettledStatus(input.mentor);
+
+  if (base.status === 'READY') {
+    // Consultant already has a usable default — respect it, untouched.
+    return { ...base, ...NO_ZOOM, meetingSource: base.meetingMode === 'OFFLINE' ? 'offline' : 'manual' };
+  }
+  // AWAITING_LINK. Only the "online link missing" gap is fillable by Zoom —
+  // an OFFLINE default with no address is a physical-location gap.
+  if (input.mentor.defaultMeetingMode === 'OFFLINE') {
+    return { ...base, ...NO_ZOOM };
+  }
+  if (input.existingZoomMeetingId) {
+    // Already auto-generated for this booking (retried settlement call) —
+    // never create a second meeting.
+    return { ...base, ...NO_ZOOM, zoomMeetingId: input.existingZoomMeetingId };
+  }
+  if (!isZoomConfigured() || !input.startTimeIso) {
+    return { ...base, ...NO_ZOOM };
+  }
+
+  try {
+    const meeting = await createZoomMeeting({
+      topic: input.topic,
+      startTime: input.startTimeIso,
+      durationMinutes: input.durationMinutes,
+    });
+    return {
+      status: 'READY',
+      meetingMode: 'ONLINE',
+      meetingLink: meeting.joinUrl,
+      meetingAddress: null,
+      meetingMapsLink: null,
+      meetingSource: 'auto',
+      zoomJoinUrl: meeting.joinUrl,
+      zoomStartUrl: meeting.startUrl,
+      zoomMeetingId: meeting.meetingId,
+    };
+  } catch (err) {
+    // Non-blocking: never let a Zoom failure disturb settlement. Fall back to
+    // AWAITING_LINK exactly as it worked before Zoom existed.
+    // eslint-disable-next-line no-console
+    console.error('[zoom] auto-generation failed, falling back to AWAITING_LINK →', err instanceof Error ? err.message : err);
+    return { ...base, ...NO_ZOOM };
+  }
 }
 
 export type SetMeetingLinkResult =
@@ -111,6 +199,10 @@ export async function setBookingMeetingLink(input: {
     booking.meetingLink = nextLink;
     booking.meetingAddress = nextAddress;
     booking.meetingMapsLink = nextMapsLink;
+    // Manually (re)supplied by the consultant/admin — overrides any prior
+    // auto-generated Zoom link. The zoomJoinUrl/zoomStartUrl/zoomMeetingId
+    // fields are left as historical record, not cleared.
+    booking.meetingSource = input.mode === 'OFFLINE' ? 'offline' : 'manual';
     booking.status = 'READY';
     booking.updatedAt = new Date().toISOString();
     return { ok: true, booking };
