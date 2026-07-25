@@ -9,7 +9,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { consultantService, type ConsultantEarnings } from '@/services/consultant.service';
 import {
-  CP_GREEN, EmptyBlock, ErrorBanner, SectionCard, SectionHeading, Spinner, StatTile, fmtDZD,
+  CP_GREEN_TEXT, CP_LIGHT_FAINT, CP_LIGHT_MUTED, EmptyBlock, ErrorBanner, SectionCard, SectionHeading, Spinner,
+  StatTile, fmtDZD,
 } from './shared';
 
 const TYPE_KEY: Record<string, string> = {
@@ -32,7 +33,7 @@ export function EarningsSection() {
     return (
       <section>
         <SectionHeading title={t('heading')} />
-        <SectionCard><ErrorBanner message={t('loadFailed')} /></SectionCard>
+        <SectionCard><ErrorBanner tone="light" message={t('loadFailed')} /></SectionCard>
       </section>
     );
   }
@@ -40,7 +41,7 @@ export function EarningsSection() {
     return (
       <section>
         <SectionHeading title={t('heading')} />
-        <SectionCard><Spinner /></SectionCard>
+        <SectionCard><Spinner tone="light" /></SectionCard>
       </section>
     );
   }
@@ -58,24 +59,24 @@ export function EarningsSection() {
         <StatTile label={t('commission')} value={fmtDZD(summary.commission)} />
         <StatTile label={t('net')} value={fmtDZD(summary.net)} accent />
       </div>
-      <p className="px-1 text-xs text-white/40">{t('summaryNote', { count: summary.consultations })}</p>
+      <p className="px-1 text-xs" style={{ color: CP_LIGHT_FAINT }}>{t('summaryNote', { count: summary.consultations })}</p>
 
       {/* Transactions */}
       <div>
-        <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-white/45">{t('transactionsHeading')}</p>
+        <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide" style={{ color: CP_LIGHT_MUTED }}>{t('transactionsHeading')}</p>
         <SectionCard className="p-2">
           {transactions.length === 0 ? (
             <div className="p-2"><EmptyBlock>{t('txnEmpty')}</EmptyBlock></div>
           ) : (
-            <ul className="divide-y divide-white/[0.06]">
+            <ul className="divide-y divide-[#F0F1F2]">
               {transactions.map((tx) => (
                 <li key={tx.id} className="flex items-center justify-between gap-3 px-2 py-2.5">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-white">{t(TYPE_KEY[tx.type] ?? 'typeEarning')}</p>
-                    <p className="truncate text-[11px] text-white/40">{new Date(tx.createdAt).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium text-[#0D0D0D]">{t(TYPE_KEY[tx.type] ?? 'typeEarning')}</p>
+                    <p className="truncate text-[11px]" style={{ color: CP_LIGHT_FAINT }}>{new Date(tx.createdAt).toLocaleDateString()}</p>
                   </div>
-                  <span className={`shrink-0 text-sm font-semibold tabular-nums ${tx.amount >= 0 ? '' : 'text-red-300'}`}
-                    style={tx.amount >= 0 ? { color: CP_GREEN } : undefined}>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums"
+                    style={{ color: tx.amount >= 0 ? CP_GREEN_TEXT : '#B42318' }}>
                     {tx.amount >= 0 ? '+' : '−'} {fmtDZD(Math.abs(tx.amount))}
                   </span>
                 </li>
@@ -87,4 +88,3 @@ export function EarningsSection() {
     </section>
   );
 }
-

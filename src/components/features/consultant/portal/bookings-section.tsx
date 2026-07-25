@@ -1,13 +1,17 @@
 'use client';
 
 /**
- * Booked consultations — list + push/pop detail sheet. The detail reveals the
- * client's contact PII (rendered only to a valid PIN/device session, which is
- * what authenticates every /api/consultant call). From the detail the
- * consultant can add a meeting link / confirm in-person (AWAITING_LINK → READY,
- * which fires the client notification), mark completed, reschedule, or cancel.
+ * Booked consultations — filter tabs + list + push/pop detail sheet. The
+ * detail reveals the client's contact PII (rendered only to a valid PIN/device
+ * session, which is what authenticates every /api/consultant call). From the
+ * detail the consultant can add a meeting link / confirm in-person
+ * (AWAITING_LINK → READY, which fires the client notification), mark
+ * completed, reschedule, or cancel.
+ *
+ * The Upcoming/Pending/Past/All tabs are a client-side grouping of the single
+ * fetched list — no extra request, no server-side filtering.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   Calendar, CheckCircle2, ChevronLeft, Clock, LinkIcon, Mail, MapPin, Phone, Video, XCircle,
@@ -19,8 +23,8 @@ import { consultantService, type ConsultantBooking } from '@/services/consultant
 import type { DaySlot } from '@/types/mentor';
 import { cn } from '@/lib/utils';
 import {
-  Avatar, BrandButton, CP_GREEN, EmptyBlock, ErrorBanner, Field, FlowSheet,
-  RowButton, SectionCard, SectionHeading, Spinner, calLocale, cpInputClass, fmtDZD,
+  Avatar, BrandButton, CP_GREEN, CP_LIGHT_BORDER, CP_LIGHT_FAINT, CP_LIGHT_MUTED, EmptyBlock, ErrorBanner, Field,
+  FlowSheet, RowButton, SectionCard, SectionHeading, Spinner, calLocale, cpInputClassLight, fmtDZD,
 } from './shared';
 
 type BadgeVariant = 'warning' | 'success' | 'danger' | 'info' | 'primary';
@@ -30,6 +34,14 @@ const STATUS_VARIANT: Record<string, BadgeVariant> = {
 };
 
 type View = 'detail' | 'link' | 'reschedule' | 'cancel';
+type FilterKey = 'upcoming' | 'pending' | 'past' | 'all';
+
+function matchesFilter(status: string, filter: FilterKey): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'upcoming') return status === 'READY' || status === 'AWAITING_LINK';
+  if (filter === 'pending') return status === 'PENDING_PAYMENT';
+  return status === 'COMPLETED' || status === 'CANCELLED'; // past
+}
 
 export function BookingsSection({ mentorId }: { mentorId: string }) {
   const t = useTranslations('consultantPortal.bookings');
@@ -37,6 +49,7 @@ export function BookingsSection({ mentorId }: { mentorId: string }) {
   const [items, setItems] = useState<ConsultantBooking[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState<ConsultantBooking | null>(null);
+  const [filter, setFilter] = useState<FilterKey>('upcoming');
 
   const load = useCallback(async () => {
     try { setFailed(false); setItems((await consultantService.bookings()).items); }
@@ -49,18 +62,49 @@ export function BookingsSection({ mentorId }: { mentorId: string }) {
     READY: tStatus('statusReady'), COMPLETED: tStatus('statusCompleted'), CANCELLED: tStatus('statusCancelled'),
   } as Record<string, string>)[s] ?? s;
 
+  const filters: Array<{ key: FilterKey; label: string }> = [
+    { key: 'upcoming', label: t('upcoming') },
+    { key: 'pending', label: t('pending') },
+    { key: 'past', label: t('past') },
+    { key: 'all', label: t('all') },
+  ];
+
+  const filtered = useMemo(
+    () => (items ?? []).filter((b) => matchesFilter(b.status, filter)),
+    [items, filter],
+  );
+
   return (
     <section>
       <SectionHeading title={t('heading')} />
+
+      <div className="mb-4 flex gap-1.5 overflow-x-auto rounded-xl p-1" style={{ background: '#F0F1F2' }}>
+        {filters.map(({ key, label }) => {
+          const active = filter === key;
+          return (
+            <button
+              key={key} type="button" onClick={() => setFilter(key)}
+              className={cn(
+                'shrink-0 whitespace-nowrap rounded-lg px-3.5 py-2 text-xs font-medium transition-colors',
+                active ? 'font-semibold text-white' : 'text-[#5A615E] hover:text-[#0D0D0D]',
+              )}
+              style={active ? { background: '#0D0D0D' } : undefined}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
       <SectionCard className="space-y-2 p-2">
         {items === null ? (
-          <Spinner />
+          <Spinner tone="light" />
         ) : failed ? (
-          <div className="p-3"><ErrorBanner message={t('loadFailed')} /></div>
-        ) : items.length === 0 ? (
+          <div className="p-3"><ErrorBanner tone="light" message={t('loadFailed')} /></div>
+        ) : filtered.length === 0 ? (
           <div className="p-2"><EmptyBlock>{t('empty')}</EmptyBlock></div>
         ) : (
-          items.map((b) => (
+          filtered.map((b) => (
             <RowButton
               key={b.id}
               onClick={() => setSelected(b)}
@@ -79,7 +123,7 @@ export function BookingsSection({ mentorId }: { mentorId: string }) {
               trailing={
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <Badge variant={STATUS_VARIANT[b.status] ?? 'info'}>{statusLabel(b.status)}</Badge>
-                  <span className="text-xs tabular-nums text-white/55">{fmtDZD(b.amountCharged)}</span>
+                  <span className="text-xs tabular-nums" style={{ color: CP_LIGHT_MUTED }}>{fmtDZD(b.amountCharged)}</span>
                 </div>
               }
             />
@@ -161,7 +205,7 @@ function BookingDetail({
 
   const back = (
     <button type="button" onClick={() => { setView('detail'); setError(null); }}
-      className="inline-flex items-center gap-1 text-xs text-white/60 hover:text-white">
+      className="inline-flex items-center gap-1 text-xs text-[#5A615E] hover:text-[#0D0D0D]">
       <ChevronLeft className="size-4" /> {t('close')}
     </button>
   );
@@ -175,12 +219,12 @@ function BookingDetail({
         view === 'detail' && isManageable ? (
           <div className="flex flex-wrap gap-2">
             {booking.status === 'AWAITING_LINK' && (
-              <BrandButton onClick={() => { setView('link'); setError(null); }} className="flex-1">
+              <BrandButton tone="light" onClick={() => { setView('link'); setError(null); }} className="flex-1">
                 <LinkIcon className="size-4" /> {t('addLinkHeading')}
               </BrandButton>
             )}
             {booking.status === 'READY' && (
-              <BrandButton onClick={complete} loading={busy} className="flex-1">
+              <BrandButton tone="light" onClick={complete} loading={busy} className="flex-1">
                 <CheckCircle2 className="size-4" /> {t('completeCta')}
               </BrandButton>
             )}
@@ -188,6 +232,7 @@ function BookingDetail({
         ) : view === 'link' ? (
           <div className="flex justify-end">
             <BrandButton
+              tone="light"
               onClick={saveLink}
               loading={busy}
               disabled={mode === 'ONLINE' ? link.trim().length < 4 : address.trim().length < 3}
@@ -197,14 +242,14 @@ function BookingDetail({
           </div>
         ) : view === 'reschedule' ? (
           <div className="flex justify-end">
-            <BrandButton onClick={submitReschedule} loading={busy} disabled={!resDate || !resTime}>
+            <BrandButton tone="light" onClick={submitReschedule} loading={busy} disabled={!resDate || !resTime}>
               {t('rescheduleConfirm')}
             </BrandButton>
           </div>
         ) : view === 'cancel' ? (
           <button
             type="button" onClick={submitCancel} disabled={busy}
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-red-500/90 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-500 disabled:opacity-50"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
           >
             {t('cancelConfirm')}
           </button>
@@ -215,7 +260,7 @@ function BookingDetail({
         <div className="space-y-5">
           <div className="flex items-center justify-between">
             <Badge variant={(STATUS_VARIANT[booking.status] ?? 'info')}>{statusLabel}</Badge>
-            <span className="text-lg font-semibold tabular-nums text-white">{fmtDZD(booking.amountCharged)}</span>
+            <span className="text-lg font-semibold tabular-nums text-[#0D0D0D]">{fmtDZD(booking.amountCharged)}</span>
           </div>
 
           {/* Session facts */}
@@ -236,9 +281,9 @@ function BookingDetail({
 
           {/* Auto-generated Zoom meeting — read-only until replaced manually */}
           {booking.meetingMode === 'ONLINE' && booking.meetingSource === 'auto' && (
-            <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+            <div className="space-y-2 rounded-xl border p-3" style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-white/45">{t('autoGeneratedLabel')}</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: CP_LIGHT_MUTED }}>{t('autoGeneratedLabel')}</p>
                 <Badge variant="success" className="text-[10px]">{t('zoomBadge')}</Badge>
               </div>
               {booking.meetingLink && (
@@ -258,9 +303,9 @@ function BookingDetail({
 
           {/* In-person address (delivered to the client) */}
           {booking.meetingMode === 'OFFLINE' && booking.meetingAddress && (
-            <div className="space-y-1 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-white/45">{t('addressLabel')}</p>
-              <p className="text-sm text-white/85">{booking.meetingAddress}</p>
+            <div className="space-y-1 rounded-xl border p-3" style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}>
+              <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: CP_LIGHT_MUTED }}>{t('addressLabel')}</p>
+              <p className="text-sm text-[#0D0D0D]">{booking.meetingAddress}</p>
               {booking.meetingMapsLink && (
                 <a href={booking.meetingMapsLink} target="_blank" rel="noopener noreferrer"
                   dir="ltr" className="inline-block text-xs underline" style={{ color: CP_GREEN }}>
@@ -271,26 +316,26 @@ function BookingDetail({
           )}
 
           {/* Client PII */}
-          <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-white/45">{t('clientHeading')}</p>
-            <p className="text-sm font-medium text-white">{booking.userName}</p>
+          <div className="space-y-2 rounded-xl border p-3" style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}>
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: CP_LIGHT_MUTED }}>{t('clientHeading')}</p>
+            <p className="text-sm font-medium text-[#0D0D0D]">{booking.userName}</p>
             <Contact icon={<Phone className="size-3.5" />} label={t('phoneLabel')} value={booking.userPhone} dir="ltr" />
             <Contact icon={<Mail className="size-3.5" />} label={t('emailLabel')} value={booking.userEmail} dir="ltr" />
             {booking.message && (
               <div className="pt-1">
-                <p className="text-[11px] font-medium text-white/45">{t('projectLabel')}</p>
-                <p className="mt-0.5 whitespace-pre-wrap text-sm text-white/80">{booking.message}</p>
+                <p className="text-[11px] font-medium" style={{ color: CP_LIGHT_MUTED }}>{t('projectLabel')}</p>
+                <p className="mt-0.5 whitespace-pre-wrap text-sm text-[#2A2F2C]">{booking.message}</p>
               </div>
             )}
           </div>
 
           {(booking.rescheduleCount ?? 0) > 0 && (
-            <p className="text-xs text-white/40">{t('rescheduledTimes', { count: booking.rescheduleCount ?? 0 })}</p>
+            <p className="text-xs" style={{ color: CP_LIGHT_FAINT }}>{t('rescheduledTimes', { count: booking.rescheduleCount ?? 0 })}</p>
           )}
 
           {/* Secondary actions */}
           {isManageable && (
-            <div className="flex flex-wrap gap-2 border-t border-white/10 pt-3">
+            <div className="flex flex-wrap gap-2 border-t pt-3" style={{ borderColor: CP_LIGHT_BORDER }}>
               {booking.status === 'READY' && booking.meetingMode === 'ONLINE' && booking.meetingSource === 'auto' && (
                 <SecondaryBtn onClick={() => { setMode('ONLINE'); setLink(''); setView('link'); setError(null); }}>
                   <LinkIcon className="size-3.5" /> {t('replaceManuallyCta')}
@@ -306,19 +351,19 @@ function BookingDetail({
               )}
             </div>
           )}
-          {error && <ErrorBanner message={error} />}
+          {error && <ErrorBanner tone="light" message={error} />}
         </div>
       )}
 
       {view === 'link' && (
         <div className="space-y-4">
           {back}
-          <div className="inline-flex rounded-xl border border-white/10 bg-white/[0.03] p-1">
+          <div className="inline-flex rounded-xl border p-1" style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}>
             {(['ONLINE', 'OFFLINE'] as const).map((m) => (
               <button
                 key={m} type="button" onClick={() => setMode(m)}
                 className={cn('min-h-9 rounded-lg px-4 text-xs font-medium transition-colors',
-                  mode === m ? 'text-[#04130b]' : 'text-white/60 hover:text-white')}
+                  mode === m ? 'text-white' : 'text-[#5A615E] hover:text-[#0D0D0D]')}
                 style={mode === m ? { backgroundColor: CP_GREEN } : undefined}
               >
                 {m === 'ONLINE' ? t('online') : t('inPerson')}
@@ -329,31 +374,31 @@ function BookingDetail({
             <Field label={t('meetingLinkLabel')} htmlFor="cp-meet-link">
               <input id="cp-meet-link" type="url" value={link} dir="ltr"
                 onChange={(e) => setLink(e.target.value)} placeholder="https://…" disabled={busy}
-                className={cpInputClass} />
+                className={cpInputClassLight} />
             </Field>
           ) : (
             <div className="space-y-3">
-              <p className="text-xs text-white/45">{t('confirmOfflineHeading')}</p>
+              <p className="text-xs" style={{ color: CP_LIGHT_MUTED }}>{t('confirmOfflineHeading')}</p>
               <Field label={t('addressLabel')} htmlFor="cp-meet-address">
                 <input id="cp-meet-address" type="text" value={address} maxLength={500}
                   onChange={(e) => setAddress(e.target.value)} placeholder={t('addressPlaceholder')} disabled={busy}
-                  className={cpInputClass} />
+                  className={cpInputClassLight} />
               </Field>
               <Field label={t('mapsLabel')} htmlFor="cp-meet-maps">
                 <input id="cp-meet-maps" type="url" value={mapsLink} dir="ltr"
                   onChange={(e) => setMapsLink(e.target.value)} placeholder={t('mapsPlaceholder')} disabled={busy}
-                  className={cpInputClass} />
+                  className={cpInputClassLight} />
               </Field>
             </div>
           )}
-          {error && <ErrorBanner message={error} />}
+          {error && <ErrorBanner tone="light" message={error} />}
         </div>
       )}
 
       {view === 'reschedule' && (
         <div className="space-y-3">
           {back}
-          <p className="text-xs text-white/45">{t('rescheduleHelp')}</p>
+          <p className="text-xs" style={{ color: CP_LIGHT_MUTED }}>{t('rescheduleHelp')}</p>
           <MentorScheduler
             mentorId={mentorId}
             selectedDate={resDate}
@@ -362,17 +407,17 @@ function BookingDetail({
             onSelectTime={(slot: DaySlot) => setResTime(slot.start)}
             locale={locale}
           />
-          {error && <ErrorBanner message={error} />}
+          {error && <ErrorBanner tone="light" message={error} />}
         </div>
       )}
 
       {view === 'cancel' && (
         <div className="space-y-3">
           {back}
-          <p className="text-sm text-white/70">{t('cancelDescription')}</p>
+          <p className="text-sm text-[#2A2F2C]">{t('cancelDescription')}</p>
           <input value={cancelReason} onChange={(e) => setCancelReason(e.target.value)}
-            placeholder={t('cancelReasonPlaceholder')} disabled={busy} className={cpInputClass} />
-          {error && <ErrorBanner message={error} />}
+            placeholder={t('cancelReasonPlaceholder')} disabled={busy} className={cpInputClassLight} />
+          {error && <ErrorBanner tone="light" message={error} />}
         </div>
       )}
     </FlowSheet>
@@ -381,8 +426,8 @@ function BookingDetail({
 
 function Fact({ icon, value }: { icon: React.ReactNode; value: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white/70">
-      <span className="text-white/45">{icon}</span>
+    <div className="flex items-center gap-2 rounded-xl border px-3 py-2 text-xs text-[#2A2F2C]" style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}>
+      <span style={{ color: CP_LIGHT_MUTED }}>{icon}</span>
       <span className="truncate">{value}</span>
     </div>
   );
@@ -391,9 +436,9 @@ function Fact({ icon, value }: { icon: React.ReactNode; value: string }) {
 function Contact({ icon, label, value, dir }: { icon: React.ReactNode; label: string; value: string; dir?: 'ltr' | 'rtl' }) {
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span className="text-white/40">{icon}</span>
-      <span className="text-white/45">{label}:</span>
-      <span dir={dir} className="text-white/85">{value || '—'}</span>
+      <span style={{ color: CP_LIGHT_FAINT }}>{icon}</span>
+      <span style={{ color: CP_LIGHT_MUTED }}>{label}:</span>
+      <span dir={dir} className="text-[#2A2F2C]">{value || '—'}</span>
     </div>
   );
 }
@@ -405,9 +450,10 @@ function SecondaryBtn({ children, onClick, danger }: { children: React.ReactNode
       className={cn(
         'inline-flex min-h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-medium transition-colors',
         danger
-          ? 'border-red-500/30 text-red-300 hover:bg-red-500/10'
-          : 'border-white/15 text-white/80 hover:bg-white/[0.06]',
+          ? 'border-red-200 text-red-700 hover:bg-red-50'
+          : 'hover:bg-[#F7F8F9]',
       )}
+      style={danger ? undefined : { borderColor: CP_LIGHT_BORDER, color: '#2A2F2C' }}
     >
       {children}
     </button>

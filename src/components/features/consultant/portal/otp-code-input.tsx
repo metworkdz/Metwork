@@ -10,6 +10,7 @@
  * parent keeps the exact same submit logic as the old single-field input.
  */
 import { useRef } from 'react';
+import { cn } from '@/lib/utils';
 
 const LENGTH = 6;
 
@@ -19,6 +20,7 @@ export function OtpCodeInput({
   disabled,
   label,
   idPrefix = 'otp',
+  tone = 'dark',
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -26,6 +28,8 @@ export function OtpCodeInput({
   /** Accessible name announced for the group and each box. */
   label: string;
   idPrefix?: string;
+  /** `dark` (default) unchanged for phone verification; `light` for the redesigned login/signup page. */
+  tone?: 'dark' | 'light';
 }) {
   const refs = useRef<Array<HTMLInputElement | null>>([]);
 
@@ -88,7 +92,13 @@ export function OtpCodeInput({
           onFocus={(e) => e.target.select()}
           disabled={disabled}
           aria-label={`${label} ${i + 1}/${LENGTH}`}
-          className="h-14 w-11 rounded-2xl border border-white/15 bg-white/[0.045] text-center text-2xl font-semibold text-white transition-colors focus-visible:border-[#30a735]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#30a735]/30 disabled:opacity-50"
+          className={cn(
+            'h-14 w-11 rounded-2xl border text-center text-2xl font-semibold transition-colors',
+            'focus-visible:border-[#30a735]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#30a735]/30 disabled:opacity-50',
+            tone === 'light'
+              ? 'border-[#E3E6E4] bg-white text-[#0D0D0D]'
+              : 'border-white/15 bg-white/[0.045] text-white',
+          )}
         />
       ))}
     </div>

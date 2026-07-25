@@ -12,6 +12,9 @@
  * On completion it navigates to /mentordashboard (a full load so the server
  * entry re-evaluates the freshly-set session cookie). A failed send surfaces a
  * clear error and never advances the step.
+ *
+ * Light, centered-card surface (brand system) — desktop widens the card and
+ * adds breathing room; mobile keeps a single comfortable column.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -22,8 +25,8 @@ import { consultantService } from '@/services/consultant.service';
 import { algerianCities, getCityName } from '@/config/cities';
 import { consultationFields, getConsultationFieldLabel } from '@/config/consultation-fields';
 import {
-  AppLogo, BrandButton, CP_GLOW, CP_GREEN, ErrorBanner, GhostButton, calLocale, cpInputClass,
-  uploadConsultantFile,
+  AppLogo, BrandButton, CP_GREEN, CP_GREEN_TEXT, CP_GREEN_TINT, CP_LIGHT_BORDER, CP_LIGHT_FAINT, CP_LIGHT_MUTED,
+  ErrorBanner, GhostButton, calLocale, cpInputClassLight, uploadConsultantFile,
 } from './shared';
 import { OtpCodeInput } from './otp-code-input';
 
@@ -44,13 +47,13 @@ function StepIndicator({ current, labels }: { current: 1 | 2 | 3; labels: [strin
         const done = n < current;
         return (
           <li key={label} className="flex items-center gap-1.5">
-            {i > 0 && <span aria-hidden className="h-px w-4 bg-white/15" />}
+            {i > 0 && <span aria-hidden className="h-px w-4" style={{ background: CP_LIGHT_BORDER }} />}
             <span
               aria-current={active ? 'step' : undefined}
               className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-                active ? 'text-[#0D0D0D]' : done ? 'text-white/80' : 'text-white/40'
+                active ? 'text-white' : done ? 'text-[#2A2F2C]' : ''
               }`}
-              style={active ? { backgroundColor: CP_GREEN } : undefined}
+              style={active ? { backgroundColor: CP_GREEN } : { color: CP_LIGHT_FAINT }}
             >
               <span className="tabular-nums">{n}</span>
               <span className={active ? '' : 'hidden sm:inline'}>{label}</span>
@@ -66,12 +69,12 @@ function BrandHeader({ tagline }: { tagline: string }) {
   return (
     <div className="mb-8 flex flex-col items-center text-center">
       <div
-        className="flex items-center justify-center rounded-3xl border border-white/[0.08] px-8 py-7"
-        style={{ backgroundImage: CP_GLOW }}
+        className="flex items-center justify-center rounded-3xl border px-8 py-7"
+        style={{ borderColor: CP_LIGHT_BORDER, background: CP_GREEN_TINT }}
       >
-        <AppLogo height={38} />
+        <AppLogo tone="light" height={38} />
       </div>
-      <p className="mt-4 text-sm text-white/50">{tagline}</p>
+      <p className="mt-4 text-sm" style={{ color: CP_LIGHT_MUTED }}>{tagline}</p>
     </div>
   );
 }
@@ -242,314 +245,328 @@ export function EmailOtpSignIn() {
     }
   }
 
+  const labelCls = 'text-sm font-medium';
+
   return (
-    <div className="mx-auto w-full max-w-sm py-10">
-      <BrandHeader tagline={t('tagline')} />
-      <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.035] p-5">
-        {step === 'email' && (
-          <form onSubmit={(e) => { e.preventDefault(); void requestCode(true); }} className="space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-white">
-              <Mail className="size-4" style={{ color: CP_GREEN }} /> {t('heading')}
-            </div>
-            <p className="text-sm text-white/50">{t('emailSubtitle')}</p>
-            {error && <ErrorBanner message={error} />}
-            <div className="space-y-1.5">
-              <label htmlFor="cp-email" className="text-sm font-medium text-white/80">{t('emailLabel')}</label>
-              <input
-                id="cp-email" type="email" required value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('emailPlaceholder')} dir="ltr" disabled={busy}
-                className={cpInputClass}
-              />
-            </div>
-            <BrandButton type="submit" loading={busy} disabled={!email.trim()} className="w-full">
-              {t('sendCode')}
-            </BrandButton>
-            <p className="flex items-center justify-center gap-1.5 text-xs text-white/50">
-              <ShieldCheck className="size-3.5" /> {t('secureNote')}
-            </p>
-            <div className="flex items-center gap-3" aria-hidden>
-              <span className="h-px flex-1 bg-white/10" />
-              <span className="text-xs text-white/40">{ts('noAccountYet')}</span>
-              <span className="h-px flex-1 bg-white/10" />
-            </div>
-            <GhostButton
-              type="button"
-              onClick={() => { setStep('signup'); setSignupFlow(true); setError(null); }}
-              disabled={busy}
-              className="w-full"
-            >
-              <UserPlus className="size-4" style={{ color: CP_GREEN }} />
-              {ts('createAccountCta')}
-            </GhostButton>
-          </form>
-        )}
-
-        {step === 'signup' && (
-          <form onSubmit={submitSignup} className="space-y-4">
-            <StepIndicator current={1} labels={[ts('step1'), ts('step2'), ts('step3')]} />
-            <div className="flex items-center gap-2 text-base font-medium text-white">
-              <UserPlus className="size-4" style={{ color: CP_GREEN }} /> {ts('heading')}
-            </div>
-            <p className="text-sm text-white/50">{ts('subtitle')}</p>
-            {error && <ErrorBanner message={error} />}
-            <div className="space-y-1.5">
-              <label htmlFor="cp-su-name" className="text-sm font-medium text-white/80">{ts('fullNameLabel')}</label>
-              <input
-                id="cp-su-name" type="text" required minLength={2} maxLength={120}
-                value={fullName} onChange={(e) => setFullName(e.target.value)}
-                disabled={busy} className={cpInputClass}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="cp-su-position" className="text-sm font-medium text-white/80">{ts('positionLabel')}</label>
-              <input
-                id="cp-su-position" type="text" required minLength={2} maxLength={160}
-                value={position} onChange={(e) => setPosition(e.target.value)}
-                placeholder={ts('positionPlaceholder')}
-                disabled={busy} className={cpInputClass}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="cp-su-email" className="text-sm font-medium text-white/80">{t('emailLabel')}</label>
-              <input
-                id="cp-su-email" type="email" required value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('emailPlaceholder')} dir="ltr" disabled={busy}
-                className={cpInputClass}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="cp-su-phone" className="text-sm font-medium text-white/80">{ts('phoneLabel')}</label>
-              <input
-                id="cp-su-phone" type="tel" required value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+213 555 00 00 00" dir="ltr" disabled={busy}
-                className={cpInputClass}
-              />
-              <p className="text-[11px] text-white/40">{ts('phoneCountryCodeHint')}</p>
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="cp-su-city" className="text-sm font-medium text-white/80">{ts('cityLabel')}</label>
-              <select
-                id="cp-su-city" required value={city}
-                onChange={(e) => setCity(e.target.value)}
-                disabled={busy} className={cpInputClass}
-              >
-                <option value="" disabled className="bg-[#0D0D0D]">{ts('cityPlaceholder')}</option>
-                {algerianCities.map((c) => (
-                  // Stored value is the French display name — consistent with
-                  // every existing mentor record (rendered raw on profiles).
-                  <option key={c.code} value={c.nameFr} className="bg-[#0D0D0D]">
-                    {getCityName(c.code, locale)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="cp-su-field" className="text-sm font-medium text-white/80">{ts('fieldLabel')}</label>
-              <select
-                id="cp-su-field" required value={field}
-                onChange={(e) => setField(e.target.value)}
-                disabled={busy} className={cpInputClass}
-              >
-                <option value="" disabled className="bg-[#0D0D0D]">{ts('fieldPlaceholder')}</option>
-                {consultationFields.map((f) => (
-                  <option key={f.code} value={f.code} className="bg-[#0D0D0D]">
-                    {getConsultationFieldLabel(f.code, locale)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <span className="block text-sm font-medium text-white/80">{ts('cvLabel')}</span>
-              {cvFile ? (
-                <div className="flex items-center gap-3 rounded-2xl border border-[#30a735]/40 bg-[#30a735]/[0.08] px-3.5 py-3">
-                  <FileText className="size-5 shrink-0" style={{ color: CP_GREEN }} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-white">{cvFile.name}</span>
-                    <span className="block text-xs text-white/50">
-                      {(cvFile.size / (1024 * 1024)).toFixed(1)} MB — {ts('cvSelected')}
-                    </span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => { setCvFile(null); setCvFieldError(null); }}
-                    disabled={busy}
-                    aria-label={ts('cvRemove')}
-                    className="flex size-10 shrink-0 items-center justify-center rounded-xl text-white/50 transition-colors hover:bg-white/10 hover:text-white"
-                  >
-                    <X className="size-4" />
-                  </button>
-                </div>
-              ) : (
-                <label
-                  htmlFor="cp-su-cv"
-                  className={`flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl border border-dashed px-4 py-6 text-center transition-colors ${
-                    cvFieldError
-                      ? 'border-red-400/50 bg-red-400/[0.06]'
-                      : 'border-white/20 bg-white/[0.03] hover:border-[#30a735]/50 hover:bg-white/[0.05]'
-                  }`}
-                >
-                  <UploadCloud className="size-6" style={{ color: CP_GREEN }} />
-                  <span className="text-sm font-medium text-white">{ts('cvDropTitle')}</span>
-                  <span className="text-xs text-white/50">{ts('cvHint')}</span>
-                  <input
-                    id="cp-su-cv" type="file" accept="application/pdf" className="sr-only"
-                    onChange={onCvChange} disabled={busy}
-                  />
-                </label>
-              )}
-              {cvFieldError && <p className="text-sm text-red-400">{cvFieldError}</p>}
-            </div>
-            <p className="text-[11px] leading-relaxed text-white/40">{ts('reviewNote')}</p>
-
-            {/* Explicit data-processing consent — Law 18-07 (required) */}
-            <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-white/60">
-              <input
-                type="checkbox"
-                checked={acceptPrivacy}
-                onChange={(e) => setAcceptPrivacy(e.target.checked)}
-                disabled={busy}
-                className="mt-0.5 size-4 shrink-0 rounded border-white/20 bg-transparent"
-                style={{ accentColor: CP_GREEN }}
-              />
-              <span>
-                {ts.rich('privacyAgreement', {
-                  privacyLink: (chunks) => (
-                    <a
-                      href={`/${routeLocale}/privacy-policy`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium underline underline-offset-2"
-                      style={{ color: CP_GREEN }}
-                    >
-                      {chunks}
-                    </a>
-                  ),
-                })}
-              </span>
-            </label>
-
-            <BrandButton
-              type="submit" loading={busy}
-              disabled={
-                fullName.trim().length < 2 || position.trim().length < 2 || !email.trim() ||
-                phone.trim().length < 6 || !city || !field || !cvFile || !acceptPrivacy
-              }
-              className="w-full"
-            >
-              {ts('submit')}
-            </BrandButton>
-            <p className="text-center text-sm text-white/50">
-              {ts('alreadyHaveAccount')}{' '}
-              <button
+    <div className="flex min-h-[calc(100dvh-64px)] items-center justify-center px-4 py-8 sm:px-6 lg:py-14">
+      <div className="w-full max-w-sm lg:max-w-md">
+        <BrandHeader tagline={t('tagline')} />
+        <div
+          className="space-y-4 rounded-3xl border bg-white p-5 sm:p-7 lg:p-8"
+          style={{ borderColor: CP_LIGHT_BORDER, boxShadow: '0 20px 60px -20px rgba(13,13,13,0.12), 0 2px 8px rgba(13,13,13,0.04)' }}
+        >
+          {step === 'email' && (
+            <form onSubmit={(e) => { e.preventDefault(); void requestCode(true); }} className="space-y-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-[#0D0D0D]">
+                <Mail className="size-4" style={{ color: CP_GREEN }} /> {t('heading')}
+              </div>
+              <p className="text-sm" style={{ color: CP_LIGHT_MUTED }}>{t('emailSubtitle')}</p>
+              {error && <ErrorBanner tone="light" message={error} />}
+              <div className="space-y-1.5">
+                <label htmlFor="cp-email" className={labelCls} style={{ color: CP_LIGHT_MUTED }}>{t('emailLabel')}</label>
+                <input
+                  id="cp-email" type="email" required value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t('emailPlaceholder')} dir="ltr" disabled={busy}
+                  className={cpInputClassLight}
+                />
+              </div>
+              <BrandButton tone="light" type="submit" loading={busy} disabled={!email.trim()} className="w-full">
+                {t('sendCode')}
+              </BrandButton>
+              <p className="flex items-center justify-center gap-1.5 text-xs" style={{ color: CP_LIGHT_MUTED }}>
+                <ShieldCheck className="size-3.5" /> {t('secureNote')}
+              </p>
+              <div className="flex items-center gap-3" aria-hidden>
+                <span className="h-px flex-1" style={{ background: CP_LIGHT_BORDER }} />
+                <span className="text-xs" style={{ color: CP_LIGHT_FAINT }}>{ts('noAccountYet')}</span>
+                <span className="h-px flex-1" style={{ background: CP_LIGHT_BORDER }} />
+              </div>
+              <GhostButton
+                tone="light"
                 type="button"
-                onClick={() => { setStep('email'); setSignupFlow(false); setError(null); }}
+                onClick={() => { setStep('signup'); setSignupFlow(true); setError(null); }}
                 disabled={busy}
-                className="font-medium underline-offset-2 hover:underline"
-                style={{ color: CP_GREEN }}
+                className="w-full"
               >
-                {ts('backToSignIn')}
-              </button>
-            </p>
-          </form>
-        )}
+                <UserPlus className="size-4" style={{ color: CP_GREEN }} />
+                {ts('createAccountCta')}
+              </GhostButton>
+            </form>
+          )}
 
-        {step === 'code' && (
-          <form onSubmit={verify} className="space-y-4">
-            {signupFlow && <StepIndicator current={2} labels={[ts('step1'), ts('step2'), ts('step3')]} />}
-            <div className="space-y-2 text-center">
-              <CheckCircle2 className="mx-auto size-9" style={{ color: CP_GREEN }} />
-              <p className="text-base font-medium text-white">{t('codeSent')}</p>
-              <p className="text-sm text-white/60">{t('codeSentDesc')}</p>
-            </div>
-            <OtpCodeInput
-              value={code} onChange={setCode} disabled={busy}
-              label={t('codeLabel')} idPrefix="cp-code"
-            />
-            {error && <ErrorBanner message={error} />}
-            <BrandButton type="submit" loading={busy} disabled={code.trim().length < 6} className="w-full">
-              {t('verify')}
-            </BrandButton>
-            <div className="flex items-center justify-between text-xs">
-              <button
-                type="button" onClick={() => { setStep('email'); setSignupFlow(false); setCode(''); setError(null); }}
-                className="min-h-12 text-white/50 underline-offset-2 hover:text-white/80 hover:underline" disabled={busy}
-              >
-                {t('changeEmail')}
-              </button>
-              <button
-                type="button" onClick={() => void requestCode(false)}
-                disabled={busy || resendIn > 0}
-                className="min-h-12 font-medium underline-offset-2 hover:underline disabled:no-underline disabled:text-white/45"
-                style={{ color: resendIn > 0 || busy ? undefined : CP_GREEN }}
-              >
-                {resendIn > 0 ? t('resendCountdown', { seconds: resendIn }) : t('resend')}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {step === 'cv' && (
-          <div className="space-y-4">
-            {signupFlow && <StepIndicator current={2} labels={[ts('step1'), ts('step2'), ts('step3')]} />}
-            <div className="flex items-center gap-2 text-base font-medium text-white">
-              <FileText className="size-4" style={{ color: CP_GREEN }} /> {ts('cvStepHeading')}
-            </div>
-            {cvUploadError ? (
-              <>
-                <ErrorBanner message={cvUploadError} />
-                <p className="text-sm text-white/50">{ts('cvUploadFailedDesc')}</p>
-                <BrandButton
-                  type="button" loading={busy} className="w-full"
-                  onClick={() => void uploadCv(pinAlreadySet)}
+          {step === 'signup' && (
+            <form onSubmit={submitSignup} className="space-y-4">
+              <StepIndicator current={1} labels={[ts('step1'), ts('step2'), ts('step3')]} />
+              <div className="flex items-center gap-2 text-base font-medium text-[#0D0D0D]">
+                <UserPlus className="size-4" style={{ color: CP_GREEN }} /> {ts('heading')}
+              </div>
+              <p className="text-sm" style={{ color: CP_LIGHT_MUTED }}>{ts('subtitle')}</p>
+              {error && <ErrorBanner tone="light" message={error} />}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label htmlFor="cp-su-name" className={labelCls} style={{ color: CP_LIGHT_MUTED }}>{ts('fullNameLabel')}</label>
+                  <input
+                    id="cp-su-name" type="text" required minLength={2} maxLength={120}
+                    value={fullName} onChange={(e) => setFullName(e.target.value)}
+                    disabled={busy} className={cpInputClassLight}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label htmlFor="cp-su-position" className={labelCls} style={{ color: CP_LIGHT_MUTED }}>{ts('positionLabel')}</label>
+                  <input
+                    id="cp-su-position" type="text" required minLength={2} maxLength={160}
+                    value={position} onChange={(e) => setPosition(e.target.value)}
+                    placeholder={ts('positionPlaceholder')}
+                    disabled={busy} className={cpInputClassLight}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="cp-su-email" className={labelCls} style={{ color: CP_LIGHT_MUTED }}>{t('emailLabel')}</label>
+                <input
+                  id="cp-su-email" type="email" required value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t('emailPlaceholder')} dir="ltr" disabled={busy}
+                  className={cpInputClassLight}
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label htmlFor="cp-su-phone" className={labelCls} style={{ color: CP_LIGHT_MUTED }}>{ts('phoneLabel')}</label>
+                  <input
+                    id="cp-su-phone" type="tel" required value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+213 555 00 00 00" dir="ltr" disabled={busy}
+                    className={cpInputClassLight}
+                  />
+                  <p className="text-[11px]" style={{ color: CP_LIGHT_FAINT }}>{ts('phoneCountryCodeHint')}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label htmlFor="cp-su-city" className={labelCls} style={{ color: CP_LIGHT_MUTED }}>{ts('cityLabel')}</label>
+                  <select
+                    id="cp-su-city" required value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    disabled={busy} className={cpInputClassLight}
+                  >
+                    <option value="" disabled>{ts('cityPlaceholder')}</option>
+                    {algerianCities.map((c) => (
+                      // Stored value is the French display name — consistent with
+                      // every existing mentor record (rendered raw on profiles).
+                      <option key={c.code} value={c.nameFr}>
+                        {getCityName(c.code, locale)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="cp-su-field" className={labelCls} style={{ color: CP_LIGHT_MUTED }}>{ts('fieldLabel')}</label>
+                <select
+                  id="cp-su-field" required value={field}
+                  onChange={(e) => setField(e.target.value)}
+                  disabled={busy} className={cpInputClassLight}
                 >
-                  {ts('cvRetry')}
-                </BrandButton>
+                  <option value="" disabled>{ts('fieldPlaceholder')}</option>
+                  {consultationFields.map((f) => (
+                    <option key={f.code} value={f.code}>
+                      {getConsultationFieldLabel(f.code, locale)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <span className={`block ${labelCls}`} style={{ color: CP_LIGHT_MUTED }}>{ts('cvLabel')}</span>
+                {cvFile ? (
+                  <div className="flex items-center gap-3 rounded-2xl border px-3.5 py-3"
+                    style={{ borderColor: 'rgba(48,167,53,0.35)', background: CP_GREEN_TINT }}>
+                    <FileText className="size-5 shrink-0" style={{ color: CP_GREEN }} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-[#0D0D0D]">{cvFile.name}</span>
+                      <span className="block text-xs" style={{ color: CP_LIGHT_MUTED }}>
+                        {(cvFile.size / (1024 * 1024)).toFixed(1)} MB — {ts('cvSelected')}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => { setCvFile(null); setCvFieldError(null); }}
+                      disabled={busy}
+                      aria-label={ts('cvRemove')}
+                      className="flex size-10 shrink-0 items-center justify-center rounded-xl transition-colors hover:bg-black/5"
+                      style={{ color: CP_LIGHT_MUTED }}
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label
+                    htmlFor="cp-su-cv"
+                    className="flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl border border-dashed px-4 py-6 text-center transition-colors hover:bg-[#F7F8F9]"
+                    style={{ borderColor: cvFieldError ? '#FCA5A5' : '#D1D6D3', background: cvFieldError ? '#FEF2F2' : '#F7F8F9' }}
+                  >
+                    <UploadCloud className="size-6" style={{ color: CP_GREEN }} />
+                    <span className="text-sm font-medium text-[#0D0D0D]">{ts('cvDropTitle')}</span>
+                    <span className="text-xs" style={{ color: CP_LIGHT_MUTED }}>{ts('cvHint')}</span>
+                    <input
+                      id="cp-su-cv" type="file" accept="application/pdf" className="sr-only"
+                      onChange={onCvChange} disabled={busy}
+                    />
+                  </label>
+                )}
+                {cvFieldError && <p className="text-sm text-red-600">{cvFieldError}</p>}
+              </div>
+              <p className="text-[11px] leading-relaxed" style={{ color: CP_LIGHT_FAINT }}>{ts('reviewNote')}</p>
+
+              {/* Explicit data-processing consent — Law 18-07 (required) */}
+              <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed" style={{ color: CP_LIGHT_MUTED }}>
+                <input
+                  type="checkbox"
+                  checked={acceptPrivacy}
+                  onChange={(e) => setAcceptPrivacy(e.target.checked)}
+                  disabled={busy}
+                  className="mt-0.5 size-4 shrink-0 rounded"
+                  style={{ accentColor: CP_GREEN }}
+                />
+                <span>
+                  {ts.rich('privacyAgreement', {
+                    privacyLink: (chunks) => (
+                      <a
+                        href={`/${routeLocale}/privacy-policy`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium underline underline-offset-2"
+                        style={{ color: CP_GREEN_TEXT }}
+                      >
+                        {chunks}
+                      </a>
+                    ),
+                  })}
+                </span>
+              </label>
+
+              <BrandButton
+                tone="light"
+                type="submit" loading={busy}
+                disabled={
+                  fullName.trim().length < 2 || position.trim().length < 2 || !email.trim() ||
+                  phone.trim().length < 6 || !city || !field || !cvFile || !acceptPrivacy
+                }
+                className="w-full"
+              >
+                {ts('submit')}
+              </BrandButton>
+              <p className="text-center text-sm" style={{ color: CP_LIGHT_MUTED }}>
+                {ts('alreadyHaveAccount')}{' '}
                 <button
-                  type="button" disabled={busy}
-                  onClick={() => { setCvFile(null); setCvUploadError(null); afterVerify(pinAlreadySet); }}
-                  className="w-full text-center text-xs text-white/45 underline-offset-2 hover:text-white/70 hover:underline"
+                  type="button"
+                  onClick={() => { setStep('email'); setSignupFlow(false); setError(null); }}
+                  disabled={busy}
+                  className="font-medium underline-offset-2 hover:underline"
+                  style={{ color: CP_GREEN_TEXT }}
                 >
-                  {ts('cvSkip')}
+                  {ts('backToSignIn')}
                 </button>
-              </>
-            ) : (
-              <p className="text-sm text-white/50">{ts('cvUploading')}</p>
-            )}
-          </div>
-        )}
+              </p>
+            </form>
+          )}
 
-        {step === 'setPin' && (
-          <form onSubmit={savePin} className="space-y-4">
-            {signupFlow && <StepIndicator current={3} labels={[ts('step1'), ts('step2'), ts('step3')]} />}
-            <div className="flex items-center gap-2 text-base font-medium text-white">
-              <KeyRound className="size-4" style={{ color: CP_GREEN }} /> {ta('setHeading')}
-            </div>
-            <p className="text-sm text-white/50">{ta('setSubtitle')}</p>
-            <div className="space-y-1.5">
-              <label htmlFor="cp-pin" className="text-sm font-medium text-white/80">{ta('pinLabel')}</label>
-              <input
-                id="cp-pin" inputMode="numeric" autoComplete="off" dir="ltr"
-                value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder={ta('pinPlaceholder')} disabled={busy}
-                className={`${cpInputClass} text-center text-lg tracking-[0.4em]`}
+          {step === 'code' && (
+            <form onSubmit={verify} className="space-y-4">
+              {signupFlow && <StepIndicator current={2} labels={[ts('step1'), ts('step2'), ts('step3')]} />}
+              <div className="space-y-2 text-center">
+                <CheckCircle2 className="mx-auto size-9" style={{ color: CP_GREEN }} />
+                <p className="text-base font-medium text-[#0D0D0D]">{t('codeSent')}</p>
+                <p className="text-sm" style={{ color: CP_LIGHT_MUTED }}>{t('codeSentDesc')}</p>
+              </div>
+              <OtpCodeInput
+                value={code} onChange={setCode} disabled={busy}
+                label={t('codeLabel')} idPrefix="cp-code" tone="light"
               />
+              {error && <ErrorBanner tone="light" message={error} />}
+              <BrandButton tone="light" type="submit" loading={busy} disabled={code.trim().length < 6} className="w-full">
+                {t('verify')}
+              </BrandButton>
+              <div className="flex items-center justify-between text-xs">
+                <button
+                  type="button" onClick={() => { setStep('email'); setSignupFlow(false); setCode(''); setError(null); }}
+                  className="min-h-12 underline-offset-2 hover:underline" style={{ color: CP_LIGHT_MUTED }} disabled={busy}
+                >
+                  {t('changeEmail')}
+                </button>
+                <button
+                  type="button" onClick={() => void requestCode(false)}
+                  disabled={busy || resendIn > 0}
+                  className="min-h-12 font-medium underline-offset-2 hover:underline disabled:no-underline"
+                  style={{ color: resendIn > 0 || busy ? CP_LIGHT_FAINT : CP_GREEN_TEXT }}
+                >
+                  {resendIn > 0 ? t('resendCountdown', { seconds: resendIn }) : t('resend')}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {step === 'cv' && (
+            <div className="space-y-4">
+              {signupFlow && <StepIndicator current={2} labels={[ts('step1'), ts('step2'), ts('step3')]} />}
+              <div className="flex items-center gap-2 text-base font-medium text-[#0D0D0D]">
+                <FileText className="size-4" style={{ color: CP_GREEN }} /> {ts('cvStepHeading')}
+              </div>
+              {cvUploadError ? (
+                <>
+                  <ErrorBanner tone="light" message={cvUploadError} />
+                  <p className="text-sm" style={{ color: CP_LIGHT_MUTED }}>{ts('cvUploadFailedDesc')}</p>
+                  <BrandButton
+                    tone="light"
+                    type="button" loading={busy} className="w-full"
+                    onClick={() => void uploadCv(pinAlreadySet)}
+                  >
+                    {ts('cvRetry')}
+                  </BrandButton>
+                  <button
+                    type="button" disabled={busy}
+                    onClick={() => { setCvFile(null); setCvUploadError(null); afterVerify(pinAlreadySet); }}
+                    className="w-full text-center text-xs underline-offset-2 hover:underline"
+                    style={{ color: CP_LIGHT_FAINT }}
+                  >
+                    {ts('cvSkip')}
+                  </button>
+                </>
+              ) : (
+                <p className="text-sm" style={{ color: CP_LIGHT_MUTED }}>{ts('cvUploading')}</p>
+              )}
             </div>
-            <label className="flex cursor-pointer items-center gap-2 text-xs text-white/60">
-              <input
-                type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)}
-                disabled={busy} className="size-4 accent-[#30a735]"
-              />
-              {ta('rememberDevice')}
-            </label>
-            {error && <ErrorBanner message={error} />}
-            <BrandButton type="submit" loading={busy} disabled={pin.trim().length < 4} className="w-full">
-              {ta('submitSet')}
-            </BrandButton>
-          </form>
-        )}
+          )}
+
+          {step === 'setPin' && (
+            <form onSubmit={savePin} className="space-y-4">
+              {signupFlow && <StepIndicator current={3} labels={[ts('step1'), ts('step2'), ts('step3')]} />}
+              <div className="flex items-center gap-2 text-base font-medium text-[#0D0D0D]">
+                <KeyRound className="size-4" style={{ color: CP_GREEN }} /> {ta('setHeading')}
+              </div>
+              <p className="text-sm" style={{ color: CP_LIGHT_MUTED }}>{ta('setSubtitle')}</p>
+              <div className="space-y-1.5">
+                <label htmlFor="cp-pin" className={labelCls} style={{ color: CP_LIGHT_MUTED }}>{ta('pinLabel')}</label>
+                <input
+                  id="cp-pin" inputMode="numeric" autoComplete="off" dir="ltr"
+                  value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder={ta('pinPlaceholder')} disabled={busy}
+                  className={`${cpInputClassLight} text-center text-lg tracking-[0.4em]`}
+                />
+              </div>
+              <label className="flex cursor-pointer items-center gap-2 text-xs" style={{ color: CP_LIGHT_MUTED }}>
+                <input
+                  type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)}
+                  disabled={busy} className="size-4" style={{ accentColor: CP_GREEN }}
+                />
+                {ta('rememberDevice')}
+              </label>
+              {error && <ErrorBanner tone="light" message={error} />}
+              <BrandButton tone="light" type="submit" loading={busy} disabled={pin.trim().length < 4} className="w-full">
+                {ta('submitSet')}
+              </BrandButton>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

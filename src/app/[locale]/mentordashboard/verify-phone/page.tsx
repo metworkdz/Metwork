@@ -27,12 +27,12 @@ export default async function VerifyPhonePage({ params }: PageProps) {
 
   if (!(await readMentorSession())) redirect('/mentordashboard');
   return (
-    <div dir="auto" className="dark min-h-[100dvh] bg-[#0D0D0D] text-white antialiased">
-      <div className="mx-auto max-w-xl px-4">
-        <Suspense>
-          <PhoneVerify />
-        </Suspense>
-      </div>
+    <div dir="auto" className="relative min-h-[100dvh] overflow-hidden bg-[#FAFAFA] text-[#0D0D0D] antialiased">
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-dot-grid opacity-70" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[480px] hero-glow" />
+      <Suspense>
+        <PhoneVerify />
+      </Suspense>
     </div>
   );
 }

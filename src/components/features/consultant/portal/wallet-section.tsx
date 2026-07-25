@@ -18,8 +18,8 @@ import {
   isValidAccountNumber, methodForAccountType, accountTypeForMethod, type WithdrawalMethod,
 } from '@/components/features/wallet/payout-account';
 import {
-  BrandButton, CP_GREEN, EmptyBlock, ErrorBanner, Field, FlowSheet,
-  SectionCard, SectionHeading, StatTile, cpInputClass, fmtDZD,
+  BrandButton, CP_GREEN, CP_GREEN_TEXT, CP_LIGHT_BORDER, CP_LIGHT_FAINT, CP_LIGHT_MUTED, EmptyBlock, ErrorBanner,
+  Field, FlowSheet, SectionCard, SectionHeading, StatTile, cpInputClassLight, fmtDZD,
 } from './shared';
 
 export function WalletSection({ wallet, onChange }: { wallet: ConsultantMe['wallet']; onChange: () => Promise<void> }) {
@@ -45,7 +45,8 @@ export function WalletSection({ wallet, onChange }: { wallet: ConsultantMe['wall
         title={t('walletHeading')}
         action={
           <button type="button" onClick={() => setPinOpen(true)}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/15 px-3 text-xs text-white/80 hover:bg-white/[0.06]">
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border px-3 text-xs text-[#0D0D0D] hover:bg-[#F7F8F9]"
+            style={{ borderColor: CP_LIGHT_BORDER }}>
             <KeyRound className="size-3.5" /> {tAccess('changeHeading')}
           </button>
         }
@@ -61,46 +62,47 @@ export function WalletSection({ wallet, onChange }: { wallet: ConsultantMe['wall
       <SectionCard className="flex items-center justify-between gap-3 p-3">
         <div className="flex min-w-0 items-center gap-3">
           {account?.accountType === 'ccp'
-            ? <Mail className="size-4 shrink-0 text-white/50" />
-            : <Landmark className="size-4 shrink-0 text-white/50" />}
+            ? <Mail className="size-4 shrink-0" style={{ color: CP_LIGHT_MUTED }} />
+            : <Landmark className="size-4 shrink-0" style={{ color: CP_LIGHT_MUTED }} />}
           {account ? (
             <div className="min-w-0">
-              <p className="text-sm font-medium text-white">
+              <p className="text-sm font-medium text-[#0D0D0D]">
                 {account.accountType === 'bank' ? t('accountBank') : t('accountCcp')}
               </p>
-              <p className="truncate text-[11px] text-white/45">
+              <p className="truncate text-[11px]" style={{ color: CP_LIGHT_FAINT }}>
                 {account.holderName}
                 {' · '}
                 <span dir="ltr" className="tabular-nums">{account.accountNumber}</span>
               </p>
             </div>
           ) : (
-            <p className="text-xs text-white/50">{t('accountNone')}</p>
+            <p className="text-xs" style={{ color: CP_LIGHT_MUTED }}>{t('accountNone')}</p>
           )}
         </div>
         <button type="button" onClick={() => setAccountOpen(true)}
-          className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-white/15 px-3 text-xs text-white/80 hover:bg-white/[0.06]">
+          className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-xs text-[#0D0D0D] hover:bg-[#F7F8F9]"
+          style={{ borderColor: CP_LIGHT_BORDER }}>
           <Pencil className="size-3.5" /> {account ? t('accountEdit') : t('accountAdd')}
         </button>
       </SectionCard>
 
-      <BrandButton onClick={() => setReqOpen(true)} className="w-full">
+      <BrandButton tone="light" onClick={() => setReqOpen(true)} className="w-full">
         <Wallet className="size-4" /> {t('requestHeading')}
       </BrandButton>
 
       {/* History */}
       <div>
-        <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-white/45">{t('historyHeading')}</p>
+        <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide" style={{ color: CP_LIGHT_MUTED }}>{t('historyHeading')}</p>
         <SectionCard className="p-2">
           {items === null ? null : items.length === 0 ? (
             <div className="p-2"><EmptyBlock>{t('empty')}</EmptyBlock></div>
           ) : (
-            <ul className="divide-y divide-white/[0.06]">
+            <ul className="divide-y divide-[#F0F1F2]">
               {items.map((w) => (
                 <li key={w.id} className="flex items-center justify-between gap-3 px-2 py-2.5">
                   <div>
-                    <p className="text-sm font-medium tabular-nums text-white">{fmtDZD(w.amount)}</p>
-                    <p className="text-[11px] text-white/40">{new Date(w.createdAt).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium tabular-nums text-[#0D0D0D]">{fmtDZD(w.amount)}</p>
+                    <p className="text-[11px]" style={{ color: CP_LIGHT_FAINT }}>{new Date(w.createdAt).toLocaleDateString()}</p>
                   </div>
                   <Badge variant={w.status === 'APPROVED' ? 'success' : w.status === 'REJECTED' ? 'danger' : 'warning'}>
                     {t(`status${w.status[0]}${w.status.slice(1).toLowerCase()}`)}
@@ -172,7 +174,8 @@ function PayoutAccountForm({
   return (
     <div className="space-y-4">
       {/* Account type — segmented control */}
-      <div role="radiogroup" aria-label={t('accountTypeLabel')} className="grid grid-cols-2 gap-1 rounded-2xl border border-white/12 bg-white/[0.045] p-1">
+      <div role="radiogroup" aria-label={t('accountTypeLabel')} className="grid grid-cols-2 gap-1 rounded-2xl border p-1"
+        style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}>
         {(['bank', 'ccp'] as const).map((v) => (
           <button
             key={v}
@@ -181,7 +184,7 @@ function PayoutAccountForm({
             aria-checked={type === v}
             onClick={() => setType(v)}
             className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition ${
-              type === v ? 'bg-white/[0.1] text-white' : 'text-white/50 hover:text-white/80'
+              type === v ? 'bg-white text-[#0D0D0D] shadow-sm' : 'text-[#5A615E] hover:text-[#0D0D0D]'
             }`}
           >
             {v === 'bank' ? <Landmark className="size-4" /> : <Mail className="size-4" />}
@@ -192,7 +195,7 @@ function PayoutAccountForm({
 
       <Field label={t('accountHolderLabel')} htmlFor="cp-pa-holder">
         <input id="cp-pa-holder" value={holder} disabled={busy}
-          onChange={(e) => setHolder(e.target.value)} className={cpInputClass} />
+          onChange={(e) => setHolder(e.target.value)} className={cpInputClassLight} />
       </Field>
 
       <Field
@@ -202,10 +205,10 @@ function PayoutAccountForm({
       >
         <input id="cp-pa-number" dir="ltr" inputMode="numeric" value={number} disabled={busy}
           onChange={(e) => setNumber(e.target.value.replace(/[^\d\s]/g, ''))}
-          placeholder="00799999000123456789" className={`${cpInputClass} tabular-nums`} />
+          placeholder="00799999000123456789" className={`${cpInputClassLight} tabular-nums`} />
       </Field>
 
-      {error && <ErrorBanner message={error} />}
+      {error && <ErrorBanner tone="light" message={error} />}
       {renderSubmit(busy, submit, valid)}
     </div>
   );
@@ -225,7 +228,7 @@ function PayoutAccountSheet({
         initial={initial}
         onSaved={onSaved}
         renderSubmit={(busy, submit, valid) => (
-          <BrandButton onClick={submit} loading={busy} disabled={!valid} className="w-full">
+          <BrandButton tone="light" onClick={submit} loading={busy} disabled={!valid} className="w-full">
             {t('accountSave')}
           </BrandButton>
         )}
@@ -287,7 +290,7 @@ function WithdrawSheet({
       open onOpenChange={(o) => { if (!o) onClose(); }}
       title={title}
       footer={step === 'withdraw' ? (
-        <BrandButton onClick={submit} loading={busy} disabled={!amountOk} className="w-full">
+        <BrandButton tone="light" onClick={submit} loading={busy} disabled={!amountOk} className="w-full">
           {t('request')}
         </BrandButton>
       ) : undefined}
@@ -301,7 +304,7 @@ function WithdrawSheet({
             setStep('withdraw');
           }}
           renderSubmit={(busy2, submit2, valid) => (
-            <BrandButton onClick={submit2} loading={busy2} disabled={!valid} className="w-full">
+            <BrandButton tone="light" onClick={submit2} loading={busy2} disabled={!valid} className="w-full">
               {t('accountSave')}
             </BrandButton>
           )}
@@ -314,14 +317,14 @@ function WithdrawSheet({
             <input id="cp-amt" type="number" inputMode="numeric" value={amount} dir="ltr"
               min={CP_MIN_WITHDRAWAL} max={available} step={1}
               onChange={(e) => setAmount(e.target.value)} placeholder="5000" disabled={busy}
-              className={`${cpInputClass} tabular-nums`} />
+              className={`${cpInputClassLight} tabular-nums`} />
           </Field>
           {amount.length > 0 && Number.isFinite(parsed) && parsed > available && (
-            <p className="text-xs text-red-400">{t('errorExceedsBalance')}</p>
+            <p className="text-xs text-red-600">{t('errorExceedsBalance')}</p>
           )}
 
           <div role="radiogroup" aria-label={t('methodLabel')} className="space-y-2">
-            <p className="text-xs font-medium text-white/60">{t('methodLabel')}</p>
+            <p className="text-xs font-medium" style={{ color: CP_LIGHT_MUTED }}>{t('methodLabel')}</p>
             {(['bank_transfer', 'ccp', 'cheque'] as const).map((m) => {
               const requiredType = accountTypeForMethod(m);
               const enabled = requiredType === null || account?.accountType === requiredType;
@@ -335,13 +338,14 @@ function WithdrawSheet({
                   onClick={() => setMethod(m)}
                   className={`flex w-full items-center justify-between gap-2 rounded-2xl border p-3 text-start text-sm transition ${
                     method === m && enabled
-                      ? 'border-[#30a735]/60 bg-[#30a735]/10 font-medium text-white'
-                      : 'border-white/12 text-white/70 hover:bg-white/[0.05]'
+                      ? 'border-[#30a735]/60 bg-[#30a735]/[0.06] font-medium text-[#0D0D0D]'
+                      : 'text-[#5A615E] hover:bg-[#F7F8F9]'
                   } ${!enabled ? 'cursor-not-allowed opacity-40' : ''}`}
+                  style={method === m && enabled ? undefined : { borderColor: CP_LIGHT_BORDER }}
                 >
                   <span>{t(`method.${m}`)}</span>
                   {!enabled && requiredType && (
-                    <span className="text-[11px] text-white/40">
+                    <span className="text-[11px]" style={{ color: CP_LIGHT_FAINT }}>
                       {requiredType === 'bank' ? t('methodNeedsBank') : t('methodNeedsCcp')}
                     </span>
                   )}
@@ -350,21 +354,22 @@ function WithdrawSheet({
               );
             })}
             <button type="button" onClick={() => setStep('account')}
-              className="text-xs font-medium text-white/60 underline-offset-2 hover:text-white hover:underline">
+              className="text-xs font-medium underline-offset-2 hover:text-[#0D0D0D] hover:underline"
+              style={{ color: CP_LIGHT_MUTED }}>
               {account ? t('accountEdit') : t('accountAdd')}
             </button>
           </div>
 
-          {error && <ErrorBanner message={error} />}
+          {error && <ErrorBanner tone="light" message={error} />}
         </div>
       )}
 
       {step === 'done' && (
         <div className="flex flex-col items-center gap-3 py-6 text-center">
           <CheckCircle2 className="size-10" style={{ color: CP_GREEN }} />
-          <p className="text-base font-semibold text-white">{t('doneTitle')}</p>
-          <p className="max-w-[36ch] text-sm text-white/60">{t('doneBody')}</p>
-          <BrandButton onClick={onClose} className="mt-2 w-full">{t('doneClose')}</BrandButton>
+          <p className="text-base font-semibold text-[#0D0D0D]">{t('doneTitle')}</p>
+          <p className="max-w-[36ch] text-sm" style={{ color: CP_LIGHT_MUTED }}>{t('doneBody')}</p>
+          <BrandButton tone="light" onClick={onClose} className="mt-2 w-full">{t('doneClose')}</BrandButton>
         </div>
       )}
     </FlowSheet>
@@ -400,26 +405,26 @@ function ChangePinSheet({ onClose }: { onClose: () => void }) {
       open onOpenChange={(o) => { if (!o) onClose(); }}
       title={t('changeHeading')}
       footer={done ? undefined : (
-        <BrandButton onClick={submit} loading={busy} disabled={currentPin.length < 4 || newPin.length < 4} className="w-full">
+        <BrandButton tone="light" onClick={submit} loading={busy} disabled={currentPin.length < 4 || newPin.length < 4} className="w-full">
           {t('changeCta')}
         </BrandButton>
       )}
     >
       {done ? (
-        <p className="py-6 text-center text-sm" style={{ color: CP_GREEN }}>{t('changed')}</p>
+        <p className="py-6 text-center text-sm" style={{ color: CP_GREEN_TEXT }}>{t('changed')}</p>
       ) : (
         <div className="space-y-4">
           <Field label={t('currentPinLabel')} htmlFor="cp-cur-pin">
             <input id="cp-cur-pin" inputMode="numeric" dir="ltr" value={currentPin} disabled={busy}
               onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              className={`${cpInputClass} text-center tracking-[0.3em]`} />
+              className={`${cpInputClassLight} text-center tracking-[0.3em]`} />
           </Field>
           <Field label={t('newPinLabel')} hint={t('invalidFormat')} htmlFor="cp-new-pin">
             <input id="cp-new-pin" inputMode="numeric" dir="ltr" value={newPin} disabled={busy}
               onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              className={`${cpInputClass} text-center tracking-[0.3em]`} />
+              className={`${cpInputClassLight} text-center tracking-[0.3em]`} />
           </Field>
-          {error && <ErrorBanner message={error} />}
+          {error && <ErrorBanner tone="light" message={error} />}
         </div>
       )}
     </FlowSheet>

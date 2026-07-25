@@ -16,12 +16,14 @@ export const metadata: Metadata = {
   title: 'Metwork Mentor',
   applicationName: 'Metwork Mentor',
   manifest: '/mentor.webmanifest',
-  appleWebApp: { capable: true, title: 'Metwork Mentor', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: 'Metwork Mentor', statusBarStyle: 'default' },
   robots: { index: false, follow: false },
 };
 
+// The dashboard redesign uses a light canvas across every phase (loading /
+// PIN-unlock / signed-in), all rendered by ConsultantPortal.
 export const viewport: Viewport = {
-  themeColor: '#0D0D0D',
+  themeColor: '#FAFAFA',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',

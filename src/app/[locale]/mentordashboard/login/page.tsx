@@ -13,12 +13,12 @@ export const metadata: Metadata = {
   title: 'Metwork Mentor',
   applicationName: 'Metwork Mentor',
   manifest: '/mentor.webmanifest',
-  appleWebApp: { capable: true, title: 'Metwork Mentor', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: 'Metwork Mentor', statusBarStyle: 'default' },
   robots: { index: false, follow: false },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0D0D0D',
+  themeColor: '#FAFAFA',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -30,7 +30,9 @@ interface PageProps {
 
 /**
  * Consultant email → OTP sign-in (auth state machine §2–4). Already-signed-in
- * consultants are bounced to the dashboard.
+ * consultants are bounced to the dashboard. Light, brand-system surface —
+ * EmailOtpSignIn owns the centered card; this shell just provides the page
+ * background and the top-end language control.
  */
 export default async function MentorLoginPage({ params }: PageProps) {
   const { locale } = await params;
@@ -38,15 +40,15 @@ export default async function MentorLoginPage({ params }: PageProps) {
 
   if (await readMentorSession()) redirect('/mentordashboard');
   return (
-    <div dir="auto" className="dark min-h-[100dvh] bg-[#0D0D0D] text-white antialiased">
-      <div className="mx-auto max-w-xl px-4">
-        <div className="flex justify-end pt-3">
-          <LanguageSwitcher />
-        </div>
-        <Suspense>
-          <EmailOtpSignIn />
-        </Suspense>
+    <div dir="auto" className="relative min-h-[100dvh] overflow-hidden bg-[#FAFAFA] text-[#0D0D0D] antialiased">
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-dot-grid opacity-70" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[480px] hero-glow" />
+      <div className="flex justify-end px-4 pt-4 sm:px-6">
+        <LanguageSwitcher tone="light" />
       </div>
+      <Suspense>
+        <EmailOtpSignIn />
+      </Suspense>
     </div>
   );
 }

@@ -13,8 +13,8 @@ import { ApiClientError } from '@/lib/api-client';
 import { consultantService, type ConsultantMentor } from '@/services/consultant.service';
 import { cn } from '@/lib/utils';
 import {
-  BrandButton, CP_GREEN, ErrorBanner, Field, GhostButton, SectionCard, SectionHeading, cpInputClass,
-  uploadConsultantFile,
+  BrandButton, CP_GREEN, CP_GREEN_TEXT, CP_LIGHT_BORDER, CP_LIGHT_FAINT, CP_LIGHT_MUTED, ErrorBanner, Field,
+  GhostButton, SectionCard, SectionHeading, cpInputClassLight, uploadConsultantFile,
 } from './shared';
 
 export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; onSaved: (m: ConsultantMentor) => void }) {
@@ -110,7 +110,8 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
           <img
             src={avatarUrl || '/assets/profilelogogreen.png'}
             alt={mentor.fullName}
-            className="size-16 shrink-0 rounded-2xl border border-white/10 object-cover"
+            className="size-16 shrink-0 rounded-2xl border object-cover"
+            style={{ borderColor: CP_LIGHT_BORDER }}
           />
           <div className="min-w-0 flex-1 space-y-2">
             <input
@@ -125,7 +126,7 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
             />
             <div className="flex flex-wrap gap-2">
               <GhostButton
-                type="button" disabled={uploading !== null}
+                tone="light" type="button" disabled={uploading !== null}
                 onClick={() => avatarInputRef.current?.click()}
               >
                 {uploading === 'avatar'
@@ -133,7 +134,7 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
                   : <ImageUp className="size-3.5" />} {t('uploadPhoto')}
               </GhostButton>
               <GhostButton
-                type="button" disabled={uploading !== null}
+                tone="light" type="button" disabled={uploading !== null}
                 onClick={() => cvInputRef.current?.click()}
               >
                 {uploading === 'cv'
@@ -141,26 +142,26 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
                   : <FileText className="size-3.5" />} {cvUrl ? t('replaceCv') : t('uploadCv')}
               </GhostButton>
             </div>
-            <p className="text-[11px] text-white/40">
+            <p className="text-[11px]" style={{ color: CP_LIGHT_FAINT }}>
               {cvUrl ? t('cvOnFile') : t('uploadHint')}
             </p>
           </div>
         </div>
-        {uploadError && <ErrorBanner message={uploadError} />}
+        {uploadError && <ErrorBanner tone="light" message={uploadError} />}
 
         {/* Contact — phone is mandatory (WhatsApp recipient) + public city */}
         <Field label={t('phoneLabel')} hint={t('phoneHint')} htmlFor="cp-phone">
           <input
             id="cp-phone" type="tel" inputMode="tel" value={phone} dir="ltr"
             onChange={(e) => setPhone(e.target.value)} placeholder={t('phonePlaceholder')} disabled={saving}
-            className={cpInputClass}
+            className={cpInputClassLight}
           />
         </Field>
         <Field label={t('cityLabel')} hint={t('cityHint')} htmlFor="cp-city">
           <input
             id="cp-city" type="text" value={city} maxLength={120}
             onChange={(e) => setCity(e.target.value)} placeholder={t('cityPlaceholder')} disabled={saving}
-            className={cpInputClass}
+            className={cpInputClassLight}
           />
         </Field>
 
@@ -169,19 +170,20 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
           <textarea
             id="cp-bio" rows={4} value={bio} onChange={(e) => setBio(e.target.value)}
             placeholder={t('bioPlaceholder')} disabled={saving}
-            className={`${cpInputClass} h-auto resize-none py-2`}
+            className={`${cpInputClassLight} h-auto resize-none py-2`}
           />
         </Field>
 
         {/* Topics */}
         <Field label={t('topicsLabel')} hint={t('topicsHint')}>
           <div className="flex flex-wrap gap-1.5">
-            {topics.length === 0 && <span className="text-xs text-white/35">{t('topicsEmpty')}</span>}
+            {topics.length === 0 && <span className="text-xs" style={{ color: CP_LIGHT_FAINT }}>{t('topicsEmpty')}</span>}
             {topics.map((tp) => (
-              <span key={tp} className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.05] px-2.5 py-1 text-xs text-white/85">
+              <span key={tp} className="inline-flex items-center gap-1 rounded-full border bg-[#F7F8F9] px-2.5 py-1 text-xs text-[#2A2F2C]"
+                style={{ borderColor: CP_LIGHT_BORDER }}>
                 {tp}
                 <button type="button" onClick={() => setTopics((prev) => prev.filter((x) => x !== tp))}
-                  className="text-white/40 hover:text-white" aria-label="remove">
+                  className="text-[#8A918E] hover:text-[#0D0D0D]" aria-label="remove">
                   <X className="size-3" />
                 </button>
               </span>
@@ -191,10 +193,11 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
             <input
               value={topicDraft} onChange={(e) => setTopicDraft(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTopic(); } }}
-              placeholder={t('topicsPlaceholder')} disabled={saving} className={`${cpInputClass} h-9`}
+              placeholder={t('topicsPlaceholder')} disabled={saving} className={`${cpInputClassLight} h-9`}
             />
             <button type="button" onClick={addTopic} disabled={saving}
-              className="grid size-9 shrink-0 place-items-center rounded-xl border border-white/15 text-white/70 hover:text-white">
+              className="grid size-9 shrink-0 place-items-center rounded-xl border text-[#5A615E] hover:text-[#0D0D0D]"
+              style={{ borderColor: CP_LIGHT_BORDER }}>
               <Plus className="size-4" />
             </button>
           </div>
@@ -202,44 +205,45 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
 
         {/* Hourly rate — the live fee clients are charged (pro-rated by duration) */}
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-white/45">{t('ratesHeading')}</p>
-          <p className="text-[11px] text-white/40">{t('ratesHint')}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: CP_LIGHT_MUTED }}>{t('ratesHeading')}</p>
+          <p className="text-[11px]" style={{ color: CP_LIGHT_FAINT }}>{t('ratesHint')}</p>
           <Field label={t('hourlyRateLabel')} htmlFor="cp-fee">
             <input id="cp-fee" type="number" inputMode="numeric" min={0} value={fee} dir="ltr"
-              onChange={(e) => setFee(e.target.value)} disabled={saving} className={cpInputClass} placeholder="0" />
+              onChange={(e) => setFee(e.target.value)} disabled={saving} className={cpInputClassLight} placeholder="0" />
           </Field>
         </div>
 
         {/* Free intro */}
         <button
           type="button" onClick={() => setFreeIntro((v) => !v)} disabled={saving}
-          className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-start"
+          className="flex w-full items-center justify-between gap-3 rounded-xl border bg-[#F7F8F9] p-3 text-start"
+          style={{ borderColor: CP_LIGHT_BORDER }}
         >
           <span className="flex items-center gap-2">
             <Sparkles className="size-4" style={{ color: CP_GREEN }} />
             <span>
-              <span className="block text-sm font-medium text-white">{t('freeIntroLabel')}</span>
-              <span className="block text-[11px] text-white/45">{t('freeIntroHint')}</span>
+              <span className="block text-sm font-medium text-[#0D0D0D]">{t('freeIntroLabel')}</span>
+              <span className="block text-[11px]" style={{ color: CP_LIGHT_FAINT }}>{t('freeIntroHint')}</span>
             </span>
           </span>
           <span className={cn('relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors',
-            freeIntro ? '' : 'bg-white/15')}
+            freeIntro ? '' : 'bg-[#D1D6D3]')}
             style={freeIntro ? { backgroundColor: CP_GREEN } : undefined}>
-            <span className={cn('inline-block size-5 transform rounded-full bg-white transition-transform',
+            <span className={cn('inline-block size-5 transform rounded-full bg-white shadow transition-transform',
               freeIntro ? 'translate-x-[22px] rtl:-translate-x-[22px]' : 'translate-x-0.5 rtl:-translate-x-0.5')} />
           </span>
         </button>
 
         {/* Meeting defaults */}
         <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-white/45">{t('meetingHeading')}</p>
-          <p className="text-[11px] text-white/40">{t('hint')}</p>
-          <div className="inline-flex rounded-xl border border-white/10 bg-white/[0.03] p-1">
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: CP_LIGHT_MUTED }}>{t('meetingHeading')}</p>
+          <p className="text-[11px]" style={{ color: CP_LIGHT_FAINT }}>{t('hint')}</p>
+          <div className="inline-flex rounded-xl border p-1" style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}>
             {(['ONLINE', 'OFFLINE'] as const).map((m) => (
               <button
                 key={m} type="button" onClick={() => setMode(m)} disabled={saving}
                 className={cn('min-h-9 rounded-lg px-4 text-xs font-medium transition-colors',
-                  mode === m ? 'text-[#04130b]' : 'text-white/60 hover:text-white')}
+                  mode === m ? 'text-white' : 'text-[#5A615E] hover:text-[#0D0D0D]')}
                 style={mode === m ? { backgroundColor: CP_GREEN } : undefined}
               >
                 {m === 'ONLINE' ? t('modeOnline') : t('modeOffline')}
@@ -250,29 +254,29 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
             <Field label={t('linkLabel')} htmlFor="cp-def-link">
               <input id="cp-def-link" type="url" value={link} dir="ltr"
                 onChange={(e) => setLink(e.target.value)} placeholder={t('linkPlaceholder')} disabled={saving}
-                className={cpInputClass} />
+                className={cpInputClassLight} />
             </Field>
           ) : (
             <>
               <Field label={t('addressLabel')} hint={t('addressHint')} htmlFor="cp-def-address">
                 <input id="cp-def-address" type="text" value={address} maxLength={500}
                   onChange={(e) => setAddress(e.target.value)} placeholder={t('addressPlaceholder')} disabled={saving}
-                  className={cpInputClass} />
+                  className={cpInputClassLight} />
               </Field>
               <Field label={t('mapsLabel')} htmlFor="cp-def-maps">
                 <input id="cp-def-maps" type="url" value={mapsLink} dir="ltr"
                   onChange={(e) => setMapsLink(e.target.value)} placeholder={t('mapsPlaceholder')} disabled={saving}
-                  className={cpInputClass} />
+                  className={cpInputClassLight} />
               </Field>
             </>
           )}
         </div>
 
-        {error && <ErrorBanner message={error} />}
+        {error && <ErrorBanner tone="light" message={error} />}
         <div className="flex items-center gap-3">
-          <BrandButton onClick={save} loading={saving} className="px-5">{t('saveProfile')}</BrandButton>
+          <BrandButton tone="light" onClick={save} loading={saving} className="px-5">{t('saveProfile')}</BrandButton>
           {saved && (
-            <span className="flex items-center gap-1 text-xs" style={{ color: CP_GREEN }}>
+            <span className="flex items-center gap-1 text-xs" style={{ color: CP_GREEN_TEXT }}>
               <CheckCircle2 className="size-3.5" /> {t('savedProfile')}
             </span>
           )}
