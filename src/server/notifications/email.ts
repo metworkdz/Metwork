@@ -66,6 +66,16 @@ export async function sendResendEmail(opts: SendOptions): Promise<boolean> {
 
 /* ─────────────────────────── HTML templates ─────────────────────────── */
 
+/**
+ * The real public domain — always used for the logo image (and its link) in
+ * the shared email layout. NEXT_PUBLIC_APP_URL is dynamic (localhost in local
+ * dev, Vercel preview URLs) and a sent email is always opened by an external
+ * mail client that can never resolve those — only the real production origin
+ * is guaranteed reachable. In production NEXT_PUBLIC_APP_URL already equals
+ * this, so the constant changes nothing there.
+ */
+const EMAIL_PUBLIC_ORIGIN = 'https://metwork.dz';
+
 export function layout(content: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -81,8 +91,8 @@ export function layout(content: string): string {
         <!-- Header -->
         <tr>
           <td style="background:#30a735;padding:24px 40px;">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}" style="text-decoration:none;">
-              <img src="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/assets/Metworkwhitelogo.png"
+            <a href="${EMAIL_PUBLIC_ORIGIN}" style="text-decoration:none;">
+              <img src="${EMAIL_PUBLIC_ORIGIN}/assets/Metworkwhitelogo.png"
                    alt="Metwork" width="160" height="44"
                    style="display:block;height:44px;width:auto;"
                    onerror="this.style.display='none';this.nextElementSibling.style.display='inline';" />

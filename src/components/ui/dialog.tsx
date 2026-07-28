@@ -44,7 +44,13 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed start-1/2 top-1/2 z-50 grid w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rtl:translate-x-1/2 gap-4 rounded-xl border border-border bg-background p-6 shadow-xl',
+        // `grid-cols-[minmax(0,1fr)]`: an implicit `auto` track can never be
+        // sized below its content's min-content width, so a single unwrappable
+        // child (a `truncate` line, a nowrap button row) silently blows the
+        // dialog past `max-w-*` and adds a horizontal scrollbar. Flooring the
+        // track at 0 keeps it at the dialog width and lets children truncate
+        // or wrap as they were written to.
+        'fixed start-1/2 top-1/2 z-50 grid grid-cols-[minmax(0,1fr)] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rtl:translate-x-1/2 gap-4 rounded-xl border border-border bg-background p-6 shadow-xl',
         'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
         'max-h-[calc(100vh-4rem)] overflow-y-auto',
         className,

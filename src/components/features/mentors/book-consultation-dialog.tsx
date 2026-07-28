@@ -714,7 +714,10 @@ export function BookConsultationDialog({
               ) : user && (
                 <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5 text-sm">
                   <Mail className="size-4 shrink-0 text-primary" />
-                  <span className="min-w-0 flex-1 truncate">
+                  {/* Wraps rather than truncates: the email is the part that
+                      identifies the account, so cutting it off defeats the
+                      purpose of the confirmation line. */}
+                  <span className="min-w-0 flex-1 break-words">
                     <span className="text-muted-foreground">{t('bookingAsLabel')}: </span>
                     <span className="font-medium">{user.fullName}</span>
                     <span className="text-muted-foreground"> · {user.email}</span>
