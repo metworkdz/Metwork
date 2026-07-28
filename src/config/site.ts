@@ -5,6 +5,8 @@
 export const siteConfig = {
   name: 'Metwork',
   shortName: 'Metwork',
+  /** Short tagline for the browser-tab / SEO title only — see generateMetadata in the locale layout. */
+  tagline: "Algeria's Startup Network",
   description:
     "Algeria's unified startup ecosystem. Connecting entrepreneurs, investors, incubators, and coworking spaces in one platform.",
   url: process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz',

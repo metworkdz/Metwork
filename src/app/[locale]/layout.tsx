@@ -51,7 +51,7 @@ export async function generateMetadata({
 
   return {
     title: {
-      default: `${siteConfig.name} — ${siteConfig.description}`,
+      default: `${siteConfig.name} | ${siteConfig.tagline}`,
       template: `%s · ${siteConfig.name}`,
     },
     description: siteConfig.description,
