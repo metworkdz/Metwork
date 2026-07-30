@@ -18,27 +18,65 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 const EFFECTIVE_DATE = '2024-01-01';
-const LAST_UPDATED = '2025-01-01';
+const LAST_UPDATED = '2026-07-31';
 
-const TOC = [
-  { id: 'introduction',       label: '1. Introduction' },
-  { id: 'controller',         label: '2. Data controller' },
-  { id: 'data-collected',     label: '3. Data we collect' },
-  { id: 'how-we-use',         label: '4. How we use your data' },
-  { id: 'legal-basis',        label: '5. Legal basis for processing' },
-  { id: 'retention',          label: '6. Data retention' },
-  { id: 'sharing',            label: '7. Data sharing' },
-  { id: 'cookies',            label: '8. Cookies & tracking' },
-  { id: 'your-rights',        label: '9. Your rights' },
-  { id: 'security',           label: '10. Data security' },
-  { id: 'children',           label: '11. Children\'s privacy' },
-  { id: 'changes',            label: '12. Changes to this policy' },
-  { id: 'contact',            label: '13. Contact & DPO' },
-];
+const DPO_EMAIL = 'dpo@metwork.dz';
+
+const PLATFORM = siteConfig.entities.platform;
+const PAYMENTS = siteConfig.entities.internationalPayments;
+
+/** Section anchors, in document order. Labels come from `toc1…toc13`. */
+const TOC_IDS = [
+  'introduction', 'controller', 'data-collected', 'how-we-use', 'legal-basis',
+  'retention', 'sharing', 'cookies', 'your-rights', 'security', 'children',
+  'changes', 'contact',
+] as const;
 
 export default async function PrivacyPolicyPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('pages.privacy');
+
+  /**
+   * Rich-tag renderers and the values they wrap. The anchor markup lives in the
+   * message because word order around a link differs per language; the
+   * addresses come from siteConfig so they stay defined in one place.
+   */
+  const linkTags = {
+    url: siteConfig.url,
+    email: siteConfig.contact.email,
+    dpoEmail: DPO_EMAIL,
+    urlLink: (chunks: React.ReactNode) => (
+      <a href={siteConfig.url} className="text-primary hover:underline">{chunks}</a>
+    ),
+    emailLink: (chunks: React.ReactNode) => (
+      <a href={`mailto:${siteConfig.contact.email}`} className="text-primary hover:underline">{chunks}</a>
+    ),
+    dpoLink: (chunks: React.ReactNode) => (
+      <a href={`mailto:${DPO_EMAIL}`} className="text-primary hover:underline">{chunks}</a>
+    ),
+  };
+
+  /**
+   * Entity names interpolated into the payment clauses. The company name is a
+   * legal identifier and is never translated; the country appears as prose, so
+   * it comes from the message catalogue.
+   */
+  const entityVars = {
+    platformName: PLATFORM.name,
+    paymentsName: PAYMENTS.name,
+    paymentsCountry: t('paymentsCountryName'),
+  };
+
+  const purposeRows = ([1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const).map((n) => ({
+    purpose: t(`s4r${n}p`),
+    basis: t(`s4r${n}b`),
+  }));
+
+  const rights = ([1, 2, 3, 4, 5, 6, 7, 8] as const).map((n) => ({
+    title: t(`s9r${n}Title`),
+    desc: t(`s9r${n}Desc`),
+  }));
 
   return (
     <>
@@ -47,22 +85,19 @@ export default async function PrivacyPolicyPage({ params }: PageProps) {
         <Container size="md">
           <div className="max-w-2xl">
             <p className="text-xs font-medium uppercase tracking-widest text-primary">
-              Legal
+              {t('heroEyebrow')}
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Privacy Policy
+              {t('heroTitle')}
             </h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Effective {EFFECTIVE_DATE} · Last updated {LAST_UPDATED} ·{' '}
+              {t('heroMeta', { effectiveDate: EFFECTIVE_DATE, lastUpdated: LAST_UPDATED })}{' '}
               <span className="font-medium text-foreground">
                 {siteConfig.legal.lawReference}
               </span>
             </p>
             <p className="mt-4 text-base text-muted-foreground leading-relaxed">
-              Metwork is committed to protecting the privacy of every person who uses our
-              platform. This policy explains what data we collect, why we collect it, and
-              the rights you have under Algerian Law 18-07 of June 10, 2018, on the
-              protection of natural persons in the processing of personal data.
+              {t('heroIntro')}
             </p>
           </div>
         </Container>
@@ -77,16 +112,16 @@ export default async function PrivacyPolicyPage({ params }: PageProps) {
             <aside className="hidden lg:block">
               <div className="sticky top-20">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Contents
+                  {t('tocHeading')}
                 </p>
                 <nav className="space-y-1">
-                  {TOC.map((item) => (
+                  {TOC_IDS.map((id, i) => (
                     <a
-                      key={item.id}
-                      href={`#${item.id}`}
+                      key={id}
+                      href={`#${id}`}
                       className="block rounded-sm px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     >
-                      {item.label}
+                      {t(`toc${i + 1}`)}
                     </a>
                   ))}
                 </nav>
@@ -97,136 +132,109 @@ export default async function PrivacyPolicyPage({ params }: PageProps) {
             <article className="space-y-12 text-sm leading-relaxed text-foreground">
 
               {/* ── 1. Introduction ── */}
-              <Section id="introduction" title="1. Introduction">
-                <p>
-                  EURL METWORK (&ldquo;Metwork&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;,
-                  &ldquo;our&rdquo;) operates the platform accessible at{' '}
-                  <a href={siteConfig.url} className="text-primary hover:underline">
-                    {siteConfig.url}
-                  </a>{' '}
-                  and associated mobile applications (collectively, the
-                  &ldquo;Platform&rdquo;).
-                </p>
-                <p>
-                  We are committed to processing your personal data lawfully, fairly, and
-                  transparently. This Privacy Policy describes our practices in accordance
-                  with Algerian Law 18-07 of June 10, 2018, relating to the protection of
-                  natural persons in the processing of personal data (the &ldquo;Law&rdquo;),
-                  as well as its implementing decrees.
-                </p>
-                <p>
-                  By creating an account or using our Platform, you acknowledge that you
-                  have read and understood this policy. Where processing is based on consent,
-                  you may withdraw it at any time without affecting the lawfulness of
-                  processing carried out prior to withdrawal.
-                </p>
+              <Section id="introduction" title={t('s1Title')}>
+                <p>{t.rich('s1p1', { ...linkTags, ...entityVars })}</p>
+                <p>{t('s1p2')}</p>
+                <p>{t('s1p3')}</p>
               </Section>
 
               {/* ── 2. Data controller ── */}
-              <Section id="controller" title="2. Data controller">
-                <p>
-                  The data controller responsible for your personal data is:
-                </p>
+              <Section id="controller" title={t('s2Title')}>
+                <p>{t('s2p1')}</p>
+
                 <address className="not-italic rounded-lg border border-border/60 bg-muted/30 p-4 space-y-1">
-                  <p className="font-semibold">EURL METWORK</p>
-                  <p className="text-muted-foreground text-xs">Commerce register: 31/00-1125194 B24</p>
-                  <p>{siteConfig.contact.address}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {t('s2PlatformRole')}
+                  </p>
+                  <p className="font-semibold">{PLATFORM.name}</p>
+                  {/* dir="ltr" on the identifier itself: in an RTL page the bidi
+                      algorithm otherwise reorders a Latin/numeric registration
+                      number or street address into the wrong visual order. */}
+                  <p className="text-muted-foreground text-xs">
+                    {t('s2Registration')}{' '}
+                    <span dir="ltr" className="inline-block">{PLATFORM.registrationNumber}</span>
+                  </p>
+                  <p dir="ltr" className="rtl:text-end">{PLATFORM.address}</p>
                   <p>
-                    Email:{' '}
-                    <a href={`mailto:${siteConfig.contact.email}`} className="text-primary hover:underline">
-                      {siteConfig.contact.email}
+                    {t('s2Email')}{' '}
+                    <a href={`mailto:${PLATFORM.email}`} className="text-primary hover:underline">
+                      {PLATFORM.email}
                     </a>
                   </p>
                   <p>
-                    Phone:{' '}
-                    <a href={`tel:${siteConfig.contact.phone}`} className="text-primary hover:underline">
-                      {siteConfig.contact.phone}
+                    {t('s2Phone')}{' '}
+                    <a href={`tel:${PLATFORM.phone}`} className="text-primary hover:underline" dir="ltr">
+                      {PLATFORM.phone}
                     </a>
                   </p>
                 </address>
-                <p>
-                  Our Data Protection Officer (DPO) can be reached at{' '}
-                  <a href="mailto:dpo@metwork.dz" className="text-primary hover:underline">
-                    dpo@metwork.dz
-                  </a>
-                  .
-                </p>
+
+                {/* Independent controller for international card transactions. */}
+                <address className="not-italic rounded-lg border border-border/60 bg-muted/30 p-4 space-y-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {t('s2PaymentsRole')}
+                  </p>
+                  <p className="font-semibold">{PAYMENTS.name}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {t('s2PaymentsRegistration')}{' '}
+                    <span dir="ltr" className="inline-block">{PAYMENTS.registrationNumber}</span>
+                  </p>
+                  <p dir="ltr" className="rtl:text-end">{PAYMENTS.address}</p>
+                  <p dir="ltr" className="rtl:text-end">{PAYMENTS.country}</p>
+                </address>
+
+                <p>{t('s2p2', entityVars)}</p>
+                <p>{t.rich('s2p3', linkTags)}</p>
               </Section>
 
               {/* ── 3. Data we collect ── */}
-              <Section id="data-collected" title="3. Data we collect">
-                <p>
-                  We collect only the personal data that is necessary for the purposes
-                  described in this policy (principle of data minimisation). Categories of
-                  data we may process include:
-                </p>
+              <Section id="data-collected" title={t('s3Title')}>
+                <p>{t('s3p1')}</p>
 
-                <SubSection title="3.1 Account data">
-                  <p>When you register on Metwork, we collect:</p>
+                <SubSection title={t('s3sub1Title')}>
+                  <p>{t('s3sub1p1')}</p>
                   <ul>
-                    <li>Full name</li>
-                    <li>Email address</li>
-                    <li>Phone number (Algerian mobile)</li>
-                    <li>City of residence</li>
-                    <li>Role (entrepreneur, investor, or incubator)</li>
-                    <li>Password (stored as a one-way cryptographic hash — we never store plaintext passwords)</li>
+                    {([1, 2, 3, 4, 5, 6] as const).map((n) => (
+                      <li key={n}>{t(`s3sub1li${n}`)}</li>
+                    ))}
                   </ul>
                 </SubSection>
 
-                <SubSection title="3.2 Profile & activity data">
-                  <p>As you use the Platform, we may also collect:</p>
+                <SubSection title={t('s3sub2Title')}>
+                  <p>{t('s3sub2p1')}</p>
                   <ul>
-                    <li>Startup profile information (name, description, industry, funding details) if you list a startup</li>
-                    <li>Booking records for coworking spaces or programs</li>
-                    <li>Event registrations and attendance records</li>
-                    <li>Messages sent through the contact form</li>
-                    <li>Wallet and payment transaction records</li>
+                    {([1, 2, 3, 4, 5] as const).map((n) => (
+                      <li key={n}>{t(`s3sub2li${n}`)}</li>
+                    ))}
                   </ul>
                 </SubSection>
 
-                <SubSection title="3.3 Technical data">
-                  <p>We automatically collect certain technical information when you visit the Platform:</p>
+                <SubSection title={t('s3sub3Title')}>
+                  <p>{t('s3sub3p1')}</p>
                   <ul>
-                    <li>IP address and approximate geolocation</li>
-                    <li>Browser type, version, and language settings</li>
-                    <li>Device type and operating system</li>
-                    <li>Pages visited and time spent, referral source</li>
-                    <li>Session identifiers and authentication tokens</li>
+                    {([1, 2, 3, 4, 5] as const).map((n) => (
+                      <li key={n}>{t(`s3sub3li${n}`)}</li>
+                    ))}
                   </ul>
                 </SubSection>
 
-                <SubSection title="3.4 Data from third parties">
-                  <p>
-                    If you use a third-party payment provider (SlickPay), we receive a
-                    transaction reference and status confirmation, but never your full
-                    card or banking details.
-                  </p>
+                <SubSection title={t('s3sub4Title')}>
+                  <p>{t('s3sub4p1')}</p>
                 </SubSection>
               </Section>
 
               {/* ── 4. How we use your data ── */}
-              <Section id="how-we-use" title="4. How we use your data">
-                <p>We use personal data for the following purposes:</p>
+              <Section id="how-we-use" title={t('s4Title')}>
+                <p>{t('s4p1')}</p>
                 <table className="w-full border-collapse text-xs">
                   <thead>
                     <tr className="border-b border-border bg-muted/40">
-                      <th className="py-2 pe-4 text-start font-semibold">Purpose</th>
-                      <th className="py-2 text-start font-semibold">Legal basis</th>
+                      <th className="py-2 pe-4 text-start font-semibold">{t('s4thPurpose')}</th>
+                      <th className="py-2 text-start font-semibold">{t('s4thBasis')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {[
-                      ['Creating and managing your account', 'Contract performance'],
-                      ['Verifying your phone number via OTP', 'Contract performance / Consent'],
-                      ['Facilitating program applications and space bookings', 'Contract performance'],
-                      ['Processing wallet top-ups and payments', 'Contract performance'],
-                      ['Connecting entrepreneurs with investors', 'Consent'],
-                      ['Sending transactional emails and notifications', 'Contract performance'],
-                      ['Sending marketing communications (opt-in only)', 'Consent'],
-                      ['Detecting and preventing fraud or abuse', 'Legitimate interest'],
-                      ['Analysing platform usage to improve our services', 'Legitimate interest'],
-                      ['Complying with legal obligations', 'Legal obligation'],
-                    ].map(([purpose, basis]) => (
+                    {purposeRows.map(({ purpose, basis }) => (
                       <tr key={purpose}>
                         <td className="py-2 pe-4 text-muted-foreground">{purpose}</td>
                         <td className="py-2 font-medium">{basis}</td>
@@ -237,188 +245,64 @@ export default async function PrivacyPolicyPage({ params }: PageProps) {
               </Section>
 
               {/* ── 5. Legal basis ── */}
-              <Section id="legal-basis" title="5. Legal basis for processing">
-                <p>
-                  Under Article 14 of Law 18-07, the processing of personal data requires
-                  one of the following lawful grounds. We rely on:
-                </p>
+              <Section id="legal-basis" title={t('s5Title')}>
+                <p>{t('s5p1')}</p>
                 <ol>
-                  <li>
-                    <strong>Explicit consent</strong> — You provide consent at account creation via
-                    a dedicated checkbox acknowledging this Privacy Policy and data processing. You
-                    may withdraw consent at any time by contacting us or deleting your account.
-                  </li>
-                  <li>
-                    <strong>Performance of a contract</strong> — Processing is necessary to deliver
-                    the services you requested when signing up (bookings, startup listings, wallet).
-                  </li>
-                  <li>
-                    <strong>Legal obligation</strong> — We may process and retain data to comply
-                    with applicable Algerian law (e.g., accounting and tax obligations).
-                  </li>
-                  <li>
-                    <strong>Legitimate interest</strong> — We process technical and analytics data
-                    to secure and improve the Platform, provided this does not override your
-                    fundamental rights and freedoms.
-                  </li>
+                  {([1, 2, 3, 4] as const).map((n) => (
+                    <li key={n}>
+                      <strong>{t(`s5li${n}Strong`)}</strong> {t(`s5li${n}`)}
+                    </li>
+                  ))}
                 </ol>
-                <p>
-                  We do not use your personal data for automated decision-making or profiling
-                  that produces legal or similarly significant effects.
-                </p>
+                <p>{t('s5p2')}</p>
               </Section>
 
               {/* ── 6. Retention ── */}
-              <Section id="retention" title="6. Data retention">
-                <p>
-                  We retain personal data for as long as necessary to fulfil the purposes
-                  set out in this policy, and no longer than required by applicable law.
-                  Specific retention periods:
-                </p>
+              <Section id="retention" title={t('s6Title')}>
+                <p>{t('s6p1')}</p>
                 <ul>
-                  <li>
-                    <strong>Account data:</strong> Retained for the duration of your account plus
-                    30 days after account deletion (to allow recovery if deletion was accidental),
-                    then permanently erased.
-                  </li>
-                  <li>
-                    <strong>Transaction records:</strong> Retained for 10 years as required by
-                    Algerian tax and accounting law.
-                  </li>
-                  <li>
-                    <strong>Contact form submissions:</strong> Retained for 2 years from submission
-                    date, then deleted.
-                  </li>
-                  <li>
-                    <strong>Technical logs:</strong> Retained for 12 months, then automatically
-                    purged or anonymised.
-                  </li>
-                  <li>
-                    <strong>OTP codes:</strong> Expire within 10 minutes and are never stored
-                    after verification.
-                  </li>
+                  {([1, 2, 3, 4, 5] as const).map((n) => (
+                    <li key={n}>
+                      <strong>{t(`s6li${n}Strong`)}</strong> {t(`s6li${n}`)}
+                    </li>
+                  ))}
                 </ul>
-                <p>
-                  Data subject to a legal hold (e.g., ongoing dispute or regulatory request)
-                  may be retained beyond standard periods until the hold is lifted.
-                </p>
+                <p>{t('s6p2')}</p>
               </Section>
 
               {/* ── 7. Sharing ── */}
-              <Section id="sharing" title="7. Data sharing">
-                <p>
-                  Metwork does not sell your personal data. We share data only in the
-                  following circumstances:
-                </p>
+              <Section id="sharing" title={t('s7Title')}>
+                <p>{t('s7p1')}</p>
                 <ul>
-                  <li>
-                    <strong>Service providers (data processors):</strong> We engage trusted
-                    third-party vendors who process data on our behalf under strict data
-                    processing agreements — including our payment provider (SlickPay),
-                    email delivery service, cloud hosting, and analytics provider. These
-                    processors may only use your data for the specific service they provide.
-                  </li>
-                  <li>
-                    <strong>Other users of the Platform:</strong> When you create a public
-                    startup listing, your startup&apos;s name, description, and industry are
-                    visible to authenticated investors. Your personal contact details are
-                    never shared without your explicit consent.
-                  </li>
-                  <li>
-                    <strong>Legal requirements:</strong> We may disclose personal data to
-                    competent authorities if required by Algerian law, a court order, or to
-                    protect the rights, property, or safety of Metwork or our users.
-                  </li>
-                  <li>
-                    <strong>Business transfer:</strong> In the event of a merger, acquisition,
-                    or sale of all or part of our business, your personal data may be
-                    transferred to the acquiring entity, subject to equivalent privacy
-                    protections. You will be notified in advance.
-                  </li>
+                  {([1, 2, 3, 4, 5] as const).map((n) => (
+                    <li key={n}>
+                      <strong>{t(`s7li${n}Strong`)}</strong> {t(`s7li${n}`, entityVars)}
+                    </li>
+                  ))}
                 </ul>
-                <p>
-                  Any transfer of personal data outside Algeria is carried out only in
-                  compliance with the requirements of Law 18-07 (adequate level of
-                  protection or appropriate safeguards such as standard contractual clauses).
-                </p>
+                <p>{t('s7p2', entityVars)}</p>
               </Section>
 
               {/* ── 8. Cookies ── */}
-              <Section id="cookies" title="8. Cookies & tracking">
-                <p>
-                  We use cookies and similar technologies to operate the Platform, remember
-                  your preferences, and analyse usage.
-                </p>
-
-                <SubSection title="Types of cookies we use">
+              <Section id="cookies" title={t('s8Title')}>
+                <p>{t('s8p1')}</p>
+                <SubSection title={t('s8subTitle')}>
                   <ul>
-                    <li>
-                      <strong>Essential cookies:</strong> Strictly necessary for authentication,
-                      session management, and security. Cannot be disabled.
-                    </li>
-                    <li>
-                      <strong>Functional cookies:</strong> Remember your preferences (e.g.,
-                      language, locale). Disabled = reduced experience.
-                    </li>
-                    <li>
-                      <strong>Analytics cookies:</strong> Help us understand how visitors use
-                      the Platform. All data is anonymised before processing. Requires consent.
-                    </li>
+                    {([1, 2, 3] as const).map((n) => (
+                      <li key={n}>
+                        <strong>{t(`s8li${n}Strong`)}</strong> {t(`s8li${n}`)}
+                      </li>
+                    ))}
                   </ul>
                 </SubSection>
-
-                <p>
-                  You can manage cookie preferences through your browser settings or our
-                  cookie preference centre. Withdrawing consent for non-essential cookies
-                  will not affect the core functionality of your account.
-                </p>
+                <p>{t('s8p2')}</p>
               </Section>
 
               {/* ── 9. Your rights ── */}
-              <Section id="your-rights" title="9. Your rights under Law 18-07">
-                <p>
-                  Algerian Law 18-07 grants you the following rights with respect to your
-                  personal data. To exercise any right, contact us at{' '}
-                  <a href="mailto:dpo@metwork.dz" className="text-primary hover:underline">
-                    dpo@metwork.dz
-                  </a>{' '}
-                  or through your account settings. We will respond within 30 days.
-                </p>
+              <Section id="your-rights" title={t('s9Title')}>
+                <p>{t.rich('s9p1', linkTags)}</p>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {[
-                    {
-                      title: 'Right of access',
-                      desc: 'Obtain a copy of all personal data we hold about you, and information on how it is processed.',
-                    },
-                    {
-                      title: 'Right to rectification',
-                      desc: 'Correct inaccurate or incomplete personal data. You can update most data directly in your account settings.',
-                    },
-                    {
-                      title: 'Right to erasure',
-                      desc: 'Request deletion of your personal data where it is no longer necessary for the purpose it was collected, subject to legal retention obligations.',
-                    },
-                    {
-                      title: 'Right to restriction',
-                      desc: 'Ask us to restrict processing of your data in certain circumstances (e.g., while accuracy is disputed).',
-                    },
-                    {
-                      title: 'Right to data portability',
-                      desc: 'Receive your personal data in a structured, machine-readable format and transmit it to another controller.',
-                    },
-                    {
-                      title: 'Right to object',
-                      desc: 'Object at any time to processing based on legitimate interest, including profiling for direct marketing.',
-                    },
-                    {
-                      title: 'Right to withdraw consent',
-                      desc: 'Where processing is based on consent, withdraw it at any time without penalty. Withdrawal does not affect prior processing.',
-                    },
-                    {
-                      title: 'Right to lodge a complaint',
-                      desc: 'File a complaint with the Algerian National Authority for Personal Data Protection (ANPDP) if you believe your rights have been violated.',
-                    },
-                  ].map(({ title, desc }) => (
+                  {rights.map(({ title, desc }) => (
                     <div
                       key={title}
                       className="rounded-lg border border-border/60 bg-muted/20 p-4"
@@ -429,93 +313,51 @@ export default async function PrivacyPolicyPage({ params }: PageProps) {
                   ))}
                 </div>
                 <p className="mt-4">
-                  <strong>Supervisory authority:</strong> You have the right to lodge a
-                  complaint with the ANPDP (Autorité Nationale de Protection des Données
-                  à caractère Personnel), the Algerian data protection authority, if you
-                  believe we have failed to comply with Law 18-07.
+                  <strong>{t('s9p2Strong')}</strong> {t('s9p2')}
                 </p>
               </Section>
 
               {/* ── 10. Security ── */}
-              <Section id="security" title="10. Data security">
-                <p>
-                  We implement appropriate technical and organisational measures to protect
-                  personal data against unauthorised access, alteration, disclosure, or
-                  destruction. Our measures include:
-                </p>
+              <Section id="security" title={t('s10Title')}>
+                <p>{t('s10p1')}</p>
                 <ul>
-                  <li>Encryption in transit using TLS 1.2+ for all data exchanges</li>
-                  <li>Encryption at rest for database storage</li>
-                  <li>Passwords hashed using Argon2id (a memory-hard, salted algorithm)</li>
-                  <li>Role-based access controls limiting internal data access on a need-to-know basis</li>
-                  <li>Regular security assessments and penetration testing</li>
-                  <li>Automated anomaly detection and rate limiting</li>
-                  <li>Multi-factor authentication for administrative access</li>
+                  {([1, 2, 3, 4, 5, 6, 7] as const).map((n) => (
+                    <li key={n}>{t(`s10li${n}`)}</li>
+                  ))}
                 </ul>
-                <p>
-                  Despite these measures, no system is perfectly secure. In the event of a
-                  personal data breach likely to result in high risk to your rights and
-                  freedoms, we will notify you and the competent authorities without undue
-                  delay, and in any case within 72 hours of becoming aware, as required
-                  by Law 18-07.
-                </p>
+                <p>{t('s10p2')}</p>
               </Section>
 
               {/* ── 11. Children ── */}
-              <Section id="children" title="11. Children's privacy">
-                <p>
-                  The Platform is not directed at children under the age of 18. We do not
-                  knowingly collect personal data from anyone under 18. If you believe a
-                  minor has provided us with personal data, please contact us immediately at{' '}
-                  <a href={`mailto:${siteConfig.contact.email}`} className="text-primary hover:underline">
-                    {siteConfig.contact.email}
-                  </a>{' '}
-                  and we will delete the relevant data promptly.
-                </p>
+              <Section id="children" title={t('s11Title')}>
+                <p>{t.rich('s11p1', linkTags)}</p>
               </Section>
 
               {/* ── 12. Changes ── */}
-              <Section id="changes" title="12. Changes to this policy">
-                <p>
-                  We may update this Privacy Policy from time to time to reflect changes in
-                  our practices, legal requirements, or the services we offer. When we make
-                  material changes, we will:
-                </p>
+              <Section id="changes" title={t('s12Title')}>
+                <p>{t('s12p1')}</p>
                 <ul>
-                  <li>Update the &ldquo;Last updated&rdquo; date at the top of this page</li>
-                  <li>Send an email notification to all registered users</li>
-                  <li>Display an in-app notice for 30 days after the update</li>
+                  {([1, 2, 3] as const).map((n) => (
+                    <li key={n}>{t(`s12li${n}`)}</li>
+                  ))}
                 </ul>
-                <p>
-                  Your continued use of the Platform after the effective date of a revised
-                  policy constitutes your acceptance of the changes. If you do not agree,
-                  you may close your account before the changes take effect.
-                </p>
+                <p>{t('s12p2')}</p>
               </Section>
 
               {/* ── 13. Contact / DPO ── */}
-              <Section id="contact" title="13. Contact & Data Protection Officer">
-                <p>
-                  For any questions, concerns, or requests related to this Privacy Policy
-                  or the processing of your personal data, please contact our Data
-                  Protection Officer:
-                </p>
+              <Section id="contact" title={t('s13Title')}>
+                <p>{t('s13p1')}</p>
                 <address className="not-italic rounded-lg border border-border/60 bg-muted/30 p-4 space-y-1">
-                  <p className="font-semibold">Data Protection Officer — Metwork</p>
+                  <p className="font-semibold">{t('s13DpoName')}</p>
                   <p>
-                    Email:{' '}
-                    <a href="mailto:dpo@metwork.dz" className="text-primary hover:underline">
-                      dpo@metwork.dz
+                    {t('s13Email')}{' '}
+                    <a href={`mailto:${DPO_EMAIL}`} className="text-primary hover:underline">
+                      {DPO_EMAIL}
                     </a>
                   </p>
-                  <p>{siteConfig.contact.address}</p>
+                  <p dir="ltr" className="rtl:text-end">{PLATFORM.address}</p>
                 </address>
-                <p>
-                  We will acknowledge your request within 5 business days and provide a
-                  substantive response within 30 calendar days. If your request is complex
-                  or you have submitted multiple requests, we may extend this period by up
-                  to two additional months, in which case we will inform you accordingly.
-                </p>
+                <p>{t('s13p2')}</p>
               </Section>
 
             </article>

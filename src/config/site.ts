@@ -40,6 +40,40 @@ export const siteConfig = {
   legal: {
     lawReference: 'Law 18-07 (Algerian Personal Data Protection Act)',
   },
+
+  /**
+   * Legal entities behind the platform — the SINGLE source of truth for company
+   * names, addresses and registration numbers. These used to be literals
+   * duplicated across the Terms and Privacy pages, which is exactly how one page
+   * ends up stale after an address change.
+   *
+   * Deliberately NOT translated: a registered company name, address and
+   * registration number are legal identifiers and must read identically in every
+   * locale. Only the surrounding prose is localised.
+   */
+  entities: {
+    /** Operates the platform; contracting party for wallet + local (DZD) payments. */
+    platform: {
+      name: 'EURL METWORK',
+      registrationNumber: '31/00-1125194 B24',
+      address: 'Boulevard de la Soumam N 02, Bloc 02, Apt 01, Oran',
+      country: 'Algeria',
+      email: 'contact@metwork.dz',
+      phone: '+213670109105',
+    },
+    /**
+     * Affiliated UK entity that contracts with the client for INTERNATIONAL card
+     * payments (Visa / Mastercard) and is the name shown on the card statement.
+     * Local CIB / Edahabia payments and the wallet stay with EURL METWORK.
+     */
+    internationalPayments: {
+      name: 'Transferly Services Limited',
+      registrationNumber: '14554642',
+      address: '71-75 Shelton Street, Covent Garden, London, WC2H 9JQ',
+      country: 'United Kingdom',
+      email: 'contact@metwork.dz',
+    },
+  },
 } as const;
 
 export type SiteConfig = typeof siteConfig;

@@ -18,6 +18,7 @@
 import { CreditCard, Wallet, Globe } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
+import { siteConfig } from '@/config/site';
 
 export type ConsultationPaymentMethod = 'WALLET' | 'SLICKPAY' | 'STRIPE';
 
@@ -165,6 +166,21 @@ export function PaymentMethodPicker({ quote, value, onChange, disabled, locale }
           {fmtDzd(quote.amountDzd)}
         </span>
       </div>
+
+      {/*
+        Who the payer is actually contracting with, disclosed at the point of
+        payment rather than only in the Terms — this is also the name that will
+        appear on their card statement, which is what prevents "unrecognised
+        charge" disputes. Shown only for the international card.
+      */}
+      {value === 'STRIPE' && (
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          {t('internationalProcessor', {
+            company: siteConfig.entities.internationalPayments.name,
+            country: t('internationalCountryName'),
+          })}
+        </p>
+      )}
     </div>
   );
 }

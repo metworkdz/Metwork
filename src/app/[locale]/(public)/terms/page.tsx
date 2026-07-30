@@ -14,31 +14,75 @@ export const metadata: Metadata = {
 };
 
 const EFFECTIVE_DATE = '2024-01-01';
-const LAST_UPDATED = '2025-05-01';
+const LAST_UPDATED = '2026-07-31';
 
 const TOC_IDS = [
-  'acceptance', 'services', 'accounts', 'conduct', 'payments',
+  'acceptance', 'services', 'accounts', 'conduct', 'payments', 'international-payments',
   'ip', 'disclaimer', 'liability', 'termination', 'changes', 'governing', 'contact',
 ] as const;
+
+const PLATFORM = siteConfig.entities.platform;
+const PAYMENTS = siteConfig.entities.internationalPayments;
 
 export default async function TermsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.terms');
 
-  const tocLabels: Record<string, string> = {
-    acceptance:  t('toc1'),
-    services:    t('toc2'),
-    accounts:    t('toc3'),
-    conduct:     t('toc4'),
-    payments:    t('toc5'),
-    ip:          t('toc6'),
-    disclaimer:  t('toc7'),
-    liability:   t('toc8'),
-    termination: t('toc9'),
-    changes:     t('toc10'),
-    governing:   t('toc11'),
-    contact:     t('toc12'),
+  /**
+   * Entity values shared by several clauses. Company name, registration number
+   * and postal address are legal identifiers and are never translated; the
+   * country name appears as prose ("registered in the United Kingdom"), so it
+   * comes from the message catalogue instead.
+   */
+  const entityVars = {
+    platformName: PLATFORM.name,
+    paymentsName: PAYMENTS.name,
+    paymentsCountry: t('paymentsCountryName'),
+    paymentsReg: PAYMENTS.registrationNumber,
+    paymentsAddress: PAYMENTS.address,
+    email: siteConfig.contact.email,
+  };
+
+  const tocLabels: Record<(typeof TOC_IDS)[number], string> = {
+    acceptance:              t('toc1'),
+    services:                t('toc2'),
+    accounts:                t('toc3'),
+    conduct:                 t('toc4'),
+    payments:                t('toc5'),
+    'international-payments': t('toc6'),
+    ip:                      t('toc7'),
+    disclaimer:              t('toc8'),
+    liability:               t('toc9'),
+    termination:             t('toc10'),
+    changes:                 t('toc11'),
+    governing:               t('toc12'),
+    contact:                 t('toc13'),
+  };
+
+  /**
+   * Rich-tag renderers + the values they wrap. The anchor markup lives in the
+   * message (word order differs per language); the address and URL are fed from
+   * siteConfig so they stay defined in one place.
+   */
+  const linkTags = {
+    email: siteConfig.contact.email,
+    url: siteConfig.url,
+    emailLink: (chunks: React.ReactNode) => (
+      <a href={`mailto:${siteConfig.contact.email}`} className="text-primary hover:underline">
+        {chunks}
+      </a>
+    ),
+    urlLink: (chunks: React.ReactNode) => (
+      <a href={siteConfig.url} className="text-primary hover:underline">
+        {chunks}
+      </a>
+    ),
+    privacyLink: (chunks: React.ReactNode) => (
+      <a href="../privacy-policy" className="text-primary hover:underline">
+        {chunks}
+      </a>
+    ),
   };
 
   return (
@@ -93,291 +137,152 @@ export default async function TermsPage({ params }: PageProps) {
 
               {/* 1 */}
               <Section id="acceptance" title={t('sec1Title')}>
-                <p>
-                  These Terms of Service (&ldquo;Terms&rdquo;) constitute a legally binding
-                  agreement between you and EURL METWORK (&ldquo;Metwork&rdquo;,
-                  &ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;), a company
-                  registered in Algeria (Commerce register: 31/00-1125194 B24), governing
-                  your access to and use of the Metwork platform accessible at{' '}
-                  <a href={siteConfig.url} className="text-primary hover:underline">
-                    {siteConfig.url}
-                  </a>{' '}
-                  and any associated applications (collectively, the &ldquo;Platform&rdquo;).
-                </p>
-                <p>
-                  By registering an account, clicking &ldquo;I agree&rdquo;, or otherwise
-                  accessing or using the Platform, you confirm that you have read, understood,
-                  and agree to be bound by these Terms and our{' '}
-                  <a href="../privacy-policy" className="text-primary hover:underline">
-                    Privacy Policy
-                  </a>
-                  . If you do not agree, you must not use the Platform.
-                </p>
-                <p>
-                  You must be at least 18 years old to use the Platform. By accepting these
-                  Terms you represent that you meet this age requirement and have the legal
-                  capacity to enter into binding contracts under Algerian law.
-                </p>
+                <p>{t.rich('s1p1', linkTags)}</p>
+                <p>{t.rich('s1p2', linkTags)}</p>
+                <p>{t('s1p3')}</p>
               </Section>
 
               {/* 2 */}
               <Section id="services" title={t('sec2Title')}>
-                <p>
-                  Metwork is an online platform that connects stakeholders in the Algerian
-                  startup ecosystem. The Platform provides, among other things:
-                </p>
+                <p>{t('s2p1')}</p>
                 <ul>
-                  <li>
-                    <strong>For entrepreneurs:</strong> Discovery and application to incubation
-                    and acceleration programs, booking of coworking spaces and private offices,
-                    access to a mentor network, connection to investors, and a digital wallet
-                    for platform transactions.
-                  </li>
-                  <li>
-                    <strong>For investors:</strong> Discovery of startup listings, direct
-                    contact with founders, and deal-flow management tools.
-                  </li>
-                  <li>
-                    <strong>For incubators:</strong> Program and space management, member
-                    tracking, and booking administration tools.
-                  </li>
+                  <li><strong>{t('s2li1Strong')}</strong> {t('s2li1')}</li>
+                  <li><strong>{t('s2li2Strong')}</strong> {t('s2li2')}</li>
+                  <li><strong>{t('s2li3Strong')}</strong> {t('s2li3')}</li>
                 </ul>
-                <p>
-                  We reserve the right to modify, suspend, or discontinue any part of the
-                  Platform at any time, with or without notice, and without liability to you.
-                </p>
+                <p>{t('s2p2')}</p>
               </Section>
 
               {/* 3 */}
               <Section id="accounts" title={t('sec3Title')}>
-                <p>
-                  To access most features of the Platform, you must create an account. You
-                  agree to:
-                </p>
+                <p>{t('s3p1')}</p>
                 <ul>
-                  <li>Provide accurate, current, and complete information during registration</li>
-                  <li>Maintain and promptly update your account information</li>
-                  <li>Keep your password confidential and not share it with third parties</li>
-                  <li>
-                    Notify us immediately at{' '}
-                    <a href={`mailto:${siteConfig.contact.email}`} className="text-primary hover:underline">
-                      {siteConfig.contact.email}
-                    </a>{' '}
-                    if you suspect unauthorised access to your account
-                  </li>
-                  <li>Not create more than one account per person or entity</li>
+                  <li>{t('s3li1')}</li>
+                  <li>{t('s3li2')}</li>
+                  <li>{t('s3li3')}</li>
+                  <li>{t.rich('s3li4', linkTags)}</li>
+                  <li>{t('s3li5')}</li>
                 </ul>
-                <p>
-                  You are responsible for all activity that occurs under your account. Metwork
-                  cannot and will not be liable for any loss resulting from unauthorised use
-                  of your account.
-                </p>
+                <p>{t('s3p2')}</p>
               </Section>
 
               {/* 4 */}
               <Section id="conduct" title={t('sec4Title')}>
-                <p>
-                  By using the Platform you agree not to:
-                </p>
+                <p>{t('s4p1')}</p>
                 <ul>
-                  <li>Violate any applicable Algerian or international law or regulation</li>
-                  <li>
-                    Post or transmit content that is false, misleading, defamatory, obscene,
-                    or infringes any third-party rights
-                  </li>
-                  <li>
-                    Impersonate any person or entity, or misrepresent your affiliation with any
-                    person or entity
-                  </li>
-                  <li>
-                    Use the Platform to send spam, unsolicited messages, or promotional
-                    communications not authorised by Metwork
-                  </li>
-                  <li>
-                    Attempt to gain unauthorised access to any portion of the Platform or
-                    its related systems
-                  </li>
-                  <li>Interfere with or disrupt the integrity or performance of the Platform</li>
-                  <li>
-                    Use automated means (bots, scrapers, crawlers) to access the Platform
-                    without our prior written consent
-                  </li>
-                  <li>
-                    Engage in any fraudulent, deceptive, or misleading activity in connection
-                    with the Platform
-                  </li>
+                  {(['s4li1', 's4li2', 's4li3', 's4li4', 's4li5', 's4li6', 's4li7', 's4li8'] as const).map((k) => (
+                    <li key={k}>{t(k)}</li>
+                  ))}
                 </ul>
-                <p>
-                  Metwork reserves the right to remove any content and suspend or terminate
-                  any account that violates these rules, at our sole discretion.
-                </p>
+                <p>{t('s4p2')}</p>
               </Section>
 
               {/* 5 */}
               <Section id="payments" title={t('sec5Title')}>
-                <p>
-                  Certain features of the Platform require payment, including membership
-                  subscriptions, coworking space bookings, and program applications. All
-                  prices are displayed in Algerian Dinars (DZD) and are inclusive of
-                  applicable taxes unless stated otherwise.
-                </p>
+                <p>{t('s5p1')}</p>
                 <SubSection title={t('sec5sub1')}>
-                  <p>
-                    The Platform provides a digital wallet that you can top up using supported
-                    payment methods. Wallet balances are non-transferable, non-refundable
-                    (except in cases of platform error), and may not be exchanged for cash.
-                  </p>
+                  <p>{t('s5s1p1')}</p>
                 </SubSection>
                 <SubSection title={t('sec5sub2')}>
-                  <p>
-                    Booking cancellations and refund eligibility are governed by the
-                    cancellation policy of the relevant incubator or space provider. Metwork
-                    facilitates but does not guarantee refunds from third-party providers.
-                    Membership fees are non-refundable once a billing period has begun.
-                  </p>
+                  <p>{t('s5s2p1')}</p>
                 </SubSection>
                 <SubSection title={t('sec5sub3')}>
-                  <p>
-                    If you dispute a charge, please contact us first at{' '}
-                    <a href={`mailto:${siteConfig.contact.email}`} className="text-primary hover:underline">
-                      {siteConfig.contact.email}
-                    </a>
-                    . We will investigate and respond within 10 business days.
-                  </p>
+                  <p>{t.rich('s5s3p1', linkTags)}</p>
                 </SubSection>
               </Section>
 
-              {/* 6 */}
-              <Section id="ip" title={t('sec6Title')}>
-                <p>
-                  The Platform and all of its content — including but not limited to text,
-                  graphics, logos, icons, images, audio clips, and software — are the property
-                  of EURL METWORK or its licensors and are protected by Algerian and
-                  international intellectual property laws.
-                </p>
-                <p>
-                  You are granted a limited, non-exclusive, non-transferable, revocable licence
-                  to access and use the Platform for its intended purposes. You may not copy,
-                  reproduce, distribute, modify, or create derivative works from any part of
-                  the Platform without our prior written consent.
-                </p>
-                <p>
-                  Any content you submit to the Platform (startup profiles, messages, etc.)
-                  remains your property, but you grant Metwork a worldwide, royalty-free licence
-                  to use, store, and display that content in connection with operating the
-                  Platform.
-                </p>
+              {/* 6 — international card payments (Transferly) */}
+              <Section id="international-payments" title={t('sec6Title')}>
+                <p>{t('s6p1', entityVars)}</p>
+                <p>{t('s6p2', entityVars)}</p>
+                <p>{t.rich('s6p3', { ...entityVars, ...linkTags })}</p>
+                <p>{t('s6p4', entityVars)}</p>
               </Section>
 
               {/* 7 */}
-              <Section id="disclaimer" title={t('sec7Title')}>
-                <p>
-                  The Platform is provided on an &ldquo;as is&rdquo; and &ldquo;as
-                  available&rdquo; basis, without warranties of any kind, express or implied,
-                  including but not limited to warranties of merchantability, fitness for a
-                  particular purpose, or non-infringement.
-                </p>
-                <p>
-                  Metwork does not warrant that the Platform will be uninterrupted, error-free,
-                  or free of viruses or other harmful components. We do not endorse or guarantee
-                  the accuracy, completeness, or reliability of any content posted by users.
-                </p>
-                <p>
-                  Investment decisions made based on information found on the Platform are made
-                  at your own risk. Metwork is not a financial advisor and nothing on the
-                  Platform constitutes financial or investment advice.
-                </p>
+              <Section id="ip" title={t('sec7Title')}>
+                <p>{t('s7p1')}</p>
+                <p>{t('s7p2')}</p>
+                <p>{t('s7p3')}</p>
               </Section>
 
               {/* 8 */}
-              <Section id="liability" title={t('sec8Title')}>
-                <p>
-                  To the fullest extent permitted by Algerian law, EURL METWORK and its
-                  directors, employees, agents, and licensors shall not be liable for any
-                  indirect, incidental, special, consequential, or punitive damages arising
-                  out of or in connection with your use of or inability to use the Platform,
-                  even if advised of the possibility of such damages.
-                </p>
-                <p>
-                  In no event shall our total aggregate liability to you exceed the greater of
-                  (a) the amount you paid to Metwork in the 12 months preceding the claim, or
-                  (b) 5,000 DZD.
-                </p>
+              <Section id="disclaimer" title={t('sec8Title')}>
+                <p>{t('s8p1')}</p>
+                <p>{t('s8p2')}</p>
+                <p>{t('s8p3')}</p>
               </Section>
 
               {/* 9 */}
-              <Section id="termination" title={t('sec9Title')}>
-                <p>
-                  You may close your account at any time from your account settings. Upon
-                  closure, your access to the Platform will be revoked and your personal data
-                  handled in accordance with our{' '}
-                  <a href="../privacy-policy" className="text-primary hover:underline">
-                    Privacy Policy
-                  </a>
-                  .
-                </p>
-                <p>
-                  Metwork may suspend or permanently terminate your account, without prior
-                  notice or liability, if you breach these Terms, if we reasonably believe
-                  your use poses a security risk, or if required by law. Provisions of these
-                  Terms that by their nature should survive termination (including intellectual
-                  property, limitation of liability, and governing law) shall survive.
-                </p>
+              <Section id="liability" title={t('sec9Title')}>
+                <p>{t('s9p1')}</p>
+                <p>{t('s9p2')}</p>
               </Section>
 
               {/* 10 */}
-              <Section id="changes" title={t('sec10Title')}>
-                <p>
-                  We reserve the right to update these Terms at any time. When we make
-                  material changes, we will update the &ldquo;Last updated&rdquo; date at
-                  the top of this page and notify registered users by email at least 14 days
-                  before the changes take effect.
-                </p>
-                <p>
-                  Your continued use of the Platform after the effective date of the revised
-                  Terms constitutes your acceptance of the changes. If you do not agree to the
-                  new Terms, you must stop using the Platform and close your account.
-                </p>
+              <Section id="termination" title={t('sec10Title')}>
+                <p>{t.rich('s10p1', linkTags)}</p>
+                <p>{t('s10p2')}</p>
               </Section>
 
               {/* 11 */}
-              <Section id="governing" title={t('sec11Title')}>
-                <p>
-                  These Terms are governed by and construed in accordance with the laws of
-                  the People&apos;s Democratic Republic of Algeria. Any dispute arising out
-                  of or in connection with these Terms or your use of the Platform shall be
-                  subject to the exclusive jurisdiction of the competent courts of Oran,
-                  Algeria.
-                </p>
-                <p>
-                  Before initiating any legal proceedings, you agree to first attempt to
-                  resolve the dispute informally by contacting us at{' '}
-                  <a href={`mailto:${siteConfig.contact.email}`} className="text-primary hover:underline">
-                    {siteConfig.contact.email}
-                  </a>
-                  . We will endeavour to respond within 15 business days.
-                </p>
+              <Section id="changes" title={t('sec11Title')}>
+                <p>{t('s11p1')}</p>
+                <p>{t('s11p2')}</p>
               </Section>
 
               {/* 12 */}
-              <Section id="contact" title={t('sec12Title')}>
-                <p>
-                  For any questions or concerns about these Terms, please contact us:
-                </p>
+              <Section id="governing" title={t('sec12Title')}>
+                <p>{t('s12p1')}</p>
+                <p>{t.rich('s12p2', linkTags)}</p>
+              </Section>
+
+              {/* 13 — both contracting entities, labelled by role */}
+              <Section id="contact" title={t('sec13Title')}>
+                <p>{t('s13p1')}</p>
+
                 <address className="not-italic rounded-lg border border-border/60 bg-muted/30 p-4 space-y-1">
-                  <p className="font-semibold">EURL METWORK</p>
-                  <p className="text-muted-foreground text-xs">Commerce register: 31/00-1125194 B24</p>
-                  <p>{siteConfig.contact.address}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {t('s13PlatformRole')}
+                  </p>
+                  <p className="font-semibold">{PLATFORM.name}</p>
+                  {/* dir="ltr" on the identifier itself: in an RTL page the bidi
+                      algorithm otherwise reorders a Latin/numeric registration
+                      number or street address into the wrong visual order. */}
+                  <p className="text-muted-foreground text-xs">
+                    {t('s13PlatformRegistration')}{' '}
+                    <span dir="ltr" className="inline-block">{PLATFORM.registrationNumber}</span>
+                  </p>
+                  <p dir="ltr" className="rtl:text-end">{PLATFORM.address}</p>
                   <p>
-                    Email:{' '}
-                    <a href={`mailto:${siteConfig.contact.email}`} className="text-primary hover:underline">
-                      {siteConfig.contact.email}
+                    {t('s13Email')}{' '}
+                    <a href={`mailto:${PLATFORM.email}`} className="text-primary hover:underline">
+                      {PLATFORM.email}
                     </a>
                   </p>
                   <p>
-                    Phone:{' '}
-                    <a href={`tel:${siteConfig.contact.phone}`} className="text-primary hover:underline">
-                      {siteConfig.contact.phone}
+                    {t('s13Phone')}{' '}
+                    <a href={`tel:${PLATFORM.phone}`} className="text-primary hover:underline" dir="ltr">
+                      {PLATFORM.phone}
+                    </a>
+                  </p>
+                </address>
+
+                <address className="not-italic rounded-lg border border-border/60 bg-muted/30 p-4 space-y-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {t('s13PaymentsRole')}
+                  </p>
+                  <p className="font-semibold">{PAYMENTS.name}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {t('s13PaymentsRegistration')}{' '}
+                    <span dir="ltr" className="inline-block">{PAYMENTS.registrationNumber}</span>
+                  </p>
+                  <p dir="ltr" className="rtl:text-end">{PAYMENTS.address}</p>
+                  <p dir="ltr" className="rtl:text-end">{PAYMENTS.country}</p>
+                  <p>
+                    {t('s13Email')}{' '}
+                    <a href={`mailto:${PAYMENTS.email}`} className="text-primary hover:underline">
+                      {PAYMENTS.email}
                     </a>
                   </p>
                 </address>
