@@ -11,7 +11,7 @@
  *   3. Add its code to `PAYMENT_PROVIDER` enum in `src/lib/env.ts`
  */
 
-export type PaymentProviderCode = 'mock' | 'slickpay' | 'cib' | 'edahabia';
+export type PaymentProviderCode = 'mock' | 'slickpay' | 'stripe' | 'cib' | 'edahabia';
 
 export interface InitTopUpInput {
   /** Our internal top-up id (acts as idempotency key with the provider). */
@@ -29,6 +29,20 @@ export interface InitTopUpInput {
     email: string;
     phone: string;
   };
+  /**
+   * Optional line-item label shown on the hosted checkout. Providers that only
+   * render an amount ignore it.
+   */
+  description?: string;
+  /** Optional UI locale hint for the hosted checkout ('en' | 'fr' | 'ar'). */
+  locale?: string;
+  /**
+   * FOREIGN-CURRENCY providers only (Stripe). `amount` above stays the
+   * canonical integer DZD; this carries the admin-configured EUR/DZD rate to
+   * freeze for this one transaction. Providers that bill in DZD ignore it.
+   * Absent for a foreign-currency provider is a hard error, never a guess.
+   */
+  fx?: { rate: number };
 }
 
 export interface InitTopUpResult {
@@ -45,6 +59,16 @@ export interface InitTopUpResult {
   redirectUrl: string | null;
   /** Provider raw payload for audit / debugging. */
   raw?: unknown;
+  /**
+   * Set by foreign-currency providers: what the payer's card is actually
+   * billed, and the rate frozen to get there. Persisted for audit only —
+   * downstream money code keeps using the DZD `amount`.
+   */
+  foreign?: {
+    currency: 'EUR';
+    amount: number;
+    rate: number;
+  };
 }
 
 export interface WebhookEvent {

@@ -1,13 +1,18 @@
 /**
  * POST /api/consultation/instant/:token
  *
- * Member top-up return for the instant-book, pay-first flow (feature-flagged).
- * After a member with insufficient wallet balance completes the SlickPay
- * top-up, they return here; this verifies the top-up settled (server-side, via
- * the top-up intent — never the redirect) and then debits the wallet and
- * confirms the booking. Idempotent.
+ * Member return endpoint for the instant-book, pay-first flow. Verifies and
+ * settles, server-side, whichever rail the booking used — never the redirect.
+ * Idempotent, so the page may poll it freely.
  *
- * Guests do NOT use this route — they settle via /api/consultation/pay/[token].
+ *   WALLET   → confirm the top-up intent settled, then debit + confirm
+ *              (settleMemberTopUp).
+ *   SLICKPAY → ask SlickPay whether the transfer completed, then settle
+ *   / STRIPE   (verifyAndSettleDirectPayment). For Stripe the webhook is the
+ *              source of truth; this poll is the UX fallback for a payer who
+ *              lands back here before the callback arrives.
+ *
+ * Legacy guest bookings settle via /api/consultation/pay/[token] instead.
  *
  * Body: { action: 'verify' }
  */
@@ -15,7 +20,8 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
-import { isInstantBookEnabled, settleMemberTopUp } from '@/server/consultations/instant-book';
+import { isInstantBookEnabled } from '@/server/consultations/instant-book';
+import { verifyAndSettleByToken } from '@/server/consultations/settle-return';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -54,8 +60,9 @@ export async function POST(
     throw err;
   }
 
-  const result = await settleMemberTopUp(token);
-  if (result.state === 'INVALID') return jsonError(404, 'NOT_FOUND', 'Invalid payment link');
-  if (result.state === 'EXPIRED') return jsonError(410, 'EXPIRED', 'This payment link has expired');
-  return json({ state: result.state });
+  // Shared with the return page — one dispatch, one answer.
+  const view = await verifyAndSettleByToken(token);
+  if (view.state === 'INVALID') return jsonError(404, 'NOT_FOUND', 'Invalid payment link');
+  if (view.state === 'EXPIRED') return jsonError(410, 'EXPIRED', 'This payment link has expired');
+  return json({ state: view.state });
 }

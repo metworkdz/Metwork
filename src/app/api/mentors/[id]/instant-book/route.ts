@@ -1,25 +1,29 @@
 /**
  * POST /api/mentors/:id/instant-book
  *
- * Instant-book, pay-first consultation (feature-flagged via
- * CONSULTATION_INSTANT_BOOK — returns 404 when disabled). No admin approval.
+ * Instant-book, pay-first consultation. No admin approval.
  *
  * ACCOUNT-ONLY: consultations require a Metwork account and pay through Metwork
- * payments — an anonymous request is rejected with 401. The authenticated
- * member pays wallet-first (debit now if funded, else a SlickPay top-up of the
- * shortfall, settled on return). Pre-existing guest bookings created before this
- * gate still settle via the unchanged /consultation/pay/[token] flow.
+ * payments — an anonymous request is rejected with 401. The member picks the
+ * rail at checkout (`method`):
+ *   WALLET   — debit now if funded, else a top-up of the shortfall.
+ *   SLICKPAY — direct CIB/Edahabia hosted charge for the full amount.
+ *   STRIPE   — direct Visa/Mastercard charge, billed in EUR at the rate frozen
+ *              here, at request time, from platform settings.
+ * Pre-existing guest bookings still settle via /consultation/pay/[token].
  *
- * Server is authoritative on price (mentor fee × duration − tier − promo, or a
- * free credit). The client never supplies an amount.
+ * Server is authoritative on price (mentor fee × duration − tier − promo). The
+ * client never supplies an amount, a currency or a rate.
  */
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { getServerSession } from '@/lib/session';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { validatePromoCode, promoAppliesToType } from '@/server/promo-codes/service';
 import { getEffectiveMembershipCode, consultationDiscountFraction } from '@/server/memberships/service';
 import { createInstantBooking, isInstantBookEnabled } from '@/server/consultations/instant-book';
+import { getInternationalCardAvailability } from '@/server/payments/exchange-rate';
 import { randomUUID } from 'node:crypto';
 
 export const runtime = 'nodejs';
@@ -44,6 +48,12 @@ const schema = z.object({
   promoCode:        z.string().max(50).optional().nullable(),
   locale:           z.enum(['en', 'fr', 'ar']).optional(),
   clientReference:  z.string().min(8).max(80).optional(),
+  /**
+   * Chosen payment rail. Optional so an older client keeps the previous
+   * wallet-first behaviour. NOTE: this selects a rail only — it can never
+   * influence the amount, which is recomputed server-side below.
+   */
+  method:           z.enum(['WALLET', 'SLICKPAY', 'STRIPE']).optional(),
 });
 
 function appBaseUrl(req: NextRequest): string {
@@ -78,6 +88,13 @@ export async function POST(
   // anonymous visitors to /login; this is the authoritative server gate.
   if (!user) {
     return jsonError(401, 'LOGIN_REQUIRED', 'Please sign in to book a consultation.');
+  }
+
+  // This route can open a chargeable hosted checkout, so it carries the same
+  // per-user cap as /api/payments/create. Applied after the session check so an
+  // unauthenticated probe can't consume another user's budget.
+  if (!(await checkRateLimitDistributed(`instant-book:user:${user.id}`, 10, 60 * 60_000))) {
+    return jsonError(429, 'RATE_LIMITED', 'Too many booking attempts. Please wait a few minutes.');
   }
 
   // 24-hour advance guard — only when a concrete slot was chosen.
@@ -134,6 +151,23 @@ export async function POST(
   const resolvedEmail = input.email?.trim() || user.email    || '';
   const resolvedPhone = input.phone?.trim() || user.phone    || '';
 
+  // Freeze the EUR/DZD rate for THIS request. Read once, here, and passed down —
+  // an admin editing the rate while the payer is on the Stripe page can never
+  // reprice a checkout that has already been quoted.
+  const method = input.method ?? 'WALLET';
+  let exchangeRate: number | null = null;
+  if (method === 'STRIPE') {
+    const availability = await getInternationalCardAvailability();
+    if (!availability.available) {
+      return jsonError(
+        503,
+        'CARD_UNAVAILABLE',
+        'International card payment is temporarily unavailable. Please choose another payment method.',
+      );
+    }
+    exchangeRate = availability.rate;
+  }
+
   const result = await createInstantBooking({
     mentorId,
     actor: user ? { id: user.id, membershipDiscountFraction } : null,
@@ -150,6 +184,8 @@ export async function POST(
     locale: input.locale,
     clientReference: input.clientReference ?? randomUUID(),
     appBaseUrl: appBaseUrl(req),
+    paymentMethod: method,
+    exchangeRate,
   });
 
   if (!result.ok) {
@@ -165,7 +201,13 @@ export async function POST(
 
   if (result.mode === 'confirmed') {
     return json(
-      { id: result.booking.id, status: result.booking.status, mode: 'confirmed' },
+      {
+        id: result.booking.id,
+        status: result.booking.status,
+        mode: 'confirmed',
+        // Server-computed DZD, echoed so the UI never has to derive a price.
+        amountDzd: result.booking.amountCharged ?? 0,
+      },
       { status: 201 },
     );
   }
@@ -178,6 +220,10 @@ export async function POST(
       payToken: result.payToken,
       redirectUrl: result.redirectUrl ?? null,
       amount: result.amount,
+      amountDzd: result.amount,
+      // EUR figure only when the payer chose the international card. Display
+      // value for the UI's "≈ €X" line; the rate itself is never exposed.
+      amountEur: result.amountForeign ?? null,
     },
     { status: 201 },
   );

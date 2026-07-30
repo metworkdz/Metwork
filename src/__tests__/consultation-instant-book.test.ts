@@ -21,7 +21,7 @@ import {
 } from '@/server/consultations/instant-book';
 import { computeConsultationCharge } from '@/server/consultations/pricing';
 import { confirmTopUp } from '@/server/wallet/service';
-import { initGuestPayment } from '@/server/consultations/guest-payment';
+import { initDirectPayment } from '@/server/consultations/direct-payment';
 import { getMentorWallet } from '@/server/mentors/ledger';
 import {
   setBookingMeetingLink,
@@ -191,7 +191,7 @@ describe('guest — PENDING_PAYMENT settled by the existing guest pay flow', () 
     expect(res.amount).toBe(10_000);
 
     // The EXISTING guest payment flow settles it without any P3-specific change.
-    const pay = await initGuestPayment(res.payToken, 'http://localhost:3000');
+    const pay = await initDirectPayment(res.payToken, 'http://localhost:3000');
     expect(pay.ok).toBe(true);
 
     const data = await db.read();
@@ -293,7 +293,7 @@ describe('mentor earnings credit (P4)', () => {
     await seed(null);
     const res = await createInstantBooking(baseInput({ actor: null }));
     if (!res.ok || res.mode !== 'awaiting_payment') throw new Error('setup failed');
-    await initGuestPayment(res.payToken, 'http://localhost:3000');
+    await initDirectPayment(res.payToken, 'http://localhost:3000');
     const wallet = await getMentorWallet(MENTOR.id);
     expect(wallet?.pendingBalance).toBe(7_000);
   });
@@ -315,7 +315,7 @@ describe('mentor earnings credit (P4)', () => {
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
       }];
     });
-    await initGuestPayment(token, 'http://localhost:3000');
+    await initDirectPayment(token, 'http://localhost:3000');
     const settled = (await db.read()).mentorBookings.find((b) => b.id === 'legacy-1');
     expect(settled?.status).toBe('CONFIRMED'); // legacy flow still settles
     const wallet = await getMentorWallet(MENTOR.id);

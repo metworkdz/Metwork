@@ -1,25 +1,30 @@
 /**
- * Instant-book, pay-first consultations (feature-flagged).
+ * Instant-book, pay-first consultations.
  *
- * Replaces the legacy admin-approval gate: a consultation is paid up front and
- * confirmed immediately, with NO admin review. Per the locked product decision:
+ * A consultation is paid up front and confirmed immediately, with NO admin
+ * review. The CLIENT chooses how to pay at checkout (`paymentMethod`); the
+ * server is authoritative on the amount in every case:
  *
- *   • Member, wallet funded   → debit wallet now → CONFIRMED (one mutation).
- *   • Member, short on funds   → PENDING_PAYMENT + SlickPay top-up of the
- *                                shortfall; on return the wallet is debited and
- *                                the booking settled (settleMemberTopUp).
- *   • Guest                    → PENDING_PAYMENT + payToken; settled by the
- *                                EXISTING guest-payment.ts / pay route (SlickPay
- *                                direct), which already handle pay-first bookings.
- *   • Zero amount (free intro / free monthly credit / full promo) → CONFIRMED now.
+ *   • WALLET, funded        → debit wallet now → settled (one mutation).
+ *   • WALLET, short         → PENDING_PAYMENT + a top-up of the shortfall; on
+ *                             return the wallet is debited and the booking
+ *                             settled (settleMemberTopUp).
+ *   • SLICKPAY (CIB/Edahabia)
+ *     / STRIPE (Visa/MC)    → PENDING_PAYMENT + payToken, then a DIRECT hosted
+ *                             charge for the full amount — no wallet involved.
+ *                             Settled by ./direct-payment (return poll, webhook,
+ *                             or the reconcile cron).
+ *   • Guest (legacy records) → PENDING_PAYMENT + payToken, same direct settler.
+ *   • Zero amount (free intro / full promo) → settled now, no payment.
+ *
+ * The wallet is OPTIONAL for consultations: a funded member may still pay by
+ * card, and is never silently debited. Whatever the rail, the booking record,
+ * the promo split, the consultant credit and every notification are identical
+ * and denominated in integer DZD — the provider is a stored value, not a branch.
  *
  * Guarantees mirror the rest of the money layer: server-authoritative pricing
  * (never trust the client), single-mutation atomic debit+booking, idempotent
- * settlement claims keyed by clientReference, and provider-verified top-ups.
- *
- * NOTE: this whole module is gated behind CONSULTATION_INSTANT_BOOK and is unused
- * in production until P7 flips the flag. The consultant earnings credit is wired
- * in at the marked settlement points by P4 (see `// P4:` markers).
+ * settlement claims keyed by clientReference, and provider-verified payments.
  */
 import { randomUUID } from 'node:crypto';
 import {
@@ -35,7 +40,8 @@ import { computeHourlySlots, mentorBookingHoldsSeat } from '@/server/mentors/ava
 import { lockSlot, releaseSlot } from '@/server/mentors/slot-lock';
 import { getTopUp, initiateTopUp } from '@/server/wallet/service';
 import { consumePromoCode } from '@/server/promo-codes/service';
-import { creditPendingEarning } from '@/server/mentors/ledger';
+import { creditMentorForSettledBooking } from './mentor-credit';
+import { startDirectCheckout, isDirectCharge } from './direct-payment';
 import { resolveSettledStatusWithZoom } from './lifecycle';
 import { sendConsultationReadyOnce } from '@/server/notifications/consultation-ready';
 import { sendBookingNotificationOnce } from '@/server/notifications/booking-notification';
@@ -82,7 +88,22 @@ export interface CreateInstantBookingInput {
   clientReference: string;
   /** Absolute app base URL for building the top-up return URL. */
   appBaseUrl: string;
+  /**
+   * How the client chose to pay. Absent ⇒ 'WALLET' (the historical behaviour),
+   * so any caller that predates the method selector is unaffected.
+   */
+  paymentMethod?: ConsultationPaymentMethod;
+  /**
+   * EUR/DZD rate to FREEZE onto this transaction, read from platform settings
+   * by the route. Required for STRIPE, ignored otherwise. Passed in rather than
+   * read here so the rate is captured once, at the top of the request, and can
+   * never shift mid-flow.
+   */
+  exchangeRate?: number | null;
 }
+
+/** Payment rails a client may pick at consultation checkout. */
+export type ConsultationPaymentMethod = 'WALLET' | 'SLICKPAY' | 'STRIPE';
 
 export type CreateInstantBookingResult =
   | { ok: true; mode: 'confirmed'; booking: MentorBookingRecord; replayed: boolean }
@@ -91,9 +112,15 @@ export type CreateInstantBookingResult =
       mode: 'awaiting_payment';
       booking: MentorBookingRecord;
       payToken: string;
-      /** Present for the member top-up path (SlickPay hosted checkout URL). */
+      /** Hosted-checkout URL (top-up or direct charge). */
       redirectUrl?: string | null;
+      /** Canonical integer DZD. */
       amount: number;
+      /**
+       * EUR actually billed, when the payer chose the international card.
+       * Display/audit only — every downstream money path uses `amount`.
+       */
+      amountForeign?: number | null;
     }
   | {
       ok: false;
@@ -172,55 +199,11 @@ function baseBooking(
 }
 
 /**
- * Credit the consultant's PENDING balance for a settled consultation and record
- * the platform's share / discount subsidy. Non-blocking: the booking is already
- * CONFIRMED, so a ledger error must never roll it back — it is logged and
- * reconcilable later (the credit is idempotent per booking).
- *
- * Owner-locked split (2026-06-18): the consultant is paid on the FULL base price
- * (`consultantShareBase`), the platform absorbs every discount — so a fully
- * promo'd (gross 0) PAID booking still pays the consultant, with the platform
- * subsidising it. FREE_QUOTA (monthly free credit) sessions never pay the
- * consultant. A free mentor (no base) is a no-op.
+ * Re-exported for existing call-sites. The implementation moved to
+ * ./mentor-credit so the wallet path and the direct-charge path can share it
+ * without importing each other.
  */
-export async function creditMentorForSettledBooking(
-  booking: Pick<
-    MentorBookingRecord,
-    | 'id'
-    | 'mentorId'
-    | 'chargeType'
-    | 'amountCharged'
-    | 'guestAmountDue'
-    | 'consultantShareBase'
-    | 'tierDiscountAmount'
-    | 'promoDiscountAmount'
-    | 'appliedPromoCode'
-  >,
-): Promise<void> {
-  // Free monthly-credit sessions never credit the consultant.
-  if (booking.chargeType === 'FREE_QUOTA') return;
-  const collected = booking.amountCharged ?? booking.guestAmountDue ?? 0;
-  const base = booking.consultantShareBase ?? collected;
-  // Nothing to pay when there is no base (free mentor).
-  if (!base || base <= 0) return;
-  try {
-    await creditPendingEarning({
-      mentorId: booking.mentorId,
-      bookingId: booking.id,
-      grossAmount: collected,
-      consultantShareBase: booking.consultantShareBase ?? null,
-      tierDiscountAmount: booking.tierDiscountAmount ?? null,
-      promoDiscountAmount: booking.promoDiscountAmount ?? null,
-      appliedPromoCode: booking.appliedPromoCode ?? null,
-    });
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(
-      `[instant-book] mentor credit failed for booking ${booking.id} (settled OK, reconcilable):`,
-      err instanceof Error ? err.message : err,
-    );
-  }
-}
+export { creditMentorForSettledBooking };
 
 /* ───────────────────────────── Create ───────────────────────────── */
 
@@ -234,6 +217,10 @@ export async function createInstantBooking(
   if (!mentor || !isMentorApproved(mentor)) return { ok: false, reason: 'MENTOR_NOT_FOUND' };
 
   const isGuest = !input.actor;
+  // Absent ⇒ WALLET, the historical behaviour, so any caller predating the
+  // method selector is unaffected. Guests have no wallet and are handled by
+  // their own branch before this is ever read.
+  const method: ConsultationPaymentMethod = isGuest ? 'SLICKPAY' : (input.paymentMethod ?? 'WALLET');
   const charge = computeConsultationCharge({
     feePerHour: mentor.consultationFee ?? 0,
     durationMinutes: input.durationMinutes,
@@ -384,7 +371,11 @@ export async function createInstantBooking(
     return { ok: true, mode: 'confirmed', booking: result.booking, replayed: result.replayed };
   }
 
-  // ── Guest → PENDING_PAYMENT; settled by the existing guest pay route ───────
+  // ── Guest → PENDING_PAYMENT; settled by the direct pay route ───────────────
+  // Checked BEFORE the card branch below: a guest's checkout stays lazy (opened
+  // when they click Pay on /consultation/pay/[token]), which is the behaviour
+  // these legacy records have always had. Unreachable from the live route,
+  // which requires a session.
   if (isGuest) {
     const result = await db.update<{ booking: MentorBookingRecord; replayed: boolean }>((d) => {
       ensureArrays(d);
@@ -392,6 +383,7 @@ export async function createInstantBooking(
       if (existing) return { booking: existing, replayed: true };
       const booking = baseBooking(input, now, {
         paymentStatus: 'AWAITING_PAYMENT',
+        paymentProvider: 'SLICKPAY',
         amountCharged: gross,
         guestAmountDue: gross,
         payToken,
@@ -410,6 +402,68 @@ export async function createInstantBooking(
       booking: result.booking,
       payToken: result.booking.payToken ?? payToken,
       amount: gross,
+    };
+  }
+
+  // ── Direct card charge (CIB/Edahabia or Visa/Mastercard) ───────────────────
+  // The wallet is not involved: the payer is charged the full amount on the
+  // provider's hosted checkout and the booking settles via ./direct-payment.
+  // This is the path a member takes whenever they pick a card, INCLUDING when
+  // their wallet could have covered it — the wallet is optional, never forced.
+  if (method === 'SLICKPAY' || method === 'STRIPE') {
+    const result = await db.update<{ booking: MentorBookingRecord; replayed: boolean }>((d) => {
+      ensureArrays(d);
+      const existing = findReplay(d, input);
+      if (existing) return { booking: existing, replayed: true };
+      const booking = baseBooking(input, now, {
+        paymentStatus: 'AWAITING_PAYMENT',
+        paymentProvider: method,
+        amountCharged: gross,
+        guestAmountDue: gross,
+        payToken,
+        payTokenExpiresAt,
+        paymentProviderRef: null,
+      }, charge, bookingId);
+      d.mentorBookings.push(booking);
+      return { booking, replayed: false };
+    });
+
+    // A replay (same clientReference) must not open a second chargeable
+    // checkout — hand back whatever state the original booking is in.
+    if (result.replayed) return replayResult(result.booking, gross);
+
+    const checkout = await startDirectCheckout({
+      booking: result.booking,
+      provider: method,
+      amountDzd: gross,
+      exchangeRate: input.exchangeRate ?? null,
+      appBaseUrl: input.appBaseUrl,
+      locale: input.locale ?? 'fr',
+      description: `Metwork — consultation ${mentor.fullName}`,
+    });
+
+    if (!checkout.ok) {
+      // Payment couldn't start — release the hold so the slot frees immediately.
+      if (slotLocked) await releaseSlot(result.booking.id);
+      return { ok: false, reason: 'PROVIDER_FAILED', message: checkout.message };
+    }
+    // Synchronous provider (mock sync) already settled it.
+    if (checkout.settled) {
+      const after = (await db.read()).mentorBookings?.find((b) => b.id === result.booking.id);
+      return { ok: true, mode: 'confirmed', booking: after ?? result.booking, replayed: false };
+    }
+
+    // NOTE: no "request received" email here. The booking is unpaid until the
+    // payer completes the hosted checkout; settlement sends the real
+    // confirmation. Emailing now would announce a session that may never exist.
+    return {
+      ok: true,
+      mode: 'awaiting_payment',
+      booking: result.booking,
+      payToken: result.booking.payToken ?? payToken,
+      redirectUrl: checkout.redirectUrl,
+      amount: gross,
+      amountForeign: checkout.amountForeign,
     };
   }
 
@@ -448,6 +502,7 @@ export async function createInstantBooking(
         amountCharged: gross,
         guestAmountDue: gross,
         transactionId: tx.id,
+        paymentProvider: 'WALLET',
       }, charge, bookingId);
       d.mentorBookings.push(booking);
       return { kind: 'confirmed', booking };
@@ -459,6 +514,10 @@ export async function createInstantBooking(
       guestAmountDue: gross,
       payToken,
       payTokenExpiresAt,
+      // WALLET even though a top-up funds it: the consultation itself is still
+      // paid by a wallet debit, and this is what routes the return/webhook to
+      // settleMemberTopUp rather than the direct-charge settler.
+      paymentProvider: 'WALLET',
       // Reuse the pre-generated id so it matches the slot-lock's bookingId —
       // otherwise releaseSlot(booking.id) on failure/settlement can't find the
       // hold and it lingers until its TTL (orphaned lock).
@@ -491,6 +550,7 @@ export async function createInstantBooking(
     userId,
     amount: topUpAmount,
     returnUrl,
+    purpose: 'CONSULTATION',
     customer: { fullName: input.name, email: input.email, phone: input.phone },
   });
   if (!top.ok) {
@@ -542,7 +602,10 @@ export interface SettleMemberResult {
 export async function settleMemberTopUp(token: string): Promise<SettleMemberResult> {
   const data = await db.read();
   const booking = (data.mentorBookings ?? []).find(
-    (b) => b.source !== 'guest' && b.payToken === token,
+    // WALLET bookings only. A registered booking paid directly by card shares
+    // the same token shape but is owned by ./direct-payment — settling it here
+    // would try to debit a wallet that was never meant to fund it.
+    (b) => b.source !== 'guest' && b.payToken === token && !isDirectCharge(b),
   );
   if (!booking) return { state: 'INVALID' };
   // 'PAID' is the settled marker; the lifecycle status is READY / AWAITING_LINK.

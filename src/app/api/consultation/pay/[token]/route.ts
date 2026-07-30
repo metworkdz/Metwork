@@ -17,9 +17,9 @@ import { z, ZodError } from 'zod';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import {
-  initGuestPayment,
-  verifyAndSettleGuestPayment,
-} from '@/server/consultations/guest-payment';
+  initDirectPayment,
+  verifyAndSettleDirectPayment,
+} from '@/server/consultations/direct-payment';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -68,7 +68,7 @@ export async function POST(
   }
 
   if (input.action === 'init') {
-    const result = await initGuestPayment(token, appBaseUrl(req));
+    const result = await initDirectPayment(token, appBaseUrl(req));
     if (!result.ok) {
       if (result.reason === 'INVALID')   return jsonError(404, 'NOT_FOUND', 'Invalid payment link');
       if (result.reason === 'EXPIRED')   return jsonError(410, 'EXPIRED', 'This payment link has expired');
@@ -80,6 +80,6 @@ export async function POST(
   }
 
   // action === 'verify'
-  const view = await verifyAndSettleGuestPayment(token);
+  const view = await verifyAndSettleDirectPayment(token);
   return json({ state: view.state });
 }

@@ -329,6 +329,24 @@ export interface TopUpIntentRecord {
   redirectUrl: string | null;
   /** Set when status transitions to COMPLETED. */
   transactionId: string | null;
+  /**
+   * What this intent funds. Absent ⇒ 'WALLET_TOPUP' (every record predating
+   * this field is a plain wallet top-up), so legacy rows keep their meaning.
+   * 'CONSULTATION' marks the shortfall top-up raised by the instant-book
+   * wallet path — informational for admin/audit; settlement still runs through
+   * confirmTopUp exactly as before.
+   */
+  purpose?: 'WALLET_TOPUP' | 'CONSULTATION';
+  /**
+   * Currency the payer was actually billed in. Absent ⇒ 'DZD'. Only ever 'EUR'
+   * for a Stripe-funded intent; `amount` above stays the canonical integer DZD
+   * in every case so the wallet ledger remains single-currency.
+   */
+  currency?: 'DZD' | 'EUR';
+  /** Foreign-currency amount billed (EUR, 2dp). Null for DZD intents. */
+  amountForeign?: number | null;
+  /** Exchange rate frozen when the checkout session was created. Null for DZD. */
+  exchangeRateApplied?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -835,6 +853,19 @@ export interface PlatformSettingsRecord {
    * from the public nav AND 404s its routes server-side.
    */
   landingVisibility?: Record<string, boolean> | null;
+  /**
+   * DZD per 1 EUR, used ONLY to price the Stripe (Visa/Mastercard) hosted
+   * checkout for consultations. Admin-editable. Null/absent ⇒ international
+   * card payment is unavailable (fail-closed: we never guess a rate).
+   *
+   * The rate is snapshotted onto the booking + top-up intent at checkout-session
+   * creation, so changing it here never retroactively affects an in-flight or
+   * already-paid transaction.
+   */
+  eurToDzdRate?: number | null;
+  eurToDzdRateUpdatedAt?: string | null;
+  /** UserRecord.id of the admin who last changed the rate. */
+  eurToDzdRateUpdatedBy?: string | null;
   updatedAt: string;
 }
 
@@ -1603,6 +1634,30 @@ export interface MentorBookingRecord {
    * trusting the redirect.
    */
   paymentProviderRef?: string | null;
+  /**
+   * How this consultation is/was paid — chosen by the client at checkout and
+   * frozen at booking creation. Drives which settler owns the booking:
+   *   WALLET   — balance debit now, or a top-up of the shortfall then a debit
+   *              (settleMemberTopUp, keyed on topUpIntentId).
+   *   SLICKPAY — direct CIB/Edahabia hosted charge for the full amount
+   *              (direct-payment.ts, keyed on payToken / booking id).
+   *   STRIPE   — direct Visa/Mastercard hosted charge, billed in EUR at the
+   *              rate frozen below. Same settler as SLICKPAY.
+   * Absent on legacy bookings: guest records behave as a direct charge,
+   * registered records as WALLET (see resolveBookingPaymentProvider).
+   */
+  paymentProvider?: 'SLICKPAY' | 'STRIPE' | 'WALLET' | 'CASH';
+  /**
+   * FX audit pair for a STRIPE-paid consultation. `amountCharged` stays the
+   * canonical integer DZD everywhere; these record what the payer's card was
+   * actually billed and the rate frozen at checkout-session creation, so a
+   * later admin rate change can never rewrite history.
+   *
+   * WRITE-ONLY as far as the product is concerned: no consultant-facing view,
+   * payout ledger, receipt or notification may read these. Audit/admin only.
+   */
+  stripeAmountEur?: number | null;
+  stripeRateApplied?: number | null;
   /**
    * Linked wallet TopUpIntentRecord id for the instant-book "wallet-first,
    * SlickPay top-up" member flow: when a member has insufficient balance, a

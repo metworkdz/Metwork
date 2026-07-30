@@ -12,7 +12,7 @@ import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/container';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { verifyAndSettleGuestPayment } from '@/server/consultations/guest-payment';
+import { verifyAndSettleDirectPayment } from '@/server/consultations/direct-payment';
 import { GuestPayButton } from './pay-button';
 
 export const runtime = 'nodejs';
@@ -40,7 +40,7 @@ export default async function ConsultationPayPage({ params }: PageProps) {
   const t = await getTranslations('pages.consultationPay');
   // Always re-verify server-side on load (handles the return from the hosted
   // checkout). Never trusts the redirect — asks the provider.
-  const view = await verifyAndSettleGuestPayment(token);
+  const view = await verifyAndSettleDirectPayment(token);
 
   const fmtDate = (iso: string | null | undefined) => {
     if (!iso) return null;

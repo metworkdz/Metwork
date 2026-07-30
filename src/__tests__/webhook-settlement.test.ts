@@ -6,13 +6,13 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { db } from '@/server/db/store';
-import { settleGuestConsultationFromWebhook } from '@/server/consultations/guest-payment';
+import { settleConsultationFromWebhook } from '@/server/consultations/direct-payment';
 import { settleCardBookingFromWebhook } from '@/server/bookings/card-payment';
 
 const NOW = '2026-06-01T10:00:00.000Z';
 const TOMORROW = new Date(Date.now() + 3 * 86_400_000).toISOString();
 
-describe('settleGuestConsultationFromWebhook', () => {
+describe('settleConsultationFromWebhook', () => {
   beforeEach(async () => {
     await db.update((d) => {
       d.mentorBookings = [
@@ -42,7 +42,7 @@ describe('settleGuestConsultationFromWebhook', () => {
   });
 
   it('settles a paid guest consultation by external_id', async () => {
-    const r = await settleGuestConsultationFromWebhook('mb-1', 'slick-ref-1', 'COMPLETED');
+    const r = await settleConsultationFromWebhook('mb-1', 'slick-ref-1', 'COMPLETED');
     expect(r).toBe('SETTLED');
     const data = await db.read();
     const b = data.mentorBookings!.find((x) => x.id === 'mb-1')!;
@@ -51,20 +51,20 @@ describe('settleGuestConsultationFromWebhook', () => {
   });
 
   it('is idempotent on replay', async () => {
-    await settleGuestConsultationFromWebhook('mb-1', 'slick-ref-1', 'COMPLETED');
-    const r2 = await settleGuestConsultationFromWebhook('mb-1', 'slick-ref-1', 'COMPLETED');
+    await settleConsultationFromWebhook('mb-1', 'slick-ref-1', 'COMPLETED');
+    const r2 = await settleConsultationFromWebhook('mb-1', 'slick-ref-1', 'COMPLETED');
     expect(r2).toBe('ALREADY');
   });
 
   it('ignores a FAILED event (leaves booking unpaid)', async () => {
-    const r = await settleGuestConsultationFromWebhook('mb-1', 'slick-ref-1', 'FAILED');
+    const r = await settleConsultationFromWebhook('mb-1', 'slick-ref-1', 'FAILED');
     expect(r).toBe('IGNORED');
     const data = await db.read();
     expect(data.mentorBookings![0]!.paymentStatus).toBe('AWAITING_PAYMENT');
   });
 
   it('returns NOT_FOUND for an unknown id', async () => {
-    const r = await settleGuestConsultationFromWebhook('nope', null, 'COMPLETED');
+    const r = await settleConsultationFromWebhook('nope', null, 'COMPLETED');
     expect(r).toBe('NOT_FOUND');
   });
 });

@@ -8,11 +8,17 @@
 import { serverEnvVars } from '@/lib/env';
 import { mockProvider } from './mock-provider';
 import { slickpayProvider } from './slickpay-provider';
+import { stripeProvider } from './stripe-provider';
 import type { PaymentProvider } from './provider';
 
 const providers: Record<string, PaymentProvider> = {
   mock: mockProvider,
   slickpay: slickpayProvider,
+  // Registered so the webhook dispatcher can resolve it, but NOT selectable via
+  // PAYMENT_PROVIDER: Stripe is chosen per-transaction by the payer at
+  // consultation checkout. Every other flow stays on the env-configured
+  // provider (SlickPay in production).
+  stripe: stripeProvider,
 };
 
 export function getActiveProvider(): PaymentProvider {

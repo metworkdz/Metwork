@@ -13,7 +13,7 @@
 import { NextResponse } from 'next/server';
 import { reconcilePendingTopUps } from '@/server/wallet/service';
 import { reconcilePendingCardBookings } from '@/server/bookings/card-payment';
-import { reconcilePendingGuestConsultations } from '@/server/consultations/guest-payment';
+import { reconcilePendingDirectConsultations } from '@/server/consultations/direct-payment';
 import { reconcilePendingPaymentLinks } from '@/server/payments/payment-links';
 
 export const runtime = 'nodejs';
@@ -34,12 +34,12 @@ async function run(): Promise<Response> {
   // critical sections; serialising keeps the in-memory store contention low.
   const topups = await reconcilePendingTopUps();
   const card = await reconcilePendingCardBookings();
-  const guest = await reconcilePendingGuestConsultations();
+  const consultations = await reconcilePendingDirectConsultations();
   const paymentLinks = await reconcilePendingPaymentLinks();
   const durationMs = Date.now() - startedAt;
   // eslint-disable-next-line no-console
-  console.info('[cron] reconcile-payments: finished', { topups, card, guest, paymentLinks, durationMs });
-  return NextResponse.json({ ok: true, topups, card, guest, paymentLinks, durationMs });
+  console.info('[cron] reconcile-payments: finished', { topups, card, consultations, paymentLinks, durationMs });
+  return NextResponse.json({ ok: true, topups, card, consultations, paymentLinks, durationMs });
 }
 
 export async function POST(req: Request): Promise<Response> {

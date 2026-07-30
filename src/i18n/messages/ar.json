@@ -2823,6 +2823,29 @@
       "invalidBody": "لم يتم العثور على بطاقة بهذا الرمز.",
       "invalidHint": "تحقق من الرمز وحاول مجددًا.",
       "poweredBy": "تحقّق بواسطة"
+    },
+    "consultationReturn": {
+      "confirmedTitle": "تم تأكيد الدفع",
+      "confirmedDesc": "تم حجز استشارتك.",
+      "consultant": "المستشار",
+      "date": "التاريخ",
+      "duration": "المدة",
+      "minutes": "دقيقة",
+      "amountPaid": "المبلغ المدفوع",
+      "detailsByEmail": "تم إرسال تفاصيل الجلسة إلى بريدك الإلكتروني.",
+      "myConsultations": "استشاراتي",
+      "pendingTitle": "جارٍ التحقق من الدفع",
+      "pendingDesc": "نحن نؤكّد عملية الدفع مع بنكك. عادة ما يستغرق ذلك لحظات قليلة.",
+      "checkAgain": "التحقق مرة أخرى",
+      "autoCheckNote": "يتم تحديث هذه الصفحة تلقائيًا.",
+      "expiredTitle": "انتهت صلاحية الرابط",
+      "expiredDesc": "لم يعد رابط الدفع هذا صالحًا. يمكنك حجز جلستك من جديد.",
+      "cancelledTitle": "تم إلغاء الحجز",
+      "cancelledDesc": "لم يعد طلب الاستشارة هذا نشطًا.",
+      "invalidTitle": "رابط غير صالح",
+      "invalidDesc": "رابط الدفع هذا غير موجود أو لم يعد صالحًا.",
+      "browseConsultants": "تصفّح المستشارين",
+      "backHome": "العودة إلى الرئيسية"
     }
   },
   "spaces": {
@@ -3978,7 +4001,13 @@
       "saveSettings": "حفظ الإعدادات",
       "settingsSaved": "تم حفظ الإعدادات.",
       "saveFailed": "فشل الحفظ",
-      "lastUpdated": "آخر تحديث: {date}"
+      "lastUpdated": "آخر تحديث: {date}",
+      "sectionPayments": "المدفوعات",
+      "sectionPaymentsDescription": "إعدادات دفع داخلية. لا تُعرض هذه القيم للعملاء أبدًا.",
+      "exchangeRateLabel": "سعر التحويل EUR ← DZD",
+      "exchangeRateHint": "عدد الدينارات مقابل 1 يورو. يُستخدم فقط لتحصيل البطاقات الدولية (Visa / Mastercard). يُثبَّت السعر لحظة الدفع، وتغييره لا يؤثر أبدًا على معاملة جارية أو منتهية.",
+      "exchangeRateUnsetWarning": "ما لم يتم تحديد سعر، يبقى الدفع بالبطاقة الدولية غير متاح.",
+      "exchangeRateUpdatedAt": "تم تعديل السعر في {date}"
     },
     "payments": {
       "cancel": "إلغاء",
@@ -4338,7 +4367,9 @@
       "guestReviewNotice": "تتم مراجعة الطلبات من قِبل فريقنا. بمجرد الموافقة، سنرسل إليك عبر البريد الإلكتروني رابطًا آمنًا لتأكيد الموعد والدفع عبر الإنترنت.",
       "guestSuccessTitle": "تم إرسال الطلب!",
       "guestPendingBadge": "قيد المراجعة",
-      "guestSuccessMessage": "تم إرسال طلب استشارتك مع {mentorName}. بمجرد الموافقة عليه، سنرسل إليك عبر البريد الإلكتروني رابطًا آمنًا للدفع عبر الإنترنت وتأكيد جلستك."
+      "guestSuccessMessage": "تم إرسال طلب استشارتك مع {mentorName}. بمجرد الموافقة عليه، سنرسل إليك عبر البريد الإلكتروني رابطًا آمنًا للدفع عبر الإنترنت وتأكيد جلستك.",
+      "loadingPaymentMethods": "جارٍ تحميل طرق الدفع…",
+      "paymentMethodsUnavailable": "تعذّر تحميل طرق الدفع. تحقّق من اتصالك ثم أعد المحاولة."
     },
     "landing": {
       "badge": "مرشدونا",
@@ -4716,5 +4747,17 @@
     "benefit3Body": "مواعيدك، أسعارك، شروطك. قابلة للتعديل في أي وقت.",
     "finalTitle": "جاهز لتقديم استشاراتك؟",
     "finalSubtitle": "انضم إلى المستشارين الذين يطورون نشاطهم مع Metwork."
+  },
+  "consultations": {
+    "payment": {
+      "chooseMethod": "طريقة الدفع",
+      "walletTitle": "محفظة Metwork",
+      "walletBalance": "الرصيد المتاح: {amount}",
+      "cibTitle": "CIB / الذهبية",
+      "cibSubtitle": "بطاقة بنكية جزائرية",
+      "internationalTitle": "Visa / Mastercard",
+      "internationalSubtitle": "بطاقة دولية",
+      "totalLabel": "المبلغ الإجمالي"
+    }
   }
 }

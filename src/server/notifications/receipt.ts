@@ -103,6 +103,12 @@ interface Copy {
   methodOnline: string;
   methodCash: string;
   methodCard: string;
+  /**
+   * Visa/Mastercard. Deliberately generic — the receipt never names the
+   * processor, never shows a foreign currency and never shows a rate. The
+   * amount above is the DZD the client was quoted and owes.
+   */
+  methodInternationalCard: string;
   attestation: (name: string) => string;
   poweredBy: string;
   free: string;
@@ -143,6 +149,7 @@ const COPY: Record<ReceiptLang, Copy> = {
     methodOnline: 'En ligne (portefeuille)',
     methodCash: 'Espèces',
     methodCard: 'Carte (CIB / Edahabia)',
+    methodInternationalCard: 'Carte internationale',
     attestation: (name) => `Ce reçu atteste que le montant mentionné ci-dessus a bien été reçu par ${name} au titre des services rendus.`,
     poweredBy: 'Propulsé par Metwork',
     free: 'Gratuit',
@@ -181,6 +188,7 @@ const COPY: Record<ReceiptLang, Copy> = {
     methodOnline: 'Online (wallet)',
     methodCash: 'Cash',
     methodCard: 'Card (CIB / Edahabia)',
+    methodInternationalCard: 'International card',
     attestation: (name) => `This receipt certifies that the amount above has been duly received by ${name} for the services rendered.`,
     poweredBy: 'Powered by Metwork',
     free: 'Free',
@@ -642,6 +650,22 @@ export async function generateMentorConfirmationPdf(input: MentorConfirmationInp
   const chargedAmount = typeof booking.amountCharged === 'number' ? booking.amountCharged : estimatedFee;
   if (booking.chargeType === 'FREE_QUOTA') labelLine(doc, c.method, c.freeCredit);
   else if (chargedAmount != null) labelLine(doc, c.amountPaid, chargedAmount === 0 ? c.free : fmtMoney(chargedAmount));
+
+  // How it was paid — a generic label only. The receipt is DZD-only: an
+  // international-card payment shows the same DZD figure as any other, with no
+  // EUR amount, no exchange rate and no processor name.
+  if (booking.chargeType !== 'FREE_QUOTA' && chargedAmount != null && chargedAmount > 0) {
+    const methodLabel =
+      booking.paymentProvider === 'STRIPE' ? c.methodInternationalCard
+      : booking.paymentProvider === 'SLICKPAY' ? c.methodCard
+      : booking.paymentProvider === 'CASH' ? c.methodCash
+      : booking.paymentProvider === 'WALLET' ? c.methodOnline
+      // Legacy records predate the field: a guest booking was always a direct
+      // card charge, a registered one always came out of the wallet.
+      : booking.source === 'guest' ? c.methodCard
+      : c.methodOnline;
+    labelLine(doc, c.paymentMethod, methodLabel);
+  }
 
   sectionRule(doc);
   sectionLabel(doc, c.message);

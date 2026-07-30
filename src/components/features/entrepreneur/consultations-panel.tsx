@@ -15,7 +15,7 @@
  *  - Promo code with real-time validation (shared PromoCodeInput)
  *  - Pending-review notice (not an automatic booking)
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Clock, UserCheck, Timer, DollarSign, Tag, CalendarClock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,6 +38,11 @@ import {
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { MentorScheduler } from '@/components/features/mentors/mentor-scheduler';
+import {
+  PaymentMethodPicker,
+  type ConsultationPaymentMethod,
+  type ConsultationQuote,
+} from '@/components/features/consultations/payment-method-picker';
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { MentorBookingRecord, MentorBookingStatus, MentorRecord } from '@/server/db/store';
@@ -203,6 +208,10 @@ export function ConsultationsPanel({
 
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState<string | null>(null);
+  // Payment method (instant-book only). Every figure comes from the SERVER
+  // quote — this panel never derives an amount, a currency or a rate.
+  const [quote, setQuote] = useState<ConsultationQuote | null>(null);
+  const [payMethod, setPayMethod] = useState<ConsultationPaymentMethod | null>(null);
   const [success, setSuccess] = useState<{
     mentorName: string;
     finalPrice: number;
@@ -226,6 +235,40 @@ export function ConsultationsPanel({
   const discountAmt   = charge.tierDiscountAmount + charge.promoDiscountAmount;
   const isFree        = feePerHour === 0 || finalPrice === 0;
 
+  // Server quote drives the payment-method step. Re-runs when the mentor,
+  // duration or applied promo changes, since each moves the price.
+  const needsPayment = instantBookEnabled && dialogOpen && !!selectedMentorId && finalPrice > 0;
+  const appliedPromo = promoResult?.code ?? '';
+  useEffect(() => {
+    if (!needsPayment) { setQuote(null); return; }
+    let cancelled = false;
+    const params = new URLSearchParams({
+      mentorId: selectedMentorId,
+      durationMinutes: String(duration),
+    });
+    if (appliedPromo) params.set('promoCode', appliedPromo);
+
+    fetch(`/api/consultations/quote?${params.toString()}`, { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: ConsultationQuote | null) => {
+        if (cancelled) return;
+        setQuote(data);
+        if (data) {
+          // Wallet preselected when it covers — never auto-debited.
+          setPayMethod((current) => {
+            if (current && data.methods[current]) return current;
+            if (data.methods.WALLET) return 'WALLET';
+            if (data.methods.SLICKPAY) return 'SLICKPAY';
+            if (data.methods.STRIPE) return 'STRIPE';
+            return null;
+          });
+        }
+      })
+      .catch(() => { if (!cancelled) setQuote(null); });
+
+    return () => { cancelled = true; };
+  }, [needsPayment, selectedMentorId, duration, appliedPromo]);
+
   function openDialog() {
     setSelectedMentorId(mentors[0]?.id ?? '');
     setPhone(userPhone);
@@ -234,6 +277,8 @@ export function ConsultationsPanel({
     setBookDate(null);
     setBookTime(null);
     setPromoResult(null);
+    setQuote(null);
+    setPayMethod(null);
     setError(null);
     setSuccess(null);
     setDialogOpen(true);
@@ -287,6 +332,8 @@ export function ConsultationsPanel({
             // the entered promo; the server keeps it only if it beats the tier.
             promoCode: promoResult?.code ?? null,
             locale,
+            // Rail only — the server recomputes the amount regardless.
+            method: needsPayment ? payMethod : undefined,
           }),
         });
         if (!res.ok) {
@@ -694,6 +741,17 @@ export function ConsultationsPanel({
                   </p>
                 </div>
 
+                {/* Payment method — instant-book, paid sessions only. */}
+                {needsPayment && quote && (
+                  <PaymentMethodPicker
+                    quote={quote}
+                    value={payMethod}
+                    onChange={setPayMethod}
+                    disabled={saving}
+                    locale={locale}
+                  />
+                )}
+
                 {/* Pending-review notice */}
                 <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
                   <Clock className="size-3.5 mt-0.5 shrink-0" />
@@ -718,7 +776,12 @@ export function ConsultationsPanel({
                 >
                   {tCommon('cancel')}
                 </Button>
-                <Button loading={saving} onClick={submit} disabled={!bookDate || !bookTime}>
+                <Button
+                  loading={saving}
+                  onClick={submit}
+                  // A paid instant booking needs the server quote and a chosen rail.
+                  disabled={!bookDate || !bookTime || (needsPayment && (!quote || !payMethod))}
+                >
                   {feePerHour > 0
                     ? (finalPrice === 0
                         ? t('sendRequestFree')

@@ -2823,6 +2823,29 @@
       "invalidBody": "No pass was found for this code.",
       "invalidHint": "Check the code and try again.",
       "poweredBy": "Verified by"
+    },
+    "consultationReturn": {
+      "confirmedTitle": "Payment confirmed",
+      "confirmedDesc": "Your consultation is booked.",
+      "consultant": "Consultant",
+      "date": "Date",
+      "duration": "Duration",
+      "minutes": "minutes",
+      "amountPaid": "Amount paid",
+      "detailsByEmail": "The session details have been emailed to you.",
+      "myConsultations": "My consultations",
+      "pendingTitle": "Verifying your payment",
+      "pendingDesc": "We are confirming the payment with your bank. This usually takes a few moments.",
+      "checkAgain": "Check again",
+      "autoCheckNote": "This page updates automatically.",
+      "expiredTitle": "Link expired",
+      "expiredDesc": "This payment link is no longer valid. You can book your session again.",
+      "cancelledTitle": "Booking cancelled",
+      "cancelledDesc": "This consultation request is no longer active.",
+      "invalidTitle": "Invalid link",
+      "invalidDesc": "This payment link does not exist or is no longer valid.",
+      "browseConsultants": "Browse consultants",
+      "backHome": "Back home"
     }
   },
   "spaces": {
@@ -3978,7 +4001,13 @@
       "saveSettings": "Save settings",
       "settingsSaved": "Settings saved.",
       "saveFailed": "Save failed",
-      "lastUpdated": "Last updated: {date}"
+      "lastUpdated": "Last updated: {date}",
+      "sectionPayments": "Payments",
+      "sectionPaymentsDescription": "Internal payment settings. These values are never shown to clients.",
+      "exchangeRateLabel": "EUR → DZD conversion rate",
+      "exchangeRateHint": "DZD per 1 EUR. Used only to bill international cards (Visa / Mastercard). The rate is frozen at payment time — changing it never affects a transaction already in flight or completed.",
+      "exchangeRateUnsetWarning": "While no rate is set, international card payment stays unavailable.",
+      "exchangeRateUpdatedAt": "Rate updated {date}"
     },
     "payments": {
       "cancel": "Cancel",
@@ -4338,7 +4367,9 @@
       "guestReviewNotice": "Requests are reviewed by our team. Once approved, we'll email you a secure link to confirm the time and pay online.",
       "guestSuccessTitle": "Request submitted!",
       "guestPendingBadge": "Pending review",
-      "guestSuccessMessage": "Your consultation request with {mentorName} has been submitted. Once it's approved, we'll email you a secure link to pay online and confirm your session."
+      "guestSuccessMessage": "Your consultation request with {mentorName} has been submitted. Once it's approved, we'll email you a secure link to pay online and confirm your session.",
+      "loadingPaymentMethods": "Loading payment methods…",
+      "paymentMethodsUnavailable": "Could not load payment methods. Check your connection and try again."
     },
     "landing": {
       "badge": "Our mentors",
@@ -4716,5 +4747,17 @@
     "benefit3Body": "Your availability, your rates, your terms. Change them anytime.",
     "finalTitle": "Ready to offer your consultations?",
     "finalSubtitle": "Join the consultants growing their practice with Metwork."
+  },
+  "consultations": {
+    "payment": {
+      "chooseMethod": "Payment method",
+      "walletTitle": "Metwork wallet",
+      "walletBalance": "Available balance: {amount}",
+      "cibTitle": "CIB / Edahabia",
+      "cibSubtitle": "Algerian bank card",
+      "internationalTitle": "Visa / Mastercard",
+      "internationalSubtitle": "International card",
+      "totalLabel": "Total to pay"
+    }
   }
 }

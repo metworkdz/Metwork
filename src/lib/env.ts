@@ -76,6 +76,12 @@ const serverSchema = z.object({
   /** Preferred — overrides SLICKPAY_API_BASE when both are set. */
   SLICKPAY_BASE_URL: z.string().url().optional(),
   SLICKPAY_API_BASE: z.string().url().optional(),
+  // Stripe (international Visa/Mastercard). NOT a PAYMENT_PROVIDER value —
+  // it's chosen per-transaction by the payer at consultation checkout. Both
+  // optional so the app boots without it; the provider fails closed at runtime
+  // and the card option is hidden in the UI.
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
   // Mock provider mode: `sync` (default, settles immediately) or `async`
   // (returns PENDING + redirectUrl, exercises the webhook path locally).
   MOCK_PAYMENT_MODE: z.enum(['sync', 'async']).default('sync'),

@@ -10,6 +10,7 @@ import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { DEFAULT_PLATFORM_SETTINGS } from '@/server/admin/settings-defaults';
 import { LANDING_SECTIONS } from '@/config/landing-sections';
+import { MIN_EUR_DZD_RATE, MAX_EUR_DZD_RATE } from '@/server/payments/fx';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,6 +22,17 @@ const schema = z.object({
   paymentsEnabled:  z.boolean().optional(),
   /** Public landing-section toggles — only known section ids accepted. */
   landingVisibility: z.record(z.enum(LANDING_SECTIONS), z.boolean()).optional(),
+  /**
+   * DZD per 1 EUR for the international-card checkout. Must be positive and
+   * within sane bounds — a fat-fingered rate mischarges every subsequent payer.
+   * Handled separately below so it carries its own audit stamp.
+   */
+  eurToDzdRate: z
+    .number()
+    .positive()
+    .min(MIN_EUR_DZD_RATE)
+    .max(MAX_EUR_DZD_RATE)
+    .optional(),
 });
 
 export async function GET() {
@@ -46,12 +58,25 @@ export async function PATCH(req: NextRequest) {
     throw err;
   }
 
+  const now = new Date().toISOString();
+  const { eurToDzdRate, ...rest } = input;
+  const rateChanged = eurToDzdRate !== undefined;
+
   const updated = await db.update((store) => {
     const current = store.platformSettings ?? { ...DEFAULT_PLATFORM_SETTINGS };
     store.platformSettings = {
       ...current,
-      ...input,
-      updatedAt: new Date().toISOString(),
+      ...rest,
+      // The rate carries who/when alongside it. Rates already snapshotted onto
+      // in-flight or settled transactions are untouched by design.
+      ...(rateChanged
+        ? {
+            eurToDzdRate,
+            eurToDzdRateUpdatedAt: now,
+            eurToDzdRateUpdatedBy: guard.user.id,
+          }
+        : {}),
+      updatedAt: now,
     };
     return { ...store.platformSettings };
   });

@@ -98,8 +98,21 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
   async function save() {
     setSaving(true); setError(null); setSaved(false);
     try {
-      const { updatedAt: _, ...patch } = form;
-      void _;
+      const {
+        updatedAt: _,
+        // Audit stamps are written server-side from the session, never sent up.
+        eurToDzdRateUpdatedAt: _rateAt,
+        eurToDzdRateUpdatedBy: _rateBy,
+        eurToDzdRate,
+        ...rest
+      } = form;
+      void _; void _rateAt; void _rateBy;
+      // The API validates the rate as a positive number, so an unset rate must
+      // be omitted rather than sent as null.
+      const patch = {
+        ...rest,
+        ...(typeof eurToDzdRate === 'number' && eurToDzdRate > 0 ? { eurToDzdRate } : {}),
+      };
       const res = await fetch('/api/admin/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -168,6 +181,46 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
             checked={form.paymentsEnabled}
             onChange={(v) => set('paymentsEnabled', v)}
           />
+        </CardContent>
+      </Card>
+
+      {/* Payments — the EUR/DZD rate used to price the international-card
+          checkout. Internal only: it is never shown to a client, and changing
+          it never reprices a payment that has already been quoted or taken. */}
+      <Card>
+        <CardHeader>
+          <p className="font-medium">{t('sectionPayments')}</p>
+          <p className="text-xs text-muted-foreground">{t('sectionPaymentsDescription')}</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="eur-dzd-rate">{t('exchangeRateLabel')}</Label>
+            <Input
+              id="eur-dzd-rate"
+              type="number"
+              inputMode="decimal"
+              min={1}
+              step="0.01"
+              dir="ltr"
+              value={form.eurToDzdRate ?? ''}
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                set('eurToDzdRate', v === '' ? null : Number(v));
+              }}
+              placeholder="275"
+            />
+            <p className="text-xs text-muted-foreground">{t('exchangeRateHint')}</p>
+            {(form.eurToDzdRate == null || form.eurToDzdRate <= 0) && (
+              <p className="text-xs text-amber-600">{t('exchangeRateUnsetWarning')}</p>
+            )}
+            {form.eurToDzdRateUpdatedAt && (
+              <p className="text-xs text-muted-foreground">
+                {t('exchangeRateUpdatedAt', {
+                  date: new Date(form.eurToDzdRateUpdatedAt).toLocaleString(),
+                })}
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
 

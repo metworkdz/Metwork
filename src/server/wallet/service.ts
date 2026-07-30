@@ -174,6 +174,11 @@ export interface InitiateTopUpInput {
   customer: { fullName: string; email: string; phone: string };
   /** Where the user lands after the hosted checkout (success or failure). */
   returnUrl?: string;
+  /**
+   * What this top-up funds. Absent ⇒ 'WALLET_TOPUP'. Purely descriptive — it is
+   * recorded on the intent for admin/audit and changes no settlement behaviour.
+   */
+  purpose?: 'WALLET_TOPUP' | 'CONSULTATION';
 }
 
 export type InitiateTopUpResult =
@@ -243,6 +248,7 @@ export async function initiateTopUp(input: InitiateTopUpInput): Promise<Initiate
       status: providerResult.status === 'COMPLETED' ? 'COMPLETED' : 'PENDING',
       redirectUrl: providerResult.redirectUrl,
       transactionId: null,
+      purpose: input.purpose ?? 'WALLET_TOPUP',
       createdAt: now,
       updatedAt: now,
     };

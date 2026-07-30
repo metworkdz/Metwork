@@ -2823,6 +2823,29 @@
       "invalidBody": "Aucun pass n'a été trouvé pour ce code.",
       "invalidHint": "Vérifiez le code et réessayez.",
       "poweredBy": "Vérifié par"
+    },
+    "consultationReturn": {
+      "confirmedTitle": "Paiement confirmé",
+      "confirmedDesc": "Votre consultation est réservée.",
+      "consultant": "Consultant",
+      "date": "Date",
+      "duration": "Durée",
+      "minutes": "minutes",
+      "amountPaid": "Montant payé",
+      "detailsByEmail": "Les détails de la séance vous ont été envoyés par e-mail.",
+      "myConsultations": "Mes consultations",
+      "pendingTitle": "Paiement en cours de vérification",
+      "pendingDesc": "Nous confirmons votre paiement auprès de votre banque. Cela prend généralement quelques instants.",
+      "checkAgain": "Vérifier à nouveau",
+      "autoCheckNote": "Cette page se met à jour automatiquement.",
+      "expiredTitle": "Lien expiré",
+      "expiredDesc": "Ce lien de paiement n'est plus valide. Vous pouvez réserver à nouveau votre séance.",
+      "cancelledTitle": "Réservation annulée",
+      "cancelledDesc": "Cette demande de consultation n'est plus active.",
+      "invalidTitle": "Lien invalide",
+      "invalidDesc": "Ce lien de paiement n'existe pas ou n'est plus valide.",
+      "browseConsultants": "Voir les consultants",
+      "backHome": "Retour à l'accueil"
     }
   },
   "spaces": {
@@ -3978,7 +4001,13 @@
       "saveSettings": "Enregistrer les paramètres",
       "settingsSaved": "Paramètres enregistrés.",
       "saveFailed": "Échec de la sauvegarde",
-      "lastUpdated": "Dernière mise à jour : {date}"
+      "lastUpdated": "Dernière mise à jour : {date}",
+      "sectionPayments": "Paiements",
+      "sectionPaymentsDescription": "Paramètres internes de paiement. Ces valeurs ne sont jamais affichées aux clients.",
+      "exchangeRateLabel": "Taux de conversion EUR → DZD",
+      "exchangeRateHint": "Nombre de DZD pour 1 EUR. Utilisé uniquement pour facturer les cartes internationales (Visa / Mastercard). Le taux est figé au moment du paiement : le modifier n'affecte jamais une transaction déjà engagée.",
+      "exchangeRateUnsetWarning": "Tant qu'aucun taux n'est défini, le paiement par carte internationale reste indisponible.",
+      "exchangeRateUpdatedAt": "Taux modifié le {date}"
     },
     "payments": {
       "cancel": "Annuler",
@@ -4338,7 +4367,9 @@
       "guestReviewNotice": "Les demandes sont examinées par notre équipe. Une fois approuvée, nous vous enverrons par e-mail un lien sécurisé pour confirmer l'horaire et payer en ligne.",
       "guestSuccessTitle": "Demande envoyée !",
       "guestPendingBadge": "En attente d'examen",
-      "guestSuccessMessage": "Votre demande de consultation avec {mentorName} a été envoyée. Une fois approuvée, nous vous enverrons par e-mail un lien sécurisé pour payer en ligne et confirmer votre session."
+      "guestSuccessMessage": "Votre demande de consultation avec {mentorName} a été envoyée. Une fois approuvée, nous vous enverrons par e-mail un lien sécurisé pour payer en ligne et confirmer votre session.",
+      "loadingPaymentMethods": "Chargement des moyens de paiement…",
+      "paymentMethodsUnavailable": "Impossible de charger les moyens de paiement. Vérifiez votre connexion et réessayez."
     },
     "landing": {
       "badge": "Nos mentors",
@@ -4716,5 +4747,17 @@
     "benefit3Body": "Vos disponibilités, vos tarifs, vos conditions. Modifiables à tout moment.",
     "finalTitle": "Prêt à proposer vos consultations ?",
     "finalSubtitle": "Rejoignez les consultants qui développent leur activité avec Metwork."
+  },
+  "consultations": {
+    "payment": {
+      "chooseMethod": "Moyen de paiement",
+      "walletTitle": "Portefeuille Metwork",
+      "walletBalance": "Solde disponible : {amount}",
+      "cibTitle": "CIB / Edahabia",
+      "cibSubtitle": "Carte bancaire algérienne",
+      "internationalTitle": "Visa / Mastercard",
+      "internationalSubtitle": "Carte internationale",
+      "totalLabel": "Total à payer"
+    }
   }
 }

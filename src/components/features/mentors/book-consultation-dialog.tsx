@@ -26,6 +26,11 @@ import {
   type BookingAccountDraft,
 } from '@/components/features/booking/booking-create-account-fields';
 import { MentorScheduler } from './mentor-scheduler';
+import {
+  PaymentMethodPicker,
+  type ConsultationPaymentMethod,
+  type ConsultationQuote,
+} from '@/components/features/consultations/payment-method-picker';
 import type { DaySlot } from '@/types/mentor';
 import { resolveTier } from '@/lib/tier-utils';
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
@@ -166,6 +171,12 @@ export function BookConsultationDialog({
   const [formState,   setFormState]   = useState<FormState>('idle');
   const [errorMsg,    setErrorMsg]    = useState<string | null>(null);
 
+  // Payment method (instant-book only). The quote is SERVER-computed — this
+  // component never derives an amount, a currency or a rate from it.
+  const [quote,       setQuote]       = useState<ConsultationQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [payMethod,   setPayMethod]   = useState<ConsultationPaymentMethod | null>(null);
+
   // Membership-tier consultation discount fraction (Builder 15 %, Founder 20 %)
   // from the ONE canonical resolver. Guests get 0.
   const membershipDiscountFraction = user ? consultationDiscountFraction(userTier) : 0;
@@ -201,6 +212,7 @@ export function BookConsultationDialog({
     setGuestChosen(false);
     setCreateAccount(false);
     setAccount(emptyBookingAccount);
+    setQuote(null); setQuoteLoading(false); setPayMethod(null);
     clientRef.current = null;
     setFormState('idle'); setErrorMsg(null);
   }
@@ -223,6 +235,47 @@ export function BookConsultationDialog({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialDate, initialTime, initialDuration]);
+
+  // Ask the server what this session costs and which rails are offerable.
+  // Runs on the details step of a paid instant booking; re-runs when the
+  // duration or the applied promo changes, since both move the price.
+  const needsPayment = instantBookEnabled && !!user && !!mentor && finalPrice > 0;
+  const appliedPromo = promoState === 'valid' ? promoCode.trim() : '';
+  useEffect(() => {
+    if (!open || step !== 'details' || !needsPayment || !mentor) {
+      setQuote(null);
+      return;
+    }
+    let cancelled = false;
+    setQuoteLoading(true);
+    const params = new URLSearchParams({
+      mentorId: mentor.id,
+      durationMinutes: String(duration),
+    });
+    if (appliedPromo) params.set('promoCode', appliedPromo);
+
+    fetch(`/api/consultations/quote?${params.toString()}`, { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: ConsultationQuote | null) => {
+        if (cancelled) return;
+        setQuote(data);
+        // Preselect the wallet when it covers the amount — but the user can
+        // always switch, and nothing is ever debited without an explicit choice.
+        if (data) {
+          setPayMethod((current) => {
+            if (current && data.methods[current]) return current;
+            if (data.methods.WALLET) return 'WALLET';
+            if (data.methods.SLICKPAY) return 'SLICKPAY';
+            if (data.methods.STRIPE) return 'STRIPE';
+            return null;
+          });
+        }
+      })
+      .catch(() => { if (!cancelled) setQuote(null); })
+      .finally(() => { if (!cancelled) setQuoteLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [open, step, needsPayment, mentor, duration, appliedPromo]);
 
   /** Real-time promo code validation — calls /api/promo-codes/validate */
   const validatePromo = useCallback(async () => {
@@ -324,6 +377,8 @@ export function BookConsultationDialog({
             promoCode: promoState === 'valid' ? promoCode.trim() : null,
             locale: locale === 'en' || locale === 'fr' || locale === 'ar' ? locale : undefined,
             clientReference: clientRef.current,
+            // Rail only — the server recomputes the amount regardless.
+            method: needsPayment ? payMethod : undefined,
           }),
         });
         if (!res.ok) {
@@ -338,7 +393,8 @@ export function BookConsultationDialog({
           redirectUrl?: string | null;
         };
         if (data.mode === 'awaiting_payment') {
-          // Member top-up → provider checkout; guest → hosted pay page.
+          // Card / top-up → the provider's hosted checkout. The payer returns to
+          // /consultation/instant/[token], which verifies and settles.
           if (data.redirectUrl) { window.location.href = data.redirectUrl; return; }
           if (data.payToken) { router.push(`/consultation/pay/${data.payToken}`); return; }
         }
@@ -885,6 +941,32 @@ export function BookConsultationDialog({
                 />
               )}
 
+              {/* Payment method — instant-book, paid sessions only. Every
+                  figure below comes from the server quote. */}
+              {needsPayment && quote && (
+                <PaymentMethodPicker
+                  quote={quote}
+                  value={payMethod}
+                  onChange={setPayMethod}
+                  disabled={formState === 'submitting'}
+                  locale={locale}
+                />
+              )}
+              {needsPayment && !quote && quoteLoading && (
+                <div className="flex items-center justify-center gap-2 rounded-lg border border-border/60 bg-muted/20 px-4 py-6 text-xs text-muted-foreground">
+                  <svg className="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  {t('loadingPaymentMethods')}
+                </div>
+              )}
+              {needsPayment && !quote && !quoteLoading && (
+                <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                  {t('paymentMethodsUnavailable')}
+                </p>
+              )}
+
               {/* Notice: instant pay-first vs legacy pending-review */}
               {instantBookEnabled ? (
                 <div className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
@@ -917,7 +999,13 @@ export function BookConsultationDialog({
                   <ChevronLeft className="size-4 rtl:rotate-180" />
                   {t('back')}
                 </Button>
-                <Button type="submit" loading={formState === 'submitting'}>
+                <Button
+                  type="submit"
+                  loading={formState === 'submitting'}
+                  // A paid instant booking can't be submitted until the server
+                  // quote has landed and a rail has been chosen.
+                  disabled={needsPayment && (!quote || !payMethod)}
+                >
                   <Calendar className="size-4" />
                   {instantBookEnabled
                     ? (feePerHour > 0 && finalPrice > 0

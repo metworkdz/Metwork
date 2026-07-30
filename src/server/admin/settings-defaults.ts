@@ -5,6 +5,11 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettingsRecord = {
   maintenanceMode: false,
   signupsEnabled:  true,
   paymentsEnabled: true,
+  // Null until an admin sets it — international (Stripe) card payment stays
+  // unavailable rather than falling back to a guessed rate.
+  eurToDzdRate:          null,
+  eurToDzdRateUpdatedAt: null,
+  eurToDzdRateUpdatedBy: null,
   updatedAt:       new Date(0).toISOString(),
 };
 
