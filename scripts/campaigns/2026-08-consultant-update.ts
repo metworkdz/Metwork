@@ -30,9 +30,11 @@
  *     REJECTED self-signups are excluded.
  *
  * ── Prerequisite ───────────────────────────────────────────────────────────
- *   The two banner PNGs must already be live at
- *   https://metwork.dz/assets/campaign/*.png — mail clients cannot load
- *   localhost or Vercel preview URLs. Deploy `public/assets/campaign/` first.
+ *   The two banner images are hosted on Cloudinary (see
+ *   `scripts/campaigns/upload-assets.ts` and the CAMPAIGN_IMAGE_URLS constant
+ *   in email.ts) rather than `public/assets/` — this repo's `main` branch
+ *   isn't wired to auto-deploy, so a plain `git push` never makes a static
+ *   asset live. Nothing to do here unless the source SVGs change.
  *
  * Run (preview):   npx tsx scripts/campaigns/2026-08-consultant-update.ts --test you@example.com
  * Run (dry run):   npx tsx scripts/campaigns/2026-08-consultant-update.ts --send
@@ -267,19 +269,6 @@ async function runTest(to: string): Promise<void> {
     'utf8',
   );
   console.log(`✓ Preview (no first name) → ${path.relative(process.cwd(), fallbackPath)}`);
-
-  // Browser-openable variant: the sent email points at https://metwork.dz for
-  // every image (mail clients can't resolve anything else), which 404s until
-  // the assets are deployed. This copy rewrites those to local file paths so
-  // the real design is reviewable before any deploy.
-  const localPath = PREVIEW_PATH.replace(/\.html$/, '-local.html');
-  const publicDir = path.resolve(process.cwd(), 'public');
-  fs.writeFileSync(
-    localPath,
-    html.replace(new RegExp(`${PUBLIC_ORIGIN}/assets/`, 'g'), `file://${publicDir}/assets/`),
-    'utf8',
-  );
-  console.log(`✓ Preview (local images) → ${path.relative(process.cwd(), localPath)}`);
 
   console.log(`\nSubject: ${CONSULTANT_UPDATE_2026_08_SUBJECT}`);
   console.log(`From:    ${process.env.EMAIL_FROM ?? 'noreply@metwork.dz'}`);

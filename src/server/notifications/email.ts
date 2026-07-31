@@ -2963,20 +2963,32 @@ export function bookingPaidIncubatorEmailHtml(opts: {
  * Sent exclusively by `scripts/campaigns/2026-08-consultant-update.ts`. Nothing
  * in the app calls this; it is not wired into the notification dispatcher.
  *
- * The two banner images are absolute URLs on EMAIL_PUBLIC_ORIGIN — mail clients
- * cannot resolve localhost or Vercel preview hosts, so the PNGs in
- * `public/assets/campaign/` must be LIVE IN PRODUCTION before any send.
+ * The two banner images are hosted on Cloudinary (not `public/assets/`) —
+ * this project's `main` branch is not wired to auto-deploy (a `git push` does
+ * not build/ship), so a same-repo static asset has no guaranteed public URL
+ * without a full `vercel --prod` of whatever else is on `main` at the time.
+ * Cloudinary is already configured and used elsewhere in this app (consultant/
+ * admin upload routes — see `src/lib/cloudinary.ts`), so the banners were
+ * uploaded there via `scripts/campaigns/upload-assets.ts` instead. Re-run that
+ * script after editing the source SVGs — same public_id + `overwrite: true`
+ * means the URL below never needs to change.
  */
 export const CONSULTANT_UPDATE_2026_08_SUBJECT =
   'Nouveautés Metwork : paiements internationaux et lien de réunion automatique';
 
+/** Cloudinary URLs for the two campaign banners — see the note above. */
+const CAMPAIGN_IMAGE_URLS = {
+  internationalPayments: 'https://res.cloudinary.com/dguqgjkuh/image/upload/v1785516960/metwork/campaign/international-payments.png',
+  meetingLink:           'https://res.cloudinary.com/dguqgjkuh/image/upload/v1785516961/metwork/campaign/meeting-link.png',
+} as const;
+
 /** Renders one feature block: banner image + heading + copy. */
-function campaignFeature(opts: { image: string; alt: string; heading: string; body: string }): string {
+function campaignFeature(opts: { imageUrl: string; alt: string; heading: string; body: string }): string {
   return `
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 8px;">
       <tr>
         <td style="padding:0 0 16px;">
-          <img src="${EMAIL_PUBLIC_ORIGIN}/assets/campaign/${opts.image}"
+          <img src="${opts.imageUrl}"
                alt="${opts.alt}" width="480"
                style="display:block;width:100%;max-width:480px;height:auto;border:0;border-radius:12px;" />
         </td>
@@ -3005,14 +3017,14 @@ export function consultantUpdateJuly2026EmailHtml(opts: {
       ${p("L'équipe Metwork a le plaisir de vous annoncer deux nouveautés sur votre espace consultant, pensées pour vous simplifier la vie et élargir votre audience.")}
 
       ${campaignFeature({
-        image:   'international-payments.png',
+        imageUrl: CAMPAIGN_IMAGE_URLS.internationalPayments,
         alt:     'Paiements par carte Visa et Mastercard, en Algérie et à l’international',
         heading: '💳 Paiements internationaux (Visa / Mastercard)',
         body:    'Vos clients peuvent désormais payer par carte Visa ou Mastercard, en plus de CIB et Edahabia. Vous pouvez donc recevoir des réservations de clients situés en dehors de l’Algérie.',
       })}
 
       ${campaignFeature({
-        image:   'meeting-link.png',
+        imageUrl: CAMPAIGN_IMAGE_URLS.meetingLink,
         alt:     'Lien de réunion Zoom généré automatiquement à chaque réservation confirmée',
         heading: '🎥 Lien de réunion automatique',
         body:    'Dès qu’une réservation est confirmée, un lien Zoom est généré automatiquement et envoyé instantanément à vous et à votre client — plus besoin de créer ou de partager un lien manuellement.',
