@@ -98,6 +98,13 @@ export const stripeProvider: PaymentProvider = {
           cancel_url: input.returnUrl,
           customer_email: input.customer.email || undefined,
           locale: CHECKOUT_LOCALES[input.locale ?? 'fr'] ?? 'fr',
+          // Adaptive Pricing is on by default per the Stripe dashboard setting
+          // and detects the buyer's card/IP country to offer a "Choose
+          // currency" picker (e.g. SGD) alongside EUR. That contradicts the
+          // frozen-rate DZD→EUR conversion above — the payer must be charged
+          // exactly `conversion.amountEurCents` in EUR, not a second
+          // Stripe-computed conversion in a different currency.
+          adaptive_pricing: { enabled: false },
           line_items: [
             {
               quantity: 1,
