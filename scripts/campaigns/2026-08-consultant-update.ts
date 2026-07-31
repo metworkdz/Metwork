@@ -25,9 +25,9 @@
  *     partial batch skips everyone already logged — nobody is emailed twice.
  *   • One failure never stops the batch (same non-blocking principle as the
  *     Zoom/WhatsApp/email dispatchers).
- *   • Recipients are APPROVED consultants only. `approvalStatus` absent means
- *     a legacy admin-added mentor, which counts as approved; PENDING and
- *     REJECTED self-signups are excluded.
+ *   • Recipients are every mentor record with a usable email — no
+ *     approvalStatus filter (owner's explicit instruction: "all consultants
+ *     with an email address").
  *
  * ── Prerequisite ───────────────────────────────────────────────────────────
  *   The two banner images are hosted on Cloudinary (see
@@ -167,13 +167,14 @@ async function logSend(sb: SupabaseClient, record: CampaignSend): Promise<void> 
 /* ───────────────────────────── recipients ──────────────────────────── */
 
 /**
- * APPROVED consultants with a usable email. `approvalStatus` absent ⇒ legacy
- * admin-added mentor, implicitly approved (mirrors `isMentorApproved`).
+ * Every consultant with a usable email — no approvalStatus filter. Owner's
+ * explicit instruction ("send to all consultants with an email address"),
+ * which supersedes the earlier APPROVED-only default and now also reaches the
+ * one still-PENDING self-signup.
  */
 function isEligible(m: MentorLike): boolean {
   const email = typeof m.email === 'string' ? m.email.trim() : '';
-  if (!email || !email.includes('@')) return false;
-  return (m.approvalStatus ?? 'APPROVED') === 'APPROVED';
+  return !!email && email.includes('@');
 }
 
 /**
@@ -185,7 +186,14 @@ function isEligible(m: MentorLike): boolean {
  * greeting chosen for every recipient; put a correction here for anyone it
  * gets wrong. An empty string forces the neutral "Bonjour," greeting.
  */
-const NAME_OVERRIDES: Record<string, string> = {};
+const NAME_OVERRIDES: Record<string, string> = {
+  '50ba2c55-e110-4214-a612-3aa80de5fc41': 'Lyes',        // "BOUDRAA Lyes" — caps = surname-first
+  '53be6a8f-c89d-417a-aeb4-efc945858d4f': 'Mohamed',     // "Sadeg mohamed" — Sadeg is a surname
+  '302f8b68-4ff4-4b87-9342-6907ac94a3ab': 'Abderraouf',  // "Khenchouche abderraouf" — Khenchouche is a surname
+  '1525631b-b13d-4449-ba94-050c37d8b959': 'Taous',       // "Salhi Taous" — Salhi is a surname
+  '516c6f23-a848-46b4-8927-8e8feef20ba3': 'Mohammad',    // "Benmoussa Mohammad" — Benmoussa is a surname
+  'e7a10326-abd8-4e7e-aa25-05542c8186f9': 'Abdelkader',  // "Boudia Abdelkader Rayane" — Boudia is a surname
+};
 
 /** "MOKHTARIA" → "Mokhtaria", "shanez" → "Shanez". Leaves accents alone. */
 function titleCase(token: string): string {
