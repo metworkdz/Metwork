@@ -2951,3 +2951,77 @@ export function bookingPaidIncubatorEmailHtml(opts: {
     </div>
   `);
 }
+
+/* ───────── One-off campaign: consultant platform update (August 2026) ───────── */
+
+/**
+ * ONE-OFF announcement to registered consultants (August 2026 campaign):
+ * international card payments + auto-generated Zoom links. French only — the
+ * consultant population is FR-speaking and this is a single manual send, not a
+ * transactional template, so it deliberately skips the EmailLang machinery.
+ *
+ * Sent exclusively by `scripts/campaigns/2026-08-consultant-update.ts`. Nothing
+ * in the app calls this; it is not wired into the notification dispatcher.
+ *
+ * The two banner images are absolute URLs on EMAIL_PUBLIC_ORIGIN — mail clients
+ * cannot resolve localhost or Vercel preview hosts, so the PNGs in
+ * `public/assets/campaign/` must be LIVE IN PRODUCTION before any send.
+ */
+export const CONSULTANT_UPDATE_2026_08_SUBJECT =
+  'Nouveautés Metwork : paiements internationaux et lien de réunion automatique';
+
+/** Renders one feature block: banner image + heading + copy. */
+function campaignFeature(opts: { image: string; alt: string; heading: string; body: string }): string {
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 8px;">
+      <tr>
+        <td style="padding:0 0 16px;">
+          <img src="${EMAIL_PUBLIC_ORIGIN}/assets/campaign/${opts.image}"
+               alt="${opts.alt}" width="480"
+               style="display:block;width:100%;max-width:480px;height:auto;border:0;border-radius:12px;" />
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0 0 24px;">
+          <h2 style="margin:0 0 10px;font-size:17px;font-weight:700;color:#0D0D0D;letter-spacing:-0.2px;line-height:1.4;">${opts.heading}</h2>
+          <p style="margin:0;font-size:15px;color:#3f3f46;line-height:1.65;">${opts.body}</p>
+        </td>
+      </tr>
+    </table>`;
+}
+
+export function consultantUpdateJuly2026EmailHtml(opts: {
+  /** Consultant's first name. Empty/absent ⇒ the greeting drops the name entirely. */
+  firstName?: string | null;
+  dashboardUrl: string;
+}): string {
+  const name = (opts.firstName ?? '').trim().replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const greeting = name ? `Bonjour ${name},` : 'Bonjour,';
+
+  return layout(`
+    <div dir="ltr" style="font-family:'Space Grotesk',Inter,Helvetica,Arial,sans-serif;">
+      ${h1('Deux nouveautés sur votre espace consultant')}
+      ${p(`${greeting}`)}
+      ${p("L'équipe Metwork a le plaisir de vous annoncer deux nouveautés sur votre espace consultant, pensées pour vous simplifier la vie et élargir votre audience.")}
+
+      ${campaignFeature({
+        image:   'international-payments.png',
+        alt:     'Paiements par carte Visa et Mastercard, en Algérie et à l’international',
+        heading: '💳 Paiements internationaux (Visa / Mastercard)',
+        body:    'Vos clients peuvent désormais payer par carte Visa ou Mastercard, en plus de CIB et Edahabia. Vous pouvez donc recevoir des réservations de clients situés en dehors de l’Algérie.',
+      })}
+
+      ${campaignFeature({
+        image:   'meeting-link.png',
+        alt:     'Lien de réunion Zoom généré automatiquement à chaque réservation confirmée',
+        heading: '🎥 Lien de réunion automatique',
+        body:    'Dès qu’une réservation est confirmée, un lien Zoom est généré automatiquement et envoyé instantanément à vous et à votre client — plus besoin de créer ou de partager un lien manuellement.',
+      })}
+
+      ${p('D’autres fonctionnalités arrivent bientôt sur votre espace consultant.')}
+      ${button(opts.dashboardUrl, 'Accéder à mon espace consultant')}
+      ${p('<span style="color:#71717a;font-size:13px;">Une question ? Écrivez-nous à <a href="mailto:contact@metwork.dz" style="color:#30a735;text-decoration:none;">contact@metwork.dz</a>.</span>')}
+      ${p('<span style="color:#71717a;font-size:13px;">À très bientôt,<br />L’équipe Metwork</span>')}
+    </div>
+  `);
+}

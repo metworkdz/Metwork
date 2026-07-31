@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="160" viewBox="0 0 480 160" fill="none">
+  <rect width="480" height="160" fill="#F1FAF2"/>
+
+  <!-- Video camera -->
+  <g transform="translate(122,52)">
+    <rect width="118" height="72" rx="14" fill="#0D0D0D"/>
+    <path d="M126 22 L162 4 A6 6 0 0 1 171 9 L171 63 A6 6 0 0 1 162 68 L126 50 Z" fill="#30A735"/>
+    <circle cx="34" cy="36" r="9" fill="#FFFFFF" opacity="0.9"/>
+    <rect x="54" y="31" width="42" height="10" rx="5" fill="#FFFFFF" opacity="0.35"/>
+  </g>
+
+  <!-- Chain link: two overlapping capsule outlines on a 45° axis -->
+  <g transform="translate(358,80) rotate(-45)" stroke="#30A735" stroke-width="9" fill="none">
+    <rect x="-46" y="-15" width="54" height="30" rx="15"/>
+    <rect x="-8" y="-15" width="54" height="30" rx="15"/>
+  </g>
+</svg>

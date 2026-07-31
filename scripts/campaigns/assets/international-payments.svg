@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="160" viewBox="0 0 480 160" fill="none">
+  <rect width="480" height="160" fill="#F1FAF2"/>
+
+  <!-- Globe -->
+  <g transform="translate(178,80)">
+    <circle r="46" fill="#FFFFFF" stroke="#30A735" stroke-width="3"/>
+    <g stroke="#30A735" stroke-width="2.5" fill="none" opacity="0.85">
+      <line x1="-46" y1="0" x2="46" y2="0"/>
+      <path d="M -41 -22 A 60 60 0 0 1 41 -22"/>
+      <path d="M -41 22 A 60 60 0 0 0 41 22"/>
+      <ellipse rx="20" ry="46"/>
+      <line x1="0" y1="-46" x2="0" y2="46"/>
+    </g>
+  </g>
+
+  <!-- Card -->
+  <g transform="translate(236,44) rotate(-7)">
+    <defs>
+      <clipPath id="cardClip">
+        <rect width="168" height="104" rx="13"/>
+      </clipPath>
+    </defs>
+    <rect width="168" height="104" rx="13" fill="#0D0D0D"/>
+    <g clip-path="url(#cardClip)">
+      <rect y="26" width="168" height="18" fill="#30A735"/>
+    </g>
+    <!-- chip -->
+    <rect x="18" y="58" width="26" height="20" rx="4" fill="#FFFFFF" opacity="0.92"/>
+    <!-- generic scheme marks -->
+    <circle cx="118" cy="76" r="15" fill="#FFFFFF" opacity="0.85"/>
+    <circle cx="136" cy="76" r="15" fill="#30A735" opacity="0.9"/>
+  </g>
+</svg>
