@@ -68,3 +68,4 @@ SESSION_*.md
 
 # e2e email observability sink (USE_LOCAL_DB only)
 .e2e-emails.jsonl
+.env*
