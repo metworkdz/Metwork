@@ -2659,6 +2659,23 @@ export interface DomiciliationRequestRecord {
   createdAt: string;
 }
 
+/**
+ * One recipient of one manual announcement campaign. Written only by the
+ * scripts under `scripts/campaigns/` — no app code creates these. The
+ * (campaignId, mentorId) pair is the idempotency key: a re-run skips anyone
+ * already present, so a partially-completed batch can be resumed safely.
+ */
+export interface CampaignSendRecord {
+  /** Stable campaign slug, e.g. "2026-08-consultant-update". */
+  campaignId: string;
+  /** MentorRecord.id of the recipient. */
+  mentorId: string;
+  /** Address the email actually went to (snapshot — the mentor record may change later). */
+  email: string;
+  /** ISO timestamp of the successful send. */
+  sentAt: string;
+}
+
 interface DbShape {
   pendingUsers: PendingUserRecord[];
   users: UserRecord[];
@@ -2767,6 +2784,14 @@ interface DbShape {
   /** Guest + authenticated registrations for programs and events. */
   registrations: RegistrationRecord[];
 
+  // ─── One-off email campaigns ──────────────────────────────────────────
+  /**
+   * Append-only send log for manual announcement campaigns. Read before each
+   * send and written after each success so a re-run never double-emails
+   * anyone. Optional — legacy blobs predate it; readers must default to [].
+   */
+  campaignSends?: CampaignSendRecord[];
+
   /**
    * One-shot flags and platform-wide config.
    */
@@ -2843,6 +2868,7 @@ const empty: DbShape = {
   perkVouchers: [],
   registrationFormFields: [],
   registrations: [],
+  campaignSends: [],
   meta: {},
 };
 
