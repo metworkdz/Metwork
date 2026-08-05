@@ -1711,6 +1711,7 @@
     "auditLog": "Audit log",
     "consultations": "Consultations",
     "mentors": "Mentors",
+    "mentorCategories": "Mentor categories",
     "mentorRevenue": "Mentor revenue",
     "contacts": "Contacts",
     "investorContacts": "Investor contacts",
@@ -2124,12 +2125,11 @@
             "bannerDiscount": "Your plan includes {percent}% off every consultation",
             "bannerReviewNotice": "Book a session with one of our expert consultants.",
             "bannerUpgradeCta": "Upgrade to a paid plan to save on every consultation",
-            "bookFirstSession": "Book your first session",
-            "bookSession": "Book a session",
+            "browseSectionTitle": "Find a mentor",
             "colDuration": "Duration",
             "colMentor": "Mentor",
             "colSubmitted": "Submitted",
-            "dialogDescription": "Choose a consultant, pick a duration and tell us what you need.",
+            "dialogDescription": "Pick a duration and tell us what you need.",
             "dialogTitle": "Book a consultation",
             "discountCardLabel": "Consultation discount",
             "discountCardValue": "{percent}% off consultations",
@@ -2156,7 +2156,6 @@
             "messageMinHint": "{count} characters (minimum 10)",
             "messagePlaceholder": "Describe your situation and what you're hoping to get from the session…",
             "optionalHint": "(optional)",
-            "placeholderSelectMentor": "Select a mentor",
             "promoCodeDiscount": "Promo code discount",
             "promoDiscountApplied": "Promo discount: −{discount}",
             "reviewNotice": "Requests are reviewed by our team. You will receive a confirmation email once approved — this is not an automatic booking.",
@@ -2477,6 +2476,10 @@
         "mentors": {
           "title": "Mentors",
           "subtitle": "The roster shown in the landing-page carousel."
+        },
+        "mentorCategories": {
+          "title": "Mentor categories",
+          "subtitle": "Manage the categories admins can assign to mentors. Deactivating a category removes it from new assignments and filters, but leaves it on mentors who already have it."
         },
         "incubator": {
           "overview": {
@@ -4048,7 +4051,11 @@
       "phonePlaceholder": "+213 …",
       "fieldCity": "City",
       "cityHint": "Shown on the public profile for in-person sessions.",
-      "cityPlaceholder": "e.g. Algiers"
+      "cityPlaceholder": "e.g. Algiers",
+      "fieldCategories": "Categories",
+      "categoriesHint": "Optional, editable at any time. Managed under Mentor categories.",
+      "categoriesPlaceholder": "Select categories…",
+      "categoriesEmpty": "No categories available."
     },
     "mentorsManager": {
       "approve": "Approve",
@@ -4223,6 +4230,30 @@
           "rejected": "rejected"
         }
       }
+    },
+    "mentorCategoriesManager": {
+      "addCategory": "Add category",
+      "editCategory": "Edit category",
+      "edit": "Edit",
+      "labelFr": "Label (French)",
+      "labelFrPlaceholder": "e.g. Category name",
+      "labelEn": "Label (English)",
+      "labelEnPlaceholder": "e.g. Category name",
+      "labelAr": "Label (Arabic)",
+      "labelArPlaceholder": "مثال: اسم الفئة",
+      "sortOrder": "Sort order",
+      "sortOrderHint": "Lower numbers appear first in pickers and filters.",
+      "sortOrderInvalid": "Sort order must be a positive number.",
+      "allLabelsRequired": "A label is required in all three languages.",
+      "cancel": "Cancel",
+      "create": "Create",
+      "save": "Save",
+      "failed": "Save failed",
+      "networkError": "Network error — please try again.",
+      "noCategories": "No mentor categories yet. Add the first one to get started.",
+      "inactive": "Inactive",
+      "deactivate": "Deactivate",
+      "activate": "Activate"
     },
     "perks": {
       "addPerk": "Add perk",
@@ -4604,17 +4635,17 @@
       "bookCta": "Book an appointment"
     },
     "directory": {
-      "searchPlaceholder": "Search by name or expertise…",
-      "filterLabel": "Filter by area",
-      "filterAll": "All areas",
-      "resultsCount": "{count} mentors",
-      "resultOne": "1 mentor",
-      "clear": "Clear",
+      "filterByCategory": "Filter by category",
+      "allCategories": "All",
       "noMentors": "No mentors listed yet. Check back soon.",
-      "noResults": "No mentors match your search.",
+      "noResultsForCategory": "No mentors in this category yet.",
       "noPhoto": "No photo",
       "viewProfile": "View profile",
-      "book": "Book"
+      "book": "Book",
+      "matchPlaceholder": "Describe your problem — we'll recommend a mentor",
+      "matchSubmitLabel": "Find a mentor",
+      "matchLoading": "Searching…",
+      "recommended": "Recommended"
     }
   },
   "network": {

@@ -105,6 +105,8 @@ export interface Mentor {
   bufferMinutes?: number | null;
   /** Expertise tags shown on the public profile. */
   topics?: string[];
+  /** Admin-assigned category ids (`MentorCategoryRecord.id`). Absent ⇒ []. */
+  categoryIds?: string[];
   /** Explicit 30-minute session price (DZD). Absent ⇒ prorated from per-hour. */
   ratePer30?: number | null;
   /** Explicit 60-minute session price (DZD). Absent ⇒ prorated from per-hour. */
@@ -142,6 +144,8 @@ export interface MentorInput {
   minNoticeHours?: number | null;
   bufferMinutes?: number | null;
   topics?: string[];
+  /** Admin-assigned category ids (`MentorCategoryRecord.id`). */
+  categoryIds?: string[];
   ratePer30?: number | null;
   ratePer60?: number | null;
   freeIntroEnabled?: boolean | null;

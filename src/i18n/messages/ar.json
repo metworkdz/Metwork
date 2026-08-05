@@ -1711,6 +1711,7 @@
     "auditLog": "سجل التدقيق",
     "consultations": "الاستشارات",
     "mentors": "المرشدون",
+    "mentorCategories": "فئات المرشدين",
     "mentorRevenue": "إيرادات المرشدين",
     "contacts": "جهات الاتصال",
     "investorContacts": "جهات اتصال المستثمرين",
@@ -2124,12 +2125,11 @@
             "bannerDiscount": "تتضمن خطتك خصم {percent}٪ على كل استشارة",
             "bannerReviewNotice": "احجز جلسة مع أحد مستشارينا الخبراء.",
             "bannerUpgradeCta": "قم بالترقية إلى خطة مدفوعة للتوفير على كل استشارة",
-            "bookFirstSession": "احجز جلستك الأولى",
-            "bookSession": "حجز جلسة",
+            "browseSectionTitle": "ابحث عن مرشد",
             "colDuration": "المدة",
             "colMentor": "المرشد",
             "colSubmitted": "تاريخ الإرسال",
-            "dialogDescription": "اختر مستشارًا وحدّد المدة وأخبرنا بما تحتاجه.",
+            "dialogDescription": "حدّد المدة وأخبرنا بما تحتاجه.",
             "dialogTitle": "حجز استشارة",
             "discountCardLabel": "خصم الاستشارة",
             "discountCardValue": "خصم {percent}٪ على الاستشارات",
@@ -2156,7 +2156,6 @@
             "messageMinHint": "{count} حرفًا (الحد الأدنى 10)",
             "messagePlaceholder": "صف وضعك وما تأمل الحصول عليه من الجلسة…",
             "optionalHint": "(اختياري)",
-            "placeholderSelectMentor": "اختر مرشدًا",
             "promoCodeDiscount": "خصم رمز الترويج",
             "promoDiscountApplied": "خصم الترويج: −{discount}",
             "reviewNotice": "تُراجع طلباتك فريقنا. ستتلقى بريدًا إلكترونيًا للتأكيد بعد الموافقة — هذا ليس حجزًا تلقائيًا.",
@@ -2477,6 +2476,10 @@
         "mentors": {
           "title": "المرشدون",
           "subtitle": "القائمة المعروضة في عرض الشرائح على الصفحة الرئيسية."
+        },
+        "mentorCategories": {
+          "title": "فئات المرشدين",
+          "subtitle": "إدارة الفئات التي يمكن للمسؤولين إسنادها للمرشدين. إلغاء تفعيل فئة يزيلها من الإسنادات الجديدة والمرشحات، لكنها تبقى لدى المرشدين الذين لديهم بالفعل."
         },
         "incubator": {
           "overview": {
@@ -4048,7 +4051,11 @@
       "phonePlaceholder": "+213 …",
       "fieldCity": "المدينة",
       "cityHint": "تظهر في الملف العام للجلسات الحضورية.",
-      "cityPlaceholder": "مثال: الجزائر"
+      "cityPlaceholder": "مثال: الجزائر",
+      "fieldCategories": "الفئات",
+      "categoriesHint": "اختياري، قابل للتعديل في أي وقت. تُدار من صفحة فئات المرشدين.",
+      "categoriesPlaceholder": "اختر الفئات…",
+      "categoriesEmpty": "لا توجد فئات متاحة."
     },
     "mentorsManager": {
       "approve": "الموافقة",
@@ -4223,6 +4230,30 @@
           "rejected": "مرفوض"
         }
       }
+    },
+    "mentorCategoriesManager": {
+      "addCategory": "إضافة فئة",
+      "editCategory": "تعديل الفئة",
+      "edit": "تعديل",
+      "labelFr": "التسمية (فرنسي)",
+      "labelFrPlaceholder": "ex. Nom de la catégorie",
+      "labelEn": "التسمية (إنجليزي)",
+      "labelEnPlaceholder": "e.g. Category name",
+      "labelAr": "التسمية (عربي)",
+      "labelArPlaceholder": "مثال: اسم الفئة",
+      "sortOrder": "ترتيب العرض",
+      "sortOrderHint": "الأرقام الأصغر تظهر أولاً في القوائم والمرشحات.",
+      "sortOrderInvalid": "يجب أن يكون ترتيب العرض رقماً موجباً.",
+      "allLabelsRequired": "التسمية مطلوبة باللغات الثلاث.",
+      "cancel": "إلغاء",
+      "create": "إنشاء",
+      "save": "حفظ",
+      "failed": "فشل الحفظ",
+      "networkError": "خطأ في الشبكة — يرجى المحاولة مرة أخرى.",
+      "noCategories": "لا توجد فئات مرشدين بعد. أضف الأولى للبدء.",
+      "inactive": "غير مفعّلة",
+      "deactivate": "إلغاء التفعيل",
+      "activate": "تفعيل"
     },
     "perks": {
       "addPerk": "إضافة ميزة",
@@ -4604,17 +4635,17 @@
       "bookCta": "احجز موعدًا"
     },
     "directory": {
-      "searchPlaceholder": "ابحث بالاسم أو مجال الخبرة…",
-      "filterLabel": "تصفية حسب المجال",
-      "filterAll": "كل المجالات",
-      "resultsCount": "{count} موجّهين",
-      "resultOne": "موجّه واحد",
-      "clear": "مسح",
+      "filterByCategory": "تصفية حسب الفئة",
+      "allCategories": "الكل",
       "noMentors": "لا يوجد موجّهون بعد. عُد قريبًا.",
-      "noResults": "لا يوجد موجّهون يطابقون بحثك.",
+      "noResultsForCategory": "لا يوجد موجّهون في هذه الفئة بعد.",
       "noPhoto": "لا توجد صورة",
       "viewProfile": "عرض الملف",
-      "book": "احجز"
+      "book": "احجز",
+      "matchPlaceholder": "صف مشكلتك — سنوصي لك بمرشد",
+      "matchSubmitLabel": "ابحث عن مرشد",
+      "matchLoading": "جارٍ البحث…",
+      "recommended": "موصى به"
     }
   },
   "network": {

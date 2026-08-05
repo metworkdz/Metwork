@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { setRequestLocale, getTranslations } from 'next-intl/server';
+import { setRequestLocale, getTranslations, getLocale } from 'next-intl/server';
 import { ArrowRight, Star } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/container';
@@ -8,8 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { MentorsDirectory } from '@/components/features/mentors/mentors-directory';
 import { listPublicMentors } from '@/server/mentors/service';
 import { toMentorDto } from '@/server/mentors/serialize';
+import { listActiveMentorCategories } from '@/server/mentor-categories/service';
 import { assertLandingVisible } from '@/lib/landing-visibility';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
+import type { Locale } from '@/i18n/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,9 +36,11 @@ export default async function MentorsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const [mentors, t] = await Promise.all([
+  const [mentors, categories, t, lang] = await Promise.all([
     listPublicMentors().then((list) => list.map(toMentorDto)),
+    listActiveMentorCategories(),
     getTranslations('pages.mentors'),
+    getLocale() as Promise<Locale>,
   ]);
 
   return (
@@ -87,7 +91,12 @@ export default async function MentorsPage({ params }: PageProps) {
       {/* ── Directory grid ── */}
       <section id="mentors" className="scroll-mt-20 py-10 sm:py-20">
         <Container>
-          <MentorsDirectory mentors={mentors} instantBookEnabled={isInstantBookEnabled()} />
+          <MentorsDirectory
+            mentors={mentors}
+            categories={categories}
+            locale={lang}
+            instantBookEnabled={isInstantBookEnabled()}
+          />
         </Container>
       </section>
 

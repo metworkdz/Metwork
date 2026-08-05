@@ -37,6 +37,7 @@ export function toMentorDto(m: MentorRecord): Mentor {
     minNoticeHours: m.minNoticeHours ?? null,
     bufferMinutes: m.bufferMinutes ?? null,
     topics: m.topics ?? [],
+    categoryIds: m.categoryIds ?? [],
     ratePer30: m.ratePer30 ?? null,
     ratePer60: m.ratePer60 ?? null,
     freeIntroEnabled: m.freeIntroEnabled ?? false,

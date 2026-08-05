@@ -38,6 +38,7 @@ import { MentorFormDialog } from './mentor-form-dialog';
 import { MentorAvailabilityDialog } from './mentor-availability-dialog';
 import { LandingMentorCard } from '@/components/features/mentors/landing-mentor-card';
 import type { Mentor } from '@/types/mentor';
+import type { MentorCategoryRecord } from '@/server/db/store';
 
 /** Today as YYYY-MM-DD, for export filenames. */
 function todayStamp(): string {
@@ -55,7 +56,13 @@ function downloadText(content: string, mime: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-export function MentorsManager({ initial }: { initial: Mentor[] }) {
+export function MentorsManager({
+  initial,
+  categories,
+}: {
+  initial: Mentor[];
+  categories: MentorCategoryRecord[];
+}) {
   const t = useTranslations('admin.mentorsManager');
   const [mentors, setMentors] = useState<Mentor[]>(initial);
   const [editing, setEditing] = useState<Mentor | null>(null);
@@ -304,6 +311,7 @@ export function MentorsManager({ initial }: { initial: Mentor[] }) {
         }}
         initial={editing}
         onSaved={onSaved}
+        categories={categories}
       />
 
       <MentorAvailabilityDialog

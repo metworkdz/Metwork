@@ -32,6 +32,7 @@ import {
   Link2,
   FileSignature,
   Mailbox,
+  Tags,
 } from 'lucide-react';
 import type { UserRole } from '@/types/auth';
 
@@ -182,6 +183,7 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.commissions',   href: '/dashboard/admin/commissions',     icon: TrendingUp },
     { labelKey: 'dashboard.bookings',      href: '/dashboard/admin/bookings',        icon: CalendarIcon },
     { labelKey: 'dashboard.mentors',       href: '/dashboard/admin/mentors',         icon: Star },
+    { labelKey: 'dashboard.mentorCategories', href: '/dashboard/admin/mentor-categories', icon: Tags },
     { labelKey: 'dashboard.consultations', href: '/dashboard/admin/mentor-bookings', icon: CalendarIcon },
     { labelKey: 'dashboard.mentorRevenue', href: '/dashboard/admin/mentor-revenue',  icon: TrendingUp },
     { labelKey: 'dashboard.contacts',         href: '/dashboard/admin/contacts',          icon: MessageSquare },

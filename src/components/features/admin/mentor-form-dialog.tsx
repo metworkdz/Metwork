@@ -13,8 +13,8 @@
  *     URL on the form. The URL field is also editable directly so
  *     admins can paste an external image URL.
  */
-import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { ImagePlus, Linkedin, Loader2, Upload } from 'lucide-react';
 import {
   Dialog,
@@ -27,11 +27,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { mentorsService } from '@/services/mentors.service';
 import { ApiClientError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
+import { getMentorCategoryLabel } from '@/lib/mentor-categories';
 import { LandingMentorCard } from '@/components/features/mentors/landing-mentor-card';
 import type { Mentor, MentorInput } from '@/types/mentor';
+import type { MentorCategoryRecord } from '@/server/db/store';
 
 interface MentorFormDialogProps {
   open: boolean;
@@ -39,6 +42,8 @@ interface MentorFormDialogProps {
   /** When provided, the form is in "edit" mode. */
   initial?: Mentor | null;
   onSaved: (mentor: Mentor) => void;
+  /** Full category roster (active + inactive) — always editable, at any time. */
+  categories: MentorCategoryRecord[];
 }
 
 interface FormState {
@@ -51,6 +56,7 @@ interface FormState {
   phone: string;
   city: string;
   consultationFeeStr: string;
+  categoryIds: string[];
 }
 
 const empty: FormState = {
@@ -63,6 +69,7 @@ const empty: FormState = {
   phone: '',
   city: '',
   consultationFeeStr: '',
+  categoryIds: [],
 };
 
 function fromMentor(m: Mentor): FormState {
@@ -76,6 +83,7 @@ function fromMentor(m: Mentor): FormState {
     phone: m.phone ?? '',
     city: m.city ?? '',
     consultationFeeStr: m.consultationFee ? String(m.consultationFee) : '',
+    categoryIds: m.categoryIds ?? [],
   };
 }
 
@@ -84,8 +92,11 @@ export function MentorFormDialog({
   onOpenChange,
   initial,
   onSaved,
+  categories,
 }: MentorFormDialogProps) {
   const t = useTranslations('admin.mentorFormDialog');
+  const rawLocale = useLocale();
+  const locale: 'en' | 'fr' | 'ar' = rawLocale === 'en' || rawLocale === 'ar' ? rawLocale : 'fr';
   const [values, setValues] = useState<FormState>(empty);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -102,6 +113,17 @@ export function MentorFormDialog({
   function update<K extends keyof FormState>(key: K, val: FormState[K]) {
     setValues((v) => ({ ...v, [key]: val }));
   }
+
+  // Offer active categories for new assignment, plus any inactive one this
+  // mentor already carries (so it stays visible as a removable chip — an
+  // admin can drop it, but can't pick OTHER inactive categories).
+  const categoryOptions = useMemo(
+    () =>
+      categories
+        .filter((c) => c.active || values.categoryIds.includes(c.id))
+        .map((c) => ({ value: c.id, label: getMentorCategoryLabel(c, locale) })),
+    [categories, values.categoryIds, locale],
+  );
 
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -142,6 +164,7 @@ export function MentorFormDialog({
         phone: values.phone.trim() || null,
         city: values.city.trim() || null,
         consultationFee: !isNaN(fee) && fee > 0 ? fee : 0,
+        categoryIds: values.categoryIds,
       };
       const saved = isEdit
         ? await mentorsService.update(initial!.id, payload)
@@ -287,6 +310,16 @@ export function MentorFormDialog({
                 onChange={(e) => update('city', e.target.value)}
                 placeholder={t('cityPlaceholder')}
                 maxLength={120}
+              />
+            </Field>
+
+            <Field label={t('fieldCategories')} hint={t('categoriesHint')}>
+              <MultiSelect
+                options={categoryOptions}
+                value={values.categoryIds}
+                onChange={(next) => update('categoryIds', next)}
+                placeholder={t('categoriesPlaceholder')}
+                emptyLabel={t('categoriesEmpty')}
               />
             </Field>
 

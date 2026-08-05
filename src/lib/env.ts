@@ -101,6 +101,12 @@ const serverSchema = z.object({
   ZOOM_ACCOUNT_ID: z.string().optional(),
   ZOOM_CLIENT_ID: z.string().optional(),
   ZOOM_CLIENT_SECRET: z.string().optional(),
+  /**
+   * Anthropic API key for AI-assisted mentor recommendation. Optional —
+   * the match endpoint fails gracefully to plain category browsing when
+   * unset. Never exposed to the client.
+   */
+  ANTHROPIC_API_KEY: z.string().optional(),
 });
 
 const clientEnv = {
