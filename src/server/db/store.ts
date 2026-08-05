@@ -1881,6 +1881,12 @@ export interface MentorRecord {
   /** Free-text expertise tags shown on the public profile. Absent ⇒ none. */
   topics?: string[];
   /**
+   * Admin-assigned category ids (`MentorCategoryRecord.id`), 0/1/many. Absent
+   * ⇒ []. Purely additive — a category can be deactivated without ever being
+   * removed from a mentor that already carries it (see `mentorCategories`).
+   */
+  categoryIds?: string[];
+  /**
    * Explicit price (DZD) for a 30-minute session. Optional override — when
    * absent, price is prorated from `consultationFee` (per-hour). STORED ONLY in
    * this round; `computePrice` still uses the per-hour rate (no money change).
@@ -1956,6 +1962,24 @@ export interface MentorRecord {
   privacyConsent?: boolean;
   /** ISO timestamp the consent was given (server-stamped). Null/absent ⇒ not recorded. */
   privacyAcceptedAt?: string | null;
+}
+
+/* ─────────────────── Mentor categories (admin-managed) ───────────────────
+ * Fully dynamic — no category name is ever hardcoded in frontend or backend
+ * code. Admins create/rename/deactivate rows via the admin dashboard; a
+ * one-time seeder (`ensureMentorCategoriesSeeded`) writes the initial starter
+ * set as plain data on first run. Deactivating a category never deletes it —
+ * it just drops out of "assign a new category" pickers and public/dashboard
+ * filters while staying on any mentor record that already carries it. */
+
+export interface MentorCategoryRecord {
+  id: string;
+  label: { fr: string; en: string; ar: string };
+  active: boolean;
+  /** Lower sorts first. Admin-editable; ties break on label. */
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /* ─────────────────── CRM — Clients ─────────────────── */
@@ -2695,6 +2719,8 @@ interface DbShape {
   startupListings: StartupListingRecord[];
   mentors: MentorRecord[];
   mentorBookings: MentorBookingRecord[];
+  /** Admin-managed category taxonomy assignable to mentors. */
+  mentorCategories: MentorCategoryRecord[];
   incubators: IncubatorRecord[];
   promoCodes: PromoCodeRecord[];
   /** DB-persisted space listings created by incubators. */
@@ -2797,6 +2823,8 @@ interface DbShape {
    */
   meta: {
     mentorsSeeded?: boolean;
+    /** Set once the starter mentor-category rows have been written. */
+    mentorCategoriesSeeded?: boolean;
     promoCodesSeeded?: boolean;
     demoMentorsRemoved?: boolean;
     /** Set once legacy TRAINER-role users are migrated to the BUSINESS role. */
@@ -2825,6 +2853,7 @@ const empty: DbShape = {
   contactSubmissions: [],
   startupListings: [],
   mentors: [],
+  mentorCategories: [],
   mentorBookings: [],
   incubators: [],
   promoCodes: [],

@@ -6,6 +6,7 @@ import { MentorsManager } from '@/components/features/admin/mentors-manager';
 import { requireRole } from '@/lib/auth-guards';
 import { listMentors } from '@/server/mentors/service';
 import { toMentorPrivateDto } from '@/server/mentors/serialize';
+import { listMentorCategories } from '@/server/mentor-categories/service';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -19,7 +20,10 @@ export default async function AdminMentorsPage({ params }: PageProps) {
 
   // Server-render with the live roster — instant first paint, no flash.
   // Admin view → private DTO so the edit form sees the consultant phone.
-  const mentors = (await listMentors()).map(toMentorPrivateDto);
+  const [mentors, categories] = await Promise.all([
+    listMentors().then((list) => list.map(toMentorPrivateDto)),
+    listMentorCategories(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -33,7 +37,7 @@ export default async function AdminMentorsPage({ params }: PageProps) {
           </Badge>
         }
       />
-      <MentorsManager initial={mentors} />
+      <MentorsManager initial={mentors} categories={categories} />
     </div>
   );
 }

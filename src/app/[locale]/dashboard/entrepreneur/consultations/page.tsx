@@ -3,6 +3,8 @@ import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { ConsultationsPanel } from '@/components/features/entrepreneur/consultations-panel';
 import { listPublicMentors } from '@/server/mentors/service';
+import { toMentorDto } from '@/server/mentors/serialize';
+import { listActiveMentorCategories } from '@/server/mentor-categories/service';
 import { db } from '@/server/db/store';
 import { getEffectiveMembershipCode, consultationDiscountFraction } from '@/server/memberships/service';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
@@ -19,8 +21,9 @@ export default async function EntrepreneurConsultationsPage({ params }: PageProp
   const lang = (await getLocale()) as Locale;
   const user = await requireRole(['ENTREPRENEUR']);
 
-  const [mentors, data] = await Promise.all([
-    listPublicMentors(),
+  const [mentors, categories, data] = await Promise.all([
+    listPublicMentors().then((list) => list.map(toMentorDto)),
+    listActiveMentorCategories(),
     db.read(),
   ]);
 
@@ -43,6 +46,7 @@ export default async function EntrepreneurConsultationsPage({ params }: PageProp
       <ConsultationsPanel
         initial={bookings}
         mentors={mentors}
+        categories={categories}
         discountPercent={discountPercent}
         membershipCode={effectiveCode === 'FREE' ? null : effectiveCode}
         locale={lang}

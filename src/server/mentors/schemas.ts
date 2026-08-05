@@ -32,6 +32,7 @@ export const createMentorSchema = z.object({
   minNoticeHours: z.number().int().min(0).max(720).optional().nullable(),
   bufferMinutes: z.number().int().min(0).max(240).optional().nullable(),
   topics: z.array(z.string().min(1).max(60)).max(20).optional(),
+  categoryIds: z.array(z.string().min(1)).max(20).optional(),
   ratePer30: z.number().int().min(0).max(1_000_000).optional().nullable(),
   ratePer60: z.number().int().min(0).max(1_000_000).optional().nullable(),
   freeIntroEnabled: z.boolean().optional().nullable(),

@@ -38,6 +38,8 @@ import {
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { MentorScheduler } from '@/components/features/mentors/mentor-scheduler';
+import { CategoryFilterBar } from '@/components/features/mentors/category-filter-bar';
+import { MentorGrid } from '@/components/features/mentors/mentor-grid';
 import {
   PaymentMethodPicker,
   type ConsultationPaymentMethod,
@@ -45,8 +47,8 @@ import {
 } from '@/components/features/consultations/payment-method-picker';
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import type { MentorBookingRecord, MentorBookingStatus, MentorRecord } from '@/server/db/store';
-import type { DaySlot } from '@/types/mentor';
+import type { MentorBookingRecord, MentorBookingStatus, MentorCategoryRecord } from '@/server/db/store';
+import type { Mentor, DaySlot } from '@/types/mentor';
 import type { Locale } from '@/i18n/config';
 // Canonical duration options, pro-rata price, price-state resolver, and the ONE
 // consultation charge calculator (no-stacking tier-vs-promo) — shared with
@@ -85,7 +87,8 @@ function buildLocalIso(dateStr: string, timeStr: string): string {
 interface Props {
   /** Existing mentor booking requests for this user, newest first. */
   initial:        MentorBookingRecord[];
-  mentors:        MentorRecord[];
+  mentors:        Mentor[];
+  categories:     MentorCategoryRecord[];
   /** Automatic membership consultation discount (%). 0 = no discount. */
   discountPercent: number;
   membershipCode: string | null;
@@ -122,6 +125,7 @@ function StatusBadge({ status }: { status: MentorBookingStatus }) {
 export function ConsultationsPanel({
   initial,
   mentors,
+  categories,
   discountPercent,
   membershipCode,
   locale,
@@ -138,6 +142,8 @@ export function ConsultationsPanel({
   const tAdminBookings  = useTranslations('admin.bookings');
   const [bookings, setBookings]     = useState(initial);
   const [dialogOpen, setDialogOpen] = useState(false);
+  /** Category chip selection for the browse grid — empty = "All". */
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
 
   const tConsult = useTranslations('consultantPortal.bookings');
   const schedulerLocale: 'en' | 'fr' | 'ar' =
@@ -269,8 +275,11 @@ export function ConsultationsPanel({
     return () => { cancelled = true; };
   }, [needsPayment, selectedMentorId, duration, appliedPromo]);
 
-  function openDialog() {
-    setSelectedMentorId(mentors[0]?.id ?? '');
+  /** Entry point into the booking dialog — the mentor is already chosen
+      (clicked from the grid), so the dialog opens straight at the duration
+      step instead of showing a mentor picker. */
+  function handleBook(mentor: Mentor) {
+    setSelectedMentorId(mentor.id);
     setPhone(userPhone);
     setMessage('');
     setDuration(60);
@@ -398,24 +407,38 @@ export function ConsultationsPanel({
       )}
 
       {/* Plan info banner */}
-      <div className="flex items-center justify-between rounded-md border border-border/60 bg-muted/30 px-4 py-3">
-        <div>
-          <p className="text-sm font-medium">
-            {showDiscountCard ? (
-              <>{t('bannerDiscount', { percent: discountPercent })}</>
-            ) : membershipCode ? (
-              <>{t('bannerAvailableOnRequest')}</>
-            ) : (
-              <>{t('bannerUpgradeCta')}</>
-            )}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {t('bannerReviewNotice')}
-          </p>
-        </div>
-        <Button size="sm" onClick={openDialog} disabled={mentors.length === 0}>
-          {t('bookSession')}
-        </Button>
+      <div className="rounded-md border border-border/60 bg-muted/30 px-4 py-3">
+        <p className="text-sm font-medium">
+          {showDiscountCard ? (
+            <>{t('bannerDiscount', { percent: discountPercent })}</>
+          ) : membershipCode ? (
+            <>{t('bannerAvailableOnRequest')}</>
+          ) : (
+            <>{t('bannerUpgradeCta')}</>
+          )}
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {t('bannerReviewNotice')}
+        </p>
+      </div>
+
+      {/* Browse & book — the discovery layer (photo, category, price now visible;
+          previously a name+price-only dropdown buried inside the dialog). */}
+      <div className="space-y-4">
+        <h2 className="text-base font-semibold text-foreground">{t('browseSectionTitle')}</h2>
+        <CategoryFilterBar
+          categories={categories}
+          selected={selectedCategoryIds}
+          onChange={setSelectedCategoryIds}
+          locale={locale}
+        />
+        <MentorGrid
+          mentors={mentors}
+          categories={categories}
+          selectedCategoryIds={selectedCategoryIds}
+          locale={locale}
+          onBook={handleBook}
+        />
       </div>
 
       {/* Booking history */}
@@ -429,11 +452,6 @@ export function ConsultationsPanel({
               title={t('emptyTitle')}
               description={t('emptyDescription')}
               icon={<UserCheck className="size-5 text-muted-foreground" />}
-              action={
-                <Button size="sm" onClick={openDialog} disabled={mentors.length === 0}>
-                  {t('bookFirstSession')}
-                </Button>
-              }
             />
           ) : (
             <div className="overflow-x-auto">
@@ -559,39 +577,19 @@ export function ConsultationsPanel({
               </DialogHeader>
 
               <div className="space-y-4">
-                {/* Mentor selector */}
-                <div className="space-y-1.5">
-                  <Label>{t('labelMentor')}</Label>
-                  <Select
-                    value={selectedMentorId}
-                    onValueChange={(v) => {
-                      setSelectedMentorId(v);
-                      // Reset promo + chosen slot when mentor changes (fee + agenda differ)
-                      setPromoResult(null);
-                      setBookDate(null);
-                      setBookTime(null);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('placeholderSelectMentor')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mentors.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.fullName} — {m.position}
-                          {(m.consultationFee ?? 0) > 0 && (
-                            <span className="ml-1 text-xs text-muted-foreground">
-                              · {formatDZD(m.consultationFee!)} /hr
-                            </span>
-                          )}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedMentor?.bio && (
-                    <p className="text-xs text-muted-foreground">{selectedMentor.bio}</p>
-                  )}
-                </div>
+                {/* Mentor context — already chosen from the grid before the dialog opened. */}
+                {selectedMentor && (
+                  <div className="space-y-1.5">
+                    <Label>{t('labelMentor')}</Label>
+                    <div className="rounded-lg border border-border/60 bg-muted/10 px-3.5 py-3">
+                      <p className="text-sm font-semibold text-foreground">{selectedMentor.fullName}</p>
+                      <p className="text-xs text-muted-foreground">{selectedMentor.position}</p>
+                      {selectedMentor.bio && (
+                        <p className="mt-1.5 text-xs text-muted-foreground">{selectedMentor.bio}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Duration selector */}
                 <div className="space-y-1.5">

@@ -1711,6 +1711,7 @@
     "auditLog": "Journal d'audit",
     "consultations": "Consultations",
     "mentors": "Mentors",
+    "mentorCategories": "Catégories de mentors",
     "mentorRevenue": "Revenus des mentors",
     "contacts": "Contacts",
     "investorContacts": "Contacts investisseurs",
@@ -2124,12 +2125,11 @@
             "bannerDiscount": "Votre offre inclut {percent} % de réduction sur chaque consultation",
             "bannerReviewNotice": "Réservez une session avec l'un de nos consultants experts.",
             "bannerUpgradeCta": "Passez à une offre payante pour économiser sur chaque consultation",
-            "bookFirstSession": "Réservez votre première session",
-            "bookSession": "Réserver une session",
+            "browseSectionTitle": "Trouver un mentor",
             "colDuration": "Durée",
             "colMentor": "Mentor",
             "colSubmitted": "Envoyée le",
-            "dialogDescription": "Choisissez un consultant, une durée et décrivez votre besoin.",
+            "dialogDescription": "Choisissez une durée et décrivez votre besoin.",
             "dialogTitle": "Réserver une consultation",
             "discountCardLabel": "Remise consultation",
             "discountCardValue": "{percent} % de réduction sur les consultations",
@@ -2156,7 +2156,6 @@
             "messageMinHint": "{count} caractères (minimum 10)",
             "messagePlaceholder": "Décrivez votre situation et ce que vous espérez obtenir de la session…",
             "optionalHint": "(facultatif)",
-            "placeholderSelectMentor": "Sélectionnez un mentor",
             "promoCodeDiscount": "Remise code promo",
             "promoDiscountApplied": "Remise promo : −{discount}",
             "reviewNotice": "Les demandes sont examinées par notre équipe. Vous recevrez un e-mail de confirmation une fois approuvé — ce n'est pas une réservation automatique.",
@@ -2477,6 +2476,10 @@
         "mentors": {
           "title": "Mentors",
           "subtitle": "La liste affichée dans le carrousel de la page d'accueil."
+        },
+        "mentorCategories": {
+          "title": "Catégories de mentors",
+          "subtitle": "Gérez les catégories que les administrateurs peuvent attribuer aux mentors. Désactiver une catégorie la retire des nouvelles attributions et des filtres, mais elle reste sur les mentors qui l'ont déjà."
         },
         "incubator": {
           "overview": {
@@ -4048,7 +4051,11 @@
       "phonePlaceholder": "+213 …",
       "fieldCity": "Ville",
       "cityHint": "Affichée sur le profil public pour les sessions en présentiel.",
-      "cityPlaceholder": "ex. Alger"
+      "cityPlaceholder": "ex. Alger",
+      "fieldCategories": "Catégories",
+      "categoriesHint": "Facultatif, modifiable à tout moment. Gérées dans Catégories de mentors.",
+      "categoriesPlaceholder": "Sélectionner des catégories…",
+      "categoriesEmpty": "Aucune catégorie disponible."
     },
     "mentorsManager": {
       "approve": "Approuver",
@@ -4223,6 +4230,30 @@
           "rejected": "rejeté"
         }
       }
+    },
+    "mentorCategoriesManager": {
+      "addCategory": "Ajouter une catégorie",
+      "editCategory": "Modifier la catégorie",
+      "edit": "Modifier",
+      "labelFr": "Libellé (français)",
+      "labelFrPlaceholder": "ex. Nom de la catégorie",
+      "labelEn": "Libellé (anglais)",
+      "labelEnPlaceholder": "e.g. Category name",
+      "labelAr": "Libellé (arabe)",
+      "labelArPlaceholder": "مثال: اسم الفئة",
+      "sortOrder": "Ordre d'affichage",
+      "sortOrderHint": "Les nombres les plus bas apparaissent en premier dans les listes et filtres.",
+      "sortOrderInvalid": "L'ordre d'affichage doit être un nombre positif.",
+      "allLabelsRequired": "Un libellé est requis dans les trois langues.",
+      "cancel": "Annuler",
+      "create": "Créer",
+      "save": "Enregistrer",
+      "failed": "Échec de l'enregistrement",
+      "networkError": "Erreur réseau — veuillez réessayer.",
+      "noCategories": "Aucune catégorie de mentor pour l'instant. Ajoutez la première pour commencer.",
+      "inactive": "Inactive",
+      "deactivate": "Désactiver",
+      "activate": "Activer"
     },
     "perks": {
       "addPerk": "Ajouter un avantage",
@@ -4604,14 +4635,10 @@
       "bookCta": "Prendre rendez-vous"
     },
     "directory": {
-      "searchPlaceholder": "Rechercher par nom ou expertise…",
-      "filterLabel": "Filtrer par domaine",
-      "filterAll": "Tous les domaines",
-      "resultsCount": "{count} mentors",
-      "resultOne": "1 mentor",
-      "clear": "Effacer",
+      "filterByCategory": "Filtrer par catégorie",
+      "allCategories": "Tous",
       "noMentors": "Aucun mentor pour le moment. Revenez bientôt.",
-      "noResults": "Aucun mentor ne correspond à votre recherche.",
+      "noResultsForCategory": "Aucun mentor dans cette catégorie pour l'instant.",
       "noPhoto": "Pas de photo",
       "viewProfile": "Voir le profil",
       "book": "Réserver"
