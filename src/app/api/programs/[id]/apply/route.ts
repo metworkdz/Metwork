@@ -16,7 +16,7 @@ import { toTransactionDto, toWalletDto } from '@/server/wallet/serialize';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { db } from '@/server/db/store';
 import { findIncubatorById } from '@/server/incubator/service';
-import { sendBookingReceiptEmail, sendAdminOrderNotification } from '@/server/notifications/mock';
+import { sendBookingReceiptEmail, sendAdminOrderNotification, notifyIncubatorNewBooking } from '@/server/notifications/mock';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -91,6 +91,18 @@ export async function POST(
         if (!incubator) return;
         const lang = user.locale === 'en' ? 'en' : 'fr';
         sendBookingReceiptEmail({ booking: result.booking, clientName: user.fullName, clientEmail: user.email, incubator, lang });
+
+        // Incubator alert (email + WhatsApp) — program applications are
+        // already CONFIRMED at creation, no approval step, so this is FYI only.
+        void notifyIncubatorNewBooking(incubator, {
+          customerName: user.fullName,
+          itemName:     result.booking.itemName,
+          startsAt:     result.booking.startsAt,
+          endsAt:       result.booking.endsAt,
+          totalAmount:  result.booking.totalAmount,
+          actionNeeded: false,
+          lang: 'fr',
+        });
 
         // Notify admin of new program application
         const paymentLabel =

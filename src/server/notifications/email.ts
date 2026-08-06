@@ -1298,46 +1298,124 @@ export function bookingProviderCancelledEmailHtml(
   `);
 }
 
-/** Sent to the incubator when a new booking arrives. */
-export function newBookingAlertHtml(opts: {
+/**
+ * Sent to the incubator when a new booking lands WITHOUT needing their
+ * approval first — INSTANT-mode spaces, cash/legacy reservations, program
+ * applications, event registrations. `actionNeeded` switches the copy
+ * between "FYI, already confirmed" and "confirm it / collect payment"
+ * (cash + legacy-escrow bookings still require the incubator to act via
+ * the incubator/bookings PATCH route). Trilingual, RTL for Arabic — same
+ * conventions as `incubatorBookingRequestEmailHtml` (the REQUEST-mode
+ * sibling of this template).
+ */
+export function incubatorNewBookingAlertEmailHtml(opts: {
   incubatorName: string;
   customerName: string;
-  bookingId: string;
   itemName: string;
-  itemKind: string;
   startsAt: string;
   endsAt: string;
   totalAmount: number;
   dashboardUrl: string;
+  actionNeeded: boolean;
+  lang?: EmailLang;
 }): string {
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  const formatAmount = (n: number) => (n === 0 ? 'Free' : `${n.toLocaleString()} DZD`);
+  const lang = normalizeEmailLang(opts.lang);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const L = RESERVATION_LABELS[lang];
+  const copy = {
+    en: {
+      heading: opts.actionNeeded ? 'New booking — confirmation needed' : 'New booking confirmed',
+      intro: opts.actionNeeded
+        ? `${opts.customerName} booked <strong>${opts.itemName}</strong>. Confirm it (or collect payment) from your dashboard.`
+        : `${opts.customerName} just booked <strong>${opts.itemName}</strong>. No action needed — it's already confirmed.`,
+      cta: opts.actionNeeded ? 'Review the booking' : 'View in dashboard',
+    },
+    fr: {
+      heading: opts.actionNeeded ? 'Nouvelle réservation — confirmation requise' : 'Nouvelle réservation confirmée',
+      intro: opts.actionNeeded
+        ? `${opts.customerName} a réservé <strong>${opts.itemName}</strong>. Confirmez-la (ou encaissez le paiement) depuis votre tableau de bord.`
+        : `${opts.customerName} vient de réserver <strong>${opts.itemName}</strong>. Aucune action requise — c'est déjà confirmé.`,
+      cta: opts.actionNeeded ? 'Voir la réservation' : 'Voir dans le tableau de bord',
+    },
+    ar: {
+      heading: opts.actionNeeded ? 'حجز جديد — يتطلب التأكيد' : 'تم تأكيد الحجز الجديد',
+      intro: opts.actionNeeded
+        ? `قام ${opts.customerName} بحجز <strong>${opts.itemName}</strong>. قم بتأكيده (أو تحصيل الدفع) من لوحة التحكم الخاصة بك.`
+        : `قام ${opts.customerName} للتو بحجز <strong>${opts.itemName}</strong>. لا حاجة لأي إجراء — تم التأكيد بالفعل.`,
+      cta: opts.actionNeeded ? 'مراجعة الحجز' : 'عرض في لوحة التحكم',
+    },
+  }[lang];
 
   return layout(`
-    ${h1(`New Booking — ${opts.itemName}`)}
-    ${p(`<strong>${opts.incubatorName}</strong> has received a new booking request.`)}
-    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin:20px 0;">
-      <tr style="background:#f9fafb;">
-        <td style="padding:12px 16px;font-size:13px;color:#71717a;font-weight:600;width:40%;">Customer</td>
-        <td style="padding:12px 16px;font-size:14px;color:#09090b;font-weight:500;">${opts.customerName}</td>
-      </tr>
-      <tr>
-        <td style="padding:12px 16px;font-size:13px;color:#71717a;font-weight:600;border-top:1px solid #e4e4e7;">Service</td>
-        <td style="padding:12px 16px;font-size:14px;color:#09090b;border-top:1px solid #e4e4e7;">${opts.itemName}</td>
-      </tr>
-      <tr style="background:#f9fafb;">
-        <td style="padding:12px 16px;font-size:13px;color:#71717a;font-weight:600;border-top:1px solid #e4e4e7;">Date</td>
-        <td style="padding:12px 16px;font-size:14px;color:#09090b;border-top:1px solid #e4e4e7;">${formatDate(opts.startsAt)}</td>
-      </tr>
-      <tr style="background:#f4fdf7;">
-        <td style="padding:14px 16px;font-size:14px;color:#166534;font-weight:700;border-top:1px solid #e4e4e7;">Amount</td>
-        <td style="padding:14px 16px;font-size:16px;color:#166534;font-weight:700;border-top:1px solid #e4e4e7;">${formatAmount(opts.totalAmount)}</td>
-      </tr>
-    </table>
-    ${p('Approve or decline this booking from your dashboard.')}
-    ${button(opts.dashboardUrl, 'Review Bookings')}
-    ${p(`<span style="color:#71717a;font-size:13px;">Reference: <code style="background:#f4f4f5;padding:2px 6px;border-radius:4px;font-family:monospace;">${opts.bookingId.slice(0, 8).toUpperCase()}</code></span>`)}
+    <div dir="${dir}">
+    ${h1(copy.heading)}
+    ${p(copy.intro)}
+    ${bookingDetailsTable([
+      [L.client, opts.customerName],
+      [L.space, opts.itemName],
+      [L.from, fmtBookingDate(opts.startsAt, lang)],
+      [L.to, fmtBookingDate(opts.endsAt, lang)],
+      [L.amount, fmtDzd(opts.totalAmount)],
+    ])}
+    ${button(opts.dashboardUrl, copy.cta)}
+    </div>
+  `);
+}
+
+/**
+ * Sent to the incubator when a visitor submits a domiciliation request.
+ * Domiciliation has no dates/amount at request time — just the lead's
+ * contact details so the incubator can follow up offline. Trilingual,
+ * RTL for Arabic.
+ */
+export function domiciliationRequestIncubatorEmailHtml(opts: {
+  incubatorName: string;
+  fullName: string;
+  companyName?: string | null;
+  phone: string;
+  email: string;
+  message?: string | null;
+  dashboardUrl: string;
+  lang?: EmailLang;
+}): string {
+  const lang = normalizeEmailLang(opts.lang);
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const copy = {
+    en: {
+      heading: 'New domiciliation request',
+      intro: `${opts.fullName} requested a domiciliation address. Follow up with them from your dashboard.`,
+      cta: 'Review the request',
+      fields: { name: 'Name', company: 'Company', phone: 'Phone', email: 'Email', message: 'Message' },
+    },
+    fr: {
+      heading: 'Nouvelle demande de domiciliation',
+      intro: `${opts.fullName} a demandé une domiciliation. Recontactez-le depuis votre tableau de bord.`,
+      cta: 'Voir la demande',
+      fields: { name: 'Nom', company: 'Entreprise', phone: 'Téléphone', email: 'Email', message: 'Message' },
+    },
+    ar: {
+      heading: 'طلب توطين جديد',
+      intro: `طلب ${opts.fullName} عنوان توطين. تواصل معه من لوحة التحكم الخاصة بك.`,
+      cta: 'مراجعة الطلب',
+      fields: { name: 'الاسم', company: 'الشركة', phone: 'الهاتف', email: 'البريد الإلكتروني', message: 'الرسالة' },
+    },
+  }[lang];
+
+  const rows: Array<[string, string]> = [
+    [copy.fields.name, opts.fullName],
+    ...(opts.companyName ? ([[copy.fields.company, opts.companyName]] as Array<[string, string]>) : []),
+    [copy.fields.phone, opts.phone],
+    [copy.fields.email, opts.email],
+    ...(opts.message ? ([[copy.fields.message, opts.message]] as Array<[string, string]>) : []),
+  ];
+
+  return layout(`
+    <div dir="${dir}">
+    ${h1(copy.heading)}
+    ${p(copy.intro)}
+    ${bookingDetailsTable(rows)}
+    ${button(opts.dashboardUrl, copy.cta)}
+    </div>
   `);
 }
 

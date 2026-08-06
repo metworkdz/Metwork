@@ -9247,6 +9247,104 @@
       "slug": "cherif-haddad"
     }
   ],
+  "mentorCategories": [
+    {
+      "id": "f8e60fb7-cce3-4797-8422-76fa41dcd9c4",
+      "label": {
+        "en": "Legal & Compliance",
+        "fr": "Juridique & Conformité",
+        "ar": "القانون والامتثال"
+      },
+      "sortOrder": 0,
+      "active": true,
+      "createdAt": "2026-08-06T12:42:49.498Z",
+      "updatedAt": "2026-08-06T12:42:49.498Z"
+    },
+    {
+      "id": "66b2d5cd-b9a4-40e9-a0a1-d74fb2d7f464",
+      "label": {
+        "en": "Finance & Fundraising",
+        "fr": "Finance & Levée de fonds",
+        "ar": "المالية وجمع التمويل"
+      },
+      "sortOrder": 1,
+      "active": true,
+      "createdAt": "2026-08-06T12:42:49.498Z",
+      "updatedAt": "2026-08-06T12:42:49.498Z"
+    },
+    {
+      "id": "cfbb4c43-4317-4443-8ca2-05cc2225aa5c",
+      "label": {
+        "en": "Marketing & Growth",
+        "fr": "Marketing & Croissance",
+        "ar": "التسويق والنمو"
+      },
+      "sortOrder": 2,
+      "active": true,
+      "createdAt": "2026-08-06T12:42:49.498Z",
+      "updatedAt": "2026-08-06T12:42:49.498Z"
+    },
+    {
+      "id": "9f335630-80e9-4036-bb22-d5b90727247c",
+      "label": {
+        "en": "Product & Tech",
+        "fr": "Produit & Tech",
+        "ar": "المنتج والتكنولوجيا"
+      },
+      "sortOrder": 3,
+      "active": true,
+      "createdAt": "2026-08-06T12:42:49.498Z",
+      "updatedAt": "2026-08-06T12:42:49.498Z"
+    },
+    {
+      "id": "17e3b5d5-a6ef-4f3c-95d3-d0ed2fc15157",
+      "label": {
+        "en": "Operations & Strategy",
+        "fr": "Opérations & Stratégie",
+        "ar": "العمليات والاستراتيجية"
+      },
+      "sortOrder": 4,
+      "active": true,
+      "createdAt": "2026-08-06T12:42:49.498Z",
+      "updatedAt": "2026-08-06T12:42:49.498Z"
+    },
+    {
+      "id": "4c774ec4-cce9-47fb-86b9-00ee62dd707d",
+      "label": {
+        "en": "HR & Team",
+        "fr": "RH & Équipe",
+        "ar": "الموارد البشرية والفريق"
+      },
+      "sortOrder": 5,
+      "active": true,
+      "createdAt": "2026-08-06T12:42:49.498Z",
+      "updatedAt": "2026-08-06T12:42:49.498Z"
+    },
+    {
+      "id": "7127cfcf-266b-46d9-8fd5-a1152c3c20fd",
+      "label": {
+        "en": "Sales & BD",
+        "fr": "Ventes & Développement commercial",
+        "ar": "المبيعات وتطوير الأعمال"
+      },
+      "sortOrder": 6,
+      "active": true,
+      "createdAt": "2026-08-06T12:42:49.498Z",
+      "updatedAt": "2026-08-06T12:42:49.498Z"
+    },
+    {
+      "id": "2241fe07-450a-48e3-8527-b4b342e291de",
+      "label": {
+        "en": "Design & Branding",
+        "fr": "Design & Image de marque",
+        "ar": "التصميم والهوية التجارية"
+      },
+      "sortOrder": 7,
+      "active": true,
+      "createdAt": "2026-08-06T12:42:49.498Z",
+      "updatedAt": "2026-08-06T12:42:49.498Z"
+    }
+  ],
   "mentorBookings": [
     {
       "id": "cb-1",
@@ -24344,6 +24442,9 @@
   "userPartnerAffiliations": [],
   "networkCheckInCodes": [],
   "networkCheckInAuditLogs": [],
+  "perks": [],
+  "perkPoolEntries": [],
+  "perkVouchers": [],
   "registrationFormFields": [],
   "registrations": [
     {
@@ -24437,11 +24538,13 @@
       "updatedAt": "2026-06-19T23:41:07.200Z"
     }
   ],
+  "campaignSends": [],
   "meta": {
     "promoCodesSeeded": true,
     "demoMentorsRemoved": true,
     "businessRoleMigrated": true,
-    "invoiceClientTypeMigrated": true
+    "invoiceClientTypeMigrated": true,
+    "mentorCategoriesSeeded": true
   },
   "mentorAccessTokens": [],
   "incubatorProfiles": [

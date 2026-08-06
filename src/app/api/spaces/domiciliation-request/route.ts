@@ -15,6 +15,8 @@ import { db, type DomiciliationRequestRecord } from '@/server/db/store';
 import { getServerSession } from '@/lib/session';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { findIncubatorById } from '@/server/incubator/service';
+import { notifyIncubatorDomiciliationRequest } from '@/server/notifications/mock';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -70,11 +72,27 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
     d.domiciliationRequests.push(record);
-    return record;
+    return { ...record, spaceName: space.name };
   });
 
   if (result === 'SPACE_NOT_FOUND') return jsonError(404, 'SPACE_NOT_FOUND', 'Space not found');
   if (result === 'NOT_DOMICILIATION') return jsonError(400, 'NOT_DOMICILIATION', 'This space does not offer domiciliation');
+
+  // Incubator alert (email + WhatsApp) — fire-and-forget; a delivery failure
+  // must never affect the already-persisted request.
+  void (async () => {
+    const incubator = await findIncubatorById(result.incubatorId);
+    if (!incubator) return;
+    await notifyIncubatorDomiciliationRequest(incubator, {
+      fullName: result.fullName,
+      companyName: result.companyName,
+      phone: result.phone,
+      email: result.email,
+      message: result.message,
+      itemName: result.spaceName,
+      lang: 'fr',
+    });
+  })();
 
   return json({ request: { id: result.id, status: result.status } }, { status: 201 });
 }

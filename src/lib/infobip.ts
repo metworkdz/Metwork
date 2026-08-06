@@ -219,6 +219,70 @@ export async function sendWhatsAppNewBookingTemplate(
 }
 
 /**
+ * Notify an INCUBATOR of a NEW booking (any kind — space, program, event,
+ * domiciliation request) via the approved Meta UTILITY template
+ * `incubator_booking` (business-initiated, so a template is mandatory).
+ *
+ * Approved template body placeholders, in order:
+ *   {{1}} incubator name
+ *   {{2}} item / booking name
+ *
+ * The template's URL button is STATIC (always https://metwork.dz) — unlike
+ * `consultation_new_booking`'s dynamic button, it takes no parameter, so
+ * nothing is sent in a `buttons` array here.
+ *
+ * Template name + language are env-overridable so they can change without a
+ * redeploy:
+ *   INFOBIP_WHATSAPP_INCUBATOR_BOOKING_TEMPLATE  default 'incubator_booking'
+ *   INFOBIP_WHATSAPP_INCUBATOR_BOOKING_LANG      default 'fr'
+ *
+ * Throws on API error so the caller can swallow it (best-effort; email still sends).
+ */
+export async function sendWhatsAppIncubatorBookingTemplate(
+  phone: string,
+  placeholders: { incubatorName: string; itemName: string },
+): Promise<void> {
+  const cfg = getConfig();
+  if (!cfg) throw new Error('Infobip not configured: INFOBIP_BASE_URL, INFOBIP_API_KEY, INFOBIP_SENDER, INFOBIP_WHATSAPP_SENDER required');
+
+  const templateName = process.env.INFOBIP_WHATSAPP_INCUBATOR_BOOKING_TEMPLATE?.trim() || 'incubator_booking';
+  const language = process.env.INFOBIP_WHATSAPP_INCUBATOR_BOOKING_LANG?.trim() || 'fr';
+
+  // Same free-text phone shapes as the other WhatsApp senders — normalize to
+  // international digits only.
+  const recipient = phone.replace(/\D/g, '');
+
+  const res = await fetch(`${cfg.baseUrl}/whatsapp/1/message/template`, {
+    method: 'POST',
+    headers: {
+      Authorization: `App ${cfg.apiKey}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      messages: [
+        {
+          from: cfg.waSender,
+          to: recipient,
+          content: {
+            templateName,
+            templateData: {
+              body: { placeholders: [placeholders.incubatorName, placeholders.itemName] },
+            },
+            language,
+          },
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Infobip WhatsApp error ${res.status}: ${body}`);
+  }
+}
+
+/**
  * Send any custom text message via SMS (Infobip text/advanced API). Unlike
  * business-initiated WhatsApp, SMS needs no pre-approved template — it is the
  * reliable fallback for transactional notices (e.g. meeting details).

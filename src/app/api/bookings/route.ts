@@ -23,6 +23,7 @@ import {
   sendBookingConfirmedWithQrEmail,
   sendBookingRequestReceivedEmail,
   sendIncubatorBookingRequestEmail,
+  notifyIncubatorNewBooking,
 } from '@/server/notifications/mock';
 import { createNotification } from '@/server/notifications/create-notification';
 import { validatePromoCode } from '@/server/promo-codes/service';
@@ -220,6 +221,20 @@ export async function POST(req: NextRequest) {
               createdAt:    result.booking.createdAt,
             });
           }
+
+          // Incubator alert (email + WhatsApp) — INSTANT/NETWORK_PASS bookings
+          // land CONFIRMED (FYI only); cash (PENDING_PAYMENT) and legacy-escrow
+          // (PENDING) bookings still need the incubator to confirm / collect
+          // payment via the incubator/bookings dashboard.
+          void notifyIncubatorNewBooking(incubator, {
+            customerName: user.fullName,
+            itemName:     result.booking.itemName,
+            startsAt:     result.booking.startsAt,
+            endsAt:       result.booking.endsAt,
+            totalAmount:  result.booking.totalAmount,
+            actionNeeded: result.booking.status !== 'CONFIRMED',
+            lang: 'fr',
+          });
         }
 
         // Notify admin of new booking (or new booking request)

@@ -11,7 +11,7 @@
  */
 
 import { recordE2eEmail } from './e2e-email-sink';
-import { sendWhatsAppOTP, sendSMSOTP, sendSMSMessage, sendWhatsAppMessage, sendWhatsAppNewBookingTemplate } from './sms';
+import { sendWhatsAppOTP, sendSMSOTP, sendSMSMessage, sendWhatsAppMessage, sendWhatsAppNewBookingTemplate, sendWhatsAppIncubatorBookingTemplate } from './sms';
 import {
   sendResendEmail,
   otpEmailHtml,
@@ -46,6 +46,8 @@ import {
   incubatorBookingRequestEmailHtml,
   bookingApprovedPayEmailHtml,
   bookingPaidIncubatorEmailHtml,
+  incubatorNewBookingAlertEmailHtml,
+  domiciliationRequestIncubatorEmailHtml,
   type AdminOrderNotifParams,
   type EmailLang,
   normalizeEmailLang,
@@ -1684,8 +1686,32 @@ export function sendBookingRequestReceivedEmail(
 }
 
 /**
- * Incubator email — "New booking request awaiting approval" + dashboard link.
- * Skipped silently when the incubator record has no email. Fire-and-forget.
+ * WhatsApp leg shared by every "new booking/request" notification to an
+ * incubator — the approved `incubator_booking` UTILITY template. Skipped
+ * silently when the incubator record has no phone. Best-effort: caught
+ * internally so it never rejects into the caller, mirroring the SMS_PROVIDER
+ * gate used by every other WhatsApp send in this file.
+ */
+function sendIncubatorBookingWhatsApp(incubator: IncubatorRecord, itemName: string): Promise<void> {
+  if (!incubator.phone) return Promise.resolve();
+  if (process.env.SMS_PROVIDER === 'infobip') {
+    return sendWhatsAppIncubatorBookingTemplate(incubator.phone, {
+      incubatorName: incubator.name,
+      itemName,
+    }).catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} WhatsApp incubator-booking template failed →`, err.message),
+    );
+  }
+  // eslint-disable-next-line no-console
+  console.log(`${banner} WHATSAPP (incubator-booking) → ${incubator.phone} :: ${incubator.name} / ${itemName}`);
+  return Promise.resolve();
+}
+
+/**
+ * Incubator notification — "New booking request awaiting approval": email +
+ * WhatsApp. Each channel is skipped independently when the incubator record
+ * lacks that contact method; fire-and-forget.
  */
 export function sendIncubatorBookingRequestEmail(
   incubator: IncubatorRecord,
@@ -1696,37 +1722,176 @@ export function sendIncubatorBookingRequestEmail(
   if (!to) {
     // eslint-disable-next-line no-console
     console.log(`${banner} BOOKING REQUEST INCUBATOR NOTIF skipped — no email on incubator record (id=${incubator.id})`);
-    return;
-  }
-  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/incubator/bookings`;
-  const subject =
-    lang === 'en' ? `New booking request — ${details.itemName}`
-    : lang === 'ar' ? `طلب حجز جديد — ${details.itemName}`
-    : `Nouvelle demande de réservation — ${details.itemName}`;
+  } else {
+    const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/incubator/bookings`;
+    const subject =
+      lang === 'en' ? `New booking request — ${details.itemName}`
+      : lang === 'ar' ? `طلب حجز جديد — ${details.itemName}`
+      : `Nouvelle demande de réservation — ${details.itemName}`;
 
-  recordE2eEmail('booking-request-incubator', { to, bookingId: details.bookingId });
-  sendResendEmail({
-    to,
-    subject,
-    html: incubatorBookingRequestEmailHtml({
-      incubatorName: incubator.name,
-      customerName,
-      itemName: details.itemName,
-      startsAt: details.startsAt,
-      endsAt: details.endsAt,
-      totalAmount: details.totalAmount,
-      dashboardUrl,
-      lang,
-    }),
-  })
-    .then((sent) => {
-      // eslint-disable-next-line no-console
-      console.log(`${banner} BOOKING REQUEST INCUBATOR NOTIF ${sent ? 'sent' : '(no Resend)'} → ${to} :: ${details.bookingId}`);
+    recordE2eEmail('booking-request-incubator', { to, bookingId: details.bookingId });
+    sendResendEmail({
+      to,
+      subject,
+      html: incubatorBookingRequestEmailHtml({
+        incubatorName: incubator.name,
+        customerName,
+        itemName: details.itemName,
+        startsAt: details.startsAt,
+        endsAt: details.endsAt,
+        totalAmount: details.totalAmount,
+        dashboardUrl,
+        lang,
+      }),
     })
-    .catch((err: Error) =>
-      // eslint-disable-next-line no-console
-      console.error(`${banner} Booking request incubator email failed →`, err.message),
+      .then((sent) => {
+        // eslint-disable-next-line no-console
+        console.log(`${banner} BOOKING REQUEST INCUBATOR NOTIF ${sent ? 'sent' : '(no Resend)'} → ${to} :: ${details.bookingId}`);
+      })
+      .catch((err: Error) =>
+        // eslint-disable-next-line no-console
+        console.error(`${banner} Booking request incubator email failed →`, err.message),
+      );
+  }
+
+  // WhatsApp (best-effort UTILITY template) — fire-and-forget.
+  void sendIncubatorBookingWhatsApp(incubator, details.itemName);
+}
+
+/**
+ * Incubator notification — "new booking, no approval needed" (email +
+ * WhatsApp). Covers every booking-creation path that ISN'T the REQUEST-mode
+ * approval flow above: INSTANT-mode spaces, cash / legacy-escrow space
+ * reservations, program applications, event registrations. `actionNeeded`
+ * picks the email copy: cash/legacy bookings still need the incubator to
+ * confirm (or collect payment) via the incubator/bookings dashboard, while
+ * INSTANT/program/event bookings are already settled — FYI only.
+ *
+ * Each channel is skipped independently when the incubator record lacks
+ * that contact method. Awaitable (like `sendConsultantNewBookingEmail`) so
+ * callers on a serverless runtime can choose to await delivery; callers that
+ * don't care can just `void` it.
+ */
+export async function notifyIncubatorNewBooking(
+  incubator: IncubatorRecord,
+  opts: {
+    customerName: string;
+    itemName: string;
+    startsAt: string;
+    endsAt: string;
+    totalAmount: number;
+    actionNeeded: boolean;
+    lang?: EmailLang;
+  },
+): Promise<void> {
+  const { customerName, itemName, startsAt, endsAt, totalAmount, actionNeeded, lang } = opts;
+  const sends: Array<Promise<unknown>> = [];
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/incubator/bookings`;
+
+  const to = incubator.email;
+  if (to) {
+    const subject =
+      lang === 'en' ? `New booking — ${itemName}`
+      : lang === 'ar' ? `حجز جديد — ${itemName}`
+      : `Nouvelle réservation — ${itemName}`;
+
+    sends.push(
+      sendResendEmail({
+        to,
+        subject,
+        html: incubatorNewBookingAlertEmailHtml({
+          incubatorName: incubator.name,
+          customerName,
+          itemName,
+          startsAt,
+          endsAt,
+          totalAmount,
+          dashboardUrl,
+          actionNeeded,
+          lang,
+        }),
+      })
+        .then((sent) => {
+          // eslint-disable-next-line no-console
+          console.log(`${banner} NEW BOOKING INCUBATOR NOTIF ${sent ? 'sent' : '(no Resend)'} → ${to} :: ${itemName}`);
+        })
+        .catch((err: Error) =>
+          // eslint-disable-next-line no-console
+          console.error(`${banner} New-booking incubator email failed →`, err.message),
+        ),
     );
+  } else {
+    // eslint-disable-next-line no-console
+    console.log(`${banner} NEW BOOKING INCUBATOR NOTIF skipped — no email on incubator record (id=${incubator.id})`);
+  }
+
+  sends.push(sendIncubatorBookingWhatsApp(incubator, itemName));
+
+  await Promise.allSettled(sends);
+}
+
+/**
+ * Incubator notification — "new domiciliation request" (email + WhatsApp).
+ * Domiciliation has no dates/amount at request time, so this reuses the
+ * generic `incubator_booking` WhatsApp template (itemName carries the space
+ * name) rather than the dated booking-alert copy. Each channel is skipped
+ * independently when the incubator record lacks that contact method.
+ */
+export async function notifyIncubatorDomiciliationRequest(
+  incubator: IncubatorRecord,
+  opts: {
+    fullName: string;
+    companyName?: string | null;
+    phone: string;
+    email: string;
+    message?: string | null;
+    itemName: string;
+    lang?: EmailLang;
+  },
+): Promise<void> {
+  const { fullName, companyName, phone, email, message, itemName, lang } = opts;
+  const sends: Array<Promise<unknown>> = [];
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/incubator/domiciliation`;
+
+  const to = incubator.email;
+  if (to) {
+    const subject =
+      lang === 'en' ? `New domiciliation request — ${fullName}`
+      : lang === 'ar' ? `طلب توطين جديد — ${fullName}`
+      : `Nouvelle demande de domiciliation — ${fullName}`;
+
+    sends.push(
+      sendResendEmail({
+        to,
+        subject,
+        html: domiciliationRequestIncubatorEmailHtml({
+          incubatorName: incubator.name,
+          fullName,
+          companyName,
+          phone,
+          email,
+          message,
+          dashboardUrl,
+          lang,
+        }),
+      })
+        .then((sent) => {
+          // eslint-disable-next-line no-console
+          console.log(`${banner} DOMICILIATION INCUBATOR NOTIF ${sent ? 'sent' : '(no Resend)'} → ${to} :: ${fullName}`);
+        })
+        .catch((err: Error) =>
+          // eslint-disable-next-line no-console
+          console.error(`${banner} Domiciliation incubator email failed →`, err.message),
+        ),
+    );
+  } else {
+    // eslint-disable-next-line no-console
+    console.log(`${banner} DOMICILIATION INCUBATOR NOTIF skipped — no email on incubator record (id=${incubator.id})`);
+  }
+
+  sends.push(sendIncubatorBookingWhatsApp(incubator, itemName));
+
+  await Promise.allSettled(sends);
 }
 
 /**

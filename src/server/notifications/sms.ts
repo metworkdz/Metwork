@@ -9,4 +9,5 @@ export {
   sendSMSMessage,
   sendWhatsAppMessage,
   sendWhatsAppNewBookingTemplate,
+  sendWhatsAppIncubatorBookingTemplate,
 } from '@/lib/infobip';
