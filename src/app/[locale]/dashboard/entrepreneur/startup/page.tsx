@@ -27,6 +27,9 @@ export default async function EntrepreneurStartupPage({ params }: PageProps) {
         fundingGoal:   String(existing.fundingGoal),
         equityOffered: String(existing.equityOffered),
         valuation:     existing.valuation ? String(existing.valuation) : '',
+        maturityStage: existing.maturityStage ?? null,
+        pitchDeckUrl:  existing.pitchDeckUrl ?? null,
+        websiteUrl:    existing.websiteUrl ?? '',
         status:        existing.status,
       }
     : {
@@ -37,6 +40,9 @@ export default async function EntrepreneurStartupPage({ params }: PageProps) {
         fundingGoal:   '',
         equityOffered: '',
         valuation:     '',
+        maturityStage: null,
+        pitchDeckUrl:  null,
+        websiteUrl:    '',
         status:        'DRAFT' as const,
       };
 

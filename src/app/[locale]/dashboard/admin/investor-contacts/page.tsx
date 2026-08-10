@@ -17,9 +17,18 @@ export default async function AdminInvestorContactsPage({ params }: PageProps) {
   await requireRole(['ADMIN']);
 
   const data = await db.read();
-  const contacts = (data.investorContacts ?? []).slice().sort(
-    (a, b) => b.createdAt.localeCompare(a.createdAt),
-  );
+  const startupsById = new Map(data.startupListings.map((s) => [s.id, s]));
+  const contacts = (data.investorContacts ?? [])
+    .slice()
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map((c) => {
+      const startup = startupsById.get(c.startupId);
+      return {
+        ...c,
+        startupMaturityStage: startup?.maturityStage ?? null,
+        startupPitchDeckUrl: startup?.pitchDeckUrl ?? null,
+      };
+    });
 
   const pending = contacts.filter((c) => c.status === 'PENDING').length;
 

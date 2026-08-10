@@ -32,6 +32,9 @@ export async function createStartup(
       fundingGoal: input.fundingGoal,
       equityOffered: input.equityOffered,
       valuation: input.valuation ?? null,
+      maturityStage: input.maturityStage,
+      pitchDeckUrl: null,
+      websiteUrl: input.websiteUrl ?? null,
       founderId,
       status: 'DRAFT',
       createdAt: now,
@@ -66,6 +69,8 @@ export async function updateStartup(
     if (patch.fundingGoal    !== undefined) listing.fundingGoal   = patch.fundingGoal;
     if (patch.equityOffered  !== undefined) listing.equityOffered = patch.equityOffered;
     if (patch.valuation      !== undefined) listing.valuation     = patch.valuation ?? null;
+    if (patch.maturityStage  !== undefined) listing.maturityStage = patch.maturityStage;
+    if (patch.websiteUrl     !== undefined) listing.websiteUrl    = patch.websiteUrl ?? null;
     if (patch.status         !== undefined) listing.status        = patch.status;
     listing.updatedAt = new Date().toISOString();
 

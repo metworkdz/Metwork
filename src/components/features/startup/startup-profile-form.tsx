@@ -9,6 +9,7 @@
  */
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
+import { FileText, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import type { StartupMaturityStage } from '@/types/startup';
 
 const INDUSTRIES = [
   'AI / ML',
@@ -36,6 +38,17 @@ const INDUSTRIES = [
   'Other',
 ];
 
+const MATURITY_STAGES: StartupMaturityStage[] = [
+  'IDEA',
+  'PROTOTYPE_MVP',
+  'PRE_SEED',
+  'SEED',
+  'SERIES_A',
+  'GROWTH',
+];
+
+const MAX_PITCH_DECK_BYTES = 5 * 1024 * 1024;
+
 export interface StartupProfileFormState {
   /** DB id — null when the startup doesn't exist yet. */
   id:            string | null;
@@ -45,6 +58,10 @@ export interface StartupProfileFormState {
   fundingGoal:   string; // string in form, parsed on submit
   equityOffered: string; // string in form, parsed on submit
   valuation:     string; // optional, empty string = null
+  /** Null until the founder actively picks one — no default is pre-selected. */
+  maturityStage: StartupMaturityStage | null;
+  pitchDeckUrl:  string | null;
+  websiteUrl:    string; // optional, empty string = null
   status:        'DRAFT' | 'ACTIVE' | 'CLOSED';
 }
 
@@ -53,10 +70,53 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
   const [values, setValues] = useState<StartupProfileFormState>(initial);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
+  const [deckBusy, setDeckBusy] = useState(false);
+  const [deckError, setDeckError] = useState<string | null>(null);
 
   function update<K extends keyof StartupProfileFormState>(key: K, val: StartupProfileFormState[K]) {
     setFeedback(null);
     setValues((v) => ({ ...v, [key]: val }));
+  }
+
+  function onPitchDeckSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file
+    if (!file || !values.id) return;
+
+    setDeckError(null);
+
+    if (file.type !== 'application/pdf') {
+      setDeckError(t('errorPitchDeckType'));
+      return;
+    }
+    if (file.size > MAX_PITCH_DECK_BYTES) {
+      setDeckError(t('errorPitchDeckSize'));
+      return;
+    }
+
+    setDeckBusy(true);
+    const fd = new FormData();
+    fd.append('file', file);
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/startups/${values.id}/pitch-deck`, {
+          method: 'POST',
+          credentials: 'include',
+          body: fd,
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
+          throw new Error(d.error?.message ?? t('errorPitchDeckUpload'));
+        }
+        const data = await res.json() as { url: string };
+        setValues((v) => ({ ...v, pitchDeckUrl: data.url }));
+      } catch (err) {
+        setDeckError(err instanceof Error ? err.message : t('errorPitchDeckUpload'));
+      } finally {
+        setDeckBusy(false);
+      }
+    })();
   }
 
   function onSubmit(e: React.FormEvent) {
@@ -66,6 +126,7 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
     const fundingGoal   = parseInt(values.fundingGoal, 10);
     const equityOffered = parseFloat(values.equityOffered);
     const valuation     = values.valuation ? parseInt(values.valuation, 10) : null;
+    const websiteUrl    = values.websiteUrl.trim() ? values.websiteUrl.trim() : null;
 
     if (isNaN(fundingGoal) || fundingGoal < 100_000) {
       setFeedback({ ok: false, text: t('errorFundingGoal') });
@@ -73,6 +134,14 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
     }
     if (isNaN(equityOffered) || equityOffered < 0.1 || equityOffered > 100) {
       setFeedback({ ok: false, text: t('errorEquityOffered') });
+      return;
+    }
+    if (!values.maturityStage) {
+      setFeedback({ ok: false, text: t('errorMaturityStage') });
+      return;
+    }
+    if (websiteUrl && !isValidUrl(websiteUrl)) {
+      setFeedback({ ok: false, text: t('errorWebsiteUrl') });
       return;
     }
 
@@ -83,6 +152,8 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
       fundingGoal,
       equityOffered,
       valuation,
+      maturityStage: values.maturityStage,
+      websiteUrl,
       status:        values.status,
     };
 
@@ -201,6 +272,32 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
               placeholder={t('valuationPlaceholder')}
             />
           </Field>
+
+          <Field label={t('maturityStageLabel')} htmlFor="su-stage" required>
+            <Select
+              value={values.maturityStage ?? undefined}
+              onValueChange={(v) => update('maturityStage', v as StartupMaturityStage)}
+            >
+              <SelectTrigger id="su-stage">
+                <SelectValue placeholder={t('maturityStagePlaceholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                {MATURITY_STAGES.map((stage) => (
+                  <SelectItem key={stage} value={stage}>{t(`stage${stage}`)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+
+          <Field label={t('websiteUrlLabel')} htmlFor="su-website">
+            <Input
+              id="su-website"
+              type="url"
+              value={values.websiteUrl}
+              onChange={(e) => update('websiteUrl', e.target.value)}
+              placeholder={t('websiteUrlPlaceholder')}
+            />
+          </Field>
         </CardContent>
       </Card>
 
@@ -221,6 +318,42 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
             />
             <p className="mt-1 text-xs text-muted-foreground">{values.description.length}/2000</p>
           </Field>
+
+          <div className="mt-4">
+            <Label htmlFor="su-deck">{t('pitchDeckLabel')}</Label>
+            <div className="mt-1.5 flex flex-wrap items-center gap-3">
+              {values.pitchDeckUrl && (
+                <a
+                  href={values.pitchDeckUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700"
+                >
+                  <FileText className="size-4" />
+                  {t('pitchDeckOnFile')}
+                </a>
+              )}
+              <Label
+                htmlFor="su-deck"
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm font-medium hover:bg-muted ${!values.id || deckBusy ? 'pointer-events-none opacity-50' : ''}`}
+              >
+                <Upload className="size-4" />
+                {deckBusy ? t('pitchDeckUploading') : values.pitchDeckUrl ? t('pitchDeckReplace') : t('pitchDeckUpload')}
+              </Label>
+              <input
+                id="su-deck"
+                type="file"
+                accept="application/pdf"
+                className="sr-only"
+                disabled={!values.id || deckBusy}
+                onChange={onPitchDeckSelected}
+              />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {values.id ? t('pitchDeckHint') : t('pitchDeckRequiresSave')}
+            </p>
+            {deckError && <p className="mt-1 text-xs text-destructive">{deckError}</p>}
+          </div>
         </CardContent>
       </Card>
 
@@ -268,6 +401,15 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
       </div>
     </form>
   );
+}
+
+function isValidUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
 
 function Field({

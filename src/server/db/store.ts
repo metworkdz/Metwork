@@ -873,6 +873,15 @@ export interface PlatformSettingsRecord {
 
 export type StartupListingStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED';
 
+/** Founder-selected maturity stage. No default — the founder must actively choose one. */
+export type StartupMaturityStage =
+  | 'IDEA'
+  | 'PROTOTYPE_MVP'
+  | 'PRE_SEED'
+  | 'SEED'
+  | 'SERIES_A'
+  | 'GROWTH';
+
 export interface StartupListingRecord {
   id: string;
   /** Display name of the startup. */
@@ -885,6 +894,18 @@ export interface StartupListingRecord {
   equityOffered: number;
   /** Pre-money valuation in integer DZD. Optional. */
   valuation: number | null;
+  /**
+   * Optional for backward compat — old records lack this field. No default
+   * value is ever assigned; null means the founder hasn't chosen one yet.
+   */
+  maturityStage?: StartupMaturityStage | null;
+  /**
+   * Optional for backward compat — old records lack this field. Cloudinary
+   * (or disk-fallback) URL of the uploaded pitch deck PDF.
+   */
+  pitchDeckUrl?: string | null;
+  /** Optional for backward compat — old records lack this field. URL-validated when present. */
+  websiteUrl?: string | null;
   /** References UserRecord.id — must be a ENTREPRENEUR role user. */
   founderId: string;
   status: StartupListingStatus;

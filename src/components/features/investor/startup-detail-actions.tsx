@@ -3,12 +3,16 @@
 /**
  * Client-side action buttons for the investor's startup detail page:
  *  • Save / unsave the listing
- *  • Contact founder (sends a request to admin for manual connection)
+ *  • "I'm interested" — sends a request to admin for manual connection with
+ *    the founder. This is the single interest/contact mechanism: it creates
+ *    an InvestorContactRecord via POST /api/startups/:id/contact and lands
+ *    in the same admin inbox (/dashboard/admin/investor-contacts). Do not
+ *    add a second, parallel contact flow.
  *  • Add to investment tracker
  */
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { Bookmark, BookmarkCheck, CheckCircle2, MessageSquare, TrendingUp } from 'lucide-react';
+import { Bookmark, BookmarkCheck, CheckCircle2, Heart, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog, DialogContent, DialogDescription,
@@ -128,8 +132,8 @@ export function StartupDetailActions({ startupId, startupName, isSaved: initialS
           onClick={() => { setContactOpen(true); setContactSent(false); setContactError(null); setMessage(''); }}
           className="gap-2"
         >
-          <MessageSquare className="size-4" />
-          {t('contactFounder')}
+          <Heart className="size-4" />
+          {t('imInterested')}
         </Button>
 
         <Button
@@ -141,7 +145,7 @@ export function StartupDetailActions({ startupId, startupName, isSaved: initialS
         </Button>
       </div>
 
-      {/* Contact founder dialog */}
+      {/* "I'm interested" dialog — creates an InvestorContactRecord, same as the old Contact Founder flow */}
       <Dialog open={contactOpen} onOpenChange={(o) => { if (!o) setContactOpen(false); }}>
         <DialogContent className="max-w-md">
           {contactSent ? (
@@ -158,7 +162,7 @@ export function StartupDetailActions({ startupId, startupName, isSaved: initialS
           ) : (
             <>
               <DialogHeader>
-                <DialogTitle>{t('contactDialogTitle')}</DialogTitle>
+                <DialogTitle>{t('contactDialogTitle', { name: startupName })}</DialogTitle>
                 <DialogDescription>
                   {t('contactDialogDesc', { name: startupName })}
                 </DialogDescription>

@@ -1,58 +1,64 @@
 import { ArrowRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type { StartupListing } from '@/types/startup';
-
-function formatDZD(amount: number): string {
-  return new Intl.NumberFormat('fr-DZ', {
-    style: 'currency',
-    currency: 'DZD',
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
+import { LockedNotice } from '@/components/features/startups/locked-notice';
+import type { PublicStartupListing } from '@/types/startup';
 
 interface StartupCardProps {
-  startup: StartupListing;
+  startup: PublicStartupListing;
 }
 
+/**
+ * Public-only startup card — used on marketing pages, never authenticated
+ * dashboards. Renders the redacted DECISION FLAG 2 view: no funding amount,
+ * equity, valuation, full pitch, or founder contact.
+ */
 export function StartupCard({ startup }: StartupCardProps) {
+  const t = useTranslations('startup.profileForm');
+  const tp = useTranslations('pages.startups');
+
   return (
     <Link href={`/investors/${startup.id}`} className="group block h-full">
       <Card className="flex h-full flex-col border-border/60 transition-all group-hover:-translate-y-0.5 group-hover:border-primary-200 group-hover:shadow-md">
         <CardContent className="flex flex-1 flex-col p-6">
-          {/* Industry */}
-          <Badge variant="default" className="w-fit text-xs font-medium">
-            {startup.industry}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="default" className="w-fit text-xs font-medium">
+              {startup.industry}
+            </Badge>
+            {startup.maturityStage && (
+              <Badge variant="outline" className="w-fit text-xs font-medium">
+                {t(`stage${startup.maturityStage}`)}
+              </Badge>
+            )}
+            {startup.isRaising && (
+              <Badge variant="success" className="w-fit text-xs font-medium">
+                {tp('raisingBadge')}
+              </Badge>
+            )}
+          </div>
 
-          {/* Name + description */}
           <h3 className="mt-3 line-clamp-1 text-lg font-semibold tracking-tight text-foreground">
             {startup.name}
           </h3>
+          {startup.city && (
+            <p className="mt-0.5 text-xs text-muted-foreground">{startup.city}</p>
+          )}
           <p className="mt-2 flex-1 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-            {startup.description}
+            {startup.tagline}
           </p>
 
-          {/* Metrics */}
-          <div className="mt-5 grid grid-cols-2 gap-4 border-t border-border/60 pt-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Funding goal</p>
-              <p className="mt-0.5 text-sm font-semibold text-foreground">
-                {formatDZD(startup.fundingGoal)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Equity offered</p>
-              <p className="mt-0.5 text-sm font-semibold text-foreground">
-                {startup.equityOffered}%
-              </p>
-            </div>
-          </div>
+          <LockedNotice
+            label={tp('lockedLabel')}
+            cta={tp('lockedCta')}
+            compact
+            className="mt-5"
+          />
 
           {/* CTA hint */}
           <div className="mt-4 flex items-center gap-1 text-xs font-medium text-primary-600">
-            View details
+            {tp('viewDetails')}
             <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
           </div>
         </CardContent>

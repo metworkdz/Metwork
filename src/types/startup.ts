@@ -1,4 +1,6 @@
-import type { StartupListingStatus } from '@/server/db/store';
+import type { StartupListingStatus, StartupMaturityStage } from '@/server/db/store';
+
+export type { StartupMaturityStage };
 
 /** DTO returned from the API — safe to send to the client. */
 export interface StartupListing {
@@ -12,6 +14,12 @@ export interface StartupListing {
   equityOffered: number;
   /** Integer DZD, or null if not disclosed */
   valuation: number | null;
+  /** Null until the founder chooses one — no default is ever assigned. */
+  maturityStage: StartupMaturityStage | null;
+  /** URL of the uploaded pitch deck PDF, or null if none uploaded. */
+  pitchDeckUrl: string | null;
+  /** Optional public website. */
+  websiteUrl: string | null;
   founderId: string;
   status: StartupListingStatus;
   createdAt: string;
@@ -25,4 +33,25 @@ export interface CreateStartupInput {
   fundingGoal: number;
   equityOffered: number;
   valuation?: number | null;
+  maturityStage: StartupMaturityStage;
+  websiteUrl?: string | null;
+}
+
+/**
+ * Redacted DTO for the public (unauthenticated / non-investor) startup pages.
+ * Deliberately omits fundraising economics, the full pitch, pitch deck,
+ * website, and founder contact — see DECISION FLAG 2.
+ */
+export interface PublicStartupListing {
+  id: string;
+  name: string;
+  industry: string;
+  /** Founder's city, or null if unavailable. */
+  city: string | null;
+  /** Null when the founder hasn't chosen a stage yet. */
+  maturityStage: StartupMaturityStage | null;
+  /** Short teaser derived from the full description — never the full text. */
+  tagline: string;
+  /** Boolean only — never exposes the funding amount. */
+  isRaising: boolean;
 }

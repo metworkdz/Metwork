@@ -6,10 +6,12 @@ import { Container } from '@/components/ui/container';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { LockedNotice } from '@/components/features/startups/locked-notice';
 import { listStartups } from '@/server/startups/service';
-import { toStartupDto } from '@/server/startups/serialize';
+import { toPublicStartupDto } from '@/server/startups/serialize';
 import { getServerSession } from '@/lib/session';
 import { assertLandingVisible } from '@/lib/landing-visibility';
+import { db } from '@/server/db/store';
 
 // ISR so the admin landing-visibility toggle propagates without a redeploy
 // (page stays statically delivered; re-rendered at most once per minute).
@@ -29,27 +31,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: t('title'), description: t('subtitle') };
 }
 
-function formatDZD(amount: number): string {
-  return new Intl.NumberFormat('fr-DZ', {
-    style: 'currency',
-    currency: 'DZD',
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
 export default async function StartupsPage({ params }: PageProps) {
   // Landing-visibility gate — 404s server-side when the admin hides this section.
   await assertLandingVisible('startups');
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const [t, session, records] = await Promise.all([
+  const [t, tStage, session, records, data] = await Promise.all([
     getTranslations('pages.startups'),
+    getTranslations('startup.profileForm'),
     getServerSession(),
     listStartups({ status: 'ACTIVE' }),
+    db.read(),
   ]);
 
-  const startups = records.map(toStartupDto);
+  const cityByFounderId = new Map(data.users.map((u) => [u.id, u.city]));
+  const startups = records.map((r) =>
+    toPublicStartupDto(r, { city: cityByFounderId.get(r.founderId) ?? null }),
+  );
 
   // Collect unique industries for the filter facets
   const industries = Array.from(new Set(startups.map((s) => s.industry))).sort();
@@ -118,31 +117,38 @@ export default async function StartupsPage({ params }: PageProps) {
                   className="flex flex-col border-border/60 transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md"
                 >
                   <CardContent className="flex flex-1 flex-col p-6">
-                    <Badge variant="default" className="w-fit text-xs font-medium">
-                      {startup.industry}
-                    </Badge>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge variant="default" className="w-fit text-xs font-medium">
+                        {startup.industry}
+                      </Badge>
+                      {startup.maturityStage && (
+                        <Badge variant="outline" className="w-fit text-xs font-medium">
+                          {tStage(`stage${startup.maturityStage}`)}
+                        </Badge>
+                      )}
+                      {startup.isRaising && (
+                        <Badge variant="success" className="w-fit text-xs font-medium">
+                          {t('raisingBadge')}
+                        </Badge>
+                      )}
+                    </div>
 
                     <h3 className="mt-3 line-clamp-1 text-lg font-semibold tracking-tight text-foreground">
                       {startup.name}
                     </h3>
+                    {startup.city && (
+                      <p className="mt-0.5 text-xs text-muted-foreground">{startup.city}</p>
+                    )}
                     <p className="mt-2 flex-1 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-                      {startup.description}
+                      {startup.tagline}
                     </p>
 
-                    <div className="mt-5 grid grid-cols-2 gap-3 border-t border-border/60 pt-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Funding goal</p>
-                        <p className="mt-0.5 text-sm font-semibold text-foreground">
-                          {formatDZD(startup.fundingGoal)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Equity</p>
-                        <p className="mt-0.5 text-sm font-semibold text-foreground">
-                          {startup.equityOffered}%
-                        </p>
-                      </div>
-                    </div>
+                    <LockedNotice
+                      label={t('lockedLabel')}
+                      cta={t('lockedCta')}
+                      compact
+                      className="mt-5"
+                    />
 
                     {isInvestor && (
                       <Link

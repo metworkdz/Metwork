@@ -14,8 +14,9 @@ import { Link } from '@/i18n/routing';
 import { Container } from '@/components/ui/container';
 import { StartupCard } from '@/components/features/startups/startup-card';
 import { listStartups } from '@/server/startups/service';
-import { toStartupDto } from '@/server/startups/serialize';
+import { toPublicStartupDto } from '@/server/startups/serialize';
 import { assertLandingVisible } from '@/lib/landing-visibility';
+import { db } from '@/server/db/store';
 
 // ISR so the admin landing-visibility toggle propagates without a redeploy
 // (page stays statically delivered; re-rendered at most once per minute).
@@ -45,7 +46,14 @@ export default async function InvestorsPage({ params }: PageProps) {
   setRequestLocale(locale);
   const t = await getTranslations('pages.investors');
 
-  const listings = (await listStartups({ status: 'ACTIVE' })).map(toStartupDto);
+  const [records, data] = await Promise.all([
+    listStartups({ status: 'ACTIVE' }),
+    db.read(),
+  ]);
+  const cityByFounderId = new Map(data.users.map((u) => [u.id, u.city]));
+  const listings = records.map((r) =>
+    toPublicStartupDto(r, { city: cityByFounderId.get(r.founderId) ?? null }),
+  );
 
   const stats = [
     { value: '47M+',  label: t('stat1Label') },

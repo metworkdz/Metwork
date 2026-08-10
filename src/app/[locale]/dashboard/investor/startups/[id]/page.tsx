@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { ArrowLeft, BarChart3, Percent, Target, User } from 'lucide-react';
+import { ArrowLeft, BarChart3, ExternalLink, FileText, Globe, Percent, Target, User } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,9 +27,10 @@ export default async function InvestorStartupDetailPage({ params }: PageProps) {
   const { locale, id } = await params;
   setRequestLocale(locale);
 
-  const [user, t] = await Promise.all([
+  const [user, t, tStage] = await Promise.all([
     requireRole(['INVESTOR']),
     getTranslations('pages.dashboard.investor.startupDetail'),
+    getTranslations('startup.profileForm'),
   ]);
 
   const record = await findStartupById(id);
@@ -67,8 +68,15 @@ export default async function InvestorStartupDetailPage({ params }: PageProps) {
         }
       />
 
-      {/* Industry badge */}
-      <Badge variant="primary" className="text-sm px-3 py-1">{startup.industry}</Badge>
+      {/* Industry + maturity stage badges */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="primary" className="text-sm px-3 py-1">{startup.industry}</Badge>
+        {startup.maturityStage && (
+          <Badge variant="outline" className="text-sm px-3 py-1">
+            {tStage(`stage${startup.maturityStage}`)}
+          </Badge>
+        )}
+      </div>
 
       {/* Description */}
       <Card>
@@ -92,6 +100,35 @@ export default async function InvestorStartupDetailPage({ params }: PageProps) {
           </Card>
         ))}
       </div>
+
+      {/* Pitch deck / website */}
+      {(startup.pitchDeckUrl || startup.websiteUrl) && (
+        <div className="flex flex-wrap gap-3">
+          {startup.pitchDeckUrl && (
+            <a
+              href={startup.pitchDeckUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-md border border-input px-3.5 py-2 text-sm font-medium hover:bg-muted"
+            >
+              <FileText className="size-4" />
+              {t('viewPitchDeck')}
+            </a>
+          )}
+          {startup.websiteUrl && (
+            <a
+              href={startup.websiteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-md border border-input px-3.5 py-2 text-sm font-medium hover:bg-muted"
+            >
+              <Globe className="size-4" />
+              {startup.websiteUrl.replace(/^https?:\/\//, '')}
+              <ExternalLink className="size-3 text-muted-foreground" />
+            </a>
+          )}
+        </div>
+      )}
 
       {/* Founder */}
       {founder && (
