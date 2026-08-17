@@ -16,16 +16,20 @@ interface Props {
  * Inline booking widget on the public space page — the SAME widget for everyone:
  *   - Logged-out visitors pick a date/time + payment option; the CTAs persist the
  *     selection and route to signup/login, which resume straight to payment.
- *   - Entrepreneurs / businesses book directly (no detour).
- *   - Other authenticated roles can't book a space → a short note.
+ *   - Entrepreneurs book directly (no detour).
+ *   - Other authenticated roles can't book a space → a short note. Since the
+ *     Business→Incubator merge this includes former BUSINESS accounts (now
+ *     INCUBATOR): they're treated identically to a real incubator, which
+ *     never had this ability either — providers manage listings, they don't
+ *     self-book as a customer through this marketplace flow.
  */
 export function SpacePublicBookingCTA({ space }: Props) {
   const { user } = useAuth();
   const t = useTranslations('spaces.detail');
   const [success, setSuccess] = useState<{ booking: BookingDto; newBalance: number } | null>(null);
 
-  // Spaces are bookable by entrepreneurs and businesses; other authed roles get a note.
-  if (user && user.role !== 'ENTREPRENEUR' && user.role !== 'BUSINESS') {
+  // Spaces are bookable by entrepreneurs; other authed roles get a note.
+  if (user && user.role !== 'ENTREPRENEUR') {
     return (
       <p className="text-sm text-muted-foreground text-center">
         {t('entrepreneurOnly')}

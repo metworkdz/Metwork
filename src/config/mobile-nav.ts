@@ -49,12 +49,6 @@ const primaryTabHrefsByRole: Record<UserRole, string[]> = {
     '/dashboard/incubator/bookings',
     '/dashboard/incubator/wallet',
   ],
-  BUSINESS: [
-    '/dashboard/business',
-    '/dashboard/business/programs',
-    '/dashboard/business/bookings',
-    '/dashboard/business/wallet',
-  ],
   ADMIN: [
     '/dashboard/admin',
     '/dashboard/admin/users',
@@ -121,12 +115,6 @@ export const mobileQuickActionsByRole: Record<UserRole, MobileQuickAction[]> = {
     { labelKey: 'dashboard.programs',     href: '/dashboard/incubator/programs',        icon: Briefcase },
     { labelKey: 'dashboard.bookings',     href: '/dashboard/incubator/bookings',        icon: Calendar },
     { labelKey: 'dashboard.clients',      href: '/dashboard/incubator/clients',         icon: UsersRound },
-  ],
-  BUSINESS: [
-    { labelKey: 'dashboard.programs',     href: '/dashboard/business/programs',         icon: Briefcase },
-    { labelKey: 'dashboard.events',       href: '/dashboard/business/events',           icon: Calendar },
-    { labelKey: 'dashboard.bookings',     href: '/dashboard/business/bookings',         icon: Calendar },
-    { labelKey: 'dashboard.wallet',       href: '/dashboard/business/wallet',           icon: Wallet },
   ],
   ADMIN: [
     { labelKey: 'dashboard.users',        href: '/dashboard/admin/users',               icon: Users },

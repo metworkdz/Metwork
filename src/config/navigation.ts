@@ -28,7 +28,6 @@ import {
   ShieldCheck,
   Network,
   IdCard,
-  MapPin,
   Link2,
   FileSignature,
   Mailbox,
@@ -156,16 +155,6 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.paymentLinks', href: '/dashboard/incubator/payment-links', icon: Link2 },
     { labelKey: 'dashboard.wallet',    href: '/dashboard/incubator/wallet',       icon: Wallet },
     { labelKey: 'dashboard.settings',  href: '/dashboard/incubator/settings',     icon: Settings },
-  ],
-  BUSINESS: [
-    { labelKey: 'dashboard.overview',    href: '/dashboard/business',             icon: LayoutDashboard },
-    { labelKey: 'dashboard.programs',    href: '/dashboard/business/programs',    icon: Briefcase       },
-    { labelKey: 'dashboard.events',      href: '/dashboard/business/events',      icon: Calendar        },
-    { labelKey: 'dashboard.bookings',    href: '/dashboard/business/bookings',    icon: CalendarIcon    },
-    { labelKey: 'dashboard.bookSpace',   href: '/spaces',                         icon: MapPin          },
-    { labelKey: 'dashboard.wallet',      href: '/dashboard/business/wallet',      icon: Wallet          },
-    { labelKey: 'dashboard.withdrawals', href: '/dashboard/business/withdrawals', icon: ArrowUpCircle   },
-    { labelKey: 'dashboard.settings',    href: '/dashboard/business/settings',    icon: Settings        },
   ],
   ADMIN: [
     // ── Platform management ──────────────────────────────────────────────────

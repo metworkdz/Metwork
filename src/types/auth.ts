@@ -2,11 +2,14 @@
  * User roles in the Metwork platform.
  * These map 1:1 with the `role` enum in the Prisma schema.
  *
- * `BUSINESS` replaces the former `TRAINER` role: it now covers trainers,
- * training centres, and companies via a `businessSubType` discriminator.
- * Legacy `TRAINER` records are migrated to `BUSINESS` on read (see store.load()).
+ * History: `TRAINER` was replaced by `BUSINESS` (trainers, training centres
+ * and companies via a `businessSubType` discriminator), then `BUSINESS` was
+ * itself retired and merged into `INCUBATOR` (via `IncubatorRecord.businessType`
+ * — see `INCUBATOR_BUSINESS_TYPES` below). Both legacy literals are migrated
+ * to `INCUBATOR` on read (see store.load() → applyOneTimeMigrations()), so
+ * neither appears in this union — every persisted record has been rewritten.
  */
-export const USER_ROLES = ['ENTREPRENEUR', 'INVESTOR', 'INCUBATOR', 'BUSINESS', 'ADMIN'] as const;
+export const USER_ROLES = ['ENTREPRENEUR', 'INVESTOR', 'INCUBATOR', 'ADMIN'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 /**
@@ -50,7 +53,7 @@ export type IncubatorBusinessType = (typeof INCUBATOR_BUSINESS_TYPES)[number];
 
 /**
  * Account approval gate (read-only-until-approved). Entrepreneurs and admins are
- * always APPROVED; INCUBATOR / INVESTOR / BUSINESS accounts land PENDING and must
+ * always APPROVED; INCUBATOR / INVESTOR accounts land PENDING and must
  * be approved by an admin before they can perform any write/transaction action.
  * Legacy records lacking the field are grandfathered as APPROVED.
  */
@@ -58,7 +61,7 @@ export const APPROVAL_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const;
 export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];
 
 /** Roles that are subject to the admin approval gate. */
-export const APPROVAL_GATED_ROLES = ['INCUBATOR', 'INVESTOR', 'BUSINESS'] as const;
+export const APPROVAL_GATED_ROLES = ['INCUBATOR', 'INVESTOR'] as const;
 
 export type UserStatus = 'PENDING_VERIFICATION' | 'ACTIVE' | 'SUSPENDED' | 'BANNED';
 
@@ -75,7 +78,7 @@ export interface SessionUser {
    * this field existed — absence is treated as APPROVED by the approval guard.
    */
   approvalStatus?: ApprovalStatus;
-  /** Business sub-type (role === 'BUSINESS' only). */
+  /** LEGACY business sub-type — set only on accounts created before the BUSINESS role was merged into INCUBATOR. */
   businessSubType?: BusinessSubType | null;
   phoneVerified: boolean;
   emailVerified: boolean;

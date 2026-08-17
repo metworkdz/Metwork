@@ -74,8 +74,10 @@ export function CoworkingBookingPanel({ space }: Props) {
     void loadDesks(date);
   }, [date, booking, loadDesks]);
 
-  // Only entrepreneurs / businesses can book; other authed roles get a note.
-  if (user && user.role !== 'ENTREPRENEUR' && user.role !== 'BUSINESS') {
+  // Only entrepreneurs can book; other authed roles get a note (since the
+  // Business→Incubator merge this includes former BUSINESS accounts, now
+  // treated identically to a real incubator — see space-public-booking-cta.tsx).
+  if (user && user.role !== 'ENTREPRENEUR') {
     return (
       <p className="text-sm text-muted-foreground text-center">{t('entrepreneurOnly')}</p>
     );

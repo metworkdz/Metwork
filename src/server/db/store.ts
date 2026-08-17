@@ -3074,17 +3074,41 @@ async function applyOneTimeMigrations(): Promise<void> {
     changed = true;
   }
 
-  // The former TRAINER role is replaced by BUSINESS (with a `businessSubType`
-  // discriminator). Rewrite any legacy `role: 'TRAINER'` user to `'BUSINESS'`
-  // so it keeps resolving a dashboard + passing role guards; default its
-  // sub-type to TRAINER. Pre-existing accounts get NO approvalStatus written,
-  // so getApprovalStatus() grandfathers them to APPROVED (nobody is locked
-  // out). Provider records keep their legacy providerType. Idempotent via flag.
+  /**
+   * Fold a trainer/business-origin user + its provider record into the final
+   * INCUBATOR end-state: role, `businessType`, and `providerType` all land
+   * consistently regardless of which legacy role the row started from.
+   * Shared by both migration blocks below so a TRAINER-origin row and a
+   * direct-signup BUSINESS-origin row converge on identical output.
+   */
+  function foldIntoIncubator(u: UserRecord): { businessType: boolean } {
+    u.role = 'INCUBATOR';
+    const provider = (cache!.incubators ?? []).find((i) => i.managerId === u.id);
+    if (!provider) return { businessType: false };
+    let businessTypeSet = false;
+    if (provider.businessType == null) {
+      provider.businessType = 'TRAINING_CENTER';
+      businessTypeSet = true;
+    }
+    // 'TRAINER' / 'BUSINESS' literals remain in the union so pre-merge blobs still parse.
+    if (provider.providerType === 'BUSINESS' || provider.providerType === 'TRAINER') {
+      provider.providerType = 'INCUBATOR';
+    }
+    return { businessType: businessTypeSet };
+  }
+
+  // The former TRAINER role predates the BUSINESS role, which was itself
+  // later retired and merged into INCUBATOR (see the block right below).
+  // Since BUSINESS no longer exists as a valid role at all, a TRAINER-origin
+  // row now migrates directly to its final INCUBATOR end-state in one step
+  // instead of via the old two-hop TRAINER→BUSINESS→INCUBATOR path. Default
+  // its sub-type to TRAINER for the admin approvals UI, which still displays
+  // the legacy field. Idempotent via flag.
   if (!cache!.meta?.businessRoleMigrated) {
     for (const u of cache!.users ?? []) {
       if ((u.role as string) === 'TRAINER') {
-        u.role = 'BUSINESS';
         if (u.businessSubType == null) u.businessSubType = 'TRAINER';
+        foldIntoIncubator(u);
       }
     }
     cache!.meta = { ...(cache!.meta ?? {}), businessRoleMigrated: true };
@@ -3119,27 +3143,20 @@ async function applyOneTimeMigrations(): Promise<void> {
       // whereas dropping the record's kind entirely is not recoverable.
       const legacy = u.businessSubType ?? 'UNSET';
       byLegacySubType[legacy] = (byLegacySubType[legacy] ?? 0) + 1;
-
-      u.role = 'INCUBATOR';
       migratedCount += 1;
 
-      const provider = (cache!.incubators ?? []).find((i) => i.managerId === u.id);
-      if (!provider) {
+      const hadProvider = (cache!.incubators ?? []).some((i) => i.managerId === u.id);
+      if (!hadProvider) {
         // Log + skip. Deliberately NOT fabricating an IncubatorRecord: an
         // invented org record would be indistinguishable from a real one and
-        // would land unapproved in public listings.
+        // would land unapproved in public listings. Role still flips so the
+        // account isn't left in a role that no longer resolves anywhere.
+        u.role = 'INCUBATOR';
         orphanedUserIds.push(u.id);
         continue;
       }
-      if (provider.businessType == null) {
-        provider.businessType = 'TRAINING_CENTER';
-        providersUpdated += 1;
-      }
-      // Keep the discriminator consistent with the new role. The 'TRAINER' /
-      // 'BUSINESS' literals remain in the union so pre-merge blobs still parse.
-      if (provider.providerType === 'BUSINESS' || provider.providerType === 'TRAINER') {
-        provider.providerType = 'INCUBATOR';
-      }
+      const { businessType } = foldIntoIncubator(u);
+      if (businessType) providersUpdated += 1;
     }
 
     const report = {

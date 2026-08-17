@@ -57,7 +57,6 @@ const roleVariant: Record<UserRole, React.ComponentProps<typeof Badge>['variant'
   ENTREPRENEUR: 'primary',
   INVESTOR:     'info',
   INCUBATOR:    'warning',
-  BUSINESS:     'info',
   ADMIN:        'danger',
 };
 

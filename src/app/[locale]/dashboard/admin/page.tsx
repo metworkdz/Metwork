@@ -70,11 +70,14 @@ export default async function AdminDashboard({ params }: PageProps) {
     ENTREPRENEUR: 0,
     INVESTOR: 0,
     INCUBATOR: 0,
-    BUSINESS: 0,
     ADMIN: 0,
   };
   for (const log of deletionLogs) {
-    const role = (log.details as { role?: UserRole } | undefined)?.role;
+    // Audit logs are append-only and never rewritten by the BUSINESS→INCUBATOR
+    // migration, so an old entry can still literally read role: 'BUSINESS'
+    // forever. Fold it into INCUBATOR rather than silently dropping the count.
+    const rawRole = (log.details as { role?: string } | undefined)?.role;
+    const role = rawRole === 'BUSINESS' ? 'INCUBATOR' : (rawRole as UserRole | undefined);
     if (role && role in deletionsByRole) deletionsByRole[role] += 1;
   }
   // Last 3 months trend, oldest → newest, formatted like "May 2026: 5"

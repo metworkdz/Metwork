@@ -45,12 +45,15 @@ export async function GET(_req: NextRequest) {
   const byRole: Record<UserRole, number> = {
     ENTREPRENEUR: 0,
     INCUBATOR: 0,
-    BUSINESS: 0,
     ADMIN: 0,
     INVESTOR: 0,
   };
   for (const log of deletions) {
-    const role = (log.details as { role?: UserRole } | undefined)?.role;
+    // Audit logs are append-only and never rewritten by the BUSINESS→INCUBATOR
+    // migration, so an old entry can still literally read role: 'BUSINESS'
+    // forever. Fold it into INCUBATOR rather than silently dropping the count.
+    const rawRole = (log.details as { role?: string } | undefined)?.role;
+    const role = rawRole === 'BUSINESS' ? 'INCUBATOR' : (rawRole as UserRole | undefined);
     if (role && role in byRole) {
       byRole[role] += 1;
     }
