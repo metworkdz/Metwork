@@ -53,7 +53,7 @@ function bucketKey(date: string, grain: 'day' | 'week' | 'month'): string {
 }
 
 export async function GET(req: NextRequest) {
-  const guard = await requireApiRole(['INCUBATOR', 'BUSINESS']);
+  const guard = await requireApiRole(['INCUBATOR']);
   if (!guard.ok) return guard.response;
 
   const inc = await findIncubatorByUserEmail(guard.user.email);

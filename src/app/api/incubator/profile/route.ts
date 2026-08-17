@@ -8,6 +8,7 @@ import { z, ZodError } from 'zod';
 import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { INCUBATOR_BUSINESS_TYPES } from '@/types/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,12 @@ const patchSchema = z.object({
   incubatorName: z.string().min(2).max(100).optional(),
   description: z.string().max(1000).optional(),
   city: z.string().min(1).optional(),
+  /**
+   * Informational organisation kind — labelling only, grants no capability.
+   * Editable so an account mapped by the Business→Incubator migration can
+   * correct its own label. Nullable ⇒ "unset".
+   */
+  businessType: z.enum(INCUBATOR_BUSINESS_TYPES).nullable().optional(),
   website: z.string().url().nullable().optional(),
   logoUrl: z.string().url().nullable().optional(),
   /** Official stamp/seal image — printed at the bottom of receipts. */
@@ -41,7 +48,7 @@ const patchSchema = z.object({
 });
 
 export async function GET() {
-  const guard = await requireApiRole(['INCUBATOR', 'ADMIN', 'BUSINESS']);
+  const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
   if (!guard.ok) return guard.response;
 
   const data = await db.read();
@@ -60,7 +67,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const guard = await requireApprovedApiRole(['INCUBATOR', 'ADMIN', 'BUSINESS']);
+  const guard = await requireApprovedApiRole(['INCUBATOR', 'ADMIN']);
   if (!guard.ok) return guard.response;
 
   let body: unknown;
@@ -84,6 +91,7 @@ export async function PATCH(req: NextRequest) {
     if (input.incubatorName !== undefined) incubator.name = input.incubatorName;
     if (input.description !== undefined) incubator.description = input.description;
     if (input.city !== undefined) incubator.city = input.city;
+    if (input.businessType !== undefined) incubator.businessType = input.businessType ?? null;
     if (input.website !== undefined) incubator.website = input.website ?? null;
     if (input.logoUrl !== undefined) incubator.logoUrl = input.logoUrl ?? null;
     if (input.stampUrl !== undefined) incubator.stampUrl = input.stampUrl ?? null;

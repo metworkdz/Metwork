@@ -19,6 +19,10 @@ import {
 } from '@/components/ui/select';
 import { AvatarUpload } from '@/components/shared/avatar-upload';
 import type { IncubatorRecord, InvoiceTemplate, UserRecord } from '@/server/db/store';
+import type { IncubatorBusinessType } from '@/types/auth';
+
+/** Local form value: the real enum plus '' for "not set yet". */
+type BusinessTypeOption = IncubatorBusinessType | '';
 
 interface Props {
   incubator: IncubatorRecord;
@@ -37,6 +41,8 @@ export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = t
     incubatorName: incubator.name,
     description: incubator.description ?? '',
     city: incubator.city,
+    /** '' = unset (every record predating the Business→Incubator merge). */
+    businessType: (incubator.businessType ?? '') as BusinessTypeOption,
     website: incubator.website ?? '',
     logoUrl: incubator.logoUrl ?? '',
     stampUrl: incubator.stampUrl ?? '',
@@ -93,6 +99,8 @@ export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = t
           incubatorName: form.incubatorName.trim(),
           description: form.description.trim(),
           city: form.city.trim(),
+          // '' means "never set" — send null rather than an invalid enum value.
+          businessType: form.businessType || null,
           website: form.website.trim() || null,
           logoUrl: form.logoUrl.trim() || null,
           stampUrl: form.stampUrl.trim() || null,
@@ -186,6 +194,24 @@ export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = t
               <Input id="inc-city" value={form.city}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, city: e.target.value }))} />
             </div>
+          </div>
+
+          {/* Organisation kind — labelling only, no capability attached. */}
+          <div className="space-y-1.5">
+            <Label htmlFor="inc-business-type">{t('labelBusinessType')}</Label>
+            <Select
+              value={form.businessType}
+              onValueChange={(v: string) => setForm((f) => ({ ...f, businessType: v as BusinessTypeOption }))}
+            >
+              <SelectTrigger id="inc-business-type">
+                <SelectValue placeholder={t('businessTypePlaceholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="INCUBATOR">{t('businessTypeIncubator')}</SelectItem>
+                <SelectItem value="COWORKING_SPACE">{t('businessTypeCoworkingSpace')}</SelectItem>
+                <SelectItem value="TRAINING_CENTER">{t('businessTypeTrainingCenter')}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1.5">

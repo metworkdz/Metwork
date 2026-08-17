@@ -12,13 +12,41 @@ export type UserRole = (typeof USER_ROLES)[number];
 /**
  * Roles a user can self-select at signup.
  * ADMIN is provisioned manually only.
+ *
+ * `BUSINESS` was removed here by the Business→Incubator merge: trainers and
+ * training centres now sign up as `INCUBATOR` and pick an
+ * `IncubatorBusinessType` instead. The literal stays in `USER_ROLES` above so
+ * any record written before the merge still types/reads correctly.
  */
-export const SIGNUP_ROLES = ['ENTREPRENEUR', 'INVESTOR', 'INCUBATOR', 'BUSINESS'] as const;
+export const SIGNUP_ROLES = ['ENTREPRENEUR', 'INVESTOR', 'INCUBATOR'] as const;
 export type SignupRole = (typeof SIGNUP_ROLES)[number];
 
-/** Sub-type chosen when a user signs up as BUSINESS (single select). */
+/**
+ * Sub-type chosen when a user signed up as BUSINESS (single select).
+ * LEGACY — no longer collected at signup (see SIGNUP_ROLES). Retained because
+ * pre-merge `UserRecord`s still carry it and the admin approvals UI displays it.
+ * Superseded by `IncubatorBusinessType` below.
+ */
 export const BUSINESS_SUB_TYPES = ['TRAINER', 'TRAINING_CENTER', 'COMPANY'] as const;
 export type BusinessSubType = (typeof BUSINESS_SUB_TYPES)[number];
+
+/**
+ * Account-level provider category, stored on `IncubatorRecord.businessType`.
+ *
+ * Purely INFORMATIONAL — it never gates permissions: an INCUBATOR, a
+ * COWORKING_SPACE and a TRAINING_CENTER all have byte-for-byte identical
+ * capabilities. It only drives user-facing labelling.
+ *
+ * NOT to be confused with `SpaceCategory` (@/types/domain — COWORKING /
+ * PRIVATE_OFFICE / TRAINING_ROOM / DOMICILIATION), which classifies an
+ * individual bookable space listing rather than the account that owns it.
+ * A TRAINING_CENTER account may list COWORKING spaces, and vice versa.
+ *
+ * Declared here (not in `@/server/db/store`) so client components can import
+ * the values without pulling the server-only store module into the bundle.
+ */
+export const INCUBATOR_BUSINESS_TYPES = ['INCUBATOR', 'COWORKING_SPACE', 'TRAINING_CENTER'] as const;
+export type IncubatorBusinessType = (typeof INCUBATOR_BUSINESS_TYPES)[number];
 
 /**
  * Account approval gate (read-only-until-approved). Entrepreneurs and admins are

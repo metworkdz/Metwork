@@ -40,7 +40,7 @@ const createProgramSchema = z.object({
 });
 
 export async function GET() {
-  const guard = await requireApiRole(['INCUBATOR', 'BUSINESS']);
+  const guard = await requireApiRole(['INCUBATOR']);
   if (!guard.ok) return guard.response;
 
   const inc = await findIncubatorByUserEmail(guard.user.email);
@@ -51,7 +51,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApprovedApiRole(['INCUBATOR', 'BUSINESS']);
+  const guard = await requireApprovedApiRole(['INCUBATOR']);
   if (!guard.ok) return guard.response;
 
   const inc = await findIncubatorByUserEmail(guard.user.email);

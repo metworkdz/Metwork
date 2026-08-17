@@ -9,7 +9,12 @@
 import { createHmac, randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { db, type PendingUserRecord, type UserRecord } from '@/server/db/store';
 import { serverEnvVars } from '@/lib/env';
-import type { UserRole, BusinessSubType, ApprovalStatus } from '@/types/auth';
+import type {
+  UserRole,
+  BusinessSubType,
+  IncubatorBusinessType,
+  ApprovalStatus,
+} from '@/types/auth';
 import { isApprovalGatedRole } from '@/lib/approval-guard';
 
 const OTP_TTL_MIN = 10;
@@ -39,7 +44,12 @@ export interface PendingUserInput {
   /** Optional investor LinkedIn handle/URL (role INVESTOR). */
   linkedin?: string;
   sex?: 'MALE' | 'FEMALE';
-  /** Business sub-type (role BUSINESS) — required at signup. */
+  /**
+   * Organisation kind (role INCUBATOR) — optional. Copied to
+   * `IncubatorRecord.businessType` on promotion; absent ⇒ null.
+   */
+  businessType?: IncubatorBusinessType;
+  /** LEGACY business sub-type — no longer collected at signup. */
   businessSubType?: BusinessSubType;
   /** Optional business field / industry. */
   businessIndustry?: string;
@@ -96,6 +106,7 @@ export async function issuePendingUser(input: PendingUserInput): Promise<IssuePe
       instagram: input.instagram,
       linkedin: input.linkedin,
       sex: input.sex,
+      businessType: input.businessType,
       businessSubType: input.businessSubType,
       businessIndustry: input.businessIndustry,
       businessPhone: input.businessPhone,
@@ -162,6 +173,16 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
     if (!pending) return null;
 
     let role: UserRole = pending.role;
+    // Business→Incubator merge: a pending record created just before the merge
+    // shipped can still be promoted after it (the OTP window is 10 minutes, so
+    // a deploy can land mid-signup). The one-time store migration has already
+    // run by then and would never revisit this row, so coerce here instead —
+    // otherwise this user would be the only BUSINESS-role account on the
+    // platform. The bootstrap check below deliberately keys off `pending.role`,
+    // so this coercion cannot turn a stale BUSINESS signup into an ADMIN.
+    if ((role as string) === 'BUSINESS') {
+      role = 'INCUBATOR';
+    }
     // Bootstrap: the first INCUBATOR signup on a fresh platform becomes the
     // ADMIN. The guard is "no ADMIN exists yet" — not "no INCUBATOR exists yet"
     // (the old check) which was always true once the bootstrap admin took the
@@ -209,8 +230,10 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
       user.linkedin = pending.linkedin?.trim() || null;
     }
 
-    // Business onboarding: persist the sub-type + optional profile fields.
-    if (role === 'BUSINESS') {
+    // Legacy business fields — only ever present on a pending record written
+    // before the Business→Incubator merge (nothing collects them now). Copied
+    // verbatim so an in-flight signup keeps every value it submitted.
+    if (pending.businessSubType || pending.businessIndustry || pending.businessPhone) {
       user.businessSubType = pending.businessSubType ?? null;
       user.businessIndustry = pending.businessIndustry?.trim() || null;
       user.businessWebsite = pending.website?.trim() || null;
@@ -221,13 +244,11 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
 
     d.users.push(user);
 
-    // Auto-create a provider IncubatorRecord for INCUBATOR- and BUSINESS-role
-    // users. Businesses reuse the exact same record + managerId-linking pattern;
-    // the only difference is the providerType discriminator (and that they get
-    // no Spaces/subscription sections in their dashboard). Bootstrap-admin
-    // promotion above only applies to INCUBATOR, so a BUSINESS always lands as
-    // a plain provider record.
-    if (role === 'INCUBATOR' || role === 'BUSINESS') {
+    // Auto-create the provider IncubatorRecord. Since the Business→Incubator
+    // merge this is the single provider shape — trainers, training centres,
+    // coworking spaces and incubators all land here with identical
+    // capabilities, distinguished only by the informational `businessType`.
+    if (role === 'INCUBATOR') {
       const incubatorId = randomUUID();
       const incubatorName =
         pending.incubatorName?.trim() || pending.fullName.trim();
@@ -237,8 +258,16 @@ export async function promotePendingUser(pendingId: string): Promise<UserRecord 
         description:      pending.businessDescription?.trim() || '',
         city:             pending.city,
         managerId:        userId,
-        /** Distinguishes businesses from incubators; INCUBATOR keeps the legacy default. */
-        providerType:     role === 'BUSINESS' ? 'BUSINESS' : 'INCUBATOR',
+        providerType:     'INCUBATOR',
+        /**
+         * Informational organisation kind. Optional at signup ⇒ null, which is
+         * exactly the state of every record predating the merge.
+         */
+        businessType:
+          pending.businessType
+          // A pre-merge BUSINESS signup promoted after the merge gets the same
+          // mapping the store migration applies to its peers.
+          ?? ((pending.role as string) === 'BUSINESS' ? 'TRAINING_CENTER' : null),
         /** email is required by findIncubatorByUserEmail for the fast lookup path */
         email:            pending.email,
         phone:            pending.phone,

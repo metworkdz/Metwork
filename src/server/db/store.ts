@@ -12,7 +12,13 @@
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { UserRole, UserStatus, ApprovalStatus, BusinessSubType } from '@/types/auth';
+import type {
+  UserRole,
+  UserStatus,
+  ApprovalStatus,
+  BusinessSubType,
+  IncubatorBusinessType,
+} from '@/types/auth';
 import type { LandingContent } from '@/types/cms';
 import type { WeeklyAvailabilityDay } from '@/types/mentor';
 
@@ -223,8 +229,16 @@ export interface PendingUserRecord {
   /** Biological sex provided at signup. Optional. */
   sex?: 'MALE' | 'FEMALE';
 
+  /**
+   * Organisation kind chosen at INCUBATOR signup — optional. Copied to
+   * `IncubatorRecord.businessType` on promotion; absent ⇒ null.
+   */
+  businessType?: IncubatorBusinessType;
+
   // ─── Business signup (role === 'BUSINESS') — all optional, carried to UserRecord ───
-  /** Required at signup when role === 'BUSINESS'; absent otherwise. */
+  // LEGACY: no longer collected at signup (the BUSINESS role was merged into
+  // INCUBATOR). Retained so pending records written before the merge still parse.
+  /** Was required at signup when role === 'BUSINESS'; absent otherwise. */
   businessSubType?: BusinessSubType;
   /** Optional field / industry. */
   businessIndustry?: string;
@@ -671,6 +685,19 @@ export interface IncubatorRecord {
    * legacy value for pre-migration records (treated identically to 'BUSINESS').
    */
   providerType?: 'INCUBATOR' | 'TRAINER' | 'BUSINESS';
+  /**
+   * Account-level provider category — what KIND of organisation this is.
+   *
+   * Additive & nullable: absent/null on every record created before the
+   * Business→Incubator merge, and readers must treat that as "unset" (falling
+   * back to the generic "Incubator" label). Purely INFORMATIONAL — it never
+   * gates permissions; a TRAINING_CENTER has exactly the same capabilities as
+   * an INCUBATOR or a COWORKING_SPACE.
+   *
+   * Distinct from `SpaceCategory` (@/types/domain), which classifies an
+   * individual bookable space listing, not the account that owns it.
+   */
+  businessType?: IncubatorBusinessType | null;
   status: IncubatorStatus;
   website?: string | null;
   /** Instagram handle or full profile URL provided at registration. Nullable. */
@@ -2850,6 +2877,25 @@ interface DbShape {
     demoMentorsRemoved?: boolean;
     /** Set once legacy TRAINER-role users are migrated to the BUSINESS role. */
     businessRoleMigrated?: boolean;
+    /**
+     * Set once BUSINESS-role users are merged into the INCUBATOR role and their
+     * provider records have `businessType` backfilled. Carries the migration
+     * report so the counts survive past the log line that printed them.
+     */
+    businessMergedIntoIncubator?: {
+      at: string;
+      /** Users whose role flipped BUSINESS → INCUBATOR. */
+      migratedCount: number;
+      /** Breakdown of the legacy `businessSubType` the mapping was derived from. */
+      byLegacySubType: Record<string, number>;
+      /** Provider records that received a `businessType` value. */
+      providersUpdated: number;
+      /**
+       * Migrated users with NO linked IncubatorRecord (managerId lookup missed).
+       * Logged + skipped, never fabricated — these need manual admin follow-up.
+       */
+      orphanedUserIds: string[];
+    };
     /** Set once legacy clients have clientType backfilled (COMPANY when companyName set). */
     invoiceClientTypeMigrated?: boolean;
     platformConfig?: PlatformConfig;
@@ -3042,6 +3088,77 @@ async function applyOneTimeMigrations(): Promise<void> {
       }
     }
     cache!.meta = { ...(cache!.meta ?? {}), businessRoleMigrated: true };
+    changed = true;
+  }
+
+  // Business→Incubator merge. The standalone BUSINESS role is retired: every
+  // BUSINESS user becomes an INCUBATOR (they already owned an IncubatorRecord
+  // and were governed by the same approval gate), and the organisation's kind
+  // moves to the new informational `IncubatorRecord.businessType`.
+  //
+  // Capability parity is automatic — no route or guard keys off businessType,
+  // and INCUBATOR is a strict superset of what BUSINESS could do, so migrated
+  // accounts gain access (spaces, invoicing, …) and lose nothing.
+  //
+  // Nothing is destroyed: the legacy `user.businessSubType` and the provider's
+  // `providerType` are left exactly as they were, so the mapping stays auditable
+  // and a rollback can reconstruct the original role. Idempotent via the flag.
+  if (!cache!.meta?.businessMergedIntoIncubator) {
+    const byLegacySubType: Record<string, number> = {};
+    const orphanedUserIds: string[] = [];
+    let migratedCount = 0;
+    let providersUpdated = 0;
+
+    for (const u of cache!.users ?? []) {
+      if ((u.role as string) !== 'BUSINESS') continue;
+
+      // Every legacy sub-type collapses to TRAINING_CENTER: TRAINER and
+      // TRAINING_CENTER are literally training providers, and COMPANY (the
+      // catch-all) is mapped there too rather than guessing INCUBATOR or
+      // COWORKING_SPACE — a wrong label is cosmetic and owner-correctable,
+      // whereas dropping the record's kind entirely is not recoverable.
+      const legacy = u.businessSubType ?? 'UNSET';
+      byLegacySubType[legacy] = (byLegacySubType[legacy] ?? 0) + 1;
+
+      u.role = 'INCUBATOR';
+      migratedCount += 1;
+
+      const provider = (cache!.incubators ?? []).find((i) => i.managerId === u.id);
+      if (!provider) {
+        // Log + skip. Deliberately NOT fabricating an IncubatorRecord: an
+        // invented org record would be indistinguishable from a real one and
+        // would land unapproved in public listings.
+        orphanedUserIds.push(u.id);
+        continue;
+      }
+      if (provider.businessType == null) {
+        provider.businessType = 'TRAINING_CENTER';
+        providersUpdated += 1;
+      }
+      // Keep the discriminator consistent with the new role. The 'TRAINER' /
+      // 'BUSINESS' literals remain in the union so pre-merge blobs still parse.
+      if (provider.providerType === 'BUSINESS' || provider.providerType === 'TRAINER') {
+        provider.providerType = 'INCUBATOR';
+      }
+    }
+
+    const report = {
+      at: new Date().toISOString(),
+      migratedCount,
+      byLegacySubType,
+      providersUpdated,
+      orphanedUserIds,
+    };
+    if (migratedCount > 0 || orphanedUserIds.length > 0) {
+      console.info('[migration] business→incubator merge', JSON.stringify(report));
+      if (orphanedUserIds.length > 0) {
+        console.warn(
+          `[migration] business→incubator: ${orphanedUserIds.length} migrated user(s) have no ` +
+            `IncubatorRecord and were skipped (manual follow-up): ${orphanedUserIds.join(', ')}`,
+        );
+      }
+    }
+    cache!.meta = { ...(cache!.meta ?? {}), businessMergedIntoIncubator: report };
     changed = true;
   }
 

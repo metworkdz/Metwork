@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SIGNUP_ROLES, BUSINESS_SUB_TYPES } from '@/types/auth';
+import { SIGNUP_ROLES, INCUBATOR_BUSINESS_TYPES } from '@/types/auth';
 
 /**
  * Algerian phone numbers:
@@ -97,25 +97,17 @@ export const signupSchema = z
     /** Biological sex — shown for ENTREPRENEUR and INVESTOR roles. */
     sex: z.enum(['MALE', 'FEMALE']).optional(),
 
-    // ── Business signup (role === 'BUSINESS') ──────────────────────────────
-    // `incubatorName`, `website`, `instagram` above are reused as the business
-    // name / website / Instagram. The fields below are business-specific.
-    /** Required when role === 'BUSINESS' (enforced by the refine below). */
-    businessSubType: z.enum(BUSINESS_SUB_TYPES).optional(),
-    /** Optional field / industry. */
-    businessIndustry: z.preprocess(emptyToUndefined, z.string().max(100).optional()),
-    /** Optional public-facing phone (free text). */
-    businessPhone: z.preprocess(emptyToUndefined, z.string().max(40).optional()),
-    /** Optional short description / bio. */
-    businessDescription: z.preprocess(emptyToUndefined, z.string().max(500).optional()),
+    /**
+     * Organisation kind — shown for INCUBATOR only, and OPTIONAL: a signup that
+     * omits it produces `businessType: null` on the provider record, exactly
+     * like every record that predates the Business→Incubator merge. Purely
+     * informational; it grants no extra capability.
+     */
+    businessType: z.enum(INCUBATOR_BUSINESS_TYPES).optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ['confirmPassword'],
     message: 'passwordMismatch',
-  })
-  .refine((data) => data.role !== 'BUSINESS' || !!data.businessSubType, {
-    path: ['businessSubType'],
-    message: 'businessTypeRequired',
   });
 export type SignupInput = z.infer<typeof signupSchema>;
 

@@ -86,25 +86,14 @@ export async function POST(req: NextRequest) {
     role: input.role,
     city: input.city,
     locale,
-    incubatorName:
-      input.role === 'INCUBATOR' || input.role === 'BUSINESS'
-        ? input.incubatorName?.trim()
-        : undefined,
-    website:
-      input.role === 'INCUBATOR' || input.role === 'BUSINESS'
-        ? input.website?.trim()
-        : undefined,
-    instagram:
-      input.role === 'INCUBATOR' || input.role === 'BUSINESS'
-        ? input.instagram?.trim()
-        : undefined,
+    incubatorName: input.role === 'INCUBATOR' ? input.incubatorName?.trim() : undefined,
+    website: input.role === 'INCUBATOR' ? input.website?.trim() : undefined,
+    instagram: input.role === 'INCUBATOR' ? input.instagram?.trim() : undefined,
     linkedin: input.role === 'INVESTOR' ? input.linkedin?.trim() : undefined,
     sex: input.sex,
-    // Business-specific fields — only carried when role === 'BUSINESS'.
-    businessSubType: input.role === 'BUSINESS' ? input.businessSubType : undefined,
-    businessIndustry: input.role === 'BUSINESS' ? input.businessIndustry?.trim() : undefined,
-    businessPhone: input.role === 'BUSINESS' ? input.businessPhone?.trim() : undefined,
-    businessDescription: input.role === 'BUSINESS' ? input.businessDescription?.trim() : undefined,
+    // Organisation kind — informational label on the provider record. Optional,
+    // so an omitted value simply leaves `businessType` null.
+    businessType: input.role === 'INCUBATOR' ? input.businessType : undefined,
   });
 
   // Primary: WhatsApp (Infobip). Secondary: email as reliable fallback.

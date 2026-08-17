@@ -2,14 +2,13 @@
  * Centralized account-approval service.
  *
  * The single logic path for an admin approving or rejecting a gated account
- * (INCUBATOR / INVESTOR / BUSINESS). It is called by both the unified admin
- * approvals route and the legacy investor route, so the behaviour never
- * diverges:
+ * (INCUBATOR / INVESTOR). It is called by both the unified admin approvals
+ * route and the legacy investor route, so the behaviour never diverges:
  *
  *   1. Set the unified write-gate field `approvalStatus` (+ rejection reason).
  *   2. Sync the legacy per-surface gate so every surface unlocks together:
- *        INVESTOR            → user.investorStatus
- *        INCUBATOR / BUSINESS → their IncubatorRecord.status
+ *        INVESTOR  → user.investorStatus
+ *        INCUBATOR → their IncubatorRecord.status
  *   3. Append an audit-log entry.
  *   4. Fire a role-appropriate approval/rejection email (fire-and-forget — a
  *      mail failure never rolls back the approval).
@@ -25,8 +24,6 @@ import {
   sendInvestorRejectionEmail,
   sendIncubatorApprovalEmail,
   sendIncubatorRejectionEmail,
-  sendBusinessApprovalEmail,
-  sendBusinessRejectionEmail,
 } from '@/server/notifications/email';
 
 export type AccountApprovalDecision = 'APPROVED' | 'REJECTED';
@@ -45,7 +42,7 @@ export type SetAccountApprovalResult =
   | { ok: true; user: SafeUser }
   | { ok: false; reason: 'NOT_FOUND' | 'NOT_GATED' };
 
-type EmailSurface = 'INVESTOR' | 'INCUBATOR' | 'BUSINESS';
+type EmailSurface = 'INVESTOR' | 'INCUBATOR';
 type EmailSideEffect =
   | { kind: 'APPROVED'; surface: EmailSurface; to: string; name: string; lang: 'en' | 'fr' | 'ar' }
   | { kind: 'REJECTED'; surface: EmailSurface; to: string; name: string; lang: 'en' | 'fr' | 'ar'; reason: string };
@@ -76,14 +73,16 @@ export async function setAccountApproval(
         ? { kind: 'APPROVED', surface: 'INVESTOR', to: user.email.trim(), name: user.fullName, lang: user.locale }
         : { kind: 'REJECTED', surface: 'INVESTOR', to: user.email.trim(), name: user.fullName, lang: user.locale, reason };
     } else {
-      // INCUBATOR / BUSINESS — both managed via an IncubatorRecord (providerType).
+      // INCUBATOR — managed via its IncubatorRecord. Since the Business→
+      // Incubator merge this covers trainers and training centres too; they
+      // share the record, the gate and the email copy.
       const provider = (d.incubators ?? []).find((i) => i.managerId === user.id);
       if (provider) {
         provider.status = approved ? 'ACTIVE' : 'REJECTED';
         provider.updatedAt = now;
       }
       const providerName = provider?.name?.trim() || user.fullName;
-      const surface: EmailSurface = user.role === 'BUSINESS' ? 'BUSINESS' : 'INCUBATOR';
+      const surface: EmailSurface = 'INCUBATOR';
       sideEffect = approved
         ? { kind: 'APPROVED', surface, to: user.email.trim(), name: providerName, lang: user.locale }
         : { kind: 'REJECTED', surface, to: user.email.trim(), name: providerName, lang: user.locale, reason };
@@ -122,15 +121,11 @@ export async function setAccountApproval(
         if (fx.kind === 'APPROVED') {
           if (fx.surface === 'INVESTOR') {
             await sendInvestorApprovalEmail({ to: fx.to, investorName: fx.name, lang: fx.lang });
-          } else if (fx.surface === 'BUSINESS') {
-            await sendBusinessApprovalEmail({ to: fx.to, businessName: fx.name, lang: fx.lang });
           } else {
             await sendIncubatorApprovalEmail({ to: fx.to, incubatorName: fx.name, lang: fx.lang });
           }
         } else if (fx.surface === 'INVESTOR') {
           await sendInvestorRejectionEmail({ to: fx.to, investorName: fx.name, reason: fx.reason, lang: fx.lang });
-        } else if (fx.surface === 'BUSINESS') {
-          await sendBusinessRejectionEmail({ to: fx.to, businessName: fx.name, reason: fx.reason, lang: fx.lang });
         } else {
           await sendIncubatorRejectionEmail({ to: fx.to, incubatorName: fx.name, reason: fx.reason, lang: fx.lang });
         }
