@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter as useNextRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { ArrowLeft, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,8 +21,8 @@ import { signupSchema, type SignupInput } from '@/lib/validators';
 import { authService } from '@/services/auth.service';
 import { ApiClientError } from '@/lib/api-client';
 import { algerianCities, getCityName } from '@/config/cities';
-import { SIGNUP_ROLES, type SignupRole } from '@/types/auth';
-import { RoleCard } from './role-card';
+import { SIGNUP_ROLES } from '@/types/auth';
+import { RoleCard, type RoleCardValue } from './role-card';
 import type { Locale } from '@/i18n/config';
 
 type Step = 'role' | 'details';
@@ -31,6 +31,11 @@ export function SignupForm() {
   const t = useTranslations('auth');
   const locale = useLocale() as Locale;
   const router = useRouter();
+  // Plain (non-locale-prefixed) router, used ONLY for the consultant-portal
+  // redirect below — /consultant/login is a deliberately prefix-free URL
+  // (its own PWA scope, rewritten by middleware), so it must bypass
+  // next-intl's router, which would otherwise inject a locale prefix.
+  const nextRouter = useNextRouter();
   const searchParams = useSearchParams();
   // Public-space "book before you sign up": carry the selection through to OTP
   // (and preserve it on the "log in instead" link) so payment resumes after auth.
@@ -62,8 +67,8 @@ export function SignupForm() {
       city: '',
       password: '',
       confirmPassword: '',
-      acceptTerms: false as unknown as true,
-      acceptPrivacy: false as unknown as true,
+      acceptTerms: false,
+      acceptPrivacy: false,
       incubatorName: '',
       website: '',
       instagram: '',
@@ -75,11 +80,29 @@ export function SignupForm() {
 
   const selectedRole = watch('role');
 
-  function handleRoleSelect(role: SignupRole) {
-    setValue('role', role, { shouldValidate: true });
+  // Step-1 card highlight state. Deliberately separate from the RHF `role`
+  // field: 'CONSULTANT' is a routing shortcut, not a real signup role, and
+  // must never be assignable to `SignupInput['role']` — keeping it out of
+  // `setValue` entirely (rather than filtering it at submit time) means a
+  // stray consultant selection can't leak into the signup payload even if
+  // this component is changed later.
+  const [cardSelection, setCardSelection] = useState<RoleCardValue>('ENTREPRENEUR');
+
+  function handleRoleSelect(role: RoleCardValue) {
+    setCardSelection(role);
+    if (role !== 'CONSULTANT') {
+      setValue('role', role, { shouldValidate: true });
+    }
   }
 
   async function handleContinue() {
+    if (cardSelection === 'CONSULTANT') {
+      // Pure routing shortcut to the consultant portal's own self-signup —
+      // not part of this form's auth path. Prefix-free URL, so it bypasses
+      // next-intl's router (see `nextRouter` above).
+      nextRouter.push('/consultant/login?signup=1');
+      return;
+    }
     const ok = await trigger('role');
     if (ok) setStep('details');
   }
@@ -124,11 +147,11 @@ export function SignupForm() {
         </div>
 
         <div className="space-y-3">
-          {SIGNUP_ROLES.map((role) => (
+          {[...SIGNUP_ROLES, 'CONSULTANT' as const].map((role) => (
             <RoleCard
               key={role}
               role={role}
-              selected={selectedRole === role}
+              selected={cardSelection === role}
               onSelect={handleRoleSelect}
             />
           ))}
@@ -139,7 +162,7 @@ export function SignupForm() {
           onClick={handleContinue}
           className="mt-6 w-full"
           size="lg"
-          disabled={!selectedRole}
+          disabled={!cardSelection}
         >
           {t('signup.continue')}
           <ArrowRight className="ms-1 size-4 rtl:rotate-180" />
@@ -189,8 +212,10 @@ export function SignupForm() {
           />
         </FormField>
 
-        {/* Organisation kind — optional single-select, INCUBATOR only.
-            Informational: it labels the account, it grants no capability. */}
+        {/* Organisation kind — required single-select, INCUBATOR only.
+            Informational once stored: it labels the account, it grants no
+            capability. Required here at signup; still optional/nullable on
+            the settings-page picker and the underlying DB field. */}
         {selectedRole === 'INCUBATOR' && (
           <Controller
             control={control}
@@ -199,11 +224,11 @@ export function SignupForm() {
               <FormField
                 label={t('signup.businessTypeLabel')}
                 htmlFor="businessType"
-                hint={t('signup.optionalHint')}
                 error={
                   errors.businessType &&
                   t(`errors.${errors.businessType.message}` as 'errors.required')
                 }
+                required
               >
                 <Select value={field.value ?? ''} onValueChange={field.onChange}>
                   <SelectTrigger id="businessType" error={!!errors.businessType}>
@@ -223,7 +248,7 @@ export function SignupForm() {
         {/* Organisation name — shown for INCUBATOR providers */}
         {selectedRole === 'INCUBATOR' && (
           <FormField
-            label={t('signup.incubatorNameLabel')}
+            label={t('signup.organizationNameLabel')}
             htmlFor="incubatorName"
             error={
               errors.incubatorName &&
@@ -233,7 +258,7 @@ export function SignupForm() {
             <Input
               id="incubatorName"
               autoComplete="organization"
-              placeholder={t('signup.incubatorNamePlaceholder')}
+              placeholder={t('signup.organizationNamePlaceholder')}
               error={!!errors.incubatorName}
               {...register('incubatorName')}
             />

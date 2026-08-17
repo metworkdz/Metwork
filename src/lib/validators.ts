@@ -79,13 +79,18 @@ export const signupSchema = z
     city: z.string().min(1, { message: 'required' }),
     password: passwordSchema,
     confirmPassword: z.string(),
-    acceptTerms: z.literal(true, {
-      errorMap: () => ({ message: 'termsRequired' }),
-    }),
+    /**
+     * `z.boolean().refine()` rather than `z.literal(true, { errorMap })`: a
+     * failed `z.literal` produces Zod's "aborted" parse status (not "dirty"),
+     * which silently skips every `.refine()` chained after this object —
+     * including the password-match check below and the businessType check
+     * further down. Since these two checkboxes are unchecked by default,
+     * that abort fired on essentially every first submit attempt. `.refine()`
+     * doesn't have this failure mode.
+     */
+    acceptTerms: z.boolean().refine((v) => v === true, { message: 'termsRequired' }),
     /** Explicit data-processing consent — required by Law 18-07 Art. 14. */
-    acceptPrivacy: z.literal(true, {
-      errorMap: () => ({ message: 'privacyRequired' }),
-    }),
+    acceptPrivacy: z.boolean().refine((v) => v === true, { message: 'privacyRequired' }),
     /** Optional — only shown when role === 'INCUBATOR'. */
     incubatorName: z.string().max(100).optional(),
     /** Optional — incubator website (role === 'INCUBATOR'). URL-validated. */
@@ -98,16 +103,21 @@ export const signupSchema = z
     sex: z.enum(['MALE', 'FEMALE']).optional(),
 
     /**
-     * Organisation kind — shown for INCUBATOR only, and OPTIONAL: a signup that
-     * omits it produces `businessType: null` on the provider record, exactly
-     * like every record that predates the Business→Incubator merge. Purely
-     * informational; it grants no extra capability.
+     * Organisation kind — shown for INCUBATOR only. Required at signup (enforced
+     * by the refine below); still purely informational once stored — it grants
+     * no extra capability. The underlying `IncubatorRecord.businessType` field
+     * itself stays nullable, since accounts created before this requirement
+     * (or via the settings page, where it remains optional) may still lack it.
      */
     businessType: z.enum(INCUBATOR_BUSINESS_TYPES).optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ['confirmPassword'],
     message: 'passwordMismatch',
+  })
+  .refine((data) => data.role !== 'INCUBATOR' || !!data.businessType, {
+    path: ['businessType'],
+    message: 'businessTypeRequired',
   });
 export type SignupInput = z.infer<typeof signupSchema>;
 

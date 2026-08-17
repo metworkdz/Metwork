@@ -1,17 +1,27 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Rocket, TrendingUp, Building2, Check } from 'lucide-react';
+import { Rocket, TrendingUp, Building2, GraduationCap, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SignupRole } from '@/types/auth';
 
+/**
+ * The step-1 selection also offers a "Consultant / Mentor" card that is NOT a
+ * real signup role — consultants have no `UserRecord` at all (a fully
+ * separate self-service auth system, see @/server/mentors/access.ts). It is
+ * a pure routing shortcut to the consultant portal's own signup; it must
+ * never be assignable to `SignupInput['role']`, so it's a local union here
+ * rather than an addition to `SignupRole`/`UserRole` in @/types/auth.
+ */
+export type RoleCardValue = SignupRole | 'CONSULTANT';
+
 interface RoleCardProps {
-  role: SignupRole;
+  role: RoleCardValue;
   selected: boolean;
-  onSelect: (role: SignupRole) => void;
+  onSelect: (role: RoleCardValue) => void;
 }
 
-const ROLE_META: Record<SignupRole, { icon: typeof Rocket; titleKey: string; descKey: string }> = {
+const ROLE_META: Record<RoleCardValue, { icon: typeof Rocket; titleKey: string; descKey: string }> = {
   ENTREPRENEUR: {
     icon: Rocket,
     titleKey: 'auth.signup.roleEntrepreneur',
@@ -26,6 +36,11 @@ const ROLE_META: Record<SignupRole, { icon: typeof Rocket; titleKey: string; des
     icon: Building2,
     titleKey: 'auth.signup.roleIncubator',
     descKey: 'auth.signup.roleIncubatorDesc',
+  },
+  CONSULTANT: {
+    icon: GraduationCap,
+    titleKey: 'auth.signup.roleConsultant',
+    descKey: 'auth.signup.roleConsultantDesc',
   },
 };
 
