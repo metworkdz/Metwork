@@ -68,7 +68,7 @@ describe('Network-Pass visit model — one row per booking', () => {
   it('book → check-in stamps the same row (never two), and payout counts once', async () => {
     // 1. Book with the Network Pass — creates the booking-time visit row.
     const res = await createSpaceBooking({
-      userId: 'user-1', spaceId: 'space-1', unit: 'HOUR',
+      booker: { type: 'user', userId: 'user-1' }, spaceId: 'space-1', unit: 'HOUR',
       startsAt: START, endsAt: END, clientReference: 'ref-1', paymentMethod: 'NETWORK_PASS',
     });
     expect(res.ok).toBe(true);
@@ -111,7 +111,7 @@ describe('Network-Pass visit model — one row per booking', () => {
 
   it('replaying recordCheckIn does not add a second row or double the payout', async () => {
     const res = await createSpaceBooking({
-      userId: 'user-1', spaceId: 'space-1', unit: 'HOUR',
+      booker: { type: 'user', userId: 'user-1' }, spaceId: 'space-1', unit: 'HOUR',
       startsAt: START, endsAt: END, clientReference: 'ref-2', paymentMethod: 'NETWORK_PASS',
     });
     if (!res.ok) throw new Error('seed booking failed');

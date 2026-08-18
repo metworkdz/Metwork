@@ -66,8 +66,36 @@ export function overlapsBlockedDates(
   return false;
 }
 
+/**
+ * Who is making the booking.
+ *
+ * `user`   — a platform account (`UserRecord`). Full range of payment methods:
+ *            wallet, cash-on-site, Network Pass; membership discounts apply.
+ * `mentor` — a consultant booking from the consultant portal. Consultants are a
+ *            separate population with NO `UserRecord` and NO Metwork wallet, so
+ *            this actor is CASH-ONLY: the booking is reserved here and settled
+ *            with the space directly on site. No money moves on Metwork, which
+ *            is why this actor needs no payment rail at all.
+ *
+ * The availability/pricing engine below is shared by both actors — only the
+ * identity and the settlement path differ.
+ */
+export type BookingActor =
+  | { type: 'user'; userId: string }
+  | {
+      type: 'mentor';
+      mentorId: string;
+      /**
+       * Contact details snapshotted onto the booking so the space can reach the
+       * consultant. Derived server-side from the mentor record — never supplied
+       * by the client.
+       */
+      contact: { fullName: string; email: string | null; phone: string | null };
+    };
+
 export interface CreateSpaceBookingArgs {
-  userId: string;
+  /** Booker identity — see `BookingActor`. */
+  booker: BookingActor;
   spaceId: string;
   unit: BookingUnit;
   startsAt: string;
@@ -234,6 +262,23 @@ export async function createSpaceBooking(
   const space = await findSpaceById(args.spaceId);
   if (!space) return { ok: false, reason: 'SPACE_NOT_FOUND' };
 
+  // ── Booker identity ───────────────────────────────────────────────────
+  // Resolved once here so the idempotency key, the desk hold and the booking
+  // row all agree on who is booking. Exactly one of these is ever non-null.
+  const bookerUserId   = args.booker.type === 'user'   ? args.booker.userId   : null;
+  const bookerMentorId = args.booker.type === 'mentor' ? args.booker.mentorId : null;
+
+  // Consultants have no Metwork wallet, no membership tier and no Network Pass
+  // credits, so cash-on-site is the only settlement path open to them. Reject
+  // anything else up front rather than letting it reach a wallet branch that
+  // would have to invent an account.
+  if (args.booker.type === 'mentor') {
+    if (args.paymentMethod !== 'manual') return { ok: false, reason: 'CONSULTANT_CASH_ONLY' };
+    if (!space.acceptedPaymentMethods?.includes('CASH')) {
+      return { ok: false, reason: 'CASH_NOT_ACCEPTED' };
+    }
+  }
+
   const price = unitPrice(space, args.unit);
   if (price == null) {
     return { ok: false, reason: 'UNIT_NOT_AVAILABLE', available: availableUnits(space) };
@@ -302,18 +347,29 @@ export async function createSpaceBooking(
     // replay fall through and duplicate the booking, double-burning a network
     // credit and double-booking a cash reservation. Synthesise a placeholder tx
     // mirroring the original response shape when none was stored.
+    // Matched on the FULL booker identity, not just clientReference: consultant
+    // rows carry userId === null, so keying on userId alone would put every
+    // consultant (and every offline booking) in one shared `null` bucket where
+    // two different consultants could replay onto each other's booking.
     const existing = d.bookings.find(
-      (b) => b.userId === args.userId && b.clientReference === args.clientReference,
+      (b) =>
+        (b.userId ?? null) === bookerUserId &&
+        (b.mentorId ?? null) === bookerMentorId &&
+        b.clientReference === args.clientReference,
     );
     if (existing) {
-      const w = d.wallets.find((x) => x.userId === args.userId) ?? newWallet(args.userId);
+      // Consultants own no wallet row — hand back an ephemeral zero wallet so
+      // the result shape holds without materialising a user wallet for them.
+      const w = bookerUserId
+        ? d.wallets.find((x) => x.userId === bookerUserId) ?? newWallet(bookerUserId)
+        : newWallet('');
       const storedTx = existing.transactionId
         ? d.transactions.find((t) => t.id === existing.transactionId) ?? null
         : null;
       const tx: TransactionRecord = storedTx ?? {
         id: randomUUID(),
         walletId: w.id,
-        userId: args.userId,
+        userId: bookerUserId ?? '',
         type: 'PAYMENT',
         amount: 0,
         balanceAfter: w.balance,
@@ -381,9 +437,12 @@ export async function createSpaceBooking(
         deskName: deskName!,
         startsAt: args.startsAt,
         endsAt,
-        userId: args.userId,
-        clientName: d.users.find((u) => u.id === args.userId)?.fullName ?? null,
-        clientPhone: null,
+        userId: bookerUserId,
+        clientName:
+          args.booker.type === 'mentor'
+            ? args.booker.contact.fullName
+            : d.users.find((u) => u.id === bookerUserId)?.fullName ?? null,
+        clientPhone: args.booker.type === 'mentor' ? args.booker.contact.phone : null,
         bookingId,
         source: 'online',
       });
@@ -400,10 +459,75 @@ export async function createSpaceBooking(
       }
     }
 
+    // ── Consultant path: CASH reservation, no money movement ────────────
+    // Runs BEFORE any wallet work: a consultant has no wallet row and must
+    // never cause one to be created. The seat is held exactly like a platform
+    // user's cash booking (same availability gate, same desk hold, same
+    // PENDING_PAYMENT status) — the space collects payment on site.
+    if (args.booker.type === 'mentor') {
+      const now = new Date().toISOString();
+      const booking: BookingRecord = {
+        id: bookingId,
+        userId: null,
+        mentorId: args.booker.mentorId,
+        source: 'online',
+        clientName: args.booker.contact.fullName,
+        clientEmail: args.booker.contact.email,
+        clientPhone: args.booker.contact.phone,
+        itemKind: 'SPACE',
+        itemId: space.id,
+        itemName: space.name,
+        vendorName: space.incubatorName,
+        city: space.city,
+        unit: args.unit,
+        quantity,
+        startsAt: args.startsAt,
+        endsAt,
+        totalAmount: baseTotal,
+        status: 'PENDING_PAYMENT',
+        clientReference: args.clientReference,
+        transactionId: null,
+        paymentMethod: 'manual',
+        createdAt: now,
+        updatedAt: now,
+      };
+      commitDeskHold();
+      d.bookings.push(booking);
+      // Ephemeral, unpersisted placeholder so the shared result shape holds.
+      // Nothing here touches `d.wallets` or `d.transactions`.
+      const ghost = newWallet('');
+      const tx: TransactionRecord = {
+        id: randomUUID(),
+        walletId: ghost.id,
+        userId: '',
+        type: 'PAYMENT',
+        amount: 0,
+        balanceAfter: 0,
+        status: 'PENDING',
+        description: `Consultant reservation — ${space.name}`,
+        reference: args.clientReference,
+        provider: 'cash',
+        providerTxnId: null,
+        metadata: {
+          bookingItemKind: 'SPACE',
+          bookingItemId: space.id,
+          mentorId: args.booker.mentorId,
+        },
+        createdAt: now,
+        completedAt: null,
+      };
+      return { ok: true, replayed: false, booking, transaction: tx, wallet: ghost };
+    }
+
+    // Everything below is the platform-user path (wallet, membership discounts,
+    // Network Pass). `args.booker` narrows to `{ type: 'user' }` here because
+    // the mentor actor returned above.
+    const userId = args.booker.userId;
+
     // Wallet — auto-create on first access.
-    let wallet = d.wallets.find((w) => w.userId === args.userId);
+    let wallet = d.wallets.find((w) => w.userId === userId);
     if (!wallet) {
-      wallet = newWallet(args.userId);
+      wallet = newWallet(userId);
       d.wallets.push(wallet);
     }
 
@@ -413,7 +537,7 @@ export async function createSpaceBooking(
         return { ok: false, reason: 'NOT_PARTNER_SPACE' };
       }
 
-      const user = d.users.find((u) => u.id === args.userId);
+      const user = d.users.find((u) => u.id === userId);
       if (!user) {
         // Shouldn't happen — guard already gated on a valid session — but
         // returning a 'TIER_NOT_ELIGIBLE' makes the failure mode explicit.
@@ -443,7 +567,7 @@ export async function createSpaceBooking(
       // Free booking — CONFIRMED immediately, no wallet movement.
       const booking: BookingRecord = {
         id: bookingId,
-        userId: args.userId,
+        userId: userId,
         itemKind: 'SPACE',
         itemId: space.id,
         itemName: space.name,
@@ -474,7 +598,7 @@ export async function createSpaceBooking(
       if (!Array.isArray(d.networkVisits)) d.networkVisits = [];
       const visit = {
         id: randomUUID(),
-        userId: args.userId,
+        userId: userId,
         spaceId: space.id,
         bookingId: booking.id,
         checkedInAt: null,
@@ -495,7 +619,7 @@ export async function createSpaceBooking(
       const tx: TransactionRecord = {
         id: randomUUID(),
         walletId: wallet.id,
-        userId: args.userId,
+        userId: userId,
         type: 'PAYMENT',
         amount: 0,
         balanceAfter: wallet.balance,
@@ -521,7 +645,7 @@ export async function createSpaceBooking(
       const now = new Date().toISOString();
       const booking: BookingRecord = {
         id: bookingId,
-        userId: args.userId,
+        userId: userId,
         itemKind: 'SPACE',
         itemId: space.id,
         itemName: space.name,
@@ -545,7 +669,7 @@ export async function createSpaceBooking(
       const tx: TransactionRecord = {
         id: randomUUID(),
         walletId: wallet.id,
-        userId: args.userId,
+        userId: userId,
         type: 'PAYMENT',
         amount: 0,
         balanceAfter: wallet.balance,
@@ -574,7 +698,7 @@ export async function createSpaceBooking(
       if (promoCodeId) consumePromoCode(d.promoCodes ?? [], promoCodeId);
       const booking: BookingRecord = {
         id: bookingId,
-        userId: args.userId,
+        userId: userId,
         itemKind: 'SPACE',
         itemId: space.id,
         itemName: space.name,
@@ -600,7 +724,7 @@ export async function createSpaceBooking(
       const tx: TransactionRecord = {
         id: randomUUID(),
         walletId: wallet.id,
-        userId: args.userId,
+        userId: userId,
         type: 'PAYMENT',
         amount: 0,
         balanceAfter: wallet.balance,
@@ -642,7 +766,7 @@ export async function createSpaceBooking(
       tx = {
         id: randomUUID(),
         walletId: wallet.id,
-        userId: args.userId,
+        userId: userId,
         type: 'PAYMENT',
         amount: -total,
         balanceAfter: wallet.balance,
@@ -668,7 +792,7 @@ export async function createSpaceBooking(
       tx = {
         id: randomUUID(),
         walletId: wallet.id,
-        userId: args.userId,
+        userId: userId,
         type: 'PAYMENT',
         amount: 0,
         balanceAfter: wallet.balance,
@@ -693,7 +817,7 @@ export async function createSpaceBooking(
 
     const booking: BookingRecord = {
       id: bookingId,
-      userId: args.userId,
+      userId: userId,
       itemKind: 'SPACE',
       itemId: space.id,
       itemName: space.name,

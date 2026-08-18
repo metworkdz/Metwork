@@ -5,6 +5,40 @@
  */
 import { apiClient } from '@/lib/api-client';
 import type { WeeklyAvailabilityDay } from '@/types/mentor';
+import type { Space } from '@/types/domain';
+
+/**
+ * A bookable space as served to the consultant portal — the public `Space`
+ * plus the host's phone, so the consultant can call instead of reserving.
+ */
+export type ConsultantSpace = Space & { contactPhone: string | null };
+
+/** A space reservation made by the consultant (always cash / pay-on-site). */
+export interface ConsultantSpaceBooking {
+  id: string;
+  status: string;
+  itemName: string;
+  vendorName: string;
+  city: string;
+  unit: 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH';
+  quantity: number;
+  startsAt: string;
+  endsAt: string;
+  totalAmount: number;
+  createdAt: string;
+}
+
+/** Shape of GET /api/spaces/:id/availability (public, canonical). */
+export interface SpaceAvailabilityResponse {
+  spaceId: string;
+  from: string;
+  to: string;
+  capacity: number;
+  workingDays: number[];
+  openingTime: string;
+  closingTime: string;
+  intervals: { start: string; end: string; kind: 'BOOKING' | 'BLOCK'; allDay: boolean }[];
+}
 
 export interface ConsultantMentor {
   id: string;
@@ -230,4 +264,27 @@ export const consultantService = {
     apiClient.get<{ payoutAccount: ConsultantPayoutAccount | null }>('/consultant/payout-account'),
   savePayoutAccount: (body: ConsultantPayoutAccount) =>
     apiClient.put<{ payoutAccount: ConsultantPayoutAccount }>('/consultant/payout-account', body),
+
+  // ── Spaces (reserve a room for an in-person consultation) ──
+  /** Cash-accepting spaces only — a consultant settles with the space on site. */
+  spaces: () => apiClient.get<{ spaces: ConsultantSpace[]; cities: string[] }>('/consultant/spaces'),
+  spaceBookings: () =>
+    apiClient.get<{ items: ConsultantSpaceBooking[] }>('/consultant/space-bookings'),
+  createSpaceBooking: (body: {
+    spaceId: string;
+    unit: 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH';
+    startsAt: string;
+    endsAt: string;
+    clientReference: string;
+    deskName?: string;
+  }) =>
+    apiClient.post<{ booking: ConsultantSpaceBooking; replayed: boolean }>(
+      '/consultant/space-bookings',
+      body,
+    ),
+  /** Canonical unavailability feed for a space — same source the write gate uses. */
+  spaceAvailability: (spaceId: string, from: string, to: string) =>
+    apiClient.get<SpaceAvailabilityResponse>(
+      `/spaces/${encodeURIComponent(spaceId)}/availability?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    ),
 };

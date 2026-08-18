@@ -516,6 +516,18 @@ export interface BookingRecord {
    * where the client does not have a Metwork account.
    */
   userId: string | null;
+  /**
+   * Consultant (MentorRecord.id) who booked this space from the consultant
+   * portal. Additive & nullable — absent on every booking made by a platform
+   * user or entered offline by an incubator.
+   *
+   * Consultants are a SEPARATE population with no `UserRecord` and no wallet,
+   * so `userId` stays null on these rows and the contact details live in
+   * `clientName` / `clientEmail` / `clientPhone` (same as an offline booking).
+   * Consultant bookings are always CASH (`paymentMethod: 'manual'`) — the
+   * consultant pays the space directly on site, so no money moves on Metwork.
+   */
+  mentorId?: string | null;
   /** 'online' = booked via the platform wallet; 'offline' = manually added by incubator. */
   source?: 'online' | 'offline';
   /**

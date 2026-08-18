@@ -118,7 +118,7 @@ describe('createSpaceBooking — NETWORK_PASS replay idempotency', () => {
 
   it('a same-clientReference replay returns the original booking and burns exactly one credit', async () => {
     const args = {
-      userId: 'user-1',
+      booker: { type: 'user' as const, userId: 'user-1' },
       spaceId: 'space-1',
       unit: 'HOUR' as const,
       startsAt: START,
@@ -153,7 +153,7 @@ describe('createSpaceBooking — cash (manual) replay idempotency', () => {
 
   it('a same-clientReference replay returns the original reservation, not a duplicate', async () => {
     const args = {
-      userId: 'user-1',
+      booker: { type: 'user' as const, userId: 'user-1' },
       spaceId: 'space-1',
       unit: 'HOUR' as const,
       startsAt: START,
@@ -184,7 +184,7 @@ describe('createSpaceBooking — wallet replay idempotency (unchanged behaviour)
 
   it('a wallet replay returns the original booking and debits once', async () => {
     const args = {
-      userId: 'user-1',
+      booker: { type: 'user' as const, userId: 'user-1' },
       spaceId: 'space-1',
       unit: 'HOUR' as const,
       startsAt: START,

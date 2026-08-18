@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  ArrowUpRight, BadgeCheck, CalendarClock, CalendarDays, Check, ChevronRight, Copy, Link2, Loader2, LogOut,
+  ArrowUpRight, BadgeCheck, Building2, CalendarClock, CalendarDays, Check, ChevronRight, Copy, Link2, Loader2, LogOut,
   MessageSquareText, Share2, ShieldOff, TrendingUp, User, Wallet,
 } from 'lucide-react';
 import { consultantService, type ConsultantMe, type ConsultantMentor } from '@/services/consultant.service';
@@ -27,10 +27,11 @@ import { BookingsSection } from './portal/bookings-section';
 import { ProfileSection } from './portal/profile-section';
 import { EarningsSection } from './portal/earnings-section';
 import { WalletSection } from './portal/wallet-section';
+import { SpacesSection } from './portal/spaces-section';
 import { LanguageSwitcher } from './portal/language-switcher';
 import { AppLogo, Avatar, CP_GREEN, CP_GREEN_TEXT, CP_LIGHT_BORDER, CP_LIGHT_MUTED, fmtDZD } from './portal/shared';
 
-type Tab = 'consultations' | 'availability' | 'profile' | 'earnings' | 'wallet';
+type Tab = 'consultations' | 'spaces' | 'availability' | 'profile' | 'earnings' | 'wallet';
 
 export function ConsultantPortal() {
   const [phase, setPhase] = useState<'loading' | 'signedOut' | 'signedIn'>('loading');
@@ -123,6 +124,7 @@ function Dashboard({
 
   const tabs: Array<{ key: Tab; label: string; icon: typeof Wallet }> = [
     { key: 'consultations', label: t('nav.consultations'), icon: CalendarDays },
+    { key: 'spaces', label: t('nav.spaces'), icon: Building2 },
     { key: 'availability', label: t('nav.availability'), icon: CalendarClock },
     { key: 'profile', label: t('nav.profile'), icon: User },
     { key: 'earnings', label: t('nav.earnings'), icon: TrendingUp },
@@ -329,6 +331,7 @@ function Dashboard({
 
           {/* Active section */}
           {tab === 'consultations' && <BookingsSection mentorId={me.mentor.id} />}
+          {tab === 'spaces' && <SpacesSection />}
           {tab === 'availability' && <AvailabilityEditor mentor={me.mentor} onSaved={onMentor} />}
           {tab === 'profile' && <ProfileSection mentor={me.mentor} onSaved={onMentor} />}
           {tab === 'earnings' && <EarningsSection />}
@@ -340,19 +343,25 @@ function Dashboard({
           className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-xl border-t bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
           style={{ borderColor: CP_LIGHT_BORDER }}
         >
-          <div className="grid grid-cols-5">
+          {/* Column count is derived from the tab list, not hardcoded: a fixed
+              `grid-cols-N` silently wraps to a second row the moment a tab is
+              added, which is exactly what happened when Spaces landed. */}
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
             {tabs.map(({ key, label, icon: Icon }) => {
               const active = tab === key;
               return (
                 <button
                   key={key} type="button" onClick={() => setTab(key)} aria-current={active ? 'page' : undefined}
-                  className="flex flex-col items-center gap-1 py-2.5"
+                  className="flex min-w-0 flex-col items-center gap-1 px-0.5 py-2.5"
                 >
-                  <span className={cn('grid h-8 w-12 place-items-center rounded-full transition-colors',
+                  <span className={cn('grid h-8 w-11 place-items-center rounded-full transition-colors',
                     active ? '' : '')} style={active ? { background: '#E6F5EA' } : undefined}>
                     <Icon className="size-5 transition-colors" style={{ color: active ? CP_GREEN_TEXT : '#8A918E' }} />
                   </span>
-                  <span className="text-[10px] font-medium transition-colors" style={{ color: active ? '#0D0D0D' : '#8A918E' }}>
+                  <span
+                    className="w-full truncate text-center text-[9px] font-medium leading-tight transition-colors"
+                    style={{ color: active ? '#0D0D0D' : '#8A918E' }}
+                  >
                     {label}
                   </span>
                 </button>

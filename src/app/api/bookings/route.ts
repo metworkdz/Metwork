@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
   }
 
   const result = await createSpaceBooking({
-    userId: guard.user.id,
+    booker: { type: 'user', userId: guard.user.id },
     spaceId: input.spaceId,
     unit: input.unit,
     startsAt: input.startsAt,
@@ -146,6 +146,11 @@ export async function POST(req: NextRequest) {
           'Network Pass requires a Builder or Founder membership.', {
             tier: result.tier,
           });
+      // Consultant-only reasons — unreachable from this platform-user route,
+      // but kept so the switch stays exhaustive over the shared result union.
+      case 'CONSULTANT_CASH_ONLY':
+      case 'CASH_NOT_ACCEPTED':
+        return jsonError(422, result.reason, 'This payment option is not available for this booking');
     }
   }
 

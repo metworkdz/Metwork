@@ -29,7 +29,16 @@ export type CreateSpaceBookingResult =
   /** NETWORK_PASS rejected: user has no remaining monthly credits. */
   | { ok: false; reason: 'NO_CREDITS'; creditsRemaining: number }
   /** NETWORK_PASS rejected: user's tier is EXPLORER (Network Pass requires BUILDER or FOUNDER). */
-  | { ok: false; reason: 'TIER_NOT_ELIGIBLE'; tier: 'EXPLORER' };
+  | { ok: false; reason: 'TIER_NOT_ELIGIBLE'; tier: 'EXPLORER' }
+  /**
+   * A consultant (booker.type === 'mentor') tried to pay by any means other
+   * than cash. Consultants have no Metwork wallet — they reserve and settle
+   * with the space directly on site, so `paymentMethod: 'manual'` is the only
+   * option open to them.
+   */
+  | { ok: false; reason: 'CONSULTANT_CASH_ONLY' }
+  /** A consultant targeted a space that does not accept cash payment on site. */
+  | { ok: false; reason: 'CASH_NOT_ACCEPTED' };
 
 /** Quote returned to the UI before the user confirms a booking. */
 export interface BookingQuote {
