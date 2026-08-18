@@ -46,17 +46,17 @@ async function seedConsultationRule(rate: number): Promise<void> {
 }
 
 describe('resolveMentorCommissionRates / computeMentorEarningSplit', () => {
-  it('defaults to a 30% platform / 70% mentor split when no rule is configured', () => {
-    expect(DEFAULT_MENTOR_PLATFORM_RATE).toBe(0.3);
+  it('defaults to a 20% platform / 80% consultant split when no rule is configured', () => {
+    expect(DEFAULT_MENTOR_PLATFORM_RATE).toBe(0.2);
     const { platformRate, mentorRate } = resolveMentorCommissionRates([]);
-    expect(platformRate).toBe(0.3);
-    expect(mentorRate).toBeCloseTo(0.7, 10);
+    expect(platformRate).toBe(0.2);
+    expect(mentorRate).toBeCloseTo(0.8, 10);
   });
 
   it('splits gross into commission + net that always sum back exactly', () => {
     const split = computeMentorEarningSplit(10_000, []);
-    expect(split.platformCommission).toBe(3_000); // 30%
-    expect(split.mentorNet).toBe(7_000); // remainder
+    expect(split.platformCommission).toBe(2_000); // 20%
+    expect(split.mentorNet).toBe(8_000); // remainder
     expect(split.platformCommission + split.mentorNet).toBe(split.gross);
   });
 
@@ -69,7 +69,7 @@ describe('resolveMentorCommissionRates / computeMentorEarningSplit', () => {
     const inactive = resolveMentorCommissionRates([
       { id: 'r', name: 'n', transactionType: 'MENTOR_CONSULTATION', rate: 0.1, description: '', isActive: false, updatedAt: '' },
     ]);
-    expect(inactive.platformRate).toBe(0.3); // falls back to default
+    expect(inactive.platformRate).toBe(0.2); // falls back to default
   });
 
   it('treats a zero/negative gross as a no-op split', () => {
@@ -82,31 +82,31 @@ describe('creditPendingEarning', () => {
   it('credits net to PENDING and records the commission for audit', async () => {
     const res = await creditPendingEarning({ mentorId: MENTOR, bookingId: 'b1', grossAmount: 10_000 });
     expect(res.replayed).toBe(false);
-    expect(res.wallet.pendingBalance).toBe(7_000);
+    expect(res.wallet.pendingBalance).toBe(8_000);
     expect(res.wallet.availableBalance).toBe(0);
 
     const { txns } = await getMentorLedgerView(MENTOR);
     const earning = txns.find((t) => t.type === 'EARNING');
     const commission = txns.find((t) => t.type === 'COMMISSION');
-    expect(earning?.amount).toBe(7_000);
+    expect(earning?.amount).toBe(8_000);
     expect(earning?.bucket).toBe('PENDING');
-    expect(commission?.amount).toBe(-3_000);
+    expect(commission?.amount).toBe(-2_000);
   });
 
   it('is idempotent — a replay does not double-credit', async () => {
     await creditPendingEarning({ mentorId: MENTOR, bookingId: 'b1', grossAmount: 10_000 });
     const replay = await creditPendingEarning({ mentorId: MENTOR, bookingId: 'b1', grossAmount: 10_000 });
     expect(replay.replayed).toBe(true);
-    expect(replay.wallet.pendingBalance).toBe(7_000); // not 14 000
+    expect(replay.wallet.pendingBalance).toBe(8_000); // not 16 000
 
     const { txns } = await getMentorLedgerView(MENTOR);
     expect(txns.filter((t) => t.type === 'EARNING')).toHaveLength(1);
   });
 
   it('uses the admin-configured rate when present', async () => {
-    await seedConsultationRule(0.2);
+    await seedConsultationRule(0.3);
     const res = await creditPendingEarning({ mentorId: MENTOR, bookingId: 'b1', grossAmount: 10_000 });
-    expect(res.wallet.pendingBalance).toBe(8_000); // 80%
+    expect(res.wallet.pendingBalance).toBe(7_000); // 70%
   });
 });
 
@@ -117,7 +117,7 @@ describe('releaseToAvailable', () => {
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.wallet.pendingBalance).toBe(0);
-      expect(res.wallet.availableBalance).toBe(7_000);
+      expect(res.wallet.availableBalance).toBe(8_000);
     }
   });
 
@@ -128,7 +128,7 @@ describe('releaseToAvailable', () => {
     expect(replay.ok).toBe(true);
     if (replay.ok) {
       expect(replay.replayed).toBe(true);
-      expect(replay.wallet.availableBalance).toBe(7_000); // not 14 000
+      expect(replay.wallet.availableBalance).toBe(8_000); // not 16 000
     }
 
     const missing = await releaseToAvailable({ mentorId: MENTOR, bookingId: 'nope' });
@@ -163,7 +163,7 @@ describe('voidPendingEarning', () => {
 
 describe('withdrawals', () => {
   async function seedAvailable(amount: number): Promise<void> {
-    await creditPendingEarning({ mentorId: MENTOR, bookingId: 'b1', grossAmount: Math.round(amount / 0.7) });
+    await creditPendingEarning({ mentorId: MENTOR, bookingId: 'b1', grossAmount: Math.round(amount / 0.8) });
     await releaseToAvailable({ mentorId: MENTOR, bookingId: 'b1' });
   }
 

@@ -1,11 +1,19 @@
 /**
- * Mentor (consultant) consultation commission resolver.
+ * Mentor (consultant) commission resolver.
  *
- * Centralizes the `MENTOR_CONSULTATION` rate lookup that was previously inlined
- * in the admin mentor-revenue report, so settlement, previews, and reports all
- * read the same number. The rate is admin-configurable via `commissionRules`;
- * when no active rule exists we fall back to the seeded default (30 % platform /
- * 70 % mentor).
+ * Centralizes the rate lookup so settlement, previews, and reports all read the
+ * same number. Two rules, keyed by what the consultant is being paid FOR:
+ *   - `MENTOR_CONSULTATION` — 1:1 sessions (default 20 % platform / 80 % them)
+ *   - `MENTOR_PROGRAM`      — consultant-owned programs (default 5 % / 95 %)
+ * Both are admin-configurable via `commissionRules`; the seeded defaults are
+ * only the fallback when no active rule row exists.
+ *
+ * History: a separate `MENTOR_CONSULTATION_SELF` tier (20 %) once gave portal
+ * self-signups a better rate than admin-added mentors (30 %). That split was
+ * retired when the standard consultation rate itself became 20 % — one rate now
+ * applies to every consultant, so `source` no longer affects the split.
+ * Historical earnings are unaffected: `creditPendingEarning` freezes the
+ * resolved rates into each ledger txn at credit time.
  *
  * Pure function — pass the rules array in; no DB, no client input. Every split
  * is integer DZD.
@@ -14,28 +22,27 @@ import type { CommissionRuleRecord } from '@/server/db/store';
 import { DEFAULT_COMMISSION_RULES } from '@/server/admin/settings-defaults';
 
 export const MENTOR_CONSULTATION_RULE_TYPE = 'MENTOR_CONSULTATION';
-/** Rule type for SELF-signed-up consultants (consultant portal signups). */
-export const MENTOR_CONSULTATION_SELF_RULE_TYPE = 'MENTOR_CONSULTATION_SELF';
+/** Rule type for paid consultant-OWNED programs (trainings/workshops/webinars). */
+export const MENTOR_PROGRAM_RULE_TYPE = 'MENTOR_PROGRAM';
 
-/** Default platform cut when no admin rule is configured (mentor keeps the rest). */
+/** Default platform cut on consultations when no admin rule is configured. */
 export const DEFAULT_MENTOR_PLATFORM_RATE =
   DEFAULT_COMMISSION_RULES.find((r) => r.transactionType === MENTOR_CONSULTATION_RULE_TYPE)?.rate ??
-  0.3;
+  0.2;
 
-/** Default platform cut for self-signed-up consultants (20 % / they keep 80 %). */
-export const DEFAULT_SELF_CONSULTANT_PLATFORM_RATE =
-  DEFAULT_COMMISSION_RULES.find(
-    (r) => r.transactionType === MENTOR_CONSULTATION_SELF_RULE_TYPE,
-  )?.rate ?? 0.2;
+/** Default platform cut on consultant-owned programs (5 % / they keep 95 %). */
+export const DEFAULT_MENTOR_PROGRAM_PLATFORM_RATE =
+  DEFAULT_COMMISSION_RULES.find((r) => r.transactionType === MENTOR_PROGRAM_RULE_TYPE)?.rate ?? 0.05;
+
+/** What the consultant is being paid for. Absent ⇒ CONSULTATION (back-compat). */
+export type MentorEarningKind = 'CONSULTATION' | 'PROGRAM';
 
 /**
- * Which mentor a rate is being resolved for. `source` comes from
- * `MentorRecord.source`: 'SELF' = portal self-signup (20 % default rule),
- * anything else (including absent, i.e. every legacy admin-added mentor) uses
- * the standard MENTOR_CONSULTATION rule — existing splits are untouched.
+ * Which rate is being resolved. `kind` selects the rule; every existing caller
+ * omits it and therefore keeps resolving the consultation rate exactly as before.
  */
 export interface MentorCommissionContext {
-  source?: 'ADMIN' | 'SELF' | null;
+  kind?: MentorEarningKind | null;
 }
 
 export interface MentorCommissionRates {
@@ -54,22 +61,23 @@ function resolveRate(value: number | null | undefined, fallback: number): number
 }
 
 /**
- * Resolve the effective platform / mentor split for consultations. Prefers the
- * active admin-configured rule for the mentor's tier; otherwise the seeded
- * default. Mirrors the lookup used by the mentor-revenue report.
+ * Resolve the effective platform / consultant split. Prefers the active
+ * admin-configured rule for the given `kind`; otherwise the seeded default.
+ * Mirrors the lookup used by the mentor-revenue report.
  *
- * Self-signed-up consultants (`context.source === 'SELF'`) resolve against the
- * `MENTOR_CONSULTATION_SELF` rule (default 20 %); everyone else — including all
- * legacy mentors with no `source` field — keeps `MENTOR_CONSULTATION` (30 %).
+ * `kind: 'PROGRAM'` resolves `MENTOR_PROGRAM` (default 5 %); everything else —
+ * including a null/absent context, i.e. every pre-existing caller — resolves
+ * `MENTOR_CONSULTATION` (default 20 %).
  */
 export function resolveMentorCommissionRates(
   rules?: readonly CommissionRuleRecord[] | null,
   context?: MentorCommissionContext | null,
 ): MentorCommissionRates {
-  const ruleType =
-    context?.source === 'SELF' ? MENTOR_CONSULTATION_SELF_RULE_TYPE : MENTOR_CONSULTATION_RULE_TYPE;
-  const fallback =
-    context?.source === 'SELF' ? DEFAULT_SELF_CONSULTANT_PLATFORM_RATE : DEFAULT_MENTOR_PLATFORM_RATE;
+  const isProgram = context?.kind === 'PROGRAM';
+  const ruleType = isProgram ? MENTOR_PROGRAM_RULE_TYPE : MENTOR_CONSULTATION_RULE_TYPE;
+  const fallback = isProgram
+    ? DEFAULT_MENTOR_PROGRAM_PLATFORM_RATE
+    : DEFAULT_MENTOR_PLATFORM_RATE;
   const active = (rules ?? []).find((r) => r.transactionType === ruleType && r.isActive);
   const platformRate = resolveRate(active?.rate, fallback);
   return { platformRate, mentorRate: 1 - platformRate };

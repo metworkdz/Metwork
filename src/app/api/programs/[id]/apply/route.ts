@@ -87,7 +87,10 @@ export async function POST(
         const user      = data.users.find((u) => u.id === guard.user.id);
         if (!user) return;
         const program   = (data.programs ?? []).find((p) => p.id === programId);
-        const incubator = program ? await findIncubatorById(program.incubatorId) : null;
+        // Consultant-owned programs have no incubatorId; they are rejected
+        // upstream by `applyToProgram`, so this branch only ever sees
+        // incubator-owned rows. Guarded anyway rather than assuming.
+        const incubator = program?.incubatorId ? await findIncubatorById(program.incubatorId) : null;
         if (!incubator) return;
         const lang = user.locale === 'en' ? 'en' : 'fr';
         sendBookingReceiptEmail({ booking: result.booking, clientName: user.fullName, clientEmail: user.email, incubator, lang });

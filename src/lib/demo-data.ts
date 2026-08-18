@@ -456,7 +456,7 @@ export const demoPublicSpaces: Space[] = [
  * Public-facing programs inventory shown on /programs. Spans multiple
  * incubators, types, and price points.
  */
-export const demoPublicPrograms: Program[] = [
+const demoPublicProgramsBase: Omit<Program, 'hostName'>[] = [
   {
     id: 'pg_oran_acc4',
     incubatorId: 'inc_oran_hub',
@@ -602,6 +602,12 @@ export const demoPublicPrograms: Program[] = [
     endDate: '2026-05-18',
   },
 ];
+
+/** `hostName` is derived: every demo program is incubator-owned. */
+export const demoPublicPrograms: Program[] = demoPublicProgramsBase.map((p) => ({
+  ...p,
+  hostName: p.incubatorName,
+}));
 
 /* ─────────────────────────── Public events marketplace ─────────────────────────── */
 
@@ -807,7 +813,7 @@ export const demoIncubatorSpaces: Space[] = [
   },
 ];
 
-export const demoIncubatorPrograms: Program[] = [
+const demoIncubatorProgramsBase: Omit<Program, 'hostName'>[] = [
   {
     id: 'pg_design_thinking',
     incubatorId: 'inc_demo',
@@ -843,6 +849,12 @@ export const demoIncubatorPrograms: Program[] = [
     endDate: '2026-08-25',
   },
 ];
+
+/** `hostName` is derived: every demo program is incubator-owned. */
+export const demoIncubatorPrograms: Program[] = demoIncubatorProgramsBase.map((p) => ({
+  ...p,
+  hostName: p.incubatorName,
+}));
 
 export const demoIncubatorEvents: PlatformEvent[] = [
   {

@@ -58,6 +58,7 @@ export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplo
       BOOTCAMP: 0,
       TRAINING: 0,
       WORKSHOP: 0,
+      WEBINAR: 0,
     };
     for (const p of programs) c[p.type] += 1;
     return c;
@@ -75,7 +76,7 @@ export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplo
       if (!q) return true;
       return (
         p.title.toLowerCase().includes(q) ||
-        p.incubatorName.toLowerCase().includes(q) ||
+        p.hostName.toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q)
       );
     });

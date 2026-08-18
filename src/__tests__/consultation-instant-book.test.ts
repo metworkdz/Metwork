@@ -263,7 +263,7 @@ describe('mentor earnings credit (P4)', () => {
     const res = await createInstantBooking(baseInput());
     expect(res.ok).toBe(true);
     const wallet = await getMentorWallet(MENTOR.id);
-    expect(wallet?.pendingBalance).toBe(7_000); // 10 000 − 30%
+    expect(wallet?.pendingBalance).toBe(8_000); // 10 000 − 20%
     expect(wallet?.availableBalance).toBe(0); // held until COMPLETED (P5)
   });
 
@@ -285,7 +285,7 @@ describe('mentor earnings credit (P4)', () => {
     await settleMemberTopUp(res.payToken);
     await settleMemberTopUp(res.payToken); // replay
     const wallet = await getMentorWallet(MENTOR.id);
-    expect(wallet?.pendingBalance).toBe(7_000); // credited once, not 14 000
+    expect(wallet?.pendingBalance).toBe(8_000); // credited once, not 16 000
   });
 
   it('credits the consultant when a guest pay-first booking settles', async () => {
@@ -295,7 +295,7 @@ describe('mentor earnings credit (P4)', () => {
     if (!res.ok || res.mode !== 'awaiting_payment') throw new Error('setup failed');
     await initDirectPayment(res.payToken, 'http://localhost:3000');
     const wallet = await getMentorWallet(MENTOR.id);
-    expect(wallet?.pendingBalance).toBe(7_000);
+    expect(wallet?.pendingBalance).toBe(8_000);
   });
 
   it('does NOT credit a legacy guest booking (no instantBook flag)', async () => {
@@ -379,9 +379,9 @@ describe('meeting-link lifecycle (P5a)', () => {
     const res = await createInstantBooking(baseInput());
     if (!res.ok) throw new Error('setup failed');
 
-    // Credited to pending at settlement (10 000 − 30%).
+    // Credited to pending at settlement (10 000 − 20%).
     let wallet = await getMentorWallet(MENTOR.id);
-    expect(wallet?.pendingBalance).toBe(7_000);
+    expect(wallet?.pendingBalance).toBe(8_000);
     expect(wallet?.availableBalance).toBe(0);
 
     const done = await completeConsultation(res.booking.id);
@@ -389,18 +389,18 @@ describe('meeting-link lifecycle (P5a)', () => {
     if (done.ok) {
       expect(done.booking.status).toBe('COMPLETED');
       expect(done.booking.completedAt).toBeTruthy();
-      expect(done.released).toBe(7_000);
+      expect(done.released).toBe(8_000);
     }
     wallet = await getMentorWallet(MENTOR.id);
     expect(wallet?.pendingBalance).toBe(0);
-    expect(wallet?.availableBalance).toBe(7_000);
+    expect(wallet?.availableBalance).toBe(8_000);
 
     // Replay → no double release.
     const again = await completeConsultation(res.booking.id);
     expect(again.ok).toBe(true);
     if (again.ok) expect(again.replayed).toBe(true);
     wallet = await getMentorWallet(MENTOR.id);
-    expect(wallet?.availableBalance).toBe(7_000);
+    expect(wallet?.availableBalance).toBe(8_000);
   });
 
   it('completeConsultation refuses a non-instant-book booking', async () => {

@@ -87,7 +87,7 @@ export function ProgramCard({ program, taken, locale, onSelect, featured }: Prog
         <div className="flex items-start justify-between gap-3">
           <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="size-3" />
-            {program.city} · {program.incubatorName}
+            {program.city} · {program.hostName}
           </p>
           <Badge variant={dl.variant}>{dl.label}</Badge>
         </div>

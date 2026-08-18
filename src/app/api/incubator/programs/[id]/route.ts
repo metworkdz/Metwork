@@ -6,6 +6,7 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
+import { canDeleteProgram, canEditProgram, type ProgramActor } from '@/server/programs/ownership';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -26,7 +27,7 @@ const isoDate = z
 const patchSchema = z.object({
   title: z.string().min(2).max(150).optional(),
   description: z.string().max(2000).optional(),
-  type: z.enum(['INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP']).optional(),
+  type: z.enum(['INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP', 'WEBINAR']).optional(),
   city: z.string().min(1).optional(),
   imageUrl: z.string().url().nullable().optional(),
   imageUrls: z.array(z.string().url()).max(8).optional(),
@@ -70,12 +71,19 @@ export async function PATCH(
     throw err;
   }
 
+  const actor: ProgramActor = {
+    kind: 'USER',
+    userId: guard.user.id,
+    isAdmin: guard.user.role === 'ADMIN',
+  };
+
   let depositError: string | null = null;
   const program = await db.update((d) => {
     const p = (d.programs ?? []).find((x) => x.id === id);
     if (!p) return null;
-    const incubator = d.incubators.find((i) => i.id === p.incubatorId);
-    if (!incubator || incubator.managerId !== guard.user.id) return 'FORBIDDEN';
+    // Canonical ownership gate — branches on incubator- vs consultant-owned.
+    // No admin bypass on edit: an admin must not rewrite someone's listing.
+    if (canEditProgram(p, actor, d.incubators) !== 'ALLOW') return 'FORBIDDEN';
 
     // Payment config: validate against the merged (existing + patched) state so
     // turning CASH on always carries a valid deposit, and turning it off clears
@@ -133,12 +141,21 @@ export async function DELETE(
   if (!guard.ok) return guard.response;
   const { id } = await params;
 
+  const actor: ProgramActor = {
+    kind: 'USER',
+    userId: guard.user.id,
+    isAdmin: guard.user.role === 'ADMIN',
+  };
+
   const result = await db.update((d) => {
     const programs = d.programs ?? [];
     const idx = programs.findIndex((x) => x.id === id);
     if (idx === -1) return 'NOT_FOUND';
-    const incubator = d.incubators.find((i) => i.id === programs[idx]!.incubatorId);
-    if (!incubator || incubator.managerId !== guard.user.id) return 'FORBIDDEN';
+    // Canonical ownership gate. Unlike edit, ADMIN passes regardless of owner:
+    // the moderation backstop for a program an incubator OR a consultant
+    // published and that has to come down.
+    const decision = canDeleteProgram(programs[idx], actor, d.incubators);
+    if (decision !== 'ALLOW') return decision;
     programs.splice(idx, 1);
     return 'OK';
   });

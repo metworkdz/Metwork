@@ -27,12 +27,11 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
   const revenue = await getConsultationRevenueSummary();
   const subsidyByMentor = new Map(revenue.perMentor.map((m) => [m.mentorId, m]));
 
-  // Commission rates are tiered by record origin: standard (admin-added /
-  // legacy) mentors vs self-signed-up consultants (20 % default). Both rates
-  // come from the SAME resolver settlement uses, so this page always previews
-  // what the ledger will actually do. Configurable on the Commissions page.
+  // ONE consultation rate for every consultant (the separate self-signup tier
+  // was retired when the standard rate itself became 20 %). Comes from the SAME
+  // resolver settlement uses, so this page always previews what the ledger will
+  // actually do. Configurable on the Commissions page.
   const standardRates = resolveMentorCommissionRates(data.commissionRules);
-  const selfRates = resolveMentorCommissionRates(data.commissionRules, { source: 'SELF' });
   const { platformRate, mentorRate } = standardRates;
 
   const bookings = data.mentorBookings ?? [];
@@ -61,7 +60,7 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
   const statMap = new Map<string, MentorStat>();
   for (const m of data.mentors ?? []) {
     const source = m.source === 'SELF' ? 'SELF' as const : 'ADMIN' as const;
-    const rates = source === 'SELF' ? selfRates : standardRates;
+    const rates = standardRates;
     statMap.set(m.id, {
       id:             m.id,
       name:           m.fullName,
@@ -120,8 +119,6 @@ export default async function AdminMentorRevenuePage({ params }: PageProps) {
         subtitle={t('admin.mentorRevenue.subtitleDual', {
           platformRate: Math.round(platformRate * 100),
           mentorRate: Math.round(mentorRate * 100),
-          selfPlatformRate: Math.round(selfRates.platformRate * 100),
-          selfMentorRate: Math.round(selfRates.mentorRate * 100),
         })}
         action={<TrendingUp className="size-5 text-muted-foreground" />}
       />

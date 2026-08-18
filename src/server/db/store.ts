@@ -1109,8 +1109,33 @@ export interface SpaceRecord {
 
 export interface ProgramRecord {
   id: string;
-  incubatorId: string;
+  /**
+   * Owning incubator (IncubatorRecord.id), or null when this program is owned
+   * by a consultant instead — see `mentorId` below. Widened from `string` to
+   * `string | null` by the consultant-programs work: every record written
+   * before that change carries a real id, so nothing needs migrating and every
+   * existing `p.incubatorId === inc.id` filter keeps behaving identically
+   * (null never matches a real id, so consultant programs are excluded from
+   * incubator-scoped queries automatically).
+   *
+   * EXACTLY ONE of `incubatorId` / `mentorId` is set. Resolve ownership through
+   * `@/server/programs/ownership` rather than reading these fields directly.
+   */
+  incubatorId: string | null;
+  /** Denormalized owning-incubator name. Empty string on consultant-owned rows. */
   incubatorName: string;
+  /**
+   * Owning consultant (MentorRecord.id). Additive & nullable — absent on every
+   * program created by an incubator or the admin.
+   *
+   * Consultants are a SEPARATE population with no `UserRecord` (see
+   * `MentorRecord` / `@/server/mentors/access`), so these rows can never be
+   * authorized through the incubator `managerId → session user` path. Mirrors
+   * the same pattern already shipped on `BookingRecord.mentorId`.
+   */
+  mentorId?: string | null;
+  /** Denormalized owning-consultant name, shown as the public host/branding. */
+  mentorName?: string | null;
   title: string;
   description: string;
   type: ProgramType;

@@ -71,7 +71,7 @@ export default async function ProgramsPage({ params }: PageProps) {
       : t('deadlineClosingMany', { count: closingDays })
     : null;
 
-  const hosts = new Set(programs.map((p) => p.incubatorId)).size;
+  const hosts = new Set(programs.map((p) => p.mentorId ?? p.incubatorId)).size;
   const free = programs.filter((p) => p.price === 0).length;
   const statsItems = [
     { label: t('statsPrograms'), value: programs.length },

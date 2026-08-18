@@ -14,6 +14,7 @@ import { Container } from '@/components/ui/container';
 import { Badge } from '@/components/ui/badge';
 import { Link } from '@/i18n/routing';
 import { findProgramBySlugOrId } from '@/server/registrations/service';
+import { programHostName } from '@/server/programs/ownership';
 import { listFormFields } from '@/server/registrations/service';
 import { getProgramAttendance } from '@/server/bookings/service';
 import { programTypeLabel } from '@/components/features/programs/program-meta';
@@ -40,7 +41,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const program = await findProgramBySlugOrId(slug);
   if (!program) return { title: 'Program not found' };
   return {
-    title: `${program.title} — ${program.incubatorName}`,
+    title: `${program.title} — ${programHostName(program)}`,
     description: program.description,
     openGraph: {
       title: program.title,
@@ -128,7 +129,7 @@ export default async function ProgramDetailPage({ params }: PageProps) {
               )}
             </div>
             <h1 className="text-3xl font-semibold tracking-tight">{program.title}</h1>
-            <p className="mt-1 text-muted-foreground">{program.incubatorName}</p>
+            <p className="mt-1 text-muted-foreground">{programHostName(program)}</p>
           </div>
 
           {/* Description */}

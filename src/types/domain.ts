@@ -84,12 +84,28 @@ export interface Space {
   domiciliationSlots?: number | null;
 }
 
-export type ProgramType = 'INCUBATION' | 'ACCELERATION' | 'TRAINING' | 'BOOTCAMP' | 'WORKSHOP';
+export type ProgramType =
+  | 'INCUBATION'
+  | 'ACCELERATION'
+  | 'TRAINING'
+  | 'BOOTCAMP'
+  | 'WORKSHOP'
+  | 'WEBINAR';
 
 export interface Program {
   id: string;
-  incubatorId: string;
+  /** Null when the program is consultant-owned — see `mentorId`. */
+  incubatorId: string | null;
+  /** Empty on consultant-owned programs; use `hostName` for display. */
   incubatorName: string;
+  /** Owning consultant (MentorRecord.id), or null/absent for incubator-owned. */
+  mentorId?: string | null;
+  mentorName?: string | null;
+  /**
+   * Resolved public host/branding label — the owning incubator's or
+   * consultant's name. Always populated; prefer this over the raw name fields.
+   */
+  hostName: string;
   title: string;
   description: string;
   type: ProgramType;

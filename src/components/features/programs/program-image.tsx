@@ -2,7 +2,7 @@
  * Type-tinted gradient image placeholder for program cards. When real
  * images land, swap the placeholder branch for `<Image>`.
  */
-import { Briefcase, Compass, Flame, GraduationCap, Hammer } from 'lucide-react';
+import { Briefcase, Compass, Flame, GraduationCap, Hammer, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { programTypeTint } from './program-meta';
 import type { ProgramType } from '@/types/domain';
@@ -13,6 +13,7 @@ const iconFor: Record<ProgramType, typeof Briefcase> = {
   BOOTCAMP: Hammer,
   TRAINING: GraduationCap,
   WORKSHOP: Briefcase,
+  WEBINAR: Video,
 };
 
 interface ProgramImageProps {

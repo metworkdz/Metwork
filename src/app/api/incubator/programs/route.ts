@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 const createProgramSchema = z.object({
   title:       z.string().min(2).max(120),
   description: z.string().min(10).max(2000),
-  type:        z.enum(['INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP']),
+  type:        z.enum(['INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP', 'WEBINAR']),
   city:        z.string().min(1).max(80),
   imageUrl:    z.string().url().optional().nullable(),
   imageUrls:   z.array(z.string().url()).max(8).optional(),

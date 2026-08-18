@@ -184,7 +184,11 @@ function findOwningIncubator(
 ): IncubatorRecord | null {
   let incubatorId: string | undefined;
   if (kind === 'SPACE') incubatorId = d.spaces?.find((s) => s.id === itemId)?.incubatorId;
-  else if (kind === 'PROGRAM') incubatorId = d.programs?.find((p) => p.id === itemId)?.incubatorId;
+  // A consultant-owned program has no incubatorId (null) and therefore no
+  // incubator wallet to settle into — it resolves to no owning incubator here.
+  // Consultant earnings use the PARALLEL mentorId-keyed ledger, which this
+  // incubator-wallet settlement path deliberately does not touch.
+  else if (kind === 'PROGRAM') incubatorId = d.programs?.find((p) => p.id === itemId)?.incubatorId ?? undefined;
   else incubatorId = d.events?.find((e) => e.id === itemId)?.incubatorId;
   if (!incubatorId) return null;
   return d.incubators.find((i) => i.id === incubatorId) ?? null;
@@ -290,7 +294,13 @@ function resolveTarget(
 
   if (input.target.itemKind === 'PROGRAM') {
     const rec = (data.programs ?? []).find((p) => p.id === (input.target as { programId: string }).programId);
-    if (!rec || !rec.isActive || !activeInc(rec.incubatorId)) return { ok: false, reason: 'ITEM_NOT_FOUND' };
+    // Consultant-owned programs are not card-purchasable yet: this checkout
+    // settles the online amount into the OWNING INCUBATOR's wallet, and a
+    // consultant has none (their earnings live in the parallel mentor ledger).
+    // Fail closed rather than let a payment settle to nobody.
+    if (!rec || !rec.isActive || !rec.incubatorId || !activeInc(rec.incubatorId)) {
+      return { ok: false, reason: 'ITEM_NOT_FOUND' };
+    }
     if (Date.parse(rec.deadline) <= Date.now()) return { ok: false, reason: 'DEADLINE_PASSED', detail: { deadline: rec.deadline } };
     return {
       ok: true,

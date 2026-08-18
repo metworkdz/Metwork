@@ -31,7 +31,11 @@ import {
   type PayoutAccount,
   type WithdrawalMethod,
 } from '@/server/db/store';
-import { computeMentorPromoSplit, type MentorEarningSplit } from '@/server/payments/mentor-commission';
+import {
+  computeMentorPromoSplit,
+  type MentorEarningKind,
+  type MentorEarningSplit,
+} from '@/server/payments/mentor-commission';
 
 /** Smallest withdrawal a consultant may request (mirrors the user wallet floor). */
 export const MIN_MENTOR_WITHDRAWAL = 500;
@@ -143,26 +147,32 @@ export async function creditPendingEarning(input: {
   promoDiscountAmount?: number | null;
   /** Promo code applied, for the subsidy audit trail. */
   appliedPromoCode?: string | null;
+  /**
+   * What this earning is FOR — selects the commission rule. Omitted ⇒
+   * CONSULTATION, so every pre-existing caller is unchanged.
+   */
+  kind?: MentorEarningKind | null;
 }): Promise<CreditPendingEarningResult> {
   const { mentorId, bookingId, grossAmount } = input;
   const basePrice =
     input.consultantShareBase != null && input.consultantShareBase > 0
       ? input.consultantShareBase
       : grossAmount;
+  const kind: MentorEarningKind = input.kind ?? 'CONSULTATION';
   const tierDiscountAmount = Math.max(0, Math.round(input.tierDiscountAmount ?? 0));
   const promoDiscountAmount = Math.max(0, Math.round(input.promoDiscountAmount ?? 0));
   const earningRef = `mentor-earning-${bookingId}`;
 
   return db.update<CreditPendingEarningResult>((d) => {
     const wallet = ensureMentorWallet(d, mentorId);
-    // Rate tier by record origin: SELF (portal signup, 20 % default rule) vs
-    // legacy/admin-added (standard rule). Resolved inside the same atomic
-    // update so the split and the mentor read the same document version.
-    const mentorSource = (d.mentors ?? []).find((m) => m.id === mentorId)?.source ?? null;
+    // Rate is selected by what the earning is FOR (consultation vs program),
+    // resolved inside the same atomic update so the split and the rules read
+    // the same document version. The resolved rates are frozen into the txn
+    // metadata below, so a later rate change never rewrites this earning.
     const promo = computeMentorPromoSplit(
       { basePrice, collectedAmount: grossAmount },
       d.commissionRules,
-      { source: mentorSource },
+      { kind },
     );
     // Shape kept MentorEarningSplit-compatible for existing consumers: gross =
     // what was collected, platformCommission = the (signed) platform share.
@@ -195,7 +205,10 @@ export async function creditPendingEarning(input: {
       bucket: 'PENDING',
       status: 'COMPLETED',
       reference: earningRef,
-      description: 'Consultation earning (held until completed)',
+      description:
+        kind === 'PROGRAM'
+          ? 'Program earning (held until the program ends)'
+          : 'Consultation earning (held until completed)',
       metadata: {
         gross: split.gross,
         basePrice: promo.basePrice,
@@ -226,8 +239,8 @@ export async function creditPendingEarning(input: {
         reference: `mentor-commission-${bookingId}`,
         description:
           promo.platformShare >= 0
-            ? 'Platform share on consultation'
-            : 'Platform subsidy on consultation (discount absorbed)',
+            ? `Platform share on ${kind === 'PROGRAM' ? 'program' : 'consultation'}`
+            : `Platform subsidy on ${kind === 'PROGRAM' ? 'program' : 'consultation'} (discount absorbed)`,
         metadata: {
           gross: promo.collectedAmount,
           basePrice: promo.basePrice,

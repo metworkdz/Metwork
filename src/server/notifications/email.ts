@@ -24,6 +24,12 @@ interface SendOptions {
   html: string;
   /** Optional file attachments — e.g. PDF receipts. */
   attachments?: Array<{ filename: string; content: Buffer }>;
+  /**
+   * Optional Reply-To address. `from` is always the fixed `noreply@` sender
+   * below, so a recipient hitting "reply" would otherwise address a mailbox
+   * nobody reads — set this when a template invites a reply.
+   */
+  replyTo?: string;
 }
 
 /**
@@ -45,6 +51,7 @@ export async function sendResendEmail(opts: SendOptions): Promise<boolean> {
       to:          opts.to,
       subject:     opts.subject,
       html:        opts.html,
+      replyTo:     opts.replyTo,
       attachments: opts.attachments?.map((a) => ({
         filename: a.filename,
         content:  a.content.toString('base64'),
@@ -3112,6 +3119,96 @@ export function consultantUpdateJuly2026EmailHtml(opts: {
       ${button(opts.dashboardUrl, 'Accéder à mon espace consultant')}
       ${p('<span style="color:#71717a;font-size:13px;">Une question ? Écrivez-nous à <a href="mailto:contact@metwork.dz" style="color:#30a735;text-decoration:none;">contact@metwork.dz</a>.</span>')}
       ${p('<span style="color:#71717a;font-size:13px;">À très bientôt,<br />L’équipe Metwork</span>')}
+    </div>
+  `);
+}
+
+/* ───────── One-off campaign: consultant/mentor re-engagement (August 2026) ───────── */
+
+/**
+ * ONE-OFF re-engagement email to registered consultants/mentors: ask if
+ * they've tried the platform yet, invite feedback, and remind them of the
+ * value on offer. Deliberately generic — the recipient list is every
+ * registered mentor with a usable email regardless of onboarding history, so
+ * the copy must not assume a call happened (some attended an onboarding
+ * call, some didn't, some are newer signups). French only, same rationale as
+ * `consultantUpdateJuly2026EmailHtml` just above (FR-speaking population,
+ * single manual send — not a transactional template).
+ *
+ * Sent exclusively by `scripts/campaigns/2026-08-consultant-followup.ts`,
+ * which passes `replyTo: 'contact@metwork.dz'` — `from` is the fixed
+ * `noreply@metwork.dz` sender, so without an explicit Reply-To a recipient
+ * hitting "reply" (as this copy invites them to) would address a mailbox
+ * nobody reads.
+ *
+ * Nothing in the app calls this; it is not wired into the notification
+ * dispatcher. Icons are emoji (not inline SVG/an icon font) because inline
+ * `<svg>` is stripped by a number of major mail clients — emoji is the one
+ * "icon" that reliably survives every client, and it's already the pattern
+ * used elsewhere in this file (see the 💳/🎥 banners above, 🎉 in
+ * `welcomeEmailHtml`).
+ */
+export const CONSULTANT_FOLLOWUP_2026_08_SUBJECT = "Avez-vous eu l'occasion d'essayer Metwork ?";
+
+/** One value-prop row: emoji icon chip + heading + one line of body copy. */
+function followupValueProp(opts: { emoji: string; heading: string; body: string }): string {
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 16px;">
+      <tr>
+        <td width="48" valign="top" style="padding:0 12px 0 0;">
+          <div style="width:36px;height:36px;border-radius:8px;background:#e6f7e8;text-align:center;line-height:36px;font-size:18px;">${opts.emoji}</div>
+        </td>
+        <td valign="top">
+          <p style="margin:0 0 4px;font-size:15px;font-weight:600;color:#09090b;line-height:1.4;">${opts.heading}</p>
+          <p style="margin:0;font-size:14px;color:#52525b;line-height:1.55;">${opts.body}</p>
+        </td>
+      </tr>
+    </table>`;
+}
+
+export function consultantFollowup2026EmailHtml(opts: {
+  /** Consultant's first name. Empty/absent ⇒ the greeting drops the name entirely. */
+  firstName?: string | null;
+  dashboardUrl: string;
+}): string {
+  const name = (opts.firstName ?? '').trim().replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const greeting = name ? `Bonjour ${name},` : 'Bonjour,';
+
+  return layout(`
+    <div dir="ltr" style="font-family:'Space Grotesk',Inter,Helvetica,Arial,sans-serif;">
+      ${h1('Votre espace consultant vous attend')}
+      ${p(`${greeting}`)}
+      ${p("Vous faites partie des consultants et mentors inscrits sur Metwork, la plateforme algérienne qui connecte les startups aux experts comme vous. Nous voulions prendre de vos nouvelles.")}
+      ${p('Avez-vous eu l’occasion de jeter un œil à votre espace consultant ? Nous serions ravis d’avoir votre retour, même rapide — cela nous aide énormément à améliorer votre expérience.')}
+
+      <div style="margin:28px 0 20px;">
+        <p style="margin:0 0 16px;font-size:13px;font-weight:700;color:#30a735;text-transform:uppercase;letter-spacing:0.5px;">Pourquoi Metwork ?</p>
+        ${followupValueProp({
+          emoji:   '📅',
+          heading: 'Réservation simple',
+          body:    'Vos clients réservent un créneau directement avec vous, sans allers-retours par message.',
+        })}
+        ${followupValueProp({
+          emoji:   '💳',
+          heading: 'Paiement flexible',
+          body:    'Vos clients peuvent payer par CIB, Edahabia, ou carte Visa/Mastercard internationale.',
+        })}
+        ${followupValueProp({
+          emoji:   '🎥',
+          heading: 'Lien de réunion automatique',
+          body:    'Dès qu’une réservation est confirmée, un lien Zoom est généré et envoyé automatiquement.',
+        })}
+        ${followupValueProp({
+          emoji:   '⭐',
+          heading: 'Plus de visibilité',
+          body:    'Votre profil est mis en avant sur la plateforme, ce qui vous apporte plus de demandes de réservation.',
+        })}
+      </div>
+
+      ${button(opts.dashboardUrl, 'Essayer Metwork maintenant')}
+      ${p('<span style="color:#71717a;font-size:13px;">Une question, un blocage, ou simplement une remarque à nous faire ? Répondez directement à cet email, ou écrivez-nous à <a href="mailto:contact@metwork.dz" style="color:#30a735;text-decoration:none;">contact@metwork.dz</a> — on vous répond avec plaisir.</span>')}
+      ${p('<span style="color:#71717a;font-size:13px;">À très bientôt,<br />L’équipe Metwork</span>')}
+      ${p('<span style="color:#a1a1aa;font-size:11px;">Vous recevez cet email car vous êtes consultant/mentor enregistré sur Metwork. Si vous préférez ne plus recevoir ce type de message, répondez simplement "STOP".</span>')}
     </div>
   `);
 }

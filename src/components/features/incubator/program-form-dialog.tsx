@@ -34,7 +34,7 @@ import { buildDefaultApplicationFields } from '@/server/programs/default-applica
 import { useAccountApproved } from '@/hooks/use-account-approved';
 import type { ProgramType } from '@/types/domain';
 
-const PROGRAM_TYPE_KEYS: ProgramType[] = ['INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP'];
+const PROGRAM_TYPE_KEYS: ProgramType[] = ['INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP', 'WEBINAR'];
 
 // FIX: BUG-2 — added edit mode props
 interface ProgramFormDialogProps {
@@ -239,7 +239,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
                 </SelectTrigger>
                 <SelectContent>
                   {PROGRAM_TYPE_KEYS.map((key) => {
-                    const labelKey = `type${key.charAt(0)}${key.slice(1).toLowerCase()}` as 'typeIncubation' | 'typeAcceleration' | 'typeTraining' | 'typeBootcamp' | 'typeWorkshop';
+                    const labelKey = `type${key.charAt(0)}${key.slice(1).toLowerCase()}` as 'typeIncubation' | 'typeAcceleration' | 'typeTraining' | 'typeBootcamp' | 'typeWorkshop' | 'typeWebinar';
                     return <SelectItem key={key} value={key}>{t(labelKey)}</SelectItem>;
                   })}
                 </SelectContent>

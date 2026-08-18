@@ -913,6 +913,14 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
   const program = await findProgramById(args.programId);
   if (!program) return { ok: false, reason: 'PROGRAM_NOT_FOUND' };
 
+  // Consultant-owned programs do not settle through this path: it credits the
+  // owning INCUBATOR's wallet, and consultants have none (their earnings live
+  // in the parallel mentorId-keyed ledger). Fail closed — a paid application
+  // here would take the applicant's money and settle it to nobody. Free
+  // consultant programs use the no-payment registration flow instead
+  // (`POST /api/registrations`), which is owner-agnostic by design.
+  if (program.mentorId) return { ok: false, reason: 'PROGRAM_NOT_FOUND' };
+
   // Deadline check (outside the lock — read-only).
   if (Date.parse(program.deadline) <= Date.now()) {
     return { ok: false, reason: 'DEADLINE_PASSED', deadline: program.deadline };

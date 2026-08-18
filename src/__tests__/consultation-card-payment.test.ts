@@ -286,8 +286,8 @@ describe('direct card charge (SLICKPAY)', () => {
     expect(stored?.paymentStatus).toBe('PAID');
 
     const wallet = await getMentorWallet(MENTOR.id);
-    // 10 000 DZD gross, default 30 % platform cut ⇒ 7 000 to the consultant.
-    expect(wallet?.pendingBalance).toBe(7_000);
+    // 10 000 DZD gross, default 20 % platform cut ⇒ 8 000 to the consultant.
+    expect(wallet?.pendingBalance).toBe(8_000);
   });
 
   it('duplicate webhook delivery does not double-credit the consultant', async () => {
@@ -301,7 +301,7 @@ describe('direct card charge (SLICKPAY)', () => {
     expect(await settleConsultationFromWebhook(res.booking.id, 'ref-1', 'COMPLETED')).toBe('ALREADY');
 
     const wallet = await getMentorWallet(MENTOR.id);
-    expect(wallet?.pendingBalance).toBe(7_000);
+    expect(wallet?.pendingBalance).toBe(8_000);
 
     const bookings = (await db.read()).mentorBookings ?? [];
     expect(bookings.filter((b) => b.mentorId === MENTOR.id)).toHaveLength(1);
@@ -352,8 +352,8 @@ describe('consultant payout is identical across rails', () => {
     expect(wallet.mode).toBe('confirmed');
     const walletCredit = (await getMentorWallet(MENTOR.id))?.pendingBalance ?? 0;
 
-    expect(cardCredit).toBe(7_000);
-    expect(walletCredit).toBe(7_000);
+    expect(cardCredit).toBe(8_000);
+    expect(walletCredit).toBe(8_000);
   });
 
   it('never records a foreign amount on a non-Stripe booking', async () => {

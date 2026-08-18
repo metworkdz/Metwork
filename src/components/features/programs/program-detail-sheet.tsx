@@ -76,7 +76,7 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-1">
                   <MapPin className="size-3.5" />
-                  {program.city} · {program.incubatorName}
+                  {program.city} · {program.hostName}
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <Users className="size-3.5" />

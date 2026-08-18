@@ -18,6 +18,7 @@ const typeLabel: Record<ProgramType, string> = {
   TRAINING:     'Training',
   BOOTCAMP:     'Bootcamp',
   WORKSHOP:     'Workshop',
+  WEBINAR:      'Webinar',
 };
 
 export function ProgramsManager() {

@@ -18,6 +18,7 @@ import {
 } from '@/server/db/store';
 import { sendResendEmail, layout } from '@/server/notifications/email';
 import { countAttendance } from '@/server/attendance';
+import { isProgramPubliclyReachable } from '@/server/programs/ownership';
 
 /* ─────────────────────────── Types ─────────────────────────── */
 
@@ -514,12 +515,20 @@ export async function buildRegistrationsCsv(
 
 /* ─────────────────────────── Slug-based lookup ─────────────────────────── */
 
-/** Find a program by slug OR id (slug takes priority). */
+/**
+ * Find a program by slug OR id (slug takes priority), for the PUBLIC detail
+ * page. Gated on owner standing via the canonical predicate — `isActive` alone
+ * is not enough: a suspended/archived incubator's (or an unapproved
+ * consultant's) program must not stay reachable by direct link.
+ */
 export async function findProgramBySlugOrId(slugOrId: string) {
   const data = await db.read();
+  const lookups = { incubators: data.incubators ?? [], mentors: data.mentors ?? [] };
   return (
     (data.programs ?? []).find(
-      (p) => p.isActive && (p.slug === slugOrId || p.id === slugOrId),
+      (p) =>
+        (p.slug === slugOrId || p.id === slugOrId) &&
+        isProgramPubliclyReachable(p, lookups),
     ) ?? null
   );
 }

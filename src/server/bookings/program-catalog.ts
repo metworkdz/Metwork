@@ -6,7 +6,11 @@
  */
 import { db, type ProgramRecord } from '@/server/db/store';
 import { countAttendance } from '@/server/attendance';
-import { isPubliclyVisibleIncubator, visibleIncubatorIds } from '@/server/incubator/visibility';
+import {
+  isProgramPubliclyListed,
+  isProgramPubliclyReachable,
+  programHostName,
+} from '@/server/programs/ownership';
 import type { Program } from '@/types/domain';
 
 function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
@@ -14,6 +18,9 @@ function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
     id:                     r.id,
     incubatorId:            r.incubatorId,
     incubatorName:          r.incubatorName,
+    mentorId:               r.mentorId ?? null,
+    mentorName:             r.mentorName ?? null,
+    hostName:               programHostName(r),
     title:                  r.title,
     description:            r.description,
     type:                   r.type,
@@ -35,22 +42,31 @@ function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
   };
 }
 
-/** List all active programs whose owning incubator is ACTIVE (no demo fallback). */
+/**
+ * List all programs shown on public LIST surfaces (the /programs explorer).
+ * Owner must be in good standing AND publicly listed — for consultant-owned
+ * programs that mirrors the mentor list gate, so a self-signed-up consultant's
+ * programs stay off the explorer unless an admin published them.
+ */
 export async function listPrograms(): Promise<Program[]> {
   const data = await db.read();
-  const visibleIncIds = visibleIncubatorIds(data.incubators ?? []);
+  const lookups = { incubators: data.incubators ?? [], mentors: data.mentors ?? [] };
   return (data.programs ?? [])
-    .filter((p) => p.isActive && visibleIncIds.has(p.incubatorId))
+    .filter((p) => isProgramPubliclyListed(p, lookups))
     .map((p) => fromRecord(p, countAttendance(data, 'PROGRAM', p.id)));
 }
 
-/** Find a single active program by ID. */
+/**
+ * Find a single program reachable by direct link. Looser than `listPrograms`:
+ * an approved-but-unlisted consultant's program resolves here (direct link
+ * works) while staying off the explorer — same rule mentors themselves follow.
+ */
 export async function findProgramById(id: string): Promise<Program | null> {
   const data = await db.read();
-  const dbProg = (data.programs ?? []).find((p) => p.id === id && p.isActive);
+  const dbProg = (data.programs ?? []).find((p) => p.id === id);
   if (!dbProg) return null;
-  const inc = (data.incubators ?? []).find((i) => i.id === dbProg.incubatorId);
-  if (!isPubliclyVisibleIncubator(inc)) return null;
+  const lookups = { incubators: data.incubators ?? [], mentors: data.mentors ?? [] };
+  if (!isProgramPubliclyReachable(dbProg, lookups)) return null;
   return fromRecord(dbProg, countAttendance(data, 'PROGRAM', dbProg.id));
 }
 
@@ -59,6 +75,15 @@ export async function listProgramsByIncubator(incubatorId: string): Promise<Prog
   const data = await db.read();
   return (data.programs ?? [])
     .filter((p) => p.incubatorId === incubatorId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map((p) => fromRecord(p, countAttendance(data, 'PROGRAM', p.id)));
+}
+
+/** List all programs (active and inactive) owned by a specific consultant. */
+export async function listProgramsByMentor(mentorId: string): Promise<Program[]> {
+  const data = await db.read();
+  return (data.programs ?? [])
+    .filter((p) => p.mentorId === mentorId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map((p) => fromRecord(p, countAttendance(data, 'PROGRAM', p.id)));
 }

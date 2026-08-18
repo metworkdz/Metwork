@@ -62,7 +62,7 @@
       "fullName": "QA TRAINER mqlj33bvkwdy",
       "phone": "+213665261194",
       "city": "Alger",
-      "role": "BUSINESS",
+      "role": "INCUBATOR",
       "status": "ACTIVE",
       "phoneVerified": true,
       "emailVerified": false,
@@ -279,7 +279,7 @@
       "fullName": "QA TRAINER mqlj9927cm7a",
       "phone": "+213606456345",
       "city": "Alger",
-      "role": "BUSINESS",
+      "role": "INCUBATOR",
       "status": "ACTIVE",
       "phoneVerified": true,
       "emailVerified": false,
@@ -496,7 +496,7 @@
       "fullName": "QA TRAINER mqlkkvwqhk5w",
       "phone": "+213628380479",
       "city": "Alger",
-      "role": "BUSINESS",
+      "role": "INCUBATOR",
       "status": "ACTIVE",
       "phoneVerified": true,
       "emailVerified": false,
@@ -13143,7 +13143,7 @@
       "description": "",
       "city": "Alger",
       "managerId": "b0ab8c21-0b26-426d-8778-694c140a3e35",
-      "providerType": "TRAINER",
+      "providerType": "INCUBATOR",
       "email": "qa.signup.trainer.mqlj33bv1gpr@metwork.test",
       "phone": "+213665261194",
       "status": "PENDING",
@@ -13157,7 +13157,8 @@
       "subscriptionPeriodEnd": null,
       "subscriptionLastPaidAmount": null,
       "createdAt": "2026-06-19T22:56:37.786Z",
-      "updatedAt": "2026-06-19T22:56:37.786Z"
+      "updatedAt": "2026-06-19T22:56:37.786Z",
+      "businessType": "TRAINING_CENTER"
     },
     {
       "id": "1221fbe5-1e87-4058-b6e5-53883e409e42",
@@ -13187,7 +13188,7 @@
       "description": "",
       "city": "Alger",
       "managerId": "a7995719-a5c2-40f8-9f46-e86abbbce17e",
-      "providerType": "TRAINER",
+      "providerType": "INCUBATOR",
       "email": "qa.signup.trainer.mqlj99275z2d@metwork.test",
       "phone": "+213606456345",
       "status": "PENDING",
@@ -13201,7 +13202,8 @@
       "subscriptionPeriodEnd": null,
       "subscriptionLastPaidAmount": null,
       "createdAt": "2026-06-19T23:01:25.082Z",
-      "updatedAt": "2026-06-19T23:01:25.082Z"
+      "updatedAt": "2026-06-19T23:01:25.082Z",
+      "businessType": "TRAINING_CENTER"
     },
     {
       "id": "a0d4892e-28dc-4b1c-99f8-b1e64ac1390c",
@@ -13231,7 +13233,7 @@
       "description": "",
       "city": "Alger",
       "managerId": "1983b08d-497a-4c5c-9b42-3ec4bb15490d",
-      "providerType": "TRAINER",
+      "providerType": "INCUBATOR",
       "email": "qa.signup.trainer.mqlkkvwqbxye@metwork.test",
       "phone": "+213628380479",
       "status": "PENDING",
@@ -13245,7 +13247,8 @@
       "subscriptionPeriodEnd": null,
       "subscriptionLastPaidAmount": null,
       "createdAt": "2026-06-19T23:38:27.573Z",
-      "updatedAt": "2026-06-19T23:38:27.573Z"
+      "updatedAt": "2026-06-19T23:38:27.573Z",
+      "businessType": "TRAINING_CENTER"
     },
     {
       "id": "qa-incubator-profile-id",
@@ -24434,6 +24437,7 @@
     }
   ],
   "mentorDeviceTokens": [],
+  "mentorEmailTokens": [],
   "mentorSlotLocks": [],
   "networkVisits": [],
   "partnerMemberships": [],
@@ -24544,7 +24548,16 @@
     "demoMentorsRemoved": true,
     "businessRoleMigrated": true,
     "invoiceClientTypeMigrated": true,
-    "mentorCategoriesSeeded": true
+    "mentorCategoriesSeeded": true,
+    "businessMergedIntoIncubator": {
+      "at": "2026-08-19T00:13:42.519Z",
+      "migratedCount": 3,
+      "byLegacySubType": {
+        "TRAINER": 3
+      },
+      "providersUpdated": 3,
+      "orphanedUserIds": []
+    }
   },
   "mentorAccessTokens": [],
   "incubatorProfiles": [

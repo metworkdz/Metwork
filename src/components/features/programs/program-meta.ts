@@ -9,6 +9,7 @@ export const programTypeLabel: Record<ProgramType, string> = {
   TRAINING: 'Training',
   BOOTCAMP: 'Bootcamp',
   WORKSHOP: 'Workshop',
+  WEBINAR: 'Webinar',
 };
 
 export const programTypeOrder: ProgramType[] = [
@@ -17,6 +18,7 @@ export const programTypeOrder: ProgramType[] = [
   'BOOTCAMP',
   'TRAINING',
   'WORKSHOP',
+  'WEBINAR',
 ];
 
 /** Tailwind classes for the gradient image placeholder per program type. */
@@ -40,5 +42,9 @@ export const programTypeTint: Record<ProgramType, { gradient: string; iconBg: st
   WORKSHOP: {
     gradient: 'from-slate-200 via-zinc-100 to-neutral-200',
     iconBg: 'bg-slate-500/10 text-slate-700',
+  },
+  WEBINAR: {
+    gradient: 'from-indigo-200 via-indigo-100 to-blue-200',
+    iconBg: 'bg-indigo-500/10 text-indigo-700',
   },
 };

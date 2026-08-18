@@ -78,14 +78,14 @@ function ref() { return 'p3-' + Math.random().toString(36).slice(2, 12); }
 
 describe('computeMentorPromoSplit (subsidize, absolute base)', () => {
   it('pays the consultant on the full base; platform can go negative', () => {
-    // base 4000, user paid 2800 (30% promo), 30/70 split
+    // base 4000, user paid 2800 (30% promo), 20/80 split
     const s = computeMentorPromoSplit({ basePrice: 4000, collectedAmount: 2800 }, []);
-    expect(s.consultantShare).toBe(2800); // round(4000*0.7)
-    expect(s.platformShare).toBe(0);      // 2800 - 2800
-    // 40% promo → user pays 2400 → platform subsidises 400
+    expect(s.consultantShare).toBe(3200); // round(4000*0.8)
+    expect(s.platformShare).toBe(-400);   // 2800 - 3200 → platform subsidises
+    // 40% promo → user pays 2400 → platform subsidises 800
     const s2 = computeMentorPromoSplit({ basePrice: 4000, collectedAmount: 2400 }, []);
-    expect(s2.consultantShare).toBe(2800);
-    expect(s2.platformShare).toBe(-400);
+    expect(s2.consultantShare).toBe(3200);
+    expect(s2.platformShare).toBe(-800);
   });
 });
 
@@ -101,19 +101,19 @@ describe('creditPendingEarning — promo subsidy', () => {
       promoDiscountAmount: 1600,
     });
     const wallet = await getMentorWallet(MENTOR.id);
-    expect(wallet?.pendingBalance).toBe(2800); // full 70% of base
+    expect(wallet?.pendingBalance).toBe(3200); // full 80% of base
 
     const { txns } = await getMentorLedgerView(MENTOR.id);
     const commission = txns.find((t) => t.type === 'COMMISSION');
-    expect(commission?.metadata.platformShare).toBe(-400);
+    expect(commission?.metadata.platformShare).toBe(-800);
     expect(commission?.metadata.promoDiscountAmount).toBe(1600);
     expect(commission?.metadata.basePrice).toBe(4000);
   });
 
-  it('back-compat: no base ⇒ splits on the collected gross (30/70)', async () => {
+  it('back-compat: no base ⇒ splits on the collected gross (20/80)', async () => {
     await creditPendingEarning({ mentorId: MENTOR.id, bookingId: 'b-plain', grossAmount: 10_000 });
     const wallet = await getMentorWallet(MENTOR.id);
-    expect(wallet?.pendingBalance).toBe(7_000);
+    expect(wallet?.pendingBalance).toBe(8_000);
   });
 
   it('is idempotent per booking', async () => {
@@ -121,7 +121,7 @@ describe('creditPendingEarning — promo subsidy', () => {
     await creditPendingEarning(args);
     await creditPendingEarning(args);
     const wallet = await getMentorWallet(MENTOR.id);
-    expect(wallet?.pendingBalance).toBe(2800); // not doubled
+    expect(wallet?.pendingBalance).toBe(3200); // not doubled
   });
 });
 
@@ -142,7 +142,7 @@ describe('createInstantBooking — full promo subsidy', () => {
     });
     expect(res.ok).toBe(true);
     const wallet = await getMentorWallet(MENTOR.id);
-    expect(wallet?.pendingBalance).toBe(7_000); // round(10000 * 0.7)
+    expect(wallet?.pendingBalance).toBe(8_000); // round(10000 * 0.8)
   });
 });
 
@@ -295,9 +295,9 @@ describe('getConsultationRevenueSummary', () => {
     const s = await getConsultationRevenueSummary();
     expect(s.settledCount).toBe(2);
     expect(s.promoSubsidy).toBe(1600);
-    // platform shares: (2400-2800) + (10000-7000) = -400 + 3000 = 2600
-    expect(s.netPlatformRevenue).toBe(2600);
-    expect(s.totalConsultantEarnings).toBe(2800 + 7000);
+    // platform shares: (2400-3200) + (10000-8000) = -800 + 2000 = 1200
+    expect(s.netPlatformRevenue).toBe(1200);
+    expect(s.totalConsultantEarnings).toBe(3200 + 8000);
   });
 
   it('excludes cancelled bookings', async () => {
