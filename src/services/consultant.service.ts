@@ -8,6 +8,13 @@ import type { WeeklyAvailabilityDay } from '@/types/mentor';
 import type { Space } from '@/types/domain';
 
 /**
+ * Channel that actually delivered a consultant OTP. Returned by signup so the
+ * confirmation copy can name the real destination. The login route
+ * deliberately does NOT return it (it would leak account existence).
+ */
+export type OtpDeliveryChannel = 'whatsapp' | 'sms' | 'email';
+
+/**
  * A bookable space as served to the consultant portal — the public `Space`
  * plus the host's phone, so the consultant can call instead of reserving.
  */
@@ -183,13 +190,16 @@ export const consultantService = {
     field?: string | null;
     /** Data-processing consent (Law 18-07) — must be true; server enforces it too. */
     acceptPrivacy: boolean;
-  }) => apiClient.post<{ ok: true }>('/consultant/signup', body),
+  }) => apiClient.post<{ ok: true; channel: OtpDeliveryChannel | null }>('/consultant/signup', body),
 
   // ── Email → OTP sign-in (untrusted device / first sign-in) ──
   requestOtp: (email: string) =>
     apiClient.post<{ ok: true }>('/consultant/otp/request', { email }),
-  verifyOtp: (email: string, code: string) =>
-    apiClient.post<{ ok: true; pinSet: boolean }>('/consultant/otp/verify', { email, code }),
+  verifyOtp: (email: string, code: string, rememberDevice = false) =>
+    apiClient.post<{ ok: true; pinSet: boolean; phoneVerified: boolean; emailVerified: boolean }>(
+      '/consultant/otp/verify',
+      { email, code, rememberDevice },
+    ),
 
   // ── Phone verification via WhatsApp (default) / SMS OTP (session-guarded) ──
   requestPhoneOtp: (channel: 'whatsapp' | 'sms' = 'whatsapp') =>

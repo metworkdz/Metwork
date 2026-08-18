@@ -16,7 +16,8 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
-import { issueConsultantOtp } from '@/server/mentors/access';
+import { issueConsultantOtp, consultantOtpKey } from '@/server/mentors/access';
+import { stampOtpChannel } from '@/server/auth/otp';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
 import { sendConsultantOtp } from '@/server/notifications/mock';
 
@@ -69,7 +70,16 @@ export async function POST(req: NextRequest) {
   // Deliver on every channel (WhatsApp/SMS when a phone is on record + email),
   // so a delayed or spam-filtered email is no longer a dead end. Awaited: on
   // Vercel an unawaited send is killed when the response returns.
-  await sendConsultantOtp({ email: issued.mentor.email, phone: issued.mentor.phone, code: issued.code });
+  const channel = await sendConsultantOtp({
+    email: issued.mentor.email,
+    phone: issued.mentor.phone,
+    code: issued.code,
+  });
+  // Stamp the delivering channel so verification knows what this code proves.
+  if (channel) await stampOtpChannel(consultantOtpKey(issued.mentor.id), channel);
+  // NOTE: the channel is deliberately NOT returned here. This route answers
+  // identically for a real and an unknown email; echoing a channel would make
+  // the two distinguishable and turn it into an account-enumeration oracle.
 
   return json({ ok: true });
 }

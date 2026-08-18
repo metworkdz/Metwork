@@ -22,7 +22,8 @@ import { fromZod, json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { consultantSignupSchema } from '@/server/mentors/schemas';
 import { createSelfSignupMentor } from '@/server/mentors/service';
-import { issueConsultantOtp } from '@/server/mentors/access';
+import { issueConsultantOtp, consultantOtpKey } from '@/server/mentors/access';
+import { stampOtpChannel } from '@/server/auth/otp';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
 import { sendConsultantOtp } from '@/server/notifications/mock';
 
@@ -72,10 +73,23 @@ export async function POST(req: NextRequest) {
   // just-created record carries the phone, so WhatsApp/SMS deliver alongside
   // email — email deliverability alone is unreliable.
   const issued = await issueConsultantOtp(email);
+  // Which channel actually took the code. Returned to the client so the
+  // "we sent a code to…" copy names the real destination instead of guessing.
+  let channel: Awaited<ReturnType<typeof sendConsultantOtp>> = null;
   if (issued) {
     // Awaited: on Vercel an unawaited send is killed when the response returns.
-    await sendConsultantOtp({ email: issued.mentor.email, phone: issued.mentor.phone, code: issued.code });
+    channel = await sendConsultantOtp({
+      email: issued.mentor.email,
+      phone: issued.mentor.phone,
+      code: issued.code,
+    });
+    // Stamp the delivering channel on the live OTP so verification knows which
+    // contact detail this code actually proves (phone vs email).
+    if (channel) await stampOtpChannel(consultantOtpKey(issued.mentor.id), channel);
   }
 
-  return json({ ok: true });
+  // Safe to disclose here: signup always resolves to a real account (created or
+  // pre-existing), so naming the channel leaks nothing extra. The login route
+  // deliberately stays generic — see its own comment.
+  return json({ ok: true, channel });
 }

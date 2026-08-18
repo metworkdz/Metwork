@@ -173,6 +173,9 @@ export interface SessionRecord {
   createdAt: string;
 }
 
+/** Channel an OTP was actually delivered through. */
+export type OtpChannel = 'whatsapp' | 'sms' | 'email';
+
 export interface OtpRecord {
   id: string;
   userId: string;
@@ -181,6 +184,17 @@ export interface OtpRecord {
   expiresAt: string;
   attempts: number;
   consumed: boolean;
+  /**
+   * Which channel actually delivered this code (stamped after the send
+   * succeeds). Additive & optional — absent on every OTP issued before the
+   * sequential-fallback sender, and on any code whose delivery failed
+   * outright.
+   *
+   * Consumed at verify time to decide WHICH contact detail this OTP proves:
+   * a code that arrived on the phone verifies the phone; one that fell back
+   * to email verifies the email and leaves the phone unverified.
+   */
+  channel?: OtpChannel;
 }
 
 export interface EmailTokenRecord {
@@ -2004,6 +2018,12 @@ export interface MentorRecord {
   publiclyListed?: boolean;
   /** True once the consultant's phone was verified (OTP). Absent ⇒ false. PRIVATE. */
   phoneVerified?: boolean;
+  /**
+   * True once the consultant's email was verified — either because the sign-in
+   * OTP was delivered to it, or via the follow-up verification link. Absent ⇒
+   * false. PRIVATE.
+   */
+  emailVerified?: boolean;
   /** Consultation domain (e.g. "Fiscalité", "Marketing"). Single headline field, distinct from `topics` tags. */
   field?: string | null;
   /**
@@ -2576,6 +2596,22 @@ export interface MentorSessionRecord {
  * Revocable (PIN change clears all; "forget this device" clears one). Only the
  * hash is persisted.
  */
+/**
+ * Email-verification token for a consultant. Deliberately a SEPARATE
+ * collection from the user-scoped `emailTokens`: consultants are a distinct
+ * population with no UserRecord, and sharing the table would let a consultant
+ * token be consumed by the user-facing /api/auth/verify-email route (burning
+ * it without verifying anyone). Mirrors `mentorSessions` / `mentorDeviceTokens`.
+ */
+export interface MentorEmailTokenRecord {
+  /** SHA-256 of the random token (plaintext lives only in the emailed link). */
+  tokenHash: string;
+  mentorId: string;
+  expiresAt: string;
+  consumed: boolean;
+  createdAt: string;
+}
+
 export interface MentorDeviceTokenRecord {
   /** SHA-256 of the random device token (plaintext lives only in the cookie). */
   tokenHash: string;
@@ -2837,6 +2873,8 @@ interface DbShape {
   mentorSessions: MentorSessionRecord[];
   /** "Remember this device" tokens for trusted-device PIN unlock. */
   mentorDeviceTokens: MentorDeviceTokenRecord[];
+  /** Consultant email-verification tokens (separate from user `emailTokens`). */
+  mentorEmailTokens?: MentorEmailTokenRecord[];
   /** Short-lived slot holds taken at payment initiation. */
   mentorSlotLocks: MentorSlotLockRecord[];
 
@@ -2963,6 +3001,7 @@ const empty: DbShape = {
   mentorWithdrawals: [],
   mentorSessions: [],
   mentorDeviceTokens: [],
+  mentorEmailTokens: [],
   mentorSlotLocks: [],
   networkVisits: [],
   partnerMemberships: [],

@@ -59,7 +59,7 @@ import {
   type BookingReceiptInput,
   type MentorConfirmationInput,
 } from './receipt';
-import type { IncubatorRecord, PaymentLinkRecord } from '@/server/db/store';
+import type { IncubatorRecord, OtpChannel, PaymentLinkRecord } from '@/server/db/store';
 
 const banner = '\x1b[36m[notify]\x1b[0m';
 
@@ -71,48 +71,60 @@ const banner = '\x1b[36m[notify]\x1b[0m';
  * Returns the send promise (self-catching, never rejects) so serverless
  * callers can await actual delivery before the lambda freezes.
  */
-export function sendOtpWhatsApp(phone: string, code: string): Promise<void> {
+export function sendOtpWhatsApp(phone: string, code: string): Promise<boolean> {
   if (process.env.NODE_ENV !== 'production') {
     // eslint-disable-next-line no-console
     console.log(`${banner} WHATSAPP → ${phone} :: code = ${code}`);
   }
 
   if (process.env.SMS_PROVIDER === 'infobip') {
-    return sendWhatsAppOTP(phone, code).catch((err: Error) =>
-      // eslint-disable-next-line no-console
-      console.error(`${banner} Infobip WhatsApp failed →`, err.message),
-    );
+    return sendWhatsAppOTP(phone, code)
+      .then(() => true)
+      .catch((err: Error) => {
+        // eslint-disable-next-line no-console
+        console.error(`${banner} Infobip WhatsApp failed →`, err.message);
+        return false;
+      });
   }
 
   if (process.env.NODE_ENV === 'production') {
+    // NEVER log the code in production — this branch used to print it.
     // eslint-disable-next-line no-console
-    console.log(`${banner} WHATSAPP (mock) → ${phone} :: code = ${code}`);
+    console.log(`${banner} WHATSAPP (mock, no provider configured) → ${phone}`);
+    // No provider configured in production means nothing was actually sent;
+    // reporting success here would stop the fallback chain on a dead channel.
+    return Promise.resolve(false);
   }
-  return Promise.resolve();
+  return Promise.resolve(true);
 }
 
 /**
  * Send OTP via SMS (Infobip fallback channel). Returns the self-catching send
  * promise — see sendOtpWhatsApp.
  */
-export function sendOtpSms(phone: string, code: string): Promise<void> {
+export function sendOtpSms(phone: string, code: string): Promise<boolean> {
   if (process.env.NODE_ENV !== 'production') {
     // eslint-disable-next-line no-console
     console.log(`${banner} SMS → ${phone} :: code = ${code}`);
   }
 
   if (process.env.SMS_PROVIDER === 'infobip') {
-    return sendSMSOTP(phone, code).catch((err: Error) =>
-      // eslint-disable-next-line no-console
-      console.error(`${banner} Infobip SMS failed →`, err.message),
-    );
+    return sendSMSOTP(phone, code)
+      .then(() => true)
+      .catch((err: Error) => {
+        // eslint-disable-next-line no-console
+        console.error(`${banner} Infobip SMS failed →`, err.message);
+        return false;
+      });
   }
 
   if (process.env.NODE_ENV === 'production') {
+    // NEVER log the code in production — this branch used to print it.
     // eslint-disable-next-line no-console
-    console.log(`${banner} SMS (mock) → ${phone} :: code = ${code}`);
+    console.log(`${banner} SMS (mock, no provider configured) → ${phone}`);
+    return Promise.resolve(false);
   }
-  return Promise.resolve();
+  return Promise.resolve(true);
 }
 
 /**
@@ -121,7 +133,7 @@ export function sendOtpSms(phone: string, code: string): Promise<void> {
  * Falls back to console.log when Resend is not configured. Returns the
  * self-catching send promise — see sendOtpWhatsApp.
  */
-export function sendOtpEmail(email: string, code: string): Promise<void> {
+export function sendOtpEmail(email: string, code: string): Promise<boolean> {
   return sendResendEmail({
     to: email,
     subject: `${code} is your Metwork verification code`,
@@ -129,14 +141,24 @@ export function sendOtpEmail(email: string, code: string): Promise<void> {
   })
     .then((sent) => {
       if (!sent) {
+        // Resend not configured (dev/CI): surface the code ONLY outside
+        // production so local sign-in still works.
+        if (process.env.NODE_ENV !== 'production') {
+          // eslint-disable-next-line no-console
+          console.log(`${banner} EMAIL (otp) → ${email} :: code = ${code}`);
+          return true;
+        }
         // eslint-disable-next-line no-console
-        console.log(`${banner} EMAIL (otp) → ${email} :: code = ${code}`);
+        console.log(`${banner} EMAIL (otp, no provider configured) → ${email}`);
+        return false;
       }
+      return true;
     })
-    .catch((err: Error) =>
+    .catch((err: Error) => {
       // eslint-disable-next-line no-console
-      console.error(`${banner} Resend OTP email failed →`, err.message),
-    );
+      console.error(`${banner} Resend OTP email failed →`, err.message);
+      return false;
+    });
 }
 
 /**
@@ -152,17 +174,54 @@ export function sendOtpEmail(email: string, code: string): Promise<void> {
  * AWAITABLE — and the consultant routes DO await it: on Vercel the lambda
  * freezes once the response is sent, so unawaited sends silently die.
  */
-export async function sendConsultantOtp(opts: { email?: string | null; phone?: string | null; code: string }): Promise<void> {
-  const sends: Array<Promise<unknown>> = [];
+/**
+ * Deliver a consultant OTP through the first channel that works:
+ * WhatsApp → SMS → email. STRICTLY sequential — the chain stops at the first
+ * success, so exactly one channel receives the code.
+ *
+ * The SAME code is passed to every attempt; nothing is ever re-generated, so a
+ * code that reaches the consultant on any channel stays valid.
+ *
+ * The returned channel is what verification keys off: a code that landed on the
+ * phone proves the phone, one that fell back to email proves the email.
+ * `null` means every channel failed — the caller should surface a real error
+ * rather than tell the consultant to check a device that got nothing.
+ *
+ * Per-attempt outcomes are logged for debugging WITHOUT the code itself.
+ */
+export async function sendConsultantOtp(opts: {
+  email?: string | null;
+  phone?: string | null;
+  code: string;
+}): Promise<OtpChannel | null> {
   const phone = opts.phone?.trim();
-  if (phone) {
-    // WhatsApp is the reliable channel for Algerian numbers; SMS backs it up.
-    sends.push(sendOtpWhatsApp(phone, opts.code));
-    sends.push(sendOtpSms(phone, opts.code));
-  }
   const email = opts.email?.trim();
-  if (email) sends.push(sendOtpEmail(email, opts.code));
-  await Promise.allSettled(sends);
+
+  const attempts: Array<{ channel: OtpChannel; run: () => Promise<boolean> }> = [];
+  if (phone) {
+    attempts.push({ channel: 'whatsapp', run: () => sendOtpWhatsApp(phone, opts.code) });
+    attempts.push({ channel: 'sms', run: () => sendOtpSms(phone, opts.code) });
+  }
+  if (email) attempts.push({ channel: 'email', run: () => sendOtpEmail(email, opts.code) });
+
+  for (const attempt of attempts) {
+    let ok = false;
+    try {
+      ok = await attempt.run();
+    } catch (err) {
+      // A sender should self-catch, but never let one throw break the chain.
+      // eslint-disable-next-line no-console
+      console.error(`${banner} OTP attempt threw on ${attempt.channel} →`, (err as Error).message);
+      ok = false;
+    }
+    // eslint-disable-next-line no-console
+    console.log(`${banner} OTP attempt :: channel=${attempt.channel} outcome=${ok ? 'sent' : 'failed'}`);
+    if (ok) return attempt.channel;
+  }
+
+  // eslint-disable-next-line no-console
+  console.error(`${banner} OTP delivery failed on every channel`);
+  return null;
 }
 
 /* ─────────────────────────── Email ─────────────────────────── */

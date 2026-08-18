@@ -50,6 +50,15 @@ const OTP_KEY_PREFIX = 'mentor:';
 /** Sentinel key used to equalize timing on the email-not-found branch. */
 const OTP_KEY_NO_MATCH = `${OTP_KEY_PREFIX}__no_match__`;
 
+/**
+ * The OTP-table key for a consultant's sign-in code. Exported so routes can
+ * stamp/read the delivery channel on the same record `issueConsultantOtp`
+ * wrote, without duplicating the `mentor:` namespace prefix.
+ */
+export function consultantOtpKey(mentorId: string): string {
+  return OTP_KEY_PREFIX + mentorId;
+}
+
 /** Resolve the mentor record for an email (case-insensitive, trimmed), or null. */
 export async function findMentorByEmail(email: string): Promise<MentorRecord | null> {
   const needle = email.trim().toLowerCase();

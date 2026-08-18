@@ -7,7 +7,7 @@
  * counter; the record is locked after MAX_ATTEMPTS regardless of outcome.
  */
 import { createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
-import { db } from '@/server/db/store';
+import { db, type OtpChannel } from '@/server/db/store';
 import { serverEnvVars } from '@/lib/env';
 
 const OTP_TTL_MIN = 10;
@@ -71,4 +71,30 @@ export async function verifyOtp(userId: string, code: string): Promise<OtpVerify
     otp.consumed = true;
     return { ok: true };
   });
+}
+
+/**
+ * Record which channel actually delivered the live OTP for `userId`.
+ *
+ * Called AFTER a successful send, so a code whose delivery failed carries no
+ * channel. Deliberately separate from `issueOtp`: the channel is only known
+ * once the sequential sender has found one that works.
+ */
+export async function stampOtpChannel(userId: string, channel: OtpChannel): Promise<void> {
+  await db.update((d) => {
+    const otp = [...d.otps].reverse().find((o) => o.userId === userId && !o.consumed);
+    if (otp) otp.channel = channel;
+  });
+}
+
+/**
+ * The channel that delivered the OTP currently being verified.
+ *
+ * Read BEFORE `verifyOtp` consumes the record — afterwards the row is marked
+ * consumed and the "latest unconsumed" lookup would miss it.
+ */
+export async function readOtpChannel(userId: string): Promise<OtpChannel | null> {
+  const d = await db.read();
+  const otp = [...(d.otps ?? [])].reverse().find((o) => o.userId === userId && !o.consumed);
+  return otp?.channel ?? null;
 }

@@ -21,7 +21,7 @@ import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { CheckCircle2, FileText, KeyRound, Mail, ShieldCheck, UploadCloud, UserPlus, X } from 'lucide-react';
 import { ApiClientError } from '@/lib/api-client';
-import { consultantService } from '@/services/consultant.service';
+import { consultantService, type OtpDeliveryChannel } from '@/services/consultant.service';
 import { algerianCities, getCityName } from '@/config/cities';
 import { consultationFields, getConsultationFieldLabel } from '@/config/consultation-fields';
 import {
@@ -93,7 +93,11 @@ export function EmailOtpSignIn() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [pin, setPin] = useState('');
-  const [remember, setRemember] = useState(true);
+  // Opt-IN: device trust is a deliberate choice, so both remember checkboxes
+  // start unchecked rather than silently persisting a 60-day token.
+  const [remember, setRemember] = useState(false);
+  /** Channel that actually delivered the code (signup only — login stays generic). */
+  const [otpChannel, setOtpChannel] = useState<OtpDeliveryChannel | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
@@ -159,7 +163,7 @@ export function EmailOtpSignIn() {
       // Generic 200 whether the email is new (PENDING account created) or
       // already a consultant (a sign-in OTP is sent instead) — both continue
       // to the same code step.
-      await consultantService.signup({
+      const res = await consultantService.signup({
         fullName: fullName.trim(),
         position: position.trim(),
         email: email.trim(),
@@ -168,6 +172,7 @@ export function EmailOtpSignIn() {
         field: field || null,
         acceptPrivacy,
       });
+      setOtpChannel(res.channel);
       setStep('code');
       setResendIn(30);
     } catch (err) {
@@ -215,7 +220,7 @@ export function EmailOtpSignIn() {
     e.preventDefault();
     setBusy(true); setError(null);
     try {
-      const res = await consultantService.verifyOtp(email.trim(), code.trim());
+      const res = await consultantService.verifyOtp(email.trim(), code.trim(), remember);
       setPinAlreadySet(res.pinSet);
       if (cvFile) {
         // Signup path with a pending CV — session now exists, upload it.
@@ -475,13 +480,27 @@ export function EmailOtpSignIn() {
               {signupFlow && <StepIndicator current={2} labels={[ts('step1'), ts('step2'), ts('step3')]} />}
               <div className="space-y-2 text-center">
                 <CheckCircle2 className="mx-auto size-9" style={{ color: CP_GREEN }} />
-                <p className="text-base font-medium text-[#0D0D0D]">{t('codeSent')}</p>
-                <p className="text-sm" style={{ color: CP_LIGHT_MUTED }}>{t('codeSentDesc')}</p>
+                <p className="text-base font-medium text-[#0D0D0D]">
+                  {otpChannel ? t(`codeSent_${otpChannel}` as 'codeSent_email') : t('codeSent')}
+                </p>
+                <p className="text-sm" style={{ color: CP_LIGHT_MUTED }}>
+                  {otpChannel
+                    ? t(`codeSentDesc_${otpChannel}` as 'codeSentDesc_email')
+                    : t('codeSentDesc')}
+                </p>
               </div>
               <OtpCodeInput
                 value={code} onChange={setCode} disabled={busy}
                 label={t('codeLabel')} idPrefix="cp-code" tone="light"
               />
+              <label className="flex min-h-12 cursor-pointer items-center gap-2.5 text-sm" style={{ color: CP_LIGHT_MUTED }}>
+                <input
+                  type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)}
+                  className="size-4 shrink-0 rounded border-[#E3E6E4] accent-[#30a735]"
+                  disabled={busy}
+                />
+                {ta('rememberDevice')}
+              </label>
               {error && <ErrorBanner tone="light" message={error} />}
               <BrandButton tone="light" type="submit" loading={busy} disabled={code.trim().length < 6} className="w-full">
                 {t('verify')}
