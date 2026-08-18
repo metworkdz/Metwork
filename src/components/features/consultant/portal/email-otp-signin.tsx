@@ -22,6 +22,13 @@ import { useLocale, useTranslations } from 'next-intl';
 import { CheckCircle2, FileText, KeyRound, Mail, ShieldCheck, UploadCloud, UserPlus, X } from 'lucide-react';
 import { ApiClientError } from '@/lib/api-client';
 import { consultantService, type OtpDeliveryChannel } from '@/services/consultant.service';
+import { CountryCodeSelect } from './country-code-select';
+import {
+  COUNTRY_OPTIONS,
+  DEFAULT_COUNTRY,
+  isValidE164,
+  type SupportedCountry,
+} from '@/lib/country-codes';
 import { algerianCities, getCityName } from '@/config/cities';
 import { consultationFields, getConsultationFieldLabel } from '@/config/consultation-fields';
 import {
@@ -79,7 +86,18 @@ function BrandHeader({ tagline }: { tagline: string }) {
   );
 }
 
-export function EmailOtpSignIn() {
+interface EmailOtpSignInProps {
+  /**
+   * ISO country resolved server-side from the request's edge-geolocation
+   * header (see the login page). Absent when the header is missing (local
+   * dev, non-Vercel hosting) or the detected country isn't in our supported
+   * list — in both cases the field below silently defaults to Algeria, per
+   * spec: geolocation must never block or error the form.
+   */
+  detectedCountry?: SupportedCountry | null;
+}
+
+export function EmailOtpSignIn({ detectedCountry }: EmailOtpSignInProps) {
   const t = useTranslations('consultantPortal.signin');
   const ta = useTranslations('consultantPortal.access');
   const ts = useTranslations('consultantPortal.signup');
@@ -107,7 +125,12 @@ export function EmailOtpSignIn() {
   const locale = calLocale(routeLocale);
   const [fullName, setFullName] = useState('');
   const [position, setPosition] = useState('');
-  const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState<SupportedCountry>(detectedCountry ?? DEFAULT_COUNTRY);
+  const [nationalNumber, setNationalNumber] = useState('');
+  const dialCode = COUNTRY_OPTIONS.find((o) => o.code === country)?.dialCode ?? '+213';
+  /** Full E.164 string sent to the API — unchanged field shape server-side. */
+  const phone = `${dialCode}${nationalNumber.replace(/[^\d]/g, '')}`;
+  const phoneValid = nationalNumber.trim().length > 0 && isValidE164(phone);
   const [city, setCity] = useState('');
   const [field, setField] = useState('');
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
@@ -339,13 +362,18 @@ export function EmailOtpSignIn() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <label htmlFor="cp-su-phone" className={labelCls} style={{ color: CP_LIGHT_MUTED }}>{ts('phoneLabel')}</label>
-                  <input
-                    id="cp-su-phone" type="tel" required value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+213 555 00 00 00" dir="ltr" disabled={busy}
-                    className={cpInputClassLight}
-                  />
-                  <p className="text-[11px]" style={{ color: CP_LIGHT_FAINT }}>{ts('phoneCountryCodeHint')}</p>
+                  <div className="flex gap-2">
+                    <CountryCodeSelect value={country} onChange={setCountry} disabled={busy} />
+                    <input
+                      id="cp-su-phone" type="tel" required value={nationalNumber}
+                      onChange={(e) => setNationalNumber(e.target.value)}
+                      placeholder="555 00 00 00" dir="ltr" disabled={busy}
+                      className={cpInputClassLight}
+                    />
+                  </div>
+                  {nationalNumber.trim().length > 0 && !phoneValid && (
+                    <p className="text-[11px]" style={{ color: '#B42318' }}>{ts('phoneInvalid')}</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <label htmlFor="cp-su-city" className={labelCls} style={{ color: CP_LIGHT_MUTED }}>{ts('cityLabel')}</label>
@@ -454,7 +482,7 @@ export function EmailOtpSignIn() {
                 type="submit" loading={busy}
                 disabled={
                   fullName.trim().length < 2 || position.trim().length < 2 || !email.trim() ||
-                  phone.trim().length < 6 || !city || !field || !cvFile || !acceptPrivacy
+                  !phoneValid || !city || !field || !cvFile || !acceptPrivacy
                 }
                 className="w-full"
               >

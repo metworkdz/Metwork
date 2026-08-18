@@ -2,9 +2,11 @@ import type { Metadata, Viewport } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { setRequestLocale } from 'next-intl/server';
+import { headers } from 'next/headers';
 import { readMentorSession } from '@/server/mentors/access';
 import { LanguageSwitcher } from '@/components/features/consultant/portal/language-switcher';
 import { EmailOtpSignIn } from '@/components/features/consultant/portal/email-otp-signin';
+import { coerceSupportedCountry } from '@/lib/country-codes';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +41,14 @@ export default async function MentorLoginPage({ params }: PageProps) {
   setRequestLocale(locale);
 
   if (await readMentorSession()) redirect('/mentordashboard');
+
+  // Best-effort default-country detection from Vercel's edge geolocation
+  // header — no client-side request, no third-party lookup. Absent on
+  // non-Vercel hosts (local dev) or an unsupported country: the signup form
+  // silently falls back to Algeria, exactly as if this were never called.
+  const detectedCountry = coerceSupportedCountry(
+    (await headers()).get('x-vercel-ip-country'),
+  );
   return (
     <div dir="auto" className="relative min-h-[100dvh] overflow-hidden bg-[#FAFAFA] text-[#0D0D0D] antialiased">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-dot-grid opacity-70" />
@@ -47,7 +57,7 @@ export default async function MentorLoginPage({ params }: PageProps) {
         <LanguageSwitcher tone="light" />
       </div>
       <Suspense>
-        <EmailOtpSignIn />
+        <EmailOtpSignIn detectedCountry={detectedCountry} />
       </Suspense>
     </div>
   );

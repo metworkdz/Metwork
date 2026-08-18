@@ -3,6 +3,7 @@
  * client by importing from `@/types/mentor` (the inferred type).
  */
 import { z } from 'zod';
+import { isValidE164 } from '@/lib/country-codes';
 
 const urlOrPath = z.string().min(1).refine(
   (v) => /^(https?:\/\/|\/)/.test(v),
@@ -54,9 +55,15 @@ export const consultantSignupSchema = z.object({
   fullName: z.string().min(2).max(120),
   position: z.string().min(2).max(160),
   email: z.string().email().max(200),
+  /**
+   * Real E.164 validity (per-country subscriber-number length), not a loose
+   * character/format check. The client sends a single composed string
+   * ("+213555000111"); the country is read back from its own "+" prefix, so
+   * this needs no separately-supplied country field.
+   */
   phone: z
     .string()
-    .refine((v) => /^\+?[0-9\s().-]{6,30}$/.test(v), { message: 'invalidPhone' }),
+    .refine((v) => isValidE164(v), { message: 'invalidPhone' }),
   city: cityField,
   bio: z.string().max(2000).optional().nullable(),
   /** Consultation domain (e.g. "Fiscalité"). Optional & additive. */
