@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  Building2, CalendarDays, Check, MapPin, Phone, Users,
+  Building2, CalendarDays, Check, Loader2, MapPin, Phone, Users, X,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ApiClientError } from '@/lib/api-client';
@@ -35,7 +35,7 @@ import {
 import type { SpaceCategory } from '@/types/domain';
 import {
   BrandButton, CP_GREEN_TEXT, CP_LIGHT_BORDER, CP_LIGHT_FAINT, CP_LIGHT_MUTED, CP_LIGHT_TEXT,
-  EmptyBlock, ErrorBanner, Field, FlowSheet, SectionCard, SectionHeading, Spinner,
+  EmptyBlock, ErrorBanner, Field, FlowSheet, GhostButton, SectionCard, SectionHeading, Spinner,
   cpInputClassLight, fmtDZD,
 } from './shared';
 
@@ -43,6 +43,9 @@ type Unit = 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH';
 type Tab = 'browse' | 'mine';
 /** DOMICILIATION is an address service, not a bookable room — never offered here. */
 const CATEGORIES: SpaceCategory[] = ['COWORKING', 'PRIVATE_OFFICE', 'TRAINING_ROOM'];
+
+/** Final states — nothing left to cancel. */
+const FINAL_STATUSES = new Set(['CANCELLED', 'REFUNDED', 'COMPLETED']);
 
 const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'danger' | 'info' | 'primary'> = {
   PENDING_PAYMENT: 'warning', PENDING: 'warning', AWAITING_APPROVAL: 'info',
@@ -106,6 +109,9 @@ export function SpacesSection() {
   const [selected, setSelected] = useState<ConsultantSpace | null>(null);
 
   const [mine, setMine] = useState<ConsultantSpaceBooking[] | null>(null);
+  const [toCancel, setToCancel] = useState<ConsultantSpaceBooking | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   const loadSpaces = useCallback(async () => {
     try {
@@ -132,6 +138,26 @@ export function SpacesSection() {
         s.category !== 'DOMICILIATION',
     );
   }, [spaces, category, city]);
+
+  async function confirmCancel() {
+    if (!toCancel) return;
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      await consultantService.cancelSpaceBooking(toCancel.id);
+      setToCancel(null);
+      await loadMine();
+    } catch (err) {
+      // A reservation cancelled from another tab/device is already in the
+      // desired end state — reconcile rather than showing a dead-end error.
+      if (err instanceof ApiClientError && err.code === 'ALREADY_FINAL') {
+        setToCancel(null);
+        await loadMine();
+      } else {
+        setCancelError(t('errCancel'));
+      }
+    } finally { setCancelling(false); }
+  }
 
   const fmtRange = (startsAt: string, endsAt: string) => {
     try {
@@ -224,26 +250,39 @@ export function SpacesSection() {
       ) : (
         <SectionCard className="space-y-1">
           {mine.map((b) => (
-            <div key={b.id} className="flex items-start gap-3 rounded-2xl px-1 py-2.5">
-              <span
-                className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl"
-                style={{ background: '#F7F8F9', color: CP_GREEN_TEXT }}
-              >
-                <Building2 className="size-4" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium" style={{ color: CP_LIGHT_TEXT }}>{b.itemName}</p>
-                <p className="mt-0.5 truncate text-xs" style={{ color: CP_LIGHT_MUTED }}>
-                  {b.vendorName} · {b.city}
-                </p>
-                <p className="mt-0.5 text-xs" style={{ color: CP_LIGHT_FAINT }}>{fmtRange(b.startsAt, b.endsAt)}</p>
+            <div key={b.id} className="rounded-2xl px-1 py-2.5">
+              <div className="flex items-start gap-3">
+                <span
+                  className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl"
+                  style={{ background: '#F7F8F9', color: CP_GREEN_TEXT }}
+                >
+                  <Building2 className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium" style={{ color: CP_LIGHT_TEXT }}>{b.itemName}</p>
+                  <p className="mt-0.5 truncate text-xs" style={{ color: CP_LIGHT_MUTED }}>
+                    {b.vendorName} · {b.city}
+                  </p>
+                  <p className="mt-0.5 text-xs" style={{ color: CP_LIGHT_FAINT }}>{fmtRange(b.startsAt, b.endsAt)}</p>
+                </div>
+                <div className="shrink-0 text-end">
+                  <Badge variant={STATUS_VARIANT[b.status] ?? 'info'}>{t(`status${b.status}` as 'statusPENDING_PAYMENT')}</Badge>
+                  <p className="mt-1 text-xs font-semibold tabular-nums" style={{ color: CP_LIGHT_TEXT }}>
+                    {fmtDZD(b.totalAmount)}
+                  </p>
+                </div>
               </div>
-              <div className="shrink-0 text-end">
-                <Badge variant={STATUS_VARIANT[b.status] ?? 'info'}>{t(`status${b.status}` as 'statusPENDING_PAYMENT')}</Badge>
-                <p className="mt-1 text-xs font-semibold tabular-nums" style={{ color: CP_LIGHT_TEXT }}>
-                  {fmtDZD(b.totalAmount)}
-                </p>
-              </div>
+              {!FINAL_STATUSES.has(b.status) && (
+                <button
+                  type="button"
+                  onClick={() => { setCancelError(null); setToCancel(b); }}
+                  // Full-width tap target on phones; hugs its content from sm up.
+                  className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-2xl border text-sm font-medium transition-colors hover:bg-[#F7F8F9] active:bg-[#F0F1F2] sm:ms-12 sm:w-auto sm:px-4"
+                  style={{ borderColor: CP_LIGHT_BORDER, color: '#B42318' }}
+                >
+                  <X className="size-4" />{t('cancelCta')}
+                </button>
+              )}
             </div>
           ))}
         </SectionCard>
@@ -254,6 +293,52 @@ export function SpacesSection() {
         onClose={() => setSelected(null)}
         onDone={() => { setSelected(null); setTab('mine'); void loadMine(); }}
       />
+
+      {/* Destructive action gets its own confirm step — a mis-tap in a list
+          should never drop a reservation. */}
+      <FlowSheet
+        open={toCancel !== null}
+        onOpenChange={(o) => { if (!o && !cancelling) { setToCancel(null); setCancelError(null); } }}
+        title={t('cancelTitle')}
+        footer={
+          <div className="flex flex-col gap-2 sm:flex-row-reverse">
+            {/* Deliberately NOT BrandButton: it hardcodes the brand-green
+                style after spreading props, so a destructive action rendered
+                through it comes out green and reads as the safe choice. */}
+            <button
+              type="button"
+              disabled={cancelling}
+              onClick={() => void confirmCancel()}
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-base font-semibold text-white transition-all active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B42318]/50 focus-visible:ring-offset-2 sm:flex-1"
+              style={{ backgroundColor: '#B42318' }}
+            >
+              {cancelling && <Loader2 className="size-4 animate-spin" />}
+              {t('cancelConfirm')}
+            </button>
+            <GhostButton
+              tone="light"
+              className="w-full sm:flex-1"
+              disabled={cancelling}
+              onClick={() => { setToCancel(null); setCancelError(null); }}
+            >
+              {t('cancelKeep')}
+            </GhostButton>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-sm" style={{ color: CP_LIGHT_TEXT }}>
+            {toCancel?.itemName}
+          </p>
+          <p className="text-xs" style={{ color: CP_LIGHT_MUTED }}>
+            {toCancel ? fmtRange(toCancel.startsAt, toCancel.endsAt) : ''}
+          </p>
+          <p className="text-xs leading-relaxed" style={{ color: CP_LIGHT_MUTED }}>
+            {t('cancelBody')}
+          </p>
+          {cancelError && <ErrorBanner message={cancelError} tone="light" />}
+        </div>
+      </FlowSheet>
     </div>
   );
 }

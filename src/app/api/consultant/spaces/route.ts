@@ -41,5 +41,5 @@ export async function GET() {
   }));
 
   const cities = Array.from(new Set(spaces.map((s) => s.city).filter(Boolean))).sort();
-  return json({ spaces, cities });
+  return json({ spaces, cities }, { headers: { 'Cache-Control': 'no-store' } });
 }

@@ -234,7 +234,13 @@
       "errNOT_A_WORKING_DAY": "The space is closed on that day.",
       "errUNIT_NOT_AVAILABLE": "That booking type is not offered by this space.",
       "errRATE_LIMITED": "Too many reservations in a short period. Please wait a moment.",
-      "errGeneric": "Could not complete the reservation. Please try again."
+      "errGeneric": "Could not complete the reservation. Please try again.",
+      "cancelCta": "Cancel",
+      "cancelTitle": "Cancel this reservation?",
+      "cancelBody": "The room will be released for other bookings. Nothing was charged, so there is nothing to refund.",
+      "cancelConfirm": "Yes, cancel it",
+      "cancelKeep": "Keep it",
+      "errCancel": "Could not cancel the reservation. Please try again."
     },
     "earnings": {
       "pending": "Pending",

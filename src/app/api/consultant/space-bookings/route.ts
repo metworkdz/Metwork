@@ -65,7 +65,9 @@ export async function GET() {
       createdAt: b.createdAt,
     }));
 
-  return json({ items });
+  // No explicit directive means the browser heuristically caches this 200,
+  // which would leave a just-cancelled reservation showing as active.
+  return json({ items }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function POST(req: NextRequest) {

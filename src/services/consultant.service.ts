@@ -282,6 +282,11 @@ export const consultantService = {
       '/consultant/space-bookings',
       body,
     ),
+  /** Cancel one of the consultant's own space reservations (no money involved). */
+  cancelSpaceBooking: (id: string) =>
+    apiClient.post<{ id: string; status: string }>(
+      `/consultant/space-bookings/${encodeURIComponent(id)}/cancel`,
+    ),
   /** Canonical unavailability feed for a space — same source the write gate uses. */
   spaceAvailability: (spaceId: string, from: string, to: string) =>
     apiClient.get<SpaceAvailabilityResponse>(

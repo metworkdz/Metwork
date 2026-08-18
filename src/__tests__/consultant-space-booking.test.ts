@@ -15,6 +15,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { db } from '@/server/db/store';
 import { createSpaceBooking } from '@/server/bookings/service';
+import { cancelConsultantSpaceBooking } from '@/server/bookings/consultant-cancel';
 
 const NOW = '2026-06-01T10:00:00.000Z';
 const START = '2026-06-15T09:00:00.000Z';
@@ -199,5 +200,89 @@ describe('consultant space reservation', () => {
     expect(user.booking.id).not.toBe(mentor.booking.id);
     expect(user.booking.userId).toBe('user-1');
     expect(user.booking.mentorId ?? null).toBeNull();
+  });
+});
+
+describe('consultant cancels their own space reservation', () => {
+  beforeEach(async () => { await seed(); });
+
+  async function reserve(mentorId = 'mentor-1', ref = 'ref-cancel') {
+    const res = await createSpaceBooking({
+      ...baseArgs,
+      booker: { type: 'mentor', mentorId, contact: CONTACT },
+      clientReference: ref,
+    });
+    if (!res.ok) throw new Error('setup reservation failed');
+    return res.booking;
+  }
+
+  it('cancels and frees the slot', async () => {
+    const b = await reserve();
+    const res = await cancelConsultantSpaceBooking({ bookingId: b.id, mentorId: 'mentor-1' });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.booking.status).toBe('CANCELLED');
+    expect(res.booking.declineReason).toBe('CANCELLED_BY_CONSULTANT');
+
+    const stored = (await db.read()).bookings.find((x) => x.id === b.id);
+    expect(stored?.status).toBe('CANCELLED');
+  });
+
+  it('releases every desk hold the reservation was holding', async () => {
+    const b = await reserve();
+    // Simulate the per-day desk holds a COWORKING reservation writes.
+    await db.update((d) => {
+      d.deskBookings = [
+        { id: 'dk-1', bookingId: b.id, spaceId: 'space-1', deskName: 'D1', status: 'CONFIRMED' } as never,
+        { id: 'dk-2', bookingId: b.id, spaceId: 'space-1', deskName: 'D1', status: 'CONFIRMED' } as never,
+        // Belongs to someone else — must be left completely alone.
+        { id: 'dk-3', bookingId: 'other-booking', spaceId: 'space-1', deskName: 'D2', status: 'CONFIRMED' } as never,
+      ];
+    });
+
+    await cancelConsultantSpaceBooking({ bookingId: b.id, mentorId: 'mentor-1' });
+
+    const desks = (await db.read()).deskBookings ?? [];
+    expect(desks.filter((x) => x.bookingId === b.id).every((x) => x.status === 'CANCELLED')).toBe(true);
+    expect(desks.find((x) => x.id === 'dk-3')?.status).toBe('CONFIRMED');
+  });
+
+  it('refuses to cancel another consultant\'s reservation', async () => {
+    const b = await reserve('mentor-a', 'ref-owner');
+    const res = await cancelConsultantSpaceBooking({ bookingId: b.id, mentorId: 'mentor-b' });
+
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe('FORBIDDEN');
+    expect((await db.read()).bookings.find((x) => x.id === b.id)?.status).toBe('PENDING_PAYMENT');
+  });
+
+  it('is idempotent — a second cancel reports ALREADY_FINAL, not a double-apply', async () => {
+    const b = await reserve();
+    const first = await cancelConsultantSpaceBooking({ bookingId: b.id, mentorId: 'mentor-1' });
+    const second = await cancelConsultantSpaceBooking({ bookingId: b.id, mentorId: 'mentor-1' });
+
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(false);
+    if (!second.ok) expect(second.reason).toBe('ALREADY_FINAL');
+  });
+
+  it('reopens the slot so the space can be reserved again', async () => {
+    const b = await reserve('mentor-1', 'ref-first');
+    await cancelConsultantSpaceBooking({ bookingId: b.id, mentorId: 'mentor-1' });
+
+    // Same window, different consultant — must now succeed.
+    const again = await createSpaceBooking({
+      ...baseArgs,
+      booker: { type: 'mentor', mentorId: 'mentor-2', contact: CONTACT },
+      clientReference: 'ref-after-cancel',
+    });
+    expect(again.ok).toBe(true);
+  });
+
+  it('returns NOT_FOUND for an unknown reservation', async () => {
+    const res = await cancelConsultantSpaceBooking({ bookingId: 'nope', mentorId: 'mentor-1' });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe('NOT_FOUND');
   });
 });

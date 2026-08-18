@@ -234,7 +234,13 @@
       "errNOT_A_WORKING_DAY": "L'espace est fermé ce jour-là.",
       "errUNIT_NOT_AVAILABLE": "Ce type de réservation n'est pas proposé par cet espace.",
       "errRATE_LIMITED": "Trop de réservations en peu de temps. Veuillez patienter un instant.",
-      "errGeneric": "Impossible de finaliser la réservation. Veuillez réessayer."
+      "errGeneric": "Impossible de finaliser la réservation. Veuillez réessayer.",
+      "cancelCta": "Annuler",
+      "cancelTitle": "Annuler cette réservation ?",
+      "cancelBody": "La salle sera libérée pour d'autres réservations. Aucun montant n'a été prélevé, il n'y a donc rien à rembourser.",
+      "cancelConfirm": "Oui, annuler",
+      "cancelKeep": "Conserver",
+      "errCancel": "Impossible d'annuler la réservation. Veuillez réessayer."
     },
     "earnings": {
       "pending": "En attente",
