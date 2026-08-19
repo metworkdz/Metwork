@@ -1231,7 +1231,10 @@ export interface RegistrationFormFieldRecord {
   id: string;
   entityType: 'PROGRAM' | 'EVENT';
   entityId: string;
-  incubatorId: string;
+  /** Owning incubator, or null when the parent program is consultant-owned. */
+  incubatorId: string | null;
+  /** Owning consultant (MentorRecord.id). Additive & nullable — see ProgramRecord.mentorId. */
+  mentorId?: string | null;
   label: string;
   type: RegistrationFieldType;
   /** For DROPDOWN / MULTIPLE_CHOICE / CHECKBOX — the list of choices. */
@@ -1254,7 +1257,10 @@ export interface RegistrationRecord {
   id: string;
   entityType: 'PROGRAM' | 'EVENT';
   entityId: string;
-  incubatorId: string;
+  /** Owning incubator, or null when the parent program is consultant-owned. */
+  incubatorId: string | null;
+  /** Owning consultant (MentorRecord.id). Additive & nullable — see ProgramRecord.mentorId. */
+  mentorId?: string | null;
   /** Null for guest (no-account) registrations. */
   userId: string | null;
   fullName: string;

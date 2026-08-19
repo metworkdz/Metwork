@@ -18,7 +18,48 @@ import {
 } from '@/server/db/store';
 import { sendResendEmail, layout } from '@/server/notifications/email';
 import { countAttendance } from '@/server/attendance';
-import { isProgramPubliclyReachable } from '@/server/programs/ownership';
+import { getProgramOwner, isProgramPubliclyReachable } from '@/server/programs/ownership';
+
+/* ─────────────────────────── Owner scope ─────────────────────────── */
+
+/**
+ * Which owner is acting. Programs (and their form fields / registrations) belong
+ * to EITHER an incubator OR a consultant — the two populations authenticate
+ * through separate systems, so every owner-scoped read/write takes this instead
+ * of a bare `incubatorId`. One implementation serves both; nothing is forked.
+ */
+export type OwnerScope =
+  | { kind: 'INCUBATOR'; incubatorId: string }
+  | { kind: 'MENTOR'; mentorId: string };
+
+/** Convenience: build a scope from an incubator id (the pre-existing callers). */
+export function incubatorScope(incubatorId: string): OwnerScope {
+  return { kind: 'INCUBATOR', incubatorId };
+}
+
+/** Convenience: build a scope from a consultant id. */
+export function mentorScope(mentorId: string): OwnerScope {
+  return { kind: 'MENTOR', mentorId };
+}
+
+/** Does an owned row belong to the acting owner? */
+function ownedBy(
+  row: { incubatorId?: string | null; mentorId?: string | null },
+  scope: OwnerScope,
+): boolean {
+  return scope.kind === 'MENTOR'
+    ? row.mentorId === scope.mentorId
+    : // A consultant-owned row must never match an incubator scope even if a
+      // stale incubatorId lingers on it.
+      !row.mentorId && row.incubatorId === scope.incubatorId;
+}
+
+/** The owner fields to stamp on a newly created row. */
+function ownerFields(scope: OwnerScope): { incubatorId: string | null; mentorId: string | null } {
+  return scope.kind === 'MENTOR'
+    ? { incubatorId: null, mentorId: scope.mentorId }
+    : { incubatorId: scope.incubatorId, mentorId: null };
+}
 
 /* ─────────────────────────── Types ─────────────────────────── */
 
@@ -36,7 +77,7 @@ export interface CreateRegistrationInput {
 export interface CreateFormFieldInput {
   entityType: 'PROGRAM' | 'EVENT';
   entityId: string;
-  incubatorId: string;
+  owner: OwnerScope;
   label: string;
   type: RegistrationFieldType;
   options: string[] | null;
@@ -89,7 +130,7 @@ export async function createFormField(
       id: randomUUID(),
       entityType: input.entityType,
       entityId: input.entityId,
-      incubatorId: input.incubatorId,
+      ...ownerFields(input.owner),
       label: input.label.trim(),
       type: input.type,
       options: input.options ?? null,
@@ -106,12 +147,12 @@ export async function createFormField(
 /** Update an existing form field. Returns null when not found. */
 export async function updateFormField(
   id: string,
-  incubatorId: string,
+  owner: OwnerScope,
   input: UpdateFormFieldInput,
 ): Promise<RegistrationFormFieldRecord | null> {
   return db.update((d) => {
     const idx = (d.registrationFormFields ?? []).findIndex(
-      (f) => f.id === id && f.incubatorId === incubatorId,
+      (f) => f.id === id && ownedBy(f, owner),
     );
     if (idx === -1) return null;
     const existing = d.registrationFormFields[idx]!;
@@ -127,10 +168,10 @@ export async function updateFormField(
 }
 
 /** Delete a form field. Also removes answers for this field from all registrations. */
-export async function deleteFormField(id: string, incubatorId: string): Promise<boolean> {
+export async function deleteFormField(id: string, owner: OwnerScope): Promise<boolean> {
   return db.update((d) => {
     const idx = (d.registrationFormFields ?? []).findIndex(
-      (f) => f.id === id && f.incubatorId === incubatorId,
+      (f) => f.id === id && ownedBy(f, owner),
     );
     if (idx === -1) return false;
     d.registrationFormFields.splice(idx, 1);
@@ -147,8 +188,11 @@ export async function deleteFormField(id: string, incubatorId: string): Promise<
 export async function replaceFormFields(
   entityType: 'PROGRAM' | 'EVENT',
   entityId: string,
-  incubatorId: string,
-  fields: Omit<RegistrationFormFieldRecord, 'id' | 'incubatorId' | 'entityType' | 'entityId' | 'createdAt' | 'updatedAt'>[],
+  owner: OwnerScope,
+  fields: Omit<
+    RegistrationFormFieldRecord,
+    'id' | 'incubatorId' | 'mentorId' | 'entityType' | 'entityId' | 'createdAt' | 'updatedAt'
+  >[],
 ): Promise<RegistrationFormFieldRecord[]> {
   const now = new Date().toISOString();
   return db.update((d) => {
@@ -173,7 +217,7 @@ export async function replaceFormFields(
       id: randomUUID(),
       entityType,
       entityId,
-      incubatorId,
+      ...ownerFields(owner),
       label: f.label,
       type: f.type,
       options: f.options,
@@ -220,8 +264,14 @@ export async function createRegistration(input: CreateRegistrationInput): Promis
   const taken = countAttendance(data, input.entityType, input.entityId);
   const status: RegistrationStatus = capacity !== null && taken >= capacity ? 'WAITLISTED' : 'CONFIRMED';
 
-  // CRM: find or create client within incubator scope
-  const incubatorId = getEntityIncubatorId(data, input.entityType, input.entityId);
+  // Owner scope comes from the entity itself: a consultant-owned program
+  // registers against the consultant, an incubator-owned one (and every event)
+  // against the incubator.
+  const owner = getEntityOwner(data, input.entityType, input.entityId);
+  // CRM clients are an INCUBATOR-side concept (ClientRecord.incubatorId), so
+  // only incubator-owned entities upsert one. Consultant registrations are
+  // still fully recorded on the RegistrationRecord itself.
+  const incubatorId = owner?.kind === 'INCUBATOR' ? owner.incubatorId : null;
 
   const registration = await db.update<RegistrationRecord>((d) => {
     if (!Array.isArray(d.registrations)) d.registrations = [];
@@ -259,7 +309,7 @@ export async function createRegistration(input: CreateRegistrationInput): Promis
       id: randomUUID(),
       entityType: input.entityType,
       entityId: input.entityId,
-      incubatorId: incubatorId ?? '',
+      ...(owner ? ownerFields(owner) : { incubatorId: null, mentorId: null }),
       userId: input.userId,
       fullName: input.fullName.trim(),
       email: input.email.trim().toLowerCase(),
@@ -284,15 +334,12 @@ export async function createRegistration(input: CreateRegistrationInput): Promis
 export async function listRegistrations(
   entityType: 'PROGRAM' | 'EVENT',
   entityId: string,
-  incubatorId: string,
+  owner: OwnerScope,
 ): Promise<RegistrationRecord[]> {
   const data = await db.read();
   return (data.registrations ?? [])
     .filter(
-      (r) =>
-        r.entityType === entityType &&
-        r.entityId === entityId &&
-        r.incubatorId === incubatorId,
+      (r) => r.entityType === entityType && r.entityId === entityId && ownedBy(r, owner),
     )
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
@@ -300,12 +347,10 @@ export async function listRegistrations(
 /** Cancel a single registration (incubator action). */
 export async function cancelRegistration(
   id: string,
-  incubatorId: string,
+  owner: OwnerScope,
 ): Promise<RegistrationRecord | null> {
   return db.update((d) => {
-    const idx = (d.registrations ?? []).findIndex(
-      (r) => r.id === id && r.incubatorId === incubatorId,
-    );
+    const idx = (d.registrations ?? []).findIndex((r) => r.id === id && ownedBy(r, owner));
     if (idx === -1) return null;
     const updated: RegistrationRecord = {
       ...d.registrations[idx]!,
@@ -334,15 +379,27 @@ function getEntityCapacity(
   return e?.capacity ?? null;
 }
 
-function getEntityIncubatorId(
+/**
+ * Resolve which owner a program/event belongs to. Programs route through the
+ * canonical ownership module (they may be consultant-owned); events are always
+ * incubator-owned today.
+ */
+function getEntityOwner(
   data: DbData,
   entityType: 'PROGRAM' | 'EVENT',
   entityId: string,
-): string | null {
+): OwnerScope | null {
   if (entityType === 'PROGRAM') {
-    return (data.programs ?? []).find((p) => p.id === entityId)?.incubatorId ?? null;
+    const program = (data.programs ?? []).find((p) => p.id === entityId);
+    if (!program) return null;
+    const owner = getProgramOwner(program);
+    if (!owner) return null;
+    return owner.kind === 'MENTOR'
+      ? { kind: 'MENTOR', mentorId: owner.mentorId }
+      : { kind: 'INCUBATOR', incubatorId: owner.incubatorId };
   }
-  return (data.events ?? []).find((e) => e.id === entityId)?.incubatorId ?? null;
+  const incubatorId = (data.events ?? []).find((e) => e.id === entityId)?.incubatorId ?? null;
+  return incubatorId ? { kind: 'INCUBATOR', incubatorId } : null;
 }
 
 function getEntityTitle(
@@ -356,10 +413,6 @@ function getEntityTitle(
   return (data.events ?? []).find((e) => e.id === entityId)?.title ?? 'Event';
 }
 
-function getIncubatorName(data: DbData, incubatorId: string): string {
-  return (data.incubators ?? []).find((i) => i.id === incubatorId)?.name ?? 'Metwork';
-}
-
 /* ─────────────────────────── Confirmation email ─────────────────────────── */
 
 async function sendConfirmationEmail(
@@ -370,8 +423,16 @@ async function sendConfirmationEmail(
 ): Promise<void> {
   try {
     const entityTitle = getEntityTitle(data, entityType, entityId);
-    const incubatorName = getIncubatorName(data, reg.incubatorId);
-    const incubator = (data.incubators ?? []).find((i) => i.id === reg.incubatorId);
+    // Host + reply-to resolve from whichever population owns the entity, so a
+    // consultant-owned program shows the consultant, not a blank incubator.
+    const mentor = reg.mentorId
+      ? (data.mentors ?? []).find((m) => m.id === reg.mentorId)
+      : undefined;
+    const incubator = reg.incubatorId
+      ? (data.incubators ?? []).find((i) => i.id === reg.incubatorId)
+      : undefined;
+    const incubatorName = mentor?.fullName ?? incubator?.name ?? 'Metwork';
+    const contactEmail = mentor?.email ?? incubator?.email ?? null;
 
     const isWaitlisted = reg.status === 'WAITLISTED';
 
@@ -429,9 +490,9 @@ async function sendConfirmationEmail(
           <td style="padding:10px 16px;font-size:13px;color:#09090b;">${escHtml(reg.phone)}</td>
         </tr>
       </table>
-      ${incubator?.email
+      ${contactEmail
         ? `<p style="margin:0;font-size:13px;color:#71717a;">
-             Questions? Contact <a href="mailto:${escHtml(incubator.email)}" style="color:#30a735;">${escHtml(incubator.email)}</a>
+             Questions? Contact <a href="mailto:${escHtml(contactEmail)}" style="color:#30a735;">${escHtml(contactEmail)}</a>
            </p>`
         : ''}
     `);
@@ -459,16 +520,13 @@ function escHtml(str: string): string {
 export async function buildRegistrationsCsv(
   entityType: 'PROGRAM' | 'EVENT',
   entityId: string,
-  incubatorId: string,
+  owner: OwnerScope,
 ): Promise<string> {
   const data = await db.read();
 
   const registrations = (data.registrations ?? [])
     .filter(
-      (r) =>
-        r.entityType === entityType &&
-        r.entityId === entityId &&
-        r.incubatorId === incubatorId,
+      (r) => r.entityType === entityType && r.entityId === entityId && ownedBy(r, owner),
     )
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 

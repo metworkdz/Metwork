@@ -8,7 +8,7 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
-import { listRegistrations, cancelRegistration } from '@/server/registrations/service';
+import { listRegistrations, cancelRegistration, incubatorScope } from '@/server/registrations/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { db } from '@/server/db/store';
 
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     return jsonError(400, 'MISSING_PARAM', 'entityId is required');
   }
 
-  let registrations = await listRegistrations(entityType, entityId, inc.id);
+  let registrations = await listRegistrations(entityType, entityId, incubatorScope(inc.id));
 
   // Attach field definitions so the client can render the answers
   const data = await db.read();
@@ -95,7 +95,7 @@ export async function DELETE(req: NextRequest) {
     throw err;
   }
 
-  const updated = await cancelRegistration(input.id, inc.id);
+  const updated = await cancelRegistration(input.id, incubatorScope(inc.id));
   if (!updated) return jsonError(404, 'NOT_FOUND', 'Registration not found');
 
   return json({ registration: updated });

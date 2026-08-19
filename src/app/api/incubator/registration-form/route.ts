@@ -14,6 +14,7 @@ import {
   listFormFields,
   replaceFormFields,
   deleteFormField,
+  incubatorScope,
 } from '@/server/registrations/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { db } from '@/server/db/store';
@@ -114,7 +115,7 @@ export async function POST(req: NextRequest) {
   const fields = await replaceFormFields(
     input.entityType,
     input.entityId,
-    inc.id,
+    incubatorScope(inc.id),
     input.fields.map((f, i) => ({
       label:    f.label,
       type:     f.type,
@@ -138,7 +139,7 @@ export async function DELETE(req: NextRequest) {
   const fieldId = searchParams.get('id');
   if (!fieldId) return jsonError(400, 'MISSING_PARAM', 'id query parameter is required');
 
-  const deleted = await deleteFormField(fieldId, inc.id);
+  const deleted = await deleteFormField(fieldId, incubatorScope(inc.id));
   if (!deleted) return jsonError(404, 'NOT_FOUND', 'Field not found');
 
   return json({ ok: true });

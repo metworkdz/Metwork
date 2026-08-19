@@ -7,7 +7,7 @@
 import type { NextRequest } from 'next/server';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
-import { buildRegistrationsCsv } from '@/server/registrations/service';
+import { buildRegistrationsCsv, incubatorScope } from '@/server/registrations/service';
 import { jsonError } from '@/server/http/json';
 import { db } from '@/server/db/store';
 
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       : (data.events ?? []).some((e) => e.id === entityId && e.incubatorId === inc.id);
   if (!owned) return jsonError(403, 'FORBIDDEN', 'This entity does not belong to your incubator');
 
-  const csv = await buildRegistrationsCsv(entityType, entityId, inc.id);
+  const csv = await buildRegistrationsCsv(entityType, entityId, incubatorScope(inc.id));
 
   const entityTitle =
     entityType === 'PROGRAM'
