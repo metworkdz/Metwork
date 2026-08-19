@@ -39,6 +39,7 @@ function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
     cashDepositType:        r.cashDepositType,
     cashDepositValue:       r.cashDepositValue,
     slug:                   r.slug ?? null,
+    isActive:               r.isActive,
   };
 }
 

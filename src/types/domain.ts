@@ -128,6 +128,8 @@ export interface Program {
   cashDepositValue?: number;
   /** URL slug for the public detail page. May be absent on legacy records. */
   slug?: string | null;
+  /** Published state. Always true on public lists; meaningful on owner lists. */
+  isActive: boolean;
 }
 
 export interface Event {

@@ -177,6 +177,56 @@ export interface ConsultantPayoutAccount {
   holderName: string;
 }
 
+/** A consultant-owned program (same ProgramRecord incubators use). */
+export interface ConsultantProgram {
+  id: string;
+  title: string;
+  description: string;
+  type: 'INCUBATION' | 'ACCELERATION' | 'TRAINING' | 'BOOTCAMP' | 'WORKSHOP' | 'WEBINAR';
+  city: string;
+  imageUrl: string | null;
+  price: number;
+  seatsTotal: number;
+  seatsTaken: number;
+  deadline: string;
+  startDate: string;
+  endDate: string;
+  slug?: string | null;
+  hostName: string;
+  isActive: boolean;
+}
+
+export interface ConsultantRegistration {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  status: 'CONFIRMED' | 'WAITLISTED' | 'CANCELLED';
+  answers: Array<{ fieldId: string; value: string | string[] }>;
+  createdAt: string;
+}
+
+export interface ConsultantFormField {
+  id: string;
+  label: string;
+  type: 'SHORT_TEXT' | 'LONG_TEXT' | 'DROPDOWN' | 'MULTIPLE_CHOICE' | 'CHECKBOX' | 'PHONE' | 'EMAIL' | 'URL';
+  options: string[] | null;
+  required: boolean;
+  order: number;
+}
+
+export interface ConsultantProgramInput {
+  title: string;
+  description: string;
+  type: ConsultantProgram['type'];
+  city: string;
+  imageUrl?: string | null;
+  seatsTotal: number;
+  deadline: string;
+  startDate: string;
+  endDate: string;
+}
+
 export const consultantService = {
   me: () => apiClient.get<ConsultantMe>('/consultant/me'),
 
@@ -302,4 +352,37 @@ export const consultantService = {
     apiClient.get<SpaceAvailabilityResponse>(
       `/spaces/${encodeURIComponent(spaceId)}/availability?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
     ),
+
+  /* ── Programs (trainings / workshops / webinars) ─────────────────────── */
+
+  programs: () =>
+    apiClient.get<{ items: ConsultantProgram[]; total: number }>('/consultant/programs'),
+  createProgram: (body: ConsultantProgramInput) =>
+    apiClient.post<ConsultantProgram>('/consultant/programs', { ...body, price: 0 }),
+  updateProgram: (id: string, body: Partial<ConsultantProgramInput> & { status?: 'DRAFT' | 'PUBLISHED' | 'CLOSED' }) =>
+    apiClient.patch<{ program: ConsultantProgram }>(
+      `/consultant/programs/${encodeURIComponent(id)}`,
+      body,
+    ),
+  deleteProgram: (id: string) =>
+    apiClient.delete<{ ok: true }>(`/consultant/programs/${encodeURIComponent(id)}`),
+
+  /** Registrants for one of the consultant's programs. */
+  programRegistrations: (entityId: string) =>
+    apiClient.get<{ registrations: ConsultantRegistration[]; total: number }>(
+      `/consultant/registrations?entityId=${encodeURIComponent(entityId)}`,
+    ),
+  cancelProgramRegistration: (id: string) =>
+    apiClient.patch<{ registration: ConsultantRegistration }>('/consultant/registrations', { id }),
+
+  /** Custom registration-form fields for one of the consultant's programs. */
+  programFormFields: (entityId: string) =>
+    apiClient.get<{ fields: ConsultantFormField[] }>(
+      `/consultant/registration-form?entityId=${encodeURIComponent(entityId)}`,
+    ),
+  saveProgramFormFields: (entityId: string, fields: Array<Omit<ConsultantFormField, 'id'>>) =>
+    apiClient.post<{ fields: ConsultantFormField[] }>('/consultant/registration-form', {
+      entityId,
+      fields,
+    }),
 };

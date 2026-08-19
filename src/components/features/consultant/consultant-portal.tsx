@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  ArrowUpRight, BadgeCheck, Building2, CalendarClock, CalendarDays, Check, ChevronRight, Copy, Link2, Loader2, LogOut,
+  ArrowUpRight, BadgeCheck, Building2, CalendarClock, CalendarDays, Check, ChevronRight, Copy, GraduationCap, Link2, Loader2, LogOut,
   MessageSquareText, Share2, ShieldOff, TrendingUp, User, Wallet,
 } from 'lucide-react';
 import { consultantService, type ConsultantMe, type ConsultantMentor } from '@/services/consultant.service';
@@ -28,10 +28,11 @@ import { ProfileSection } from './portal/profile-section';
 import { EarningsSection } from './portal/earnings-section';
 import { WalletSection } from './portal/wallet-section';
 import { SpacesSection } from './portal/spaces-section';
+import { ProgramsSection } from './portal/programs-section';
 import { LanguageSwitcher } from './portal/language-switcher';
 import { AppLogo, Avatar, CP_GREEN, CP_GREEN_TEXT, CP_LIGHT_BORDER, CP_LIGHT_MUTED, fmtDZD } from './portal/shared';
 
-type Tab = 'consultations' | 'spaces' | 'availability' | 'profile' | 'earnings' | 'wallet';
+type Tab = 'consultations' | 'programs' | 'spaces' | 'availability' | 'profile' | 'earnings' | 'wallet';
 
 export function ConsultantPortal() {
   const [phase, setPhase] = useState<'loading' | 'signedOut' | 'signedIn'>('loading');
@@ -124,6 +125,7 @@ function Dashboard({
 
   const tabs: Array<{ key: Tab; label: string; icon: typeof Wallet }> = [
     { key: 'consultations', label: t('nav.consultations'), icon: CalendarDays },
+    { key: 'programs', label: t('nav.programs'), icon: GraduationCap },
     { key: 'spaces', label: t('nav.spaces'), icon: Building2 },
     { key: 'availability', label: t('nav.availability'), icon: CalendarClock },
     { key: 'profile', label: t('nav.profile'), icon: User },
@@ -331,6 +333,7 @@ function Dashboard({
 
           {/* Active section */}
           {tab === 'consultations' && <BookingsSection mentorId={me.mentor.id} />}
+          {tab === 'programs' && <ProgramsSection />}
           {tab === 'spaces' && <SpacesSection />}
           {tab === 'availability' && <AvailabilityEditor mentor={me.mentor} onSaved={onMentor} />}
           {tab === 'profile' && <ProfileSection mentor={me.mentor} onSaved={onMentor} />}
