@@ -1,4 +1,4 @@
-import type { PlatformSettingsRecord } from '@/server/db/store';
+import type { PlatformSettingsRecord, MembershipPlanConfigRecord } from '@/server/db/store';
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettingsRecord = {
   appName:         'Metwork',
@@ -61,3 +61,55 @@ export const DEFAULT_COMMISSION_RULES = [
     updatedAt:       new Date(0).toISOString(),
   },
 ] as const;
+
+/**
+ * Default entrepreneur membership plans, seeded on first admin load (same
+ * additive, never-overwrite pattern as DEFAULT_COMMISSION_RULES).
+ *
+ * Cycle prices are DERIVED, never stored — see `computeCyclePrices` in
+ * `@/lib/billing-cycles`, the one helper shared with the incubator FLAT plan:
+ *   semesterly = monthlyPrice × semesterlyMonths          (no discount)
+ *   annual     = monthlyPrice × 12 × (1 − annualDiscount) (−30 %)
+ *
+ * With the values below:
+ *   Builder — 1 500 /mo → 9 000 / 6 mo → 12 600 / yr
+ *   Founder — 7 900 /mo → 47 400 / 6 mo → 66 360 / yr
+ *
+ * Coworking pass counts are NOT here — they stay canonical in
+ * `meta.platformConfig.{builder,founder}MonthlyCredits` (Builder 0, Founder 5).
+ */
+export const DEFAULT_MEMBERSHIP_PLAN_CONFIGS: readonly MembershipPlanConfigRecord[] = [
+  {
+    planCode:                 'ENTREPRENEUR', // Builder
+    monthlyPrice:             1_500,
+    semesterlyMonths:         6,
+    annualDiscountPercent:    30,
+    consultationDiscountRate: 0.10,
+    spaceDiscountRate:        0.15,
+    recommended:              true,
+    isActive:                 true,
+    updatedAt:                new Date(0).toISOString(),
+  },
+  {
+    planCode:                 'STARTUP', // Founder
+    monthlyPrice:             7_900,
+    semesterlyMonths:         6,
+    annualDiscountPercent:    30,
+    consultationDiscountRate: 0.10,
+    spaceDiscountRate:        0.15,
+    recommended:              false,
+    isActive:                 true,
+    updatedAt:                new Date(0).toISOString(),
+  },
+] as const;
+
+/**
+ * Discount rates as they stood BEFORE the 2026-08 repricing (Builder 15 %,
+ * Founder 20 %, asymmetric across both spaces and consultations). Used only to
+ * backfill the frozen snapshot of memberships bought under the old terms.
+ * Mirrors LEGACY_MONTHLY_PASS_COUNTS in the store.
+ */
+export const LEGACY_PLAN_DISCOUNT_RATES = {
+  ENTREPRENEUR: { spaceDiscountRate: 0.15, consultationDiscountRate: 0.15 },
+  STARTUP:      { spaceDiscountRate: 0.20, consultationDiscountRate: 0.20 },
+} as const;

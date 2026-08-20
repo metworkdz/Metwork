@@ -803,6 +803,63 @@ export interface UserMembershipRecord {
   status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
   createdAt: string;
   updatedAt: string;
+
+  // ─── Frozen snapshot (captured at purchase / renewal) ─────────────────
+  //
+  // Everything below is written ONCE, when the membership is created, and is
+  // never mutated afterwards. A later admin price or benefit change applies
+  // only to the NEXT purchase — an active member keeps the terms they bought.
+  // All fields are optional: records created before the snapshot existed have
+  // none, and readers fall back to live config (see resolveMemberBenefits).
+  /** Billing cycle purchased. */
+  billingPeriod?: 'semesterly' | 'yearly';
+  /** Pre-promo price for the purchased cycle, in integer DZD. */
+  basePrice?: number;
+  /** Integer DZD actually debited after any promo code. */
+  amountCharged?: number;
+  /** Promo percentage applied at purchase (0 when none). */
+  promoDiscountPercent?: number;
+  /** Space-booking discount fraction (0–1) locked in for this period. */
+  spaceDiscountRate?: number;
+  /** Consultation discount fraction (0–1) locked in for this period. */
+  consultationDiscountRate?: number;
+  /** Network Pass credits per month locked in for this period. */
+  monthlyPassCount?: number;
+  /** ISO timestamp the snapshot was taken. */
+  snapshotAt?: string;
+}
+
+/* ──────────────────── Membership plan configuration ──────────────────── */
+
+/**
+ * Admin-editable pricing + benefits for ONE entrepreneur membership plan.
+ *
+ * Seeded from DEFAULT_MEMBERSHIP_PLAN_CONFIGS on first admin load, exactly
+ * like commissionRules. This is the source of truth for what a NEW purchase
+ * costs and grants; already-active memberships read their own frozen snapshot
+ * (see UserMembershipRecord) and are unaffected by edits here.
+ *
+ * Network Pass credit allowances deliberately do NOT live here — they remain
+ * canonical in `meta.platformConfig.{builder,founder}MonthlyCredits`, written
+ * exclusively through `setAdminCreditConfig`, so there is one writer per value.
+ */
+export interface MembershipPlanConfigRecord {
+  /** Canonical plan code — 'ENTREPRENEUR' (Builder) | 'STARTUP' (Founder). */
+  planCode: string;
+  /** Display/reference monthly rate in DZD. Never charged directly. */
+  monthlyPrice: number;
+  /** Months in the shortest (semesterly) cycle. Default 6. */
+  semesterlyMonths: number;
+  /** Discount % applied to the 12-month lump sum. Default 30. */
+  annualDiscountPercent: number;
+  /** Consultation discount fraction (0–1). */
+  consultationDiscountRate: number;
+  /** Space/event booking discount fraction (0–1). */
+  spaceDiscountRate: number;
+  /** Show the "Recommended" tag on this plan. At most one plan should set it. */
+  recommended: boolean;
+  isActive: boolean;
+  updatedAt: string;
 }
 
 /* ─────────────────────────── Commission Rules ─────────────────────────── */
@@ -2352,9 +2409,13 @@ export interface PlatformConfig {
   payerFeeRate?: number;
 
   // ─── Network Pass credit allowances (admin-configurable) ─────────────
-  /** Monthly pass credits for Builder-tier users. Default 3. */
+  //
+  // THE canonical home for coworking pass counts — deliberately NOT duplicated
+  // into MembershipPlanConfigRecord, so `setAdminCreditConfig` stays the single
+  // writer. 0 is a valid allowance (Builder no longer includes passes).
+  /** Monthly pass credits for Builder-tier users. Default 0. */
   builderMonthlyCredits?: number;
-  /** Monthly pass credits for Founder-tier users. Default 10. */
+  /** Monthly pass credits for Founder-tier users. Default 5. */
   founderMonthlyCredits?: number;
   /** ISO datetime — last time a credit-config change was saved. */
   creditConfigUpdatedAt?: string;
@@ -2369,9 +2430,20 @@ export const defaultPlatformConfig: PlatformConfig = {
   commissionRate: 0.05,
   receiverCommissionRate: 0.05,
   payerFeeRate: 0.02,
-  builderMonthlyCredits: 3,
-  founderMonthlyCredits: 10,
+  builderMonthlyCredits: 0,
+  founderMonthlyCredits: 5,
 };
+
+/**
+ * Pass allowances as they stood BEFORE the 2026-08 membership repricing
+ * (Builder 3 / Founder 10). Used only to backfill the frozen snapshot of
+ * memberships purchased under the old terms, so those members keep what they
+ * bought until they renew. Never used for a new purchase.
+ */
+export const LEGACY_MONTHLY_PASS_COUNTS = {
+  ENTREPRENEUR: 3,
+  STARTUP:      10,
+} as const;
 
 /* ─────────────────────────── Notifications ─────────────────────────── */
 
@@ -2880,6 +2952,11 @@ interface DbShape {
   commissionRules: CommissionRuleRecord[];
   /** User membership records (one per active plan per user). */
   userMemberships: UserMembershipRecord[];
+  /**
+   * Admin-editable membership pricing + benefits, one per paid plan. Optional —
+   * legacy blobs predate it; readers must default to [] and seed additively.
+   */
+  membershipPlanConfigs?: MembershipPlanConfigRecord[];
   /** Audit log entries for admin actions. */
   auditLogs: AuditLogRecord[];
   /** In-app notifications per user. */
@@ -3020,6 +3097,7 @@ const empty: DbShape = {
   platformSettings: null,
   commissionRules: [],
   userMemberships: [],
+  membershipPlanConfigs: [],
   auditLogs: [],
   notifications: [],
   investorContacts: [],
