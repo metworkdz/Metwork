@@ -55,7 +55,11 @@ const nextConfig = {
     // booking receipt email silently fails. Keeping pdfkit external loads it
     // from node_modules (where the .afm files live) and lets Vercel's file
     // tracing include them in the serverless bundle.
-    serverComponentsExternalPackages: ['pdfkit'],
+    // `better-sqlite3` is the METWORK OS CRM's dev/test driver and is a native
+    // module — webpack cannot bundle its .node binary, so it must stay external
+    // and be loaded from node_modules. Production uses @libsql/client (pure
+    // HTTP) where this does not apply. See METWORK_OS_DEVELOPMENT_RULES.md R-30.
+    serverComponentsExternalPackages: ['pdfkit', 'better-sqlite3'],
     // The contract PDF generator reads a bundled Arabic TTF at runtime via fs.
     // process.cwd() isn't statically analyzable, so explicitly include the font
     // file in the serverless trace for the generation route (otherwise Arabic

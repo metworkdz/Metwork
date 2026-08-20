@@ -37,6 +37,19 @@ function stripLocale(pathname: string): { locale: string | null; path: string } 
 export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // METWORK OS CRM (`/metworkcrm/*`) — internal tool, French-only, deliberately
+  // OUTSIDE the `[locale]` segment (it lives at `src/app/metworkcrm/`). This
+  // matcher would otherwise hand the path to next-intl, which sees no locale
+  // prefix and redirects to `/en/metworkcrm`. Unlike `/mentordashboard` there is
+  // nothing to rewrite — the route is a real static path — so we just bypass the
+  // i18n + customer-auth logic entirely. The CRM self-guards via its own session
+  // (`metwork_crm` cookie) inside the route tree, because SQLite and node:crypto
+  // are unavailable on the Edge runtime this middleware runs on.
+  // See METWORK_OS_DEVELOPMENT_RULES.md R-4.
+  if (pathname === '/metworkcrm' || pathname.startsWith('/metworkcrm/')) {
+    return NextResponse.next();
+  }
+
   // Rebranded consultant login URL: `/consultant/login` serves the exact same
   // login page as `/mentordashboard/login` (rewrite — the URL the visitor sees
   // stays `/consultant/login`). `/consultant` itself is the public landing page

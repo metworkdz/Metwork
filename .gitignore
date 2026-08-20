@@ -40,6 +40,11 @@ yarn-error.log*
 
 # local db + DB snapshots (never commit data dumps)
 .local-db.json
+
+# METWORK OS CRM — local SQLite dev database (+ WAL/SHM siblings)
+.crm-local.db
+.crm-local.db-wal
+.crm-local.db-shm
 /backups/
 
 # typescript

@@ -1,0 +1,88 @@
+/**
+ * METWORK OS CRM — brand tokens, scoped to `[data-crm]`.
+ *
+ * The platform's own theme in src/styles/globals.css is UNTOUCHED (dev rules
+ * R-6). Everything here lives behind the `[data-crm]` attribute set on the CRM
+ * <body>, so it cannot leak into any customer-facing page.
+ *
+ * Overriding the shadcn token variables means the platform's token-driven
+ * primitives (input, label, card, table, dialog) render in CRM brand colours
+ * with zero modification. Only `button` and `badge` hardcode numeric palette
+ * shades (bg-primary-700 etc.) that a variable cannot reach — hence the local
+ * copies in components/metworkcrm/ui/.
+ *
+ * NOTE: #30a735 is the CRM's canonical green and is deliberately NOT the same
+ * as the main site's #278a3f (hsl(142 65% 30%)). The divergence is intentional
+ * and recorded in METWORK_OS_DEVELOPMENT_RULES.md R-6 — do not "fix" it.
+ */
+
+[data-crm] {
+  /* Brand */
+  --crm-green: #30a735;
+  --crm-green-hover: #2a9130;
+  --crm-green-active: #237a29;
+  --crm-black: #0d0d0d;
+
+  /* shadcn token overrides — #30a735 == hsl(122.5 55.3% 42.2%) */
+  --primary: 122.5 55.3% 42.2%;
+  --primary-foreground: 0 0% 100%;
+
+  /* #0D0D0D == hsl(0 0% 5.1%) */
+  --foreground: 0 0% 5.1%;
+  --background: 0 0% 100%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 5.1%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 5.1%;
+
+  --secondary: 0 0% 96.5%;
+  --secondary-foreground: 0 0% 5.1%;
+  --muted: 0 0% 96.5%;
+  --muted-foreground: 0 0% 42%;
+  --accent: 122 30% 95%;
+  --accent-foreground: 0 0% 5.1%;
+
+  --destructive: 0 72% 45%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 122.5 55.3% 42.2%;
+
+  /* Tighter than the marketing site — this is a dense data tool. */
+  --radius: 0.5rem;
+
+  /* Surfaces */
+  --crm-sidebar: #0d0d0d;
+  --crm-sidebar-foreground: #e8e8e8;
+  --crm-sidebar-muted: #8a8a8a;
+  --crm-sidebar-hover: #1a1a1a;
+  --crm-canvas: #fafafa;
+}
+
+/**
+ * The CRM is a light-only internal tool. The platform toggles `.dark` on <html>
+ * via next-themes, but the CRM tree never mounts that provider — this guard is
+ * belt-and-braces so a stale class on <html> can never bleed a dark palette in.
+ */
+[data-crm],
+.dark [data-crm] {
+  color-scheme: light;
+}
+
+[data-crm] body,
+body[data-crm] {
+  background-color: var(--crm-canvas);
+  color: var(--crm-black);
+}
+
+/* Space Grotesk across the whole CRM, not just numerals. */
+[data-crm] {
+  font-family: var(--font-grotesk-crm), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: 'tnum' 1;
+}
+
+[data-crm] ::selection {
+  background-color: color-mix(in srgb, var(--crm-green) 22%, transparent);
+}

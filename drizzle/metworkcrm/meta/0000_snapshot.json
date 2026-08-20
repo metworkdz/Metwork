@@ -1,0 +1,5370 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "5d074268-4cd2-4e3e-87fe-a918cca3c05b",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "crm_activity_log": {
+      "name": "crm_activity_log",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "actor_id": {
+          "name": "actor_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "diff": {
+          "name": "diff",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ip": {
+          "name": "ip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_log_entity": {
+          "name": "idx_crm_log_entity",
+          "columns": [
+            "entity_type",
+            "entity_id",
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_log_actor": {
+          "name": "idx_crm_log_actor",
+          "columns": [
+            "actor_id",
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_activity_log_actor_id_internal_users_id_fk": {
+          "name": "crm_activity_log_actor_id_internal_users_id_fk",
+          "tableFrom": "crm_activity_log",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "actor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "crm_automation_runs": {
+      "name": "crm_automation_runs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "automation_key": {
+          "name": "automation_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "rule": {
+          "name": "rule",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trigger_entity_type": {
+          "name": "trigger_entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "trigger_entity_id": {
+          "name": "trigger_entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_autorun_key": {
+          "name": "idx_crm_autorun_key",
+          "columns": [
+            "automation_key"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_autorun_status_check": {
+          "name": "crm_autorun_status_check",
+          "value": "\"status\" IN ('OK', 'ERREUR')"
+        }
+      }
+    },
+    "crm_contact_organizations": {
+      "name": "crm_contact_organizations",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_primary": {
+          "name": "is_primary",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_co_pair": {
+          "name": "idx_crm_co_pair",
+          "columns": [
+            "contact_id",
+            "organization_id"
+          ],
+          "isUnique": true
+        },
+        "idx_crm_co_org": {
+          "name": "idx_crm_co_org",
+          "columns": [
+            "organization_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_contact_organizations_contact_id_crm_contacts_id_fk": {
+          "name": "crm_contact_organizations_contact_id_crm_contacts_id_fk",
+          "tableFrom": "crm_contact_organizations",
+          "tableTo": "crm_contacts",
+          "columnsFrom": [
+            "contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "crm_contact_organizations_organization_id_crm_organizations_id_fk": {
+          "name": "crm_contact_organizations_organization_id_crm_organizations_id_fk",
+          "tableFrom": "crm_contact_organizations",
+          "tableTo": "crm_organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "crm_contacts": {
+      "name": "crm_contacts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "full_name": {
+          "name": "full_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "generated": {
+            "as": "((\"first_name\" || ' ' || \"last_name\"))",
+            "type": "stored"
+          }
+        },
+        "position": {
+          "name": "position",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "whatsapp": {
+          "name": "whatsapp",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "linkedin_url": {
+          "name": "linkedin_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "language": {
+          "name": "language",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "primary_organization_id": {
+          "name": "primary_organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'ACTIF'"
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_ref": {
+          "name": "source_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "platform_user_id": {
+          "name": "platform_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "platform_mentor_id": {
+          "name": "platform_mentor_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "display_name_cache": {
+          "name": "display_name_cache",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_contact_fullname_nc": {
+          "name": "idx_crm_contact_fullname_nc",
+          "columns": [
+            "\"full_name\" COLLATE NOCASE"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_contact_email_nc": {
+          "name": "idx_crm_contact_email_nc",
+          "columns": [
+            "\"email\" COLLATE NOCASE"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_contact_phone": {
+          "name": "idx_crm_contact_phone",
+          "columns": [
+            "phone"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_contact_org": {
+          "name": "idx_crm_contact_org",
+          "columns": [
+            "primary_organization_id"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_contact_owner": {
+          "name": "idx_crm_contact_owner",
+          "columns": [
+            "owner_id"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_contact_status": {
+          "name": "idx_crm_contact_status",
+          "columns": [
+            "status"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_contacts_primary_organization_id_crm_organizations_id_fk": {
+          "name": "crm_contacts_primary_organization_id_crm_organizations_id_fk",
+          "tableFrom": "crm_contacts",
+          "tableTo": "crm_organizations",
+          "columnsFrom": [
+            "primary_organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_contacts_owner_id_internal_users_id_fk": {
+          "name": "crm_contacts_owner_id_internal_users_id_fk",
+          "tableFrom": "crm_contacts",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_contacts_created_by_internal_users_id_fk": {
+          "name": "crm_contacts_created_by_internal_users_id_fk",
+          "tableFrom": "crm_contacts",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_contact_status_check": {
+          "name": "crm_contact_status_check",
+          "value": "\"status\" IN ('PROSPECT', 'ACTIF', 'INACTIF', 'ARCHIVE')"
+        }
+      }
+    },
+    "crm_document_links": {
+      "name": "crm_document_links",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "document_id": {
+          "name": "document_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_doclink_unique": {
+          "name": "idx_crm_doclink_unique",
+          "columns": [
+            "document_id",
+            "entity_type",
+            "entity_id"
+          ],
+          "isUnique": true
+        },
+        "idx_crm_doclink_entity": {
+          "name": "idx_crm_doclink_entity",
+          "columns": [
+            "entity_type",
+            "entity_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_document_links_document_id_crm_documents_id_fk": {
+          "name": "crm_document_links_document_id_crm_documents_id_fk",
+          "tableFrom": "crm_document_links",
+          "tableTo": "crm_documents",
+          "columnsFrom": [
+            "document_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_doclink_entity_check": {
+          "name": "crm_doclink_entity_check",
+          "value": "\"entity_type\" IN ('ORGANIZATION', 'CONTACT', 'OPPORTUNITY', 'STARTUP', 'EXPERT', 'PARTNERSHIP', 'OI_PROJECT', 'PROGRAM', 'SPACE_BOOKING', 'PAYMENT', 'TASK')"
+        }
+      }
+    },
+    "crm_documents": {
+      "name": "crm_documents",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "file_url": {
+          "name": "file_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "file_name": {
+          "name": "file_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "mime_type": {
+          "name": "mime_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "size_bytes": {
+          "name": "size_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "cloudinary_public_id": {
+          "name": "cloudinary_public_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "uploaded_by": {
+          "name": "uploaded_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_doc_type": {
+          "name": "idx_crm_doc_type",
+          "columns": [
+            "type"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_doc_title_nc": {
+          "name": "idx_crm_doc_title_nc",
+          "columns": [
+            "\"title\" COLLATE NOCASE"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_documents_uploaded_by_internal_users_id_fk": {
+          "name": "crm_documents_uploaded_by_internal_users_id_fk",
+          "tableFrom": "crm_documents",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "uploaded_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_documents_created_by_internal_users_id_fk": {
+          "name": "crm_documents_created_by_internal_users_id_fk",
+          "tableFrom": "crm_documents",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_doc_type_check": {
+          "name": "crm_doc_type_check",
+          "value": "\"type\" IN ('CONVENTION', 'CONTRAT', 'PROPOSITION', 'PRESENTATION', 'DEVIS', 'FACTURE', 'NDA', 'PROGRAMME', 'SUPPORT_FORMATION', 'RAPPORT', 'AUTRE')"
+        }
+      }
+    },
+    "crm_expert_missions": {
+      "name": "crm_expert_missions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expert_id": {
+          "name": "expert_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "startup_id": {
+          "name": "startup_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "program_id": {
+          "name": "program_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "oi_project_id": {
+          "name": "oi_project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'PREVUE'"
+        },
+        "amount": {
+          "name": "amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_mission_expert": {
+          "name": "idx_crm_mission_expert",
+          "columns": [
+            "expert_id",
+            "start_date"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_expert_missions_expert_id_crm_experts_id_fk": {
+          "name": "crm_expert_missions_expert_id_crm_experts_id_fk",
+          "tableFrom": "crm_expert_missions",
+          "tableTo": "crm_experts",
+          "columnsFrom": [
+            "expert_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "crm_expert_missions_startup_id_crm_startups_id_fk": {
+          "name": "crm_expert_missions_startup_id_crm_startups_id_fk",
+          "tableFrom": "crm_expert_missions",
+          "tableTo": "crm_startups",
+          "columnsFrom": [
+            "startup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_expert_missions_program_id_crm_programs_id_fk": {
+          "name": "crm_expert_missions_program_id_crm_programs_id_fk",
+          "tableFrom": "crm_expert_missions",
+          "tableTo": "crm_programs",
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_expert_missions_oi_project_id_crm_oi_projects_id_fk": {
+          "name": "crm_expert_missions_oi_project_id_crm_oi_projects_id_fk",
+          "tableFrom": "crm_expert_missions",
+          "tableTo": "crm_oi_projects",
+          "columnsFrom": [
+            "oi_project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_expert_missions_organization_id_crm_organizations_id_fk": {
+          "name": "crm_expert_missions_organization_id_crm_organizations_id_fk",
+          "tableFrom": "crm_expert_missions",
+          "tableTo": "crm_organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_expert_missions_created_by_internal_users_id_fk": {
+          "name": "crm_expert_missions_created_by_internal_users_id_fk",
+          "tableFrom": "crm_expert_missions",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_mission_status_check": {
+          "name": "crm_mission_status_check",
+          "value": "\"status\" IN ('PREVUE', 'EN_COURS', 'TERMINEE', 'ANNULEE')"
+        }
+      }
+    },
+    "crm_experts": {
+      "name": "crm_experts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "platform_mentor_id": {
+          "name": "platform_mentor_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "link_status": {
+          "name": "link_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "generated": {
+            "as": "((CASE WHEN \"platform_mentor_id\" IS NULL THEN 'CRM_ONLY' ELSE 'LINKED' END))",
+            "type": "stored"
+          }
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "display_name_cache": {
+          "name": "display_name_cache",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "specialties": {
+          "name": "specialties",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "pipeline_stage": {
+          "name": "pipeline_stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'PROSPECT'"
+        },
+        "stage_changed_at": {
+          "name": "stage_changed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "daily_rate": {
+          "name": "daily_rate",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "internal_notes": {
+          "name": "internal_notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "linked_at": {
+          "name": "linked_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "linked_by": {
+          "name": "linked_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_expert_mentor": {
+          "name": "idx_crm_expert_mentor",
+          "columns": [
+            "platform_mentor_id"
+          ],
+          "isUnique": true,
+          "where": "\"platform_mentor_id\" IS NOT NULL"
+        },
+        "idx_crm_expert_stage": {
+          "name": "idx_crm_expert_stage",
+          "columns": [
+            "pipeline_stage"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_expert_link": {
+          "name": "idx_crm_expert_link",
+          "columns": [
+            "link_status"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_expert_name_nc": {
+          "name": "idx_crm_expert_name_nc",
+          "columns": [
+            "\"name\" COLLATE NOCASE"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_expert_cache_nc": {
+          "name": "idx_crm_expert_cache_nc",
+          "columns": [
+            "\"display_name_cache\" COLLATE NOCASE"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_experts_organization_id_crm_organizations_id_fk": {
+          "name": "crm_experts_organization_id_crm_organizations_id_fk",
+          "tableFrom": "crm_experts",
+          "tableTo": "crm_organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_experts_contact_id_crm_contacts_id_fk": {
+          "name": "crm_experts_contact_id_crm_contacts_id_fk",
+          "tableFrom": "crm_experts",
+          "tableTo": "crm_contacts",
+          "columnsFrom": [
+            "contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_experts_owner_id_internal_users_id_fk": {
+          "name": "crm_experts_owner_id_internal_users_id_fk",
+          "tableFrom": "crm_experts",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_experts_linked_by_internal_users_id_fk": {
+          "name": "crm_experts_linked_by_internal_users_id_fk",
+          "tableFrom": "crm_experts",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "linked_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_experts_created_by_internal_users_id_fk": {
+          "name": "crm_experts_created_by_internal_users_id_fk",
+          "tableFrom": "crm_experts",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_expert_stage_check": {
+          "name": "crm_expert_stage_check",
+          "value": "\"pipeline_stage\" IN ('PROSPECT', 'CONTACTE', 'ENTRETIEN', 'VALIDE', 'CONVENTION', 'ACTIF', 'INACTIF')"
+        },
+        "crm_expert_identity_check": {
+          "name": "crm_expert_identity_check",
+          "value": "\"platform_mentor_id\" IS NOT NULL OR \"name\" IS NOT NULL"
+        }
+      }
+    },
+    "crm_interactions": {
+      "name": "crm_interactions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "direction": {
+          "name": "direction",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "duration_minutes": {
+          "name": "duration_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "opportunity_id": {
+          "name": "opportunity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "startup_id": {
+          "name": "startup_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "expert_id": {
+          "name": "expert_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "partnership_id": {
+          "name": "partnership_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "program_id": {
+          "name": "program_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "oi_project_id": {
+          "name": "oi_project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "next_action": {
+          "name": "next_action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "next_action_date": {
+          "name": "next_action_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "next_action_done": {
+          "name": "next_action_done",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_int_org_time": {
+          "name": "idx_crm_int_org_time",
+          "columns": [
+            "organization_id",
+            "occurred_at"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_int_contact_time": {
+          "name": "idx_crm_int_contact_time",
+          "columns": [
+            "contact_id",
+            "occurred_at"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_int_opp_time": {
+          "name": "idx_crm_int_opp_time",
+          "columns": [
+            "opportunity_id",
+            "occurred_at"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_int_startup_time": {
+          "name": "idx_crm_int_startup_time",
+          "columns": [
+            "startup_id",
+            "occurred_at"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_int_next_action": {
+          "name": "idx_crm_int_next_action",
+          "columns": [
+            "next_action_date"
+          ],
+          "isUnique": false,
+          "where": "\"next_action_done\" = 0"
+        },
+        "idx_crm_int_subject_nc": {
+          "name": "idx_crm_int_subject_nc",
+          "columns": [
+            "\"subject\" COLLATE NOCASE"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_int_occurred": {
+          "name": "idx_crm_int_occurred",
+          "columns": [
+            "occurred_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_interactions_contact_id_crm_contacts_id_fk": {
+          "name": "crm_interactions_contact_id_crm_contacts_id_fk",
+          "tableFrom": "crm_interactions",
+          "tableTo": "crm_contacts",
+          "columnsFrom": [
+            "contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_interactions_organization_id_crm_organizations_id_fk": {
+          "name": "crm_interactions_organization_id_crm_organizations_id_fk",
+          "tableFrom": "crm_interactions",
+          "tableTo": "crm_organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_interactions_opportunity_id_crm_opportunities_id_fk": {
+          "name": "crm_interactions_opportunity_id_crm_opportunities_id_fk",
+          "tableFrom": "crm_interactions",
+          "tableTo": "crm_opportunities",
+          "columnsFrom": [
+            "opportunity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_interactions_startup_id_crm_startups_id_fk": {
+          "name": "crm_interactions_startup_id_crm_startups_id_fk",
+          "tableFrom": "crm_interactions",
+          "tableTo": "crm_startups",
+          "columnsFrom": [
+            "startup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_interactions_expert_id_crm_experts_id_fk": {
+          "name": "crm_interactions_expert_id_crm_experts_id_fk",
+          "tableFrom": "crm_interactions",
+          "tableTo": "crm_experts",
+          "columnsFrom": [
+            "expert_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_interactions_partnership_id_crm_partnerships_id_fk": {
+          "name": "crm_interactions_partnership_id_crm_partnerships_id_fk",
+          "tableFrom": "crm_interactions",
+          "tableTo": "crm_partnerships",
+          "columnsFrom": [
+            "partnership_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_interactions_program_id_crm_programs_id_fk": {
+          "name": "crm_interactions_program_id_crm_programs_id_fk",
+          "tableFrom": "crm_interactions",
+          "tableTo": "crm_programs",
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_interactions_oi_project_id_crm_oi_projects_id_fk": {
+          "name": "crm_interactions_oi_project_id_crm_oi_projects_id_fk",
+          "tableFrom": "crm_interactions",
+          "tableTo": "crm_oi_projects",
+          "columnsFrom": [
+            "oi_project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_interactions_created_by_internal_users_id_fk": {
+          "name": "crm_interactions_created_by_internal_users_id_fk",
+          "tableFrom": "crm_interactions",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_int_type_check": {
+          "name": "crm_int_type_check",
+          "value": "\"type\" IN ('APPEL', 'EMAIL', 'WHATSAPP', 'LINKEDIN', 'REUNION', 'VISIO', 'VISITE', 'RELANCE', 'PROPOSITION', 'DOCUMENT_ENVOYE', 'AUTRE')"
+        },
+        "crm_int_link_check": {
+          "name": "crm_int_link_check",
+          "value": "\"contact_id\" IS NOT NULL OR \"organization_id\" IS NOT NULL OR \"opportunity_id\" IS NOT NULL OR \"startup_id\" IS NOT NULL OR \"expert_id\" IS NOT NULL OR \"partnership_id\" IS NOT NULL OR \"program_id\" IS NOT NULL OR \"oi_project_id\" IS NOT NULL"
+        }
+      }
+    },
+    "crm_notifications": {
+      "name": "crm_notifications",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "href": {
+          "name": "href",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "read": {
+          "name": "read",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "read_at": {
+          "name": "read_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dedupe_key": {
+          "name": "dedupe_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_notif_user_unread": {
+          "name": "idx_crm_notif_user_unread",
+          "columns": [
+            "user_id",
+            "read",
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_notif_dedupe": {
+          "name": "idx_crm_notif_dedupe",
+          "columns": [
+            "dedupe_key"
+          ],
+          "isUnique": true,
+          "where": "\"dedupe_key\" IS NOT NULL"
+        }
+      },
+      "foreignKeys": {
+        "crm_notifications_user_id_internal_users_id_fk": {
+          "name": "crm_notifications_user_id_internal_users_id_fk",
+          "tableFrom": "crm_notifications",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_notif_type_check": {
+          "name": "crm_notif_type_check",
+          "value": "\"type\" IN ('TACHE_DUE', 'RELANCE_DUE', 'PAIEMENT_RETARD', 'REUNION_30MIN', 'OPPORTUNITE_INACTIVE', 'SYSTEME')"
+        }
+      }
+    },
+    "crm_oi_experts": {
+      "name": "crm_oi_experts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "oi_project_id": {
+          "name": "oi_project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expert_id": {
+          "name": "expert_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'PRESSENTIE'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_oie_pair": {
+          "name": "idx_crm_oie_pair",
+          "columns": [
+            "oi_project_id",
+            "expert_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "crm_oi_experts_oi_project_id_crm_oi_projects_id_fk": {
+          "name": "crm_oi_experts_oi_project_id_crm_oi_projects_id_fk",
+          "tableFrom": "crm_oi_experts",
+          "tableTo": "crm_oi_projects",
+          "columnsFrom": [
+            "oi_project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "crm_oi_experts_expert_id_crm_experts_id_fk": {
+          "name": "crm_oi_experts_expert_id_crm_experts_id_fk",
+          "tableFrom": "crm_oi_experts",
+          "tableTo": "crm_experts",
+          "columnsFrom": [
+            "expert_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_oie_status_check": {
+          "name": "crm_oie_status_check",
+          "value": "\"status\" IN ('PRESSENTIE', 'MOBILISEE', 'RETENUE', 'ECARTEE')"
+        }
+      }
+    },
+    "crm_oi_projects": {
+      "name": "crm_oi_projects",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "partnership_id": {
+          "name": "partnership_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "stage": {
+          "name": "stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'ENTREPRISE_IDENTIFIEE'"
+        },
+        "stage_changed_at": {
+          "name": "stage_changed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "problem_statement": {
+          "name": "problem_statement",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "challenge_statement": {
+          "name": "challenge_statement",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "budget": {
+          "name": "budget",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'DZD'"
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "target_end_date": {
+          "name": "target_end_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_oi_stage": {
+          "name": "idx_crm_oi_stage",
+          "columns": [
+            "stage"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_oi_org": {
+          "name": "idx_crm_oi_org",
+          "columns": [
+            "organization_id"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_oi_title_nc": {
+          "name": "idx_crm_oi_title_nc",
+          "columns": [
+            "\"title\" COLLATE NOCASE"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_oi_projects_organization_id_crm_organizations_id_fk": {
+          "name": "crm_oi_projects_organization_id_crm_organizations_id_fk",
+          "tableFrom": "crm_oi_projects",
+          "tableTo": "crm_organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_oi_projects_contact_id_crm_contacts_id_fk": {
+          "name": "crm_oi_projects_contact_id_crm_contacts_id_fk",
+          "tableFrom": "crm_oi_projects",
+          "tableTo": "crm_contacts",
+          "columnsFrom": [
+            "contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_oi_projects_partnership_id_crm_partnerships_id_fk": {
+          "name": "crm_oi_projects_partnership_id_crm_partnerships_id_fk",
+          "tableFrom": "crm_oi_projects",
+          "tableTo": "crm_partnerships",
+          "columnsFrom": [
+            "partnership_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_oi_projects_owner_id_internal_users_id_fk": {
+          "name": "crm_oi_projects_owner_id_internal_users_id_fk",
+          "tableFrom": "crm_oi_projects",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_oi_projects_created_by_internal_users_id_fk": {
+          "name": "crm_oi_projects_created_by_internal_users_id_fk",
+          "tableFrom": "crm_oi_projects",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_oi_stage_check": {
+          "name": "crm_oi_stage_check",
+          "value": "\"stage\" IN ('ENTREPRISE_IDENTIFIEE', 'PROBLEME_IDENTIFIE', 'DIAGNOSTIC', 'DEFI_DEFINI', 'RECHERCHE_SOLUTION', 'STARTUPS_EXPERTS_MOBILISES', 'POC', 'EXPERIMENTATION', 'DEPLOIEMENT', 'TERMINE')"
+        }
+      }
+    },
+    "crm_oi_startups": {
+      "name": "crm_oi_startups",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "oi_project_id": {
+          "name": "oi_project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "startup_id": {
+          "name": "startup_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'PRESSENTIE'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_ois_pair": {
+          "name": "idx_crm_ois_pair",
+          "columns": [
+            "oi_project_id",
+            "startup_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "crm_oi_startups_oi_project_id_crm_oi_projects_id_fk": {
+          "name": "crm_oi_startups_oi_project_id_crm_oi_projects_id_fk",
+          "tableFrom": "crm_oi_startups",
+          "tableTo": "crm_oi_projects",
+          "columnsFrom": [
+            "oi_project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "crm_oi_startups_startup_id_crm_startups_id_fk": {
+          "name": "crm_oi_startups_startup_id_crm_startups_id_fk",
+          "tableFrom": "crm_oi_startups",
+          "tableTo": "crm_startups",
+          "columnsFrom": [
+            "startup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_ois_status_check": {
+          "name": "crm_ois_status_check",
+          "value": "\"status\" IN ('PRESSENTIE', 'MOBILISEE', 'RETENUE', 'ECARTEE')"
+        }
+      }
+    },
+    "crm_opportunities": {
+      "name": "crm_opportunities",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "stage": {
+          "name": "stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'NOUVEAU_LEAD'"
+        },
+        "amount": {
+          "name": "amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "probability": {
+          "name": "probability",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "expected_close_date": {
+          "name": "expected_close_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "lost_reason": {
+          "name": "lost_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "stage_changed_at": {
+          "name": "stage_changed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_activity_at": {
+          "name": "last_activity_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_opp_stage": {
+          "name": "idx_crm_opp_stage",
+          "columns": [
+            "stage"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_opp_org": {
+          "name": "idx_crm_opp_org",
+          "columns": [
+            "organization_id"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_opp_contact": {
+          "name": "idx_crm_opp_contact",
+          "columns": [
+            "contact_id"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_opp_owner": {
+          "name": "idx_crm_opp_owner",
+          "columns": [
+            "owner_id"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_opp_stale": {
+          "name": "idx_crm_opp_stale",
+          "columns": [
+            "stage_changed_at"
+          ],
+          "isUnique": false,
+          "where": "\"stage\" NOT IN ('GAGNE', 'PERDU')"
+        },
+        "idx_crm_opp_close": {
+          "name": "idx_crm_opp_close",
+          "columns": [
+            "expected_close_date"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_opp_title_nc": {
+          "name": "idx_crm_opp_title_nc",
+          "columns": [
+            "\"title\" COLLATE NOCASE"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_opportunities_organization_id_crm_organizations_id_fk": {
+          "name": "crm_opportunities_organization_id_crm_organizations_id_fk",
+          "tableFrom": "crm_opportunities",
+          "tableTo": "crm_organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_opportunities_contact_id_crm_contacts_id_fk": {
+          "name": "crm_opportunities_contact_id_crm_contacts_id_fk",
+          "tableFrom": "crm_opportunities",
+          "tableTo": "crm_contacts",
+          "columnsFrom": [
+            "contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_opportunities_owner_id_internal_users_id_fk": {
+          "name": "crm_opportunities_owner_id_internal_users_id_fk",
+          "tableFrom": "crm_opportunities",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_opportunities_created_by_internal_users_id_fk": {
+          "name": "crm_opportunities_created_by_internal_users_id_fk",
+          "tableFrom": "crm_opportunities",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_opp_type_check": {
+          "name": "crm_opp_type_check",
+          "value": "\"type\" IN ('COWORKING', 'SALLE', 'PACK', 'INCUBATION', 'ACCELERATION', 'PRE_INCUBATION', 'CONSULTING', 'FORMATION', 'AUTRE')"
+        },
+        "crm_opp_stage_check": {
+          "name": "crm_opp_stage_check",
+          "value": "\"stage\" IN ('NOUVEAU_LEAD', 'CONTACTE', 'BESOIN_IDENTIFIE', 'PROPOSITION_ENVOYEE', 'RELANCE', 'NEGOCIATION', 'GAGNE', 'PERDU')"
+        },
+        "crm_opp_link_check": {
+          "name": "crm_opp_link_check",
+          "value": "\"organization_id\" IS NOT NULL OR \"contact_id\" IS NOT NULL"
+        }
+      }
+    },
+    "crm_opportunity_stage_history": {
+      "name": "crm_opportunity_stage_history",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "opportunity_id": {
+          "name": "opportunity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "from_stage": {
+          "name": "from_stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "to_stage": {
+          "name": "to_stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "changed_at": {
+          "name": "changed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "changed_by": {
+          "name": "changed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_opp_hist": {
+          "name": "idx_crm_opp_hist",
+          "columns": [
+            "opportunity_id",
+            "changed_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_opportunity_stage_history_opportunity_id_crm_opportunities_id_fk": {
+          "name": "crm_opportunity_stage_history_opportunity_id_crm_opportunities_id_fk",
+          "tableFrom": "crm_opportunity_stage_history",
+          "tableTo": "crm_opportunities",
+          "columnsFrom": [
+            "opportunity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "crm_opportunity_stage_history_changed_by_internal_users_id_fk": {
+          "name": "crm_opportunity_stage_history_changed_by_internal_users_id_fk",
+          "tableFrom": "crm_opportunity_stage_history",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "changed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "crm_organizations": {
+      "name": "crm_organizations",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "legal_name": {
+          "name": "legal_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sector": {
+          "name": "sector",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "size": {
+          "name": "size",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "wilaya": {
+          "name": "wilaya",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'DZ'"
+        },
+        "website": {
+          "name": "website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "linkedin_url": {
+          "name": "linkedin_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'PROSPECT'"
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "platform_incubator_id": {
+          "name": "platform_incubator_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "platform_user_id": {
+          "name": "platform_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "display_name_cache": {
+          "name": "display_name_cache",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_org_name_nc": {
+          "name": "idx_crm_org_name_nc",
+          "columns": [
+            "\"name\" COLLATE NOCASE"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_org_type": {
+          "name": "idx_crm_org_type",
+          "columns": [
+            "type"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_org_status": {
+          "name": "idx_crm_org_status",
+          "columns": [
+            "status"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_org_city": {
+          "name": "idx_crm_org_city",
+          "columns": [
+            "city"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_org_sector": {
+          "name": "idx_crm_org_sector",
+          "columns": [
+            "sector"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_org_owner": {
+          "name": "idx_crm_org_owner",
+          "columns": [
+            "owner_id"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_org_platform": {
+          "name": "idx_crm_org_platform",
+          "columns": [
+            "platform_incubator_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_organizations_owner_id_internal_users_id_fk": {
+          "name": "crm_organizations_owner_id_internal_users_id_fk",
+          "tableFrom": "crm_organizations",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_organizations_created_by_internal_users_id_fk": {
+          "name": "crm_organizations_created_by_internal_users_id_fk",
+          "tableFrom": "crm_organizations",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_org_type_check": {
+          "name": "crm_org_type_check",
+          "value": "\"type\" IN ('ENTREPRISE', 'STARTUP', 'INCUBATEUR', 'ACCELERATEUR', 'UNIVERSITE', 'INSTITUTION_PUBLIQUE', 'ONG_ASSOCIATION', 'INVESTISSEUR', 'MEDIA', 'AUTRE')"
+        },
+        "crm_org_status_check": {
+          "name": "crm_org_status_check",
+          "value": "\"status\" IN ('PROSPECT', 'ACTIF', 'INACTIF', 'ARCHIVE')"
+        }
+      }
+    },
+    "crm_partnership_contacts": {
+      "name": "crm_partnership_contacts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "partnership_id": {
+          "name": "partnership_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_partc_pair": {
+          "name": "idx_crm_partc_pair",
+          "columns": [
+            "partnership_id",
+            "contact_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "crm_partnership_contacts_partnership_id_crm_partnerships_id_fk": {
+          "name": "crm_partnership_contacts_partnership_id_crm_partnerships_id_fk",
+          "tableFrom": "crm_partnership_contacts",
+          "tableTo": "crm_partnerships",
+          "columnsFrom": [
+            "partnership_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "crm_partnership_contacts_contact_id_crm_contacts_id_fk": {
+          "name": "crm_partnership_contacts_contact_id_crm_contacts_id_fk",
+          "tableFrom": "crm_partnership_contacts",
+          "tableTo": "crm_contacts",
+          "columnsFrom": [
+            "contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "crm_partnerships": {
+      "name": "crm_partnerships",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "stage": {
+          "name": "stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'PROSPECT'"
+        },
+        "stage_changed_at": {
+          "name": "stage_changed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "value_amount": {
+          "name": "value_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "renewal_date": {
+          "name": "renewal_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "platform_partner_membership_id": {
+          "name": "platform_partner_membership_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "display_name_cache": {
+          "name": "display_name_cache",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_part_stage": {
+          "name": "idx_crm_part_stage",
+          "columns": [
+            "stage"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_part_org": {
+          "name": "idx_crm_part_org",
+          "columns": [
+            "organization_id"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_part_name_nc": {
+          "name": "idx_crm_part_name_nc",
+          "columns": [
+            "\"name\" COLLATE NOCASE"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_partnerships_organization_id_crm_organizations_id_fk": {
+          "name": "crm_partnerships_organization_id_crm_organizations_id_fk",
+          "tableFrom": "crm_partnerships",
+          "tableTo": "crm_organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "crm_partnerships_owner_id_internal_users_id_fk": {
+          "name": "crm_partnerships_owner_id_internal_users_id_fk",
+          "tableFrom": "crm_partnerships",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_partnerships_created_by_internal_users_id_fk": {
+          "name": "crm_partnerships_created_by_internal_users_id_fk",
+          "tableFrom": "crm_partnerships",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_part_type_check": {
+          "name": "crm_part_type_check",
+          "value": "\"type\" IN ('CORPORATE', 'INCUBATEUR', 'ACCELERATEUR', 'UNIVERSITE', 'INSTITUTION', 'ONG', 'MEDIA', 'INVESTISSEUR', 'AUTRE')"
+        },
+        "crm_part_stage_check": {
+          "name": "crm_part_stage_check",
+          "value": "\"stage\" IN ('PROSPECT', 'CONTACTE', 'CONVERSATION', 'REUNION', 'PROPOSITION', 'NEGOCIATION', 'ACTIF', 'TERMINE')"
+        }
+      }
+    },
+    "crm_payments": {
+      "name": "crm_payments",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'DZD'"
+        },
+        "direction": {
+          "name": "direction",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'IN'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'EN_ATTENTE'"
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "paid_at": {
+          "name": "paid_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "method": {
+          "name": "method",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reminder_1_sent_at": {
+          "name": "reminder_1_sent_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reminder_2_sent_at": {
+          "name": "reminder_2_sent_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "opportunity_id": {
+          "name": "opportunity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "space_booking_id": {
+          "name": "space_booking_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "program_id": {
+          "name": "program_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "partnership_id": {
+          "name": "partnership_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "oi_project_id": {
+          "name": "oi_project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "external_ref": {
+          "name": "external_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_pay_status_due": {
+          "name": "idx_crm_pay_status_due",
+          "columns": [
+            "status",
+            "due_date"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_pay_overdue": {
+          "name": "idx_crm_pay_overdue",
+          "columns": [
+            "due_date"
+          ],
+          "isUnique": false,
+          "where": "\"status\" IN ('EN_ATTENTE', 'RELANCE_1', 'RELANCE_2')"
+        },
+        "idx_crm_pay_org": {
+          "name": "idx_crm_pay_org",
+          "columns": [
+            "organization_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_payments_opportunity_id_crm_opportunities_id_fk": {
+          "name": "crm_payments_opportunity_id_crm_opportunities_id_fk",
+          "tableFrom": "crm_payments",
+          "tableTo": "crm_opportunities",
+          "columnsFrom": [
+            "opportunity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_payments_space_booking_id_crm_space_bookings_id_fk": {
+          "name": "crm_payments_space_booking_id_crm_space_bookings_id_fk",
+          "tableFrom": "crm_payments",
+          "tableTo": "crm_space_bookings",
+          "columnsFrom": [
+            "space_booking_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_payments_program_id_crm_programs_id_fk": {
+          "name": "crm_payments_program_id_crm_programs_id_fk",
+          "tableFrom": "crm_payments",
+          "tableTo": "crm_programs",
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_payments_organization_id_crm_organizations_id_fk": {
+          "name": "crm_payments_organization_id_crm_organizations_id_fk",
+          "tableFrom": "crm_payments",
+          "tableTo": "crm_organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_payments_contact_id_crm_contacts_id_fk": {
+          "name": "crm_payments_contact_id_crm_contacts_id_fk",
+          "tableFrom": "crm_payments",
+          "tableTo": "crm_contacts",
+          "columnsFrom": [
+            "contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_payments_partnership_id_crm_partnerships_id_fk": {
+          "name": "crm_payments_partnership_id_crm_partnerships_id_fk",
+          "tableFrom": "crm_payments",
+          "tableTo": "crm_partnerships",
+          "columnsFrom": [
+            "partnership_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_payments_oi_project_id_crm_oi_projects_id_fk": {
+          "name": "crm_payments_oi_project_id_crm_oi_projects_id_fk",
+          "tableFrom": "crm_payments",
+          "tableTo": "crm_oi_projects",
+          "columnsFrom": [
+            "oi_project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_payments_created_by_internal_users_id_fk": {
+          "name": "crm_payments_created_by_internal_users_id_fk",
+          "tableFrom": "crm_payments",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_pay_direction_check": {
+          "name": "crm_pay_direction_check",
+          "value": "\"direction\" IN ('IN', 'OUT')"
+        },
+        "crm_pay_status_check": {
+          "name": "crm_pay_status_check",
+          "value": "\"status\" IN ('EN_ATTENTE', 'RELANCE_1', 'RELANCE_2', 'PAYE', 'ANNULE')"
+        },
+        "crm_pay_link_check": {
+          "name": "crm_pay_link_check",
+          "value": "\"opportunity_id\" IS NOT NULL OR \"space_booking_id\" IS NOT NULL OR \"program_id\" IS NOT NULL OR \"organization_id\" IS NOT NULL OR \"contact_id\" IS NOT NULL OR \"partnership_id\" IS NOT NULL OR \"oi_project_id\" IS NOT NULL"
+        }
+      }
+    },
+    "crm_program_participants": {
+      "name": "crm_program_participants",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "program_id": {
+          "name": "program_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "startup_id": {
+          "name": "startup_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "full_name": {
+          "name": "full_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'INSCRIT'"
+        },
+        "attended": {
+          "name": "attended",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "satisfaction_score": {
+          "name": "satisfaction_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "amount_due": {
+          "name": "amount_due",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "platform_registration_id": {
+          "name": "platform_registration_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "display_name_cache": {
+          "name": "display_name_cache",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_pp_program": {
+          "name": "idx_crm_pp_program",
+          "columns": [
+            "program_id",
+            "status"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_pp_contact": {
+          "name": "idx_crm_pp_contact",
+          "columns": [
+            "contact_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_program_participants_program_id_crm_programs_id_fk": {
+          "name": "crm_program_participants_program_id_crm_programs_id_fk",
+          "tableFrom": "crm_program_participants",
+          "tableTo": "crm_programs",
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "crm_program_participants_contact_id_crm_contacts_id_fk": {
+          "name": "crm_program_participants_contact_id_crm_contacts_id_fk",
+          "tableFrom": "crm_program_participants",
+          "tableTo": "crm_contacts",
+          "columnsFrom": [
+            "contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_program_participants_startup_id_crm_startups_id_fk": {
+          "name": "crm_program_participants_startup_id_crm_startups_id_fk",
+          "tableFrom": "crm_program_participants",
+          "tableTo": "crm_startups",
+          "columnsFrom": [
+            "startup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_program_participants_organization_id_crm_organizations_id_fk": {
+          "name": "crm_program_participants_organization_id_crm_organizations_id_fk",
+          "tableFrom": "crm_program_participants",
+          "tableTo": "crm_organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_program_participants_created_by_internal_users_id_fk": {
+          "name": "crm_program_participants_created_by_internal_users_id_fk",
+          "tableFrom": "crm_program_participants",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_pp_status_check": {
+          "name": "crm_pp_status_check",
+          "value": "\"status\" IN ('INSCRIT', 'CONFIRME', 'PRESENT', 'ABSENT', 'ANNULE')"
+        },
+        "crm_pp_identity_check": {
+          "name": "crm_pp_identity_check",
+          "value": "\"contact_id\" IS NOT NULL OR \"full_name\" IS NOT NULL"
+        }
+      }
+    },
+    "crm_program_partners": {
+      "name": "crm_program_partners",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "program_id": {
+          "name": "program_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "partnership_id": {
+          "name": "partnership_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_ppart_program": {
+          "name": "idx_crm_ppart_program",
+          "columns": [
+            "program_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_program_partners_program_id_crm_programs_id_fk": {
+          "name": "crm_program_partners_program_id_crm_programs_id_fk",
+          "tableFrom": "crm_program_partners",
+          "tableTo": "crm_programs",
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "crm_program_partners_partnership_id_crm_partnerships_id_fk": {
+          "name": "crm_program_partners_partnership_id_crm_partnerships_id_fk",
+          "tableFrom": "crm_program_partners",
+          "tableTo": "crm_partnerships",
+          "columnsFrom": [
+            "partnership_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_program_partners_organization_id_crm_organizations_id_fk": {
+          "name": "crm_program_partners_organization_id_crm_organizations_id_fk",
+          "tableFrom": "crm_program_partners",
+          "tableTo": "crm_organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_ppart_link_check": {
+          "name": "crm_ppart_link_check",
+          "value": "\"partnership_id\" IS NOT NULL OR \"organization_id\" IS NOT NULL"
+        }
+      }
+    },
+    "crm_program_trainers": {
+      "name": "crm_program_trainers",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "program_id": {
+          "name": "program_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expert_id": {
+          "name": "expert_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "fee": {
+          "name": "fee",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "confirmed": {
+          "name": "confirmed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_pt_pair": {
+          "name": "idx_crm_pt_pair",
+          "columns": [
+            "program_id",
+            "expert_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "crm_program_trainers_program_id_crm_programs_id_fk": {
+          "name": "crm_program_trainers_program_id_crm_programs_id_fk",
+          "tableFrom": "crm_program_trainers",
+          "tableTo": "crm_programs",
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "crm_program_trainers_expert_id_crm_experts_id_fk": {
+          "name": "crm_program_trainers_expert_id_crm_experts_id_fk",
+          "tableFrom": "crm_program_trainers",
+          "tableTo": "crm_experts",
+          "columnsFrom": [
+            "expert_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "crm_programs": {
+      "name": "crm_programs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "stage": {
+          "name": "stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'IDEE'"
+        },
+        "stage_changed_at": {
+          "name": "stage_changed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "venue": {
+          "name": "venue",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "capacity": {
+          "name": "capacity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "price": {
+          "name": "price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "platform_program_id": {
+          "name": "platform_program_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "platform_event_id": {
+          "name": "platform_event_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "display_name_cache": {
+          "name": "display_name_cache",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_prog_stage": {
+          "name": "idx_crm_prog_stage",
+          "columns": [
+            "stage"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_prog_dates": {
+          "name": "idx_crm_prog_dates",
+          "columns": [
+            "start_date"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_prog_title_nc": {
+          "name": "idx_crm_prog_title_nc",
+          "columns": [
+            "\"title\" COLLATE NOCASE"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_prog_platform_prog": {
+          "name": "idx_crm_prog_platform_prog",
+          "columns": [
+            "platform_program_id"
+          ],
+          "isUnique": true,
+          "where": "\"platform_program_id\" IS NOT NULL"
+        },
+        "idx_crm_prog_platform_event": {
+          "name": "idx_crm_prog_platform_event",
+          "columns": [
+            "platform_event_id"
+          ],
+          "isUnique": true,
+          "where": "\"platform_event_id\" IS NOT NULL"
+        }
+      },
+      "foreignKeys": {
+        "crm_programs_owner_id_internal_users_id_fk": {
+          "name": "crm_programs_owner_id_internal_users_id_fk",
+          "tableFrom": "crm_programs",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_programs_created_by_internal_users_id_fk": {
+          "name": "crm_programs_created_by_internal_users_id_fk",
+          "tableFrom": "crm_programs",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_prog_type_check": {
+          "name": "crm_prog_type_check",
+          "value": "\"type\" IN ('FORMATION', 'BOOTCAMP', 'INCUBATION', 'ACCELERATION', 'EVENEMENT', 'WEBINAIRE', 'AUTRE')"
+        },
+        "crm_prog_stage_check": {
+          "name": "crm_prog_stage_check",
+          "value": "\"stage\" IN ('IDEE', 'PLANIFICATION', 'FORMATEUR_CONFIRME', 'PROMOTION', 'INSCRIPTIONS', 'EN_COURS', 'TERMINE', 'REPORTING')"
+        },
+        "crm_prog_single_platform_link": {
+          "name": "crm_prog_single_platform_link",
+          "value": "\"platform_program_id\" IS NULL OR \"platform_event_id\" IS NULL"
+        }
+      }
+    },
+    "crm_sessions": {
+      "name": "crm_sessions",
+      "columns": {
+        "id_hash": {
+          "name": "id_hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_sessions_user": {
+          "name": "idx_crm_sessions_user",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_sessions_expires": {
+          "name": "idx_crm_sessions_expires",
+          "columns": [
+            "expires_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_sessions_user_id_internal_users_id_fk": {
+          "name": "crm_sessions_user_id_internal_users_id_fk",
+          "tableFrom": "crm_sessions",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "crm_settings": {
+      "name": "crm_settings",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_settings_key": {
+          "name": "idx_crm_settings_key",
+          "columns": [
+            "key"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "crm_settings_updated_by_internal_users_id_fk": {
+          "name": "crm_settings_updated_by_internal_users_id_fk",
+          "tableFrom": "crm_settings",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "crm_space_bookings": {
+      "name": "crm_space_bookings",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reference": {
+          "name": "reference",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "space_label": {
+          "name": "space_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "space_type": {
+          "name": "space_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "opportunity_id": {
+          "name": "opportunity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "start_at": {
+          "name": "start_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "end_at": {
+          "name": "end_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "attendees": {
+          "name": "attendees",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "quoted_amount": {
+          "name": "quoted_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "final_amount": {
+          "name": "final_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'DEMANDE'"
+        },
+        "platform_space_id": {
+          "name": "platform_space_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "display_name_cache": {
+          "name": "display_name_cache",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_book_reference": {
+          "name": "idx_crm_book_reference",
+          "columns": [
+            "reference"
+          ],
+          "isUnique": true
+        },
+        "idx_crm_book_status": {
+          "name": "idx_crm_book_status",
+          "columns": [
+            "status",
+            "start_at"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_book_org": {
+          "name": "idx_crm_book_org",
+          "columns": [
+            "organization_id"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_book_dates": {
+          "name": "idx_crm_book_dates",
+          "columns": [
+            "start_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_space_bookings_organization_id_crm_organizations_id_fk": {
+          "name": "crm_space_bookings_organization_id_crm_organizations_id_fk",
+          "tableFrom": "crm_space_bookings",
+          "tableTo": "crm_organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_space_bookings_contact_id_crm_contacts_id_fk": {
+          "name": "crm_space_bookings_contact_id_crm_contacts_id_fk",
+          "tableFrom": "crm_space_bookings",
+          "tableTo": "crm_contacts",
+          "columnsFrom": [
+            "contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_space_bookings_opportunity_id_crm_opportunities_id_fk": {
+          "name": "crm_space_bookings_opportunity_id_crm_opportunities_id_fk",
+          "tableFrom": "crm_space_bookings",
+          "tableTo": "crm_opportunities",
+          "columnsFrom": [
+            "opportunity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_space_bookings_owner_id_internal_users_id_fk": {
+          "name": "crm_space_bookings_owner_id_internal_users_id_fk",
+          "tableFrom": "crm_space_bookings",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_space_bookings_created_by_internal_users_id_fk": {
+          "name": "crm_space_bookings_created_by_internal_users_id_fk",
+          "tableFrom": "crm_space_bookings",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_book_type_check": {
+          "name": "crm_book_type_check",
+          "value": "\"space_type\" IN ('COWORKING', 'BUREAU_PRIVE', 'SALLE_REUNION', 'SALLE_FORMATION', 'EVENEMENT', 'DOMICILIATION', 'AUTRE')"
+        },
+        "crm_book_status_check": {
+          "name": "crm_book_status_check",
+          "value": "\"status\" IN ('DEMANDE', 'VERIFICATION_DISPO', 'DEVIS_ENVOYE', 'ATTENTE_CONFIRMATION', 'CONFIRME', 'PAYE', 'TERMINE', 'ANNULE')"
+        },
+        "crm_book_link_check": {
+          "name": "crm_book_link_check",
+          "value": "\"organization_id\" IS NOT NULL OR \"contact_id\" IS NOT NULL"
+        }
+      }
+    },
+    "crm_startups": {
+      "name": "crm_startups",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "platform_listing_id": {
+          "name": "platform_listing_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "link_status": {
+          "name": "link_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "generated": {
+            "as": "((CASE WHEN \"platform_listing_id\" IS NULL THEN 'CRM_ONLY' ELSE 'LINKED' END))",
+            "type": "stored"
+          }
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "display_name_cache": {
+          "name": "display_name_cache",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sector": {
+          "name": "sector",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "website": {
+          "name": "website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "founder_name": {
+          "name": "founder_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "founder_email": {
+          "name": "founder_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "founder_phone": {
+          "name": "founder_phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "primary_contact_id": {
+          "name": "primary_contact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "pipeline_stage": {
+          "name": "pipeline_stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'LEAD'"
+        },
+        "stage_changed_at": {
+          "name": "stage_changed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "assigned_expert_id": {
+          "name": "assigned_expert_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "program_id": {
+          "name": "program_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "linked_at": {
+          "name": "linked_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "linked_by": {
+          "name": "linked_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_startup_listing": {
+          "name": "idx_crm_startup_listing",
+          "columns": [
+            "platform_listing_id"
+          ],
+          "isUnique": true,
+          "where": "\"platform_listing_id\" IS NOT NULL"
+        },
+        "idx_crm_startup_stage": {
+          "name": "idx_crm_startup_stage",
+          "columns": [
+            "pipeline_stage"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_startup_link": {
+          "name": "idx_crm_startup_link",
+          "columns": [
+            "link_status"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_startup_expert": {
+          "name": "idx_crm_startup_expert",
+          "columns": [
+            "assigned_expert_id"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_startup_program": {
+          "name": "idx_crm_startup_program",
+          "columns": [
+            "program_id"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_startup_name_nc": {
+          "name": "idx_crm_startup_name_nc",
+          "columns": [
+            "\"name\" COLLATE NOCASE"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_startup_cache_nc": {
+          "name": "idx_crm_startup_cache_nc",
+          "columns": [
+            "\"display_name_cache\" COLLATE NOCASE"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_startups_organization_id_crm_organizations_id_fk": {
+          "name": "crm_startups_organization_id_crm_organizations_id_fk",
+          "tableFrom": "crm_startups",
+          "tableTo": "crm_organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_startups_primary_contact_id_crm_contacts_id_fk": {
+          "name": "crm_startups_primary_contact_id_crm_contacts_id_fk",
+          "tableFrom": "crm_startups",
+          "tableTo": "crm_contacts",
+          "columnsFrom": [
+            "primary_contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_startups_assigned_expert_id_crm_experts_id_fk": {
+          "name": "crm_startups_assigned_expert_id_crm_experts_id_fk",
+          "tableFrom": "crm_startups",
+          "tableTo": "crm_experts",
+          "columnsFrom": [
+            "assigned_expert_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_startups_program_id_crm_programs_id_fk": {
+          "name": "crm_startups_program_id_crm_programs_id_fk",
+          "tableFrom": "crm_startups",
+          "tableTo": "crm_programs",
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_startups_owner_id_internal_users_id_fk": {
+          "name": "crm_startups_owner_id_internal_users_id_fk",
+          "tableFrom": "crm_startups",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_startups_linked_by_internal_users_id_fk": {
+          "name": "crm_startups_linked_by_internal_users_id_fk",
+          "tableFrom": "crm_startups",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "linked_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_startups_created_by_internal_users_id_fk": {
+          "name": "crm_startups_created_by_internal_users_id_fk",
+          "tableFrom": "crm_startups",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_startup_stage_check": {
+          "name": "crm_startup_stage_check",
+          "value": "\"pipeline_stage\" IN ('LEAD', 'DIAGNOSTIC', 'BESOINS_IDENTIFIES', 'PROGRAMME_PACK', 'ONBOARDING', 'ACTIF', 'TERMINE', 'ALUMNI')"
+        },
+        "crm_startup_identity_check": {
+          "name": "crm_startup_identity_check",
+          "value": "\"platform_listing_id\" IS NOT NULL OR \"name\" IS NOT NULL"
+        }
+      }
+    },
+    "crm_tasks": {
+      "name": "crm_tasks",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "priority": {
+          "name": "priority",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'MOYENNE'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'INBOX'"
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "due_at": {
+          "name": "due_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "assignee_id": {
+          "name": "assignee_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "opportunity_id": {
+          "name": "opportunity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "startup_id": {
+          "name": "startup_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "expert_id": {
+          "name": "expert_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "partnership_id": {
+          "name": "partnership_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "program_id": {
+          "name": "program_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "oi_project_id": {
+          "name": "oi_project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "booking_id": {
+          "name": "booking_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "payment_id": {
+          "name": "payment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'MANUAL'"
+        },
+        "automation_key": {
+          "name": "automation_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_crm_task_automation": {
+          "name": "idx_crm_task_automation",
+          "columns": [
+            "automation_key"
+          ],
+          "isUnique": true,
+          "where": "\"automation_key\" IS NOT NULL"
+        },
+        "idx_crm_task_assignee_due": {
+          "name": "idx_crm_task_assignee_due",
+          "columns": [
+            "assignee_id",
+            "due_date"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_task_status_due": {
+          "name": "idx_crm_task_status_due",
+          "columns": [
+            "status",
+            "due_date"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_task_open_due": {
+          "name": "idx_crm_task_open_due",
+          "columns": [
+            "due_date"
+          ],
+          "isUnique": false,
+          "where": "\"status\" != 'TERMINEE'"
+        },
+        "idx_crm_task_org": {
+          "name": "idx_crm_task_org",
+          "columns": [
+            "organization_id"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_task_contact": {
+          "name": "idx_crm_task_contact",
+          "columns": [
+            "contact_id"
+          ],
+          "isUnique": false
+        },
+        "idx_crm_task_title_nc": {
+          "name": "idx_crm_task_title_nc",
+          "columns": [
+            "\"title\" COLLATE NOCASE"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "crm_tasks_assignee_id_internal_users_id_fk": {
+          "name": "crm_tasks_assignee_id_internal_users_id_fk",
+          "tableFrom": "crm_tasks",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "assignee_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_tasks_contact_id_crm_contacts_id_fk": {
+          "name": "crm_tasks_contact_id_crm_contacts_id_fk",
+          "tableFrom": "crm_tasks",
+          "tableTo": "crm_contacts",
+          "columnsFrom": [
+            "contact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_tasks_organization_id_crm_organizations_id_fk": {
+          "name": "crm_tasks_organization_id_crm_organizations_id_fk",
+          "tableFrom": "crm_tasks",
+          "tableTo": "crm_organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_tasks_opportunity_id_crm_opportunities_id_fk": {
+          "name": "crm_tasks_opportunity_id_crm_opportunities_id_fk",
+          "tableFrom": "crm_tasks",
+          "tableTo": "crm_opportunities",
+          "columnsFrom": [
+            "opportunity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_tasks_startup_id_crm_startups_id_fk": {
+          "name": "crm_tasks_startup_id_crm_startups_id_fk",
+          "tableFrom": "crm_tasks",
+          "tableTo": "crm_startups",
+          "columnsFrom": [
+            "startup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_tasks_expert_id_crm_experts_id_fk": {
+          "name": "crm_tasks_expert_id_crm_experts_id_fk",
+          "tableFrom": "crm_tasks",
+          "tableTo": "crm_experts",
+          "columnsFrom": [
+            "expert_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_tasks_partnership_id_crm_partnerships_id_fk": {
+          "name": "crm_tasks_partnership_id_crm_partnerships_id_fk",
+          "tableFrom": "crm_tasks",
+          "tableTo": "crm_partnerships",
+          "columnsFrom": [
+            "partnership_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_tasks_program_id_crm_programs_id_fk": {
+          "name": "crm_tasks_program_id_crm_programs_id_fk",
+          "tableFrom": "crm_tasks",
+          "tableTo": "crm_programs",
+          "columnsFrom": [
+            "program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_tasks_oi_project_id_crm_oi_projects_id_fk": {
+          "name": "crm_tasks_oi_project_id_crm_oi_projects_id_fk",
+          "tableFrom": "crm_tasks",
+          "tableTo": "crm_oi_projects",
+          "columnsFrom": [
+            "oi_project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_tasks_booking_id_crm_space_bookings_id_fk": {
+          "name": "crm_tasks_booking_id_crm_space_bookings_id_fk",
+          "tableFrom": "crm_tasks",
+          "tableTo": "crm_space_bookings",
+          "columnsFrom": [
+            "booking_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_tasks_payment_id_crm_payments_id_fk": {
+          "name": "crm_tasks_payment_id_crm_payments_id_fk",
+          "tableFrom": "crm_tasks",
+          "tableTo": "crm_payments",
+          "columnsFrom": [
+            "payment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "crm_tasks_created_by_internal_users_id_fk": {
+          "name": "crm_tasks_created_by_internal_users_id_fk",
+          "tableFrom": "crm_tasks",
+          "tableTo": "internal_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "crm_task_priority_check": {
+          "name": "crm_task_priority_check",
+          "value": "\"priority\" IN ('URGENTE', 'HAUTE', 'MOYENNE', 'BASSE')"
+        },
+        "crm_task_status_check": {
+          "name": "crm_task_status_check",
+          "value": "\"status\" IN ('INBOX', 'A_FAIRE', 'EN_COURS', 'EN_ATTENTE', 'TERMINEE')"
+        },
+        "crm_task_source_check": {
+          "name": "crm_task_source_check",
+          "value": "\"source\" IN ('MANUAL', 'AUTOMATION')"
+        },
+        "crm_task_link_check": {
+          "name": "crm_task_link_check",
+          "value": "\"contact_id\" IS NOT NULL OR \"organization_id\" IS NOT NULL OR \"opportunity_id\" IS NOT NULL OR \"startup_id\" IS NOT NULL OR \"expert_id\" IS NOT NULL OR \"partnership_id\" IS NOT NULL OR \"program_id\" IS NOT NULL OR \"oi_project_id\" IS NOT NULL OR \"booking_id\" IS NOT NULL OR \"payment_id\" IS NOT NULL"
+        }
+      }
+    },
+    "internal_users": {
+      "name": "internal_users",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "must_change_password": {
+          "name": "must_change_password",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_login_at": {
+          "name": "last_login_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_internal_users_email": {
+          "name": "idx_internal_users_email",
+          "columns": [
+            "email"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "internal_users_role_check": {
+          "name": "internal_users_role_check",
+          "value": "\"role\" IN ('ADMIN', 'TEAM_MEMBER')"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {
+      "idx_crm_contact_fullname_nc": {
+        "columns": {
+          "\"full_name\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      },
+      "idx_crm_contact_email_nc": {
+        "columns": {
+          "\"email\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      },
+      "idx_crm_doc_title_nc": {
+        "columns": {
+          "\"title\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      },
+      "idx_crm_expert_name_nc": {
+        "columns": {
+          "\"name\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      },
+      "idx_crm_expert_cache_nc": {
+        "columns": {
+          "\"display_name_cache\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      },
+      "idx_crm_int_subject_nc": {
+        "columns": {
+          "\"subject\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      },
+      "idx_crm_oi_title_nc": {
+        "columns": {
+          "\"title\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      },
+      "idx_crm_opp_title_nc": {
+        "columns": {
+          "\"title\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      },
+      "idx_crm_org_name_nc": {
+        "columns": {
+          "\"name\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      },
+      "idx_crm_part_name_nc": {
+        "columns": {
+          "\"name\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      },
+      "idx_crm_prog_title_nc": {
+        "columns": {
+          "\"title\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      },
+      "idx_crm_startup_name_nc": {
+        "columns": {
+          "\"name\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      },
+      "idx_crm_startup_cache_nc": {
+        "columns": {
+          "\"display_name_cache\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      },
+      "idx_crm_task_title_nc": {
+        "columns": {
+          "\"title\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      }
+    }
+  }
+}
