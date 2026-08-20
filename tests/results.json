@@ -244,44 +244,40 @@
   },
   "suites": [
     {
-      "title": "incubator.spec.ts",
-      "file": "incubator.spec.ts",
+      "title": "api/membership-pricing.spec.ts",
+      "file": "api/membership-pricing.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "🟠 Incubator Agent",
-          "file": "incubator.spec.ts",
-          "line": 28,
+          "title": "Membership pricing — config, purchase, frozen snapshot",
+          "file": "api/membership-pricing.spec.ts",
+          "line": 186,
           "column": 6,
           "specs": [
             {
-              "title": "I01 — Login and dashboard loads",
+              "title": "public pricing page shows the configured terms, the cycle toggle, and Recommended on Builder only",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 45000,
+                  "timeout": 90000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
+                  "projectId": "membership-pricing",
+                  "projectName": "membership-pricing",
                   "results": [
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8572,
+                      "duration": 11761,
                       "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I01 — Login & Dashboard\n"
-                        }
-                      ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:43:41.292Z",
+                      "startTime": "2026-08-20T21:31:08.024Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -289,121 +285,67 @@
                   "status": "expected"
                 }
               ],
-              "id": "2b746f50a791f3b28f19-ffcad1ecc32f69197b4b",
-              "file": "incubator.spec.ts",
-              "line": 31,
+              "id": "ecde4baaa6a943f14bad-1941d2e23d4a4a7ff0c6",
+              "file": "api/membership-pricing.spec.ts",
+              "line": 224,
               "column": 7
             },
             {
-              "title": "I02 — No console errors on dashboard",
+              "title": "Builder charges exactly 9 000 semesterly and 12 600 annually",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 45000,
+                  "timeout": 90000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
+                  "projectId": "membership-pricing",
+                  "projectName": "membership-pricing",
                   "results": [
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "timedOut",
-                      "duration": 50596,
-                      "error": {
-                        "message": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m",
-                        "stack": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m"
-                      },
-                      "errors": [
-                        {
-                          "message": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m"
-                        }
-                      ],
-                      "stdout": [
-                        {
-                          "text": "❌ [INCUBATOR] I02 — No Console Errors | Failed to load resource: the server responded with a status of 500 (Internal Server Error) | Cannot read properties of null (reading 'useContext') | Loading plugin data from 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBpZD0ic3ZnIj48dGV4dCB4PSIxMCIgeT0iMjAiIGlkPSJzdmctbGluay10ZXh0Ij50ZXh0PC90ZXh0Pjwvc3ZnPg==' violates the following Content Security Policy directive: \"object-src 'none'\". The action has been blocked.\n"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 18309,
+                      "errors": [],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:43:50.320Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-6ea4e-console-errors-on-dashboard-incubator/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-6ea4e-console-errors-on-dashboard-incubator/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-6ea4e-console-errors-on-dashboard-incubator/error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-6ea4e-console-errors-on-dashboard-incubator/trace.zip"
-                        }
-                      ]
-                    },
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 6195,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I02 — No Console Errors\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 1,
-                      "startTime": "2026-08-20T17:44:42.710Z",
+                      "startTime": "2026-08-20T21:31:23.574Z",
                       "annotations": [],
                       "attachments": []
                     }
                   ],
-                  "status": "flaky"
+                  "status": "expected"
                 }
               ],
-              "id": "2b746f50a791f3b28f19-9204bd9e1f4f09148bb0",
-              "file": "incubator.spec.ts",
-              "line": 42,
+              "id": "ecde4baaa6a943f14bad-3a31f196c8b8a2bc05b2",
+              "file": "api/membership-pricing.spec.ts",
+              "line": 265,
               "column": 7
             },
             {
-              "title": "I03 — Analytics page renders",
+              "title": "Founder charges exactly 47 400 semesterly and 66 360 annually",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 45000,
+                  "timeout": 90000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
+                  "projectId": "membership-pricing",
+                  "projectName": "membership-pricing",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 37534,
+                      "duration": 619,
                       "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I03 — Analytics\n"
-                        }
-                      ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:44:49.268Z",
+                      "startTime": "2026-08-20T21:31:41.903Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -411,615 +353,33 @@
                   "status": "expected"
                 }
               ],
-              "id": "2b746f50a791f3b28f19-aac09d761143b24dbfa2",
-              "file": "incubator.spec.ts",
-              "line": 58,
-              "column": 9
-            },
-            {
-              "title": "I04 — Clients page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 26011,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I04 — Clients\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:45:26.827Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "2b746f50a791f3b28f19-7ab6faf58613c601fcf7",
-              "file": "incubator.spec.ts",
-              "line": 58,
-              "column": 9
-            },
-            {
-              "title": "I05 — Income page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 25706,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I05 — Income\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:45:52.867Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "2b746f50a791f3b28f19-658a5d8b84cc54de24d6",
-              "file": "incubator.spec.ts",
-              "line": 58,
-              "column": 9
-            },
-            {
-              "title": "I06 — Expenses page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 15567,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I06 — Expenses\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:46:18.597Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "2b746f50a791f3b28f19-c4f4bbb30d1409220a09",
-              "file": "incubator.spec.ts",
-              "line": 58,
-              "column": 9
-            },
-            {
-              "title": "I07 — Services page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 23348,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I07 — Services\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:46:34.187Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "2b746f50a791f3b28f19-a15f0417cc39f717c631",
-              "file": "incubator.spec.ts",
-              "line": 58,
-              "column": 9
-            },
-            {
-              "title": "I08 — Spaces page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 33798,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I08 — Spaces\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:46:57.584Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "2b746f50a791f3b28f19-ebab57c15ccefc1d363d",
-              "file": "incubator.spec.ts",
-              "line": 58,
-              "column": 9
-            },
-            {
-              "title": "I09 — Programs page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 20688,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I09 — Programs\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:47:31.409Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "2b746f50a791f3b28f19-ab4c606d792f9f125d92",
-              "file": "incubator.spec.ts",
-              "line": 58,
-              "column": 9
-            },
-            {
-              "title": "I10 — Events page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 21637,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I10 — Events\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:47:52.116Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "2b746f50a791f3b28f19-338f0842563e936423a5",
-              "file": "incubator.spec.ts",
-              "line": 58,
-              "column": 9
-            },
-            {
-              "title": "I11 — Bookings page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 28523,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I11 — Bookings\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:48:13.782Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "2b746f50a791f3b28f19-b2c20d85d843c6e609a2",
-              "file": "incubator.spec.ts",
-              "line": 58,
-              "column": 9
-            },
-            {
-              "title": "I12 — Revenue page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 13515,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I12 — Revenue\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:48:42.323Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "2b746f50a791f3b28f19-1af566713b63aecc8410",
-              "file": "incubator.spec.ts",
-              "line": 58,
-              "column": 9
-            },
-            {
-              "title": "I13 — Invoices page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 12571,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I13 — Invoices\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:48:55.853Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "2b746f50a791f3b28f19-be7ce8f2404af9c7be8d",
-              "file": "incubator.spec.ts",
-              "line": 58,
-              "column": 9
-            },
-            {
-              "title": "I14 — Wallet page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 18162,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I14 — Wallet\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:49:08.439Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "2b746f50a791f3b28f19-f5ad75b60faa1e47460d",
-              "file": "incubator.spec.ts",
-              "line": 58,
-              "column": 9
-            },
-            {
-              "title": "I15 — Settings page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 29624,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I15 — Settings\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:49:26.617Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "2b746f50a791f3b28f19-30e4f530e5ed0fd8dcdd",
-              "file": "incubator.spec.ts",
-              "line": 58,
-              "column": 9
-            },
-            {
-              "title": "I16 — Create space dialog opens",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 24235,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I16 — Create Space Dialog\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:49:56.252Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "2b746f50a791f3b28f19-f1ca3eb07d5480040c27",
-              "file": "incubator.spec.ts",
-              "line": 76,
+              "id": "ecde4baaa6a943f14bad-3ffe05407e6761a76b7a",
+              "file": "api/membership-pricing.spec.ts",
+              "line": 277,
               "column": 7
             },
             {
-              "title": "I17 — Income form: service field is a select/dropdown (not free text)",
+              "title": "a repeated purchase with the same clientReference never charges twice",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 45000,
+                  "timeout": 90000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
+                  "projectId": "membership-pricing",
+                  "projectName": "membership-pricing",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "timedOut",
-                      "duration": 47208,
-                      "error": {
-                        "message": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m",
-                        "stack": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m"
-                      },
-                      "errors": [
-                        {
-                          "message": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m"
-                        }
-                      ],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I17 — Income Service Is Dropdown\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:50:20.503Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-014b0-ect-dropdown-not-free-text--incubator/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-014b0-ect-dropdown-not-free-text--incubator/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-014b0-ect-dropdown-not-free-text--incubator/error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-014b0-ect-dropdown-not-free-text--incubator/trace.zip"
-                        }
-                      ]
-                    },
-                    {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 13200,
+                      "duration": 515,
                       "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I17 — Income Service Is Dropdown\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 1,
-                      "startTime": "2026-08-20T17:51:09.799Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "flaky"
-                }
-              ],
-              "id": "2b746f50a791f3b28f19-65382250cd8152d3704c",
-              "file": "incubator.spec.ts",
-              "line": 103,
-              "column": 7
-            },
-            {
-              "title": "I18 — Create program dialog/form opens",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
-                  "results": [
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 18249,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I18 — Create Program Form\n"
-                        }
-                      ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:51:23.313Z",
+                      "startTime": "2026-08-20T21:31:42.541Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1027,37 +387,33 @@
                   "status": "expected"
                 }
               ],
-              "id": "2b746f50a791f3b28f19-376486e237628139897c",
-              "file": "incubator.spec.ts",
-              "line": 133,
+              "id": "ecde4baaa6a943f14bad-490fbd1f79b994504e1a",
+              "file": "api/membership-pricing.spec.ts",
+              "line": 289,
               "column": 7
             },
             {
-              "title": "I19 — Bookings list renders",
+              "title": "a Builder member gets exactly 10 % off a consultation and 15 % off a space booking",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 45000,
+                  "timeout": 90000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
+                  "projectId": "membership-pricing",
+                  "projectName": "membership-pricing",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 12702,
+                      "duration": 5928,
                       "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I19 — Bookings List\n"
-                        }
-                      ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:51:41.586Z",
+                      "startTime": "2026-08-20T21:31:43.120Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1065,37 +421,33 @@
                   "status": "expected"
                 }
               ],
-              "id": "2b746f50a791f3b28f19-c20f261b9bbb67e3ca0f",
-              "file": "incubator.spec.ts",
-              "line": 149,
+              "id": "ecde4baaa6a943f14bad-487f745eee03011d35c1",
+              "file": "api/membership-pricing.spec.ts",
+              "line": 311,
               "column": 7
             },
             {
-              "title": "I20 — Dashboard usable on mobile (375px)",
+              "title": "a Founder member gets 5 coworking passes and a Builder member gets none",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 45000,
+                  "timeout": 90000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "incubator",
-                  "projectName": "incubator",
+                  "projectId": "membership-pricing",
+                  "projectName": "membership-pricing",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6921,
+                      "duration": 770,
                       "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [INCUBATOR] I20 — Mobile Responsive\n"
-                        }
-                      ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:51:54.318Z",
+                      "startTime": "2026-08-20T21:31:49.074Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1103,9 +455,111 @@
                   "status": "expected"
                 }
               ],
-              "id": "2b746f50a791f3b28f19-60d4e26ae48f73d45ac4",
-              "file": "incubator.spec.ts",
-              "line": 159,
+              "id": "ecde4baaa6a943f14bad-ea78dafdd9ed4d17fd0c",
+              "file": "api/membership-pricing.spec.ts",
+              "line": 342,
+              "column": 7
+            },
+            {
+              "title": "an admin price change reaches new purchases only — an active member keeps the terms they bought",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "membership-pricing",
+                  "projectName": "membership-pricing",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2191,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-20T21:31:49.883Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ecde4baaa6a943f14bad-125b8a974c9091043ae4",
+              "file": "api/membership-pricing.spec.ts",
+              "line": 364,
+              "column": 7
+            },
+            {
+              "title": "a promo code and the membership discount never combine — only the larger applies",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "membership-pricing",
+                  "projectName": "membership-pricing",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2652,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-20T21:31:52.100Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ecde4baaa6a943f14bad-432b1f6626e8d3f20eea",
+              "file": "api/membership-pricing.spec.ts",
+              "line": 444,
+              "column": 7
+            },
+            {
+              "title": "a FREE-tier account gets no discount, no passes, and pays list price",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "membership-pricing",
+                  "projectName": "membership-pricing",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1251,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-20T21:31:54.776Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ecde4baaa6a943f14bad-19f23983bd825d407c12",
+              "file": "api/membership-pricing.spec.ts",
+              "line": 477,
               "column": 7
             }
           ]
@@ -1115,11 +569,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-20T17:42:39.305Z",
-    "duration": 562122.8470000001,
-    "expected": 18,
+    "startTime": "2026-08-20T21:30:33.203Z",
+    "duration": 83595.76699999999,
+    "expected": 9,
     "skipped": 0,
     "unexpected": 0,
-    "flaky": 2
+    "flaky": 0
   }
 }
