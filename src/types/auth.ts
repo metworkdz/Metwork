@@ -99,6 +99,14 @@ export interface SessionUser {
   membershipTier?: 'EXPLORER' | 'BUILDER' | 'FOUNDER';
   /** ISO datetime when the current membership started. */
   membershipStartDate?: string | null;
+  /**
+   * Membership discount rates locked in at purchase (0–1). Present so client
+   * price previews use the member's ACTUAL frozen rates instead of re-deriving
+   * them from the tier — a later admin change must not move an active member's
+   * displayed price. Absent ⇒ the client shows no tier discount.
+   */
+  membershipSpaceDiscountRate?: number;
+  membershipConsultationDiscountRate?: number;
   /** Network pass credits remaining this billing cycle. */
   networkCredits?: number;
   /** Monthly allowance for this tier. */

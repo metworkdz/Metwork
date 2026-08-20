@@ -3,15 +3,26 @@
  *
  * Source of truth for:
  *   - Effective membership code (checks expiry)
- *   - Per-tier space booking discount
- *   - Per-tier consultation discount (re-exported from the client-safe lib)
- *   - Membership prices
+ *   - Per-member space / consultation / event discount, resolved through the
+ *     frozen snapshot first (see `resolveMemberBenefits`)
+ *   - Per-tier consultation discount constants (re-exported from the client-safe lib)
+ *
+ * NOTE ON PRICING: what a NEW purchase costs now comes from
+ * `@/server/memberships/plan-config` (DB-backed, admin-editable). The
+ * MEMBERSHIP_PRICES / SPACE_DISCOUNT constants below survive only as the
+ * last-resort fallback and as the record of pre-repricing terms.
  */
-import { db } from '@/server/db/store';
+import { db, type UserMembershipRecord, type MembershipPlanConfigRecord, type PlatformConfig } from '@/server/db/store';
 import {
   CONSULTATION_DISCOUNT,
   consultationDiscountFraction,
 } from '@/lib/consultation-pricing';
+import {
+  normalizePlanCode,
+  planConfigsFrom,
+  passCountFrom,
+  type PaidPlanCode,
+} from '@/server/memberships/plan-config';
 
 // Re-export the canonical consultation-discount constant + resolver so server
 // callers have a single import surface. The definition lives in the client-safe
@@ -35,7 +46,13 @@ export interface MembershipUserLike {
 // ---------------------------------------------------------------------------
 
 /**
- * Space booking discount fraction per membership tier (e.g. 0.20 = 20 % off).
+ * LEGACY space-booking discount fractions — the asymmetric Builder 15 % /
+ * Founder 20 % split that applied before the 2026-08 repricing.
+ *
+ * NO LONGER THE LIVE RATE. Live rates resolve through `resolveMemberBenefits`
+ * (frozen snapshot → user mirror → plan config). This map is kept because
+ * memberships bought under these terms are grandfathered onto them, and it is
+ * the shape the historical regression test asserts against.
  * Keyed by both old membershipCode and new membershipTier.
  */
 export const SPACE_DISCOUNT: Record<string, number> = {
@@ -46,13 +63,11 @@ export const SPACE_DISCOUNT: Record<string, number> = {
 };
 
 /**
- * Membership prices in integer DZD.
+ * LEGACY membership prices in integer DZD (pre-2026-08 repricing).
  *
- * Entrepreneurs are billed SEMESTERLY (6 months, no discount) or YEARLY
- * (12 months, 30 % off). `monthly` is the per-month figure shown in the UI
- * — it is never charged directly.
- *   semesterly = monthly × 6   (no discount)
- *   yearly     = monthly × 12 × 0.7   (30 % off)
+ * NO LONGER THE CHARGED PRICE — the purchase route reads
+ * `getPlanConfig()` + `computeCyclePrices()`. Retained so historical analytics
+ * rows whose transactions predate `basePrice` metadata can still be valued.
  */
 export const MEMBERSHIP_PRICES: Record<
   string,
@@ -109,32 +124,160 @@ export function getEffectiveMembershipCode(user: MembershipUserLike): string {
   return 'FREE';
 }
 
+// ---------------------------------------------------------------------------
+// Member benefits — frozen-snapshot resolution
+// ---------------------------------------------------------------------------
+
+/** Where a member's resolved rates came from. Useful in tests and debugging. */
+export type MemberBenefitsSource = 'snapshot' | 'user' | 'config' | 'none';
+
+export interface MemberBenefits {
+  /** Effective membership code — 'FREE' when absent or expired. */
+  code: string;
+  /** Canonical paid plan code, or null when the member is on FREE. */
+  planCode: PaidPlanCode | null;
+  /** Space + event booking discount fraction (0–1). */
+  spaceDiscountRate: number;
+  /** Consultation discount fraction (0–1). */
+  consultationDiscountRate: number;
+  /** Network Pass credits granted per month. */
+  monthlyPassCount: number;
+  source: MemberBenefitsSource;
+}
+
+const NO_BENEFITS: MemberBenefits = {
+  code: 'FREE',
+  planCode: null,
+  spaceDiscountRate: 0,
+  consultationDiscountRate: 0,
+  monthlyPassCount: 0,
+  source: 'none',
+};
+
+/** User shape `resolveMemberBenefits` needs. Satisfied by UserRecord. */
+export type BenefitUserLike = MembershipUserLike & {
+  id: string;
+  membershipSpaceDiscountRate?: number;
+  membershipConsultationDiscountRate?: number;
+};
+
+/** Minimal doc slice `resolveMemberBenefits` reads. */
+type BenefitsSource = {
+  userMemberships?: UserMembershipRecord[];
+  membershipPlanConfigs?: MembershipPlanConfigRecord[];
+  meta?: { platformConfig?: PlatformConfig };
+};
+
 /**
- * Compute the space-booking discount percentage for a given user (0 if none).
+ * THE benefit resolver. Every discount and pass allowance in the app resolves
+ * through this one function so a member can never be charged one rate and
+ * shown another.
+ *
+ * Resolution order — most specific (and most frozen) first:
+ *
+ *   1. **Frozen snapshot** on the member's ACTIVE UserMembershipRecord. This is
+ *      what they bought. An admin repricing must never move it.
+ *   2. **User-record mirror** (`membershipSpaceDiscountRate` etc.) — covers
+ *      grants that create no membership record, e.g. partner promos.
+ *   3. **Live plan config** — the current terms, for members with neither.
+ *   4. Zero, for FREE / expired / unknown codes.
+ *
+ * Pass counts follow the same order but skip step 2: `networkCreditsMax` on the
+ * user is the cron's *output*, not a source of truth, so reading it back here
+ * would be circular.
  */
-export async function getSpaceDiscountForUser(userId: string): Promise<number> {
+export function resolveMemberBenefits(
+  data: BenefitsSource,
+  user: BenefitUserLike,
+): MemberBenefits {
+  const code = getEffectiveMembershipCode(user);
+  const planCode = normalizePlanCode(code);
+  if (!planCode) return { ...NO_BENEFITS, code };
+
+  const config =
+    planConfigsFrom(data).find((c) => c.planCode === planCode) ?? null;
+  const configPassCount = passCountFrom(data, planCode);
+
+  // 1. Frozen snapshot on the active membership record.
+  const snapshot = (data.userMemberships ?? []).find(
+    (m) =>
+      m.userId === user.id &&
+      m.status === 'ACTIVE' &&
+      normalizePlanCode(m.plan) === planCode &&
+      m.spaceDiscountRate !== undefined,
+  );
+  if (snapshot) {
+    return {
+      code,
+      planCode,
+      spaceDiscountRate:        clamp01(snapshot.spaceDiscountRate),
+      consultationDiscountRate: clamp01(snapshot.consultationDiscountRate),
+      monthlyPassCount:         Math.max(0, snapshot.monthlyPassCount ?? configPassCount),
+      source: 'snapshot',
+    };
+  }
+
+  // 2. User-record mirror (grants that create no membership record).
+  if (user.membershipSpaceDiscountRate !== undefined) {
+    return {
+      code,
+      planCode,
+      spaceDiscountRate:        clamp01(user.membershipSpaceDiscountRate),
+      consultationDiscountRate: clamp01(user.membershipConsultationDiscountRate),
+      monthlyPassCount:         configPassCount,
+      source: 'user',
+    };
+  }
+
+  // 3. Live config.
+  return {
+    code,
+    planCode,
+    spaceDiscountRate:        clamp01(config?.spaceDiscountRate),
+    consultationDiscountRate: clamp01(config?.consultationDiscountRate),
+    monthlyPassCount:         configPassCount,
+    source: 'config',
+  };
+}
+
+function clamp01(value: number | null | undefined): number {
+  if (value == null || !Number.isFinite(value)) return 0;
+  return Math.min(1, Math.max(0, value));
+}
+
+/** Async form of `resolveMemberBenefits`, keyed by user id. */
+export async function getMemberBenefits(userId: string): Promise<MemberBenefits> {
   const data = await db.read();
   const user = data.users.find((u) => u.id === userId);
-  if (!user) return 0;
-  const effectiveCode = getEffectiveMembershipCode(user);
-  return SPACE_DISCOUNT[effectiveCode] ?? 0;
+  if (!user) return { ...NO_BENEFITS };
+  return resolveMemberBenefits(data, user);
+}
+
+/**
+ * Compute the space-booking discount fraction for a given user (0 if none).
+ * Snapshot-aware — see `resolveMemberBenefits`.
+ */
+export async function getSpaceDiscountForUser(userId: string): Promise<number> {
+  return (await getMemberBenefits(userId)).spaceDiscountRate;
 }
 
 /**
  * Compute the automatic consultation discount fraction for a given user
- * (0 if none). Mirrors `getSpaceDiscountForUser` — Builder 15 %, Founder 20 %.
+ * (0 if none). Snapshot-aware — see `resolveMemberBenefits`.
  */
 export async function getConsultationDiscountForUser(userId: string): Promise<number> {
-  const data = await db.read();
-  const user = data.users.find((u) => u.id === userId);
-  if (!user) return 0;
-  return consultationDiscountFraction(getEffectiveMembershipCode(user));
+  return (await getMemberBenefits(userId)).consultationDiscountRate;
 }
 
 /**
- * Compute the event-registration discount percentage for a given user.
- * Mirrors `SPACE_DISCOUNT` — Builder/Founder get the same fraction off events.
+ * Compute the event-registration discount fraction for a given user.
+ * Events intentionally share the space rate.
  */
 export async function getEventDiscountForUser(userId: string): Promise<number> {
   return getSpaceDiscountForUser(userId);
+}
+
+/** Monthly Network Pass allowance for a given user (snapshot-aware). */
+export async function getMonthlyPassCountForUser(userId: string): Promise<number> {
+  return (await getMemberBenefits(userId)).monthlyPassCount;
 }

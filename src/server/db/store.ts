@@ -73,9 +73,20 @@ export interface UserRecord {
   /** ISO datetime — when the paid membership renews / re-charges. */
   membershipRenewalDate?: string | null;
 
+  /**
+   * Discount rates locked in when the current membership was bought — the
+   * working mirror of the frozen snapshot on the UserMembershipRecord, kept
+   * here so the serialized session can carry them to the browser without an
+   * extra lookup. Written ONLY by the purchase / admin-grant paths, alongside
+   * networkCreditsMax. The UserMembershipRecord snapshot stays authoritative
+   * for money; these are the display mirror. Absent ⇒ fall back to live config.
+   */
+  membershipSpaceDiscountRate?: number;
+  membershipConsultationDiscountRate?: number;
+
   /** Network pass credits remaining this billing cycle. */
   networkCredits?: number;
-  /** Monthly allowance — 3 for Builder, 10 for Founder, 0 for Explorer. */
+  /** Monthly allowance — 0 for Builder, 5 for Founder, 0 for Explorer. */
   networkCreditsMax?: number;
   /** ISO datetime — next 1st-of-month UTC when credits reset to networkCreditsMax. */
   networkCreditsResetDate?: string | null;
@@ -827,6 +838,12 @@ export interface UserMembershipRecord {
   monthlyPassCount?: number;
   /** ISO timestamp the snapshot was taken. */
   snapshotAt?: string;
+  /**
+   * Caller-supplied idempotency key for the purchase that created this record.
+   * A retry carrying the same key returns this record instead of charging
+   * again. Optional — absent on records created before idempotency existed.
+   */
+  clientReference?: string;
 }
 
 /* ──────────────────── Membership plan configuration ──────────────────── */
@@ -3059,6 +3076,13 @@ interface DbShape {
     platformConfig?: PlatformConfig;
     /** ISO timestamp — set once the one-time per-space → per-incubator partner migration runs. */
     partnerPerIncubatorMigratedAt?: string;
+    /**
+     * ISO timestamp — set once memberships that predate frozen snapshots have
+     * been backfilled with the terms live at the time they were bought
+     * (pre-2026-08 repricing). Guards the one-time backfill in
+     * `ensureMembershipPlanConfigs`.
+     */
+    membershipLegacyTermsBackfilledAt?: string;
   };
 }
 

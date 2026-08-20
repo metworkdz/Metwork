@@ -7,7 +7,8 @@ import crypto from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
-import { db, defaultPlatformConfig } from '@/server/db/store';
+import { db, type UserMembershipRecord } from '@/server/db/store';
+import { planConfigsFrom, passCountFrom, normalizePlanCode } from '@/server/memberships/plan-config';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
       .filter((m) => m.userId === input.userId && m.status === 'ACTIVE')
       .forEach((m) => { m.status = 'CANCELLED'; m.updatedAt = now; });
 
-    const record = {
+    const record: UserMembershipRecord = {
       id:        crypto.randomUUID(),
       userId:    input.userId,
       plan:      input.plan,
@@ -74,23 +75,28 @@ export async function POST(req: NextRequest) {
     // monthly cron fires — meaning the partner-incubator owner can't
     // actually use their pass for weeks. Mirrors the logic in
     // `partner-promo-service.applyPromoCode` (~lines 480-505).
-    const cfg = store.meta?.platformConfig;
-    const builderCredits =
-      cfg?.builderMonthlyCredits ?? defaultPlatformConfig.builderMonthlyCredits ?? 3;
-    const founderCredits =
-      cfg?.founderMonthlyCredits ?? defaultPlatformConfig.founderMonthlyCredits ?? 10;
+    // Allowance comes from the canonical platform config, never from literals.
+    const allowance = passCountFrom(store, input.plan);
+    const planCode = normalizePlanCode(input.plan);
+    const planConfig = planCode
+      ? planConfigsFrom(store).find((c) => c.planCode === planCode) ?? null
+      : null;
 
-    let tier: 'EXPLORER' | 'BUILDER' | 'FOUNDER';
-    let allowance: number;
-    if (input.plan === 'STARTUP') {
-      tier = 'FOUNDER';
-      allowance = founderCredits;
-    } else if (input.plan === 'ENTREPRENEUR') {
-      tier = 'BUILDER';
-      allowance = builderCredits;
+    const tier: 'EXPLORER' | 'BUILDER' | 'FOUNDER' =
+      input.plan === 'STARTUP' ? 'FOUNDER' : input.plan === 'ENTREPRENEUR' ? 'BUILDER' : 'EXPLORER';
+
+    // Freeze the granted terms onto the record + user mirror, exactly like a
+    // paid purchase, so the grant is not silently repriced by a later edit.
+    if (planConfig) {
+      record.spaceDiscountRate        = planConfig.spaceDiscountRate;
+      record.consultationDiscountRate = planConfig.consultationDiscountRate;
+      record.monthlyPassCount         = allowance;
+      record.snapshotAt               = now;
+      user.membershipSpaceDiscountRate        = planConfig.spaceDiscountRate;
+      user.membershipConsultationDiscountRate = planConfig.consultationDiscountRate;
     } else {
-      tier = 'EXPLORER';
-      allowance = 0;
+      delete user.membershipSpaceDiscountRate;
+      delete user.membershipConsultationDiscountRate;
     }
 
     user.membershipTier = tier;

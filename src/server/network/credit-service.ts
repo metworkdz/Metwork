@@ -26,6 +26,7 @@ import {
   type UserRecord,
 } from '@/server/db/store';
 import { appendAuditLog } from '@/server/audit/service';
+import { resolveMemberBenefits } from '@/server/memberships/service';
 import { createNotification } from '@/server/notifications/create-notification';
 import {
   sendResendEmail,
@@ -138,13 +139,10 @@ export async function getUserCredits(userId: string): Promise<UserCreditsInfo> {
   const user = data.users.find((u) => u.id === userId);
   if (!user) throw new Error(`getUserCredits: user ${userId} not found`);
 
-  const config = await getAdminCreditConfig();
   const tier = resolvedTier(user);
-  const max = tier === 'FOUNDER'
-    ? config.founderCredits
-    : tier === 'BUILDER'
-      ? config.builderCredits
-      : 0;
+  // Snapshot-aware, so a grandfathered member sees the allowance they bought
+  // rather than the current plan's.
+  const max = resolveMemberBenefits(data, user).monthlyPassCount;
 
   const now = new Date();
   const resetDate = nextFirstOfMonth(now);
@@ -239,7 +237,6 @@ export async function resetMonthlyCredits(): Promise<ResetCreditsResult> {
   let usersReset = 0;
 
   try {
-    const config = await getAdminCreditConfig();
     const nextReset = nextFirstOfMonth(new Date()).toISOString();
 
     await db.update((d) => {
@@ -248,7 +245,10 @@ export async function resetMonthlyCredits(): Promise<ResetCreditsResult> {
         if (tier === 'EXPLORER') continue;
 
         try {
-          const max = tier === 'FOUNDER' ? config.founderCredits : config.builderCredits;
+          // Snapshot-aware: a member grandfathered on a larger allowance keeps
+          // it for the life of their billing period. Reading the live config
+          // here directly would silently downgrade them on the 1st of a month.
+          const max = resolveMemberBenefits(d, user).monthlyPassCount;
           user.networkCredits = max;
           user.networkCreditsMax = max;
           user.networkCreditsResetDate = nextReset;
@@ -285,18 +285,20 @@ export async function resetMonthlyCredits(): Promise<ResetCreditsResult> {
 async function sendResetNotifications(): Promise<void> {
   try {
     const data = await db.read();
-    const config = await getAdminCreditConfig();
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz';
 
+    // Members on a 0-pass plan (Builder) have nothing to be told about — a
+    // "you now have 0 credits" message would be noise, not a notification.
     const eligible = data.users.filter((u) => {
       const tier = resolvedTier(u);
-      return tier !== 'EXPLORER';
+      if (tier === 'EXPLORER') return false;
+      return resolveMemberBenefits(data, u).monthlyPassCount > 0;
     });
 
     await Promise.allSettled(
       eligible.map(async (user) => {
         const tier = resolvedTier(user);
-        const newCredits = tier === 'FOUNDER' ? config.founderCredits : config.builderCredits;
+        const newCredits = resolveMemberBenefits(data, user).monthlyPassCount;
 
         // In-app notification
         await createNotification({
@@ -372,11 +374,13 @@ export async function setAdminCreditConfig(
   adminId: string,
 ): Promise<SetCreditConfigResult> {
   // ── Validate inputs ──────────────────────────────────────────────────────
-  if (!Number.isInteger(builderAmount) || builderAmount < 1 || builderAmount > 100) {
-    throw new Error('builderAmount must be an integer between 1 and 100');
+  // 0 is a valid allowance — the Builder plan no longer includes coworking
+  // passes, so the lower bound is 0 rather than 1.
+  if (!Number.isInteger(builderAmount) || builderAmount < 0 || builderAmount > 100) {
+    throw new Error('builderAmount must be an integer between 0 and 100');
   }
-  if (!Number.isInteger(founderAmount) || founderAmount < 1 || founderAmount > 100) {
-    throw new Error('founderAmount must be an integer between 1 and 100');
+  if (!Number.isInteger(founderAmount) || founderAmount < 0 || founderAmount > 100) {
+    throw new Error('founderAmount must be an integer between 0 and 100');
   }
 
   const data = await db.read();

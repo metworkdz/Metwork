@@ -103,11 +103,20 @@ export async function GET() {
       membershipPlan?: string;
       billingPeriod?: string;
       discountPercent?: number;
+      basePrice?: number;
     } | null;
     if (!meta?.discountPercent || meta.discountPercent === 0) continue;
-    const prices = MEMBERSHIP_PRICES[meta.membershipPlan ?? ''];
-    if (!prices) continue;
-    const base = meta.billingPeriod === 'yearly' ? prices.yearly : prices.monthly;
+    // Purchases made after the repricing carry the price they were actually
+    // charged on. Older rows have no basePrice, so fall back to the legacy
+    // price table — the only figure that was true when they were written.
+    let base = meta.basePrice;
+    if (base == null) {
+      const prices = MEMBERSHIP_PRICES[meta.membershipPlan ?? ''];
+      if (!prices) continue;
+      // Was reading `prices.monthly` for semesterly rows, understating every
+      // semesterly discount by a factor of six.
+      base = meta.billingPeriod === 'yearly' ? prices.yearly : prices.semesterly;
+    }
     membershipDiscountTotal += Math.floor((base * meta.discountPercent) / 100);
     membershipPurchasesWithDiscount++;
   }

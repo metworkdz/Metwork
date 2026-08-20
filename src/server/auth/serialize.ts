@@ -31,6 +31,8 @@ export function toSessionUser(u: UserRecord): SessionUser {
     // Network Pass / tier fields — optional; omitted when not yet set on record
     ...(u.membershipTier        !== undefined && { membershipTier: u.membershipTier }),
     ...(u.membershipStartDate   !== undefined && { membershipStartDate: u.membershipStartDate }),
+    ...(u.membershipSpaceDiscountRate !== undefined && { membershipSpaceDiscountRate: u.membershipSpaceDiscountRate }),
+    ...(u.membershipConsultationDiscountRate !== undefined && { membershipConsultationDiscountRate: u.membershipConsultationDiscountRate }),
     ...(u.networkCredits        !== undefined && { networkCredits: u.networkCredits }),
     ...(u.networkCreditsMax     !== undefined && { networkCreditsMax: u.networkCreditsMax }),
     ...(u.networkCreditsResetDate !== undefined && { networkCreditsResetDate: u.networkCreditsResetDate }),

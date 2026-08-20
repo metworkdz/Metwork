@@ -11,7 +11,7 @@
  */
 import { NextResponse } from 'next/server';
 import { db, type MembershipTier } from '@/server/db/store';
-import { getAdminCreditConfig } from '@/server/network/credit-service';
+import { planConfigsFrom, passCountFrom, normalizePlanCode } from '@/server/memberships/plan-config';
 
 export const runtime = 'nodejs';
 
@@ -52,17 +52,6 @@ export async function POST(req: Request): Promise<Response> {
   const errors: string[] = [];
   let processed = 0;
 
-  let config;
-  try {
-    config = await getAdminCreditConfig();
-  } catch (err) {
-    console.error('[cron] process-downgrades: failed to load credit config', err);
-    return NextResponse.json(
-      { ok: false, error: 'Failed to load credit config' },
-      { status: 500 },
-    );
-  }
-
   await db.update((d) => {
     for (const user of d.users) {
       if (!user.scheduledMembershipChange || !user.scheduledChangeDate) continue;
@@ -72,15 +61,33 @@ export async function POST(req: Request): Promise<Response> {
         const target = user.scheduledMembershipChange;
         const targetCode = target === 'FREE' ? null : target;
         const newTier = codeToTier(target);
-        const newMaxCredits =
-          newTier === 'FOUNDER'
-            ? config.founderCredits
-            : newTier === 'BUILDER'
-              ? config.builderCredits
-              : 0;
+        // A scheduled change starts a NEW plan period, so the target plan's
+        // current terms apply — there is nothing frozen to carry over.
+        const targetPlan = normalizePlanCode(target);
+        const newMaxCredits = passCountFrom(d, target);
+        const targetConfig = targetPlan
+          ? planConfigsFrom(d).find((c) => c.planCode === targetPlan) ?? null
+          : null;
 
         user.membershipCode = targetCode;
         user.membershipTier = newTier;
+        // Re-point the frozen mirror at the new plan's terms (cleared entirely
+        // when dropping to FREE, so no stale discount survives the downgrade).
+        if (targetConfig) {
+          user.membershipSpaceDiscountRate        = targetConfig.spaceDiscountRate;
+          user.membershipConsultationDiscountRate = targetConfig.consultationDiscountRate;
+        } else {
+          delete user.membershipSpaceDiscountRate;
+          delete user.membershipConsultationDiscountRate;
+        }
+        // Supersede the old membership record so its frozen snapshot stops
+        // winning in resolveMemberBenefits.
+        for (const m of d.userMemberships ?? []) {
+          if (m.userId !== user.id || m.status !== 'ACTIVE') continue;
+          if (normalizePlanCode(m.plan) === targetPlan) continue;
+          m.status = 'CANCELLED';
+          m.updatedAt = now.toISOString();
+        }
         // Cap at the new max AND don't grow credits on downgrade — a user with
         // 0 credits remaining shouldn't suddenly gain credits by downgrading.
         user.networkCredits = Math.min(user.networkCredits ?? 0, newMaxCredits);

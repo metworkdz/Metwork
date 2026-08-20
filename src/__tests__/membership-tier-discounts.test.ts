@@ -9,11 +9,13 @@
  *     spaces/events even with correct casing.
  */
 import { describe, it, expect } from 'vitest';
-import { db } from '@/server/db/store';
+import { db, type UserMembershipRecord } from '@/server/db/store';
 import {
   getEffectiveMembershipCode,
   getSpaceDiscountForUser,
   getConsultationDiscountForUser,
+  getMemberBenefits,
+  getMonthlyPassCountForUser,
   SPACE_DISCOUNT,
   CONSULTATION_DISCOUNT,
 } from '@/server/memberships/service';
@@ -80,7 +82,11 @@ describe('getEffectiveMembershipCode', () => {
   });
 });
 
-describe('discount maps', () => {
+describe('legacy discount maps', () => {
+  // These maps are no longer the live rate — they record the PRE-repricing
+  // terms that grandfathered members are still entitled to. The four-key
+  // coverage is the original regression: a missing BUILDER/FOUNDER key silently
+  // gave tier-keyed users 0 %.
   it('SPACE_DISCOUNT and CONSULTATION_DISCOUNT cover all four code/tier keys', () => {
     for (const map of [SPACE_DISCOUNT, CONSULTATION_DISCOUNT]) {
       expect(map.ENTREPRENEUR).toBe(0.15);
@@ -91,25 +97,49 @@ describe('discount maps', () => {
   });
 });
 
-describe('per-user discount resolution', () => {
-  it('partner-promo user with legacy lowercase code gets space + consultation discounts', async () => {
+async function seedMembership(
+  userId: string,
+  plan: string,
+  snapshot: Partial<UserMembershipRecord> = {},
+): Promise<void> {
+  await db.update((d) => {
+    if (!Array.isArray(d.userMemberships)) d.userMemberships = [];
+    d.userMemberships.push({
+      id: `m-${Math.random().toString(36).slice(2, 10)}`,
+      userId,
+      plan,
+      startsAt: PAST,
+      expiresAt: FUTURE,
+      status: 'ACTIVE',
+      createdAt: PAST,
+      updatedAt: PAST,
+      ...snapshot,
+    });
+  });
+}
+
+describe('per-user discount resolution (no snapshot ⇒ live config)', () => {
+  // Members with neither a frozen snapshot nor a user-record mirror fall
+  // through to the live plan config: 10 % consultations / 15 % spaces on BOTH
+  // tiers after the 2026-08 repricing.
+  it('partner-promo user with legacy lowercase code resolves to current terms', async () => {
     const id = await seedUser({
       membershipCode: 'builder',
       membershipTier: 'BUILDER',
       membershipExpiresAt: FUTURE,
     });
     expect(await getSpaceDiscountForUser(id)).toBe(0.15);
-    expect(await getConsultationDiscountForUser(id)).toBe(0.15);
+    expect(await getConsultationDiscountForUser(id)).toBe(0.10);
   });
 
-  it('tier-only FOUNDER user gets 20 % on spaces and consultations', async () => {
+  it('tier-only FOUNDER user resolves to the unified current terms', async () => {
     const id = await seedUser({
       membershipCode: null,
       membershipTier: 'FOUNDER',
       membershipExpiresAt: FUTURE,
     });
-    expect(await getSpaceDiscountForUser(id)).toBe(0.2);
-    expect(await getConsultationDiscountForUser(id)).toBe(0.2);
+    expect(await getSpaceDiscountForUser(id)).toBe(0.15);
+    expect(await getConsultationDiscountForUser(id)).toBe(0.10);
   });
 
   it('expired membership gets no discount', async () => {
@@ -120,12 +150,71 @@ describe('per-user discount resolution', () => {
     expect(await getSpaceDiscountForUser(id)).toBe(0);
     expect(await getConsultationDiscountForUser(id)).toBe(0);
   });
+});
 
-  it('purchased ENTREPRENEUR member is unchanged (15 %)', async () => {
+describe('frozen snapshot wins over live config', () => {
+  it('grandfathered FOUNDER keeps the 20 % / 20 % terms they bought', async () => {
     const id = await seedUser({
-      membershipCode: 'ENTREPRENEUR',
+      membershipCode: 'STARTUP',
+      membershipTier: 'FOUNDER',
       membershipExpiresAt: FUTURE,
     });
+    await seedMembership(id, 'STARTUP', {
+      spaceDiscountRate: 0.2,
+      consultationDiscountRate: 0.2,
+      monthlyPassCount: 10,
+      snapshotAt: PAST,
+    });
+    expect(await getSpaceDiscountForUser(id)).toBe(0.2);
+    expect(await getConsultationDiscountForUser(id)).toBe(0.2);
+    expect(await getMonthlyPassCountForUser(id)).toBe(10);
+
+    const benefits = await getMemberBenefits(id);
+    expect(benefits.source).toBe('snapshot');
+  });
+
+  it('a CANCELLED membership snapshot never wins', async () => {
+    const id = await seedUser({
+      membershipCode: 'ENTREPRENEUR',
+      membershipTier: 'BUILDER',
+      membershipExpiresAt: FUTURE,
+    });
+    await seedMembership(id, 'ENTREPRENEUR', {
+      status: 'CANCELLED',
+      spaceDiscountRate: 0.9,
+      consultationDiscountRate: 0.9,
+      snapshotAt: PAST,
+    });
     expect(await getSpaceDiscountForUser(id)).toBe(0.15);
+    expect(await getConsultationDiscountForUser(id)).toBe(0.10);
+  });
+
+  it('user-record mirror is used when no membership record exists', async () => {
+    const id = await seedUser({
+      membershipCode: 'ENTREPRENEUR',
+      membershipTier: 'BUILDER',
+      membershipExpiresAt: FUTURE,
+      membershipSpaceDiscountRate: 0.25,
+      membershipConsultationDiscountRate: 0.05,
+    });
+    const benefits = await getMemberBenefits(id);
+    expect(benefits.source).toBe('user');
+    expect(benefits.spaceDiscountRate).toBe(0.25);
+    expect(benefits.consultationDiscountRate).toBe(0.05);
+  });
+
+  it('FREE users get nothing regardless of stray snapshots', async () => {
+    const id = await seedUser({ membershipCode: null, membershipTier: 'EXPLORER' });
+    await seedMembership(id, 'STARTUP', {
+      spaceDiscountRate: 0.5,
+      consultationDiscountRate: 0.5,
+      snapshotAt: PAST,
+    });
+    const benefits = await getMemberBenefits(id);
+    expect(benefits.code).toBe('FREE');
+    expect(benefits.source).toBe('none');
+    expect(benefits.spaceDiscountRate).toBe(0);
+    expect(benefits.consultationDiscountRate).toBe(0);
+    expect(benefits.monthlyPassCount).toBe(0);
   });
 });
