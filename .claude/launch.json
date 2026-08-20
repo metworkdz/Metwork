@@ -31,6 +31,21 @@
         "USE_LOCAL_DB": "true",
         "API_INTERNAL_URL": "http://localhost:3999/api"
       }
+    },
+    {
+      "name": "metwork-e2e",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "dev"
+      ],
+      "port": 3000,
+      "env": {
+        "USE_LOCAL_DB": "true",
+        "API_INTERNAL_URL": "http://localhost:3000/api",
+        "PAYMENT_PROVIDER": "mock",
+        "MOCK_PAYMENT_MODE": "sync"
+      }
     }
   ]
 }

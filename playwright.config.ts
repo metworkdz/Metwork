@@ -131,6 +131,22 @@ export default defineConfig({
       },
     },
     {
+      // Membership repricing — admin-editable plan config, exact purchase
+      // amounts, the frozen-snapshot invariant (an admin price change must not
+      // reach an active billing period), discount application, pass allowances
+      // and promo-vs-membership stacking. SERIAL & state-sharing, and every
+      // money test signs up its OWN member so seeded accounts stay clean.
+      // Retries disabled so a flake never re-runs a purchase.
+      //   npx playwright test --project=membership-pricing --workers=1
+      name: 'membership-pricing',
+      testMatch: '**/api/membership-pricing.spec.ts',
+      retries: 0,
+      timeout: 90_000,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
       // Manual withdrawal — requester UI (payout-account gate, RIB/RIP form) +
       // a hydration guard on the pages this feature touched. Default session is
       // the entrepreneur `builder` (a clean wallet not used by the api

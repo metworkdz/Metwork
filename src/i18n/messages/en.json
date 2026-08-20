@@ -3898,7 +3898,8 @@
       "recommendedHint": "Only one plan can be recommended at a time.",
       "frozenHint": "Changes apply to new purchases only — active members keep their current terms until renewal.",
       "priceError": "Enter a valid amount",
-      "passError": "Enter a whole number between 0 and 100"
+      "passError": "Enter a whole number between 0 and 100",
+      "perMonth": "/ month"
     },
     "withdrawals": {
       "pendingReview": "Pending review",

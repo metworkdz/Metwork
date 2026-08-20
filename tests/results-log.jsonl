@@ -91,3 +91,71 @@
 {"agent":"EXPLORER","id":"E3-06","name":"Public Programs","status":"PASS","ts":"2026-05-23T16:40:17.856Z"}
 {"agent":"EXPLORER","id":"E3-08","name":"Public Pricing","status":"PASS","ts":"2026-05-23T16:40:21.621Z"}
 {"agent":"EXPLORER","id":"E3-10","name":"Public About","status":"PASS","ts":"2026-05-23T16:40:25.281Z"}
+{"agent":"BUILDER","id":"E1-01","name":"Login & Dashboard","status":"PASS","ts":"2026-08-20T17:26:40.781Z"}
+{"agent":"BUILDER","id":"E1-02","name":"No Console Errors","status":"PASS","ts":"2026-08-20T17:26:49.326Z"}
+{"agent":"BUILDER","id":"E1-03","name":"Bookings","status":"PASS","ts":"2026-08-20T17:27:07.136Z"}
+{"agent":"BUILDER","id":"E1-04","name":"Startup","status":"PASS","ts":"2026-08-20T17:27:19.081Z"}
+{"agent":"BUILDER","id":"E1-05","name":"Marketplace","status":"PASS","ts":"2026-08-20T17:27:35.913Z"}
+{"agent":"BUILDER","id":"E1-06","name":"Consultations","status":"PASS","ts":"2026-08-20T17:27:52.018Z"}
+{"agent":"BUILDER","id":"E1-07","name":"Perks","status":"PASS","ts":"2026-08-20T17:28:02.554Z"}
+{"agent":"BUILDER","id":"E1-08","name":"Wallet","status":"PASS","ts":"2026-08-20T17:28:13.063Z"}
+{"agent":"BUILDER","id":"E1-09","name":"Membership","status":"PASS","ts":"2026-08-20T17:28:28.236Z"}
+{"agent":"BUILDER","id":"E1-10","name":"Network Pass","status":"PASS","ts":"2026-08-20T17:28:42.763Z"}
+{"agent":"BUILDER","id":"E1-11","name":"Settings","status":"PASS","ts":"2026-08-20T17:28:52.900Z"}
+{"agent":"BUILDER","id":"E1-12","name":"Membership Shows BUILDER","status":"PASS","ts":"2026-08-20T17:28:58.911Z"}
+{"agent":"BUILDER","id":"E1-13","name":"Network Pass Has Credits","status":"PASS","detail":"Credit info visible","ts":"2026-08-20T17:29:05.352Z"}
+{"agent":"BUILDER","id":"E1-14","name":"Book Mentor → Form Not Signup","status":"PASS","detail":"http://localhost:3000/en/mentors","ts":"2026-08-20T17:29:20.440Z"}
+{"agent":"BUILDER","id":"E1-15","name":"Settings Has Delete Account","status":"PASS","ts":"2026-08-20T17:29:27.780Z"}
+{"agent":"BUILDER","id":"E1-16","name":"Spaces Page Loads","status":"PASS","ts":"2026-08-20T17:29:47.662Z"}
+{"agent":"BUILDER","id":"E1-17","name":"Events Page Loads","status":"PASS","ts":"2026-08-20T17:29:59.866Z"}
+{"agent":"BUILDER","id":"E1-18","name":"Programs Page Loads","status":"PASS","ts":"2026-08-20T17:30:09.704Z"}
+{"agent":"FOUNDER","id":"E2-01","name":"Login & Dashboard","status":"PASS","ts":"2026-08-20T17:30:20.052Z"}
+{"agent":"FOUNDER","id":"E2-02","name":"Dashboard Shows FOUNDER","status":"PASS","ts":"2026-08-20T17:30:25.540Z"}
+{"agent":"FOUNDER","id":"E2-03","name":"Membership Shows FOUNDER","status":"PASS","ts":"2026-08-20T17:30:35.862Z"}
+{"agent":"FOUNDER","id":"E2-04","name":"Network Pass 10 Sessions","status":"PASS","ts":"2026-08-20T17:30:50.458Z"}
+{"agent":"FOUNDER","id":"E2-05","name":"Consultations Page","status":"PASS","ts":"2026-08-20T17:31:09.457Z"}
+{"agent":"FOUNDER","id":"E2-06","name":"Wallet Page","status":"PASS","ts":"2026-08-20T17:31:34.533Z"}
+{"agent":"FOUNDER","id":"E2-07","name":"All Nav Links Resolve","status":"PASS","ts":"2026-08-20T17:32:33.609Z"}
+{"agent":"FOUNDER","id":"E2-08","name":"Mentors LinkedIn Buttons","status":"SKIP","detail":"No mentors with LinkedIn shown","ts":"2026-08-20T17:32:46.661Z"}
+{"agent":"FOUNDER","id":"E2-09","name":"Pricing Shows All Tiers","status":"PASS","ts":"2026-08-20T17:32:55.561Z"}
+{"agent":"FOUNDER","id":"E2-10","name":"Perks Page","status":"PASS","ts":"2026-08-20T17:33:01.202Z"}
+{"agent":"EXPLORER","id":"E3-01","name":"Login & Dashboard","status":"PASS","ts":"2026-08-20T17:33:09.643Z"}
+{"agent":"EXPLORER","id":"E3-02","name":"Explorer Free Tier","status":"PASS","detail":"No paid tier shown as active","ts":"2026-08-20T17:33:19.155Z"}
+{"agent":"EXPLORER","id":"E3-03","name":"Upgrade CTA Visible","status":"PASS","detail":"Found on membership page","ts":"2026-08-20T17:33:29.976Z"}
+{"agent":"EXPLORER","id":"E3-04","name":"Public Spaces","status":"PASS","ts":"2026-08-20T17:33:42.166Z"}
+{"agent":"EXPLORER","id":"E3-05","name":"Public Mentors","status":"PASS","ts":"2026-08-20T17:33:50.958Z"}
+{"agent":"EXPLORER","id":"E3-06","name":"Public Programs","status":"PASS","ts":"2026-08-20T17:34:22.900Z"}
+{"agent":"EXPLORER","id":"E3-07","name":"Public Events","status":"PASS","ts":"2026-08-20T17:34:31.460Z"}
+{"agent":"EXPLORER","id":"E3-08","name":"Public Pricing","status":"PASS","ts":"2026-08-20T17:34:39.522Z"}
+{"agent":"EXPLORER","id":"E3-09","name":"Public Investors","status":"PASS","ts":"2026-08-20T17:34:54.463Z"}
+{"agent":"EXPLORER","id":"E3-10","name":"Public About","status":"PASS","ts":"2026-08-20T17:35:04.061Z"}
+{"agent":"EXPLORER","id":"E3-11","name":"Pricing Has Tiers + Discounts","status":"PASS","ts":"2026-08-20T17:35:09.051Z"}
+{"agent":"EXPLORER","id":"E3-12","name":"Language Switcher Visible","status":"PASS","ts":"2026-08-20T17:35:18.031Z"}
+{"agent":"EXPLORER","id":"E3-13","name":"Arabic RTL Direction","status":"PASS","ts":"2026-08-20T17:35:27.263Z"}
+{"agent":"EXPLORER","id":"E3-14","name":"Mobile No Horizontal Overflow","status":"PASS","ts":"2026-08-20T17:35:34.210Z"}
+{"agent":"EXPLORER","id":"E3-15","name":"Network Pass 0 Credits","status":"PASS","detail":"0 credits shown (Explorer)","ts":"2026-08-20T17:35:46.227Z"}
+{"agent":"ADMIN","id":"A01","name":"Login & Dashboard","status":"PASS","ts":"2026-08-20T17:36:31.933Z"}
+{"agent":"ADMIN","id":"A02","name":"No Console Errors","status":"PASS","ts":"2026-08-20T17:36:35.456Z"}
+{"agent":"ADMIN","id":"A03","name":"Analytics","status":"PASS","ts":"2026-08-20T17:36:47.465Z"}
+{"agent":"ADMIN","id":"A04","name":"Users","status":"PASS","ts":"2026-08-20T17:37:04.944Z"}
+{"agent":"ADMIN","id":"A05","name":"Incubators","status":"PASS","ts":"2026-08-20T17:37:16.305Z"}
+{"agent":"ADMIN","id":"A06","name":"Memberships","status":"PASS","ts":"2026-08-20T17:37:24.868Z"}
+{"agent":"ADMIN","id":"A07","name":"Promo Codes","status":"PASS","ts":"2026-08-20T17:37:34.121Z"}
+{"agent":"ADMIN","id":"A08","name":"Partner Network","status":"PASS","ts":"2026-08-20T17:37:43.991Z"}
+{"agent":"ADMIN","id":"A09","name":"Partner Promo Codes","status":"PASS","ts":"2026-08-20T17:37:55.065Z"}
+{"agent":"ADMIN","id":"A10","name":"Commissions","status":"PASS","ts":"2026-08-20T17:38:04.203Z"}
+{"agent":"ADMIN","id":"A11","name":"Bookings","status":"PASS","ts":"2026-08-20T17:38:14.673Z"}
+{"agent":"ADMIN","id":"A12","name":"Mentors","status":"PASS","ts":"2026-08-20T17:38:22.847Z"}
+{"agent":"ADMIN","id":"A13","name":"Consultations","status":"PASS","ts":"2026-08-20T17:38:33.074Z"}
+{"agent":"ADMIN","id":"A14","name":"Mentor Revenue","status":"PASS","ts":"2026-08-20T17:38:40.800Z"}
+{"agent":"ADMIN","id":"A15","name":"Contacts","status":"PASS","ts":"2026-08-20T17:38:47.767Z"}
+{"agent":"ADMIN","id":"A16","name":"Investor Contacts","status":"PASS","ts":"2026-08-20T17:38:54.945Z"}
+{"agent":"ADMIN","id":"A17","name":"Withdrawals","status":"FAIL","detail":"404 at /en/dashboard/admin/withdrawals","ts":"2026-08-20T17:39:01.312Z"}
+{"agent":"ADMIN","id":"A18","name":"CMS Content","status":"PASS","ts":"2026-08-20T17:39:08.767Z"}
+{"agent":"ADMIN","id":"A19","name":"Audit Log","status":"PASS","ts":"2026-08-20T17:39:17.214Z"}
+{"agent":"ADMIN","id":"A20","name":"Settings","status":"PASS","ts":"2026-08-20T17:39:25.431Z"}
+{"agent":"ADMIN","id":"A21","name":"Create Promo Code Form","status":"PASS","detail":"heading:true inputs:4","ts":"2026-08-20T17:39:30.187Z"}
+{"agent":"ADMIN","id":"A22","name":"Settings Has Fields","status":"PASS","detail":"2 input(s) found","ts":"2026-08-20T17:39:37.924Z"}
+{"agent":"ADMIN","id":"A23","name":"Users Table Rows","status":"PASS","detail":"81 rows","ts":"2026-08-20T17:39:46.156Z"}
+{"agent":"ADMIN","id":"A24","name":"Incubators List","status":"PASS","ts":"2026-08-20T17:39:52.326Z"}
+{"agent":"ADMIN","id":"A25","name":"Mobile Responsive","status":"PASS","ts":"2026-08-20T17:39:59.576Z"}

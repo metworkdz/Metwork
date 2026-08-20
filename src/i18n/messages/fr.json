@@ -3898,7 +3898,8 @@
       "recommendedHint": "Une seule formule peut être recommandée à la fois.",
       "frozenHint": "Les changements ne s'appliquent qu'aux nouveaux achats — les membres actifs conservent leurs conditions jusqu'au renouvellement.",
       "priceError": "Saisissez un montant valide",
-      "passError": "Saisissez un nombre entier entre 0 et 100"
+      "passError": "Saisissez un nombre entier entre 0 et 100",
+      "perMonth": "/ mois"
     },
     "withdrawals": {
       "pendingReview": "Pending review",

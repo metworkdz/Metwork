@@ -245,7 +245,7 @@ function MembershipPricingCard({
               <span className="text-2xl font-semibold tabular-nums">
                 {formatCurrency(plan.config.monthlyPrice, locale)}
               </span>
-              <span className="text-sm text-muted-foreground">/ {t('monthlyPrice').toLowerCase()}</span>
+              <span className="text-sm text-muted-foreground">{t('perMonth')}</span>
               <Button variant="ghost" size="icon" className="size-7" onClick={startEdit} disabled={busy}>
                 <Pencil className="size-3" />
               </Button>
