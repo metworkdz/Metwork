@@ -53,7 +53,10 @@ export const CRM_NAV: CrmNavSection[] = [
     title: null,
     items: [
       { label: 'Tableau de bord', href: '/metworkcrm', icon: Gauge, status: 'ready' },
-      { label: 'Inbox', href: '/metworkcrm/inbox', icon: Inbox, status: 'coming-soon', prompt: 2 },
+      // Reads contactSubmissions from the platform's JSON store — the first
+      // cross-store read (platform-refs.ts) isn't built until Prompt 3.
+      // Mislabeled `prompt: 2` in Prompt 1; corrected here.
+      { label: 'Inbox', href: '/metworkcrm/inbox', icon: Inbox, status: 'coming-soon', prompt: 3 },
     ],
   },
   {

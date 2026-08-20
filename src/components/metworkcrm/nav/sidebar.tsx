@@ -2,53 +2,44 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
-import { LogOut, Menu, X } from 'lucide-react';
+import { LogOut, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { navForRole, type CrmNavSection } from './nav-config';
 
 /**
- * CRM shell navigation.
+ * CRM shell navigation — the `<aside>` only. Mobile open/close state and the
+ * top bar (hamburger + global search) live in `CrmShell`, which is the only
+ * place that needs to coordinate both — see components/metworkcrm/shell/crm-shell.tsx.
  *
  * Responsive with Tailwind breakpoints ONLY — no useMediaQuery, no
  * window.innerWidth (dev rules: those cause hydration mismatches). The mobile
- * drawer is pure CSS translate driven by a boolean, so the server and client
- * render identical markup; `open` only ever starts false.
+ * drawer is pure CSS translate driven by a boolean prop, so the server and
+ * client render identical markup; `open` only ever starts false.
  */
 export function CrmSidebar({
   role,
   userName,
   userEmail,
+  open,
+  onClose,
 }: {
   role: 'ADMIN' | 'TEAM_MEMBER';
   userName: string;
   userEmail: string;
+  open: boolean;
+  onClose: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const sections = navForRole(role);
 
   return (
     <>
-      {/* Mobile top bar */}
-      <div className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-neutral-200 bg-white px-4 lg:hidden">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="inline-flex size-9 items-center justify-center rounded-md hover:bg-neutral-100"
-          aria-label="Ouvrir le menu"
-        >
-          <Menu className="size-5" aria-hidden />
-        </button>
-        <span className="font-semibold tracking-tight text-[var(--crm-black)]">METWORK OS</span>
-      </div>
-
       {/* Backdrop (mobile only) */}
       {open ? (
         <button
           type="button"
           aria-label="Fermer le menu"
-          onClick={() => setOpen(false)}
+          onClick={onClose}
           className="fixed inset-0 z-40 bg-black/40 lg:hidden"
         />
       ) : null}
@@ -66,7 +57,7 @@ export function CrmSidebar({
           </Link>
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={onClose}
             className="inline-flex size-8 items-center justify-center rounded-md text-neutral-400 hover:bg-white/10 lg:hidden"
             aria-label="Fermer le menu"
           >
@@ -95,7 +86,7 @@ export function CrmSidebar({
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        onClick={() => setOpen(false)}
+                        onClick={onClose}
                         aria-current={active ? 'page' : undefined}
                         className={cn(
                           'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',

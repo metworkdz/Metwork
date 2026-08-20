@@ -1,18 +1,17 @@
 import type { Metadata } from 'next';
-import { Target } from 'lucide-react';
 import { requireCrmUser } from '@/server/metworkcrm/auth/guards';
 import { CrmPageHeader } from '@/components/metworkcrm/shared/page-header';
-import { ComingSoon } from '@/components/metworkcrm/shared/coming-soon';
+import { TasksList } from '@/components/metworkcrm/tasks/tasks-list';
 
 export const metadata: Metadata = { title: 'Tâches' };
 export const dynamic = 'force-dynamic';
 
-export default async function CrmPage() {
+export default async function CrmTasksPage() {
   await requireCrmUser();
   return (
     <>
       <CrmPageHeader title="Tâches" subtitle="Suivi des actions à mener." />
-      <ComingSoon title="Tâches" icon={Target} prompt={2} />
+      <TasksList />
     </>
   );
 }

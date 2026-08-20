@@ -1,5 +1,5 @@
 import { requireCrmUser } from '@/server/metworkcrm/auth/guards';
-import { CrmSidebar } from '@/components/metworkcrm/nav/sidebar';
+import { CrmShell } from '@/components/metworkcrm/shell/crm-shell';
 
 /**
  * Guarded CRM shell.
@@ -16,11 +16,8 @@ export default async function CrmAppLayout({ children }: { children: React.React
   const user = await requireCrmUser();
 
   return (
-    <div className="min-h-screen bg-[var(--crm-canvas)]">
-      <CrmSidebar role={user.role} userName={user.name} userEmail={user.email} />
-      <div className="lg:pl-64">
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
-      </div>
-    </div>
+    <CrmShell role={user.role} userName={user.name} userEmail={user.email}>
+      {children}
+    </CrmShell>
   );
 }
