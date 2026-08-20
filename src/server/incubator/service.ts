@@ -15,6 +15,10 @@
  * back to defaultPlatformConfig if not yet set.
  */
 import {
+  computeCyclePrices,
+  computePeriodEnd as computeCycleEnd,
+} from '@/lib/billing-cycles';
+import {
   db,
   type IncubatorRecord,
   type IncubatorBillingCycle,
@@ -42,22 +46,30 @@ export interface SubscriptionPricing {
   yearlyDiscountPercent: number;
 }
 
+/**
+ * Pricing for the FLAT (Pro) plan. The cycle math itself lives in the shared
+ * `@/lib/billing-cycles` helper — the same one entrepreneur memberships use —
+ * so the two subscription products can never drift. This function keeps the
+ * incubator-specific field names (`monthlyAmount` / `yearlyAmount` / ...) that
+ * the subscription route and its UI already consume.
+ */
 export function computeSubscriptionPricing(cfg: PlatformConfig): SubscriptionPricing {
-  const { flatMonthlyPrice, yearlyDiscountPercent } = cfg;
-  const yearlyAmount = Math.round(flatMonthlyPrice * 12 * (1 - yearlyDiscountPercent / 100));
+  const prices = computeCyclePrices({
+    monthlyPrice:          cfg.flatMonthlyPrice,
+    semesterlyMonths:      cfg.semesterlyMonths,
+    annualDiscountPercent: cfg.yearlyDiscountPercent,
+  });
   return {
-    monthlyAmount: flatMonthlyPrice,
-    yearlyAmount,
-    yearlyMonthlyEquivalent: Math.round(yearlyAmount / 12),
-    yearlyDiscountPercent,
+    monthlyAmount:           prices.monthly,
+    yearlyAmount:            prices.annual,
+    yearlyMonthlyEquivalent: prices.annualMonthlyEquivalent,
+    yearlyDiscountPercent:   cfg.yearlyDiscountPercent,
   };
 }
 
 /** Compute the period-end date from a subscription start + billing cycle. */
 export function computePeriodEnd(start: string, billingCycle: IncubatorBillingCycle): string {
-  const d = new Date(start);
-  d.setUTCMonth(d.getUTCMonth() + (billingCycle === 'YEARLY' ? 12 : 1));
-  return d.toISOString();
+  return computeCycleEnd(start, billingCycle === 'YEARLY' ? 'ANNUAL' : 'MONTHLY');
 }
 
 /* ─────────────────────────── Incubator lookup ─────────────────────────── */
