@@ -887,10 +887,12 @@
       "fundraisingAccess": "اجمع تمويلاً واستقطب المستثمرين",
       "investorMeetings": "احصل على طلبات اجتماع من المستثمرين",
       "featuredListing": "تمييز شركتك الناشئة في الصفحة الرئيسية للسوق",
-      "networkPass3": "3 رصيد Network Pass شهرياً للعمل المشترك",
-      "networkPass10": "10 رصيد Network Pass شهرياً للعمل المشترك",
-      "freeConsultations3": "خصم 20٪ على استشارات المرشدين",
-      "spaceDiscount20": "خصم 20٪ على جميع حجوزات المساحات"
+      "consultationDiscount": "خصم {percent}٪ على استشارات المرشدين",
+      "spaceDiscount": "خصم {percent}٪ على حجوزات المساحات",
+      "networkPass": "{count} رصيد Network Pass شهرياً للعمل المشترك",
+      "perks": "امتيازات وتخفيضات حصرية من الشركاء",
+      "exclusiveEvents": "وصول إلى الفعاليات الحصرية للأعضاء",
+      "marketplaceFeature": "تمييز شركتك الناشئة في السوق"
     },
     "billingMonthly": "شهري",
     "billingYearly": "سنوي",
@@ -927,7 +929,12 @@
     "billedSemesterly": "{total} تُدفع كل 6 أشهر",
     "billedYearly": "{total} تُدفع سنويًا",
     "billedSemesterlyOrYearly": "أو {yearly} / سنة — وفّر {percent}%",
-    "priceFree": "مجاني"
+    "priceFree": "مجاني",
+    "recommended": "موصى به",
+    "currentPlanLabel": "الباقة الحالية",
+    "upgradeAvailable": "الترقية متاحة",
+    "renewsOn": "يتجدد في {date}",
+    "grandfatheredNotice": "تحتفظ بالسعر والمزايا التي اشتركت بها حتى {date}."
   },
   "investorApproval": {
     "title": "حسابك قيد التحقق",

@@ -887,10 +887,12 @@
       "fundraisingAccess": "Levez des fonds et attirez des investisseurs",
       "investorMeetings": "Recevez des demandes de rendez-vous d'investisseurs",
       "featuredListing": "Mise en avant de votre startup dans la marketplace",
-      "networkPass3": "3 crédits Network Pass de coworking par mois",
-      "networkPass10": "10 crédits Network Pass de coworking par mois",
-      "freeConsultations3": "20 % de réduction sur les consultations mentor",
-      "spaceDiscount20": "20% de réduction sur toutes les réservations"
+      "consultationDiscount": "{percent} % de réduction sur les consultations mentor",
+      "spaceDiscount": "{percent} % de réduction sur les réservations d'espaces",
+      "networkPass": "{count} crédits Network Pass de coworking par mois",
+      "perks": "Avantages et réductions partenaires exclusifs",
+      "exclusiveEvents": "Accès aux événements membres exclusifs",
+      "marketplaceFeature": "Mise en avant de votre startup dans la marketplace"
     },
     "billingMonthly": "Mensuel",
     "billingYearly": "Annuel",
@@ -927,7 +929,12 @@
     "billedSemesterly": "{total} facturés tous les 6 mois",
     "billedYearly": "{total} facturés annuellement",
     "billedSemesterlyOrYearly": "ou {yearly} / an — économisez {percent}%",
-    "priceFree": "Gratuit"
+    "priceFree": "Gratuit",
+    "recommended": "Recommandé",
+    "currentPlanLabel": "Formule actuelle",
+    "upgradeAvailable": "Mise à niveau disponible",
+    "renewsOn": "Renouvellement le {date}",
+    "grandfatheredNotice": "Vous conservez le tarif et les avantages de votre inscription jusqu'au {date}."
   },
   "investorApproval": {
     "title": "Votre compte est en attente de validation",

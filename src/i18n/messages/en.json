@@ -887,10 +887,12 @@
       "fundraisingAccess": "Raise funds and attract investors",
       "investorMeetings": "Receive investor meeting requests",
       "featuredListing": "Featured startup placement in the marketplace",
-      "networkPass3": "3 Network Pass coworking credits per month",
-      "networkPass10": "10 Network Pass coworking credits per month",
-      "freeConsultations3": "20% off mentor consultations",
-      "spaceDiscount20": "20% off all space bookings"
+      "consultationDiscount": "{percent}% off mentor consultations",
+      "spaceDiscount": "{percent}% off space bookings",
+      "networkPass": "{count} Network Pass coworking credits per month",
+      "perks": "Exclusive perks and partner discounts",
+      "exclusiveEvents": "Access to exclusive member events",
+      "marketplaceFeature": "Featured startup placement in the marketplace"
     },
     "billingMonthly": "Monthly",
     "billingYearly": "Yearly",
@@ -927,7 +929,12 @@
     "billedSemesterly": "{total} billed every 6 months",
     "billedYearly": "{total} billed yearly",
     "billedSemesterlyOrYearly": "or {yearly} / year — save {percent}%",
-    "priceFree": "Free"
+    "priceFree": "Free",
+    "recommended": "Recommended",
+    "currentPlanLabel": "Current plan",
+    "upgradeAvailable": "Upgrade available",
+    "renewsOn": "Renews on {date}",
+    "grandfatheredNotice": "You keep the price and benefits from when you joined until {date}."
   },
   "investorApproval": {
     "title": "Your account is awaiting validation",
