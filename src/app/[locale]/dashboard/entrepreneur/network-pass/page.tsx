@@ -62,13 +62,17 @@ export default async function EntrepreneurNetworkPassPage({ params }: PageProps)
       {/* Profile header with tier ring */}
       <UserProfileHeader user={user} showMeta avatarSize="lg" />
 
-      {/* Network Pass card (live — fetches current check-in QR client-side) */}
-      {tier === 'EXPLORER' ? (
+      {/* Network Pass card (live — fetches current check-in QR client-side).
+          Gated on the ACTUAL allowance rather than on the tier: a paid plan can
+          grant zero passes, and rendering a 0 / 0 pass card would be worse than
+          saying plainly that the plan does not include them. */}
+      {creditsMax <= 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-border bg-card p-8 text-center">
           <h2 className="text-lg font-semibold">No active Network Pass</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Upgrade to <strong>Builder</strong> or <strong>Founder</strong> to unlock check-in
-            access at partner coworking spaces.
+            {tier === 'EXPLORER'
+              ? 'Upgrade to a paid plan to unlock check-in access at partner coworking spaces.'
+              : 'Your current plan does not include coworking passes. Upgrade to Founder for monthly check-in access at partner spaces.'}
           </p>
         </div>
       ) : (

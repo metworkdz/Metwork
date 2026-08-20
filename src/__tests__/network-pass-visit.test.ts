@@ -55,7 +55,8 @@ async function seed(): Promise<void> {
     d.users.push({
       id: 'user-1', email: 'u@x.com', passwordHash: 'h', fullName: 'Member', phone: '+213500000000',
       city: 'Algiers', role: 'ENTREPRENEUR', status: 'ACTIVE', phoneVerified: true, emailVerified: true,
-      membershipCode: null, membershipTier: 'BUILDER', networkCredits: 3, networkCreditsMax: 3,
+      // Founder: Builder plans no longer include coworking passes.
+      membershipCode: null, membershipTier: 'FOUNDER', networkCredits: 3, networkCreditsMax: 3,
       avatarUrl: null, locale: 'en', createdAt: NOW, updatedAt: NOW,
     } as never);
     d.wallets.push({ id: 'w-1', userId: 'user-1', balance: 0, currency: 'DZD', status: 'ACTIVE', createdAt: NOW, updatedAt: NOW } as never);

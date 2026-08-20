@@ -143,7 +143,9 @@ export async function POST(req: NextRequest) {
           });
       case 'TIER_NOT_ELIGIBLE':
         return jsonError(403, 'TIER_NOT_ELIGIBLE',
-          'Network Pass requires a Builder or Founder membership.', {
+          result.tier === 'EXPLORER'
+            ? 'Network Pass requires a paid membership.'
+            : 'Your plan does not include Network Pass credits.', {
             tier: result.tier,
           });
       // Consultant-only reasons — unreachable from this platform-user route,

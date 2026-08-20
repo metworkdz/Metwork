@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { CheckCircle2, Tag } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/format';
+import { safeUUID } from '@/lib/safe-uuid';
 import { cn } from '@/lib/utils';
 import { useRouter } from '@/i18n/routing';
 import type { Locale } from '@/i18n/config';
@@ -48,6 +49,21 @@ export function MembershipUpgradeButton({
   }>({ checking: false, valid: null, discount: 0, message: '' });
   const [errorMsg, setErrorMsg] = useState('');
   const [isPending, startTransition] = useTransition();
+
+  // Idempotency key for the purchase — a dropped response or a double-click
+  // replays instead of charging the wallet twice. Reset whenever the plan
+  // parameters change, so a genuinely different purchase gets a new key.
+  const purchaseRef = useRef<string>('');
+  const purchaseRefKey = `${plan}:${billingPeriod}:${promoCode.trim()}`;
+  const lastKey = useRef<string>(purchaseRefKey);
+  if (lastKey.current !== purchaseRefKey) {
+    lastKey.current = purchaseRefKey;
+    purchaseRef.current = '';
+  }
+  function ensurePurchaseRef(): string {
+    if (!purchaseRef.current) purchaseRef.current = safeUUID();
+    return purchaseRef.current;
+  }
 
   const basePrice = billingPeriod === 'yearly' ? priceYearly : priceSemesterly;
   const perMonth = billingPeriod === 'yearly' ? Math.round(priceYearly / 12) : priceMonthly;
@@ -101,6 +117,7 @@ export function MembershipUpgradeButton({
             plan,
             billingPeriod,
             promoCode: promoCode.trim() || undefined,
+            clientReference: ensurePurchaseRef(),
           }),
         });
         const data = await res.json();

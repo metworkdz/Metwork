@@ -335,9 +335,12 @@ export function SpaceBookingForm({
   // Network Pass eligibility (a pass confirms instantly, so it is not offered
   // on Request-to-Book listings — the host must approve first).
   const userTier = user ? resolveTier(user) : 'EXPLORER';
-  const canUsePass = isAuthed && user !== null && userTier !== 'EXPLORER' && (space.isPartnerInNetwork ?? false) && !isRequestMode;
   const passCredits = user?.networkCredits ?? 0;
   const passCreditsMax = user?.networkCreditsMax ?? 0;
+  // Gated on the ACTUAL allowance, not just on holding a paid tier: a plan can
+  // grant zero passes (Builder does), and offering the option to those members
+  // would only produce a rejected booking.
+  const canUsePass = isAuthed && user !== null && passCreditsMax > 0 && (space.isPartnerInNetwork ?? false) && !isRequestMode;
   const passResetDate = user?.networkCreditsResetDate
     ? new Date(user.networkCreditsResetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : null;

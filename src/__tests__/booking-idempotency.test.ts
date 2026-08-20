@@ -113,7 +113,8 @@ async function seed(opts: { tier?: string; credits?: number; partner?: boolean }
 
 describe('createSpaceBooking — NETWORK_PASS replay idempotency', () => {
   beforeEach(async () => {
-    await seed({ tier: 'BUILDER', credits: 3, partner: true });
+    // Founder: Builder plans no longer include coworking passes.
+    await seed({ tier: 'FOUNDER', credits: 3, partner: true });
   });
 
   it('a same-clientReference replay returns the original booking and burns exactly one credit', async () => {

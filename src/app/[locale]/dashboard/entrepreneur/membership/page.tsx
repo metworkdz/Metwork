@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { requireRole } from '@/lib/auth-guards';
 import { formatCurrency } from '@/lib/format';
-import { membershipTiers } from '@/config/memberships';
+import { getMembershipPlanViews } from '@/server/memberships/plan-view';
 import { MembershipPromoSection } from '@/components/features/membership/membership-promo-section';
 import { cn } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
@@ -51,33 +51,9 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
   const scheduledChange = user.scheduledMembershipChange ?? null;
   const scheduledDate = user.scheduledChangeDate ?? null;
 
-  // Feature lists for each tier — mirrors src/app/[locale]/(public)/pricing/page.tsx
-  // exactly, so the dashboard view stays consistent with the marketing page.
-  const tierFeatures: Record<string, string[]> = {
-    FREE: [
-      tm('features.profile'),
-      tm('features.browse'),
-      tm('features.events'),
-    ],
-    ENTREPRENEUR: [
-      tm('features.allFree'),
-      tm('features.bookPrograms'),
-      tm('features.networkPass3'),
-      tm('features.bookSpaces'),
-      tm('features.eventsDiscount'),
-      tm('features.prioritySupport'),
-    ],
-    STARTUP: [
-      tm('features.allEntrepreneur'),
-      tm('features.freeConsultations3'),
-      tm('features.networkPass10'),
-      tm('features.spaceDiscount20'),
-      tm('features.listStartup'),
-      tm('features.fundraisingAccess'),
-      tm('features.investorMeetings'),
-      tm('features.featuredListing'),
-    ],
-  };
+  // Plans come from the ONE shared view model that the public pricing page
+  // also uses, so the two can no longer drift.
+  const planViews = await getMembershipPlanViews();
 
   return (
     <div className="space-y-6">
@@ -99,37 +75,39 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
       <Card className="border-primary-200 bg-primary-50/40">
         <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-primary-700">Current plan</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-primary-700">{tm('currentPlanLabel')}</p>
             <p className="mt-1 text-xl font-semibold">{tierCopy[currentCode]?.name ?? currentCode}</p>
             <p className="mt-1 text-sm text-muted-foreground">
               {tierCopy[currentCode]?.description}
             </p>
             {expiresAt && currentCode !== 'FREE' && (
               <p className="mt-1 text-xs text-muted-foreground">
-                Renews on {new Date(expiresAt).toLocaleDateString(lang, { dateStyle: 'medium' })}
+                {tm('renewsOn', {
+                  date: new Date(expiresAt).toLocaleDateString(lang, { dateStyle: 'medium' }),
+                })}
               </p>
             )}
           </div>
           {currentRank < (TIER_RANK.STARTUP ?? 2) && (
-            <Badge variant="primary">Upgrade available</Badge>
+            <Badge variant="primary">{tm('upgradeAvailable')}</Badge>
           )}
         </CardContent>
       </Card>
 
       {/* Tier cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        {membershipTiers.map((tier) => {
-          const targetRank = TIER_RANK[tier.code] ?? 0;
+        {planViews.map((plan) => {
+          const targetRank = TIER_RANK[plan.code] ?? 0;
           const isCurrent = targetRank === currentRank;
-          const isHighlighted = 'highlighted' in tier && tier.highlighted === true;
-          const copy = tierCopy[tier.code] ?? { name: tier.code, description: '' };
+          const isHighlighted = plan.recommended;
+          const copy = tierCopy[plan.code] ?? { name: plan.code, description: '' };
           const isDowngrade = targetRank < currentRank;
           const isUpgrade = targetRank > currentRank;
-          const features = tierFeatures[tier.code] ?? [];
+          const isPaid = plan.prices.monthly > 0;
 
           return (
             <Card
-              key={tier.code}
+              key={plan.code}
               className={cn(
                 'relative flex flex-col',
                 isHighlighted && 'border-primary-300 shadow-md',
@@ -139,7 +117,7 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
                 <div className="absolute -top-3 start-6">
                   <Badge variant="primary" className="gap-1">
                     <Star className="size-3" />
-                    Most popular
+                    {tm('recommended')}
                   </Badge>
                 </div>
               )}
@@ -150,28 +128,23 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
               <CardContent className="flex-1">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-semibold tracking-tight">
-                    {tier.priceMonthly === 0 ? tm('tiers.free.name') : formatCurrency(tier.priceMonthly, lang)}
+                    {isPaid ? formatCurrency(plan.prices.monthly, lang) : tm('priceFree')}
                   </span>
-                  {tier.priceMonthly > 0 && (
-                    <span className="text-sm text-muted-foreground">{tm('perMonth')}</span>
-                  )}
+                  {isPaid && <span className="text-sm text-muted-foreground">{tm('perMonth')}</span>}
                 </div>
-                {tier.priceMonthly > 0 && (
+                {isPaid && (
                   <p className="mt-1 text-xs text-muted-foreground">
                     {tm('billedSemesterlyOrYearly', {
-                      yearly: formatCurrency(Math.round(tier.priceYearly), lang),
-                      percent:
-                        'yearlyDiscountPercent' in tier && tier.yearlyDiscountPercent
-                          ? tier.yearlyDiscountPercent
-                          : 30,
+                      yearly: formatCurrency(plan.prices.annual, lang),
+                      percent: plan.prices.annualDiscountPercent,
                     })}
                   </p>
                 )}
                 <ul className="mt-5 space-y-2 text-sm">
-                  {features.map((label) => (
-                    <li key={label} className="flex items-start gap-2">
+                  {plan.features.map((f) => (
+                    <li key={f.key} className="flex items-start gap-2">
                       <Check className="mt-0.5 size-4 shrink-0 text-primary-600" />
-                      <span className="text-foreground">{label}</span>
+                      <span className="text-foreground">{tm(`features.${f.key}`, f.values)}</span>
                     </li>
                   ))}
                 </ul>
@@ -182,22 +155,22 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
                     className="inline-flex h-10 w-full items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium opacity-50 cursor-not-allowed"
                     disabled
                   >
-                    Current plan
+                    {tm('currentPlanLabel')}
                   </button>
                 ) : isDowngrade ? (
                   <MembershipDowngradeButton
-                    targetPlan={tier.code as 'ENTREPRENEUR' | 'FREE'}
+                    targetPlan={plan.code as 'ENTREPRENEUR' | 'FREE'}
                     targetName={copy.name}
                     scheduledDate={expiresAt ?? null}
                     locale={lang}
-                    alreadyScheduled={scheduledChange === tier.code}
+                    alreadyScheduled={scheduledChange === plan.code}
                   />
-                ) : isUpgrade && tier.priceMonthly > 0 ? (
+                ) : isUpgrade && isPaid ? (
                   <MembershipUpgradeButton
-                    plan={tier.code as 'ENTREPRENEUR' | 'STARTUP'}
-                    priceMonthly={tier.priceMonthly}
-                    priceSemesterly={'priceSemesterly' in tier ? tier.priceSemesterly : tier.priceMonthly * 6}
-                    priceYearly={Math.round(tier.priceYearly)}
+                    plan={plan.code as 'ENTREPRENEUR' | 'STARTUP'}
+                    priceMonthly={plan.prices.monthly}
+                    priceSemesterly={plan.prices.semesterly}
+                    priceYearly={plan.prices.annual}
                     planName={copy.name}
                     highlighted={isHighlighted}
                     locale={lang}
@@ -211,14 +184,13 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
 
       {/* Promo code preview — shown when an upgrade is available */}
       {(() => {
-        const tiers = membershipTiers as ReadonlyArray<{ code: string; priceMonthly: number }>;
-        const currentIdx = tiers.findIndex((t) => (TIER_RANK[t.code] ?? 0) === currentRank);
-        const nextTier = tiers[currentIdx + 1];
-        if (!nextTier || nextTier.priceMonthly === 0) return null;
+        const currentIdx = planViews.findIndex((p) => (TIER_RANK[p.code] ?? 0) === currentRank);
+        const nextTier = planViews[currentIdx + 1];
+        if (!nextTier || nextTier.prices.monthly === 0) return null;
         const nextCopy = tierCopy[nextTier.code] ?? { name: nextTier.code, description: '' };
         return (
           <MembershipPromoSection
-            nextTierPrice={nextTier.priceMonthly}
+            nextTierPrice={nextTier.prices.monthly}
             nextTierName={nextCopy.name}
             locale={lang}
           />

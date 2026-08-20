@@ -29,7 +29,9 @@ export type CreateSpaceBookingResult =
   /** NETWORK_PASS rejected: user has no remaining monthly credits. */
   | { ok: false; reason: 'NO_CREDITS'; creditsRemaining: number }
   /** NETWORK_PASS rejected: user's tier is EXPLORER (Network Pass requires BUILDER or FOUNDER). */
-  | { ok: false; reason: 'TIER_NOT_ELIGIBLE'; tier: 'EXPLORER' }
+  // `tier` widened beyond EXPLORER: a paid plan can grant zero coworking
+  // passes (Builder does), which makes its members ineligible too.
+  | { ok: false; reason: 'TIER_NOT_ELIGIBLE'; tier: 'EXPLORER' | 'BUILDER' | 'FOUNDER' }
   /**
    * A consultant (booker.type === 'mentor') tried to pay by any means other
    * than cash. Consultants have no Metwork wallet — they reserve and settle

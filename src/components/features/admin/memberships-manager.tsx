@@ -24,7 +24,14 @@ import {
   SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
-import { membershipTiers } from '@/config/memberships';
+
+/**
+ * Plans an admin can grant. Deliberately code-only — the price shown here used
+ * to come from a hardcoded constant that is no longer authoritative; prices
+ * live in the admin Commissions page now, and duplicating them into this
+ * dropdown would guarantee they go stale.
+ */
+const GRANTABLE_PLANS = ['FREE', 'ENTREPRENEUR', 'STARTUP'] as const;
 
 export interface MembershipRow {
   userId:         string;
@@ -116,9 +123,9 @@ function AssignDialog({ user, onClose, onSaved }: AssignDialogProps) {
             <Select value={plan} onValueChange={setPlan}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {membershipTiers.map((tier) => (
-                  <SelectItem key={tier.code} value={tier.code}>
-                    {tier.code} {tier.priceMonthly > 0 ? t('planMonthly', { name: tier.code, amount: tier.priceMonthly.toLocaleString() }) : t('freePlan')}
+                {GRANTABLE_PLANS.map((code) => (
+                  <SelectItem key={code} value={code}>
+                    {code} {code === 'FREE' ? t('freePlan') : ''}
                   </SelectItem>
                 ))}
               </SelectContent>

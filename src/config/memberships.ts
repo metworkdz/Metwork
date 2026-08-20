@@ -1,69 +1,14 @@
 /**
- * Default membership tiers.
+ * Static platform pricing config.
  *
- * IMPORTANT: These are *seed values*. The actual prices and features
- * are stored in the `memberships` table and editable from the admin
- * dashboard. This file is the source of truth for the initial migration
- * and the type definitions consumed by the UI.
+ * Entrepreneur membership tiers USED to live here as a hardcoded table. They
+ * are now DB-backed and admin-editable — see `membershipPlanConfigs` in the
+ * store, `@/server/memberships/plan-config` for reads, and
+ * `@/lib/membership-benefits` for the shipped defaults. Nothing about
+ * entrepreneur membership pricing belongs in this file any more.
  *
  * All prices in DZD (Algerian Dinar).
  */
-export const membershipTiers = [
-  {
-    code: 'FREE',
-    nameKey: 'membership.tiers.free.name',
-    descriptionKey: 'membership.tiers.free.description',
-    priceMonthly: 0,
-    priceYearly: 0,
-    features: [
-      'membership.features.profile',
-      'membership.features.browse',
-      'membership.features.events',
-    ],
-    canListStartup: false,
-    canAccessMarketplace: false,
-  },
-  {
-    code: 'ENTREPRENEUR',
-    nameKey: 'membership.tiers.entrepreneur.name',
-    descriptionKey: 'membership.tiers.entrepreneur.description',
-    priceMonthly: 3500,
-    priceSemesterly: 3500 * 6, // billed every 6 months, no discount
-    priceYearly: Math.round(3500 * 12 * 0.7), // 30% yearly discount
-    yearlyDiscountPercent: 30,
-    features: [
-      'membership.features.allFree',
-      'membership.features.bookSpaces',
-      'membership.features.bookPrograms',
-      'membership.features.eventsDiscount',
-      'membership.features.prioritySupport',
-    ],
-    canListStartup: false,
-    canAccessMarketplace: true,
-    highlighted: false,
-  },
-  {
-    code: 'STARTUP',
-    nameKey: 'membership.tiers.startup.name',
-    descriptionKey: 'membership.tiers.startup.description',
-    priceMonthly: 6500,
-    priceSemesterly: 6500 * 6, // billed every 6 months, no discount
-    priceYearly: Math.round(6500 * 12 * 0.7),
-    yearlyDiscountPercent: 30,
-    features: [
-      'membership.features.allEntrepreneur',
-      'membership.features.listStartup',
-      'membership.features.fundraisingAccess',
-      'membership.features.investorMeetings',
-      'membership.features.featuredListing',
-    ],
-    canListStartup: true,
-    canAccessMarketplace: true,
-    highlighted: true,
-  },
-] as const;
-
-export type MembershipCode = (typeof membershipTiers)[number]['code'];
 
 /**
  * Incubator subscription model (the "Pro" plan).

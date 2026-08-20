@@ -1,5 +1,6 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { redirect } from 'next/navigation';
+import { getMembershipPlanViews } from '@/server/memberships/plan-view';
 import { Gift, Zap, HeadphonesIcon, Tag, BookOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,67 +22,81 @@ interface Perk {
   tag?: string;
 }
 
-const perks: Perk[] = [
-  {
-    icon: HeadphonesIcon,
-    title: 'Priority Support',
-    description:
-      'Skip the queue — your support tickets are handled within 4 business hours by a dedicated team member.',
-    tag: 'ENTREPRENEUR+',
-  },
-  {
-    icon: Tag,
-    title: 'Event Discounts',
-    description:
-      'Get 15% off all Metwork-hosted workshops, networking events, and bootcamps — automatically applied at checkout.',
-    tag: 'ENTREPRENEUR+',
-  },
-  {
-    icon: BookOpen,
-    title: 'Resource Library',
-    description:
-      'Unlock the full library of startup playbooks, investor pitch templates, and financial model spreadsheets curated by Metwork.',
-    tag: 'ENTREPRENEUR+',
-  },
-  {
-    icon: Zap,
-    title: 'Mentor Sessions',
-    description:
-      'Enjoy 1 free 30-minute mentor consultation per month — no wallet charge, no strings attached.',
-    tag: 'ENTREPRENEUR+',
-  },
-  {
-    icon: Gift,
-    title: 'Partner Deals',
-    description:
-      'Exclusive discounts from Metwork partners: cloud credits, legal services, accounting tools, and co-working passes.',
-    tag: 'ENTREPRENEUR+',
-  },
-];
+/**
+ * Perk copy is built from live plan config rather than hardcoded, because the
+ * discount percentages are admin-editable. Everything advertised here is a
+ * benefit the platform actually grants — the previous static list claimed free
+ * monthly mentor sessions that no code path has ever provided.
+ */
+function builderPerks(consultationPercent: number, spacePercent: number): Perk[] {
+  return [
+    {
+      icon: Tag,
+      title: `${spacePercent}% Space Booking Discount`,
+      description:
+        'Automatically applied to every coworking space, private office and event reservation — no promo code needed.',
+      tag: 'BUILDER+',
+    },
+    {
+      icon: Zap,
+      title: `${consultationPercent}% Off Mentor Consultations`,
+      description:
+        'Applied automatically when you book a paid consultation. Does not stack with a promo code — whichever saves you more is the one applied.',
+      tag: 'BUILDER+',
+    },
+    {
+      icon: Gift,
+      title: 'Partner Deals',
+      description:
+        'Exclusive discounts from Metwork partners: cloud credits, legal services, accounting tools, and coworking passes.',
+      tag: 'BUILDER+',
+    },
+    {
+      icon: HeadphonesIcon,
+      title: 'Exclusive Member Events',
+      description:
+        'Access to member-only workshops, networking evenings and founder roundtables hosted by Metwork.',
+      tag: 'BUILDER+',
+    },
+    {
+      icon: BookOpen,
+      title: 'Resource Library',
+      description:
+        'Unlock the full library of startup playbooks, investor pitch templates, and financial model spreadsheets curated by Metwork.',
+      tag: 'BUILDER+',
+    },
+  ];
+}
 
-const startupPerks: Perk[] = [
-  {
-    icon: Tag,
-    title: '20% Space Booking Discount',
-    description:
-      'Automatically applied to every coworking space or private office reservation — no promo code needed.',
-    tag: 'STARTUP',
-  },
-  {
-    icon: Zap,
-    title: '3 Mentor Sessions / Month',
-    description:
-      'Three free mentor consultations per calendar month — ideal for fast-moving product and fundraising sprints.',
-    tag: 'STARTUP',
-  },
-  {
-    icon: BookOpen,
-    title: 'Featured Marketplace Listing',
-    description:
-      'Your startup appears at the top of the investor marketplace, increasing visibility with active investors.',
-    tag: 'STARTUP',
-  },
-];
+function founderPerks(passCount: number): Perk[] {
+  return [
+    ...(passCount > 0
+      ? [
+          {
+            icon: Zap,
+            title: `${passCount} Coworking Passes / Month`,
+            description:
+              'Free day access at partner coworking spaces across the network — check in with your Metwork Pass QR code.',
+            tag: 'FOUNDER',
+          } satisfies Perk,
+        ]
+      : []),
+    {
+      icon: BookOpen,
+      title: 'Featured Marketplace Listing',
+      description:
+        'Your startup appears at the top of the investor marketplace, increasing visibility with active investors.',
+      tag: 'FOUNDER',
+    },
+    {
+      icon: Gift,
+      title: 'Fundraising Access',
+      description:
+        'List your round, receive investor meeting requests, and raise directly through the platform.',
+      tag: 'FOUNDER',
+    },
+  ];
+}
 
 export default async function PerksPage({ params }: PageProps) {
   const { locale } = await params;
@@ -97,6 +112,18 @@ export default async function PerksPage({ params }: PageProps) {
   }
 
   const isStartup = effectiveCode === 'STARTUP';
+
+  // Live rates for the copy above.
+  const planViews = await getMembershipPlanViews();
+  const currentPlan =
+    planViews.find((p) => p.code === (isStartup ? 'STARTUP' : 'ENTREPRENEUR')) ?? planViews[1];
+  const perks = builderPerks(
+    currentPlan?.consultationDiscountPercent ?? 0,
+    currentPlan?.spaceDiscountPercent ?? 0,
+  );
+  const startupPerks = founderPerks(
+    planViews.find((p) => p.code === 'STARTUP')?.monthlyPassCount ?? 0,
+  );
 
   // Partner Perks — claimable offers, filtered server-side to the user's tier.
   // listPerksForUser needs the full UserRecord (requireRole returns the

@@ -22,6 +22,8 @@ export interface MembershipPlanCard {
   /** Full amount charged for a 12-month period (monthly × 12 × 0.7). */
   priceYearly: number;
   yearlyDiscountPercent: number;
+  /** Months in a semesterly cycle — drives the "billed every N months" copy. */
+  semesterlyMonths: number;
   highlighted: boolean;
   features: string[];
 }
@@ -37,6 +39,10 @@ type BillingPeriod = 'semesterly' | 'yearly';
 export function MembershipPlans({ tiers, locale, mostPopularLabel }: Props) {
   const tm = useTranslations('membership');
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('semesterly');
+  // Savings badge reads the configured discount off the paid plans rather than
+  // a literal, so an admin changing the annual discount updates the badge too.
+  const annualDiscountPercent =
+    tiers.find((t) => t.priceMonthly > 0)?.yearlyDiscountPercent ?? 0;
 
   return (
     <div>
@@ -64,7 +70,7 @@ export function MembershipPlans({ tiers, locale, mostPopularLabel }: Props) {
                     : 'bg-green-100 text-green-700',
                 )}
               >
-                {tm('yearlySaveBadge', { percent: 30 })}
+                {tm('yearlySaveBadge', { percent: annualDiscountPercent })}
               </span>
             )}
           </button>

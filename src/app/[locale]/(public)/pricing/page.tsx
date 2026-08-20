@@ -9,7 +9,8 @@ import {
   MembershipPlans,
   type MembershipPlanCard,
 } from '@/components/features/membership/membership-plans';
-import { membershipTiers, incubatorSubscriptionTiers } from '@/config/memberships';
+import { incubatorSubscriptionTiers } from '@/config/memberships';
+import { getMembershipPlanViews } from '@/server/memberships/plan-view';
 import { formatCurrency } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 import { assertLandingVisible } from '@/lib/landing-visibility';
@@ -45,58 +46,22 @@ export default async function PricingPage({ params }: PageProps) {
     getTranslations('incubator'),
   ]);
 
-  // Map config data to display-ready entrepreneur tiers (explicit keys per tier).
-  const tiers: MembershipPlanCard[] = [
-    {
-      code: 'FREE',
-      name: tm('tiers.free.name'),
-      description: tm('tiers.free.description'),
-      priceMonthly: membershipTiers[0].priceMonthly,
-      priceSemesterly: membershipTiers[0].priceMonthly * 6,
-      priceYearly: membershipTiers[0].priceYearly,
-      yearlyDiscountPercent: 0,
-      highlighted: false,
-      features: [tm('features.profile'), tm('features.browse'), tm('features.events')],
-    },
-    {
-      code: 'ENTREPRENEUR',
-      name: tm('tiers.entrepreneur.name'),
-      description: tm('tiers.entrepreneur.description'),
-      priceMonthly: membershipTiers[1].priceMonthly,
-      priceSemesterly: membershipTiers[1].priceSemesterly,
-      priceYearly: membershipTiers[1].priceYearly,
-      yearlyDiscountPercent: membershipTiers[1].yearlyDiscountPercent,
-      highlighted: false,
-      features: [
-        tm('features.allFree'),
-        tm('features.bookPrograms'),
-        tm('features.networkPass3'),
-        tm('features.bookSpaces'),
-        tm('features.eventsDiscount'),
-        tm('features.prioritySupport'),
-      ],
-    },
-    {
-      code: 'STARTUP',
-      name: tm('tiers.startup.name'),
-      description: tm('tiers.startup.description'),
-      priceMonthly: membershipTiers[2].priceMonthly,
-      priceSemesterly: membershipTiers[2].priceSemesterly,
-      priceYearly: membershipTiers[2].priceYearly,
-      yearlyDiscountPercent: membershipTiers[2].yearlyDiscountPercent,
-      highlighted: true,
-      features: [
-        tm('features.allEntrepreneur'),
-        tm('features.freeConsultations3'),
-        tm('features.networkPass10'),
-        tm('features.spaceDiscount20'),
-        tm('features.listStartup'),
-        tm('features.fundraisingAccess'),
-        tm('features.investorMeetings'),
-        tm('features.featuredListing'),
-      ],
-    },
-  ];
+  // Display-ready tiers, built from the admin-editable plan config. Prices,
+  // discount percentages, pass counts and the Recommended tag all come from
+  // the DB — this page hardcodes none of them.
+  const planViews = await getMembershipPlanViews();
+  const tiers: MembershipPlanCard[] = planViews.map((plan) => ({
+    code: plan.code,
+    name: tm(plan.nameKey),
+    description: tm(plan.descriptionKey),
+    priceMonthly: plan.prices.monthly,
+    priceSemesterly: plan.prices.semesterly,
+    priceYearly: plan.prices.annual,
+    yearlyDiscountPercent: plan.prices.annualDiscountPercent,
+    semesterlyMonths: plan.prices.semesterlyMonths,
+    highlighted: plan.recommended,
+    features: plan.features.map((f) => tm(`features.${f.key}`, f.values)),
+  }));
 
   const commissionTier = incubatorSubscriptionTiers[0];
   const proTier = incubatorSubscriptionTiers[1];
@@ -129,7 +94,7 @@ export default async function PricingPage({ params }: PageProps) {
             <p className="mt-3 text-base text-muted-foreground">{t('entrepreneurSubtitle')}</p>
           </div>
 
-          <MembershipPlans tiers={tiers} locale={lang} mostPopularLabel={t('mostPopular')} />
+          <MembershipPlans tiers={tiers} locale={lang} mostPopularLabel={tm('recommended')} />
 
           {/* FAQ link */}
           <p className="mt-10 text-center text-sm text-muted-foreground">

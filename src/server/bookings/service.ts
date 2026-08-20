@@ -29,6 +29,7 @@ import {
 import { findProgramById } from './program-catalog';
 import { findEventById } from './event-catalog';
 import { countAttendance } from '@/server/attendance';
+import { resolveMemberBenefits } from '@/server/memberships/service';
 import { validatePromoCodeSync as validatePromoCode, consumePromoCodeSync as consumePromoCode, ensurePromoCodesSeeded } from '@/server/promo-codes/service';
 import type {
   ApplyToProgramResult,
@@ -546,6 +547,12 @@ export async function createSpaceBooking(
       const tier = user.membershipTier ?? 'EXPLORER';
       if (tier === 'EXPLORER') {
         return { ok: false, reason: 'TIER_NOT_ELIGIBLE', tier: 'EXPLORER' };
+      }
+      // A plan can grant zero passes (Builder does). Those members are not
+      // eligible at all — reporting NO_CREDITS would wrongly suggest they had
+      // an allowance and merely spent it.
+      if (resolveMemberBenefits(d, user).monthlyPassCount <= 0) {
+        return { ok: false, reason: 'TIER_NOT_ELIGIBLE', tier };
       }
       const currentCredits = user.networkCredits ?? 0;
       if (currentCredits <= 0) {
