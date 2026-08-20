@@ -21,7 +21,7 @@ import { getServerSession } from '@/lib/session';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { validatePromoCode, promoAppliesToType } from '@/server/promo-codes/service';
-import { getEffectiveMembershipCode, consultationDiscountFraction } from '@/server/memberships/service';
+import { getConsultationDiscountForUser } from '@/server/memberships/service';
 import { createInstantBooking, isInstantBookEnabled } from '@/server/consultations/instant-book';
 import { getInternationalCardAvailability } from '@/server/payments/exchange-rate';
 import { randomUUID } from 'node:crypto';
@@ -134,11 +134,12 @@ export async function POST(
     appliedPromoCode = validation.promoCode.code;
   }
 
-  // Member-only: resolve the automatic membership-tier consultation discount
-  // (Builder 15 % / Founder 20 %) from the ONE canonical resolver. The pricing
-  // layer decides tier-vs-promo (no stacking) — this just supplies the fraction.
+  // Member-only: resolve the automatic membership consultation discount from
+  // the ONE canonical resolver, which reads the member's frozen snapshot before
+  // any live config. The pricing layer decides tier-vs-promo (no stacking) —
+  // this just supplies the fraction.
   const membershipDiscountFraction = user
-    ? consultationDiscountFraction(getEffectiveMembershipCode(user))
+    ? await getConsultationDiscountForUser(user.id)
     : 0;
 
   // Resolve the client's contact identity server-side from their account. The

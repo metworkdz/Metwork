@@ -21,6 +21,7 @@ import { safeUUID } from '@/lib/safe-uuid';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
 import { resolveTier } from '@/lib/tier-utils';
+import { memberSpaceDiscountFraction } from '@/lib/membership-benefits';
 import { computeClientDeposit } from '@/lib/deposit';
 import type { Locale } from '@/i18n/config';
 import type { Event as PlatformEvent, PaymentMethod } from '@/types/domain';
@@ -95,11 +96,11 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
 
   // Membership tier discount (Builder 15 %, Founder 20 %) — mirrors the server.
   const userTier = user ? resolveTier(user) : 'EXPLORER';
+  // Events share the space discount rate. Read the member's OWN frozen rate
+  // from the session instead of re-deriving it from the tier.
   const membershipDiscountFraction = !isAuthed || isFree
     ? 0
-    : userTier === 'FOUNDER' ? 0.20
-    : userTier === 'BUILDER' ? 0.15
-    : 0;
+    : memberSpaceDiscountFraction(user);
   const membershipDiscountPercent = Math.round(membershipDiscountFraction * 100);
   const membershipDiscountAmount = membershipDiscountFraction > 0
     ? event.price - Math.round(event.price * (1 - membershipDiscountFraction))

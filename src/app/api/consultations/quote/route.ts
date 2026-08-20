@@ -20,10 +20,7 @@ import { findMentorById } from '@/server/mentors/service';
 import { isMentorApproved } from '@/lib/mentor-approval';
 import { computeConsultationCharge } from '@/server/consultations/pricing';
 import { validatePromoCode, promoAppliesToType } from '@/server/promo-codes/service';
-import {
-  getEffectiveMembershipCode,
-  consultationDiscountFraction,
-} from '@/server/memberships/service';
+import { getConsultationDiscountForUser } from '@/server/memberships/service';
 import { getInternationalCardAvailability } from '@/server/payments/exchange-rate';
 import { convertDzdToEur, FxError } from '@/server/payments/fx';
 
@@ -61,9 +58,9 @@ export async function GET(req: NextRequest) {
   const charge = computeConsultationCharge({
     feePerHour: mentor.consultationFee ?? 0,
     durationMinutes,
-    membershipDiscountFraction: consultationDiscountFraction(
-      getEffectiveMembershipCode(guard.user),
-    ),
+    // Snapshot-aware: quotes must show the rate this member will actually be
+    // charged, not the current plan's rate.
+    membershipDiscountFraction: await getConsultationDiscountForUser(guard.user.id),
     promoDiscountPercent,
   });
 

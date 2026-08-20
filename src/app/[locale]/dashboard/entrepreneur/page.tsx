@@ -16,7 +16,7 @@ import {
 import { mobileQuickActionsByRole } from '@/config/mobile-nav';
 import { db } from '@/server/db/store';
 import { formatCurrency } from '@/lib/format';
-import { getEffectiveMembershipCode, consultationDiscountFraction } from '@/server/memberships/service';
+import { getEffectiveMembershipCode, getConsultationDiscountForUser } from '@/server/memberships/service';
 import type { Locale } from '@/i18n/config';
 
 interface PageProps {
@@ -60,8 +60,11 @@ export default async function EntrepreneurDashboard({ params }: PageProps) {
   // Membership
   const effectiveCode = getEffectiveMembershipCode(user);
   const membershipLabel = effectiveCode === 'FREE' ? 'Free' : effectiveCode.charAt(0) + effectiveCode.slice(1).toLowerCase();
-  // Automatic consultation discount (Builder 15 % / Founder 20 %; 0 for Free).
-  const consultationDiscountPercent = Math.round(consultationDiscountFraction(effectiveCode) * 100);
+  // Automatic consultation discount, resolved through the snapshot-aware
+  // resolver so a grandfathered member sees their own rate (0 for Free).
+  const consultationDiscountPercent = Math.round(
+    (await getConsultationDiscountForUser(user.id)) * 100,
+  );
 
   // Recent bookings (mobile list) — newest first, top 4. Display only.
   const recentBookings = data.bookings

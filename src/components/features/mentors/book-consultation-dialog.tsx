@@ -33,6 +33,7 @@ import {
 } from '@/components/features/consultations/payment-method-picker';
 import type { DaySlot } from '@/types/mentor';
 import { resolveTier } from '@/lib/tier-utils';
+import { memberConsultationDiscountFraction } from '@/lib/membership-benefits';
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
 import {
   Dialog,
@@ -60,7 +61,6 @@ import {
   computePrice,
   resolveMentorPricing,
   resolveConsultationCharge,
-  consultationDiscountFraction,
 } from '@/lib/consultation-pricing';
 import type { Mentor } from '@/types/mentor';
 
@@ -179,7 +179,9 @@ export function BookConsultationDialog({
 
   // Membership-tier consultation discount fraction (Builder 15 %, Founder 20 %)
   // from the ONE canonical resolver. Guests get 0.
-  const membershipDiscountFraction = user ? consultationDiscountFraction(userTier) : 0;
+  // The member's OWN frozen consultation rate, carried on the session — not
+  // re-derived from the tier, so a grandfathered rate previews correctly.
+  const membershipDiscountFraction = memberConsultationDiscountFraction(user);
   const tierDiscountPercent = Math.round(membershipDiscountFraction * 100);
 
   // Derived pricing — resolved through the ONE canonical calculator (shared with

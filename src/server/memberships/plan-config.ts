@@ -29,6 +29,11 @@ import {
   LEGACY_PLAN_DISCOUNT_RATES,
 } from '@/server/admin/settings-defaults';
 import { computeCyclePrices, type CyclePrices } from '@/lib/billing-cycles';
+import {
+  PAID_PLAN_CODES,
+  normalizePlanCode,
+  type PaidPlanCode,
+} from '@/lib/membership-benefits';
 
 // The store's document type is intentionally not exported, so the read helpers
 // below take the minimal structural slice they actually need. That also lets
@@ -38,25 +43,9 @@ type PlanConfigSource = { membershipPlanConfigs?: MembershipPlanConfigRecord[] }
 /** Minimal doc slice needed to resolve pass allowances. */
 type PassCountSource = { meta?: { platformConfig?: PlatformConfig } };
 
-/** Canonical paid plan codes. The tier names Builder/Founder map onto these. */
-export const PAID_PLAN_CODES = ['ENTREPRENEUR', 'STARTUP'] as const;
-export type PaidPlanCode = (typeof PAID_PLAN_CODES)[number];
-
-/**
- * Normalize any membership code or tier to a canonical paid plan code.
- *
- * The store carries four spellings for two plans — `ENTREPRENEUR`/`BUILDER`
- * and `STARTUP`/`FOUNDER` — and the partner-promo path historically wrote them
- * lowercase. Every lookup goes through here so no caller has to know that.
- * Returns null for FREE / EXPLORER / unrecognized values.
- */
-export function normalizePlanCode(codeOrTier: string | null | undefined): PaidPlanCode | null {
-  if (!codeOrTier) return null;
-  const v = codeOrTier.toUpperCase();
-  if (v === 'ENTREPRENEUR' || v === 'BUILDER') return 'ENTREPRENEUR';
-  if (v === 'STARTUP' || v === 'FOUNDER') return 'STARTUP';
-  return null;
-}
+// Plan codes and the code normalizer are defined in the client-safe benefits
+// module and re-exported here so server callers keep one import surface.
+export { PAID_PLAN_CODES, normalizePlanCode, type PaidPlanCode };
 
 /** The in-code default for a plan — last-resort fallback when nothing is stored. */
 export function defaultPlanConfig(planCode: PaidPlanCode): MembershipPlanConfigRecord {

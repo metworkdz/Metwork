@@ -38,6 +38,7 @@ import { SpaceScheduler } from './space-scheduler';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
 import { resolveTier } from '@/lib/tier-utils';
+import { memberSpaceDiscountFraction } from '@/lib/membership-benefits';
 import { computeClientDeposit } from '@/lib/deposit';
 import type { Locale } from '@/i18n/config';
 import type { PaymentMethod, Space } from '@/types/domain';
@@ -400,17 +401,13 @@ export function SpaceBookingForm({
   }, [space.durationDiscounts, effectiveUnit, qty]);
   const durationDiscountAmount = durationPercent > 0 ? total - Math.round(total * (1 - durationPercent / 100)) : 0;
   const afterDuration = total - durationDiscountAmount;
-  // Membership-tier space discount (mirrors SPACE_DISCOUNT on the server):
-  //   BUILDER  (ENTREPRENEUR membershipCode) → 15 % off
-  //   FOUNDER  (STARTUP      membershipCode) → 20 % off
-  // Discount is suppressed when the Network Pass is used (already free).
+  // Membership space discount. Read from the member's OWN frozen rate (carried
+  // on the session) rather than re-derived from the tier, so a grandfathered
+  // member sees the rate the server will actually charge them.
+  // Suppressed when the Network Pass is used (the booking is already free).
   const membershipDiscountFraction = !isAuthed || useNetworkPass
     ? 0
-    : userTier === 'FOUNDER'
-    ? 0.20
-    : userTier === 'BUILDER'
-    ? 0.15
-    : 0;
+    : memberSpaceDiscountFraction(user);
   const membershipDiscountPercent  = Math.round(membershipDiscountFraction * 100);
   const membershipDiscountAmount   = membershipDiscountFraction > 0 ? afterDuration - Math.round(afterDuration * (1 - membershipDiscountFraction)) : 0;
   const afterMembershipDiscount    = afterDuration - membershipDiscountAmount;

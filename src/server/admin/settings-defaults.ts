@@ -1,4 +1,5 @@
 import type { PlatformSettingsRecord, MembershipPlanConfigRecord } from '@/server/db/store';
+import { DEFAULT_PLAN_BENEFITS, PAID_PLAN_CODES } from '@/lib/membership-benefits';
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettingsRecord = {
   appName:         'Metwork',
@@ -78,30 +79,13 @@ export const DEFAULT_COMMISSION_RULES = [
  * Coworking pass counts are NOT here — they stay canonical in
  * `meta.platformConfig.{builder,founder}MonthlyCredits` (Builder 0, Founder 5).
  */
-export const DEFAULT_MEMBERSHIP_PLAN_CONFIGS: readonly MembershipPlanConfigRecord[] = [
-  {
-    planCode:                 'ENTREPRENEUR', // Builder
-    monthlyPrice:             1_500,
-    semesterlyMonths:         6,
-    annualDiscountPercent:    30,
-    consultationDiscountRate: 0.10,
-    spaceDiscountRate:        0.15,
-    recommended:              true,
-    isActive:                 true,
-    updatedAt:                new Date(0).toISOString(),
-  },
-  {
-    planCode:                 'STARTUP', // Founder
-    monthlyPrice:             7_900,
-    semesterlyMonths:         6,
-    annualDiscountPercent:    30,
-    consultationDiscountRate: 0.10,
-    spaceDiscountRate:        0.15,
-    recommended:              false,
-    isActive:                 true,
-    updatedAt:                new Date(0).toISOString(),
-  },
-] as const;
+export const DEFAULT_MEMBERSHIP_PLAN_CONFIGS: readonly MembershipPlanConfigRecord[] =
+  PAID_PLAN_CODES.map((planCode) => ({
+    planCode,
+    ...DEFAULT_PLAN_BENEFITS[planCode],
+    isActive:  true,
+    updatedAt: new Date(0).toISOString(),
+  }));
 
 /**
  * Discount rates as they stood BEFORE the 2026-08 repricing (Builder 15 %,
