@@ -244,20 +244,20 @@
   },
   "suites": [
     {
-      "title": "admin.spec.ts",
-      "file": "admin.spec.ts",
+      "title": "incubator.spec.ts",
+      "file": "incubator.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "🔴 Admin Agent",
-          "file": "admin.spec.ts",
-          "line": 32,
+          "title": "🟠 Incubator Agent",
+          "file": "incubator.spec.ts",
+          "line": 28,
           "column": 6,
           "specs": [
             {
-              "title": "A01 — Login and dashboard loads",
+              "title": "I01 — Login and dashboard loads",
               "ok": true,
               "tags": [],
               "tests": [
@@ -265,23 +265,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4538,
+                      "duration": 8572,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A01 — Login & Dashboard\n"
+                          "text": "✅ [INCUBATOR] I01 — Login & Dashboard\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:36:27.416Z",
+                      "startTime": "2026-08-20T17:43:41.292Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -289,13 +289,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-8cc8ef9d82a5db984fc0",
-              "file": "admin.spec.ts",
-              "line": 35,
+              "id": "2b746f50a791f3b28f19-ffcad1ecc32f69197b4b",
+              "file": "incubator.spec.ts",
+              "line": 31,
               "column": 7
             },
             {
-              "title": "A02 — No console errors on dashboard",
+              "title": "I02 — No console errors on dashboard",
               "ok": true,
               "tags": [],
               "tests": [
@@ -303,37 +303,83 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3967,
-                      "errors": [],
+                      "status": "timedOut",
+                      "duration": 50596,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m"
+                        }
+                      ],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A02 — No Console Errors\n"
+                          "text": "❌ [INCUBATOR] I02 — No Console Errors | Failed to load resource: the server responded with a status of 500 (Internal Server Error) | Cannot read properties of null (reading 'useContext') | Loading plugin data from 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBpZD0ic3ZnIj48dGV4dCB4PSIxMCIgeT0iMjAiIGlkPSJzdmctbGluay10ZXh0Ij50ZXh0PC90ZXh0Pjwvc3ZnPg==' violates the following Content Security Policy directive: \"object-src 'none'\". The action has been blocked.\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:36:32.315Z",
+                      "startTime": "2026-08-20T17:43:50.320Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-6ea4e-console-errors-on-dashboard-incubator/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-6ea4e-console-errors-on-dashboard-incubator/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-6ea4e-console-errors-on-dashboard-incubator/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-6ea4e-console-errors-on-dashboard-incubator/trace.zip"
+                        }
+                      ]
+                    },
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6195,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ [INCUBATOR] I02 — No Console Errors\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-08-20T17:44:42.710Z",
                       "annotations": [],
                       "attachments": []
                     }
                   ],
-                  "status": "expected"
+                  "status": "flaky"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-81243151a96016d94f97",
-              "file": "admin.spec.ts",
-              "line": 46,
+              "id": "2b746f50a791f3b28f19-9204bd9e1f4f09148bb0",
+              "file": "incubator.spec.ts",
+              "line": 42,
               "column": 7
             },
             {
-              "title": "A03 — Analytics page renders",
+              "title": "I03 — Analytics page renders",
               "ok": true,
               "tags": [],
               "tests": [
@@ -341,23 +387,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 11357,
+                      "duration": 37534,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A03 — Analytics\n"
+                          "text": "✅ [INCUBATOR] I03 — Analytics\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:36:36.303Z",
+                      "startTime": "2026-08-20T17:44:49.268Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -365,13 +411,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-140e1aba734a901bbe7c",
-              "file": "admin.spec.ts",
-              "line": 64,
+              "id": "2b746f50a791f3b28f19-aac09d761143b24dbfa2",
+              "file": "incubator.spec.ts",
+              "line": 58,
               "column": 9
             },
             {
-              "title": "A04 — Users page renders",
+              "title": "I04 — Clients page renders",
               "ok": true,
               "tags": [],
               "tests": [
@@ -379,23 +425,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 17486,
+                      "duration": 26011,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A04 — Users\n"
+                          "text": "✅ [INCUBATOR] I04 — Clients\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:36:47.675Z",
+                      "startTime": "2026-08-20T17:45:26.827Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -403,13 +449,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-1564fcf780197188b237",
-              "file": "admin.spec.ts",
-              "line": 64,
+              "id": "2b746f50a791f3b28f19-7ab6faf58613c601fcf7",
+              "file": "incubator.spec.ts",
+              "line": 58,
               "column": 9
             },
             {
-              "title": "A05 — Incubators page renders",
+              "title": "I05 — Income page renders",
               "ok": true,
               "tags": [],
               "tests": [
@@ -417,23 +463,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 11300,
+                      "duration": 25706,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A05 — Incubators\n"
+                          "text": "✅ [INCUBATOR] I05 — Income\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:37:05.176Z",
+                      "startTime": "2026-08-20T17:45:52.867Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -441,13 +487,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-a7b6df10bf4acb130d2c",
-              "file": "admin.spec.ts",
-              "line": 64,
+              "id": "2b746f50a791f3b28f19-658a5d8b84cc54de24d6",
+              "file": "incubator.spec.ts",
+              "line": 58,
               "column": 9
             },
             {
-              "title": "A06 — Memberships page renders",
+              "title": "I06 — Expenses page renders",
               "ok": true,
               "tags": [],
               "tests": [
@@ -455,23 +501,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8554,
+                      "duration": 15567,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A06 — Memberships\n"
+                          "text": "✅ [INCUBATOR] I06 — Expenses\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:37:16.491Z",
+                      "startTime": "2026-08-20T17:46:18.597Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -479,13 +525,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-c0b8d568bfbafbc6e99d",
-              "file": "admin.spec.ts",
-              "line": 64,
+              "id": "2b746f50a791f3b28f19-c4f4bbb30d1409220a09",
+              "file": "incubator.spec.ts",
+              "line": 58,
               "column": 9
             },
             {
-              "title": "A07 — Promo Codes page renders",
+              "title": "I07 — Services page renders",
               "ok": true,
               "tags": [],
               "tests": [
@@ -493,23 +539,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9361,
+                      "duration": 23348,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A07 — Promo Codes\n"
+                          "text": "✅ [INCUBATOR] I07 — Services\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:37:25.061Z",
+                      "startTime": "2026-08-20T17:46:34.187Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -517,13 +563,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-cc8b92ec9e0ec83a219b",
-              "file": "admin.spec.ts",
-              "line": 64,
+              "id": "2b746f50a791f3b28f19-a15f0417cc39f717c631",
+              "file": "incubator.spec.ts",
+              "line": 58,
               "column": 9
             },
             {
-              "title": "A08 — Partner Network page renders",
+              "title": "I08 — Spaces page renders",
               "ok": true,
               "tags": [],
               "tests": [
@@ -531,23 +577,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9719,
+                      "duration": 33798,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A08 — Partner Network\n"
+                          "text": "✅ [INCUBATOR] I08 — Spaces\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:37:34.437Z",
+                      "startTime": "2026-08-20T17:46:57.584Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -555,13 +601,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-49869581c0c80df1b3a3",
-              "file": "admin.spec.ts",
-              "line": 64,
+              "id": "2b746f50a791f3b28f19-ebab57c15ccefc1d363d",
+              "file": "incubator.spec.ts",
+              "line": 58,
               "column": 9
             },
             {
-              "title": "A09 — Partner Promo Codes page renders",
+              "title": "I09 — Programs page renders",
               "ok": true,
               "tags": [],
               "tests": [
@@ -569,23 +615,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 11030,
+                      "duration": 20688,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A09 — Partner Promo Codes\n"
+                          "text": "✅ [INCUBATOR] I09 — Programs\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:37:44.198Z",
+                      "startTime": "2026-08-20T17:47:31.409Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -593,13 +639,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-70e31f10ff945a522129",
-              "file": "admin.spec.ts",
-              "line": 64,
+              "id": "2b746f50a791f3b28f19-ab4c606d792f9f125d92",
+              "file": "incubator.spec.ts",
+              "line": 58,
               "column": 9
             },
             {
-              "title": "A10 — Commissions page renders",
+              "title": "I10 — Events page renders",
               "ok": true,
               "tags": [],
               "tests": [
@@ -607,23 +653,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9340,
+                      "duration": 21637,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A10 — Commissions\n"
+                          "text": "✅ [INCUBATOR] I10 — Events\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:37:55.245Z",
+                      "startTime": "2026-08-20T17:47:52.116Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -631,13 +677,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-f94b1c607ff63ffdef0e",
-              "file": "admin.spec.ts",
-              "line": 64,
+              "id": "2b746f50a791f3b28f19-338f0842563e936423a5",
+              "file": "incubator.spec.ts",
+              "line": 58,
               "column": 9
             },
             {
-              "title": "A11 — Bookings page renders",
+              "title": "I11 — Bookings page renders",
               "ok": true,
               "tags": [],
               "tests": [
@@ -645,23 +691,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 10288,
+                      "duration": 28523,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A11 — Bookings\n"
+                          "text": "✅ [INCUBATOR] I11 — Bookings\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:38:04.598Z",
+                      "startTime": "2026-08-20T17:48:13.782Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -669,13 +715,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-0de08739b8ba70259e03",
-              "file": "admin.spec.ts",
-              "line": 64,
+              "id": "2b746f50a791f3b28f19-b2c20d85d843c6e609a2",
+              "file": "incubator.spec.ts",
+              "line": 58,
               "column": 9
             },
             {
-              "title": "A12 — Mentors page renders",
+              "title": "I12 — Revenue page renders",
               "ok": true,
               "tags": [],
               "tests": [
@@ -683,23 +729,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 8240,
+                      "duration": 13515,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A12 — Mentors\n"
+                          "text": "✅ [INCUBATOR] I12 — Revenue\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:38:14.902Z",
+                      "startTime": "2026-08-20T17:48:42.323Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -707,13 +753,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-0c100558b13997edf5fe",
-              "file": "admin.spec.ts",
-              "line": 64,
+              "id": "2b746f50a791f3b28f19-1af566713b63aecc8410",
+              "file": "incubator.spec.ts",
+              "line": 58,
               "column": 9
             },
             {
-              "title": "A13 — Consultations page renders",
+              "title": "I13 — Invoices page renders",
               "ok": true,
               "tags": [],
               "tests": [
@@ -721,23 +767,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 10299,
+                      "duration": 12571,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A13 — Consultations\n"
+                          "text": "✅ [INCUBATOR] I13 — Invoices\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:38:23.153Z",
+                      "startTime": "2026-08-20T17:48:55.853Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -745,13 +791,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-034071f4cf334d49c8b6",
-              "file": "admin.spec.ts",
-              "line": 64,
+              "id": "2b746f50a791f3b28f19-be7ce8f2404af9c7be8d",
+              "file": "incubator.spec.ts",
+              "line": 58,
               "column": 9
             },
             {
-              "title": "A14 — Mentor Revenue page renders",
+              "title": "I14 — Wallet page renders",
               "ok": true,
               "tags": [],
               "tests": [
@@ -759,23 +805,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7483,
+                      "duration": 18162,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A14 — Mentor Revenue\n"
+                          "text": "✅ [INCUBATOR] I14 — Wallet\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:38:33.545Z",
+                      "startTime": "2026-08-20T17:49:08.439Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -783,13 +829,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-f782b041835a94e58b78",
-              "file": "admin.spec.ts",
-              "line": 64,
+              "id": "2b746f50a791f3b28f19-f5ad75b60faa1e47460d",
+              "file": "incubator.spec.ts",
+              "line": 58,
               "column": 9
             },
             {
-              "title": "A15 — Contacts page renders",
+              "title": "I15 — Settings page renders",
               "ok": true,
               "tags": [],
               "tests": [
@@ -797,23 +843,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6909,
+                      "duration": 29624,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A15 — Contacts\n"
+                          "text": "✅ [INCUBATOR] I15 — Settings\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:38:41.045Z",
+                      "startTime": "2026-08-20T17:49:26.617Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -821,13 +867,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-f29231b63e7fa1859e01",
-              "file": "admin.spec.ts",
-              "line": 64,
+              "id": "2b746f50a791f3b28f19-30e4f530e5ed0fd8dcdd",
+              "file": "incubator.spec.ts",
+              "line": 58,
               "column": 9
             },
             {
-              "title": "A16 — Investor Contacts page renders",
+              "title": "I16 — Create space dialog opens",
               "ok": true,
               "tags": [],
               "tests": [
@@ -835,23 +881,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7335,
+                      "duration": 24235,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A16 — Investor Contacts\n"
+                          "text": "✅ [INCUBATOR] I16 — Create Space Dialog\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:38:47.967Z",
+                      "startTime": "2026-08-20T17:49:56.252Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -859,203 +905,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-65aaa651d5704518313d",
-              "file": "admin.spec.ts",
-              "line": 64,
-              "column": 9
-            },
-            {
-              "title": "A17 — Withdrawals page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 6227,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "❌ [ADMIN] A17 — Withdrawals | 404 at /en/dashboard/admin/withdrawals\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:38:55.314Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "d4043a9dd1ab94463227-5b96721ad4f93b63701e",
-              "file": "admin.spec.ts",
-              "line": 64,
-              "column": 9
-            },
-            {
-              "title": "A18 — CMS Content page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 7389,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [ADMIN] A18 — CMS Content\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:39:01.553Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "d4043a9dd1ab94463227-36e3a827d235f2f0a813",
-              "file": "admin.spec.ts",
-              "line": 64,
-              "column": 9
-            },
-            {
-              "title": "A19 — Audit Log page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 8558,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [ADMIN] A19 — Audit Log\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:39:08.957Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "d4043a9dd1ab94463227-6d5e4f965f73d5b2a029",
-              "file": "admin.spec.ts",
-              "line": 64,
-              "column": 9
-            },
-            {
-              "title": "A20 — Settings page renders",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 8077,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [ADMIN] A20 — Settings\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:39:17.530Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "d4043a9dd1ab94463227-9872f0f31e293d7650a0",
-              "file": "admin.spec.ts",
-              "line": 64,
-              "column": 9
-            },
-            {
-              "title": "A21 — Create promo code form is visible on promo codes page",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 4830,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ [ADMIN] A21 — Create Promo Code Form | heading:true inputs:4\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T17:39:25.621Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "d4043a9dd1ab94463227-1f228735bc9dbff6d066",
-              "file": "admin.spec.ts",
-              "line": 82,
+              "id": "2b746f50a791f3b28f19-f1ca3eb07d5480040c27",
+              "file": "incubator.spec.ts",
+              "line": 76,
               "column": 7
             },
             {
-              "title": "A22 — Settings page has editable fields",
+              "title": "I17 — Income form: service field is a select/dropdown (not free text)",
               "ok": true,
               "tags": [],
               "tests": [
@@ -1063,37 +919,83 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 7955,
-                      "errors": [],
+                      "status": "timedOut",
+                      "duration": 47208,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m"
+                        }
+                      ],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A22 — Settings Has Fields | 2 input(s) found\n"
+                          "text": "✅ [INCUBATOR] I17 — Income Service Is Dropdown\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:39:30.466Z",
+                      "startTime": "2026-08-20T17:50:20.503Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-014b0-ect-dropdown-not-free-text--incubator/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-014b0-ect-dropdown-not-free-text--incubator/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-014b0-ect-dropdown-not-free-text--incubator/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/macbookpro/Downloads/metwork/test-results/incubator-🟠-Incubator-Age-014b0-ect-dropdown-not-free-text--incubator/trace.zip"
+                        }
+                      ]
+                    },
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13200,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ [INCUBATOR] I17 — Income Service Is Dropdown\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-08-20T17:51:09.799Z",
                       "annotations": [],
                       "attachments": []
                     }
                   ],
-                  "status": "expected"
+                  "status": "flaky"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-57087e1c3c76d9d9912d",
-              "file": "admin.spec.ts",
-              "line": 99,
+              "id": "2b746f50a791f3b28f19-65382250cd8152d3704c",
+              "file": "incubator.spec.ts",
+              "line": 103,
               "column": 7
             },
             {
-              "title": "A23 — Users table shows rows",
+              "title": "I18 — Create program dialog/form opens",
               "ok": true,
               "tags": [],
               "tests": [
@@ -1101,23 +1003,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7934,
+                      "duration": 18249,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A23 — Users Table Rows | 81 rows\n"
+                          "text": "✅ [INCUBATOR] I18 — Create Program Form\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:39:38.433Z",
+                      "startTime": "2026-08-20T17:51:23.313Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1125,13 +1027,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-2c88bf70c8b38e1f7900",
-              "file": "admin.spec.ts",
-              "line": 113,
+              "id": "2b746f50a791f3b28f19-376486e237628139897c",
+              "file": "incubator.spec.ts",
+              "line": 133,
               "column": 7
             },
             {
-              "title": "A24 — Incubators list renders",
+              "title": "I19 — Bookings list renders",
               "ok": true,
               "tags": [],
               "tests": [
@@ -1139,23 +1041,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6121,
+                      "duration": 12702,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A24 — Incubators List\n"
+                          "text": "✅ [INCUBATOR] I19 — Bookings List\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:39:46.380Z",
+                      "startTime": "2026-08-20T17:51:41.586Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1163,13 +1065,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-f74cfa4edce8266fc43b",
-              "file": "admin.spec.ts",
-              "line": 127,
+              "id": "2b746f50a791f3b28f19-c20f261b9bbb67e3ca0f",
+              "file": "incubator.spec.ts",
+              "line": 149,
               "column": 7
             },
             {
-              "title": "A25 — Dashboard usable on mobile (375px)",
+              "title": "I20 — Dashboard usable on mobile (375px)",
               "ok": true,
               "tags": [],
               "tests": [
@@ -1177,23 +1079,23 @@
                   "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin",
-                  "projectName": "admin",
+                  "projectId": "incubator",
+                  "projectName": "incubator",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7539,
+                      "duration": 6921,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ [ADMIN] A25 — Mobile Responsive\n"
+                          "text": "✅ [INCUBATOR] I20 — Mobile Responsive\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T17:39:52.512Z",
+                      "startTime": "2026-08-20T17:51:54.318Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1201,9 +1103,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "d4043a9dd1ab94463227-f489943a625cf55b9c4f",
-              "file": "admin.spec.ts",
-              "line": 137,
+              "id": "2b746f50a791f3b28f19-60d4e26ae48f73d45ac4",
+              "file": "incubator.spec.ts",
+              "line": 159,
               "column": 7
             }
           ]
@@ -1213,11 +1115,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-20T17:35:52.365Z",
-    "duration": 247864.812,
-    "expected": 25,
+    "startTime": "2026-08-20T17:42:39.305Z",
+    "duration": 562122.8470000001,
+    "expected": 18,
     "skipped": 0,
     "unexpected": 0,
-    "flaky": 0
+    "flaky": 2
   }
 }

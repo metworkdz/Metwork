@@ -699,7 +699,12 @@
       "avatarUrl": null,
       "locale": "fr",
       "createdAt": "2026-07-06T01:20:47.024Z",
-      "updatedAt": "2026-07-06T01:20:47.024Z"
+      "updatedAt": "2026-07-06T01:20:47.024Z",
+      "notificationsSeen": {
+        "events": "2026-08-20T17:48:13.544Z",
+        "bookings": "2026-08-20T17:51:50.806Z",
+        "programs": "2026-08-20T17:51:36.500Z"
+      }
     },
     {
       "id": "qa-builder-id",
@@ -3249,6 +3254,36 @@
       "userId": "qa-explorer-id",
       "expiresAt": "2026-08-27T17:36:26.116Z",
       "createdAt": "2026-08-20T17:36:26.116Z"
+    },
+    {
+      "idHash": "fcb9369e38521a596ea938cf2456fe692f2bd2f299b6269d3d5084a99738d2de",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-08-27T17:42:58.619Z",
+      "createdAt": "2026-08-20T17:42:58.619Z"
+    },
+    {
+      "idHash": "4d2f84c3e0cc38f090b084771f558523fa22ed511e0fd7d9f20c715dcd322002",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-08-27T17:43:03.887Z",
+      "createdAt": "2026-08-20T17:43:03.887Z"
+    },
+    {
+      "idHash": "b1b43abb60bce9b4869cc0f6712fca447569bc397655494ab86035d148264f28",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-08-27T17:43:08.839Z",
+      "createdAt": "2026-08-20T17:43:08.839Z"
+    },
+    {
+      "idHash": "9ced4ec243eea0d5a21af794b9178b1190273d34e52297709256c3a62eb97d2d",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-08-27T17:43:23.028Z",
+      "createdAt": "2026-08-20T17:43:23.028Z"
+    },
+    {
+      "idHash": "927d1adf8311ff1880216801f58f858ff9f1ccc5e0eb4b33402e5c88fc018bac",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-08-27T17:43:34.904Z",
+      "createdAt": "2026-08-20T17:43:34.904Z"
     }
   ],
   "otps": [],

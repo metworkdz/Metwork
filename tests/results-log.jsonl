@@ -159,3 +159,25 @@
 {"agent":"ADMIN","id":"A23","name":"Users Table Rows","status":"PASS","detail":"81 rows","ts":"2026-08-20T17:39:46.156Z"}
 {"agent":"ADMIN","id":"A24","name":"Incubators List","status":"PASS","ts":"2026-08-20T17:39:52.326Z"}
 {"agent":"ADMIN","id":"A25","name":"Mobile Responsive","status":"PASS","ts":"2026-08-20T17:39:59.576Z"}
+{"agent":"INCUBATOR","id":"I01","name":"Login & Dashboard","status":"PASS","ts":"2026-08-20T17:43:48.237Z"}
+{"agent":"INCUBATOR","id":"I02","name":"No Console Errors","status":"FAIL","detail":"Failed to load resource: the server responded with a status of 500 (Internal Server Error) | Cannot read properties of null (reading 'useContext') | Loading plugin data from 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBpZD0ic3ZnIj48dGV4dCB4PSIxMCIgeT0iMjAiIGlkPSJzdmctbGluay10ZXh0Ij50ZXh0PC90ZXh0Pjwvc3ZnPg==' violates the following Content Security Policy directive: \"object-src 'none'\". The action has been blocked.","ts":"2026-08-20T17:44:36.282Z"}
+{"agent":"INCUBATOR","id":"I02","name":"No Console Errors","status":"PASS","ts":"2026-08-20T17:44:48.014Z"}
+{"agent":"INCUBATOR","id":"I03","name":"Analytics","status":"PASS","ts":"2026-08-20T17:45:25.048Z"}
+{"agent":"INCUBATOR","id":"I04","name":"Clients","status":"PASS","ts":"2026-08-20T17:45:52.478Z"}
+{"agent":"INCUBATOR","id":"I05","name":"Income","status":"PASS","ts":"2026-08-20T17:46:18.313Z"}
+{"agent":"INCUBATOR","id":"I06","name":"Expenses","status":"PASS","ts":"2026-08-20T17:46:33.315Z"}
+{"agent":"INCUBATOR","id":"I07","name":"Services","status":"PASS","ts":"2026-08-20T17:46:56.928Z"}
+{"agent":"INCUBATOR","id":"I08","name":"Spaces","status":"PASS","ts":"2026-08-20T17:47:30.332Z"}
+{"agent":"INCUBATOR","id":"I09","name":"Programs","status":"PASS","ts":"2026-08-20T17:47:51.675Z"}
+{"agent":"INCUBATOR","id":"I10","name":"Events","status":"PASS","ts":"2026-08-20T17:48:13.243Z"}
+{"agent":"INCUBATOR","id":"I11","name":"Bookings","status":"PASS","ts":"2026-08-20T17:48:41.202Z"}
+{"agent":"INCUBATOR","id":"I12","name":"Revenue","status":"PASS","ts":"2026-08-20T17:48:54.567Z"}
+{"agent":"INCUBATOR","id":"I13","name":"Invoices","status":"PASS","ts":"2026-08-20T17:49:08.069Z"}
+{"agent":"INCUBATOR","id":"I14","name":"Wallet","status":"PASS","ts":"2026-08-20T17:49:26.301Z"}
+{"agent":"INCUBATOR","id":"I15","name":"Settings","status":"PASS","ts":"2026-08-20T17:49:55.431Z"}
+{"agent":"INCUBATOR","id":"I16","name":"Create Space Dialog","status":"PASS","ts":"2026-08-20T17:50:19.723Z"}
+{"agent":"INCUBATOR","id":"I17","name":"Income Service Is Dropdown","status":"PASS","ts":"2026-08-20T17:51:07.414Z"}
+{"agent":"INCUBATOR","id":"I17","name":"Income Service Is Dropdown","status":"PASS","ts":"2026-08-20T17:51:22.784Z"}
+{"agent":"INCUBATOR","id":"I18","name":"Create Program Form","status":"PASS","ts":"2026-08-20T17:51:41.142Z"}
+{"agent":"INCUBATOR","id":"I19","name":"Bookings List","status":"PASS","ts":"2026-08-20T17:51:54.019Z"}
+{"agent":"INCUBATOR","id":"I20","name":"Mobile Responsive","status":"PASS","ts":"2026-08-20T17:52:00.658Z"}
