@@ -4854,10 +4854,10 @@
       "pitchDeckUpload": "Upload PDF",
       "pitchDeckReplace": "Replace PDF",
       "pitchDeckUploading": "Uploading…",
-      "pitchDeckHint": "PDF only, 5 MB max.",
+      "pitchDeckHint": "PDF only, {max} MB max.",
       "pitchDeckRequiresSave": "Save your listing first, then upload your pitch deck.",
       "errorPitchDeckType": "The pitch deck must be a PDF file.",
-      "errorPitchDeckSize": "The file exceeds 5 MB.",
+      "errorPitchDeckSize": "The file exceeds {max} MB.",
       "errorPitchDeckUpload": "The pitch deck upload failed.",
       "visibilityTitle": "Marketplace visibility",
       "showInMarketplace": "Show in investor marketplace",
@@ -4875,7 +4875,9 @@
       "errorWebsiteUrl": "Please enter a valid website URL (starting with http:// or https://).",
       "errorMembershipRequired": "An active membership is required to list your startup. Upgrade your plan.",
       "errorSaveFailed": "Save failed. Please try again.",
-      "errorNetwork": "Network error. Please check your connection."
+      "errorNetwork": "Network error. Please check your connection.",
+      "errorPitchDeckNetwork": "The upload could not be completed. Check your connection and try again.",
+      "errorPitchDeckService": "The upload service is unavailable right now. Please try again in a moment."
     }
   },
   "wallet": {

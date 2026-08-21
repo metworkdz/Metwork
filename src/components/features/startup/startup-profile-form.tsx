@@ -22,6 +22,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import {
+  MAX_PITCH_DECK_BYTES,
+  MAX_PITCH_DECK_MB,
+  PITCH_DECK_MIME,
+} from '@/lib/upload-limits';
 import type { StartupMaturityStage } from '@/types/startup';
 
 const INDUSTRIES = [
@@ -47,7 +52,20 @@ const MATURITY_STAGES: StartupMaturityStage[] = [
   'GROWTH',
 ];
 
-const MAX_PITCH_DECK_BYTES = 5 * 1024 * 1024;
+/** Cloudinary's response to a direct (browser → Cloudinary) upload. */
+interface CloudinaryUploadResult {
+  secure_url?: string;
+  error?:      { message?: string };
+}
+
+interface SignatureResponse {
+  mode:       'direct' | 'proxy';
+  uploadUrl?: string;
+  apiKey?:    string;
+  timestamp?: number;
+  publicId?:  string;
+  signature?: string;
+}
 
 export interface StartupProfileFormState {
   /** DB id — null when the startup doesn't exist yet. */
@@ -78,41 +96,113 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
     setValues((v) => ({ ...v, [key]: val }));
   }
 
+  /**
+   * Reads our API's `{ error: { message } }` envelope. Falls back to a generic
+   * message rather than surfacing a raw status code.
+   */
+  async function readApiError(res: Response, fallback: string): Promise<string> {
+    const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
+    return d.error?.message ?? fallback;
+  }
+
+  /**
+   * Pitch decks upload straight to Cloudinary with a signature minted by our
+   * API, instead of streaming through the API route. Vercel Functions reject
+   * request bodies over 4.5 MB and drop the connection mid-upload, which the
+   * browser reports as a bare "Failed to fetch" — a deck of any realistic size
+   * could never have made it through. Only the resulting file reference comes
+   * back to us. See src/app/api/startups/[id]/pitch-deck/signature/route.ts.
+   */
   function onPitchDeckSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = ''; // allow re-selecting the same file
     if (!file || !values.id) return;
 
+    const startupId = values.id;
     setDeckError(null);
 
-    if (file.type !== 'application/pdf') {
+    if (file.type !== PITCH_DECK_MIME) {
       setDeckError(t('errorPitchDeckType'));
       return;
     }
     if (file.size > MAX_PITCH_DECK_BYTES) {
-      setDeckError(t('errorPitchDeckSize'));
+      setDeckError(t('errorPitchDeckSize', { max: MAX_PITCH_DECK_MB }));
       return;
     }
 
     setDeckBusy(true);
-    const fd = new FormData();
-    fd.append('file', file);
 
     (async () => {
       try {
-        const res = await fetch(`/api/startups/${values.id}/pitch-deck`, {
+        // 1. Ask our API to authorise this upload.
+        const signRes = await fetch(`/api/startups/${startupId}/pitch-deck/signature`, {
           method: 'POST',
           credentials: 'include',
-          body: fd,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ size: file.size, mimeType: file.type }),
         });
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
-          throw new Error(d.error?.message ?? t('errorPitchDeckUpload'));
+        if (!signRes.ok) throw new Error(await readApiError(signRes, t('errorPitchDeckUpload')));
+        const signed = await signRes.json() as SignatureResponse;
+
+        let confirmBody: BodyInit;
+        let confirmHeaders: HeadersInit | undefined;
+
+        if (signed.mode === 'direct') {
+          // 2. Send the bytes to Cloudinary directly — never through our function.
+          const fd = new FormData();
+          // The filename is deliberately extensionless: for a raw upload
+          // Cloudinary appends the filename's extension to our public_id, and
+          // an asset ending in `.pdf` is blocked (401) on delivery while the
+          // account's "Allow delivery of PDF and ZIP files" setting is off.
+          // See src/server/startups/pitch-deck.ts.
+          fd.append('file', file, 'pitch-deck');
+          fd.append('api_key', signed.apiKey!);
+          fd.append('timestamp', String(signed.timestamp));
+          fd.append('public_id', signed.publicId!);
+          fd.append('signature', signed.signature!);
+
+          let cloudRes: Response;
+          try {
+            cloudRes = await fetch(signed.uploadUrl!, { method: 'POST', body: fd });
+          } catch {
+            // Genuine network-level failure (offline, connection dropped).
+            throw new Error(t('errorPitchDeckNetwork'));
+          }
+          const cloudBody = await cloudRes.json().catch(() => ({})) as CloudinaryUploadResult;
+          if (!cloudRes.ok || !cloudBody.secure_url) {
+            console.error('[pitch-deck] Cloudinary upload rejected:', cloudRes.status, cloudBody.error?.message);
+            throw new Error(t('errorPitchDeckService'));
+          }
+
+          // 3. Hand the reference back so our API can verify and persist it.
+          //    Both values are re-validated server-side before anything is saved.
+          confirmBody = JSON.stringify({ publicId: signed.publicId, secureUrl: cloudBody.secure_url });
+          confirmHeaders = { 'Content-Type': 'application/json' };
+        } else {
+          // Cloudinary unconfigured (local dev): post the file to our own route,
+          // which writes it to public/uploads.
+          const fd = new FormData();
+          fd.append('file', file);
+          confirmBody = fd;
         }
+
+        const res = await fetch(`/api/startups/${startupId}/pitch-deck`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: confirmHeaders,
+          body: confirmBody,
+        });
+        if (!res.ok) throw new Error(await readApiError(res, t('errorPitchDeckUpload')));
+
         const data = await res.json() as { url: string };
         setValues((v) => ({ ...v, pitchDeckUrl: data.url }));
       } catch (err) {
-        setDeckError(err instanceof Error ? err.message : t('errorPitchDeckUpload'));
+        // `fetch` rejects with "Failed to fetch" on network-level failures —
+        // never show that raw string; it tells the founder nothing.
+        const message = err instanceof Error && err.message && !/failed to fetch/i.test(err.message)
+          ? err.message
+          : t('errorPitchDeckNetwork');
+        setDeckError(message);
       } finally {
         setDeckBusy(false);
       }
@@ -350,7 +440,7 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
               />
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              {values.id ? t('pitchDeckHint') : t('pitchDeckRequiresSave')}
+              {values.id ? t('pitchDeckHint', { max: MAX_PITCH_DECK_MB }) : t('pitchDeckRequiresSave')}
             </p>
             {deckError && <p className="mt-1 text-xs text-destructive">{deckError}</p>}
           </div>

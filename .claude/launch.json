@@ -46,6 +46,21 @@
         "PAYMENT_PROVIDER": "mock",
         "MOCK_PAYMENT_MODE": "sync"
       }
+    },
+    {
+      "name": "metwork-deck-verify",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "dev",
+        "--port",
+        "3997"
+      ],
+      "port": 3997,
+      "env": {
+        "USE_LOCAL_DB": "true",
+        "API_INTERNAL_URL": "http://localhost:3997/api"
+      }
     }
   ]
 }

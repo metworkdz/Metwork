@@ -4854,10 +4854,10 @@
       "pitchDeckUpload": "Téléverser un PDF",
       "pitchDeckReplace": "Remplacer le PDF",
       "pitchDeckUploading": "Téléversement…",
-      "pitchDeckHint": "PDF uniquement, 5 Mo max.",
+      "pitchDeckHint": "PDF uniquement, {max} Mo max.",
       "pitchDeckRequiresSave": "Enregistrez d'abord votre annonce, puis téléversez votre pitch deck.",
       "errorPitchDeckType": "Le pitch deck doit être un fichier PDF.",
-      "errorPitchDeckSize": "Le fichier dépasse 5 Mo.",
+      "errorPitchDeckSize": "Le fichier dépasse {max} Mo.",
       "errorPitchDeckUpload": "Le téléversement du pitch deck a échoué.",
       "visibilityTitle": "Visibilité sur le marché",
       "showInMarketplace": "Afficher sur le marché des investisseurs",
@@ -4875,7 +4875,9 @@
       "errorWebsiteUrl": "Veuillez entrer une URL de site web valide (commençant par http:// ou https://).",
       "errorMembershipRequired": "Un abonnement actif est requis pour référencer votre startup. Mettez à niveau votre plan.",
       "errorSaveFailed": "Échec de l'enregistrement. Veuillez réessayer.",
-      "errorNetwork": "Erreur réseau. Vérifiez votre connexion."
+      "errorNetwork": "Erreur réseau. Vérifiez votre connexion.",
+      "errorPitchDeckNetwork": "Le téléversement n'a pas pu aboutir. Vérifiez votre connexion et réessayez.",
+      "errorPitchDeckService": "Le service de téléversement est indisponible pour le moment. Réessayez dans un instant."
     }
   },
   "wallet": {

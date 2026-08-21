@@ -721,10 +721,10 @@
       "membershipTier": "BUILDER",
       "networkCredits": 3,
       "networkCreditsMax": 3,
-      "avatarUrl": null,
+      "avatarUrl": "https://res.cloudinary.com/dguqgjkuh/image/upload/v1787270758/metwork/avatars/mairafcictv2s0cgfpmi.png",
       "locale": "fr",
       "createdAt": "2026-07-06T01:20:47.024Z",
-      "updatedAt": "2026-07-06T01:20:47.024Z",
+      "updatedAt": "2026-08-21T00:05:58.704Z",
       "notificationsSeen": {
         "consultations": "2026-08-20T17:27:51.526Z",
         "wallet": "2026-08-20T17:28:14.280Z"
@@ -3645,6 +3645,12 @@
       "userId": "1982fe82-06e4-45a6-a26e-0bd1402b4382",
       "expiresAt": "2026-08-27T21:31:55.443Z",
       "createdAt": "2026-08-20T21:31:55.443Z"
+    },
+    {
+      "idHash": "cf7d9d6f9c8d1ff2e84539b0c587399f77134ad43b495db9293a53efade655d7",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-08-27T23:40:58.969Z",
+      "createdAt": "2026-08-20T23:40:58.969Z"
     }
   ],
   "otps": [],
@@ -14262,7 +14268,24 @@
   "bookingIntents": [],
   "paymentLinks": [],
   "contactSubmissions": [],
-  "startupListings": [],
+  "startupListings": [
+    {
+      "id": "6026eb19-933f-4ed8-9ad3-5ed4433591fc",
+      "name": "Deck Verify Co (edited)",
+      "description": "Edited description to confirm the startup profile save path is unaffected by the upload change.",
+      "industry": "SaaS",
+      "fundingGoal": 5000000,
+      "equityOffered": 12,
+      "valuation": null,
+      "maturityStage": "SEED",
+      "pitchDeckUrl": "https://res.cloudinary.com/dguqgjkuh/raw/upload/v1787270641/metwork/pitch-decks/pitch-deck-d3d2c066-9758-47e6-b8d4-7b3c488dc10b",
+      "websiteUrl": null,
+      "founderId": "qa-builder-id",
+      "status": "DRAFT",
+      "createdAt": "2026-08-20T23:42:09.684Z",
+      "updatedAt": "2026-08-21T00:05:32.633Z"
+    }
+  ],
   "mentors": [
     {
       "id": "qa-mentor-id",

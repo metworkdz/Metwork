@@ -4854,10 +4854,10 @@
       "pitchDeckUpload": "رفع ملف PDF",
       "pitchDeckReplace": "استبدال ملف PDF",
       "pitchDeckUploading": "جارٍ الرفع…",
-      "pitchDeckHint": "PDF فقط، بحد أقصى 5 ميغابايت.",
+      "pitchDeckHint": "PDF فقط، بحد أقصى {max} ميغابايت.",
       "pitchDeckRequiresSave": "احفظ ملفك أولاً، ثم ارفع العرض التقديمي.",
       "errorPitchDeckType": "يجب أن يكون العرض التقديمي ملف PDF.",
-      "errorPitchDeckSize": "حجم الملف يتجاوز 5 ميغابايت.",
+      "errorPitchDeckSize": "حجم الملف يتجاوز {max} ميغابايت.",
       "errorPitchDeckUpload": "فشل رفع العرض التقديمي.",
       "visibilityTitle": "الظهور في السوق",
       "showInMarketplace": "الظهور في سوق المستثمرين",
@@ -4875,7 +4875,9 @@
       "errorWebsiteUrl": "يرجى إدخال رابط موقع إلكتروني صالح (يبدأ بـ http:// أو https://).",
       "errorMembershipRequired": "يلزم وجود عضوية نشطة لإدراج شركتك الناشئة. قم بترقية خطتك.",
       "errorSaveFailed": "فشل الحفظ. يرجى المحاولة مرة أخرى.",
-      "errorNetwork": "خطأ في الشبكة. تحقق من اتصالك."
+      "errorNetwork": "خطأ في الشبكة. تحقق من اتصالك.",
+      "errorPitchDeckNetwork": "تعذّر إتمام الرفع. تحقّق من اتصالك وحاول مرة أخرى.",
+      "errorPitchDeckService": "خدمة الرفع غير متاحة حالياً. يرجى المحاولة بعد قليل."
     }
   },
   "wallet": {

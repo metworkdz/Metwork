@@ -117,7 +117,10 @@ const nextConfig = {
               // api.qrserver.com renders the QR image on the public voucher verify page (plain <img>, no JS dep).
               "img-src 'self' data: blob: https://res.cloudinary.com https://metwork.dz https://*.supabase.co https://api.qrserver.com",
               "font-src 'self'",
-              "connect-src 'self' https://*.sentry.io https://*.supabase.co https://api.resend.com",
+              // api.cloudinary.com: pitch decks upload direct from the browser
+              // to Cloudinary (Vercel Functions cap request bodies at 4.5 MB),
+              // so the founder's PDF never passes through our API route.
+              "connect-src 'self' https://*.sentry.io https://*.supabase.co https://api.resend.com https://api.cloudinary.com",
               "frame-ancestors 'none'",
               "object-src 'none'",
               "base-uri 'self'",
