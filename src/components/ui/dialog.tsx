@@ -50,7 +50,17 @@ const DialogContent = React.forwardRef<
         // dialog past `max-w-*` and adds a horizontal scrollbar. Flooring the
         // track at 0 keeps it at the dialog width and lets children truncate
         // or wrap as they were written to.
-        'fixed start-1/2 top-1/2 z-50 grid grid-cols-[minmax(0,1fr)] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rtl:translate-x-1/2 gap-4 rounded-xl border border-border bg-background p-6 shadow-xl',
+        // Centred with `inset-0 + m-auto + h-fit`, NOT with a translate.
+        // `-translate-x-1/2 -translate-y-1/2` shares the `transform` property
+        // with the `zoom-in-95` enter animation below, and the animation wins
+        // for as long as it is applied — so the dialog rendered offset by half
+        // its own width (visibly shoved off-centre on a narrow viewport, and
+        // stuck that way whenever the animation doesn't run to completion:
+        // reduced-motion, a backgrounded tab, a throttled device). Auto margins
+        // do the same centring in layout, cost nothing, need no RTL flip
+        // (`start-1/2` + `rtl:translate-x-1/2` are both gone), and leave
+        // `transform` free for the animation.
+        'fixed inset-0 z-50 m-auto h-fit grid grid-cols-[minmax(0,1fr)] w-[calc(100vw-2rem)] max-w-lg gap-4 rounded-xl border border-border bg-background p-6 shadow-xl',
         'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
         'max-h-[calc(100vh-4rem)] overflow-y-auto',
         className,

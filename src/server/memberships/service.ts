@@ -218,7 +218,11 @@ export function resolveMemberBenefits(
   }
 
   // 2. User-record mirror (grants that create no membership record).
-  if (user.membershipSpaceDiscountRate !== undefined) {
+  //    A *number* is required, not merely "not undefined": the JSONB store
+  //    round-trips a cleared field as `null`, and `null` used to satisfy this
+  //    branch and then clamp to 0 — silently giving a paid member a 0 %
+  //    discount instead of falling through to their plan's live terms.
+  if (typeof user.membershipSpaceDiscountRate === 'number') {
     return {
       code,
       planCode,

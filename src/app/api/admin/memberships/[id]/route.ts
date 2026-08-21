@@ -1,6 +1,15 @@
 /**
  * DELETE /api/admin/memberships/[id]
  * Cancel a membership. Admin only.
+ *
+ * Clearing a membership has to undo the SAME set of user fields the grant
+ * wrote, or a revoked member keeps their benefits. `getEffectiveMembershipCode`
+ * falls back to `membershipTier` when `membershipCode` is null, and
+ * `resolveMemberBenefits` falls back to the `membership*DiscountRate` mirror —
+ * so clearing only the code left a "revoked" member resolving as BUILDER and
+ * still being charged the discounted price. The field list below mirrors the
+ * FREE branch of `/api/cron/process-downgrades`, which is the reference
+ * implementation for dropping a user to Explorer.
  */
 import type { NextRequest } from 'next/server';
 import { requireApiRole } from '@/server/auth/api-guards';
@@ -26,12 +35,34 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     membership.status = 'CANCELLED';
     membership.updatedAt = now;
 
-    // Clear both membership fields on the user so no gate still sees them
-    // as active (membershipExpiresAt is used by quota checks independently).
+    // Supersede every other ACTIVE record for this user too, so no frozen
+    // snapshot survives to win in resolveMemberBenefits step 1.
+    for (const m of store.userMemberships) {
+      if (m.userId !== membership.userId || m.status !== 'ACTIVE') continue;
+      m.status = 'CANCELLED';
+      m.updatedAt = now;
+    }
+
     const user = store.users.find((u) => u.id === membership.userId);
     if (user) {
+      // 1. Code + expiry (expiry is read independently by quota checks).
       user.membershipCode = null;
       user.membershipExpiresAt = null;
+      user.membershipStartDate = null;
+      user.membershipRenewalDate = null;
+      // 2. Tier — the fallback getEffectiveMembershipCode reads when the code
+      //    is null. Leaving BUILDER here kept the plan alive after "revoke".
+      user.membershipTier = 'EXPLORER';
+      // 3. Frozen discount mirror — the fallback resolveMemberBenefits reads.
+      delete user.membershipSpaceDiscountRate;
+      delete user.membershipConsultationDiscountRate;
+      // 4. Network Pass allowance drops to nothing.
+      user.networkCredits = 0;
+      user.networkCreditsMax = 0;
+      user.networkPassesUsedThisMonth = 0;
+      // 5. A pending scheduled change is meaningless once the plan is gone.
+      user.scheduledMembershipChange = null;
+      user.scheduledChangeDate = null;
       user.updatedAt = now;
     }
     return true;

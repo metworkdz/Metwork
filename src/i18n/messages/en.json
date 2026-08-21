@@ -2300,17 +2300,18 @@
             "optionalHint": "(optional)",
             "promoCodeDiscount": "Promo code discount",
             "promoDiscountApplied": "Promo discount: −{discount}",
-            "reviewNotice": "Requests are reviewed by our team. You will receive a confirmation email once approved — this is not an automatic booking.",
+            "reviewNotice": "Your booking goes straight to the consultant — there is no team review. Once paid, it is confirmed and they send you the meeting details.",
             "sectionTitle": "Your consultation requests",
             "sendRequest": "Send request",
             "sendRequestFree": "Book free session",
             "sendRequestWithPrice": "Book & pay {price}",
             "sessionLabel": "Session ({duration})",
-            "successBody": "Your request has been sent to {mentorName}. You'll receive a confirmation soon.",
-            "successHeading": "Request sent!",
+            "successBody": "Your session with {mentorName} is booked and paid. The consultant will send you the meeting details by email.",
+            "successHeading": "Booking confirmed!",
             "tierBuilder": "Builder",
             "tierDiscountLabel": "{tier} discount ({percent}% off)",
-            "tierFounder": "Founder"
+            "tierFounder": "Founder",
+            "successBadge": "Confirmed"
           }
         },
         "marketplace": {
@@ -4638,7 +4639,11 @@
       "perMonth": "/ month",
       "yearlySave": "Save {percent}%",
       "billedSemesterly": "{total} billed every 6 months",
-      "billedYearly": "{total} billed yearly"
+      "billedYearly": "{total} billed yearly",
+      "topUpTitle": "Not enough in your wallet yet",
+      "topUpBody": "This plan costs {required}. Your wallet holds {balance}, so you need {shortfall} more. Top up and come back — nothing has been charged.",
+      "topUpCta": "Top up wallet",
+      "topUpBack": "Back"
     },
     "profileForm": {
       "profilePictureTitle": "Profile picture",
@@ -4684,7 +4689,7 @@
       "dialogWith": "with {name} · {position}",
       "successTitle": "Request submitted!",
       "pendingReview": "Pending review",
-      "successMessage": "Your consultation request with {mentorName} has been submitted. You will receive an email once it has been reviewed.",
+      "successMessage": "Your session with {mentorName} is booked. The consultant has it and will send you the meeting details.",
       "pricingNotSet": "The mentor hasn't set a price yet.",
       "freeSession": "Free session (promo applied)",
       "estimatedFee": "Estimated fee: {fee}",
@@ -4706,7 +4711,6 @@
       "freePromoApplied": "Free (promo applied)",
       "total": "Total",
       "free": "Free",
-      "adminConfirmsNote": "Admin confirms the exact amount after reviewing your request.",
       "promoCodeLabel": "Promo code",
       "promoChecking": "Checking",
       "promoAppliedLabel": "Applied",
@@ -4714,7 +4718,7 @@
       "promoDiscountPercent": "{percent}% discount applied",
       "promoDiscountAmount": "{amount} discount applied",
       "promoApplied": "🎉 Promo code applied — {amount} discount!",
-      "reviewNotice": "Requests are reviewed by our team. You will receive a confirmation email once approved — this is not an automatic booking.",
+      "reviewNotice": "Your booking goes straight to the consultant — there is no team review. Once paid, it is confirmed and they send you the meeting details.",
       "cancel": "Cancel",
       "sendRequest": "Send request",
       "promoAlreadyFree": "No fee to discount — consultation is already free.",
@@ -4740,12 +4744,13 @@
       "accountOptionDesc": "Use your wallet balance, free credits, and membership discounts.",
       "noAccountPrompt": "Don't have an account?",
       "signUpLink": "Create one",
-      "guestReviewNotice": "Requests are reviewed by our team. Once approved, we'll email you a secure link to confirm the time and pay online.",
+      "guestReviewNotice": "Your booking goes straight to the consultant. We will email you a secure link to confirm the time and pay online.",
       "guestSuccessTitle": "Request submitted!",
       "guestPendingBadge": "Pending review",
-      "guestSuccessMessage": "Your consultation request with {mentorName} has been submitted. Once it's approved, we'll email you a secure link to pay online and confirm your session.",
+      "guestSuccessMessage": "Your booking with {mentorName} is in. We'll email you a secure link to pay online and confirm your session — the consultant takes it from there.",
       "loadingPaymentMethods": "Loading payment methods…",
-      "paymentMethodsUnavailable": "Could not load payment methods. Check your connection and try again."
+      "paymentMethodsUnavailable": "Could not load payment methods. Check your connection and try again.",
+      "finalAmountNote": "This is the final amount. You pay now and the session is confirmed instantly — no approval step."
     },
     "landing": {
       "badge": "Our mentors",

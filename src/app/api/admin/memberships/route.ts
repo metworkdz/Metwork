@@ -15,7 +15,11 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const schema = z.object({
-  userId:    z.string().uuid(),
+  // NOT `.uuid()`. Store ids are opaque strings: most are randomUUID(), but
+  // seeded / imported accounts carry human-readable ids (e.g. `qa-explorer-id`).
+  // A uuid() guard rejected those with a bare "Invalid input" 422, which reads
+  // in the admin UI as "the grant silently did nothing".
+  userId:    z.string().min(1).max(120),
   plan:      z.enum(['FREE', 'ENTREPRENEUR', 'STARTUP']),
   expiresAt: z.string().datetime().nullable().default(null),
 });
@@ -106,9 +110,16 @@ export async function POST(req: NextRequest) {
     // Fresh allowance period — wipe the per-month usage counter so the
     // user starts at 0/MAX visits.
     user.networkPassesUsedThisMonth = 0;
-    user.membershipStartDate = now;
+    // Granting FREE is a revoke: it must undo the same fields the DELETE
+    // (revoke) handler undoes, or the user keeps a start date and a pending
+    // scheduled change that no longer refers to anything.
+    user.membershipStartDate = input.plan === 'FREE' ? null : now;
     user.membershipExpiresAt = input.expiresAt;
     user.membershipRenewalDate = input.expiresAt;
+    if (input.plan === 'FREE') {
+      user.scheduledMembershipChange = null;
+      user.scheduledChangeDate = null;
+    }
     user.updatedAt = now;
 
     return record;

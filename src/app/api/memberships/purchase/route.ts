@@ -257,6 +257,9 @@ export async function POST(req: NextRequest) {
       return jsonError(422, 'INSUFFICIENT_FUNDS', 'Insufficient wallet balance', {
         balance: result.balance,
         required: result.required,
+        // Precomputed so the client renders "top up X" without re-deriving a
+        // figure the server is authoritative for.
+        shortfall: Math.max(0, result.required - result.balance),
       });
     }
   }
