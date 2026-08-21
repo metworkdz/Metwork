@@ -24,6 +24,8 @@ export type CreateSpaceBookingResult =
   | { ok: false; reason: 'NOT_A_WORKING_DAY'; workingDays: number[] }
   /** Another confirmed booking occupies all or part of the requested window. */
   | { ok: false; reason: 'OVERLAP_CONFLICT'; conflictingBookingId: string }
+  /** NETWORK_PASS rejected: the feature is switched off platform-wide. */
+  | { ok: false; reason: 'NETWORK_PASS_DISABLED' }
   /** NETWORK_PASS rejected: space is not part of the partner network. */
   | { ok: false; reason: 'NOT_PARTNER_SPACE' }
   /** NETWORK_PASS rejected: user has no remaining monthly credits. */
