@@ -865,11 +865,11 @@
         "description": "اكتشف المنظومة — بدون أي التزام"
       },
       "entrepreneur": {
-        "name": "باني",
+        "name": "رائد أعمال",
         "description": "كل ما تحتاجه لإطلاق شركتك الناشئة وتنميتها"
       },
       "startup": {
-        "name": "مؤسِّس",
+        "name": "شركة ناشئة",
         "description": "اجمع التمويل، ابرز للعالم، وابنِ إمبراطوريتك"
       }
     },
@@ -882,7 +882,7 @@
       "bookPrograms": "خصم 15٪ على استشارات المرشدين",
       "eventsDiscount": "تخفيضات على حجوزات المساحات",
       "prioritySupport": "وصول إلى الفعاليات الحصرية للأعضاء",
-      "allEntrepreneur": "كل ميزات باقة باني",
+      "allEntrepreneur": "كل ميزات باقة رائد أعمال",
       "listStartup": "أدرج شركتك الناشئة في السوق",
       "fundraisingAccess": "اجمع تمويلاً واستقطب المستثمرين",
       "investorMeetings": "احصل على طلبات اجتماع من المستثمرين",
@@ -2308,9 +2308,9 @@
             "sessionLabel": "جلسة ({duration})",
             "successBody": "تم حجز جلستك مع {mentorName} ودفعها. سيرسل إليك المستشار تفاصيل الاجتماع عبر البريد الإلكتروني.",
             "successHeading": "تم تأكيد الحجز!",
-            "tierBuilder": "Builder",
+            "tierBuilder": "رائد أعمال",
             "tierDiscountLabel": "خصم {tier} ({percent}٪ خصم)",
-            "tierFounder": "Founder",
+            "tierFounder": "شركة ناشئة",
             "successBadge": "مؤكَّد"
           }
         },
@@ -3218,7 +3218,7 @@
       "networkPassCredits": "{count} متبقية · تجديد {date}",
       "networkPassNoCredits": "لا توجد رصيد متبقٍ هذا الشهر",
       "networkPassWarning": "لم يتبقَّ لديك أي رصيد هذا الشهر. يتجدد الرصيد في الأول من الشهر.",
-      "founderDiscount": "خصم المؤسِّس ({percent}٪)",
+      "founderDiscount": "خصم الشركة الناشئة ({percent}٪)",
       "durationDiscount": "خصم حسب المدة ({percent}٪)",
       "promoLabel": "خصم",
       "networkPassTotal": "بطاقة الشبكة (رصيد واحد)",
@@ -3274,7 +3274,7 @@
       "passCreditsInfo": "يستخدم رصيداً واحداً — {count} من {max} متبقية",
       "passResetsDate": "· يُعاد في {date}",
       "hourlyCapAutoSwitch": "الحجوزات بالساعة: حد أقصى 7 ساعات يومياً — تجاوز ذلك يحوّل تلقائياً إلى السعر اليومي",
-      "builderDiscount": "خصم الباني ({percent}٪)",
+      "builderDiscount": "خصم رائد الأعمال ({percent}٪)",
       "depositDueNow": "العربون المستحق الآن",
       "balanceOnSite": "الرصيد المتبقي في المكان",
       "payDeposit": "ادفع العربون — {amount}",
@@ -3649,9 +3649,9 @@
       "deleteConfirm": "حذف نهائياً",
       "tierFilter": "الفئة",
       "allTiers": "كل الفئات",
-      "tierExplorer": "Explorer",
-      "tierBuilder": "Builder",
-      "tierFounder": "Founder",
+      "tierExplorer": "مستكشف",
+      "tierBuilder": "رائد أعمال",
+      "tierFounder": "شركة ناشئة",
       "fromDate": "من",
       "toDate": "إلى",
       "exportCsv": "تصدير CSV",
@@ -3892,8 +3892,6 @@
       "engineHint": "يُطبَّق على الحاضنات ذات خطة العمولة والمدرّبين. الحاضنات Pro (الاشتراك الثابت) معفاة من عمولة المستلم؛ ومع ذلك يدفع مشتروها رسوم الدافع.",
       "membershipTitle": "باقات العضوية",
       "membershipDescription": "الأسعار والمزايا للاشتراكات الجديدة. الأعضاء المشتركون حالياً يحتفظون بالسعر والمزايا التي اشتركوا بها حتى التجديد.",
-      "planBuilder": "باني",
-      "planFounder": "مؤسِّس",
       "monthlyPrice": "السعر الشهري",
       "annualDiscount": "الخصم السنوي",
       "consultationDiscount": "خصم الاستشارات",
@@ -3907,7 +3905,9 @@
       "frozenHint": "تنطبق التغييرات على الاشتراكات الجديدة فقط — يحتفظ الأعضاء النشطون بشروطهم حتى التجديد.",
       "priceError": "أدخل مبلغاً صالحاً",
       "passError": "أدخل عدداً صحيحاً بين 0 و100",
-      "perMonth": "/ شهر"
+      "perMonth": "/ شهر",
+      "planEntrepreneur": "رائد أعمال",
+      "planStartup": "شركة ناشئة"
     },
     "withdrawals": {
       "pendingReview": "Pending review",
@@ -4831,8 +4831,8 @@
       "appliedCheckmark": "مُطبَّق ✓",
       "applyButton": "تطبيق",
       "off": "خصم",
-      "founderMembership": "عضوية المؤسس",
-      "builderMembership": "عضوية البناء",
+      "founderMembership": "عضوية شركة ناشئة",
+      "builderMembership": "عضوية رائد أعمال",
       "membershipActive": "عضويتك {tier} نشطة الآن بخصم {pct}%!"
     }
   },

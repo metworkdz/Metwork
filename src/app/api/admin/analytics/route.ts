@@ -11,6 +11,7 @@
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { json } from '@/server/http/json';
+import { resolveMemberBenefits } from '@/server/memberships/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -211,32 +212,45 @@ export async function GET() {
   }
   const bySpace = Array.from(spaceVisitMap.values()).sort((a, b) => b.count - a.count).slice(0, 10);
 
-  // ── 4. Space booking membership discounts (FOUNDER tier = 20% off wallet bookings) ─
+  // ── 4. Space booking membership discounts ──────────────────────────────────
+  //
+  // Every paid plan grants a space discount, and each MEMBER's rate is their
+  // own: `resolveMemberBenefits` reads their frozen snapshot before the live
+  // config, so a grandfathered member is valued at the rate they actually
+  // bought. This used to assume "Founder, 20 %" for everyone — which ignored
+  // Entrepreneur members entirely and over-stated every remaining booking once
+  // the live space rate became 15 %.
+  //
+  // `totalAmount` is stored POST-discount, so the amount forgone on a booking
+  // discounted at rate r is  totalAmount × r / (1 − r).
+  const spaceDiscountRateByUser = new Map<string, number>();
+  for (const u of data.users) {
+    const rate = resolveMemberBenefits(data, u).spaceDiscountRate;
+    if (rate > 0 && rate < 1) spaceDiscountRateByUser.set(u.id, rate);
+  }
 
-  const founderUserIds = new Set(
-    data.users
-      .filter((u) => {
-        const notExpired = !u.membershipExpiresAt || new Date(u.membershipExpiresAt) > now;
-        return (
-          notExpired &&
-          (u.membershipCode === 'STARTUP' || u.membershipTier === 'FOUNDER')
-        );
-      })
-      .map((u) => u.id),
-  );
+  /** DZD forgone on one wallet-paid space booking, or 0 when it carried no discount. */
+  function spaceDiscountGiven(b: { userId?: string | null; totalAmount: number }): number {
+    const rate = b.userId ? spaceDiscountRateByUser.get(b.userId) : undefined;
+    if (!rate) return 0;
+    return Math.round((b.totalAmount * rate) / (1 - rate));
+  }
 
-  // Estimate: wallet-paid space bookings by FOUNDER users.
-  // totalAmount is post-20%-discount → discount = totalAmount * 0.25 (since 80% → 100%)
+  const isDiscountableSpaceBooking = (b: {
+    userId?: string | null;
+    paymentMethod?: string | null;
+    itemKind?: string;
+    status?: string;
+  }): boolean =>
+    b.userId != null &&
+    spaceDiscountRateByUser.has(b.userId) &&
+    b.paymentMethod === 'wallet' &&
+    b.itemKind === 'SPACE' &&
+    b.status !== 'CANCELLED';
+
   const membershipSpaceDiscountEstimate = (data.bookings ?? [])
-    .filter(
-      (b) =>
-        b.userId != null &&
-        founderUserIds.has(b.userId!) &&
-        b.paymentMethod === 'wallet' &&
-        b.itemKind === 'SPACE' &&
-        b.status !== 'CANCELLED',
-    )
-    .reduce((s, b) => s + Math.round(b.totalAmount * 0.25), 0);
+    .filter(isDiscountableSpaceBooking)
+    .reduce((s, b) => s + spaceDiscountGiven(b), 0);
 
   // ── 5. Month-by-month trend (current year) ─────────────────────────────────
 
@@ -269,19 +283,12 @@ export async function GET() {
       monthlyTrend[k]!.networkPassSessions += 1;
     }
   }
-  // Distribute space discount estimate evenly across bookings
+  // Same per-member valuation as the all-time figure, bucketed by month.
   for (const b of (data.bookings ?? [])) {
-    if (
-      b.userId != null &&
-      founderUserIds.has(b.userId!) &&
-      b.paymentMethod === 'wallet' &&
-      b.itemKind === 'SPACE' &&
-      b.status !== 'CANCELLED' &&
-      b.createdAt >= yearStart
-    ) {
+    if (isDiscountableSpaceBooking(b) && b.createdAt >= yearStart) {
       const k = monthKey(b.createdAt);
       if (monthlyTrend[k]) {
-        monthlyTrend[k]!.spaceDiscount += Math.round(b.totalAmount * 0.25);
+        monthlyTrend[k]!.spaceDiscount += spaceDiscountGiven(b);
       }
     }
   }

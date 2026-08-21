@@ -865,11 +865,11 @@
         "description": "Discover the ecosystem — no commitment"
       },
       "entrepreneur": {
-        "name": "Builder",
+        "name": "Entrepreneur",
         "description": "Everything you need to launch and grow your startup"
       },
       "startup": {
-        "name": "Founder",
+        "name": "Startup",
         "description": "Raise funds, get noticed, and build your empire"
       }
     },
@@ -882,7 +882,7 @@
       "bookPrograms": "15% off mentor consultations",
       "eventsDiscount": "Discounts on space reservations",
       "prioritySupport": "Access to exclusive member events",
-      "allEntrepreneur": "Everything in Builder",
+      "allEntrepreneur": "Everything in Entrepreneur",
       "listStartup": "List your startup in the marketplace",
       "fundraisingAccess": "Raise funds and attract investors",
       "investorMeetings": "Receive investor meeting requests",
@@ -2308,9 +2308,9 @@
             "sessionLabel": "Session ({duration})",
             "successBody": "Your session with {mentorName} is booked and paid. The consultant will send you the meeting details by email.",
             "successHeading": "Booking confirmed!",
-            "tierBuilder": "Builder",
+            "tierBuilder": "Entrepreneur",
             "tierDiscountLabel": "{tier} discount ({percent}% off)",
-            "tierFounder": "Founder",
+            "tierFounder": "Startup",
             "successBadge": "Confirmed"
           }
         },
@@ -3218,7 +3218,7 @@
       "networkPassCredits": "{count} left · Resets {date}",
       "networkPassNoCredits": "No credits remaining this month",
       "networkPassWarning": "You have no credits left this month. Credits reset on the 1st.",
-      "founderDiscount": "Founder discount ({percent}% off)",
+      "founderDiscount": "Startup discount ({percent}% off)",
       "durationDiscount": "Duration discount ({percent}% off)",
       "promoLabel": "Promo",
       "networkPassTotal": "Network Pass (1 credit)",
@@ -3274,7 +3274,7 @@
       "passCreditsInfo": "Uses 1 credit — {count} of {max} left",
       "passResetsDate": "· Resets {date}",
       "hourlyCapAutoSwitch": "Hourly bookings: max 7 hours per day — exceeding this will automatically switch to the day rate",
-      "builderDiscount": "Builder discount ({percent}% off)",
+      "builderDiscount": "Entrepreneur discount ({percent}% off)",
       "depositDueNow": "Deposit due now",
       "balanceOnSite": "Balance on-site",
       "payDeposit": "Pay deposit — {amount}",
@@ -3650,8 +3650,8 @@
       "tierFilter": "Tier",
       "allTiers": "All tiers",
       "tierExplorer": "Explorer",
-      "tierBuilder": "Builder",
-      "tierFounder": "Founder",
+      "tierBuilder": "Entrepreneur",
+      "tierFounder": "Startup",
       "fromDate": "From",
       "toDate": "To",
       "exportCsv": "Export CSV",
@@ -3892,8 +3892,6 @@
       "engineHint": "Applies to commission-plan incubators and trainers. Pro (flat-fee) incubators are exempt from the receiver commission; their buyers still pay the payer fee.",
       "membershipTitle": "Membership plans",
       "membershipDescription": "Prices and benefits for new purchases. Members who already bought a plan keep the price and benefits they signed up for until they renew.",
-      "planBuilder": "Builder",
-      "planFounder": "Founder",
       "monthlyPrice": "Monthly price",
       "annualDiscount": "Annual discount",
       "consultationDiscount": "Consultation discount",
@@ -3907,7 +3905,9 @@
       "frozenHint": "Changes apply to new purchases only — active members keep their current terms until renewal.",
       "priceError": "Enter a valid amount",
       "passError": "Enter a whole number between 0 and 100",
-      "perMonth": "/ month"
+      "perMonth": "/ month",
+      "planEntrepreneur": "Entrepreneur",
+      "planStartup": "Startup"
     },
     "withdrawals": {
       "pendingReview": "Pending review",
@@ -4831,8 +4831,8 @@
       "appliedCheckmark": "Applied ✓",
       "applyButton": "Apply",
       "off": "off",
-      "founderMembership": "Founder membership",
-      "builderMembership": "Builder membership",
+      "founderMembership": "Startup membership",
+      "builderMembership": "Entrepreneur membership",
       "membershipActive": "Your {tier} is now active at a {pct}% discount!"
     }
   },

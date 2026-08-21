@@ -865,11 +865,11 @@
         "description": "Découvrez l'écosystème — sans engagement"
       },
       "entrepreneur": {
-        "name": "Bâtisseur",
+        "name": "Entrepreneur",
         "description": "Tout ce qu'il faut pour lancer et développer votre startup"
       },
       "startup": {
-        "name": "Fondateur",
+        "name": "Startup",
         "description": "Levez des fonds, faites-vous remarquer, bâtissez votre empire"
       }
     },
@@ -882,7 +882,7 @@
       "bookPrograms": "15 % de réduction sur les consultations mentor",
       "eventsDiscount": "Réductions sur les réservations d'espaces",
       "prioritySupport": "Accès aux événements membres exclusifs",
-      "allEntrepreneur": "Tout de l'offre Bâtisseur",
+      "allEntrepreneur": "Tout de l'offre Entrepreneur",
       "listStartup": "Listez votre startup dans la marketplace",
       "fundraisingAccess": "Levez des fonds et attirez des investisseurs",
       "investorMeetings": "Recevez des demandes de rendez-vous d'investisseurs",
@@ -2308,9 +2308,9 @@
             "sessionLabel": "Session ({duration})",
             "successBody": "Votre session avec {mentorName} est réservée et payée. Le consultant vous enverra les détails de la réunion par e-mail.",
             "successHeading": "Réservation confirmée !",
-            "tierBuilder": "Builder",
+            "tierBuilder": "Entrepreneur",
             "tierDiscountLabel": "Remise {tier} ({percent} % de réduction)",
-            "tierFounder": "Founder",
+            "tierFounder": "Startup",
             "successBadge": "Confirmée"
           }
         },
@@ -3218,7 +3218,7 @@
       "networkPassCredits": "{count} restant · Réinitialisation le {date}",
       "networkPassNoCredits": "Aucun crédit restant ce mois-ci",
       "networkPassWarning": "Vous n'avez plus de crédits ce mois-ci. Les crédits se réinitialisent le 1er.",
-      "founderDiscount": "Remise Fondateur ({percent} % de réduction)",
+      "founderDiscount": "Remise Startup ({percent} % de réduction)",
       "durationDiscount": "Remise sur la durée ({percent} % de réduction)",
       "promoLabel": "Promo",
       "networkPassTotal": "Network Pass (1 crédit)",
@@ -3274,7 +3274,7 @@
       "passCreditsInfo": "Utilise 1 crédit — {count} sur {max} restants",
       "passResetsDate": "· Réinitialisation le {date}",
       "hourlyCapAutoSwitch": "Réservations horaires : max 7 heures par jour — au-delà, le tarif journalier s'applique automatiquement",
-      "builderDiscount": "Remise Bâtisseur ({percent} % de réduction)",
+      "builderDiscount": "Remise Entrepreneur ({percent} % de réduction)",
       "depositDueNow": "Acompte à payer maintenant",
       "balanceOnSite": "Solde sur place",
       "payDeposit": "Payer l'acompte — {amount}",
@@ -3649,9 +3649,9 @@
       "deleteConfirm": "Supprimer définitivement",
       "tierFilter": "Palier",
       "allTiers": "Tous les paliers",
-      "tierExplorer": "Explorer",
-      "tierBuilder": "Builder",
-      "tierFounder": "Founder",
+      "tierExplorer": "Explorateur",
+      "tierBuilder": "Entrepreneur",
+      "tierFounder": "Startup",
       "fromDate": "Du",
       "toDate": "Au",
       "exportCsv": "Exporter CSV",
@@ -3892,8 +3892,6 @@
       "engineHint": "S'applique aux incubateurs au forfait commission et aux formateurs. Les incubateurs Pro (forfait fixe) sont exonérés de la commission bénéficiaire ; leurs acheteurs paient toujours les frais du payeur.",
       "membershipTitle": "Formules d'adhésion",
       "membershipDescription": "Tarifs et avantages pour les nouveaux achats. Les membres déjà abonnés conservent le tarif et les avantages souscrits jusqu'à leur renouvellement.",
-      "planBuilder": "Bâtisseur",
-      "planFounder": "Fondateur",
       "monthlyPrice": "Prix mensuel",
       "annualDiscount": "Remise annuelle",
       "consultationDiscount": "Remise consultations",
@@ -3907,7 +3905,9 @@
       "frozenHint": "Les changements ne s'appliquent qu'aux nouveaux achats — les membres actifs conservent leurs conditions jusqu'au renouvellement.",
       "priceError": "Saisissez un montant valide",
       "passError": "Saisissez un nombre entier entre 0 et 100",
-      "perMonth": "/ mois"
+      "perMonth": "/ mois",
+      "planEntrepreneur": "Entrepreneur",
+      "planStartup": "Startup"
     },
     "withdrawals": {
       "pendingReview": "Pending review",
@@ -4831,8 +4831,8 @@
       "appliedCheckmark": "Appliqué ✓",
       "applyButton": "Appliquer",
       "off": "de réduction",
-      "founderMembership": "abonnement Fondateur",
-      "builderMembership": "abonnement Builder",
+      "founderMembership": "abonnement Startup",
+      "builderMembership": "abonnement Entrepreneur",
       "membershipActive": "Votre {tier} est maintenant actif avec une remise de {pct} % !"
     }
   },
