@@ -10,11 +10,29 @@
  */
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
-import { MEMBERSHIP_PRICES } from '@/server/memberships/service';
 import { json } from '@/server/http/json';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+/**
+ * Membership prices as they stood BEFORE `basePrice` was frozen onto every
+ * purchase transaction. HISTORICAL VALUATION ONLY — never a live price.
+ *
+ * Purchases made since carry the exact amount they were charged in their
+ * metadata; only rows older than that need this table to value their promo
+ * discount, and the figure it gives is the one that was true when the row was
+ * written. It lives here, next to its single consumer, rather than in the
+ * membership service — where it read like a current price table and could
+ * disagree with the admin-editable config.
+ */
+const LEGACY_MEMBERSHIP_PRICES: Record<
+  string,
+  { monthly: number; semesterly: number; yearly: number }
+> = {
+  ENTREPRENEUR: { monthly: 3_500, semesterly: 3_500 * 6, yearly: Math.round(3_500 * 12 * 0.7) },
+  STARTUP:      { monthly: 6_500, semesterly: 6_500 * 6, yearly: Math.round(6_500 * 12 * 0.7) },
+};
 
 export async function GET() {
   const guard = await requireApiRole(['ADMIN']);
@@ -111,7 +129,7 @@ export async function GET() {
     // price table — the only figure that was true when they were written.
     let base = meta.basePrice;
     if (base == null) {
-      const prices = MEMBERSHIP_PRICES[meta.membershipPlan ?? ''];
+      const prices = LEGACY_MEMBERSHIP_PRICES[meta.membershipPlan ?? ''];
       if (!prices) continue;
       // Was reading `prices.monthly` for semesterly rows, understating every
       // semesterly discount by a factor of six.
