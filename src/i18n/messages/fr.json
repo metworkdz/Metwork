@@ -2338,7 +2338,14 @@
         },
         "networkPass": {
           "title": "Mon Metwork Pass",
-          "subtitle": "Utilisez votre pass pour vous enregistrer dans les espaces coworking partenaires."
+          "subtitle": "Utilisez votre pass pour vous enregistrer dans les espaces coworking partenaires.",
+          "comingSoonTitle": "Network Pass — bientôt disponible",
+          "comingSoonBody": "Accédez aux espaces de coworking partenaires partout en Algérie avec un seul pass. Nous y mettons la dernière main — votre formule et ses avantages restent inchangés d'ici là.",
+          "currentPlanLabel": "Votre formule actuelle",
+          "upgradeCta": "Changer de formule",
+          "upgradeHint": "Comparez les formules et voyez ce que chacune inclut.",
+          "noPassTitle": "Aucun Network Pass actif",
+          "noPassBody": "Votre formule actuelle n'inclut pas de pass coworking. Changez de formule pour débloquer l'accès mensuel aux espaces partenaires."
         }
       },
       "business": {

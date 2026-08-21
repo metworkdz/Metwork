@@ -1,11 +1,16 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
+import { Clock, Sparkles } from 'lucide-react';
+import { Link } from '@/i18n/routing';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { UserProfileHeader } from '@/components/features/membership/user-profile-header';
 import { type PassRecentVisit } from '@/components/features/membership/membership-pass-card';
 import { MembershipPassCardLive } from '@/components/features/membership/membership-pass-card-live';
-import { resolveTier } from '@/lib/tier-utils';
 import { db } from '@/server/db/store';
+import { getEffectiveMembershipCode } from '@/server/memberships/service';
+import { getMembershipPlanViews } from '@/server/memberships/plan-view';
+import { normalizePlanCode } from '@/lib/membership-benefits';
+import { isNetworkPassEnabled } from '@/config/feature-flags';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -17,10 +22,69 @@ export default async function EntrepreneurNetworkPassPage({ params }: PageProps)
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.dashboard.entrepreneur.networkPass');
+  const tm = await getTranslations('membership');
   const user = await requireRole(['ENTREPRENEUR']);
 
-  const tier = resolveTier(user);
+  // ── Feature off: placeholder, not a dead link ──────────────────────────────
+  //
+  // The nav entry stays, so this route has to lead somewhere useful. It shows
+  // the member what they DO have (their plan) and a route to change it, rather
+  // than an empty page apologising for a missing feature.
+  //
+  // Plan name comes from the shared plan-view model, the same source the public
+  // pricing page and the dashboard membership cards read — never a local label
+  // map, which is exactly how this page drifted out of translation before.
+  if (!isNetworkPassEnabled()) {
+    const planViews = await getMembershipPlanViews();
+    const planCode = normalizePlanCode(getEffectiveMembershipCode(user)) ?? 'FREE';
+    const plan = planViews.find((p) => p.code === planCode);
 
+    return (
+      <div className="space-y-6">
+        <DashboardPageHeader title={t('title')} subtitle={t('subtitle')} />
+
+        <UserProfileHeader user={user} showMeta avatarSize="lg" />
+
+        {/* Current plan + upgrade route */}
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t('currentPlanLabel')}
+              </p>
+              <p className="mt-1 truncate text-xl font-semibold text-foreground">
+                {plan ? tm(plan.nameKey) : getEffectiveMembershipCode(user)}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{t('upgradeHint')}</p>
+            </div>
+
+            {/* Gold accent — a new accent for the upgrade route only. Brand
+                green stays the primary action colour everywhere else. */}
+            <Link
+              href="/dashboard/entrepreneur/membership"
+              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-gold-600 px-6 text-sm font-bold uppercase tracking-wider text-[#0D0D0D] shadow-sm transition-colors hover:bg-gold-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-600 focus-visible:ring-offset-2"
+            >
+              <Sparkles className="size-4" />
+              {t('upgradeCta')}
+            </Link>
+          </div>
+        </div>
+
+        {/* Coming soon */}
+        <div className="rounded-2xl border-2 border-dashed border-border bg-card p-8 text-center">
+          <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+            <Clock className="size-5" />
+          </div>
+          <h2 className="mt-4 text-lg font-semibold text-foreground">{t('comingSoonTitle')}</h2>
+          <p className="mx-auto mt-2 max-w-prose text-sm text-muted-foreground">
+            {t('comingSoonBody')}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Feature on: the real pass ──────────────────────────────────────────────
   const data = await db.read();
 
   // ── Credits ────────────────────────────────────────────────────────────────
@@ -68,12 +132,8 @@ export default async function EntrepreneurNetworkPassPage({ params }: PageProps)
           saying plainly that the plan does not include them. */}
       {creditsMax <= 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-border bg-card p-8 text-center">
-          <h2 className="text-lg font-semibold">No active Network Pass</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {tier === 'EXPLORER'
-              ? 'Upgrade to a paid plan to unlock check-in access at partner coworking spaces.'
-              : 'Your current plan does not include coworking passes. Upgrade to Founder for monthly check-in access at partner spaces.'}
-          </p>
+          <h2 className="text-lg font-semibold">{t('noPassTitle')}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{t('noPassBody')}</p>
         </div>
       ) : (
         <MembershipPassCardLive

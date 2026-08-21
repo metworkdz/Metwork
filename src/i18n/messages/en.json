@@ -2338,7 +2338,14 @@
         },
         "networkPass": {
           "title": "My Metwork Pass",
-          "subtitle": "Use your pass to check in at partner coworking spaces across the network."
+          "subtitle": "Use your pass to check in at partner coworking spaces across the network.",
+          "comingSoonTitle": "Network Pass — coming soon",
+          "comingSoonBody": "Check in at partner coworking spaces across Algeria with a single pass. We are putting the finishing touches on it — your plan and its benefits are unaffected in the meantime.",
+          "currentPlanLabel": "Your current plan",
+          "upgradeCta": "Upgrade your plan",
+          "upgradeHint": "Compare plans and see what each one includes.",
+          "noPassTitle": "No active Network Pass",
+          "noPassBody": "Your current plan does not include coworking passes. Upgrade to unlock monthly check-in access at partner spaces."
         }
       },
       "business": {
