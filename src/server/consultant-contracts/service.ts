@@ -36,6 +36,9 @@ import {
   type MentorRecord,
 } from '@/server/db/store';
 import { resolveMentorCommissionRates } from '@/server/payments/mentor-commission';
+import { generateConsultantContractPdf } from './contract-pdf';
+import { findMetworkParty, missingLegalFields, type MetworkLegalField } from './party';
+import { mintContractPdfUrl, storeSignedContractPdf } from './storage';
 import {
   evaluateSendPolicy,
   isLockedOut,
@@ -288,7 +291,8 @@ export function describePayoutAccount(mentor: MentorRecord): string | null {
 
 export type SendContractResult =
   | { ok: true; contract: ConsultantContractRecord }
-  | { ok: false; reason: 'NOT_FOUND' | 'NOT_DRAFT' | 'CONSULTANT_NOT_FOUND' | 'NO_VERIFIED_PHONE' | 'EMPTY_CONTENT' };
+  | { ok: false; reason: 'NOT_FOUND' | 'NOT_DRAFT' | 'CONSULTANT_NOT_FOUND' | 'NO_VERIFIED_PHONE' | 'EMPTY_CONTENT' }
+  | { ok: false; reason: 'METWORK_LEGAL_INCOMPLETE'; missing: MetworkLegalField[] };
 
 /**
  * Freeze the terms and put the contract in front of the consultant.
@@ -323,6 +327,12 @@ export async function sendContract(
 
     const phone = mentor.phone?.trim();
     if (!phone || !mentor.phoneVerified) return { ok: false, reason: 'NO_VERIFIED_PHONE' };
+
+    // A contract that cannot name Metwork's commercial register number and tax
+    // identifier proves nothing to a tax authority. Blocked here rather than
+    // rendered with blank lines — see `party.ts`.
+    const missing = missingLegalFields(findMetworkParty(d));
+    if (missing.length) return { ok: false, reason: 'METWORK_LEGAL_INCOMPLETE', missing };
 
     const { platformRate } = resolveMentorCommissionRates(d.commissionRules, { kind: 'CONSULTATION' });
 
@@ -482,6 +492,157 @@ export async function verifySigningOtp(
   if (result.reason === 'TOO_MANY_ATTEMPTS') return { ok: false, reason: 'TOO_MANY_ATTEMPTS' };
   if (result.reason === 'EXPIRED') return { ok: false, reason: 'EXPIRED' };
   return { ok: false, reason: 'INVALID' };
+}
+
+/* ─────────────────── Signing (PENDING_SIGNATURE → SIGNED) ─────────────────── */
+
+export type SignContractResult =
+  | { ok: true; contract: ConsultantContractRecord }
+  | { ok: false; reason: 'NOT_FOUND' | 'NOT_PENDING' | 'LOCKED' | 'INVALID' | 'EXPIRED' | 'TOO_MANY_ATTEMPTS' }
+  | { ok: false; reason: 'BAD_SIGNATURE' }
+  | { ok: false; reason: 'METWORK_LEGAL_INCOMPLETE'; missing: MetworkLegalField[] }
+  | { ok: false; reason: 'STORAGE_FAILED'; message: string };
+
+export interface SignContractInput {
+  /** `data:image/png;base64,…` from the signature canvas. */
+  signatureImagePng: string;
+  /** The one-time code sent to `signerPhoneSnapshot`. */
+  otpCode: string;
+  /** MentorRecord.id of the signing consultant. */
+  actorId: string;
+}
+
+/** Smallest plausible drawn signature. Below this the canvas was effectively blank. */
+const MIN_SIGNATURE_BYTES = 256;
+
+/**
+ * Complete a signature: verify the code, render the PDF, hash it, store it, and
+ * flip the contract to SIGNED.
+ *
+ * MUTUAL EXCLUSION comes from the OTP itself. `verifySigningOtp` consumes the
+ * code inside the store's critical section, so of two concurrent sign requests
+ * exactly one gets past it — there is no second lock to take, and no window in
+ * which two PDFs could be produced for one contract.
+ *
+ * ORDERING is deliberate. The PDF is rendered and uploaded BEFORE the status
+ * flips, and the flip writes the pdf id, the hash, the signature and the
+ * timestamp together in a single `db.update`. A contract is therefore never
+ * observable as SIGNED-but-unstored. The cost of that ordering is that a
+ * failure after upload leaves an orphaned Cloudinary asset; that is the
+ * harmless direction to fail, and far better than a signed record pointing at
+ * nothing.
+ *
+ * The render is NOT held inside the write lock: it fetches remote images and
+ * uploads over the network, and the store's write queue is process-wide, so
+ * holding it would stall every unrelated write for the duration.
+ */
+export async function signContract(
+  contractId: string,
+  input: SignContractInput,
+): Promise<SignContractResult> {
+  const contract = await findContractById(contractId);
+  if (!contract) return { ok: false, reason: 'NOT_FOUND' };
+  if (contract.status !== 'PENDING_SIGNATURE') return { ok: false, reason: 'NOT_PENDING' };
+
+  // Reject a blank or malformed canvas BEFORE spending the one-time code — a
+  // consultant who submits an empty signature should be able to retry without
+  // waiting out the resend throttle.
+  const signatureBytes = decodeSignatureBytes(input.signatureImagePng);
+  if (!signatureBytes || signatureBytes < MIN_SIGNATURE_BYTES) {
+    return { ok: false, reason: 'BAD_SIGNATURE' };
+  }
+
+  const verified = await verifySigningOtp(contractId, input.otpCode, input.actorId);
+  if (!verified.ok) return { ok: false, reason: verified.reason };
+
+  // Re-read the parties inside a single snapshot so the PDF is built from one
+  // consistent view of the document.
+  const data = await db.read();
+  const metwork = findMetworkParty(data);
+  const missing = missingLegalFields(metwork);
+  if (missing.length) return { ok: false, reason: 'METWORK_LEGAL_INCOMPLETE', missing };
+
+  const mentor = (data.mentors ?? []).find((m) => m.id === contract.consultantId);
+  const adminStampUrl = data.platformSettings?.adminStampImageUrl ?? null;
+  const signedAt = new Date().toISOString();
+
+  let stored;
+  try {
+    const pdf = await generateConsultantContractPdf({
+      metwork: metwork!,
+      contractId: contract.id,
+      consultantName: mentor?.fullName ?? 'Consultant',
+      // Every printed term comes from the frozen record, never the live
+      // profile — re-rendering this contract in five years must produce the
+      // same document.
+      body: contract.contentSnapshot,
+      commissionRate: contract.commissionRate,
+      payoutMethod: contract.payoutMethod,
+      payoutDetails: contract.payoutDetails,
+      signerPhoneSnapshot: contract.signerPhoneSnapshot,
+      signatureImagePng: input.signatureImagePng,
+      signedAt,
+      adminStampUrl,
+    });
+    stored = await storeSignedContractPdf(pdf, contract.id);
+  } catch (err) {
+    // The code is already spent at this point. Recorded so the audit trail
+    // explains the gap between OTP_VERIFIED and a missing SIGNED.
+    const message = err instanceof Error ? err.message : 'Contract storage failed';
+    console.error('[consultant-contracts] sign failed:', err);
+    return { ok: false, reason: 'STORAGE_FAILED', message };
+  }
+
+  // One atomic write: status, signature, stamp, pdf location, hash, timestamp
+  // and the audit entry all land together or not at all.
+  const result = await updateContract(contractId, (c) => {
+    if (c.status !== 'PENDING_SIGNATURE') return 'RACED' as const;
+    c.status = 'SIGNED';
+    c.signature = { imagePng: input.signatureImagePng, signedAt };
+    c.adminStamp = adminStampUrl ? { imageUrl: adminStampUrl, appliedAt: signedAt } : null;
+    c.finalPdfPublicId = stored.publicId;
+    c.finalPdfUrl = stored.url;
+    c.finalPdfHash = stored.hash;
+    c.signedAt = signedAt;
+    // The signing code is spent and the contract is closed to further codes.
+    c.otp = null;
+    c.auditTrail.push({ event: 'SIGNED', actorId: input.actorId, timestamp: signedAt });
+    return 'OK' as const;
+  });
+
+  if (!result.ok) return { ok: false, reason: 'NOT_FOUND' };
+  if (result.value === 'RACED') return { ok: false, reason: 'NOT_PENDING' };
+  return { ok: true, contract: result.contract };
+}
+
+/** Byte length of a data-URI PNG payload, or null when it is not one. */
+function decodeSignatureBytes(dataUri: string): number | null {
+  const match = /^data:image\/png;base64,([A-Za-z0-9+/=\s]+)$/.exec(dataUri ?? '');
+  if (!match?.[1]) return null;
+  try {
+    return Buffer.from(match[1].replace(/\s+/g, ''), 'base64').length;
+  } catch {
+    return null;
+  }
+}
+
+/* ─────────────────── Signed PDF access ─────────────────── */
+
+/**
+ * A fresh link to a signed contract's PDF.
+ *
+ * Minted on every request rather than served from `finalPdfUrl`, because the
+ * stored one expires within minutes of being created. The refreshed link is
+ * written back as a cache — one of only two fields a SIGNED contract may still
+ * change (see `SIGNED_MUTABLE_FIELDS`).
+ */
+export async function getContractPdfUrl(contractId: string): Promise<string | null> {
+  const contract = await findContractById(contractId);
+  if (!contract?.finalPdfPublicId) return null;
+
+  const url = mintContractPdfUrl(contract.finalPdfPublicId);
+  await updateContract(contractId, (c) => { c.finalPdfUrl = url; });
+  return url;
 }
 
 /** Record that the consultant opened the contract. Best-effort, never throws. */

@@ -993,6 +993,16 @@ export interface PlatformSettingsRecord {
   eurToDzdRateUpdatedAt?: string | null;
   /** UserRecord.id of the admin who last changed the rate. */
   eurToDzdRateUpdatedBy?: string | null;
+  /**
+   * Metwork's stamp / authorised signature image, uploaded once by an admin and
+   * composited into every signed consultant contract PDF. Additive & nullable —
+   * absent ⇒ the contract's Metwork signature block renders as a ruled line
+   * rather than failing to generate.
+   *
+   * A URL rather than the bytes: it is an ordinary public image asset, unlike
+   * the signed contracts themselves.
+   */
+  adminStampImageUrl?: string | null;
   updatedAt: string;
 }
 

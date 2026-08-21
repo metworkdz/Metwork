@@ -12,7 +12,7 @@
  *   • lockout and resend throttling are enforced in the service, not the route.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { db, type ConsultantContractRecord, type MentorRecord } from '@/server/db/store';
+import { db, type ConsultantContractRecord, type IncubatorRecord, type MentorRecord, type UserRecord } from '@/server/db/store';
 import {
   createDraftContract,
   editDraftContract,
@@ -54,9 +54,32 @@ const MENTOR: MentorRecord = {
   createdAt: new Date('2026-01-01').toISOString(),
 };
 
+/**
+ * Metwork's own legal identity. `sendContract` refuses to issue a contract that
+ * cannot name the company's commercial register number and tax identifier, so
+ * every fixture that sends one has to seed this party.
+ */
+const METWORK = {
+  id: 'inc-metwork',
+  name: 'EURL METWORK',
+  description: '',
+  city: 'Oran',
+  managerId: ADMIN_ID,
+  status: 'ACTIVE',
+  website: null,
+  logoUrl: null,
+  commercialRegNumber: '31/00-1234567 B 24',
+  nif: '002431012345678',
+  address: '12 rue des Frères Bouadou, Oran',
+  createdAt: new Date('2026-01-01').toISOString(),
+  updatedAt: new Date('2026-01-01').toISOString(),
+} as unknown as IncubatorRecord;
+
 async function seedMentor(overrides: Partial<MentorRecord> = {}): Promise<void> {
   await db.update((d) => {
     d.mentors = [{ ...MENTOR, ...overrides }];
+    d.users = [{ id: ADMIN_ID, role: 'ADMIN', email: 'admin@metwork.dz' } as UserRecord];
+    d.incubators = [{ ...METWORK }];
   });
 }
 
