@@ -1,18 +1,17 @@
 import type { Metadata } from 'next';
-import { FolderKanban } from 'lucide-react';
 import { requireCrmUser } from '@/server/metworkcrm/auth/guards';
 import { CrmPageHeader } from '@/components/metworkcrm/shared/page-header';
-import { ComingSoon } from '@/components/metworkcrm/shared/coming-soon';
+import { OpportunitiesList } from '@/components/metworkcrm/opportunities/opportunities-list';
 
 export const metadata: Metadata = { title: 'Ventes' };
 export const dynamic = 'force-dynamic';
 
-export default async function CrmPage() {
+export default async function CrmSalesPage() {
   await requireCrmUser();
   return (
     <>
       <CrmPageHeader title="Ventes" subtitle="Pipeline commercial et opportunités." />
-      <ComingSoon title="Ventes" icon={FolderKanban} prompt={3} />
+      <OpportunitiesList />
     </>
   );
 }

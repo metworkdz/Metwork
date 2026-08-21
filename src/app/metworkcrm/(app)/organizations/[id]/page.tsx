@@ -28,11 +28,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
  * round-trip); client-side mutations refetch through the API route.
  */
 export default async function CrmOrganizationDetailPage({ params }: Params) {
-  await requireCrmUser();
+  const user = await requireCrmUser();
   const { id } = await params;
 
   try {
-    const detail = await getOrganizationDetail(id);
+    const detail = await getOrganizationDetail(id, user);
     return <OrganizationDetail initial={detail} />;
   } catch (err) {
     if (err instanceof CrmNotFoundError) notFound();

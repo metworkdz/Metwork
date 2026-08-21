@@ -1,16 +1,19 @@
 /**
  * METWORK OS CRM — global search.
  *
- * v1 per METWORK_OS_DATABASE_SCHEMA.md §8: a single UNION ALL across
- * Organizations, Contacts, Tasks and Interactions, no FTS index — appropriate
- * at internal-CRM volume. Entities that live in the platform's JSON store
- * (StartupListing, MentorRecord) are deliberately NOT in this search; they get
- * their own linking-search screen once Prompt 3 adds `platform-refs.ts`.
+ * Per METWORK_OS_DATABASE_SCHEMA.md §8: a single UNION ALL, no FTS index —
+ * appropriate at internal-CRM volume. Startups/Experts search on
+ * `COALESCE(display_name_cache, name)` because a platform-linked record can
+ * have `name IS NULL` (schema doc §7.4) — every UI-created record in this
+ * pass is CRM_ONLY though, so `name` is always populated in practice.
  */
 import { sql } from 'drizzle-orm';
 import { getCrmDb } from '../db/client';
 
-export type SearchResultKind = 'ORGANIZATION' | 'CONTACT' | 'TASK' | 'INTERACTION';
+export type SearchResultKind =
+  | 'ORGANIZATION' | 'CONTACT' | 'TASK' | 'INTERACTION'
+  | 'OPPORTUNITY' | 'STARTUP' | 'EXPERT' | 'PARTNERSHIP'
+  | 'OI_PROJECT' | 'PROGRAM';
 
 export interface SearchResultRow {
   kind: SearchResultKind;
@@ -24,7 +27,10 @@ export interface SearchResultGroup {
   items: SearchResultRow[];
 }
 
-const GROUP_ORDER: SearchResultKind[] = ['ORGANIZATION', 'CONTACT', 'TASK', 'INTERACTION'];
+const GROUP_ORDER: SearchResultKind[] = [
+  'ORGANIZATION', 'CONTACT', 'OPPORTUNITY', 'STARTUP', 'EXPERT', 'PARTNERSHIP',
+  'OI_PROJECT', 'PROGRAM', 'TASK', 'INTERACTION',
+];
 const PER_KIND_LIMIT = 8;
 
 /** Escape SQLite LIKE wildcards so a literal `%`/`_` in the query isn't treated as one. */
@@ -50,6 +56,48 @@ export async function globalSearch(rawQuery: string): Promise<SearchResultGroup[
       SELECT 'CONTACT' AS kind, id, full_name AS title, email AS subtitle, updated_at AS sort_key
       FROM crm_contacts
       WHERE full_name LIKE ${term} ESCAPE '\\' COLLATE NOCASE OR email LIKE ${term} ESCAPE '\\' COLLATE NOCASE
+      ORDER BY updated_at DESC LIMIT ${PER_KIND_LIMIT}
+    )
+    UNION ALL
+    SELECT * FROM (
+      SELECT 'OPPORTUNITY' AS kind, id, title AS title, stage AS subtitle, updated_at AS sort_key
+      FROM crm_opportunities
+      WHERE title LIKE ${term} ESCAPE '\\' COLLATE NOCASE
+      ORDER BY updated_at DESC LIMIT ${PER_KIND_LIMIT}
+    )
+    UNION ALL
+    SELECT * FROM (
+      SELECT 'STARTUP' AS kind, id, COALESCE(display_name_cache, name) AS title, sector AS subtitle, updated_at AS sort_key
+      FROM crm_startups
+      WHERE COALESCE(display_name_cache, name) LIKE ${term} ESCAPE '\\' COLLATE NOCASE
+      ORDER BY updated_at DESC LIMIT ${PER_KIND_LIMIT}
+    )
+    UNION ALL
+    SELECT * FROM (
+      SELECT 'EXPERT' AS kind, id, COALESCE(display_name_cache, name) AS title, city AS subtitle, updated_at AS sort_key
+      FROM crm_experts
+      WHERE COALESCE(display_name_cache, name) LIKE ${term} ESCAPE '\\' COLLATE NOCASE
+      ORDER BY updated_at DESC LIMIT ${PER_KIND_LIMIT}
+    )
+    UNION ALL
+    SELECT * FROM (
+      SELECT 'PARTNERSHIP' AS kind, id, name AS title, stage AS subtitle, updated_at AS sort_key
+      FROM crm_partnerships
+      WHERE name LIKE ${term} ESCAPE '\\' COLLATE NOCASE
+      ORDER BY updated_at DESC LIMIT ${PER_KIND_LIMIT}
+    )
+    UNION ALL
+    SELECT * FROM (
+      SELECT 'OI_PROJECT' AS kind, id, title AS title, stage AS subtitle, updated_at AS sort_key
+      FROM crm_oi_projects
+      WHERE title LIKE ${term} ESCAPE '\\' COLLATE NOCASE
+      ORDER BY updated_at DESC LIMIT ${PER_KIND_LIMIT}
+    )
+    UNION ALL
+    SELECT * FROM (
+      SELECT 'PROGRAM' AS kind, id, title AS title, stage AS subtitle, updated_at AS sort_key
+      FROM crm_programs
+      WHERE title LIKE ${term} ESCAPE '\\' COLLATE NOCASE
       ORDER BY updated_at DESC LIMIT ${PER_KIND_LIMIT}
     )
     UNION ALL

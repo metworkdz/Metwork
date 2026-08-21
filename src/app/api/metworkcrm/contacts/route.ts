@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return fromZod(parsed.error);
 
   try {
-    const contact = await createContact(parsed.data, guard.user.id);
+    const contact = await createContact(parsed.data, guard.user.id, guard.user);
     return json(contact, { status: 201 });
   } catch (err) {
     return crmErrorResponse(err);

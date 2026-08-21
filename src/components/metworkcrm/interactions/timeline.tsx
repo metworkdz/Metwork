@@ -54,11 +54,27 @@ function formatTime(iso: string): string {
 interface TimelineProps {
   organizationId?: string;
   contactId?: string;
+  opportunityId?: string;
+  startupId?: string;
+  expertId?: string;
+  partnershipId?: string;
+  programId?: string;
+  oiProjectId?: string;
   /** Pre-filled label shown in the "new interaction" dialog once opened. */
   entityLabel?: string;
 }
 
-export function Timeline({ organizationId, contactId, entityLabel }: TimelineProps) {
+export function Timeline({
+  organizationId,
+  contactId,
+  opportunityId,
+  startupId,
+  expertId,
+  partnershipId,
+  programId,
+  oiProjectId,
+  entityLabel,
+}: TimelineProps) {
   const [rows, setRows] = useState<InteractionRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -67,11 +83,17 @@ export function Timeline({ organizationId, contactId, entityLabel }: TimelinePro
     const params = new URLSearchParams({ limit: '200' });
     if (organizationId) params.set('organizationId', organizationId);
     if (contactId) params.set('contactId', contactId);
+    if (opportunityId) params.set('opportunityId', opportunityId);
+    if (startupId) params.set('startupId', startupId);
+    if (expertId) params.set('expertId', expertId);
+    if (partnershipId) params.set('partnershipId', partnershipId);
+    if (programId) params.set('programId', programId);
+    if (oiProjectId) params.set('oiProjectId', oiProjectId);
     const res = await fetch(`/api/metworkcrm/interactions?${params.toString()}`);
     const data = res.ok ? ((await res.json()) as { rows: InteractionRow[] }) : { rows: [] };
     setRows(data.rows);
     setLoading(false);
-  }, [organizationId, contactId]);
+  }, [organizationId, contactId, opportunityId, startupId, expertId, partnershipId, programId, oiProjectId]);
 
   useEffect(() => {
     load();
@@ -112,6 +134,12 @@ export function Timeline({ organizationId, contactId, entityLabel }: TimelinePro
           lockedOrganizationLabel={entityLabel}
           lockedContactId={contactId}
           lockedContactLabel={entityLabel}
+          lockedOpportunityId={opportunityId}
+          lockedStartupId={startupId}
+          lockedExpertId={expertId}
+          lockedPartnershipId={partnershipId}
+          lockedProgramId={programId}
+          lockedOiProjectId={oiProjectId}
           onSaved={load}
           trigger={
             <CrmButton size="sm" variant="outline">
@@ -177,6 +205,12 @@ export function Timeline({ organizationId, contactId, entityLabel }: TimelinePro
                               interaction={row}
                               lockedOrganizationId={organizationId}
                               lockedContactId={contactId}
+                              lockedOpportunityId={opportunityId}
+                              lockedStartupId={startupId}
+                              lockedExpertId={expertId}
+                              lockedPartnershipId={partnershipId}
+                              lockedProgramId={programId}
+                              lockedOiProjectId={oiProjectId}
                               onSaved={load}
                               trigger={
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Modifier</DropdownMenuItem>

@@ -8,7 +8,17 @@ import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { EntityPicker } from '@/components/metworkcrm/shared/entity-picker';
 import { Timeline } from '@/components/metworkcrm/interactions/timeline';
 import { TaskFormDialog, type TaskRow } from '@/components/metworkcrm/tasks/task-form-dialog';
-import { TASK_PRIORITY_BADGE, TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, ORG_TYPE_LABELS, RECORD_STATUS_BADGE, RECORD_STATUS_LABELS } from '@/components/metworkcrm/shared/labels';
+import { OpportunityFormDialog, type OpportunityRow } from '@/components/metworkcrm/opportunities/opportunity-form-dialog';
+import {
+  TASK_PRIORITY_BADGE,
+  TASK_PRIORITY_LABELS,
+  TASK_STATUS_LABELS,
+  ORG_TYPE_LABELS,
+  OPPORTUNITY_STAGE_BADGE,
+  OPPORTUNITY_STAGE_LABELS,
+  RECORD_STATUS_BADGE,
+  RECORD_STATUS_LABELS,
+} from '@/components/metworkcrm/shared/labels';
 import { OrganizationFormDialog, type OrganizationRow } from './organization-form-dialog';
 import { ContactFormDialog, type ContactRow } from '@/components/metworkcrm/contacts/contact-form-dialog';
 
@@ -21,7 +31,7 @@ export interface OrganizationDetailData {
   organization: OrganizationRow;
   contacts: LinkedContact[];
   tasks: TaskRow[];
-  opportunities: unknown[];
+  opportunities: OpportunityRow[];
 }
 
 export function OrganizationDetail({ initial }: { initial: OrganizationDetailData }) {
@@ -251,12 +261,33 @@ export function OrganizationDetail({ initial }: { initial: OrganizationDetailDat
             </ul>
           </div>
 
-          {/* Opportunities — Prompt 3 module; always empty for now, and that's correct */}
           <div className="rounded-xl border border-neutral-200 bg-white p-4">
-            <h3 className="mb-2 text-sm font-semibold text-[var(--crm-black)]">Opportunités</h3>
-            <p className="text-sm text-neutral-400">
-              {data.opportunities.length === 0 ? 'Module disponible prochainement.' : `${data.opportunities.length} opportunité(s).`}
-            </p>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-[var(--crm-black)]">
+                Opportunités <span className="font-normal text-neutral-400">({data.opportunities.length})</span>
+              </h3>
+              <OpportunityFormDialog
+                lockedOrganizationId={org.id}
+                lockedOrganizationLabel={org.name}
+                onSaved={refresh}
+                trigger={
+                  <button type="button" className="inline-flex size-6 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600">
+                    <Plus className="size-4" aria-hidden />
+                  </button>
+                }
+              />
+            </div>
+            <ul className="space-y-2">
+              {data.opportunities.map((o) => (
+                <li key={o.id}>
+                  <a href={`/metworkcrm/sales/${o.id}`} className="flex items-center gap-2 rounded-md p-1.5 text-sm hover:bg-neutral-50">
+                    <span className="min-w-0 flex-1 truncate text-[var(--crm-black)]">{o.title}</span>
+                    <Badge variant={OPPORTUNITY_STAGE_BADGE[o.stage] ?? 'default'}>{OPPORTUNITY_STAGE_LABELS[o.stage] ?? o.stage}</Badge>
+                  </a>
+                </li>
+              ))}
+              {data.opportunities.length === 0 ? <li className="text-sm text-neutral-400">Aucune opportunité.</li> : null}
+            </ul>
           </div>
         </div>
       </div>

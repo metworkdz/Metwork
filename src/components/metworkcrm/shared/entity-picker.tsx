@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Loader2, X } from 'lucide-react';
 
-export type EntityPickerKind = 'organization' | 'contact';
+export type EntityPickerKind = 'organization' | 'contact' | 'opportunity' | 'startup' | 'expert' | 'partnership';
 
 interface EntityOption {
   id: string;
@@ -20,22 +20,44 @@ interface EntityOption {
 const ENDPOINT: Record<EntityPickerKind, string> = {
   organization: '/api/metworkcrm/organizations',
   contact: '/api/metworkcrm/contacts',
+  opportunity: '/api/metworkcrm/opportunities',
+  startup: '/api/metworkcrm/startups',
+  expert: '/api/metworkcrm/experts',
+  partnership: '/api/metworkcrm/partnerships',
 };
 
 function toOption(kind: EntityPickerKind, row: Record<string, unknown>): EntityOption {
-  if (kind === 'organization') {
-    return { id: row.id as string, label: row.name as string, sublabel: (row.city as string | null) ?? null };
+  switch (kind) {
+    case 'organization':
+      return { id: row.id as string, label: row.name as string, sublabel: (row.city as string | null) ?? null };
+    case 'contact':
+      return {
+        id: row.id as string,
+        label: (row.fullName as string | null) ?? `${row.firstName as string} ${row.lastName as string}`,
+        sublabel: (row.email as string | null) ?? null,
+      };
+    case 'opportunity':
+      return { id: row.id as string, label: row.title as string, sublabel: (row.stage as string | null) ?? null };
+    case 'startup':
+    case 'expert':
+      // LINKED records have `name: null` — the display name lives in `displayNameCache` (schema doc §7.4).
+      return {
+        id: row.id as string,
+        label: (row.displayNameCache as string | null) ?? (row.name as string) ?? '',
+        sublabel: (row.sector as string | null) ?? (row.city as string | null) ?? null,
+      };
+    case 'partnership':
+      return { id: row.id as string, label: row.name as string, sublabel: (row.stage as string | null) ?? null };
   }
-  return {
-    id: row.id as string,
-    label: (row.fullName as string | null) ?? `${row.firstName as string} ${row.lastName as string}`,
-    sublabel: (row.email as string | null) ?? null,
-  };
 }
 
 const PLACEHOLDER: Record<EntityPickerKind, string> = {
   organization: 'Rechercher une organisation…',
   contact: 'Rechercher un contact…',
+  opportunity: 'Rechercher une opportunité…',
+  startup: 'Rechercher une startup…',
+  expert: 'Rechercher un expert…',
+  partnership: 'Rechercher un partenariat…',
 };
 
 export function EntityPicker({

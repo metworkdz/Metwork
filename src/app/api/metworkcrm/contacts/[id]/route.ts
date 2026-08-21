@@ -23,7 +23,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const { id } = await params;
 
   try {
-    return json(await getContactDetail(id));
+    return json(await getContactDetail(id, guard.user));
   } catch (err) {
     return crmErrorResponse(err);
   }
@@ -39,7 +39,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (!parsed.success) return fromZod(parsed.error);
 
   try {
-    return json(await updateContact(id, parsed.data));
+    return json(await updateContact(id, parsed.data, guard.user));
   } catch (err) {
     return crmErrorResponse(err);
   }
