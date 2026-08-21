@@ -650,5 +650,22 @@ export async function markContractViewed(contractId: string, actorId: string): P
   await appendContractAudit(contractId, 'VIEWED', actorId);
 }
 
+/**
+ * Record the FIRST view only.
+ *
+ * The "has it been viewed already?" test runs INSIDE the write lock, not
+ * against a snapshot read beforehand. Two page loads landing together — which
+ * React's development double-render makes routine — would otherwise both read
+ * an unviewed contract and both append, and the trail is supposed to answer
+ * "when did they first see this", not "how many times did the page mount".
+ */
+export async function markContractViewedOnce(contractId: string, actorId: string): Promise<void> {
+  await updateContract(contractId, (c) => {
+    if (c.status !== 'PENDING_SIGNATURE') return;
+    if (c.auditTrail.some((e) => e.event === 'VIEWED')) return;
+    c.auditTrail.push({ event: 'VIEWED', actorId, timestamp: new Date().toISOString() });
+  });
+}
+
 /** Re-exported so callers need only one import for the OTP state type. */
 export type { ConsultantContractOtpState };

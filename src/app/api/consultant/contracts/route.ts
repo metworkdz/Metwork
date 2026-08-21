@@ -16,7 +16,7 @@ import { isInstantBookEnabled } from '@/server/consultations/instant-book';
 import { json, jsonError } from '@/server/http/json';
 import {
   findContractsByConsultant,
-  appendContractAudit,
+  markContractViewedOnce,
 } from '@/server/consultant-contracts/service';
 import { mintContractPdfUrl } from '@/server/consultant-contracts/storage';
 import { toConsultantContractDto } from '@/server/consultant-contracts/dto';
@@ -33,10 +33,10 @@ export async function GET() {
 
   for (const contract of contracts) {
     if (contract.status !== 'PENDING_SIGNATURE') continue;
-    if (contract.auditTrail.some((e) => e.event === 'VIEWED')) continue;
-    // Audit writes are best-effort by design — never fail a read because the
-    // trail could not be extended.
-    await appendContractAudit(contract.id, 'VIEWED', guard.mentorId);
+    // The already-viewed test happens inside the write lock (see
+    // markContractViewedOnce) — checking it out here against this snapshot
+    // would let two concurrent loads both append.
+    await markContractViewedOnce(contract.id, guard.mentorId);
   }
 
   return json({

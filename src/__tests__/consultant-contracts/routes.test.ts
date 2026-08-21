@@ -33,9 +33,12 @@ vi.mock('@/lib/cloudinary', () => ({
     `https://api.cloudinary.com/v1_1/test/raw/download?public_id=${encodeURIComponent(publicId)}&expires_at=1&signature=x`,
 }));
 
-/** Delivery is stubbed — the codes are read from the service's return value. */
-vi.mock('@/server/notifications/mock', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/server/notifications/mock')>()),
+/**
+ * Delivery is stubbed. Only the two senders the OTP route imports are provided:
+ * the tests read codes from the service's return value, never from a message,
+ * so nothing else in this module is reachable from here.
+ */
+vi.mock('@/server/notifications/mock', () => ({
   sendOtpWhatsApp: async () => true,
   sendOtpSms: async () => true,
 }));
@@ -260,7 +263,10 @@ describe('serialisation', () => {
 
     await listContracts();
     await listContracts();
-    await listContracts();
+
+    // Concurrent loads too — React's development double-render makes this the
+    // normal case, and a snapshot-based check would let both through.
+    await Promise.all([listContracts(), listContracts(), listContracts()]);
 
     const viewed = (await findContractById(id))!.auditTrail.filter((e) => e.event === 'VIEWED');
     expect(viewed).toHaveLength(1);

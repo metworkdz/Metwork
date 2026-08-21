@@ -19,7 +19,7 @@
  * finalised, so editing them in devtools changes what this screen renders and
  * nothing about what gets signed.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { CheckCircle2, Download, FileText, Loader2, Lock, ShieldCheck } from 'lucide-react';
 import { ApiClientError } from '@/lib/api-client';
