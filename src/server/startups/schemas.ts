@@ -23,6 +23,8 @@ export const createStartupSchema = z.object({
   maturityStage: maturityStageSchema,
   /** Optional public website. */
   websiteUrl: z.string().url().max(300).optional().nullable(),
+  /** Optional logo — uploaded via POST /api/startups/logo, URL persisted here. */
+  logoUrl: z.string().url().max(500).optional().nullable(),
 });
 
 export type CreateStartupInput = z.infer<typeof createStartupSchema>;

@@ -29,7 +29,7 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   const browser = await chromium.launch();
 
   for (const role of ROLES) {
-    const context = await browser.newContext({ baseURL: 'http://localhost:3010' });
+    const context = await browser.newContext({ baseURL: 'http://localhost:3000' });
     const page = await context.newPage();
 
     await page.goto('/en/login');

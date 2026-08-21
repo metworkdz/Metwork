@@ -35,6 +35,7 @@ export async function createStartup(
       maturityStage: input.maturityStage,
       pitchDeckUrl: null,
       websiteUrl: input.websiteUrl ?? null,
+      logoUrl: input.logoUrl ?? null,
       founderId,
       status: 'DRAFT',
       createdAt: now,
@@ -71,6 +72,7 @@ export async function updateStartup(
     if (patch.valuation      !== undefined) listing.valuation     = patch.valuation ?? null;
     if (patch.maturityStage  !== undefined) listing.maturityStage = patch.maturityStage;
     if (patch.websiteUrl     !== undefined) listing.websiteUrl    = patch.websiteUrl ?? null;
+    if (patch.logoUrl        !== undefined) listing.logoUrl       = patch.logoUrl ?? null;
     if (patch.status         !== undefined) listing.status        = patch.status;
     listing.updatedAt = new Date().toISOString();
 

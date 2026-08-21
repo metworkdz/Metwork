@@ -30,6 +30,7 @@ export default async function EntrepreneurStartupPage({ params }: PageProps) {
         maturityStage: existing.maturityStage ?? null,
         pitchDeckUrl:  existing.pitchDeckUrl ?? null,
         websiteUrl:    existing.websiteUrl ?? '',
+        logoUrl:       existing.logoUrl ?? null,
         status:        existing.status,
       }
     : {
@@ -43,6 +44,7 @@ export default async function EntrepreneurStartupPage({ params }: PageProps) {
         maturityStage: null,
         pitchDeckUrl:  null,
         websiteUrl:    '',
+        logoUrl:       null,
         status:        'DRAFT' as const,
       };
 

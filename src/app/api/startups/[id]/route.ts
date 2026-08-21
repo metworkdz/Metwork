@@ -45,6 +45,7 @@ const patchSchema = z.object({
   valuation:     z.number().int().positive().optional().nullable(),
   maturityStage: maturityStageSchema.optional(),
   websiteUrl:    z.string().url().max(300).optional().nullable(),
+  logoUrl:       z.string().url().max(500).optional().nullable(),
   status:        z.enum(['DRAFT', 'ACTIVE', 'CLOSED']).optional(),
 });
 
