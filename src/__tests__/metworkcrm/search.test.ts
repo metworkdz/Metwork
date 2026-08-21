@@ -13,6 +13,8 @@ import { createExpert } from '@/server/metworkcrm/services/experts';
 import { createPartnership } from '@/server/metworkcrm/services/partnerships';
 import { createOiProject } from '@/server/metworkcrm/services/oi-projects';
 import { createProgram } from '@/server/metworkcrm/services/programs';
+import { createSpaceBooking } from '@/server/metworkcrm/services/space-bookings';
+import { attachDocument } from '@/server/metworkcrm/services/documents';
 
 const MEM = 'file::memory:';
 let db: CrmDatabase;
@@ -38,6 +40,9 @@ beforeEach(async () => {
   await db.run(sql`DELETE FROM crm_partnerships`);
   await db.run(sql`DELETE FROM crm_oi_projects`);
   await db.run(sql`DELETE FROM crm_programs`);
+  await db.run(sql`DELETE FROM crm_document_links`);
+  await db.run(sql`DELETE FROM crm_documents`);
+  await db.run(sql`DELETE FROM crm_space_bookings`);
   await db.run(sql`DELETE FROM crm_contacts`);
   await db.run(sql`DELETE FROM crm_organizations`);
 });
@@ -49,7 +54,7 @@ describe('Global search', () => {
     expect(await globalSearch('')).toEqual([]);
   });
 
-  it('finds matches across all 10 entity types and groups them by kind', async () => {
+  it('finds matches across all 12 entity types and groups them by kind (Payments deliberately excluded)', async () => {
     await createOrganization({ name: 'Atlas Ventures', type: 'ENTREPRISE', status: 'ACTIF', country: 'DZ' }, ACTOR);
     await createContact({ firstName: 'Atlas', lastName: 'Contact', status: 'ACTIF' }, ACTOR);
     const org = await createOrganization({ name: 'Autre Org', type: 'ENTREPRISE', status: 'ACTIF', country: 'DZ' }, ACTOR);
@@ -64,10 +69,18 @@ describe('Global search', () => {
     await createPartnership({ name: 'Atlas Partnership', organizationId: org.id, type: 'CORPORATE', stage: 'PROSPECT' }, ACTOR);
     await createOiProject({ title: 'Atlas OI Project', stage: 'ENTREPRISE_IDENTIFIEE', currency: 'DZD' }, ACTOR);
     await createProgram({ title: 'Atlas Program', type: 'FORMATION', stage: 'IDEE' }, ACTOR);
+    await createSpaceBooking({ spaceLabel: 'Atlas Room', spaceType: 'SALLE_REUNION', status: 'DEMANDE', organizationId: org.id }, ACTOR);
+    await attachDocument(
+      { title: 'Atlas Contract', type: 'CONTRAT', entityType: 'ORGANIZATION', entityId: org.id, fileUrl: 'https://res.cloudinary.com/demo/raw/upload/v1/atlas.pdf' },
+      ACTOR,
+    );
 
     const groups = await globalSearch('atlas');
     expect(groups.map((g) => g.kind).sort()).toEqual(
-      ['CONTACT', 'EXPERT', 'INTERACTION', 'ORGANIZATION', 'OPPORTUNITY', 'OI_PROJECT', 'PROGRAM', 'PARTNERSHIP', 'STARTUP', 'TASK'].sort(),
+      [
+        'CONTACT', 'EXPERT', 'INTERACTION', 'ORGANIZATION', 'OPPORTUNITY', 'OI_PROJECT', 'PROGRAM',
+        'PARTNERSHIP', 'STARTUP', 'TASK', 'SPACE_BOOKING', 'DOCUMENT',
+      ].sort(),
     );
 
     const orgGroup = groups.find((g) => g.kind === 'ORGANIZATION')!;

@@ -9,7 +9,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Loader2, X } from 'lucide-react';
 
-export type EntityPickerKind = 'organization' | 'contact' | 'opportunity' | 'startup' | 'expert' | 'partnership';
+export type EntityPickerKind =
+  | 'organization' | 'contact' | 'opportunity' | 'startup' | 'expert' | 'partnership'
+  | 'program' | 'oi-project' | 'space-booking';
 
 interface EntityOption {
   id: string;
@@ -24,6 +26,9 @@ const ENDPOINT: Record<EntityPickerKind, string> = {
   startup: '/api/metworkcrm/startups',
   expert: '/api/metworkcrm/experts',
   partnership: '/api/metworkcrm/partnerships',
+  program: '/api/metworkcrm/programs',
+  'oi-project': '/api/metworkcrm/oi-projects',
+  'space-booking': '/api/metworkcrm/space-bookings',
 };
 
 function toOption(kind: EntityPickerKind, row: Record<string, unknown>): EntityOption {
@@ -48,6 +53,12 @@ function toOption(kind: EntityPickerKind, row: Record<string, unknown>): EntityO
       };
     case 'partnership':
       return { id: row.id as string, label: row.name as string, sublabel: (row.stage as string | null) ?? null };
+    case 'program':
+      return { id: row.id as string, label: row.title as string, sublabel: (row.stage as string | null) ?? null };
+    case 'oi-project':
+      return { id: row.id as string, label: row.title as string, sublabel: (row.stage as string | null) ?? null };
+    case 'space-booking':
+      return { id: row.id as string, label: (row.reference as string) ?? (row.spaceLabel as string), sublabel: (row.spaceLabel as string | null) ?? null };
   }
 }
 
@@ -58,6 +69,9 @@ const PLACEHOLDER: Record<EntityPickerKind, string> = {
   startup: 'Rechercher une startup…',
   expert: 'Rechercher un expert…',
   partnership: 'Rechercher un partenariat…',
+  program: 'Rechercher un programme…',
+  'oi-project': 'Rechercher un projet Open Innovation…',
+  'space-booking': 'Rechercher une réservation…',
 };
 
 export function EntityPicker({

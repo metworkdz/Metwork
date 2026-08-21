@@ -307,3 +307,36 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   CARTE: 'Carte',
   AUTRE: 'Autre',
 };
+
+export const SPACE_TYPE_LABELS: Record<string, string> = {
+  COWORKING: 'Coworking',
+  BUREAU_PRIVE: 'Bureau privé',
+  SALLE_REUNION: 'Salle de réunion',
+  SALLE_FORMATION: 'Salle de formation',
+  EVENEMENT: 'Événement',
+  DOMICILIATION: 'Domiciliation',
+  AUTRE: 'Autre',
+};
+
+/** Space bookings pipeline — product spec §4.13, in order. */
+export const BOOKING_STATUS_LABELS: Record<string, string> = {
+  DEMANDE: 'Demande',
+  VERIFICATION_DISPO: 'Vérification dispo.',
+  DEVIS_ENVOYE: 'Devis envoyé',
+  ATTENTE_CONFIRMATION: 'Attente confirmation',
+  CONFIRME: 'Confirmé',
+  PAYE: 'Payé',
+  TERMINE: 'Terminé',
+  ANNULE: 'Annulé',
+};
+
+export const BOOKING_STATUS_BADGE: Record<string, 'success' | 'info' | 'default' | 'warning' | 'danger'> = {
+  DEMANDE: 'default',
+  VERIFICATION_DISPO: 'info',
+  DEVIS_ENVOYE: 'info',
+  ATTENTE_CONFIRMATION: 'warning',
+  CONFIRME: 'warning',
+  PAYE: 'success',
+  TERMINE: 'success',
+  ANNULE: 'danger',
+};

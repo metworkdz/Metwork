@@ -22,6 +22,7 @@ import type { OpportunityInput } from '../validation/opportunities';
 import { redactMoney } from '../auth/guards';
 import { CrmNotFoundError, CrmServiceError } from './errors';
 import { checkOpportunityDeleteGuard, formatDeleteGuardMessage } from './delete-guard';
+import { deleteDocumentLinksFor, listDocumentsFor } from './documents';
 
 function likeTerm(q: string): string {
   return `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -72,7 +73,7 @@ export async function getOpportunityDetail(id: string, user: Pick<InternalUser, 
   const opp = (await db.select().from(crmOpportunities).where(eq(crmOpportunities.id, id)))[0];
   if (!opp) throw new CrmNotFoundError('Opportunité');
 
-  const [organization, contact, tasks, interactions, stageHistory] = await Promise.all([
+  const [organization, contact, tasks, interactions, stageHistory, documents] = await Promise.all([
     opp.organizationId
       ? (await db.select().from(crmOrganizations).where(eq(crmOrganizations.id, opp.organizationId)))[0] ?? null
       : null,
@@ -84,6 +85,7 @@ export async function getOpportunityDetail(id: string, user: Pick<InternalUser, 
       .from(crmOpportunityStageHistory)
       .where(eq(crmOpportunityStageHistory.opportunityId, id))
       .orderBy(desc(crmOpportunityStageHistory.changedAt)),
+    listDocumentsFor('OPPORTUNITY', id),
   ]);
 
   return {
@@ -93,6 +95,7 @@ export async function getOpportunityDetail(id: string, user: Pick<InternalUser, 
     tasks,
     interactions,
     stageHistory,
+    documents,
   };
 }
 
@@ -186,4 +189,5 @@ export async function deleteOpportunity(id: string): Promise<void> {
   } catch {
     throw new CrmServiceError(409, 'CRM_DELETE_BLOCKED', 'Impossible de supprimer cette opportunité — des éléments y sont encore rattachés.');
   }
+  await deleteDocumentLinksFor('OPPORTUNITY', id);
 }

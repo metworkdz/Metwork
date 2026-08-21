@@ -15,6 +15,7 @@ import { redactMoney } from '../auth/guards';
 import type { InternalUser } from '../db/schema';
 import { CrmNotFoundError, CrmServiceError } from './errors';
 import { checkExpertDeleteGuard, formatDeleteGuardMessage } from './delete-guard';
+import { deleteDocumentLinksFor, listDocumentsFor } from './documents';
 
 function likeTerm(q: string): string {
   return `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -73,19 +74,21 @@ export async function getExpertDetail(id: string, user: Pick<InternalUser, 'role
   const expert = (await db.select().from(crmExperts).where(eq(crmExperts.id, id)))[0];
   if (!expert) throw new CrmNotFoundError('Expert');
 
-  const [organization, contact, tasks, interactions] = await Promise.all([
+  const [organization, contact, tasks, interactions, documents] = await Promise.all([
     expert.organizationId
       ? (await db.select().from(crmOrganizations).where(eq(crmOrganizations.id, expert.organizationId)))[0] ?? null
       : null,
     expert.contactId ? (await db.select().from(crmContacts).where(eq(crmContacts.id, expert.contactId)))[0] ?? null : null,
     db.select().from(crmTasks).where(eq(crmTasks.expertId, id)).orderBy(desc(crmTasks.createdAt)),
     db.select().from(crmInteractions).where(eq(crmInteractions.expertId, id)).orderBy(desc(crmInteractions.occurredAt)),
+    listDocumentsFor('EXPERT', id),
   ]);
 
   return {
     expert: redactMoney(user, withParsedSpecialties(expert), MONEY_FIELDS),
     organization,
     contact,
+    documents,
     tasks,
     interactions,
   };
@@ -161,4 +164,5 @@ export async function deleteExpert(id: string): Promise<void> {
   } catch {
     throw new CrmServiceError(409, 'CRM_DELETE_BLOCKED', 'Impossible de supprimer cet expert — des éléments y sont encore rattachés.');
   }
+  await deleteDocumentLinksFor('EXPERT', id);
 }

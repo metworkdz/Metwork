@@ -20,6 +20,7 @@ import {
   checkOrganizationDeleteGuard,
   formatDeleteGuardMessage,
 } from './delete-guard';
+import { deleteDocumentLinksFor, listDocumentsFor } from './documents';
 
 /** Escape SQLite LIKE wildcards so a literal `%`/`_` in a search term isn't treated as one. */
 function likeTerm(q: string): string {
@@ -75,7 +76,7 @@ export async function getOrganizationDetail(id: string, user: Pick<InternalUser,
   const org = (await db.select().from(crmOrganizations).where(eq(crmOrganizations.id, id)))[0];
   if (!org) throw new CrmNotFoundError('Organisation');
 
-  const [contactLinks, interactions, tasks, opportunities] = await Promise.all([
+  const [contactLinks, interactions, tasks, opportunities, documents] = await Promise.all([
     db
       .select({
         link: crmContactOrganizations,
@@ -96,6 +97,7 @@ export async function getOrganizationDetail(id: string, user: Pick<InternalUser,
       .where(eq(crmTasks.organizationId, id))
       .orderBy(desc(crmTasks.createdAt)),
     db.select().from(crmOpportunities).where(eq(crmOpportunities.organizationId, id)),
+    listDocumentsFor('ORGANIZATION', id),
   ]);
 
   return {
@@ -106,6 +108,7 @@ export async function getOrganizationDetail(id: string, user: Pick<InternalUser,
     // R-19: amount is hidden from TEAM_MEMBER everywhere, including this
     // "everything visible on one page" sub-list, not just the Sales module.
     opportunities: opportunities.map((o) => redactMoney(user, o, ['amount'] as const)),
+    documents,
   };
 }
 
@@ -179,6 +182,7 @@ export async function deleteOrganization(id: string): Promise<void> {
     // clean 409 instead of a raw SQLite error.
     throw new CrmServiceError(409, 'CRM_DELETE_BLOCKED', "Impossible de supprimer cette organisation — des éléments y sont encore rattachés.");
   }
+  await deleteDocumentLinksFor('ORGANIZATION', id);
 }
 
 export async function archiveOrganization(id: string) {
