@@ -24,6 +24,7 @@ import type { StartupInput } from '../validation/startups';
 import { CrmNotFoundError, CrmServiceError } from './errors';
 import { checkStartupDeleteGuard, formatDeleteGuardMessage } from './delete-guard';
 import { deleteDocumentLinksFor, listDocumentsFor } from './documents';
+import { runStartupOnboardingAutomation } from './automations';
 
 function likeTerm(q: string): string {
   return `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -130,12 +131,28 @@ export async function updateStartup(id: string, input: Partial<StartupInput>) {
 
   const now = new Date().toISOString();
   const patch: Record<string, unknown> = { ...input, updatedAt: now };
-  if (input.pipelineStage && input.pipelineStage !== existing.pipelineStage) {
+  const stageChanged = input.pipelineStage && input.pipelineStage !== existing.pipelineStage;
+  if (stageChanged) {
     patch.stageChangedAt = now;
   }
 
   await db.update(crmStartups).set(patch).where(eq(crmStartups.id, id));
-  return (await db.select().from(crmStartups).where(eq(crmStartups.id, id)))[0]!;
+  const updated = (await db.select().from(crmStartups).where(eq(crmStartups.id, id)))[0]!;
+
+  // Non-blocking automation (R-22/R-23, product spec §4.17) — runs AFTER the
+  // update above has committed; a failure here can never fail this request.
+  if (stageChanged && input.pipelineStage === 'ONBOARDING') {
+    await runStartupOnboardingAutomation({
+      id: updated.id,
+      displayName: updated.displayNameCache ?? updated.name ?? 'Startup',
+      organizationId: updated.organizationId,
+      primaryContactId: updated.primaryContactId,
+      assignedExpertId: updated.assignedExpertId,
+      stageChangedAt: updated.stageChangedAt,
+    });
+  }
+
+  return updated;
 }
 
 export async function deleteStartup(id: string): Promise<void> {

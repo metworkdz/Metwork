@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -79,6 +79,14 @@ export function InteractionFormDialog({
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Product spec §4.17: "Interaction close sans next_action → Blocage UI :
+   * demander la prochaine action." A client-side guard, not a server
+   * automation — the other 4 automations are async/non-blocking (R-22); this
+   * one is explicitly a UI block on save, so it lives entirely here.
+   */
+  const [showNextActionPrompt, setShowNextActionPrompt] = useState(false);
+  const nextActionInputRef = useRef<HTMLInputElement>(null);
 
   const [type, setType] = useState(interaction?.type ?? 'APPEL');
   const [direction, setDirection] = useState(interaction?.direction ?? '');
@@ -115,6 +123,7 @@ export function InteractionFormDialog({
   useEffect(() => {
     if (!open) return;
     setError(null);
+    setShowNextActionPrompt(false);
     setType(interaction?.type ?? 'APPEL');
     setDirection(interaction?.direction ?? '');
     setSubject(interaction?.subject ?? '');
@@ -166,6 +175,15 @@ export function InteractionFormDialog({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // Block on close without a next action (product spec §4.17) — one extra
+    // click either fills it in or explicitly confirms none is needed; not
+    // persisted anywhere, so re-saving with the fields still empty asks again.
+    if (!nextAction.trim() && !nextActionDate && !showNextActionPrompt) {
+      setShowNextActionPrompt(true);
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
@@ -303,7 +321,16 @@ export function InteractionFormDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Prochaine action" htmlFor="int-next-action">
-              <Input id="int-next-action" value={nextAction} onChange={(e) => setNextAction(e.target.value)} maxLength={200} />
+              <Input
+                id="int-next-action"
+                ref={nextActionInputRef}
+                value={nextAction}
+                onChange={(e) => {
+                  setNextAction(e.target.value);
+                  if (showNextActionPrompt) setShowNextActionPrompt(false);
+                }}
+                maxLength={200}
+              />
             </FormField>
             <FormField label="Date de l'action" htmlFor="int-next-date">
               <Input
@@ -325,6 +352,28 @@ export function InteractionFormDialog({
               />
               Action déjà réalisée
             </label>
+          ) : null}
+
+          {showNextActionPrompt ? (
+            <div role="alert" className="rounded-md bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+              <p>Aucune prochaine action n'est renseignée pour cette interaction.</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <CrmButton
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setShowNextActionPrompt(false);
+                    nextActionInputRef.current?.focus();
+                  }}
+                >
+                  Ajouter une action
+                </CrmButton>
+                <CrmButton type="submit" size="sm" loading={saving}>
+                  Aucune action nécessaire, continuer
+                </CrmButton>
+              </div>
+            </div>
           ) : null}
 
           {error ? (

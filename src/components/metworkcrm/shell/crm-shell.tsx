@@ -4,12 +4,14 @@ import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { CrmSidebar } from '@/components/metworkcrm/nav/sidebar';
 import { GlobalSearch } from '@/components/metworkcrm/shared/global-search';
+import { NotificationBell } from '@/components/metworkcrm/notifications/notification-bell';
 
 /**
  * Owns the mobile sidebar's open/close state, so it can render ONE unified top
- * bar (hamburger + global search) instead of the sidebar's self-contained bar
- * from Prompt 1 — which had nowhere to mount a header-level search input.
- * `CrmSidebar` is now a dumb `<aside>` driven by props.
+ * bar (hamburger + global search + notification bell) instead of the
+ * sidebar's self-contained bar from Prompt 1 — which had nowhere to mount a
+ * header-level search input. `CrmSidebar` is now a dumb `<aside>` driven by
+ * props.
  */
 export function CrmShell({
   role,
@@ -38,7 +40,10 @@ export function CrmShell({
           >
             <Menu className="size-5" aria-hidden />
           </button>
-          <GlobalSearch />
+          <div className="min-w-0 flex-1">
+            <GlobalSearch />
+          </div>
+          <NotificationBell />
         </header>
 
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>

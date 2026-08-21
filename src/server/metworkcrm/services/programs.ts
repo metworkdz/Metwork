@@ -34,6 +34,7 @@ import { redactMoney } from '../auth/guards';
 import { CrmNotFoundError, CrmServiceError } from './errors';
 import { checkProgramDeleteGuard, formatDeleteGuardMessage } from './delete-guard';
 import { deleteDocumentLinksFor, listDocumentsFor } from './documents';
+import { runProgramChecklistAutomation } from './automations';
 
 function likeTerm(q: string): string {
   return `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -148,7 +149,13 @@ export async function createProgram(input: ProgramInput, actorId: string) {
     createdBy: actorId,
   });
 
-  return (await db.select().from(crmPrograms).where(eq(crmPrograms.id, id)))[0]!;
+  const created = (await db.select().from(crmPrograms).where(eq(crmPrograms.id, id)))[0]!;
+
+  // Non-blocking automation (R-22/R-23, product spec §4.17) — runs AFTER the
+  // insert above has committed; a failure here can never fail this request.
+  await runProgramChecklistAutomation({ id: created.id, title: created.title, ownerId: created.ownerId });
+
+  return created;
 }
 
 export async function updateProgram(id: string, input: Partial<ProgramInput>) {
