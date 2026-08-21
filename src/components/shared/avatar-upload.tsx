@@ -16,6 +16,12 @@ interface AvatarUploadProps {
   onError?: (message: string) => void;
   /** Size class applied to the Avatar root, e.g. "size-20". Default: "size-20" */
   size?: string;
+  /** Upload endpoint. Default: "/api/auth/avatar" (persists to the user's own avatarUrl). */
+  uploadUrl?: string;
+  /** Alt text for the image. Default: t('profilePicture'). */
+  photoAlt?: string;
+  /** Title/aria-label for the overlay button. Default: t('changeProfilePicture'). */
+  changeLabel?: string;
 }
 
 export function AvatarUpload({
@@ -24,6 +30,9 @@ export function AvatarUpload({
   onUpload,
   onError,
   size = 'size-20',
+  uploadUrl = '/api/auth/avatar',
+  photoAlt,
+  changeLabel,
 }: AvatarUploadProps) {
   const t = useTranslations('common');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,7 +46,7 @@ export function AvatarUpload({
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch('/api/auth/avatar', {
+      const res = await fetch(uploadUrl, {
         method: 'POST',
         credentials: 'include',
         body: fd,
@@ -71,14 +80,14 @@ export function AvatarUpload({
   return (
     <div className="relative inline-block">
       <Avatar className={size}>
-        {displayUrl && <AvatarImage src={displayUrl} alt={t('profilePicture')} />}
+        {displayUrl && <AvatarImage src={displayUrl} alt={photoAlt ?? t('profilePicture')} />}
         <AvatarFallback>{initials || '?'}</AvatarFallback>
       </Avatar>
 
       {/* Overlay button */}
       <button
         type="button"
-        title={t('changeProfilePicture')}
+        title={changeLabel ?? t('changeProfilePicture')}
         disabled={uploading}
         onClick={() => inputRef.current?.click()}
         className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity hover:opacity-100 focus-visible:opacity-100 disabled:cursor-not-allowed"

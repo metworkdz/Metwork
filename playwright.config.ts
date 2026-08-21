@@ -181,6 +181,19 @@ export default defineConfig({
       },
     },
     {
+      // Startup logo field — founder uploads a logo via the profile form; a
+      // second browser context (investor, via authStatePath) verifies it
+      // renders as a rounded avatar and that a no-logo listing falls back to
+      // initials at the same footprint. Founder is the primary actor.
+      //   npx playwright test --project=startup-logo
+      name: 'startup-logo',
+      testMatch: '**/startup-logo.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authStatePath('founder'),
+      },
+    },
+    {
       // Manual withdrawal — requester UI (payout-account gate, RIB/RIP form) +
       // a hydration guard on the pages this feature touched. Default session is
       // the entrepreneur `builder` (a clean wallet not used by the api

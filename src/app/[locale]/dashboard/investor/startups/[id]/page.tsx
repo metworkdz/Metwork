@@ -5,6 +5,7 @@ import { Link } from '@/i18n/routing';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
+import { StartupLogo } from '@/components/shared/startup-logo';
 import { StartupDetailActions } from '@/components/features/investor/startup-detail-actions';
 import { requireRole } from '@/lib/auth-guards';
 import { findStartupById } from '@/server/startups/service';
@@ -54,19 +55,23 @@ export default async function InvestorStartupDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <DashboardPageHeader
-        title={startup.name}
-        subtitle={startup.industry}
-        action={
-          <Link
-            href="/dashboard/investor/startups"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="size-4 rtl:rotate-180" />
-            {t('backToMarketplace')}
-          </Link>
-        }
-      />
+      <div className="flex items-center gap-4">
+        <StartupLogo logoUrl={startup.logoUrl} name={startup.name} size={56} />
+        <DashboardPageHeader
+          className="flex-1"
+          title={startup.name}
+          subtitle={startup.industry}
+          action={
+            <Link
+              href="/dashboard/investor/startups"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="size-4 rtl:rotate-180" />
+              {t('backToMarketplace')}
+            </Link>
+          }
+        />
+      </div>
 
       {/* Industry + maturity stage badges */}
       <div className="flex flex-wrap items-center gap-2">
