@@ -2899,6 +2899,143 @@ export interface DomiciliationRequestRecord {
   createdAt: string;
 }
 
+
+/* ─────────────── Consultant contracts (e-signature) ───────────────
+ *
+ * The commission mandate signed between EURL METWORK and each consultant:
+ * consultation income Metwork collects on the consultant's behalf is paid out
+ * to them, minus the platform commission. Its purpose is evidentiary — it
+ * documents for the tax authority that Metwork is NOT the beneficial owner of
+ * that income — so the record is built for auditability first.
+ *
+ * DELIBERATELY SEPARATE from `contractTemplates` / `ContractTemplateRecord`,
+ * which are the incubator-owned SPACE-BOOKING contracts. Different parties,
+ * different lifecycle, different PDF. The two never share a collection.
+ *
+ * Two invariants the service layer enforces (see
+ * `src/server/consultant-contracts/service.ts`):
+ *
+ *  1. FROZEN SNAPSHOTS — `contentSnapshot`, `commissionRate`, `payoutMethod`,
+ *     `payoutDetails` and `signerPhoneSnapshot` are captured when the contract
+ *     is SENT and are never re-read from the live consultant profile again. A
+ *     consultant who later edits their phone or payout account does not alter
+ *     what they signed.
+ *
+ *  2. IMMUTABILITY AFTER SIGNING — once `status === 'SIGNED'` the only legal
+ *     write is an append to `auditTrail`. Enforced in `updateContract()`, the
+ *     single write gateway; no route may call `db.update` on this collection
+ *     directly (guarded by a test).
+ *
+ * Additive collection — legacy DB documents lack the `consultantContracts` key
+ * and resolve to `[]` via the empty-merge.
+ */
+
+export type ConsultantContractStatus = 'DRAFT' | 'PENDING_SIGNATURE' | 'SIGNED' | 'VOIDED';
+
+/**
+ * How the consultant is paid out under the contract.
+ *
+ * Mirrors the shapes money actually moves in on this platform (see
+ * `PayoutAccount.accountType` and `WithdrawalMethod`): `BANK_TRANSFER` = RIB,
+ * `CCP` = Algérie Poste RIP, `CHEQUE` = no account needed. The spec's original
+ * two-value union dropped CCP, which real consultants use.
+ */
+export type ConsultantContractPayoutMethod = 'BANK_TRANSFER' | 'CCP' | 'CHEQUE';
+
+export type ConsultantContractAuditEvent =
+  | 'CREATED'
+  | 'SENT'
+  | 'VIEWED'
+  | 'OTP_SENT'
+  | 'OTP_FAILED'
+  | 'OTP_VERIFIED'
+  | 'SIGNED'
+  | 'VOIDED'
+  | 'RESEND_OTP';
+
+export interface ConsultantContractAuditEntry {
+  event: ConsultantContractAuditEvent;
+  /**
+   * Who caused the event: a `UserRecord.id` for admin actions, a
+   * `MentorRecord.id` for consultant actions, or 'system' for automatic ones.
+   * Deliberately a plain string — the two id spaces are disjoint populations.
+   */
+  actorId: string;
+  timestamp: string;
+}
+
+/**
+ * Contract-signing OTP metadata.
+ *
+ * The code itself is NOT here. Generation, hashing, expiry and the per-code
+ * attempt counter all live in the shared OTP table (`d.otps`) under the
+ * `contract-sign:<contractId>` key namespace — the same mechanism the
+ * consultant sign-in (`mentor:`) and phone-verification (`mentor-phone:`)
+ * flows already use. Storing a second copy of `codeHash`/`expiresAt`/
+ * `attempts` here would guarantee drift between the two.
+ *
+ * What lives here is only what the shared module has no concept of: the
+ * resend-throttle counters and the post-lockout cooldown.
+ */
+export interface ConsultantContractOtpState {
+  /** Attempts allowed against one code before lockout. Frozen at 5. */
+  maxAttempts: number;
+  /** ISO — while in the future, no verify or resend is accepted. Null ⇒ not locked. */
+  lockedUntil: string | null;
+  /** Codes sent for this contract within the current rolling window. */
+  sendCount: number;
+  /** ISO timestamp of the most recent send. Null ⇒ never sent. */
+  lastSentAt: string | null;
+  /** ISO start of the rolling send window `sendCount` is counted against. */
+  windowStartedAt: string | null;
+}
+
+export interface ConsultantContractRecord {
+  id: string;
+  /** MentorRecord.id of the signing consultant. */
+  consultantId: string;
+  status: ConsultantContractStatus;
+  /** Bumped whenever the admin revises the body while still DRAFT. */
+  templateVersion: number;
+  /** Rendered French contract body, frozen at send-time. */
+  contentSnapshot: string;
+  /**
+   * Platform commission as a decimal 0–1, frozen at send-time from
+   * `resolveMentorCommissionRates()` — never hardcoded, never re-read later.
+   */
+  commissionRate: number;
+  payoutMethod: ConsultantContractPayoutMethod;
+  /**
+   * Human-readable payout target frozen at send-time (e.g. a masked RIB plus
+   * the holder name). Null for CHEQUE, which needs no account.
+   */
+  payoutDetails: string | null;
+  /** Phone the signing OTP is sent to, copied from the verified profile at send-time. */
+  signerPhoneSnapshot: string;
+  signature: {
+    /** `data:image/png;base64,…` of the drawn signature. */
+    imagePng: string;
+    signedAt: string;
+  } | null;
+  /** Metwork's stamp/signature image as burned into the PDF. */
+  adminStamp: {
+    imageUrl: string;
+    appliedAt: string;
+  } | null;
+  /** Cloudinary public_id of the authenticated raw PDF. Signed URLs are minted on demand. */
+  finalPdfPublicId: string | null;
+  /** Last-minted signed URL — expires; treat as a cache, not the source of truth. */
+  finalPdfUrl: string | null;
+  /** Lowercase hex SHA-256 of the exact PDF bytes that were uploaded. */
+  finalPdfHash: string | null;
+  otp: ConsultantContractOtpState | null;
+  auditTrail: ConsultantContractAuditEntry[];
+  createdAt: string;
+  sentAt: string | null;
+  signedAt: string | null;
+  voidedAt: string | null;
+}
+
 /**
  * One recipient of one manual announcement campaign. Written only by the
  * scripts under `scripts/campaigns/` — no app code creates these. The
@@ -3002,6 +3139,12 @@ interface DbShape {
   mentorEmailTokens?: MentorEmailTokenRecord[];
   /** Short-lived slot holds taken at payment initiation. */
   mentorSlotLocks: MentorSlotLockRecord[];
+  /**
+   * Commission mandates signed between EURL METWORK and each consultant.
+   * Optional — legacy blobs predate it; readers must default to [].
+   * NOT to be confused with `contractTemplates` (space-booking contracts).
+   */
+  consultantContracts?: ConsultantContractRecord[];
 
   // ─── Network Pass & Partner Program ──────────────────────────────────
   /** Per-visit ledger backing the monthly partner payout batch run. */
@@ -3136,6 +3279,7 @@ const empty: DbShape = {
   mentorDeviceTokens: [],
   mentorEmailTokens: [],
   mentorSlotLocks: [],
+  consultantContracts: [],
   networkVisits: [],
   partnerMemberships: [],
   partnerPromoCodes: [],

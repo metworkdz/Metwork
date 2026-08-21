@@ -10,6 +10,7 @@ import { createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto
 import { db, type OtpChannel } from '@/server/db/store';
 import { serverEnvVars } from '@/lib/env';
 
+/** Default lifetime of a code, in minutes. Overridable per-issue (see `issueOtp`). */
 const OTP_TTL_MIN = 10;
 const MAX_ATTEMPTS = 5;
 
@@ -28,10 +29,33 @@ export interface OtpIssue {
   expiresAt: string;
 }
 
-export async function issueOtp(userId: string): Promise<OtpIssue> {
+export interface OtpIssueOptions {
+  /**
+   * Lifetime of this code in minutes. Omitted ⇒ `OTP_TTL_MIN` (10), which is
+   * what every account/sign-in flow uses. Shorter windows are for
+   * higher-stakes, single-sitting confirmations — contract signing issues a
+   * 5-minute code because the consultant already has the page open.
+   */
+  ttlMinutes?: number;
+}
+
+/**
+ * Issue a code for `userId`.
+ *
+ * `userId` is an opaque KEY, not necessarily a `UserRecord.id`. Non-user
+ * populations namespace it with a prefix so their codes can never collide with
+ * an account OTP — `mentor:<id>` (consultant sign-in), `mentor-phone:<id>`
+ * (phone verification), `contract-sign:<contractId>` (contract signing). Each
+ * namespace invalidates only its own prior codes.
+ */
+export async function issueOtp(userId: string, options?: OtpIssueOptions): Promise<OtpIssue> {
+  const ttlMinutes =
+    options?.ttlMinutes != null && Number.isFinite(options.ttlMinutes) && options.ttlMinutes > 0
+      ? options.ttlMinutes
+      : OTP_TTL_MIN;
   const code = generateCode();
   const id = randomBytes(12).toString('hex');
-  const expiresAt = new Date(Date.now() + OTP_TTL_MIN * 60_000).toISOString();
+  const expiresAt = new Date(Date.now() + ttlMinutes * 60_000).toISOString();
   await db.update((d) => {
     // Invalidate any prior unconsumed OTPs for this user.
     d.otps = d.otps.filter((o) => o.userId !== userId || o.consumed);
