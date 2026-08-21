@@ -25998,14 +25998,14 @@
     },
     {
       "planCode": "STARTUP",
-      "monthlyPrice": 7900,
+      "monthlyPrice": 3500,
       "semesterlyMonths": 6,
       "annualDiscountPercent": 30,
-      "consultationDiscountRate": 0.1,
+      "consultationDiscountRate": 0.2,
       "spaceDiscountRate": 0.15,
       "recommended": false,
       "isActive": true,
-      "updatedAt": "2026-08-20T21:31:56.612Z"
+      "updatedAt": "2026-08-21T15:20:38.527Z"
     }
   ],
   "auditLogs": [
@@ -31826,7 +31826,8 @@
       "creditConfigUpdatedBy": "qa-admin-id"
     },
     "partnerPerIncubatorMigratedAt": "2026-08-20T17:37:37.591Z",
-    "membershipLegacyTermsBackfilledAt": "2026-08-20T17:37:58.803Z"
+    "membershipLegacyTermsBackfilledAt": "2026-08-20T17:37:58.803Z",
+    "membershipStartupRepricedAt": "2026-08-21T15:20:38.527Z"
   },
   "mentorAccessTokens": [],
   "incubatorProfiles": [

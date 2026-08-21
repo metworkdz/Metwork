@@ -41,7 +41,9 @@ export default async function EntrepreneurNetworkPassPage({ params }: PageProps)
 
     return (
       <div className="space-y-6">
-        <DashboardPageHeader title={t('title')} subtitle={t('subtitle')} />
+        {/* No subtitle here: it describes checking in at partner spaces, which
+            would contradict the "coming soon" card directly below it. */}
+        <DashboardPageHeader title={t('title')} />
 
         <UserProfileHeader user={user} showMeta avatarSize="lg" />
 

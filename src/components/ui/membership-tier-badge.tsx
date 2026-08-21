@@ -3,9 +3,9 @@
  *
  * Renders the user's membership tier as a compact, elegantly-styled pill.
  *
- *   Explorer — neutral gray, no background, no icon
- *   Builder  — gold text + border + soft gold background
- *   Founder  — platinum text + border + soft platinum background + shimmer
+ *   Explorer     — neutral gray, no background, no icon
+ *   Entrepreneur — gold text + border + soft gold background
+ *   Startup      — platinum text + border + soft platinum background + shimmer
  *
  * Accepts either a `tier` prop directly or a `user` duck-type from which the
  * tier is resolved, so the component works everywhere without the caller

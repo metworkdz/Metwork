@@ -5,6 +5,7 @@
  * the caller receives null and must fall back to console logging.
  */
 import { Resend } from 'resend';
+import { isNetworkPassEnabled } from '@/config/feature-flags';
 
 let _resend: Resend | null = null;
 
@@ -2466,9 +2467,11 @@ export function creditLowWarningEmailHtml(params: CreditLowWarningEmailParams): 
     try { return d.toLocaleDateString('en-DZ', { dateStyle: 'long' }); }
     catch { return d.toISOString().slice(0, 10); }
   };
-  const tierLabel = tier === 'FOUNDER' ? 'Founder' : 'Builder';
+  // The tier field still carries the plans' former names (BUILDER / FOUNDER);
+  // members see the current ones.
+  const tierLabel = tier === 'FOUNDER' ? 'Startup' : 'Entrepreneur';
   const upgradeNote = tier === 'BUILDER'
-    ? `<p style="margin:16px 0;font-size:15px;color:#374151;">Upgrade to <strong>Founder</strong> to get <strong>10 credits</strong> every month.</p>`
+    ? `<p style="margin:16px 0;font-size:15px;color:#374151;">Upgrade to <strong>Startup</strong> for monthly coworking credits.</p>`
     : '';
 
   return layout(`
@@ -2483,7 +2486,7 @@ export function creditLowWarningEmailHtml(params: CreditLowWarningEmailParams): 
       </tr>
     </table>
     ${upgradeNote}
-    ${upgradeNote ? `<p style="margin:0 0 16px;"><a href="${upgradeUrl}" style="display:inline-block;padding:12px 24px;background:#16a34a;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">Upgrade to Founder</a></p>` : ''}
+    ${upgradeNote ? `<p style="margin:0 0 16px;"><a href="${upgradeUrl}" style="display:inline-block;padding:12px 24px;background:#16a34a;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">Upgrade to Startup</a></p>` : ''}
     ${p('<span style="color:#71717a;font-size:13px;">Network Pass credits expire at the end of the month and do not carry over.</span>')}
   `);
 }
@@ -2708,7 +2711,7 @@ export interface MembershipWelcomeEmailParams {
   fullName: string;
   /** 'BUILDER' or 'FOUNDER'. */
   membershipTier: 'BUILDER' | 'FOUNDER';
-  /** Monthly credits allocated (3 for Builder, 10 for Founder). */
+  /** Monthly coworking credits allocated for the plan. */
   monthlyCredits: number;
   /** ISO expiry date. */
   expiresAt: string;
@@ -2717,18 +2720,21 @@ export interface MembershipWelcomeEmailParams {
 }
 
 /**
- * Tier-themed welcome email sent when a user activates a Builder or Founder
- * membership (direct purchase or via a partner promo code).
+ * Tier-themed welcome email for a newly activated paid membership (direct
+ * purchase or partner promo code). NOTE: currently has no caller — kept because
+ * the template is complete and the send is expected to be wired up.
  *
  * Subject line should be set by the caller:
- *   Builder → "🏆 Welcome to Metwork Builder membership!"
- *   Founder → "👑 Welcome to Metwork Founder membership!"
+ *   Entrepreneur → "🏆 Welcome to Metwork Entrepreneur membership!"
+ *   Startup      → "👑 Welcome to Metwork Startup membership!"
  */
 export function membershipWelcomeEmailHtml(params: MembershipWelcomeEmailParams): string {
   const { fullName, membershipTier, monthlyCredits, expiresAt, dashboardUrl } = params;
 
   const isFounder = membershipTier === 'FOUNDER';
-  const tierLabel = isFounder ? 'Founder' : 'Builder';
+  // The tier field still carries the plans' former names; members see the
+  // current ones.
+  const tierLabel = isFounder ? 'Startup' : 'Entrepreneur';
   const tierIcon  = isFounder ? '👑' : '🏆';
 
   // Tier-specific accent colors (inline — email clients don't support CSS vars)
@@ -2741,21 +2747,28 @@ export function membershipWelcomeEmailHtml(params: MembershipWelcomeEmailParams)
     year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC',
   });
 
+  // Coworking-session lines advertise Network Pass, so they appear only while
+  // that feature is live — an email must not promise a benefit the booking API
+  // would refuse.
+  const passBenefit =
+    isNetworkPassEnabled() && monthlyCredits > 0
+      ? [`${monthlyCredits} coworking sessions / month`]
+      : [];
+
   const benefits = isFounder
     ? [
-        `${monthlyCredits} coworking sessions / month`,
-        'Access to all 30+ partner spaces',
+        ...passBenefit,
         'Featured startup listing',
-        'Priority mentor sessions (3 / month)',
+        'Raise funds and attract investors',
         'Investor meeting requests',
-        'Dedicated support',
+        'Discounted mentor consultations and space bookings',
+        'Exclusive perks and member events',
       ]
     : [
-        `${monthlyCredits} coworking sessions / month`,
-        'Access to all partner spaces',
+        ...passBenefit,
         'Book spaces & programs',
-        'Priority mentor session (1 / month)',
-        'Events at discounted rate',
+        'Discounted mentor consultations and space bookings',
+        'Exclusive perks and member events',
       ];
 
   const benefitRows = benefits
