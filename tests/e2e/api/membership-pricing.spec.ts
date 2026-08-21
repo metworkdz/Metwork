@@ -40,7 +40,13 @@ test.describe.configure({ mode: 'serial' });
 
 /* ─────────────────────────── Expected terms ─────────────────────────── */
 
-/** Shipped defaults — mirrors DEFAULT_PLAN_BENEFITS in src/lib/membership-benefits.ts. */
+/**
+ * Shipped defaults — mirrors DEFAULT_PLAN_BENEFITS in src/lib/membership-benefits.ts.
+ *
+ * The plans are named Entrepreneur and Startup; the constants keep the store
+ * codes they are keyed by. The two DIVERGE on consultations (10 % vs 20 %) and
+ * agree on spaces (15 %) — see the note at DEFAULT_PLAN_BENEFITS for why.
+ */
 const BUILDER = {
   code: 'ENTREPRENEUR',
   monthly: 1_500,
@@ -53,10 +59,10 @@ const BUILDER = {
 
 const FOUNDER = {
   code: 'STARTUP',
-  monthly: 7_900,
-  semesterly: 47_400,  // 7 900 × 6
-  annual: 66_360,      // round(7 900 × 12 × 0.7)
-  consultationRate: 0.10,
+  monthly: 3_500,
+  semesterly: 21_000,  // 3 500 × 6
+  annual: 29_400,      // round(3 500 × 12 × 0.7)
+  consultationRate: 0.20,
   spaceRate: 0.15,
   passes: 5,
 } as const;
@@ -221,7 +227,7 @@ test.describe('Membership pricing — config, purchase, frozen snapshot', () => 
   });
 
   // ── 1. Public pricing page ────────────────────────────────────────────────
-  test('public pricing page shows the configured terms, the cycle toggle, and Recommended on Builder only', async ({ page }) => {
+  test('public pricing page shows the configured terms, the cycle toggle, and Recommended on Entrepreneur only', async ({ page }) => {
     await page.goto('/en/pricing');
     await page.waitForLoadState('networkidle');
 
@@ -230,18 +236,19 @@ test.describe('Membership pricing — config, purchase, frozen snapshot', () => 
     // Semesterly is the default cycle.
     await expect(body).toContainText('1,500 DZD');
     await expect(body).toContainText('9,000 DZD billed every 6 months');
-    await expect(body).toContainText('7,900 DZD');
-    await expect(body).toContainText('47,400 DZD billed every 6 months');
+    await expect(body).toContainText('3,500 DZD');
+    await expect(body).toContainText('21,000 DZD billed every 6 months');
 
-    // Unified discount copy on both paid plans.
-    expect(await page.getByText('10% off mentor consultations').count()).toBe(2);
+    // Consultations diverge, spaces agree.
+    expect(await page.getByText('10% off mentor consultations').count()).toBe(1);
+    expect(await page.getByText('20% off mentor consultations').count()).toBe(1);
     expect(await page.getByText('15% off space bookings').count()).toBe(2);
 
-    // Passes advertised on Founder only — Builder grants none.
-    await expect(body).toContainText('5 Network Pass coworking credits per month');
-    await expect(body).not.toContainText('0 Network Pass');
+    // Network Pass is switched off, so it is advertised on no plan at all —
+    // regardless of the allowance the Startup plan still carries in config.
+    await expect(body).not.toContainText('Network Pass');
 
-    // Exactly one Recommended tag, and it sits on the Builder card. Resolved by
+    // Exactly one Recommended tag, and it sits on the Entrepreneur card. Resolved by
     // walking up from the badge to its owning card rather than by guessing at a
     // class name, so a styling change cannot silently void this assertion.
     expect(await page.getByText('Recommended', { exact: true }).count()).toBe(1);
@@ -253,37 +260,37 @@ test.describe('Membership pricing — config, purchase, frozen snapshot', () => 
       while (node && !node.querySelector('h3')) node = node.parentElement;
       return node?.querySelector('h3')?.textContent?.trim() ?? null;
     });
-    expect(recommendedPlan?.toUpperCase(), 'Recommended belongs to Builder').toBe('BUILDER');
+    expect(recommendedPlan?.toUpperCase(), 'Recommended belongs to Entrepreneur').toBe('ENTREPRENEUR');
 
     // Annual toggle switches both plans to the discounted lump sum.
     await page.getByRole('button', { name: /Yearly/ }).click();
     await expect(body).toContainText('12,600 DZD billed yearly');
-    await expect(body).toContainText('66,360 DZD billed yearly');
+    await expect(body).toContainText('29,400 DZD billed yearly');
   });
 
   // ── 2. Purchase amounts ───────────────────────────────────────────────────
-  test('Builder charges exactly 9 000 semesterly and 12 600 annually', async () => {
+  test('Entrepreneur charges exactly 9 000 semesterly and 12 600 annually', async () => {
     const member = await newMember();
     openContexts.push(member.ctx);
     await topUp(member.ctx, BUILDER.semesterly + BUILDER.annual + 1_000);
 
     const semesterly = await purchase(member, 'ENTREPRENEUR', 'semesterly');
-    expect(semesterly.amountCharged, 'Builder semesterly').toBe(BUILDER.semesterly);
+    expect(semesterly.amountCharged, 'Entrepreneur semesterly').toBe(BUILDER.semesterly);
 
     const annual = await purchase(member, 'ENTREPRENEUR', 'yearly');
-    expect(annual.amountCharged, 'Builder annual (-30 %)').toBe(BUILDER.annual);
+    expect(annual.amountCharged, 'Entrepreneur annual (-30 %)').toBe(BUILDER.annual);
   });
 
-  test('Founder charges exactly 47 400 semesterly and 66 360 annually', async () => {
+  test('Startup charges exactly 21 000 semesterly and 29 400 annually', async () => {
     const member = await newMember();
     openContexts.push(member.ctx);
     await topUp(member.ctx, FOUNDER.semesterly + FOUNDER.annual + 1_000);
 
     const semesterly = await purchase(member, 'STARTUP', 'semesterly');
-    expect(semesterly.amountCharged, 'Founder semesterly').toBe(FOUNDER.semesterly);
+    expect(semesterly.amountCharged, 'Startup semesterly').toBe(FOUNDER.semesterly);
 
     const annual = await purchase(member, 'STARTUP', 'yearly');
-    expect(annual.amountCharged, 'Founder annual (-30 %)').toBe(FOUNDER.annual);
+    expect(annual.amountCharged, 'Startup annual (-30 %)').toBe(FOUNDER.annual);
   });
 
   test('a repeated purchase with the same clientReference never charges twice', async () => {
@@ -308,7 +315,7 @@ test.describe('Membership pricing — config, purchase, frozen snapshot', () => 
   });
 
   // ── 3. Discounts granted by a purchased plan ──────────────────────────────
-  test('a Builder member gets exactly 10 % off a consultation and 15 % off a space booking', async () => {
+  test('an Entrepreneur member gets exactly 10 % off a consultation and 15 % off a space booking', async () => {
     const member = await newMember();
     openContexts.push(member.ctx);
     await topUp(member.ctx, 40_000);
@@ -339,15 +346,15 @@ test.describe('Membership pricing — config, purchase, frozen snapshot', () => 
     expect(booking.totalAmount, '2 000 base − 15 %').toBe(1_700);
   });
 
-  test('a Founder member gets 5 coworking passes and a Builder member gets none', async () => {
+  test('a Startup member gets 5 coworking passes and an Entrepreneur member gets none', async () => {
     const founderMember = await newMember();
     openContexts.push(founderMember.ctx);
     await topUp(founderMember.ctx, FOUNDER.semesterly + 1_000);
     await purchase(founderMember, 'STARTUP', 'semesterly');
 
     const founderRec = memberRecord(founderMember.userId);
-    expect(founderRec.user?.networkCreditsMax, 'Founder allowance').toBe(FOUNDER.passes);
-    expect(founderRec.user?.networkCredits, 'Founder starts with a full allowance').toBe(FOUNDER.passes);
+    expect(founderRec.user?.networkCreditsMax, 'Startup allowance').toBe(FOUNDER.passes);
+    expect(founderRec.user?.networkCredits, 'Startup starts with a full allowance').toBe(FOUNDER.passes);
     expect(founderRec.active?.monthlyPassCount, 'allowance frozen on the record').toBe(FOUNDER.passes);
 
     const builderMember = await newMember();
@@ -356,7 +363,7 @@ test.describe('Membership pricing — config, purchase, frozen snapshot', () => 
     await purchase(builderMember, 'ENTREPRENEUR', 'semesterly');
 
     const builderRec = memberRecord(builderMember.userId);
-    expect(builderRec.user?.networkCreditsMax, 'Builder grants no passes').toBe(0);
+    expect(builderRec.user?.networkCreditsMax, 'Entrepreneur grants no passes').toBe(0);
     expect(builderRec.active?.monthlyPassCount).toBe(0);
   });
 
@@ -375,7 +382,7 @@ test.describe('Membership pricing — config, purchase, frozen snapshot', () => 
     const frozenDiscount = Math.round(base * BUILDER.consultationRate); // 10 %
     expect(quoteBefore.tierDiscountAmount).toBe(frozenDiscount);
 
-    // Admin reprices Builder and slashes its benefits.
+    // Admin reprices Entrepreneur and slashes its benefits.
     const NEW_MONTHLY = 2_500;
     await setPlan(admin, 'ENTREPRENEUR', {
       monthlyPrice: NEW_MONTHLY,
@@ -424,7 +431,7 @@ test.describe('Membership pricing — config, purchase, frozen snapshot', () => 
     const recB = memberRecord(memberB.userId);
     expect(recB.user?.networkCreditsMax, 'new buyer gets the new allowance').toBe(2);
 
-    // Restore the shipped Builder terms before leaving. This suite runs
+    // Restore the shipped Entrepreneur terms before leaving. This suite runs
     // serially, so a test that mutates shared config cleans up after itself
     // rather than leaving the next test to guess at the current price.
     await setPlan(admin, 'ENTREPRENEUR', {
