@@ -71,12 +71,12 @@ export const CRM_NAV: CrmNavSection[] = [
   {
     title: 'Écosystème',
     items: [
-      { label: 'Ventes', href: '/metworkcrm/sales', icon: FolderKanban, status: 'coming-soon', prompt: 3 },
-      { label: 'Startups', href: '/metworkcrm/startups', icon: Rocket, status: 'coming-soon', prompt: 3 },
-      { label: 'Experts', href: '/metworkcrm/experts', icon: UsersRound, status: 'coming-soon', prompt: 3 },
-      { label: 'Partenariats', href: '/metworkcrm/partnerships', icon: Handshake, status: 'coming-soon', prompt: 3 },
-      { label: 'Open Innovation', href: '/metworkcrm/open-innovation', icon: Lightbulb, status: 'coming-soon', prompt: 4 },
-      { label: 'Programmes', href: '/metworkcrm/programs', icon: CalendarRange, status: 'coming-soon', prompt: 4 },
+      { label: 'Ventes', href: '/metworkcrm/sales', icon: FolderKanban, status: 'ready' },
+      { label: 'Startups', href: '/metworkcrm/startups', icon: Rocket, status: 'ready' },
+      { label: 'Experts', href: '/metworkcrm/experts', icon: UsersRound, status: 'ready' },
+      { label: 'Partenariats', href: '/metworkcrm/partnerships', icon: Handshake, status: 'ready' },
+      { label: 'Open Innovation', href: '/metworkcrm/open-innovation', icon: Lightbulb, status: 'ready' },
+      { label: 'Programmes', href: '/metworkcrm/programs', icon: CalendarRange, status: 'ready' },
       { label: 'Espaces', href: '/metworkcrm/spaces', icon: MapPin, status: 'coming-soon', prompt: 5 },
     ],
   },

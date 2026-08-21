@@ -10,10 +10,9 @@ const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date invalide (AAAA-MM
 const isoDateTime = z.string().datetime({ message: 'Date/heure invalide.' });
 
 /**
- * `contactId`/`organizationId` are the only link types the UI offers in this
- * prompt (dev rules note in the Prompt 2 plan) — the DB CHECK also accepts
- * startup/expert/partnership/program/oi_project, which later prompts will add
- * pickers for without needing to touch this schema's shape.
+ * `contactId`/`organizationId` were the only link types the Prompt 2 UI
+ * offered — Prompt 3/4 add real pickers for opportunity/startup/expert/
+ * partnership/program/oi_project as those modules ship CRUD.
  */
 export const interactionInputSchema = z
   .object({
@@ -26,16 +25,25 @@ export const interactionInputSchema = z
     outcome: optionalTrimmed,
     contactId: optionalTrimmed,
     organizationId: optionalTrimmed,
+    opportunityId: optionalTrimmed,
+    startupId: optionalTrimmed,
+    expertId: optionalTrimmed,
+    partnershipId: optionalTrimmed,
+    programId: optionalTrimmed,
+    oiProjectId: optionalTrimmed,
     nextAction: optionalTrimmed,
     nextActionDate: z.preprocess(emptyToUndefined, dateOnly.optional()),
     nextActionDone: z.boolean().default(false),
   })
   .superRefine((data, ctx) => {
-    if (!data.contactId && !data.organizationId) {
+    if (
+      !data.contactId && !data.organizationId && !data.opportunityId && !data.startupId &&
+      !data.expertId && !data.partnershipId && !data.programId && !data.oiProjectId
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['organizationId'],
-        message: 'Rattachez cette interaction à un contact ou une organisation.',
+        message: 'Rattachez cette interaction à au moins un élément.',
       });
     }
   });
@@ -62,6 +70,12 @@ export const interactionUpdateSchema = z.object({
   outcome: optionalTrimmed,
   contactId: optionalTrimmed,
   organizationId: optionalTrimmed,
+  opportunityId: optionalTrimmed,
+  startupId: optionalTrimmed,
+  expertId: optionalTrimmed,
+  partnershipId: optionalTrimmed,
+  programId: optionalTrimmed,
+  oiProjectId: optionalTrimmed,
   nextAction: optionalTrimmed,
   nextActionDate: z.preprocess(emptyToUndefined, dateOnly.optional()),
   nextActionDone: z.boolean().optional(),
@@ -70,6 +84,12 @@ export const interactionUpdateSchema = z.object({
 export const interactionListQuerySchema = z.object({
   contactId: optionalTrimmed,
   organizationId: optionalTrimmed,
+  opportunityId: optionalTrimmed,
+  startupId: optionalTrimmed,
+  expertId: optionalTrimmed,
+  partnershipId: optionalTrimmed,
+  programId: optionalTrimmed,
+  oiProjectId: optionalTrimmed,
   type: z.enum(INTERACTION_TYPES).optional(),
   /** Only interactions with an unfinished next action, due on/before today. */
   nextActionDue: z.coerce.boolean().optional(),

@@ -15,6 +15,18 @@ function likeTerm(q: string): string {
   return `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
 }
 
+/** Mirrors LINK_COLUMNS in db/schema.ts — the "no orphan task" invariant. */
+const TASK_LINK_KEYS = [
+  'contactId',
+  'organizationId',
+  'opportunityId',
+  'startupId',
+  'expertId',
+  'partnershipId',
+  'programId',
+  'oiProjectId',
+] as const;
+
 export interface TaskListFilters {
   q?: string;
   status?: string;
@@ -22,6 +34,12 @@ export interface TaskListFilters {
   assigneeId?: string;
   contactId?: string;
   organizationId?: string;
+  opportunityId?: string;
+  startupId?: string;
+  expertId?: string;
+  partnershipId?: string;
+  programId?: string;
+  oiProjectId?: string;
   limit: number;
   offset: number;
 }
@@ -34,6 +52,12 @@ export async function listTasks(filters: TaskListFilters) {
     filters.assigneeId ? eq(crmTasks.assigneeId, filters.assigneeId) : undefined,
     filters.contactId ? eq(crmTasks.contactId, filters.contactId) : undefined,
     filters.organizationId ? eq(crmTasks.organizationId, filters.organizationId) : undefined,
+    filters.opportunityId ? eq(crmTasks.opportunityId, filters.opportunityId) : undefined,
+    filters.startupId ? eq(crmTasks.startupId, filters.startupId) : undefined,
+    filters.expertId ? eq(crmTasks.expertId, filters.expertId) : undefined,
+    filters.partnershipId ? eq(crmTasks.partnershipId, filters.partnershipId) : undefined,
+    filters.programId ? eq(crmTasks.programId, filters.programId) : undefined,
+    filters.oiProjectId ? eq(crmTasks.oiProjectId, filters.oiProjectId) : undefined,
     filters.q ? sql`(${crmTasks.title} LIKE ${likeTerm(filters.q)} ESCAPE '\\' COLLATE NOCASE)` : undefined,
   ].filter(Boolean);
   const where = clauses.length > 0 ? and(...clauses) : undefined;
@@ -73,6 +97,12 @@ export async function createTask(input: TaskInput, actorId: string) {
     assigneeId: input.assigneeId ?? null,
     contactId: input.contactId ?? null,
     organizationId: input.organizationId ?? null,
+    opportunityId: input.opportunityId ?? null,
+    startupId: input.startupId ?? null,
+    expertId: input.expertId ?? null,
+    partnershipId: input.partnershipId ?? null,
+    programId: input.programId ?? null,
+    oiProjectId: input.oiProjectId ?? null,
     source: 'MANUAL',
     createdAt: now,
     updatedAt: now,
@@ -89,10 +119,11 @@ export async function updateTask(id: string, input: Record<string, unknown>) {
 
   // Merged-row check — see the note in validation/interactions.ts (same
   // pattern, same reason: zod always materializes optional keys).
-  const nextContactId = 'contactId' in input ? (input.contactId as string | null) : existing.contactId;
-  const nextOrgId = 'organizationId' in input ? (input.organizationId as string | null) : existing.organizationId;
-  if (!nextContactId && !nextOrgId) {
-    throw new CrmServiceError(422, 'CRM_VALIDATION_ERROR', 'Rattachez cette tâche à un contact ou une organisation.');
+  const mergedLink = (key: keyof typeof existing) =>
+    key in input ? (input[key] as string | null) : (existing[key] as string | null);
+  const hasAnyLink = TASK_LINK_KEYS.some((key) => mergedLink(key));
+  if (!hasAnyLink) {
+    throw new CrmServiceError(422, 'CRM_VALIDATION_ERROR', 'Rattachez cette tâche à au moins un élément.');
   }
 
   const patch = { ...input, updatedAt: new Date().toISOString() } as Record<string, unknown>;

@@ -11,20 +11,34 @@
  * not. This module pre-computes the same condition so the API can return a
  * readable 409 instead ("archive it, or unlink these first").
  *
- * SCOPE NOTE — read before adding a new table that references
- * crm_organizations or crm_contacts: this only checks the tables Prompt 2
- * populates (`crm_tasks`, `crm_interactions`, `crm_opportunities`,
- * `crm_contact_organizations`) plus `crm_partnerships` (RESTRICT, checked
- * because it always blocks regardless of other links, even though nothing
- * populates it until Prompt 3). Every later prompt that adds a link column
- * into Organizations/Contacts (crm_startups, crm_experts, crm_program_*,
- * crm_space_bookings, crm_payments, crm_oi_projects…) MUST extend the
- * blocker list here, or a delete on a row one of those tables depends on will
- * throw a raw SQLite error again instead of a friendly 409.
+ * SCOPE NOTE — read before adding a new table with an anti-orphan CHECK that
+ * references crm_organizations/crm_contacts/crm_opportunities/crm_startups/
+ * crm_experts/crm_partnerships/crm_programs/crm_oi_projects: this only checks
+ * the tables that currently have such a CHECK (`crm_tasks`,
+ * `crm_interactions`, `crm_payments`) plus `crm_opportunities`/
+ * `crm_partnerships` RESTRICT. A table with `ON DELETE SET NULL` but NO
+ * anti-orphan CHECK of its own (`crm_startups.program_id`,
+ * `crm_expert_missions.*`, the OI/program junctions) never needs a guard
+ * here — it just silently loses the link, which is correct. The tell that
+ * you're missing one: a delete returns 409 with the GENERIC catch-all
+ * message ("des éléments y sont encore rattachés") instead of the specific
+ * one from `formatDeleteGuardMessage` — that means the pre-check said
+ * canDelete:true but the DB threw anyway. `crm_payments` was exactly this
+ * bug once (see the `checkLeafEntityGuard` comment below) — caught by
+ * browser verification, not by tests, because no test exercised a payment
+ * being a program's sole link until Prompt 4 gave Payments its first write
+ * path.
  */
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { CrmDatabase } from '../db/client';
-import { crmContactOrganizations, crmInteractions, crmOpportunities, crmPartnerships, crmTasks } from '../db/schema';
+import {
+  crmContactOrganizations,
+  crmInteractions,
+  crmOpportunities,
+  crmPartnerships,
+  crmPayments,
+  crmTasks,
+} from '../db/schema';
 
 export interface DeleteBlocker {
   /** French, user-facing label — shown verbatim in the 409 message. */
@@ -40,11 +54,27 @@ export interface DeleteGuardResult {
   cascades: DeleteBlocker[];
 }
 
+type LinkColumnName =
+  | 'organization_id' | 'contact_id' | 'opportunity_id' | 'startup_id'
+  | 'expert_id' | 'partnership_id' | 'program_id' | 'oi_project_id';
+
+/**
+ * crm_payments has its OWN anti-orphan CHECK (schema doc §0), same failure
+ * mode as crm_tasks/crm_interactions: deleting a row this links to SET NULLs
+ * the column, and if that was the payment's only link the CHECK fires. It has
+ * no startup_id/expert_id column, so only applies when the deleted entity's
+ * link column is one of these.
+ */
+const PAYMENT_LINK_COLUMNS = [
+  'opportunity_id', 'space_booking_id', 'program_id',
+  'organization_id', 'contact_id', 'partnership_id', 'oi_project_id',
+];
+
 /** Count rows where `linkColumn = id` and every OTHER link column on that table is NULL. */
 async function countOrphanedBy(
   db: CrmDatabase,
-  table: typeof crmTasks | typeof crmInteractions,
-  linkColumn: 'organization_id' | 'contact_id',
+  table: typeof crmTasks | typeof crmInteractions | typeof crmPayments,
+  linkColumn: LinkColumnName,
   id: string,
   otherLinkColumns: string[],
 ): Promise<number> {
@@ -71,13 +101,17 @@ const INTERACTION_OTHER_LINKS_FOR_CONTACT = [
   'organization_id', 'opportunity_id', 'startup_id', 'expert_id', 'partnership_id', 'program_id', 'oi_project_id',
 ];
 
+const PAYMENT_OTHER_LINKS_FOR_ORG = PAYMENT_LINK_COLUMNS.filter((c) => c !== 'organization_id');
+const PAYMENT_OTHER_LINKS_FOR_CONTACT = PAYMENT_LINK_COLUMNS.filter((c) => c !== 'contact_id');
+
 export async function checkOrganizationDeleteGuard(
   db: CrmDatabase,
   organizationId: string,
 ): Promise<DeleteGuardResult> {
-  const [orphanTasks, orphanInteractions, soleOpportunities, partnershipCount, linkedContacts] = await Promise.all([
+  const [orphanTasks, orphanInteractions, orphanPayments, soleOpportunities, partnershipCount, linkedContacts] = await Promise.all([
     countOrphanedBy(db, crmTasks, 'organization_id', organizationId, TASK_OTHER_LINKS_FOR_ORG),
     countOrphanedBy(db, crmInteractions, 'organization_id', organizationId, INTERACTION_OTHER_LINKS_FOR_ORG),
+    countOrphanedBy(db, crmPayments, 'organization_id', organizationId, PAYMENT_OTHER_LINKS_FOR_ORG),
     db
       .select({ n: sql<number>`count(*)` })
       .from(crmOpportunities)
@@ -98,6 +132,7 @@ export async function checkOrganizationDeleteGuard(
   const blockers: DeleteBlocker[] = [
     { label: 'tâches sans autre lien', count: orphanTasks },
     { label: 'interactions sans autre lien', count: orphanInteractions },
+    { label: 'paiements sans autre lien', count: orphanPayments },
     { label: 'opportunités sans autre lien', count: soleOpportunities },
     { label: 'partenariats actifs', count: partnershipCount },
   ].filter((b) => b.count > 0);
@@ -113,9 +148,10 @@ export async function checkContactDeleteGuard(
   db: CrmDatabase,
   contactId: string,
 ): Promise<DeleteGuardResult> {
-  const [orphanTasks, orphanInteractions, soleOpportunities, linkedOrgs] = await Promise.all([
+  const [orphanTasks, orphanInteractions, orphanPayments, soleOpportunities, linkedOrgs] = await Promise.all([
     countOrphanedBy(db, crmTasks, 'contact_id', contactId, TASK_OTHER_LINKS_FOR_CONTACT),
     countOrphanedBy(db, crmInteractions, 'contact_id', contactId, INTERACTION_OTHER_LINKS_FOR_CONTACT),
+    countOrphanedBy(db, crmPayments, 'contact_id', contactId, PAYMENT_OTHER_LINKS_FOR_CONTACT),
     db
       .select({ n: sql<number>`count(*)` })
       .from(crmOpportunities)
@@ -131,6 +167,7 @@ export async function checkContactDeleteGuard(
   const blockers: DeleteBlocker[] = [
     { label: 'tâches sans autre lien', count: orphanTasks },
     { label: 'interactions sans autre lien', count: orphanInteractions },
+    { label: 'paiements sans autre lien', count: orphanPayments },
     { label: 'opportunités sans autre lien', count: soleOpportunities },
   ].filter((b) => b.count > 0);
 
@@ -139,6 +176,77 @@ export async function checkContactDeleteGuard(
   ].filter((b) => b.count > 0);
 
   return { canDelete: blockers.length === 0, blockers, cascades };
+}
+
+/** The 8 link columns shared by crm_tasks and crm_interactions (LINK_COLUMNS in db/schema.ts). */
+const ALL_LINK_COLUMNS = [
+  'contact_id', 'organization_id', 'opportunity_id', 'startup_id',
+  'expert_id', 'partnership_id', 'program_id', 'oi_project_id',
+];
+/** crm_tasks alone also has these two — a task can be orphan-free via either. */
+const TASK_ONLY_LINK_COLUMNS = ['booking_id', 'payment_id'];
+
+/**
+ * Shared shape for the leaf-entity guards. Each risks orphaning a Task or
+ * Interaction; opportunity/partnership/program/oi_project ALSO risk
+ * orphaning a Payment (crm_payments has no startup_id/expert_id column, so
+ * those two skip the payment check — this bit us once: see git history on
+ * this file for the 409 that surfaced it during Prompt 4 verification).
+ */
+async function checkLeafEntityGuard(
+  db: CrmDatabase,
+  linkColumn: 'opportunity_id' | 'startup_id' | 'expert_id' | 'partnership_id' | 'program_id' | 'oi_project_id',
+  id: string,
+): Promise<DeleteGuardResult> {
+  const otherColumns = ALL_LINK_COLUMNS.filter((c) => c !== linkColumn);
+  const paymentApplies = (PAYMENT_LINK_COLUMNS as string[]).includes(linkColumn);
+  const [orphanTasks, orphanInteractions, orphanPayments] = await Promise.all([
+    countOrphanedBy(db, crmTasks, linkColumn, id, [...otherColumns, ...TASK_ONLY_LINK_COLUMNS]),
+    countOrphanedBy(db, crmInteractions, linkColumn, id, otherColumns),
+    paymentApplies
+      ? countOrphanedBy(db, crmPayments, linkColumn, id, PAYMENT_LINK_COLUMNS.filter((c) => c !== linkColumn))
+      : Promise.resolve(0),
+  ]);
+
+  const blockers: DeleteBlocker[] = [
+    { label: 'tâches sans autre lien', count: orphanTasks },
+    { label: 'interactions sans autre lien', count: orphanInteractions },
+    { label: 'paiements sans autre lien', count: orphanPayments },
+  ].filter((b) => b.count > 0);
+
+  return { canDelete: blockers.length === 0, blockers, cascades: [] };
+}
+
+export async function checkOpportunityDeleteGuard(db: CrmDatabase, opportunityId: string): Promise<DeleteGuardResult> {
+  return checkLeafEntityGuard(db, 'opportunity_id', opportunityId);
+}
+
+export async function checkStartupDeleteGuard(db: CrmDatabase, startupId: string): Promise<DeleteGuardResult> {
+  return checkLeafEntityGuard(db, 'startup_id', startupId);
+}
+
+export async function checkExpertDeleteGuard(db: CrmDatabase, expertId: string): Promise<DeleteGuardResult> {
+  return checkLeafEntityGuard(db, 'expert_id', expertId);
+}
+
+export async function checkPartnershipDeleteGuard(db: CrmDatabase, partnershipId: string): Promise<DeleteGuardResult> {
+  return checkLeafEntityGuard(db, 'partnership_id', partnershipId);
+}
+
+/**
+ * Programs/OI Projects: every OTHER table that references them
+ * (`crm_startups.program_id`, `crm_expert_missions.*`, the participant/
+ * trainer/partner junctions, `crm_oi_startups`/`crm_oi_experts`) uses SET
+ * NULL or CASCADE, never RESTRICT. `crm_payments` is the one exception worth
+ * naming: SET NULL, but it carries its OWN anti-orphan CHECK, so
+ * `checkLeafEntityGuard` checks it too, same as Task/Interaction.
+ */
+export async function checkProgramDeleteGuard(db: CrmDatabase, programId: string): Promise<DeleteGuardResult> {
+  return checkLeafEntityGuard(db, 'program_id', programId);
+}
+
+export async function checkOiProjectDeleteGuard(db: CrmDatabase, oiProjectId: string): Promise<DeleteGuardResult> {
+  return checkLeafEntityGuard(db, 'oi_project_id', oiProjectId);
 }
 
 export function formatDeleteGuardMessage(entity: string, result: DeleteGuardResult): string {

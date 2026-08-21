@@ -12,7 +12,9 @@ import {
   crmOrganizations,
   crmTasks,
 } from '../db/schema';
+import type { InternalUser } from '../db/schema';
 import type { OrganizationInput } from '../validation/organizations';
+import { redactMoney } from '../auth/guards';
 import { CrmNotFoundError, CrmServiceError } from './errors';
 import {
   checkOrganizationDeleteGuard,
@@ -67,7 +69,8 @@ export async function listOrganizations(filters: OrganizationListFilters) {
   return { rows, total: Number(totalRows[0]?.n ?? 0) };
 }
 
-export async function getOrganizationDetail(id: string) {
+/** `user` defaults to fail-closed TEAM_MEMBER redaction — see the note in contacts.ts. */
+export async function getOrganizationDetail(id: string, user: Pick<InternalUser, 'role'> = { role: 'TEAM_MEMBER' }) {
   const db = getCrmDb();
   const org = (await db.select().from(crmOrganizations).where(eq(crmOrganizations.id, id)))[0];
   if (!org) throw new CrmNotFoundError('Organisation');
@@ -92,9 +95,6 @@ export async function getOrganizationDetail(id: string) {
       .from(crmTasks)
       .where(eq(crmTasks.organizationId, id))
       .orderBy(desc(crmTasks.createdAt)),
-    // Opportunities module ships in Prompt 3 — this always returns [] until
-    // then, which is the correct, forward-compatible behaviour (no schema
-    // change needed later to show them here).
     db.select().from(crmOpportunities).where(eq(crmOpportunities.organizationId, id)),
   ]);
 
@@ -103,7 +103,9 @@ export async function getOrganizationDetail(id: string) {
     contacts: contactLinks.map((r) => ({ ...r.contact, role: r.link.role, isPrimary: r.link.isPrimary })),
     interactions,
     tasks,
-    opportunities,
+    // R-19: amount is hidden from TEAM_MEMBER everywhere, including this
+    // "everything visible on one page" sub-list, not just the Sales module.
+    opportunities: opportunities.map((o) => redactMoney(user, o, ['amount'] as const)),
   };
 }
 

@@ -7,6 +7,12 @@ import { createOrganization } from '@/server/metworkcrm/services/organizations';
 import { createContact } from '@/server/metworkcrm/services/contacts';
 import { createTask } from '@/server/metworkcrm/services/tasks';
 import { createInteraction } from '@/server/metworkcrm/services/interactions';
+import { createOpportunity } from '@/server/metworkcrm/services/opportunities';
+import { createStartup } from '@/server/metworkcrm/services/startups';
+import { createExpert } from '@/server/metworkcrm/services/experts';
+import { createPartnership } from '@/server/metworkcrm/services/partnerships';
+import { createOiProject } from '@/server/metworkcrm/services/oi-projects';
+import { createProgram } from '@/server/metworkcrm/services/programs';
 
 const MEM = 'file::memory:';
 let db: CrmDatabase;
@@ -26,6 +32,12 @@ beforeAll(async () => {
 beforeEach(async () => {
   await db.run(sql`DELETE FROM crm_tasks`);
   await db.run(sql`DELETE FROM crm_interactions`);
+  await db.run(sql`DELETE FROM crm_opportunities`);
+  await db.run(sql`DELETE FROM crm_startups`);
+  await db.run(sql`DELETE FROM crm_experts`);
+  await db.run(sql`DELETE FROM crm_partnerships`);
+  await db.run(sql`DELETE FROM crm_oi_projects`);
+  await db.run(sql`DELETE FROM crm_programs`);
   await db.run(sql`DELETE FROM crm_contacts`);
   await db.run(sql`DELETE FROM crm_organizations`);
 });
@@ -37,7 +49,7 @@ describe('Global search', () => {
     expect(await globalSearch('')).toEqual([]);
   });
 
-  it('finds matches across all 4 entity types and groups them by kind', async () => {
+  it('finds matches across all 10 entity types and groups them by kind', async () => {
     await createOrganization({ name: 'Atlas Ventures', type: 'ENTREPRISE', status: 'ACTIF', country: 'DZ' }, ACTOR);
     await createContact({ firstName: 'Atlas', lastName: 'Contact', status: 'ACTIF' }, ACTOR);
     const org = await createOrganization({ name: 'Autre Org', type: 'ENTREPRISE', status: 'ACTIF', country: 'DZ' }, ACTOR);
@@ -46,9 +58,17 @@ describe('Global search', () => {
       { type: 'APPEL', subject: 'Appel Atlas', occurredAt: new Date().toISOString(), organizationId: org.id, nextActionDone: false },
       ACTOR,
     );
+    await createOpportunity({ title: 'Deal Atlas', organizationId: org.id, type: 'AUTRE', stage: 'NOUVEAU_LEAD' }, ACTOR);
+    await createStartup({ name: 'Atlas Startup', pipelineStage: 'LEAD' }, ACTOR);
+    await createExpert({ name: 'Atlas Expert', pipelineStage: 'PROSPECT' }, ACTOR);
+    await createPartnership({ name: 'Atlas Partnership', organizationId: org.id, type: 'CORPORATE', stage: 'PROSPECT' }, ACTOR);
+    await createOiProject({ title: 'Atlas OI Project', stage: 'ENTREPRISE_IDENTIFIEE', currency: 'DZD' }, ACTOR);
+    await createProgram({ title: 'Atlas Program', type: 'FORMATION', stage: 'IDEE' }, ACTOR);
 
     const groups = await globalSearch('atlas');
-    expect(groups.map((g) => g.kind).sort()).toEqual(['CONTACT', 'INTERACTION', 'ORGANIZATION', 'TASK']);
+    expect(groups.map((g) => g.kind).sort()).toEqual(
+      ['CONTACT', 'EXPERT', 'INTERACTION', 'ORGANIZATION', 'OPPORTUNITY', 'OI_PROJECT', 'PROGRAM', 'PARTNERSHIP', 'STARTUP', 'TASK'].sort(),
+    );
 
     const orgGroup = groups.find((g) => g.kind === 'ORGANIZATION')!;
     expect(orgGroup.items.map((i) => i.title)).toEqual(['Atlas Ventures']);

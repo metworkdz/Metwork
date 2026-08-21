@@ -7,8 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { Timeline } from '@/components/metworkcrm/interactions/timeline';
 import { TaskFormDialog, type TaskRow } from '@/components/metworkcrm/tasks/task-form-dialog';
+import { OpportunityFormDialog, type OpportunityRow } from '@/components/metworkcrm/opportunities/opportunity-form-dialog';
 import {
   CONTACT_LANGUAGE_LABELS,
+  OPPORTUNITY_STAGE_BADGE,
+  OPPORTUNITY_STAGE_LABELS,
   RECORD_STATUS_BADGE,
   RECORD_STATUS_LABELS,
   TASK_PRIORITY_BADGE,
@@ -22,7 +25,7 @@ export interface ContactDetailData {
   contact: ContactRow;
   organizations: LinkedOrganization[];
   tasks: TaskRow[];
-  opportunities: unknown[];
+  opportunities: OpportunityRow[];
 }
 
 export function ContactDetail({ initial }: { initial: ContactDetailData }) {
@@ -218,12 +221,33 @@ export function ContactDetail({ initial }: { initial: ContactDetailData }) {
             </ul>
           </div>
 
-          {/* Opportunities — Prompt 3 module; always empty for now, and that's correct */}
           <div className="rounded-xl border border-neutral-200 bg-white p-4">
-            <h3 className="mb-2 text-sm font-semibold text-[var(--crm-black)]">Opportunités</h3>
-            <p className="text-sm text-neutral-400">
-              {data.opportunities.length === 0 ? 'Module disponible prochainement.' : `${data.opportunities.length} opportunité(s).`}
-            </p>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-[var(--crm-black)]">
+                Opportunités <span className="font-normal text-neutral-400">({data.opportunities.length})</span>
+              </h3>
+              <OpportunityFormDialog
+                lockedContactId={contact.id}
+                lockedContactLabel={displayName}
+                onSaved={refresh}
+                trigger={
+                  <button type="button" className="inline-flex size-6 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600">
+                    <Plus className="size-4" aria-hidden />
+                  </button>
+                }
+              />
+            </div>
+            <ul className="space-y-2">
+              {data.opportunities.map((o) => (
+                <li key={o.id}>
+                  <a href={`/metworkcrm/sales/${o.id}`} className="flex items-center gap-2 rounded-md p-1.5 text-sm hover:bg-neutral-50">
+                    <span className="min-w-0 flex-1 truncate text-[var(--crm-black)]">{o.title}</span>
+                    <Badge variant={OPPORTUNITY_STAGE_BADGE[o.stage] ?? 'default'}>{OPPORTUNITY_STAGE_LABELS[o.stage] ?? o.stage}</Badge>
+                  </a>
+                </li>
+              ))}
+              {data.opportunities.length === 0 ? <li className="text-sm text-neutral-400">Aucune opportunité.</li> : null}
+            </ul>
           </div>
         </div>
       </div>

@@ -19,7 +19,9 @@ import {
   crmOrganizations,
   crmTasks,
 } from '../db/schema';
+import type { InternalUser } from '../db/schema';
 import type { ContactInput } from '../validation/contacts';
+import { redactMoney } from '../auth/guards';
 import { CrmNotFoundError, CrmServiceError } from './errors';
 import { checkContactDeleteGuard, formatDeleteGuardMessage } from './delete-guard';
 
@@ -89,7 +91,13 @@ export async function listContacts(filters: ContactListFilters) {
   return { rows, total: Number(totalRows[0]?.n ?? 0) };
 }
 
-export async function getContactDetail(id: string) {
+/**
+ * `user` defaults to the fail-closed TEAM_MEMBER redaction — callers on the
+ * write path (create/update/archive) don't have a viewer to redact for at
+ * that point, so they get the safe default rather than leaking `amount`.
+ * The real GET route/page passes the actual session user.
+ */
+export async function getContactDetail(id: string, user: Pick<InternalUser, 'role'> = { role: 'TEAM_MEMBER' }) {
   const db = getCrmDb();
   const contact = (await db.select().from(crmContacts).where(eq(crmContacts.id, id)))[0];
   if (!contact) throw new CrmNotFoundError('Contact');
@@ -111,7 +119,7 @@ export async function getContactDetail(id: string) {
     organizations: orgLinks.map((r) => ({ ...r.organization, role: r.link.role, isPrimary: r.link.isPrimary })),
     interactions,
     tasks,
-    opportunities,
+    opportunities: opportunities.map((o) => redactMoney(user, o, ['amount'] as const)),
   };
 }
 
@@ -151,7 +159,7 @@ export async function replaceContactOrganizations(contactId: string, links: OrgL
   await replaceOrganizationLinksTx(db, contactId, links);
 }
 
-export async function createContact(input: ContactInput, actorId: string) {
+export async function createContact(input: ContactInput, actorId: string, user?: Pick<InternalUser, 'role'>) {
   const db = getCrmDb();
   const now = new Date().toISOString();
   const id = randomUUID();
@@ -182,10 +190,10 @@ export async function createContact(input: ContactInput, actorId: string) {
     await replaceOrganizationLinksTx(db, id, input.organizations);
   }
 
-  return getContactDetail(id);
+  return getContactDetail(id, user);
 }
 
-export async function updateContact(id: string, input: Partial<ContactInput>) {
+export async function updateContact(id: string, input: Partial<ContactInput>, user?: Pick<InternalUser, 'role'>) {
   const db = getCrmDb();
   const existing = (await db.select().from(crmContacts).where(eq(crmContacts.id, id)))[0];
   if (!existing) throw new CrmNotFoundError('Contact');
@@ -201,7 +209,7 @@ export async function updateContact(id: string, input: Partial<ContactInput>) {
     await replaceOrganizationLinksTx(db, id, organizations);
   }
 
-  return getContactDetail(id);
+  return getContactDetail(id, user);
 }
 
 export async function deleteContact(id: string): Promise<void> {

@@ -23,11 +23,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 /** Same "everything visible" timeline pattern as the Organization detail page. */
 export default async function CrmContactDetailPage({ params }: Params) {
-  await requireCrmUser();
+  const user = await requireCrmUser();
   const { id } = await params;
 
   try {
-    const detail = await getContactDetail(id);
+    const detail = await getContactDetail(id, user);
     return <ContactDetail initial={detail} />;
   } catch (err) {
     if (err instanceof CrmNotFoundError) notFound();

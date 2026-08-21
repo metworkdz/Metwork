@@ -88,3 +88,222 @@ export const RECORD_STATUS_BADGE: Record<string, 'success' | 'info' | 'default' 
   INACTIF: 'default',
   ARCHIVE: 'outline',
 };
+
+export const LINK_STATUS_LABELS: Record<string, string> = {
+  LINKED: 'Lié à la plateforme',
+  CRM_ONLY: 'CRM uniquement',
+};
+
+export const OPPORTUNITY_TYPE_LABELS: Record<string, string> = {
+  COWORKING: 'Coworking',
+  SALLE: 'Salle',
+  PACK: 'Pack',
+  INCUBATION: 'Incubation',
+  ACCELERATION: 'Accélération',
+  PRE_INCUBATION: 'Pré-incubation',
+  CONSULTING: 'Conseil',
+  FORMATION: 'Formation',
+  AUTRE: 'Autre',
+};
+
+export const OPPORTUNITY_STAGE_LABELS: Record<string, string> = {
+  NOUVEAU_LEAD: 'Nouveau lead',
+  CONTACTE: 'Contacté',
+  BESOIN_IDENTIFIE: 'Besoin identifié',
+  PROPOSITION_ENVOYEE: 'Proposition envoyée',
+  RELANCE: 'Relance',
+  NEGOCIATION: 'Négociation',
+  GAGNE: 'Gagné',
+  PERDU: 'Perdu',
+};
+
+export const OPPORTUNITY_STAGE_BADGE: Record<string, 'success' | 'info' | 'default' | 'warning' | 'danger'> = {
+  NOUVEAU_LEAD: 'default',
+  CONTACTE: 'info',
+  BESOIN_IDENTIFIE: 'info',
+  PROPOSITION_ENVOYEE: 'warning',
+  RELANCE: 'warning',
+  NEGOCIATION: 'warning',
+  GAGNE: 'success',
+  PERDU: 'danger',
+};
+
+export const STARTUP_STAGE_LABELS: Record<string, string> = {
+  LEAD: 'Lead',
+  DIAGNOSTIC: 'Diagnostic',
+  BESOINS_IDENTIFIES: 'Besoins identifiés',
+  PROGRAMME_PACK: 'Programme / Pack',
+  ONBOARDING: 'Onboarding',
+  ACTIF: 'Actif',
+  TERMINE: 'Terminé',
+  ALUMNI: 'Alumni',
+};
+
+export const STARTUP_STAGE_BADGE: Record<string, 'success' | 'info' | 'default' | 'warning'> = {
+  LEAD: 'default',
+  DIAGNOSTIC: 'info',
+  BESOINS_IDENTIFIES: 'info',
+  PROGRAMME_PACK: 'warning',
+  ONBOARDING: 'warning',
+  ACTIF: 'success',
+  TERMINE: 'success',
+  ALUMNI: 'default',
+};
+
+export const EXPERT_STAGE_LABELS: Record<string, string> = {
+  PROSPECT: 'Prospect',
+  CONTACTE: 'Contacté',
+  ENTRETIEN: 'Entretien',
+  VALIDE: 'Validé',
+  CONVENTION: 'Convention',
+  ACTIF: 'Actif',
+  INACTIF: 'Inactif',
+};
+
+export const EXPERT_STAGE_BADGE: Record<string, 'success' | 'info' | 'default' | 'warning'> = {
+  PROSPECT: 'default',
+  CONTACTE: 'info',
+  ENTRETIEN: 'info',
+  VALIDE: 'warning',
+  CONVENTION: 'warning',
+  ACTIF: 'success',
+  INACTIF: 'default',
+};
+
+export const PARTNERSHIP_TYPE_LABELS: Record<string, string> = {
+  CORPORATE: 'Entreprise',
+  INCUBATEUR: 'Incubateur',
+  ACCELERATEUR: 'Accélérateur',
+  UNIVERSITE: 'Université',
+  INSTITUTION: 'Institution',
+  ONG: 'ONG',
+  MEDIA: 'Média',
+  INVESTISSEUR: 'Investisseur',
+  AUTRE: 'Autre',
+};
+
+export const PARTNERSHIP_STAGE_LABELS: Record<string, string> = {
+  PROSPECT: 'Prospect',
+  CONTACTE: 'Contacté',
+  CONVERSATION: 'Conversation',
+  REUNION: 'Réunion',
+  PROPOSITION: 'Proposition',
+  NEGOCIATION: 'Négociation',
+  ACTIF: 'Actif',
+  TERMINE: 'Terminé',
+};
+
+export const PARTNERSHIP_STAGE_BADGE: Record<string, 'success' | 'info' | 'default' | 'warning'> = {
+  PROSPECT: 'default',
+  CONTACTE: 'info',
+  CONVERSATION: 'info',
+  REUNION: 'warning',
+  PROPOSITION: 'warning',
+  NEGOCIATION: 'warning',
+  ACTIF: 'success',
+  TERMINE: 'success',
+};
+
+/** Open Innovation pipeline — product spec's 10-stage journey, in order. */
+export const OI_STAGE_LABELS: Record<string, string> = {
+  ENTREPRISE_IDENTIFIEE: 'Entreprise identifiée',
+  PROBLEME_IDENTIFIE: 'Problème identifié',
+  DIAGNOSTIC: 'Diagnostic',
+  DEFI_DEFINI: 'Défi défini',
+  RECHERCHE_SOLUTION: 'Recherche de solution',
+  STARTUPS_EXPERTS_MOBILISES: 'Startups/experts mobilisés',
+  POC: 'POC',
+  EXPERIMENTATION: 'Expérimentation',
+  DEPLOIEMENT: 'Déploiement',
+  TERMINE: 'Terminé',
+};
+
+export const OI_PARTICIPANT_STATUS_LABELS: Record<string, string> = {
+  PRESSENTIE: 'Pressentie',
+  MOBILISEE: 'Mobilisée',
+  RETENUE: 'Retenue',
+  ECARTEE: 'Écartée',
+};
+
+export const OI_PARTICIPANT_STATUS_BADGE: Record<string, 'success' | 'info' | 'default' | 'danger'> = {
+  PRESSENTIE: 'default',
+  MOBILISEE: 'info',
+  RETENUE: 'success',
+  ECARTEE: 'danger',
+};
+
+export const PROGRAM_TYPE_LABELS: Record<string, string> = {
+  FORMATION: 'Formation',
+  BOOTCAMP: 'Bootcamp',
+  INCUBATION: 'Incubation',
+  ACCELERATION: 'Accélération',
+  EVENEMENT: 'Événement',
+  WEBINAIRE: 'Webinaire',
+  AUTRE: 'Autre',
+};
+
+/** Programs & Events pipeline — product spec's 8-stage journey, in order. */
+export const PROGRAM_STAGE_LABELS: Record<string, string> = {
+  IDEE: 'Idée',
+  PLANIFICATION: 'Planification',
+  FORMATEUR_CONFIRME: 'Formateur confirmé',
+  PROMOTION: 'Promotion',
+  INSCRIPTIONS: 'Inscriptions',
+  EN_COURS: 'En cours',
+  TERMINE: 'Terminé',
+  REPORTING: 'Reporting',
+};
+
+export const PARTICIPANT_STATUS_LABELS: Record<string, string> = {
+  INSCRIT: 'Inscrit',
+  CONFIRME: 'Confirmé',
+  PRESENT: 'Présent',
+  ABSENT: 'Absent',
+  ANNULE: 'Annulé',
+};
+
+export const PARTICIPANT_STATUS_BADGE: Record<string, 'success' | 'info' | 'default' | 'danger' | 'warning'> = {
+  INSCRIT: 'default',
+  CONFIRME: 'info',
+  PRESENT: 'success',
+  ABSENT: 'warning',
+  ANNULE: 'danger',
+};
+
+export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+  CONVENTION: 'Convention',
+  CONTRAT: 'Contrat',
+  PROPOSITION: 'Proposition',
+  PRESENTATION: 'Présentation',
+  DEVIS: 'Devis',
+  FACTURE: 'Facture',
+  NDA: 'NDA',
+  PROGRAMME: 'Programme',
+  SUPPORT_FORMATION: 'Support de formation',
+  RAPPORT: 'Rapport',
+  AUTRE: 'Autre',
+};
+
+export const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  EN_ATTENTE: 'En attente',
+  RELANCE_1: 'Relance 1',
+  RELANCE_2: 'Relance 2',
+  PAYE: 'Payé',
+  ANNULE: 'Annulé',
+};
+
+export const PAYMENT_STATUS_BADGE: Record<string, 'success' | 'info' | 'default' | 'danger' | 'warning'> = {
+  EN_ATTENTE: 'default',
+  RELANCE_1: 'warning',
+  RELANCE_2: 'warning',
+  PAYE: 'success',
+  ANNULE: 'danger',
+};
+
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  ESPECE: 'Espèces',
+  CHEQUE: 'Chèque',
+  VIREMENT: 'Virement',
+  CARTE: 'Carte',
+  AUTRE: 'Autre',
+};

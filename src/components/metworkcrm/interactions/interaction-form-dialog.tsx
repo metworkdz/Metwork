@@ -45,6 +45,12 @@ export function InteractionFormDialog({
   lockedOrganizationLabel,
   lockedContactId,
   lockedContactLabel,
+  lockedOpportunityId,
+  lockedStartupId,
+  lockedExpertId,
+  lockedPartnershipId,
+  lockedProgramId,
+  lockedOiProjectId,
   onSaved,
 }: {
   trigger: React.ReactNode;
@@ -56,6 +62,17 @@ export function InteractionFormDialog({
   /** Opened from a Contact's detail page: hide the contact picker, always link here. */
   lockedContactId?: string;
   lockedContactLabel?: string;
+  /**
+   * Opportunity/Startup/Expert/Partnership never get a picker in this dialog
+   * — unlike Organization/Contact they're only ever used in "locked" mode,
+   * opened from that entity's own detail page timeline.
+   */
+  lockedOpportunityId?: string;
+  lockedStartupId?: string;
+  lockedExpertId?: string;
+  lockedPartnershipId?: string;
+  lockedProgramId?: string;
+  lockedOiProjectId?: string;
   onSaved: () => void;
 }) {
   const isEdit = !!interaction;
@@ -163,6 +180,12 @@ export function InteractionFormDialog({
       outcome: outcome || undefined,
       organizationId: lockedOrganizationId ?? organization?.id ?? '',
       contactId: lockedContactId ?? contact?.id ?? '',
+      opportunityId: lockedOpportunityId,
+      startupId: lockedStartupId,
+      expertId: lockedExpertId,
+      partnershipId: lockedPartnershipId,
+      programId: lockedProgramId,
+      oiProjectId: lockedOiProjectId,
       nextAction: nextAction || undefined,
       nextActionDate: nextActionDate || undefined,
       nextActionDone,

@@ -2,16 +2,19 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Building2, ListChecks, MessagesSquare, Search, Target } from 'lucide-react';
+import { Building2, CalendarRange, FolderKanban, Handshake, Lightbulb, ListChecks, MessagesSquare, Rocket, Search, Target, UsersRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
  * Duplicated from the (server-only) search service rather than imported —
  * this is a client component, and importing across that boundary risks
  * pulling `getCrmDb`/better-sqlite3 into the client bundle even via a
- * type-only import. A 4-value union is cheap to keep in sync by hand.
+ * type-only import. Cheap to keep in sync by hand.
  */
-type SearchResultKind = 'ORGANIZATION' | 'CONTACT' | 'TASK' | 'INTERACTION';
+type SearchResultKind =
+  | 'ORGANIZATION' | 'CONTACT' | 'TASK' | 'INTERACTION'
+  | 'OPPORTUNITY' | 'STARTUP' | 'EXPERT' | 'PARTNERSHIP'
+  | 'OI_PROJECT' | 'PROGRAM';
 
 interface SearchResultRow {
   kind: SearchResultKind;
@@ -27,6 +30,12 @@ interface SearchResultGroup {
 const KIND_LABEL: Record<SearchResultKind, string> = {
   ORGANIZATION: 'Organisations',
   CONTACT: 'Contacts',
+  OPPORTUNITY: 'Opportunités',
+  STARTUP: 'Startups',
+  EXPERT: 'Experts',
+  PARTNERSHIP: 'Partenariats',
+  OI_PROJECT: 'Open Innovation',
+  PROGRAM: 'Programmes',
   TASK: 'Tâches',
   INTERACTION: 'Interactions',
 };
@@ -34,14 +43,20 @@ const KIND_LABEL: Record<SearchResultKind, string> = {
 const KIND_ICON: Record<SearchResultKind, typeof Building2> = {
   ORGANIZATION: Building2,
   CONTACT: Target,
+  OPPORTUNITY: FolderKanban,
+  STARTUP: Rocket,
+  EXPERT: UsersRound,
+  PARTNERSHIP: Handshake,
+  OI_PROJECT: Lightbulb,
+  PROGRAM: CalendarRange,
   TASK: ListChecks,
   INTERACTION: MessagesSquare,
 };
 
 /**
- * Where a result sends the user. Tasks and Interactions have no detail page in
- * this prompt (they're edited from their list views), so a click lands on the
- * relevant list rather than a dedicated page.
+ * Where a result sends the user. Tasks and Interactions have no detail page
+ * (they're edited from their list views), so a click lands on the relevant
+ * list rather than a dedicated page.
  */
 function resultHref(row: SearchResultRow): string {
   switch (row.kind) {
@@ -49,6 +64,18 @@ function resultHref(row: SearchResultRow): string {
       return `/metworkcrm/organizations/${row.id}`;
     case 'CONTACT':
       return `/metworkcrm/contacts/${row.id}`;
+    case 'OPPORTUNITY':
+      return `/metworkcrm/sales/${row.id}`;
+    case 'STARTUP':
+      return `/metworkcrm/startups/${row.id}`;
+    case 'EXPERT':
+      return `/metworkcrm/experts/${row.id}`;
+    case 'PARTNERSHIP':
+      return `/metworkcrm/partnerships/${row.id}`;
+    case 'OI_PROJECT':
+      return `/metworkcrm/open-innovation/${row.id}`;
+    case 'PROGRAM':
+      return `/metworkcrm/programs/${row.id}`;
     case 'TASK':
       return '/metworkcrm/tasks';
     case 'INTERACTION':
@@ -123,7 +150,7 @@ export function GlobalSearch() {
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setOpen(true)}
           onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
-          placeholder="Rechercher organisations, contacts, tâches…"
+          placeholder="Rechercher dans le CRM…"
           aria-label="Recherche globale"
           className="h-10 w-full rounded-md border border-neutral-300 bg-white ps-9 pe-3 text-sm outline-none transition-colors focus:border-[var(--crm-green)] focus:ring-2 focus:ring-[var(--crm-green)]/20"
         />

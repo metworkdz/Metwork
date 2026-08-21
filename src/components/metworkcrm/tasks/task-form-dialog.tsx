@@ -42,6 +42,12 @@ export function TaskFormDialog({
   lockedOrganizationLabel,
   lockedContactId,
   lockedContactLabel,
+  lockedOpportunityId,
+  lockedStartupId,
+  lockedExpertId,
+  lockedPartnershipId,
+  lockedProgramId,
+  lockedOiProjectId,
   onSaved,
 }: {
   trigger: React.ReactNode;
@@ -51,6 +57,13 @@ export function TaskFormDialog({
   lockedOrganizationLabel?: string;
   lockedContactId?: string;
   lockedContactLabel?: string;
+  /** No picker for these — only ever used locked, opened from that entity's own detail page. */
+  lockedOpportunityId?: string;
+  lockedStartupId?: string;
+  lockedExpertId?: string;
+  lockedPartnershipId?: string;
+  lockedProgramId?: string;
+  lockedOiProjectId?: string;
   onSaved: () => void;
 }) {
   const isEdit = !!task;
@@ -130,6 +143,12 @@ export function TaskFormDialog({
       assigneeId: assigneeId || undefined,
       organizationId: lockedOrganizationId ?? organization?.id ?? '',
       contactId: lockedContactId ?? contact?.id ?? '',
+      opportunityId: lockedOpportunityId,
+      startupId: lockedStartupId,
+      expertId: lockedExpertId,
+      partnershipId: lockedPartnershipId,
+      programId: lockedProgramId,
+      oiProjectId: lockedOiProjectId,
     };
 
     try {

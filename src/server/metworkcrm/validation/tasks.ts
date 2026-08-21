@@ -7,10 +7,11 @@ const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date invalide (AAAA-MM
 const isoDateTime = z.string().datetime({ message: 'Date/heure invalide.' });
 
 /**
- * `contactId`/`organizationId` are the only link types the UI offers in this
- * prompt — see the matching note in validation/interactions.ts. The DB CHECK
- * also accepts opportunity/startup/expert/partnership/program/oi_project/
- * booking/payment, which later prompts add pickers for.
+ * `contactId`/`organizationId` were the only link types the Prompt 2 UI
+ * offered; Prompt 3/4 add real pickers for opportunity/startup/expert/
+ * partnership/program/oi_project as those modules ship CRUD. `bookingId`/
+ * `paymentId` stay unavailable here — no UI creates a task pre-linked to a
+ * booking or payment yet.
  */
 export const taskInputSchema = z
   .object({
@@ -23,13 +24,22 @@ export const taskInputSchema = z
     assigneeId: optionalTrimmed,
     contactId: optionalTrimmed,
     organizationId: optionalTrimmed,
+    opportunityId: optionalTrimmed,
+    startupId: optionalTrimmed,
+    expertId: optionalTrimmed,
+    partnershipId: optionalTrimmed,
+    programId: optionalTrimmed,
+    oiProjectId: optionalTrimmed,
   })
   .superRefine((data, ctx) => {
-    if (!data.contactId && !data.organizationId) {
+    if (
+      !data.contactId && !data.organizationId && !data.opportunityId && !data.startupId &&
+      !data.expertId && !data.partnershipId && !data.programId && !data.oiProjectId
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['organizationId'],
-        message: 'Rattachez cette tâche à un contact ou une organisation.',
+        message: 'Rattachez cette tâche à au moins un élément.',
       });
     }
   });
@@ -51,6 +61,12 @@ export const taskUpdateSchema = z.object({
   assigneeId: optionalTrimmed,
   contactId: optionalTrimmed,
   organizationId: optionalTrimmed,
+  opportunityId: optionalTrimmed,
+  startupId: optionalTrimmed,
+  expertId: optionalTrimmed,
+  partnershipId: optionalTrimmed,
+  programId: optionalTrimmed,
+  oiProjectId: optionalTrimmed,
 });
 
 export const taskListQuerySchema = z.object({
@@ -60,6 +76,12 @@ export const taskListQuerySchema = z.object({
   assigneeId: optionalTrimmed,
   contactId: optionalTrimmed,
   organizationId: optionalTrimmed,
+  opportunityId: optionalTrimmed,
+  startupId: optionalTrimmed,
+  expertId: optionalTrimmed,
+  partnershipId: optionalTrimmed,
+  programId: optionalTrimmed,
+  oiProjectId: optionalTrimmed,
   limit: z.coerce.number().int().min(1).max(200).default(50),
   offset: z.coerce.number().int().min(0).default(0),
 });

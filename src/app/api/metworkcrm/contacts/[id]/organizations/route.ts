@@ -30,7 +30,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   try {
     await replaceContactOrganizations(id, parsed.data.organizations);
-    return json(await getContactDetail(id));
+    return json(await getContactDetail(id, guard.user));
   } catch (err) {
     return crmErrorResponse(err);
   }

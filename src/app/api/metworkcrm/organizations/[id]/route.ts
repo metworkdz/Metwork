@@ -27,7 +27,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const { id } = await params;
 
   try {
-    return json(await getOrganizationDetail(id));
+    return json(await getOrganizationDetail(id, guard.user));
   } catch (err) {
     return crmErrorResponse(err);
   }

@@ -182,6 +182,27 @@ describe('Organizations — delete guard', () => {
     expect(rows[0]?.contact_id).toBe(contact.id);
   });
 
+  it('blocks deleting an organization that is the sole link on a payment (crm_payments has its own anti-orphan CHECK)', async () => {
+    const org = await createOrganization({ name: 'Payment-blocked', type: 'ENTREPRISE', status: 'PROSPECT', country: 'DZ' }, ACTOR);
+    await db.run(sql`
+      INSERT INTO crm_payments (id, label, amount, currency, direction, status, organization_id, created_at, updated_at, created_by)
+      VALUES ('pay-org-1', 'Test', 1000, 'DZD', 'IN', 'EN_ATTENTE', ${org.id}, datetime('now'), datetime('now'), ${ACTOR})
+    `);
+
+    let error: unknown;
+    try {
+      await deleteOrganization(org.id);
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeInstanceOf(CrmServiceError);
+    const err = error as CrmServiceError;
+    expect(err.status).toBe(409);
+    expect(err.message).toContain('paiements sans autre lien');
+
+    await db.run(sql`DELETE FROM crm_payments WHERE id = 'pay-org-1'`);
+  });
+
   it('cascades crm_contact_organizations rows without blocking the delete', async () => {
     const org = await createOrganization({ name: 'Cascade', type: 'ENTREPRISE', status: 'PROSPECT', country: 'DZ' }, ACTOR);
     const contact = (await createContact({ firstName: 'C', lastName: 'D', status: 'ACTIF' }, ACTOR)).contact;
