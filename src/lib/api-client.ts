@@ -61,6 +61,12 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   };
 
   const response = await fetch(url, {
+    // Every call through this client is a live, per-user API request — a
+    // session lookup, a dashboard read, a mutation. On the server Next.js
+    // would otherwise put GETs in the Data Cache, which is how an admin's
+    // membership grant can land in the DB and still not show up on the
+    // member's next page load. Explicit and overridable via `options.cache`.
+    cache: 'no-store',
     ...rest,
     headers: finalHeaders,
     // Always include credentials so the browser stores Set-Cookie headers

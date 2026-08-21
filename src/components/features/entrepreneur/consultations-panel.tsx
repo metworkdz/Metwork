@@ -2,22 +2,25 @@
 
 /**
  * Entrepreneur consultations panel.
- * Lists the user's consultation booking requests and lets them submit new ones.
+ * Lists the user's consultations and lets them book new ones.
  *
- * Booking flow:
- *   POST /api/mentors/:id/book  →  status: PENDING
- *   Admin reviews  →  APPROVED (confirmation email) | REJECTED
+ * Booking flow — pay-first, no approval step. Admin review was retired (the
+ * old PATCH /api/admin/mentor-bookings/:id is a 410 tombstone):
+ *   POST /api/mentors/:id/instant-book  →  pay  →  READY (meeting details
+ *   known) or AWAITING_LINK (consultant still owes a link).
+ * The assigned consultant owns the session from there — they set the meeting
+ * link, reschedule, cancel (full refund) or complete it from /mentordashboard.
  *
  * Dialog features:
  *  - Mentor selector
  *  - Duration selector (30 – 180 min) with per-option DZD price
- *  - Price breakdown: base → promo discount → final
+ *  - Price breakdown: base → tier or promo discount → final
  *  - Promo code with real-time validation (shared PromoCodeInput)
- *  - Pending-review notice (not an automatic booking)
+ *  - Instant-confirmation notice (the consultant receives it directly)
  */
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Clock, UserCheck, Timer, DollarSign, Tag, CalendarClock } from 'lucide-react';
+import { Check, Clock, UserCheck, Timer, DollarSign, Tag, CalendarClock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -137,10 +140,9 @@ export function ConsultationsPanel({
 }: Props) {
   const t = useTranslations('pages.dashboard.entrepreneur.consultations.quotaCard');
   // Additional namespaces used inside the render tree below. Previously
-  // referenced (tCommon, tAdminBookings) without being declared — a refactor
-  // dropped the calls, leaving runtime ReferenceErrors that crashed the page.
+  // referenced (tCommon) without being declared — a refactor dropped the
+  // calls, leaving runtime ReferenceErrors that crashed the page.
   const tCommon         = useTranslations('common');
-  const tAdminBookings  = useTranslations('admin.bookings');
   const [bookings, setBookings]     = useState(initial);
   const [dialogOpen, setDialogOpen] = useState(false);
   /** Category chip selection for the browse grid — empty = "All". */
@@ -148,6 +150,9 @@ export function ConsultationsPanel({
   const [matches, setMatches] = useState<MentorMatchResult[] | null>(null);
 
   const tConsult = useTranslations('consultantPortal.bookings');
+  // The pay-first booking copy lives with the public dialog's namespace so the
+  // two surfaces state the same thing about who confirms a session.
+  const tBookConsult = useTranslations('mentors.bookConsultation');
   const schedulerLocale: 'en' | 'fr' | 'ar' =
     locale === 'fr' || locale === 'ar' ? locale : 'en';
 
@@ -547,13 +552,15 @@ export function ConsultationsPanel({
       >
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           {success ? (
-            /* ── Pending-approval success state ── */
+            /* ── Confirmed success state. The booking is paid and settled by
+                 the time we get here; the consultant, not an admin, follows
+                 up with the meeting details. ── */
             <div className="flex flex-col items-center py-6 text-center">
-              <div className="flex size-14 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-950">
-                <Clock className="size-7 text-amber-500 dark:text-amber-400" />
+              <div className="flex size-14 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950">
+                <Check className="size-7 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h2 className="mt-4 text-lg font-semibold">{t('successHeading')}</h2>
-              <Badge variant="warning" className="mt-2">{tAdminBookings('pendingReview')}</Badge>
+              <Badge variant="success" className="mt-2">{t('successBadge')}</Badge>
               <p className="mt-3 text-sm text-muted-foreground max-w-xs">
                 {t('successBody', { mentorName: success.mentorName })}
               </p>
@@ -754,11 +761,22 @@ export function ConsultationsPanel({
                   />
                 )}
 
-                {/* Pending-review notice */}
-                <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-                  <Clock className="size-3.5 mt-0.5 shrink-0" />
-                  <span>{t('reviewNotice')}</span>
-                </div>
+                {/* Booking notice. Consultations are pay-first and confirm on
+                    settlement — nobody "reviews" them — so the instant path
+                    gets the same confirmed treatment as the public dialog and
+                    the amber pending-review box is reserved for the (currently
+                    unreachable) legacy request flow. */}
+                {instantBookEnabled ? (
+                  <div className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+                    <Check className="size-3.5 mt-0.5 shrink-0" />
+                    <span>{tBookConsult('instantPayNote')}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                    <Clock className="size-3.5 mt-0.5 shrink-0" />
+                    <span>{t('reviewNotice')}</span>
+                  </div>
+                )}
 
                 {error && (
                   <p

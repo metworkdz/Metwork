@@ -147,6 +147,40 @@ export default defineConfig({
       },
     },
     {
+      // Admin grant / revoke of a membership + the under-funded-wallet purchase
+      // contract. SERIAL & state-sharing (one JSON doc) and every test signs up
+      // its own member — run with `--workers=1`. Retries disabled so a flake
+      // never re-runs a purchase.
+      //   npx playwright test --project=entrepreneur-fixes --workers=1
+      name: 'entrepreneur-fixes',
+      testMatch: '**/api/membership-grant-topup.spec.ts',
+      retries: 0,
+      timeout: 90_000,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
+      // Entrepreneur dashboard at phone width — dialog centring, no horizontal
+      // scroll, and the pay-first booking copy. Read-only: it opens a dialog
+      // but never submits, so it is safe to run in parallel.
+      //   npx playwright test --project=entrepreneur-mobile
+      name: 'entrepreneur-mobile',
+      testMatch: '**/entrepreneur-mobile.spec.ts',
+      // A cold dev server compiles the wallet route on first hit, which can
+      // outlast the default 45s before `networkidle` ever settles.
+      timeout: 90_000,
+      use: {
+        // iPhone 13 metrics on Chromium: the repo only provisions the Chromium
+        // browser, and the descriptor's default (WebKit) is not installed.
+        // Mobile emulation (viewport, DPR, touch, UA) is what these assertions
+        // actually depend on.
+        ...devices['iPhone 13'],
+        browserName: 'chromium',
+        storageState: authStatePath('builder'),
+      },
+    },
+    {
       // Manual withdrawal — requester UI (payout-account gate, RIB/RIP form) +
       // a hydration guard on the pages this feature touched. Default session is
       // the entrepreneur `builder` (a clean wallet not used by the api

@@ -2300,17 +2300,18 @@
             "optionalHint": "(facultatif)",
             "promoCodeDiscount": "Remise code promo",
             "promoDiscountApplied": "Remise promo : −{discount}",
-            "reviewNotice": "Les demandes sont examinées par notre équipe. Vous recevrez un e-mail de confirmation une fois approuvé — ce n'est pas une réservation automatique.",
+            "reviewNotice": "Votre réservation va directement au consultant — aucune validation par notre équipe. Une fois payée, elle est confirmée et il vous envoie les détails de la réunion.",
             "sectionTitle": "Vos demandes de consultation",
             "sendRequest": "Envoyer la demande",
             "sendRequestFree": "Réserver la session gratuite",
             "sendRequestWithPrice": "Réserver et payer {price}",
             "sessionLabel": "Session ({duration})",
-            "successBody": "Votre demande a été envoyée à {mentorName}. Vous recevrez une confirmation prochainement.",
-            "successHeading": "Demande envoyée !",
+            "successBody": "Votre session avec {mentorName} est réservée et payée. Le consultant vous enverra les détails de la réunion par e-mail.",
+            "successHeading": "Réservation confirmée !",
             "tierBuilder": "Builder",
             "tierDiscountLabel": "Remise {tier} ({percent} % de réduction)",
-            "tierFounder": "Founder"
+            "tierFounder": "Founder",
+            "successBadge": "Confirmée"
           }
         },
         "marketplace": {
@@ -4638,7 +4639,11 @@
       "perMonth": "/ mois",
       "yearlySave": "Économisez {percent}%",
       "billedSemesterly": "{total} facturés tous les 6 mois",
-      "billedYearly": "{total} facturés annuellement"
+      "billedYearly": "{total} facturés annuellement",
+      "topUpTitle": "Solde insuffisant dans votre portefeuille",
+      "topUpBody": "Ce plan coûte {required}. Votre portefeuille contient {balance}, il vous manque donc {shortfall}. Rechargez puis revenez — rien n'a été débité.",
+      "topUpCta": "Recharger le portefeuille",
+      "topUpBack": "Retour"
     },
     "profileForm": {
       "profilePictureTitle": "Photo de profil",
@@ -4684,7 +4689,7 @@
       "dialogWith": "avec {name} · {position}",
       "successTitle": "Demande soumise !",
       "pendingReview": "En attente de révision",
-      "successMessage": "Votre demande de consultation avec {mentorName} a été soumise. Vous recevrez un e-mail une fois qu'elle aura été examinée.",
+      "successMessage": "Votre session avec {mentorName} est réservée. Le consultant l’a reçue et vous enverra les détails de la réunion.",
       "pricingNotSet": "Ce mentor n'a pas encore défini de tarif.",
       "freeSession": "Session gratuite (promo appliquée)",
       "estimatedFee": "Frais estimés : {fee}",
@@ -4706,7 +4711,6 @@
       "freePromoApplied": "Gratuit (promo appliquée)",
       "total": "Total",
       "free": "Gratuit",
-      "adminConfirmsNote": "L'administrateur confirme le montant exact après examen de votre demande.",
       "promoCodeLabel": "Code promo",
       "promoChecking": "Vérification",
       "promoAppliedLabel": "Appliqué",
@@ -4714,7 +4718,7 @@
       "promoDiscountPercent": "{percent} % de remise appliquée",
       "promoDiscountAmount": "{amount} de remise appliquée",
       "promoApplied": "🎉 Code promo appliqué — {amount} de remise !",
-      "reviewNotice": "Les demandes sont examinées par notre équipe. Vous recevrez un e-mail de confirmation une fois approuvé — ce n'est pas une réservation automatique.",
+      "reviewNotice": "Votre réservation va directement au consultant — aucune validation par notre équipe. Une fois payée, elle est confirmée et il vous envoie les détails de la réunion.",
       "cancel": "Annuler",
       "sendRequest": "Envoyer la demande",
       "promoAlreadyFree": "Pas de frais à réduire — la consultation est déjà gratuite.",
@@ -4740,12 +4744,13 @@
       "accountOptionDesc": "Utilisez le solde de votre portefeuille, vos crédits gratuits et vos réductions membre.",
       "noAccountPrompt": "Vous n'avez pas de compte ?",
       "signUpLink": "Créer un compte",
-      "guestReviewNotice": "Les demandes sont examinées par notre équipe. Une fois approuvée, nous vous enverrons par e-mail un lien sécurisé pour confirmer l'horaire et payer en ligne.",
+      "guestReviewNotice": "Votre réservation va directement au consultant. Nous vous enverrons par e-mail un lien sécurisé pour confirmer l'horaire et payer en ligne.",
       "guestSuccessTitle": "Demande envoyée !",
       "guestPendingBadge": "En attente d'examen",
-      "guestSuccessMessage": "Votre demande de consultation avec {mentorName} a été envoyée. Une fois approuvée, nous vous enverrons par e-mail un lien sécurisé pour payer en ligne et confirmer votre session.",
+      "guestSuccessMessage": "Votre réservation avec {mentorName} est enregistrée. Nous vous enverrons par e-mail un lien sécurisé pour payer en ligne et confirmer votre session — le consultant prend le relais ensuite.",
       "loadingPaymentMethods": "Chargement des moyens de paiement…",
-      "paymentMethodsUnavailable": "Impossible de charger les moyens de paiement. Vérifiez votre connexion et réessayez."
+      "paymentMethodsUnavailable": "Impossible de charger les moyens de paiement. Vérifiez votre connexion et réessayez.",
+      "finalAmountNote": "C'est le montant final. Vous payez maintenant et la session est confirmée instantanément — sans étape de validation."
     },
     "landing": {
       "badge": "Nos mentors",

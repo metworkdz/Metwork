@@ -2300,17 +2300,18 @@
             "optionalHint": "(اختياري)",
             "promoCodeDiscount": "خصم رمز الترويج",
             "promoDiscountApplied": "خصم الترويج: −{discount}",
-            "reviewNotice": "تُراجع طلباتك فريقنا. ستتلقى بريدًا إلكترونيًا للتأكيد بعد الموافقة — هذا ليس حجزًا تلقائيًا.",
+            "reviewNotice": "يصل حجزك مباشرةً إلى المستشار — لا توجد مراجعة من فريقنا. بمجرد الدفع يُصبح مؤكَّدًا ويرسل إليك تفاصيل الاجتماع.",
             "sectionTitle": "طلبات الاستشارة الخاصة بك",
             "sendRequest": "إرسال الطلب",
             "sendRequestFree": "احجز الجلسة المجانية",
             "sendRequestWithPrice": "احجز وادفع {price}",
             "sessionLabel": "جلسة ({duration})",
-            "successBody": "تم إرسال طلبك إلى {mentorName}. ستتلقى تأكيدًا قريبًا.",
-            "successHeading": "تم إرسال الطلب!",
+            "successBody": "تم حجز جلستك مع {mentorName} ودفعها. سيرسل إليك المستشار تفاصيل الاجتماع عبر البريد الإلكتروني.",
+            "successHeading": "تم تأكيد الحجز!",
             "tierBuilder": "Builder",
             "tierDiscountLabel": "خصم {tier} ({percent}٪ خصم)",
-            "tierFounder": "Founder"
+            "tierFounder": "Founder",
+            "successBadge": "مؤكَّد"
           }
         },
         "marketplace": {
@@ -4638,7 +4639,11 @@
       "perMonth": "/ شهر",
       "yearlySave": "وفّر {percent}%",
       "billedSemesterly": "{total} تُدفع كل 6 أشهر",
-      "billedYearly": "{total} تُدفع سنويًا"
+      "billedYearly": "{total} تُدفع سنويًا",
+      "topUpTitle": "رصيد محفظتك غير كافٍ",
+      "topUpBody": "تكلفة هذه الخطة {required}. رصيد محفظتك {balance}، لذا تحتاج إلى {shortfall} إضافية. اشحن محفظتك ثم عُد — لم يتم خصم أي مبلغ.",
+      "topUpCta": "شحن المحفظة",
+      "topUpBack": "رجوع"
     },
     "profileForm": {
       "profilePictureTitle": "صورة الملف الشخصي",
@@ -4684,7 +4689,7 @@
       "dialogWith": "مع {name} · {position}",
       "successTitle": "تم إرسال الطلب!",
       "pendingReview": "قيد المراجعة",
-      "successMessage": "تم إرسال طلب استشارتك مع {mentorName}. ستتلقى بريدًا إلكترونيًا بعد المراجعة.",
+      "successMessage": "تم حجز جلستك مع {mentorName}. وصل الحجز إلى المستشار وسيرسل إليك تفاصيل الاجتماع.",
       "pricingNotSet": "لم يحدد هذا المستشار سعرًا بعد.",
       "freeSession": "جلسة مجانية (تم تطبيق الخصم)",
       "estimatedFee": "الرسوم المقدرة: {fee}",
@@ -4706,7 +4711,6 @@
       "freePromoApplied": "مجاني (تم تطبيق الخصم)",
       "total": "الإجمالي",
       "free": "مجاني",
-      "adminConfirmsNote": "يؤكد المسؤول المبلغ الدقيق بعد مراجعة طلبك.",
       "promoCodeLabel": "رمز الخصم",
       "promoChecking": "جارٍ التحقق",
       "promoAppliedLabel": "مُطبَّق",
@@ -4714,7 +4718,7 @@
       "promoDiscountPercent": "تم تطبيق خصم {percent}%",
       "promoDiscountAmount": "تم تطبيق خصم {amount}",
       "promoApplied": "🎉 تم تطبيق رمز الخصم — خصم {amount}!",
-      "reviewNotice": "تُراجع طلباتك فريقنا. ستتلقى بريدًا إلكترونيًا للتأكيد بعد الموافقة — هذا ليس حجزًا تلقائيًا.",
+      "reviewNotice": "يصل حجزك مباشرةً إلى المستشار — لا توجد مراجعة من فريقنا. بمجرد الدفع يُصبح مؤكَّدًا ويرسل إليك تفاصيل الاجتماع.",
       "cancel": "إلغاء",
       "sendRequest": "إرسال الطلب",
       "promoAlreadyFree": "لا توجد رسوم للخصم — الاستشارة مجانية بالفعل.",
@@ -4740,12 +4744,13 @@
       "accountOptionDesc": "استخدم رصيد محفظتك ورصيدك المجاني وخصومات العضوية.",
       "noAccountPrompt": "ليس لديك حساب؟",
       "signUpLink": "أنشئ حسابًا",
-      "guestReviewNotice": "تتم مراجعة الطلبات من قِبل فريقنا. بمجرد الموافقة، سنرسل إليك عبر البريد الإلكتروني رابطًا آمنًا لتأكيد الموعد والدفع عبر الإنترنت.",
+      "guestReviewNotice": "يصل حجزك مباشرةً إلى المستشار. سنرسل إليك عبر البريد الإلكتروني رابطًا آمنًا لتأكيد الموعد والدفع عبر الإنترنت.",
       "guestSuccessTitle": "تم إرسال الطلب!",
       "guestPendingBadge": "قيد المراجعة",
-      "guestSuccessMessage": "تم إرسال طلب استشارتك مع {mentorName}. بمجرد الموافقة عليه، سنرسل إليك عبر البريد الإلكتروني رابطًا آمنًا للدفع عبر الإنترنت وتأكيد جلستك.",
+      "guestSuccessMessage": "تم تسجيل حجزك مع {mentorName}. سنرسل إليك عبر البريد الإلكتروني رابطًا آمنًا للدفع وتأكيد جلستك — ثم يتولى المستشار الأمر.",
       "loadingPaymentMethods": "جارٍ تحميل طرق الدفع…",
-      "paymentMethodsUnavailable": "تعذّر تحميل طرق الدفع. تحقّق من اتصالك ثم أعد المحاولة."
+      "paymentMethodsUnavailable": "تعذّر تحميل طرق الدفع. تحقّق من اتصالك ثم أعد المحاولة.",
+      "finalAmountNote": "هذا هو المبلغ النهائي. تدفع الآن وتُؤكَّد الجلسة فورًا — دون أي خطوة موافقة."
     },
     "landing": {
       "badge": "مرشدونا",

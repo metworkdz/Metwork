@@ -1,14 +1,14 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
-import { CheckCircle2, Tag } from 'lucide-react';
+import { CheckCircle2, Tag, Wallet } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/format';
 import { safeUUID } from '@/lib/safe-uuid';
 import { cn } from '@/lib/utils';
-import { useRouter } from '@/i18n/routing';
+import { Link, useRouter } from '@/i18n/routing';
 import type { Locale } from '@/i18n/config';
 
 interface Props {
@@ -25,7 +25,7 @@ interface Props {
 }
 
 type BillingPeriod = 'semesterly' | 'yearly';
-type DialogStep = 'idle' | 'confirm' | 'success' | 'error';
+type DialogStep = 'idle' | 'confirm' | 'success' | 'error' | 'topup';
 
 export function MembershipUpgradeButton({
   plan,
@@ -48,6 +48,9 @@ export function MembershipUpgradeButton({
     message: string;
   }>({ checking: false, valid: null, discount: 0, message: '' });
   const [errorMsg, setErrorMsg] = useState('');
+  // An under-funded wallet is an expected outcome, not a failure — it gets its
+  // own step with a route into top-up rather than the red "try again" banner.
+  const [topUp, setTopUp] = useState<{ balance: number; required: number; shortfall: number } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   // Idempotency key for the purchase — a dropped response or a double-click
@@ -108,25 +111,41 @@ export function MembershipUpgradeButton({
 
   function handlePurchase() {
     setErrorMsg('');
+    setTopUp(null);
     startTransition(async () => {
       try {
         const res = await fetch('/api/memberships/purchase', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             plan,
             billingPeriod,
             promoCode: promoCode.trim() || undefined,
+            // Stable across retries — the server replays the original purchase
+            // instead of debiting the wallet a second time.
             clientReference: ensurePurchaseRef(),
           }),
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          if (res.status === 422 && data.code === 'INSUFFICIENT_FUNDS') {
-            setErrorMsg(t('errorInsufficientFunds', { amount: formatCurrency(data.details?.required ?? finalPrice, locale) }));
-          } else {
-            setErrorMsg(data.message ?? t('errorPurchaseFailed'));
+          // The API error envelope is `{ error: { code, message, details } }`.
+          // Reading `data.code` / `data.message` off the top level always came
+          // back undefined, so EVERY failure — including a simply under-funded
+          // wallet — fell through to the generic "Purchase failed" banner.
+          const err = (data as { error?: { code?: string; message?: string; details?: Record<string, number> } }).error;
+          if (res.status === 422 && err?.code === 'INSUFFICIENT_FUNDS') {
+            const required  = err.details?.required ?? finalPrice;
+            const balance   = err.details?.balance ?? 0;
+            setTopUp({
+              balance,
+              required,
+              shortfall: err.details?.shortfall ?? Math.max(0, required - balance),
+            });
+            setStep('topup');
+            return;
           }
+          setErrorMsg(err?.message ?? t('errorPurchaseFailed'));
           setStep('error');
           return;
         }
@@ -160,6 +179,42 @@ export function MembershipUpgradeButton({
       <div className="flex w-full items-center justify-center gap-2 rounded-md bg-green-50 p-3 text-sm font-medium text-green-700">
         <CheckCircle2 className="size-4" />
         {t('upgradedTo', { planName })}
+      </div>
+    );
+  }
+
+  // Under-funded wallet: an actionable prompt, not an error. Keeping the amount
+  // short and a direct route into top-up means the member never has to work out
+  // how much to add. Retrying afterwards reuses the same clientReference.
+  if (step === 'topup' && topUp) {
+    return (
+      <div className="w-full space-y-3 rounded-lg border border-amber-300/70 bg-amber-50 p-4 text-amber-900 shadow-sm dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100">
+        <div className="flex items-start gap-2">
+          <Wallet className="mt-0.5 size-4 shrink-0" />
+          <div className="min-w-0 space-y-1">
+            <p className="text-sm font-semibold">{t('topUpTitle')}</p>
+            <p className="text-xs">
+              {t('topUpBody', {
+                shortfall: formatCurrency(topUp.shortfall, locale),
+                balance:   formatCurrency(topUp.balance, locale),
+                required:  formatCurrency(topUp.required, locale),
+              })}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button asChild size="sm" className="flex-1 text-xs">
+            <Link href="/dashboard/entrepreneur/wallet">{t('topUpCta')}</Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 bg-background text-xs"
+            onClick={() => { setTopUp(null); setStep('confirm'); }}
+          >
+            {t('topUpBack')}
+          </Button>
+        </div>
       </div>
     );
   }

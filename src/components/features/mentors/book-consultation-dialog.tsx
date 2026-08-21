@@ -851,7 +851,7 @@ export function BookConsultationDialog({
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground/70 mt-1">
-                    {t('adminConfirmsNote')}
+                    {t('finalAmountNote')}
                   </p>
                 </div>
               )}
