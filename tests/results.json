@@ -29,7 +29,7 @@
         "testMatch": [
           "**/admin.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
@@ -45,7 +45,7 @@
         "testMatch": [
           "**/incubator.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
@@ -61,7 +61,7 @@
         "testMatch": [
           "**/entrepreneur-builder.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
@@ -77,7 +77,7 @@
         "testMatch": [
           "**/entrepreneur-founder.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
@@ -93,7 +93,7 @@
         "testMatch": [
           "**/entrepreneur-explorer.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
@@ -109,7 +109,7 @@
         "testMatch": [
           "**/spaces-granularity.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
@@ -125,7 +125,7 @@
         "testMatch": [
           "**/*.cleanup.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
@@ -142,7 +142,7 @@
           "**/invoice-*.spec.ts",
           "**/domiciliation-price.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
@@ -159,7 +159,7 @@
           "**/api/consultation*.spec.ts",
           "**/consultation-i18n.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
@@ -175,7 +175,7 @@
         "testMatch": [
           "**/api/space-reservation-modes.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
@@ -191,7 +191,7 @@
         "testMatch": [
           "**/api/membership-pricing.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
@@ -207,7 +207,7 @@
         "testMatch": [
           "**/api/membership-grant-topup.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
@@ -223,7 +223,7 @@
         "testMatch": [
           "**/entrepreneur-mobile.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
@@ -239,7 +239,7 @@
         "testMatch": [
           "**/startup-logo.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
@@ -255,7 +255,7 @@
         "testMatch": [
           "**/withdrawal-ui.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       }
     ],
     "quiet": false,
@@ -306,11 +306,11 @@
           "specs": [
             {
               "title": "founder uploads a logo, it persists, and renders correctly across the marketplace",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 120000,
+                  "timeout": 90000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "startup-logo",
@@ -319,131 +319,18 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 44851,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Startup profile saved successfully.')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Startup profile saved successfully.')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Startup profile saved successfully.')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Startup profile saved successfully.')\u001b[22m\n\n    at /Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e/startup-logo.spec.ts:80:73",
-                        "location": {
-                          "file": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e/startup-logo.spec.ts",
-                          "column": 73,
-                          "line": 80
-                        },
-                        "snippet": "  78 |\n  79 |     await page.getByRole('button', { name: /create listing|save changes/i }).click();\n> 80 |     await expect(page.getByText('Startup profile saved successfully.')).toBeVisible();\n     |                                                                         ^\n  81 |\n  82 |     // ── 2. Assert persisted server-side ──\n  83 |     const mineRes = await page.request.get('/api/startups?mine=true');"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e/startup-logo.spec.ts",
-                            "column": 73,
-                            "line": 80
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Startup profile saved successfully.')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Startup profile saved successfully.')\u001b[22m\n\n\n  78 |\n  79 |     await page.getByRole('button', { name: /create listing|save changes/i }).click();\n> 80 |     await expect(page.getByText('Startup profile saved successfully.')).toBeVisible();\n     |                                                                         ^\n  81 |\n  82 |     // ── 2. Assert persisted server-side ──\n  83 |     const mineRes = await page.request.get('/api/startups?mine=true');\n    at /Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e/startup-logo.spec.ts:80:73"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 49813,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-21T21:24:27.486Z",
+                      "startTime": "2026-08-21T21:29:51.933Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results/startup-logo-Startup-logo--d05ae-ctly-across-the-marketplace-startup-logo/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results/startup-logo-Startup-logo--d05ae-ctly-across-the-marketplace-startup-logo/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results/startup-logo-Startup-logo--d05ae-ctly-across-the-marketplace-startup-logo/error-context.md"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results/startup-logo-Startup-logo--d05ae-ctly-across-the-marketplace-startup-logo/error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results/startup-logo-Startup-logo--d05ae-ctly-across-the-marketplace-startup-logo/trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e/startup-logo.spec.ts",
-                        "column": 73,
-                        "line": 80
-                      }
-                    },
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 24959,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Startup profile saved successfully.')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Startup profile saved successfully.')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Startup profile saved successfully.')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Startup profile saved successfully.')\u001b[22m\n\n    at /Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e/startup-logo.spec.ts:80:73",
-                        "location": {
-                          "file": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e/startup-logo.spec.ts",
-                          "column": 73,
-                          "line": 80
-                        },
-                        "snippet": "  78 |\n  79 |     await page.getByRole('button', { name: /create listing|save changes/i }).click();\n> 80 |     await expect(page.getByText('Startup profile saved successfully.')).toBeVisible();\n     |                                                                         ^\n  81 |\n  82 |     // ── 2. Assert persisted server-side ──\n  83 |     const mineRes = await page.request.get('/api/startups?mine=true');"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e/startup-logo.spec.ts",
-                            "column": 73,
-                            "line": 80
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('Startup profile saved successfully.')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText('Startup profile saved successfully.')\u001b[22m\n\n\n  78 |\n  79 |     await page.getByRole('button', { name: /create listing|save changes/i }).click();\n> 80 |     await expect(page.getByText('Startup profile saved successfully.')).toBeVisible();\n     |                                                                         ^\n  81 |\n  82 |     // ── 2. Assert persisted server-side ──\n  83 |     const mineRes = await page.request.get('/api/startups?mine=true');\n    at /Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e/startup-logo.spec.ts:80:73"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 1,
-                      "startTime": "2026-08-21T21:25:27.313Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results/startup-logo-Startup-logo--d05ae-ctly-across-the-marketplace-startup-logo-retry1/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results/startup-logo-Startup-logo--d05ae-ctly-across-the-marketplace-startup-logo-retry1/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results/startup-logo-Startup-logo--d05ae-ctly-across-the-marketplace-startup-logo-retry1/error-context.md"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results/startup-logo-Startup-logo--d05ae-ctly-across-the-marketplace-startup-logo-retry1/error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results/startup-logo-Startup-logo--d05ae-ctly-across-the-marketplace-startup-logo-retry1/trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e/startup-logo.spec.ts",
-                        "column": 73,
-                        "line": 80
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "18f1e0d2fc4aee9aeabd-f1bc6df9d4a85cfa201d",
@@ -458,11 +345,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-21T21:23:22.080Z",
-    "duration": 151904.11899999998,
-    "expected": 0,
+    "startTime": "2026-08-21T21:28:15.701Z",
+    "duration": 154058.29200000002,
+    "expected": 1,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 0,
     "flaky": 0
   }
 }

@@ -3769,6 +3769,42 @@
       "userId": "qa-investor-id",
       "expiresAt": "2026-08-28T21:24:19.638Z",
       "createdAt": "2026-08-21T21:24:19.638Z"
+    },
+    {
+      "idHash": "df7341dbf95b3861acd37f9200dc35e047709af79a942343df8bf90aebb81873",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-08-28T21:28:35.438Z",
+      "createdAt": "2026-08-21T21:28:35.438Z"
+    },
+    {
+      "idHash": "deb20015c3f62f47e9b49b930ea31766d9dd4c9ba26e98d0c1e26d213f132705",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-08-28T21:28:59.649Z",
+      "createdAt": "2026-08-21T21:28:59.649Z"
+    },
+    {
+      "idHash": "2cf9fd0c0d86a35107adf53b3d728aaf2a7167b27dda94448548d87e24d847c6",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-08-28T21:29:14.509Z",
+      "createdAt": "2026-08-21T21:29:14.509Z"
+    },
+    {
+      "idHash": "cd3b0814685fa1d4cf1f55abed50611fd60d3c57209274da88e526610ccf679c",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-08-28T21:29:24.203Z",
+      "createdAt": "2026-08-21T21:29:24.203Z"
+    },
+    {
+      "idHash": "d5af8749a96525baab1872f82f6ba1e05877238673c1802adfa28ad7828cbf52",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-08-28T21:29:28.603Z",
+      "createdAt": "2026-08-21T21:29:28.603Z"
+    },
+    {
+      "idHash": "cfd6015327231cf982d6486e885035294196bfd93ab101a5c3c8d1a76916d654",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-08-28T21:29:34.444Z",
+      "createdAt": "2026-08-21T21:29:34.444Z"
     }
   ],
   "otps": [],
@@ -14457,8 +14493,8 @@
     },
     {
       "id": "a08c6619-5728-4904-9167-a95eb5f66dd9",
-      "name": "QA Direct API Test",
-      "description": "Automated e2e fixture startup via direct API call. Safe to delete.",
+      "name": "QA Founder Logo Startup 1787347799663",
+      "description": "Automated e2e fixture startup with a logo. Safe to delete.",
       "industry": "SaaS",
       "fundingGoal": 500000,
       "equityOffered": 10,
@@ -14466,11 +14502,11 @@
       "maturityStage": "IDEA",
       "pitchDeckUrl": null,
       "websiteUrl": null,
-      "logoUrl": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "logoUrl": "/uploads/startup-logos/fc555de5-698a-4c7c-936c-65c241ba1116.png",
       "founderId": "qa-founder-id",
       "status": "ACTIVE",
       "createdAt": "2026-08-21T19:37:36.241Z",
-      "updatedAt": "2026-08-21T19:38:06.047Z"
+      "updatedAt": "2026-08-21T21:30:25.610Z"
     },
     {
       "id": "c5b2a62e-5ef9-4605-91e1-f600b211d1b4",
@@ -14505,6 +14541,23 @@
       "status": "ACTIVE",
       "createdAt": "2026-08-21T21:25:27.519Z",
       "updatedAt": "2026-08-21T21:25:27.640Z"
+    },
+    {
+      "id": "16510128-6407-4179-9b2e-05ebcc9f2732",
+      "name": "QA NoLogo Startup 1787347792062",
+      "description": "Automated e2e fixture startup with no logo. Safe to delete.",
+      "industry": "SaaS",
+      "fundingGoal": 500000,
+      "equityOffered": 10,
+      "valuation": null,
+      "maturityStage": "IDEA",
+      "pitchDeckUrl": null,
+      "websiteUrl": null,
+      "logoUrl": null,
+      "founderId": "qa-builder-id",
+      "status": "ACTIVE",
+      "createdAt": "2026-08-21T21:29:55.400Z",
+      "updatedAt": "2026-08-21T21:29:59.175Z"
     }
   ],
   "mentors": [
