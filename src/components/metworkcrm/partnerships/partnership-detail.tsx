@@ -8,6 +8,7 @@ import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { EntityPicker } from '@/components/metworkcrm/shared/entity-picker';
 import { Timeline } from '@/components/metworkcrm/interactions/timeline';
 import { TaskFormDialog, type TaskRow } from '@/components/metworkcrm/tasks/task-form-dialog';
+import { DocumentUpload, type DocumentRow } from '@/components/metworkcrm/shared/document-upload';
 import {
   PARTNERSHIP_STAGE_BADGE,
   PARTNERSHIP_STAGE_LABELS,
@@ -31,6 +32,7 @@ export interface PartnershipDetailData {
   organization: { id: string; name: string } | null;
   contacts: LinkedContact[];
   tasks: TaskRow[];
+  documents: DocumentRow[];
 }
 
 export function PartnershipDetail({ initial }: { initial: PartnershipDetailData }) {
@@ -203,6 +205,8 @@ export function PartnershipDetail({ initial }: { initial: PartnershipDetailData 
               {data.tasks.length === 0 ? <li className="text-sm text-neutral-400">Aucune tâche.</li> : null}
             </ul>
           </div>
+
+          <DocumentUpload entityType="PARTNERSHIP" entityId={partnership.id} initial={data.documents} />
         </div>
       </div>
     </div>

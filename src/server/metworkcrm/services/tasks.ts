@@ -10,12 +10,13 @@ import { getCrmDb } from '../db/client';
 import { crmTasks } from '../db/schema';
 import type { TaskInput } from '../validation/tasks';
 import { CrmNotFoundError, CrmServiceError } from './errors';
+import { deleteDocumentLinksFor } from './documents';
 
 function likeTerm(q: string): string {
   return `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
 }
 
-/** Mirrors LINK_COLUMNS in db/schema.ts — the "no orphan task" invariant. */
+/** Mirrors LINK_COLUMNS in db/schema.ts plus booking_id/payment_id — the "no orphan task" invariant. */
 const TASK_LINK_KEYS = [
   'contactId',
   'organizationId',
@@ -25,6 +26,8 @@ const TASK_LINK_KEYS = [
   'partnershipId',
   'programId',
   'oiProjectId',
+  'bookingId',
+  'paymentId',
 ] as const;
 
 export interface TaskListFilters {
@@ -40,6 +43,8 @@ export interface TaskListFilters {
   partnershipId?: string;
   programId?: string;
   oiProjectId?: string;
+  bookingId?: string;
+  paymentId?: string;
   limit: number;
   offset: number;
 }
@@ -58,6 +63,8 @@ export async function listTasks(filters: TaskListFilters) {
     filters.partnershipId ? eq(crmTasks.partnershipId, filters.partnershipId) : undefined,
     filters.programId ? eq(crmTasks.programId, filters.programId) : undefined,
     filters.oiProjectId ? eq(crmTasks.oiProjectId, filters.oiProjectId) : undefined,
+    filters.bookingId ? eq(crmTasks.bookingId, filters.bookingId) : undefined,
+    filters.paymentId ? eq(crmTasks.paymentId, filters.paymentId) : undefined,
     filters.q ? sql`(${crmTasks.title} LIKE ${likeTerm(filters.q)} ESCAPE '\\' COLLATE NOCASE)` : undefined,
   ].filter(Boolean);
   const where = clauses.length > 0 ? and(...clauses) : undefined;
@@ -103,6 +110,8 @@ export async function createTask(input: TaskInput, actorId: string) {
     partnershipId: input.partnershipId ?? null,
     programId: input.programId ?? null,
     oiProjectId: input.oiProjectId ?? null,
+    bookingId: input.bookingId ?? null,
+    paymentId: input.paymentId ?? null,
     source: 'MANUAL',
     createdAt: now,
     updatedAt: now,
@@ -142,4 +151,5 @@ export async function deleteTask(id: string): Promise<void> {
   const existing = (await db.select({ id: crmTasks.id }).from(crmTasks).where(eq(crmTasks.id, id)))[0];
   if (!existing) throw new CrmNotFoundError('Tâche');
   await db.delete(crmTasks).where(eq(crmTasks.id, id));
+  await deleteDocumentLinksFor('TASK', id);
 }

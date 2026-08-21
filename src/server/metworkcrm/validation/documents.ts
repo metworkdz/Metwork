@@ -1,10 +1,8 @@
 /**
- * METWORK OS CRM — Document attach validation.
- *
- * Minimal, scoped to what OI Project detail needs (dev rules R-26): attach a
- * file already uploaded via `POST /api/metworkcrm/upload` to one entity. The
- * full cross-entity Documents browser (`/metworkcrm/documents`) is out of
- * scope for this pass — see SESSION_LOG.
+ * METWORK OS CRM — Document validation: attach a file already uploaded via
+ * `POST /api/metworkcrm/upload` (dev rules R-26) to one entity, plus the
+ * query schemas for the per-entity list and the cross-entity browse page
+ * (`/metworkcrm/documents`, Prompt 5).
  */
 import { z } from 'zod';
 import { DOCUMENT_ENTITY_TYPES, DOCUMENT_TYPES } from '../db/schema';
@@ -29,4 +27,11 @@ export type DocumentAttachInput = z.infer<typeof documentAttachSchema>;
 export const documentListQuerySchema = z.object({
   entityType: z.enum(DOCUMENT_ENTITY_TYPES),
   entityId: z.string().trim().min(1),
+});
+
+export const documentBrowseQuerySchema = z.object({
+  q: optionalTrimmed,
+  type: z.enum(DOCUMENT_TYPES).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
 });

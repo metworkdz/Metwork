@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { Timeline } from '@/components/metworkcrm/interactions/timeline';
 import { TaskFormDialog, type TaskRow } from '@/components/metworkcrm/tasks/task-form-dialog';
+import { DocumentUpload, type DocumentRow } from '@/components/metworkcrm/shared/document-upload';
 import {
   OPPORTUNITY_STAGE_BADGE,
   OPPORTUNITY_STAGE_LABELS,
@@ -30,6 +31,7 @@ export interface OpportunityDetailData {
   contact: { id: string; fullName: string | null; firstName: string; lastName: string } | null;
   tasks: TaskRow[];
   stageHistory: StageHistoryRow[];
+  documents: DocumentRow[];
 }
 
 export function OpportunityDetail({ initial }: { initial: OpportunityDetailData }) {
@@ -171,6 +173,8 @@ export function OpportunityDetail({ initial }: { initial: OpportunityDetailData 
               {data.tasks.length === 0 ? <li className="text-sm text-neutral-400">Aucune tâche.</li> : null}
             </ul>
           </div>
+
+          <DocumentUpload entityType="OPPORTUNITY" entityId={opp.id} initial={data.documents} />
         </div>
       </div>
     </div>

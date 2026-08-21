@@ -33,6 +33,7 @@ import type { ParticipantInput, PartnerInput, ProgramInput } from '../validation
 import { redactMoney } from '../auth/guards';
 import { CrmNotFoundError, CrmServiceError } from './errors';
 import { checkProgramDeleteGuard, formatDeleteGuardMessage } from './delete-guard';
+import { deleteDocumentLinksFor, listDocumentsFor } from './documents';
 
 function likeTerm(q: string): string {
   return `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -77,7 +78,7 @@ export async function getProgramDetail(id: string, user: Pick<InternalUser, 'rol
   const program = (await db.select().from(crmPrograms).where(eq(crmPrograms.id, id)))[0];
   if (!program) throw new CrmNotFoundError('Programme');
 
-  const [participants, trainers, partners, tasks, payments] = await Promise.all([
+  const [participants, trainers, partners, tasks, payments, documents] = await Promise.all([
     db
       .select({ participant: crmProgramParticipants, contact: crmContacts })
       .from(crmProgramParticipants)
@@ -99,6 +100,7 @@ export async function getProgramDetail(id: string, user: Pick<InternalUser, 'rol
       .orderBy(asc(crmProgramPartners.createdAt)),
     db.select().from(crmTasks).where(eq(crmTasks.programId, id)).orderBy(desc(crmTasks.createdAt)),
     db.select().from(crmPayments).where(eq(crmPayments.programId, id)).orderBy(desc(crmPayments.createdAt)),
+    listDocumentsFor('PROGRAM', id),
   ]);
 
   return {
@@ -118,6 +120,7 @@ export async function getProgramDetail(id: string, user: Pick<InternalUser, 'rol
     })),
     tasks,
     payments: payments.map((p) => redactMoney(user, p, PAYMENT_MONEY_FIELDS)),
+    documents,
   };
 }
 
@@ -181,6 +184,7 @@ export async function deleteProgram(id: string): Promise<void> {
   } catch {
     throw new CrmServiceError(409, 'CRM_DELETE_BLOCKED', 'Impossible de supprimer ce programme — des éléments y sont encore rattachés.');
   }
+  await deleteDocumentLinksFor('PROGRAM', id);
 }
 
 /* ─────────────────────────── Participants ─────────────────────────── */
@@ -283,34 +287,7 @@ export async function removePartner(partnerId: string): Promise<void> {
   await getCrmDb().delete(crmProgramPartners).where(eq(crmProgramPartners.id, partnerId));
 }
 
-/* ─────────────────────────── Payments (ADMIN-gated create, route layer) ─────────────────────────── */
-
-export interface ProgramPaymentInput {
-  label: string;
-  amount: number;
-  direction: 'IN' | 'OUT';
-  status: string;
-  dueDate?: string;
-  method?: string;
-}
-
-export async function createProgramPayment(programId: string, input: ProgramPaymentInput, actorId: string) {
-  const db = getCrmDb();
-  const now = new Date().toISOString();
-  const id = randomUUID();
-  await db.insert(crmPayments).values({
-    id,
-    label: input.label,
-    amount: input.amount,
-    currency: 'DZD',
-    direction: input.direction,
-    status: input.status as never,
-    dueDate: input.dueDate ?? null,
-    method: (input.method as never) ?? null,
-    programId,
-    createdAt: now,
-    updatedAt: now,
-    createdBy: actorId,
-  });
-  return (await db.select().from(crmPayments).where(eq(crmPayments.id, id)))[0]!;
-}
+// Payment creation moved to services/payments.ts (Prompt 5) — one writer, not
+// two. Program detail's "add payment" mini-form now POSTs to the standalone
+// ADMIN-gated `/api/metworkcrm/payments` with `programId` preset, instead of
+// a Program-scoped nested route.

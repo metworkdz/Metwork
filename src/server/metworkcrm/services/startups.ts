@@ -23,6 +23,7 @@ import {
 import type { StartupInput } from '../validation/startups';
 import { CrmNotFoundError, CrmServiceError } from './errors';
 import { checkStartupDeleteGuard, formatDeleteGuardMessage } from './delete-guard';
+import { deleteDocumentLinksFor, listDocumentsFor } from './documents';
 
 function likeTerm(q: string): string {
   return `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -68,7 +69,7 @@ export async function getStartupDetail(id: string) {
   const startup = (await db.select().from(crmStartups).where(eq(crmStartups.id, id)))[0];
   if (!startup) throw new CrmNotFoundError('Startup');
 
-  const [organization, primaryContact, assignedExpert, tasks, interactions] = await Promise.all([
+  const [organization, primaryContact, assignedExpert, tasks, interactions, documents] = await Promise.all([
     startup.organizationId
       ? (await db.select().from(crmOrganizations).where(eq(crmOrganizations.id, startup.organizationId)))[0] ?? null
       : null,
@@ -80,9 +81,10 @@ export async function getStartupDetail(id: string) {
       : null,
     db.select().from(crmTasks).where(eq(crmTasks.startupId, id)).orderBy(desc(crmTasks.createdAt)),
     db.select().from(crmInteractions).where(eq(crmInteractions.startupId, id)).orderBy(desc(crmInteractions.occurredAt)),
+    listDocumentsFor('STARTUP', id),
   ]);
 
-  return { startup, organization, primaryContact, assignedExpert, tasks, interactions };
+  return { startup, organization, primaryContact, assignedExpert, tasks, interactions, documents };
 }
 
 export async function createStartup(input: StartupInput, actorId: string) {
@@ -154,4 +156,5 @@ export async function deleteStartup(id: string): Promise<void> {
   } catch {
     throw new CrmServiceError(409, 'CRM_DELETE_BLOCKED', 'Impossible de supprimer cette startup — des éléments y sont encore rattachés.');
   }
+  await deleteDocumentLinksFor('STARTUP', id);
 }

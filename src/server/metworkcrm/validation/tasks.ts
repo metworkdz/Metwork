@@ -7,11 +7,11 @@ const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date invalide (AAAA-MM
 const isoDateTime = z.string().datetime({ message: 'Date/heure invalide.' });
 
 /**
- * `contactId`/`organizationId` were the only link types the Prompt 2 UI
- * offered; Prompt 3/4 add real pickers for opportunity/startup/expert/
- * partnership/program/oi_project as those modules ship CRUD. `bookingId`/
- * `paymentId` stay unavailable here — no UI creates a task pre-linked to a
- * booking or payment yet.
+ * All 10 link columns the schema allows on crm_tasks are accepted here —
+ * `bookingId`/`paymentId` joined the other 8 in Prompt 5 once Space Bookings
+ * and Payments shipped CRUD. No dialog exposes pickers for any of these
+ * beyond Organization/Contact; the rest are only ever set "locked" from that
+ * entity's own detail page (see TaskFormDialog).
  */
 export const taskInputSchema = z
   .object({
@@ -30,11 +30,14 @@ export const taskInputSchema = z
     partnershipId: optionalTrimmed,
     programId: optionalTrimmed,
     oiProjectId: optionalTrimmed,
+    bookingId: optionalTrimmed,
+    paymentId: optionalTrimmed,
   })
   .superRefine((data, ctx) => {
     if (
       !data.contactId && !data.organizationId && !data.opportunityId && !data.startupId &&
-      !data.expertId && !data.partnershipId && !data.programId && !data.oiProjectId
+      !data.expertId && !data.partnershipId && !data.programId && !data.oiProjectId &&
+      !data.bookingId && !data.paymentId
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -67,6 +70,8 @@ export const taskUpdateSchema = z.object({
   partnershipId: optionalTrimmed,
   programId: optionalTrimmed,
   oiProjectId: optionalTrimmed,
+  bookingId: optionalTrimmed,
+  paymentId: optionalTrimmed,
 });
 
 export const taskListQuerySchema = z.object({
@@ -82,6 +87,8 @@ export const taskListQuerySchema = z.object({
   partnershipId: optionalTrimmed,
   programId: optionalTrimmed,
   oiProjectId: optionalTrimmed,
+  bookingId: optionalTrimmed,
+  paymentId: optionalTrimmed,
   limit: z.coerce.number().int().min(1).max(200).default(50),
   offset: z.coerce.number().int().min(0).default(0),
 });

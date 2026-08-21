@@ -9,6 +9,7 @@ import { EntityPicker } from '@/components/metworkcrm/shared/entity-picker';
 import { Timeline } from '@/components/metworkcrm/interactions/timeline';
 import { TaskFormDialog, type TaskRow } from '@/components/metworkcrm/tasks/task-form-dialog';
 import { OpportunityFormDialog, type OpportunityRow } from '@/components/metworkcrm/opportunities/opportunity-form-dialog';
+import { DocumentUpload, type DocumentRow } from '@/components/metworkcrm/shared/document-upload';
 import {
   TASK_PRIORITY_BADGE,
   TASK_PRIORITY_LABELS,
@@ -32,6 +33,7 @@ export interface OrganizationDetailData {
   contacts: LinkedContact[];
   tasks: TaskRow[];
   opportunities: OpportunityRow[];
+  documents: DocumentRow[];
 }
 
 export function OrganizationDetail({ initial }: { initial: OrganizationDetailData }) {
@@ -289,6 +291,8 @@ export function OrganizationDetail({ initial }: { initial: OrganizationDetailDat
               {data.opportunities.length === 0 ? <li className="text-sm text-neutral-400">Aucune opportunité.</li> : null}
             </ul>
           </div>
+
+          <DocumentUpload entityType="ORGANIZATION" entityId={org.id} initial={data.documents} />
         </div>
       </div>
     </div>

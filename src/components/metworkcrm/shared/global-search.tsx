@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Building2, CalendarRange, FolderKanban, Handshake, Lightbulb, ListChecks, MessagesSquare, Rocket, Search, Target, UsersRound } from 'lucide-react';
+import { Building2, CalendarRange, FileText, FolderKanban, Handshake, Lightbulb, ListChecks, MapPin, MessagesSquare, Rocket, Search, Target, UsersRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -10,11 +10,13 @@ import { cn } from '@/lib/utils';
  * this is a client component, and importing across that boundary risks
  * pulling `getCrmDb`/better-sqlite3 into the client bundle even via a
  * type-only import. Cheap to keep in sync by hand.
+ *
+ * Payments is deliberately absent — see the note in services/search.ts.
  */
 type SearchResultKind =
   | 'ORGANIZATION' | 'CONTACT' | 'TASK' | 'INTERACTION'
   | 'OPPORTUNITY' | 'STARTUP' | 'EXPERT' | 'PARTNERSHIP'
-  | 'OI_PROJECT' | 'PROGRAM';
+  | 'OI_PROJECT' | 'PROGRAM' | 'SPACE_BOOKING' | 'DOCUMENT';
 
 interface SearchResultRow {
   kind: SearchResultKind;
@@ -36,6 +38,8 @@ const KIND_LABEL: Record<SearchResultKind, string> = {
   PARTNERSHIP: 'Partenariats',
   OI_PROJECT: 'Open Innovation',
   PROGRAM: 'Programmes',
+  SPACE_BOOKING: 'Réservations',
+  DOCUMENT: 'Documents',
   TASK: 'Tâches',
   INTERACTION: 'Interactions',
 };
@@ -49,6 +53,8 @@ const KIND_ICON: Record<SearchResultKind, typeof Building2> = {
   PARTNERSHIP: Handshake,
   OI_PROJECT: Lightbulb,
   PROGRAM: CalendarRange,
+  SPACE_BOOKING: MapPin,
+  DOCUMENT: FileText,
   TASK: ListChecks,
   INTERACTION: MessagesSquare,
 };
@@ -76,6 +82,10 @@ function resultHref(row: SearchResultRow): string {
       return `/metworkcrm/open-innovation/${row.id}`;
     case 'PROGRAM':
       return `/metworkcrm/programs/${row.id}`;
+    case 'SPACE_BOOKING':
+      return `/metworkcrm/spaces/${row.id}`;
+    case 'DOCUMENT':
+      return '/metworkcrm/documents';
     case 'TASK':
       return '/metworkcrm/tasks';
     case 'INTERACTION':

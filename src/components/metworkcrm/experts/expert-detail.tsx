@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { Timeline } from '@/components/metworkcrm/interactions/timeline';
 import { TaskFormDialog, type TaskRow } from '@/components/metworkcrm/tasks/task-form-dialog';
+import { DocumentUpload, type DocumentRow } from '@/components/metworkcrm/shared/document-upload';
 import {
   EXPERT_STAGE_BADGE,
   EXPERT_STAGE_LABELS,
@@ -21,6 +22,7 @@ export interface ExpertDetailData {
   organization: { id: string; name: string } | null;
   contact: { id: string; fullName: string | null; firstName: string; lastName: string } | null;
   tasks: TaskRow[];
+  documents: DocumentRow[];
 }
 
 export function ExpertDetail({ initial }: { initial: ExpertDetailData }) {
@@ -149,6 +151,8 @@ export function ExpertDetail({ initial }: { initial: ExpertDetailData }) {
               {data.tasks.length === 0 ? <li className="text-sm text-neutral-400">Aucune tâche.</li> : null}
             </ul>
           </div>
+
+          <DocumentUpload entityType="EXPERT" entityId={expert.id} initial={data.documents} />
         </div>
       </div>
     </div>

@@ -24,6 +24,7 @@ import type { ContactInput } from '../validation/contacts';
 import { redactMoney } from '../auth/guards';
 import { CrmNotFoundError, CrmServiceError } from './errors';
 import { checkContactDeleteGuard, formatDeleteGuardMessage } from './delete-guard';
+import { deleteDocumentLinksFor, listDocumentsFor } from './documents';
 
 function likeTerm(q: string): string {
   return `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -102,7 +103,7 @@ export async function getContactDetail(id: string, user: Pick<InternalUser, 'rol
   const contact = (await db.select().from(crmContacts).where(eq(crmContacts.id, id)))[0];
   if (!contact) throw new CrmNotFoundError('Contact');
 
-  const [orgLinks, interactions, tasks, opportunities] = await Promise.all([
+  const [orgLinks, interactions, tasks, opportunities, documents] = await Promise.all([
     db
       .select({ link: crmContactOrganizations, organization: crmOrganizations })
       .from(crmContactOrganizations)
@@ -112,6 +113,7 @@ export async function getContactDetail(id: string, user: Pick<InternalUser, 'rol
     db.select().from(crmInteractions).where(eq(crmInteractions.contactId, id)).orderBy(desc(crmInteractions.occurredAt)),
     db.select().from(crmTasks).where(eq(crmTasks.contactId, id)).orderBy(desc(crmTasks.createdAt)),
     db.select().from(crmOpportunities).where(eq(crmOpportunities.contactId, id)),
+    listDocumentsFor('CONTACT', id),
   ]);
 
   return {
@@ -120,6 +122,7 @@ export async function getContactDetail(id: string, user: Pick<InternalUser, 'rol
     interactions,
     tasks,
     opportunities: opportunities.map((o) => redactMoney(user, o, ['amount'] as const)),
+    documents,
   };
 }
 
@@ -230,6 +233,7 @@ export async function deleteContact(id: string): Promise<void> {
   } catch {
     throw new CrmServiceError(409, 'CRM_DELETE_BLOCKED', "Impossible de supprimer ce contact — des éléments y sont encore rattachés.");
   }
+  await deleteDocumentLinksFor('CONTACT', id);
 }
 
 export async function archiveContact(id: string) {
