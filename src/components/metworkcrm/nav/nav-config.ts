@@ -85,7 +85,7 @@ export const CRM_NAV: CrmNavSection[] = [
     items: [
       { label: 'Paiements', href: '/metworkcrm/payments', icon: Banknote, status: 'ready', adminOnly: true },
       { label: 'Documents', href: '/metworkcrm/documents', icon: FileText, status: 'ready' },
-      { label: 'Rapports', href: '/metworkcrm/reports', icon: Gauge, status: 'coming-soon', prompt: 6 },
+      { label: 'Rapports', href: '/metworkcrm/reports', icon: Gauge, status: 'ready' },
       { label: 'Utilisateurs', href: '/metworkcrm/users', icon: UserCog, status: 'coming-soon', prompt: 8, adminOnly: true },
       { label: 'Paramètres', href: '/metworkcrm/settings', icon: Settings, status: 'coming-soon', prompt: 8, adminOnly: true },
     ],
