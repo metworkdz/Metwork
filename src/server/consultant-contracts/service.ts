@@ -415,9 +415,14 @@ export async function sendSigningOtp(
     if (c.status !== 'PENDING_SIGNATURE') return { kind: 'NOT_PENDING' } as const;
     const decision = evaluateSendPolicy(c.otp, now);
     if (!decision.allowed) return { kind: 'THROTTLED', decision } as const;
+    // Distinguish the first code this contract ever sent from every later one,
+    // rather than keying off the per-window counter — an audit reading the
+    // trail should see a resend as a resend even when it follows a lapsed
+    // window that reset the count.
+    const isResend = c.otp?.lastSentAt != null;
     c.otp = nextStateAfterSend(c.otp, now);
     c.auditTrail.push({
-      event: c.otp.sendCount > 1 ? 'RESEND_OTP' : 'OTP_SENT',
+      event: isResend ? 'RESEND_OTP' : 'OTP_SENT',
       actorId,
       timestamp: new Date(now).toISOString(),
     });
