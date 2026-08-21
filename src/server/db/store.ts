@@ -2430,9 +2430,9 @@ export interface PlatformConfig {
   // THE canonical home for coworking pass counts — deliberately NOT duplicated
   // into MembershipPlanConfigRecord, so `setAdminCreditConfig` stays the single
   // writer. 0 is a valid allowance (Builder no longer includes passes).
-  /** Monthly pass credits for Builder-tier users. Default 0. */
+  /** Monthly pass credits for Entrepreneur-tier (BUILDER) users. Default 0. */
   builderMonthlyCredits?: number;
-  /** Monthly pass credits for Founder-tier users. Default 5. */
+  /** Monthly pass credits for Startup-tier (FOUNDER) users. Default 5. */
   founderMonthlyCredits?: number;
   /** ISO datetime — last time a credit-config change was saved. */
   creditConfigUpdatedAt?: string;
@@ -3083,6 +3083,14 @@ interface DbShape {
      * `ensureMembershipPlanConfigs`.
      */
     membershipLegacyTermsBackfilledAt?: string;
+    /**
+     * ISO timestamp — set once the stored STARTUP plan config has been moved to
+     * the 2026-08 Startup terms (3 500 DZD/mo, 20 % consultations). Guards the
+     * one-time repricing in `ensureMembershipPlanConfigs`; without it, editing
+     * the shipped defaults would never reach a deployment whose plan configs
+     * were already seeded. Active members are untouched — they hold snapshots.
+     */
+    membershipStartupRepricedAt?: string;
   };
 }
 

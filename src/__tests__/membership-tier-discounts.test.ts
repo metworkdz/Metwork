@@ -130,9 +130,10 @@ async function seedMembership(
 
 describe('per-user discount resolution (no snapshot ⇒ live config)', () => {
   // Members with neither a frozen snapshot nor a user-record mirror fall
-  // through to the live plan config: 10 % consultations / 15 % spaces on BOTH
-  // tiers after the 2026-08 repricing.
-  it('partner-promo user with legacy lowercase code resolves to current terms', async () => {
+  // through to the live plan config. The two plans agree on spaces (15 %) and
+  // DIVERGE on consultations — Entrepreneur 10 %, Startup 20 % — which is the
+  // point of these two cases.
+  it('partner-promo Entrepreneur with legacy lowercase code resolves to current terms', async () => {
     const id = await seedUser({
       membershipCode: 'builder',
       membershipTier: 'BUILDER',
@@ -142,14 +143,14 @@ describe('per-user discount resolution (no snapshot ⇒ live config)', () => {
     expect(await getConsultationDiscountForUser(id)).toBe(0.10);
   });
 
-  it('tier-only FOUNDER user resolves to the unified current terms', async () => {
+  it('tier-only Startup (FOUNDER) user gets the higher consultation rate', async () => {
     const id = await seedUser({
       membershipCode: null,
       membershipTier: 'FOUNDER',
       membershipExpiresAt: FUTURE,
     });
     expect(await getSpaceDiscountForUser(id)).toBe(0.15);
-    expect(await getConsultationDiscountForUser(id)).toBe(0.10);
+    expect(await getConsultationDiscountForUser(id)).toBe(0.20);
   });
 
   it('expired membership gets no discount', async () => {
