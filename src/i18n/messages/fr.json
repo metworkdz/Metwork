@@ -69,7 +69,8 @@
       "wallet": "Portefeuille",
       "language": "Langue",
       "forgetDevice": "Oublier l'appareil et se déconnecter",
-      "programs": "Programmes"
+      "programs": "Programmes",
+      "contract": "Contrat"
     },
     "signin": {
       "heading": "Connexion consultant",
@@ -459,6 +460,59 @@
       "codeSentWhatsApp": "Code envoyé sur WhatsApp",
       "codeSentSms": "Code envoyé par SMS",
       "fallbackSms": "Message WhatsApp non reçu ? Recevoir le code par SMS"
+    },
+    "contract": {
+      "bannerTitle": "Un contrat attend votre signature",
+      "bannerBody": "Signez votre contrat de commission pour que nous puissions vous reverser les sommes encaissées.",
+      "title": "Contrat de commission",
+      "subtitle": "L'accord qui encadre le reversement des honoraires encaissés pour votre compte.",
+      "empty": "Vous n'avez pas encore de contrat. Metwork vous en enverra un dès qu'il sera prêt.",
+      "pendingTitle": "En attente de votre signature",
+      "pendingBody": "Lisez le contrat, signez-le, puis confirmez avec le code envoyé sur votre téléphone.",
+      "startSigning": "Lire et signer",
+      "back": "Retour",
+      "continueToCode": "Continuer",
+      "confirmSignature": "Confirmer la signature",
+      "redraw": "Signer à nouveau",
+      "clear": "Effacer",
+      "signatureHint": "Signez ici",
+      "signatureLegal": "Votre signature manuscrite a la même valeur qu'une signature sur papier.",
+      "signatureCanvasLabel": "Zone de signature",
+      "codeLabel": "Code de confirmation",
+      "codeSentWhatsApp": "Code envoyé sur WhatsApp au {phone}. Valable 5 minutes.",
+      "codeSentSms": "Code envoyé par SMS au {phone}. Valable 5 minutes.",
+      "resendWhatsApp": "Renvoyer sur WhatsApp",
+      "resendSms": "Envoyer par SMS",
+      "signedTitle": "Contrat signé",
+      "signedBody": "Signé le {date}. Une copie vous a été envoyée par e-mail.",
+      "downloadPdf": "Télécharger le contrat signé",
+      "terms": {
+        "lockedNote": "Figé lors de l'émission du contrat — non modifiable.",
+        "commission": "Commission Metwork",
+        "yourShare": "Votre part",
+        "payoutMethod": "Mode de règlement",
+        "payoutDetails": "Coordonnées de règlement",
+        "signerPhone": "Téléphone vérifié"
+      },
+      "payoutMethod": {
+        "BANK_TRANSFER": "Virement bancaire",
+        "CCP": "Virement CCP (Algérie Poste)",
+        "CHEQUE": "Chèque"
+      },
+      "errors": {
+        "generic": "Une erreur est survenue. Veuillez réessayer.",
+        "invalidCode": "Code incorrect. Vérifiez-le et réessayez.",
+        "expiredCode": "Ce code a expiré. Demandez-en un nouveau.",
+        "locked": "Trop de tentatives. Réessayez plus tard.",
+        "throttled": "Veuillez patienter avant de demander un nouveau code.",
+        "waitSeconds": "Veuillez patienter {seconds} secondes avant de demander un nouveau code.",
+        "deliveryFailed": "Impossible d'envoyer le code. Essayez l'autre canal.",
+        "badSignature": "Veuillez signer avant de continuer.",
+        "notPending": "Ce contrat n'est plus en attente de signature.",
+        "pdfUnavailable": "Impossible d'ouvrir le document. Veuillez réessayer.",
+        "signFailed": "Nous n'avons pas pu finaliser votre contrat. Veuillez réessayer dans un instant.",
+        "unavailable": "La signature est momentanément indisponible. Veuillez réessayer plus tard."
+      }
     }
   },
   "common": {

@@ -16,10 +16,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  ArrowUpRight, BadgeCheck, Building2, CalendarClock, CalendarDays, Check, ChevronRight, Copy, GraduationCap, Link2, Loader2, LogOut,
+  ArrowUpRight, BadgeCheck, Building2, CalendarClock, CalendarDays, Check, ChevronRight, Copy, FileSignature, GraduationCap, Link2, Loader2, LogOut,
   MessageSquareText, Share2, ShieldOff, TrendingUp, User, Wallet,
 } from 'lucide-react';
-import { consultantService, type ConsultantMe, type ConsultantMentor } from '@/services/consultant.service';
+import { consultantService, type ConsultantContract, type ConsultantMe, type ConsultantMentor } from '@/services/consultant.service';
 import { cn } from '@/lib/utils';
 import { PinUnlock } from './portal/pin-unlock';
 import { AvailabilityEditor } from './portal/availability-editor';
@@ -29,10 +29,11 @@ import { EarningsSection } from './portal/earnings-section';
 import { WalletSection } from './portal/wallet-section';
 import { SpacesSection } from './portal/spaces-section';
 import { ProgramsSection } from './portal/programs-section';
+import { ContractSection } from './portal/contract-section';
 import { LanguageSwitcher } from './portal/language-switcher';
 import { AppLogo, Avatar, CP_GREEN, CP_GREEN_TEXT, CP_LIGHT_BORDER, CP_LIGHT_MUTED, fmtDZD } from './portal/shared';
 
-type Tab = 'consultations' | 'programs' | 'spaces' | 'availability' | 'profile' | 'earnings' | 'wallet';
+type Tab = 'consultations' | 'programs' | 'spaces' | 'availability' | 'profile' | 'earnings' | 'wallet' | 'contract';
 
 export function ConsultantPortal() {
   const [phase, setPhase] = useState<'loading' | 'signedOut' | 'signedIn'>('loading');
@@ -96,6 +97,24 @@ function Dashboard({
   const [tab, setTab] = useState<Tab>('consultations');
   const [menuOpen, setMenuOpen] = useState(false);
 
+  /* Commission contracts. Fetched once here rather than inside the section so
+     the banner and the tab always agree about whether one is outstanding. A
+     failure is silent: a contract the consultant cannot fetch must not break
+     the rest of their dashboard. */
+  const [contracts, setContracts] = useState<ConsultantContract[]>([]);
+  const [contractsLoading, setContractsLoading] = useState(true);
+  const loadContracts = useCallback(async () => {
+    try {
+      setContracts((await consultantService.contracts()).contracts);
+    } catch {
+      setContracts([]);
+    } finally {
+      setContractsLoading(false);
+    }
+  }, []);
+  useEffect(() => { void loadContracts(); }, [loadContracts]);
+  const pendingContract = contracts.find((c) => c.status === 'PENDING_SIGNATURE') ?? null;
+
   /* Public profile link — the page clients book from. slug is stable; pre-slug
      records fall back to the id (the public route resolves both). */
   const profilePath = `/${locale}/mentors/${me.mentor.slug ?? me.mentor.id}`;
@@ -132,6 +151,12 @@ function Dashboard({
     { key: 'earnings', label: t('nav.earnings'), icon: TrendingUp },
     { key: 'wallet', label: t('nav.wallet'), icon: Wallet },
   ];
+  // The tab appears only once a contract exists. A consultant who has never
+  // been sent one has nothing to look at, and an always-present empty tab
+  // would just add a dead end to the nav.
+  if (contracts.length > 0) {
+    tabs.push({ key: 'contract', label: t('nav.contract'), icon: FileSignature });
+  }
 
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-[1360px] lg:items-start">
@@ -256,6 +281,25 @@ function Dashboard({
             </a>
           )}
 
+          {/* Contract awaiting signature. Sits above the hero because it is the
+              one thing on this screen that blocks getting paid — and it links
+              into the tab rather than opening a modal, so the consultant can
+              read the whole document before committing to anything. */}
+          {pendingContract && tab !== 'contract' && (
+            <button
+              type="button"
+              onClick={() => setTab('contract')}
+              className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-start transition-colors hover:bg-amber-100/60"
+            >
+              <FileSignature className="size-4 shrink-0 text-amber-700" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-amber-800">{t('contract.bannerTitle')}</span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-amber-700/80">{t('contract.bannerBody')}</span>
+              </span>
+              <ChevronRight className="size-4 shrink-0 text-amber-700/70 rtl:rotate-180" />
+            </button>
+          )}
+
           {/* Account hero */}
           <div className="mb-6 overflow-hidden rounded-3xl border bg-white p-5 lg:p-6" style={{ borderColor: CP_LIGHT_BORDER }}>
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -339,6 +383,9 @@ function Dashboard({
           {tab === 'profile' && <ProfileSection mentor={me.mentor} onSaved={onMentor} />}
           {tab === 'earnings' && <EarningsSection />}
           {tab === 'wallet' && <WalletSection wallet={me.wallet} onChange={reload} />}
+          {tab === 'contract' && (
+            <ContractSection contracts={contracts} loading={contractsLoading} onChanged={loadContracts} />
+          )}
         </main>
 
         {/* Bottom tab bar (mobile only, below lg) */}
