@@ -147,6 +147,21 @@ export default defineConfig({
       },
     },
     {
+      // Entrepreneur/Startup rename + THE price-consistency regression (public
+      // pricing page vs dashboard widget vs admin page vs what checkout charges)
+      // + Network Pass gating and its dashboard placeholder. SERIAL &
+      // state-sharing, and every money test signs up its OWN member. Retries
+      // disabled so a flake never re-runs a purchase.
+      //   npx playwright test --project=membership-rename --workers=1
+      name: 'membership-rename',
+      testMatch: '**/api/membership-rename.spec.ts',
+      retries: 0,
+      timeout: 90_000,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
       // Admin grant / revoke of a membership + the under-funded-wallet purchase
       // contract. SERIAL & state-sharing (one JSON doc) and every test signs up
       // its own member — run with `--workers=1`. Retries disabled so a flake

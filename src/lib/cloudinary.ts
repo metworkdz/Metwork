@@ -106,6 +106,77 @@ export async function destroyRawResource(publicId: string): Promise<void> {
   await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
 }
 
+/**
+ * Server-side upload of a PRIVATE raw asset (`type: 'authenticated'`).
+ *
+ * Deliberately separate from `uploadBuffer` rather than an option on it:
+ * `uploadBuffer` returns `secure_url`, which is meaningless for an
+ * authenticated asset — those are never delivered from a plain URL. Callers
+ * here need the `public_id` so they can mint an expiring signed link later, so
+ * the return shape differs. Keeping them apart leaves `uploadBuffer`'s nine
+ * existing callers untouched.
+ *
+ * Signed consultant contracts carry phone numbers, bank details and a
+ * handwritten signature, so public delivery is not an option for them.
+ *
+ * NAMING: the public_id is extensionless, exactly like the pitch-deck and
+ * consultant-CV raw uploads. This account has Cloudinary's "Allow delivery of
+ * PDF and ZIP files" setting OFF, and while it is off any URL ending in `.pdf`
+ * returns 401 (verified against the live account — see
+ * `src/server/startups/pitch-deck.ts`). `upload_stream` receives no filename,
+ * so nothing appends one.
+ */
+export async function uploadAuthenticatedRaw(
+  buffer: Buffer,
+  options: { publicId: string; folder?: string },
+): Promise<{ publicId: string; bytes: number }> {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: options.folder,
+        public_id: options.publicId,
+        resource_type: 'raw',
+        type: 'authenticated',
+        // A contract is written once. Overwriting one would destroy the very
+        // bytes its stored SHA-256 attests to.
+        overwrite: false,
+      },
+      (err, result) => {
+        if (err || !result) return reject(err ?? new Error('Authenticated upload failed'));
+        resolve({ publicId: result.public_id as string, bytes: result.bytes as number });
+      },
+    );
+    stream.end(buffer);
+  });
+}
+
+/** How long a minted contract link stays valid. Short — links get forwarded. */
+export const SIGNED_URL_TTL_SECONDS = 5 * 60;
+
+/**
+ * Mint an expiring, signed link to an authenticated raw asset.
+ *
+ * Uses Cloudinary's download API (`api.cloudinary.com/.../raw/download`) rather
+ * than a signed delivery URL on `res.cloudinary.com`, for two reasons: it is the
+ * form that honours `expires_at` without depending on the paid auth-token
+ * feature, and it sidesteps the account's PDF-delivery restriction entirely.
+ *
+ * `format` is passed empty on purpose — the stored public_id is already the
+ * complete identifier, and supplying a format here would make Cloudinary look
+ * for `<public_id>.pdf`, which is not what was uploaded.
+ */
+export function signedRawDownloadUrl(
+  publicId: string,
+  options: { expiresInSeconds?: number } = {},
+): string {
+  const ttl = options.expiresInSeconds ?? SIGNED_URL_TTL_SECONDS;
+  return cloudinary.utils.private_download_url(publicId, '', {
+    resource_type: 'raw',
+    type: 'authenticated',
+    expires_at: Math.round(Date.now() / 1000) + ttl,
+  });
+}
+
 export async function uploadBuffer(
   buffer: Buffer,
   options: { folder?: string; publicId?: string; resourceType?: 'image' | 'raw' } = {},

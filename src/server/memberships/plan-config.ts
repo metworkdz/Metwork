@@ -131,22 +131,42 @@ export async function getPlanPassCount(codeOrTier: string | null | undefined): P
 /** Meta flag marking the one-time legacy-terms snapshot backfill as done. */
 const LEGACY_BACKFILL_FLAG = 'membershipLegacyTermsBackfilledAt';
 
+/** Meta flag marking the one-time 2026-08 Startup repricing as applied. */
+const STARTUP_REPRICE_FLAG = 'membershipStartupRepricedAt';
+
+/**
+ * The 2026-08 Startup terms, applied ONCE to an already-seeded plan config.
+ *
+ * Seeding is additive by design — a stored plan record is never overwritten —
+ * which means a change to `DEFAULT_PLAN_BENEFITS` reaches a fresh database but
+ * NOT a deployment that has already run the admin Commissions page. This is the
+ * one-time bridge for that gap. Only the two fields that actually changed are
+ * written: an admin's edits to the annual discount, the space rate or the
+ * Recommended tag are preserved.
+ */
+const STARTUP_REPRICE = {
+  monthlyPrice:             3_500,
+  consultationDiscountRate: 0.20,
+} as const;
+
 /**
  * Seed plan configs on first admin load, additively — a plan code that is
  * already stored is never touched. Runs three one-time, non-destructive steps:
  *
  *  1. Append any missing plan config from DEFAULT_MEMBERSHIP_PLAN_CONFIGS.
- *  2. Normalize the Network Pass allowances to the new defaults (Builder 0,
- *     Founder 5) — but ONLY when an admin has never edited them
+ *  2. Normalize the Network Pass allowances to the new defaults (Entrepreneur
+ *     0, Startup 5) — but ONLY when an admin has never edited them
  *     (`creditConfigUpdatedAt` unset). An admin's explicit value always wins.
  *  3. Backfill the frozen snapshot of every ACTIVE membership that predates
  *     snapshotting, using the terms that were live when it was bought
- *     (Builder 15 %/3 passes, Founder 20 %/10 passes). Without this, existing
+ *     (15 %/3 passes and 20 %/10 passes respectively). Without this, existing
  *     members would silently inherit the new terms on their next booking —
  *     the opposite of grandfathering.
+ *  4. Apply the one-time 2026-08 Startup repricing to an already-stored STARTUP
+ *     config (see STARTUP_REPRICE). Step 1 cannot do this: it only appends.
  *
- * Idempotent: steps 1 and 2 are conditional, step 3 is guarded by a meta flag
- * AND by a per-record "has no snapshot" check.
+ * Idempotent: steps 1 and 2 are conditional, steps 3 and 4 are guarded by meta
+ * flags (step 3 additionally by a per-record "has no snapshot" check).
  */
 export async function ensureMembershipPlanConfigs(): Promise<MembershipPlanConfigRecord[]> {
   const data = await db.read();
@@ -161,8 +181,14 @@ export async function ensureMembershipPlanConfigs(): Promise<MembershipPlanConfi
     (pcRead.builderMonthlyCredits !== defaultPlatformConfig.builderMonthlyCredits ||
       pcRead.founderMonthlyCredits !== defaultPlatformConfig.founderMonthlyCredits);
   const needsLegacyBackfill = !data.meta?.[LEGACY_BACKFILL_FLAG];
+  const needsStartupReprice = !data.meta?.[STARTUP_REPRICE_FLAG];
 
-  if (!missingConfig && !needsCreditNormalization && !needsLegacyBackfill) {
+  if (
+    !missingConfig &&
+    !needsCreditNormalization &&
+    !needsLegacyBackfill &&
+    !needsStartupReprice
+  ) {
     return planConfigsFrom(data);
   }
 
@@ -202,6 +228,21 @@ export async function ensureMembershipPlanConfigs(): Promise<MembershipPlanConfi
         // number would corrupt the audit trail. Absent means unknown.
       }
       store.meta[LEGACY_BACKFILL_FLAG] = now;
+    }
+
+    // ── 4. One-time Startup repricing on an already-stored config ─────────
+    // Ordered AFTER the snapshot backfill on purpose: step 3 must capture the
+    // terms a grandfathered member bought, which are the pre-repricing ones.
+    if (!store.meta[STARTUP_REPRICE_FLAG]) {
+      const stored = store.membershipPlanConfigs.find((c) => c.planCode === 'STARTUP');
+      if (stored) {
+        stored.monthlyPrice             = STARTUP_REPRICE.monthlyPrice;
+        stored.consultationDiscountRate = STARTUP_REPRICE.consultationDiscountRate;
+        stored.updatedAt                = new Date().toISOString();
+      }
+      // Flag set either way: on a fresh database step 1 just appended the
+      // record at the new terms, so there is nothing left to reprice.
+      store.meta[STARTUP_REPRICE_FLAG] = new Date().toISOString();
     }
 
     return planConfigsFrom(store);

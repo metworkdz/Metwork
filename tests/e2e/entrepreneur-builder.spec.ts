@@ -68,31 +68,40 @@ test.describe('🟢 Entrepreneur Builder Agent', () => {
   }
 
   // ── E1-12: Membership page shows BUILDER tier ────────────────────────────
-  test('E1-12 — Membership page shows BUILDER tier name', async ({ page }) => {
+  test('E1-12 — Membership page shows the Entrepreneur plan name', async ({ page }) => {
     await page.goto(`${BASE}/membership`);
     await page.waitForLoadState('networkidle');
     await capture(page, 'builder-E1-12-membership');
     const text = (await mainText(page)).toLowerCase();
-    const hasBuilder = text.includes('builder');
-    if (hasBuilder) {
-      log(A, 'E1-12', 'Membership Shows BUILDER', 'PASS');
+    // The plan formerly called "Builder". The retired name must be gone too —
+    // this account's tier value is still BUILDER internally, so a page showing
+    // "Builder" would mean a raw tier value leaking into the UI.
+    const hasEntrepreneur = text.includes('entrepreneur');
+    const hasRetired = text.includes('builder');
+    if (hasEntrepreneur && !hasRetired) {
+      log(A, 'E1-12', 'Membership Shows Entrepreneur', 'PASS');
     } else {
-      log(A, 'E1-12', 'Membership Shows BUILDER', 'FAIL', 'Word "builder" not found on membership page');
+      log(A, 'E1-12', 'Membership Shows Entrepreneur', 'FAIL',
+        `entrepreneur:${hasEntrepreneur} retired-"builder":${hasRetired}`);
     }
   });
 
-  // ── E1-13: Network pass shows credits ────────────────────────────────────
-  test('E1-13 — Network Pass shows credit balance', async ({ page }) => {
+  // ── E1-13: Network Pass placeholder while the feature is off ─────────────
+  test('E1-13 — Network Pass shows the coming-soon placeholder', async ({ page }) => {
     await page.goto(`${BASE}/network-pass`);
     await page.waitForLoadState('networkidle');
     await capture(page, 'builder-E1-13-network-pass');
     const text = await mainText(page);
-    // Should show "3" credits or "crédit" or similar
-    const hasCredits = /3|crédit|credit/i.test(text);
-    if (hasCredits) {
-      log(A, 'E1-13', 'Network Pass Has Credits', 'PASS', 'Credit info visible');
+    // Network Pass is switched off (see src/config/feature-flags.ts), so this
+    // screen shows the member's plan + an upgrade route instead of a credit
+    // balance. Flip the flag back on and this expectation flips with it.
+    const hasComingSoon = /coming soon|bientôt|قريبا|قريباً/i.test(text);
+    const hasCurrentPlan = /current plan|formule actuelle|الحالية/i.test(text);
+    if (hasComingSoon && hasCurrentPlan) {
+      log(A, 'E1-13', 'Network Pass Placeholder', 'PASS', 'Plan + coming-soon shown');
     } else {
-      log(A, 'E1-13', 'Network Pass Has Credits', 'FAIL', 'No credit information visible');
+      log(A, 'E1-13', 'Network Pass Placeholder', 'FAIL',
+        `comingSoon:${hasComingSoon} currentPlan:${hasCurrentPlan}`);
     }
   });
 

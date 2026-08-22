@@ -282,7 +282,7 @@ export default async function AdminAnalyticsPage({ params }: PageProps) {
           <StatCard
             label="Active Paid Members"
             value={a.memberships.activeTotal}
-            hint={`Builder: ${a.memberships.activeBuilder} · Founder: ${a.memberships.activeFounder}`}
+            hint={`Entrepreneur: ${a.memberships.activeBuilder} · Startup: ${a.memberships.activeFounder}`}
             icon={UserCheck}
           />
         </div>
@@ -446,24 +446,26 @@ export default async function AdminAnalyticsPage({ params }: PageProps) {
       {/* ── Space Booking Discounts ───────────────────────────────────── */}
       <section>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Space Booking Discounts (Founder Tier — 20% Off)
+          Space Booking Discounts (All Paid Plans)
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <StatCard
             label="Estimated Discount Given (all-time)"
             value={fmtDZD(a.spaceBookings.membershipDiscountEstimate)}
-            hint="20% off all wallet-paid space bookings by active Founder members"
+            hint="Wallet-paid space bookings by active members, at each member's own rate"
             icon={Gift}
           />
           <Card>
             <CardContent className="p-6">
               <p className="text-sm font-medium text-muted-foreground">How this is calculated</p>
               <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                For each wallet-paid space booking by a Founder member, the stored{' '}
-                <code className="rounded bg-muted px-1 text-xs">totalAmount</code> already reflects the
-                20% discount. The original price would have been{' '}
-                <strong>totalAmount ÷ 0.8</strong>, so the discount is{' '}
-                <strong>totalAmount × 0.25</strong>. Cancelled bookings are excluded.
+                For each wallet-paid space booking by a paying member, the stored{' '}
+                <code className="rounded bg-muted px-1 text-xs">totalAmount</code> already reflects
+                that member&apos;s discount rate <strong>r</strong>, so the amount forgone is{' '}
+                <strong>totalAmount × r ÷ (1 − r)</strong>. The rate is per member, not per plan:
+                it comes from the frozen snapshot on their membership, so anyone grandfathered onto
+                older terms is valued at the rate they actually bought. Cancelled bookings are
+                excluded.
               </p>
             </CardContent>
           </Card>

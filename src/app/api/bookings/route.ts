@@ -133,6 +133,9 @@ export async function POST(req: NextRequest) {
         return jsonError(409, 'OVERLAP_CONFLICT', 'This time slot is already booked', {
           conflictingBookingId: result.conflictingBookingId,
         });
+      case 'NETWORK_PASS_DISABLED':
+        return jsonError(403, 'NETWORK_PASS_DISABLED',
+          'Network Pass is not available yet.');
       case 'NOT_PARTNER_SPACE':
         return jsonError(422, 'NOT_PARTNER_SPACE',
           'This space is not part of the Network Pass partner network.');

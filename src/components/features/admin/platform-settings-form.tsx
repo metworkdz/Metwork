@@ -70,6 +70,7 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
   const [error,   setError]   = useState<string | null>(null);
   /** Landing section awaiting hide confirmation (hiding is destructive-ish: nav link + 404). */
   const [pendingHide, setPendingHide] = useState<LandingSection | null>(null);
+  const [stampUploading, setStampUploading] = useState(false);
 
   function set<K extends keyof PlatformSettingsRecord>(k: K, v: PlatformSettingsRecord[K]) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -93,6 +94,32 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
   function requestSectionToggle(section: LandingSection, visible: boolean) {
     if (visible) setSectionVisible(section, true);
     else setPendingHide(section);
+  }
+
+  /**
+   * Upload the stamp through the generic image endpoint, then hold the returned
+   * URL in form state. It is persisted by the normal Save, not on upload — so an
+   * admin who picks the wrong file can navigate away without having changed the
+   * image every future contract is signed with.
+   */
+  async function uploadStamp(file: File) {
+    setStampUploading(true); setError(null);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      body.append('folder', 'metwork/contract-stamp');
+      const res = await fetch('/api/upload', { method: 'POST', credentials: 'include', body });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
+        throw new Error(d.error?.message ?? t('saveFailed'));
+      }
+      const { url } = await res.json() as { url: string };
+      set('adminStampImageUrl', url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('saveFailed'));
+    } finally {
+      setStampUploading(false);
+    }
   }
 
   async function save() {
@@ -220,6 +247,50 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsRec
                 })}
               </p>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Contract stamp — burned into every consultant contract PDF signed from
+          now on. Past contracts are untouched: each one stores the stamp it was
+          signed with, so replacing this never alters a document already
+          produced. */}
+      <Card>
+        <CardHeader>
+          <p className="font-medium">{t('sectionContractStamp')}</p>
+          <p className="text-xs text-muted-foreground">{t('sectionContractStampDescription')}</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {form.adminStampImageUrl ? (
+            <div className="flex items-center gap-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={form.adminStampImageUrl}
+                alt={t('contractStampAlt')}
+                className="size-24 rounded-lg border border-border bg-white object-contain p-1"
+              />
+              <Button variant="outline" size="sm" onClick={() => set('adminStampImageUrl', null)}>
+                {t('contractStampRemove')}
+              </Button>
+            </div>
+          ) : (
+            <p className="text-xs text-amber-600">{t('contractStampUnsetWarning')}</p>
+          )}
+          <div className="space-y-1.5">
+            <Label htmlFor="contract-stamp">{t('contractStampLabel')}</Label>
+            <Input
+              id="contract-stamp"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              disabled={stampUploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void uploadStamp(file);
+                // Reset so re-picking the same file fires onChange again.
+                e.target.value = '';
+              }}
+            />
+            <p className="text-xs text-muted-foreground">{t('contractStampHint')}</p>
           </div>
         </CardContent>
       </Card>

@@ -9,7 +9,14 @@
  * Exercises the real chain end-to-end:
  *   createSpaceBooking → generateCheckInCode → validateCheckInManual → recordCheckIn
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+
+// The Network Pass feature ships switched OFF (see `@/config/feature-flags`).
+// These tests are what keeps the redemption path alive for the day it is
+// switched back on, so they run against the feature ENABLED — gating it would
+// have quietly stopped exercising the thing this file exists to protect.
+vi.mock('@/config/feature-flags', () => ({ isNetworkPassEnabled: () => true }));
+
 import { db } from '@/server/db/store';
 import { createSpaceBooking } from '@/server/bookings/service';
 import {

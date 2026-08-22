@@ -7,6 +7,11 @@
  *
  * These helpers normalise both representations into a single `MembershipTier`
  * enum value so the UI doesn't need to branch on both.
+ *
+ * NOTE ON NAMES: the enum values are stored data and keep the plans' ORIGINAL
+ * names — BUILDER and FOUNDER. The plans are now called Entrepreneur and
+ * Startup everywhere a member can see, which is what `TIER_LABELS` renders.
+ * Renaming the stored values would buy nothing and mutate live records.
  */
 
 export type MembershipTier = 'EXPLORER' | 'BUILDER' | 'FOUNDER';
@@ -35,11 +40,19 @@ export function resolveTier(user: TierSource): MembershipTier {
   }
 }
 
-/** Human-readable label for each tier. */
+/**
+ * Human-readable label for each tier — the CURRENT plan names.
+ *
+ * Not translated, and deliberately left that way for now: `MembershipTierBadge`
+ * is a sync component rendered from both Server and Client Components, so
+ * wiring next-intl into it is a refactor of its own. That gap predates this
+ * rename; the names it renders are at least correct. The translated names live
+ * at `membership.tiers.*.name` and are what every plan card uses.
+ */
 export const TIER_LABELS: Record<MembershipTier, string> = {
   EXPLORER: 'Explorer',
-  BUILDER:  'Builder',
-  FOUNDER:  'Founder',
+  BUILDER:  'Entrepreneur',
+  FOUNDER:  'Startup',
 };
 
 /** Emoji icon for each tier. */
