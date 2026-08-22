@@ -9,7 +9,21 @@ export const dynamic = 'force-dynamic';
 export default async function CrmLoginPage() {
   // Already signed in? Skip the form. Honour the pending password change so a
   // user cannot dodge it by navigating back to /login.
-  const session = await readCrmSession();
+  //
+  // This check is deliberately best-effort: it only runs when a session
+  // cookie is present (readCrmSession() returns null without touching the
+  // database otherwise), but if the database IS reachable-but-erroring at
+  // that moment, failing here must never block the one page whose entire job
+  // is letting someone log in. A visitor with a stale/irrelevant cookie
+  // during a transient database issue should still see the form and be able
+  // to attempt a real login (which has its own error handling) rather than
+  // being stuck on a blank error-boundary page with no way forward.
+  let session: Awaited<ReturnType<typeof readCrmSession>> = null;
+  try {
+    session = await readCrmSession();
+  } catch (err) {
+    console.error('[metworkcrm] readCrmSession failed on the login page — rendering the form anyway:', err);
+  }
   if (session) {
     redirect(session.user.mustChangePassword ? '/metworkcrm/change-password' : '/metworkcrm');
   }

@@ -25,31 +25,46 @@ export function CrmChangePasswordForm({ forced }: { forced: boolean }) {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
+    // Same split as the login form: fetch() failing and res.json() failing
+    // are different problems (network vs. a server-side crash producing a
+    // non-JSON body) and deserve different, honest messages — see the note
+    // there for why "Erreur réseau" for both was actively misleading.
+    let res: Response;
     try {
-      const res = await fetch('/api/metworkcrm/auth/change-password', {
+      res = await fetch('/api/metworkcrm/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
       });
-      const data = (await res.json()) as ChangePasswordResponse;
-
-      if (!res.ok) {
-        // Surface the first field-level message when validation failed.
-        const fieldErrors = data.error?.details?.fieldErrors;
-        const firstField = fieldErrors
-          ? Object.values(fieldErrors).flat().find(Boolean)
-          : undefined;
-        setError(firstField ?? data.error?.message ?? 'Modification impossible.');
-        setLoading(false);
-        return;
-      }
-
-      router.push(data.next ?? '/metworkcrm');
-      router.refresh();
     } catch {
-      setError('Erreur réseau. Réessayez.');
+      setError('Impossible de contacter le serveur. Vérifiez votre connexion.');
       setLoading(false);
+      return;
     }
+
+    let data: ChangePasswordResponse;
+    try {
+      data = (await res.json()) as ChangePasswordResponse;
+    } catch {
+      setError(`Réponse du serveur invalide (code ${res.status}). Réessayez ou contactez l'équipe technique.`);
+      setLoading(false);
+      return;
+    }
+
+    if (!res.ok) {
+      // Surface the first field-level message when validation failed.
+      const fieldErrors = data.error?.details?.fieldErrors;
+      const firstField = fieldErrors
+        ? Object.values(fieldErrors).flat().find(Boolean)
+        : undefined;
+      setError(firstField ?? data.error?.message ?? 'Modification impossible.');
+      setLoading(false);
+      return;
+    }
+
+    router.push(data.next ?? '/metworkcrm');
+    router.refresh();
   }
 
   return (
