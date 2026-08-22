@@ -196,6 +196,19 @@ export default defineConfig({
       },
     },
     {
+      // Admin startups management — admin sees all statuses (DRAFT included),
+      // a non-admin gets 403 from the API, and hard-delete requires a
+      // confirm/cancel round trip before cascading per decision D2 (bookmarks
+      // gone, investor-contact history kept). Admin is the primary actor.
+      //   npx playwright test --project=admin-startups
+      name: 'admin-startups',
+      testMatch: '**/admin-startups.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authStatePath('admin'),
+      },
+    },
+    {
       // Startup logo field — founder uploads a logo via the profile form; a
       // second browser context (investor, via authStatePath) verifies it
       // renders as a rounded avatar and that a no-logo listing falls back to
