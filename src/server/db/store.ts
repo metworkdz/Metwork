@@ -931,7 +931,8 @@ export type AuditAction =
   | 'MENTOR_APPROVED'
   | 'MENTOR_REJECTED'
   | 'MENTOR_PUBLISHED'
-  | 'MENTOR_UNPUBLISHED';
+  | 'MENTOR_UNPUBLISHED'
+  | 'STARTUP_DELETED';
 
 export interface AuditLogRecord {
   id: string;
