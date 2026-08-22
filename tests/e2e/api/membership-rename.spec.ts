@@ -208,8 +208,18 @@ test.describe('Rename, price consistency, and Network Pass gating', () => {
 
   test.beforeAll(async () => {
     admin = await roleContext('admin');
-    // A no-op PATCH runs the same seeding/migration path the admin Commissions
-    // page triggers, so this suite does not depend on page-visit order.
+    // A GET on the admin Commissions PAGE is what runs
+    // `ensureMembershipPlanConfigs()` in normal use — it seeds any missing plan
+    // code, backfills legacy snapshots, AND applies the one-time Startup
+    // repricing migration. A PATCH is NOT equivalent: the PATCH route seeds a
+    // plan code only when its record is entirely ABSENT, and never touches the
+    // repricing migration at all, so a STARTUP record already sitting at the
+    // pre-repricing 7 900 price is a permanent no-op for it. This suite must
+    // trigger the real page path, not assume the PATCH covers it.
+    const seedVisit = await admin.get('/en/dashboard/admin/commissions');
+    expect(seedVisit.ok(), `admin Commissions page → ${seedVisit.status()}`).toBeTruthy();
+
+    // No-op PATCHes as a secondary smoke check that the endpoint itself works.
     await setPlan(admin, 'ENTREPRENEUR', { isActive: true });
     await setPlan(admin, 'STARTUP', { isActive: true });
   });
