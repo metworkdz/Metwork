@@ -1851,7 +1851,7 @@
     {
       "id": "qa-admin-id",
       "email": "test.admin@metwork.test",
-      "passwordHash": "scrypt$9a5141f55ad6fd1d4db33594a5510dd0$6931d88dcb1deee33787c0a71efa81d654ab585437116386ba8af73fc6351eedc0d122915c57b02f28d6d1034327e3d241eca826ddfcb7436e645642baa86ca6",
+      "passwordHash": "scrypt$0a564ed07658b53cc8c47a887bfd7a57$7da7ac7a77d088aaea539544f8c1d5dab6550ea4162027af91a98a66ba361379bd395abf5bc9f3afeaa698d229afc9ccd7552115e34e7a0eb23db0e823386dce",
       "fullName": "QA Admin",
       "phone": "+2130700000000",
       "city": "Alger",
@@ -1865,13 +1865,13 @@
       "networkCreditsMax": 0,
       "avatarUrl": null,
       "locale": "fr",
-      "createdAt": "2026-08-21T19:50:34.470Z",
-      "updatedAt": "2026-08-21T19:50:34.470Z"
+      "createdAt": "2026-08-22T00:12:22.265Z",
+      "updatedAt": "2026-08-22T00:12:22.265Z"
     },
     {
       "id": "qa-incubator-user-id",
       "email": "test.incubator@metwork.test",
-      "passwordHash": "scrypt$76450f85f664776b592d0bde4a0084c1$87de72521748f6c964c9425a720e8c228b75ea37f14bbc25143cd13d94a4abb857db4c00256c22265c7499d3b9f210a01b2e4684df088b9a2853827b040e2f3f",
+      "passwordHash": "scrypt$651b76d2a6b4f0f813b28f80ba1aefb5$e3e9c8c79af3f33d7a4ae7a8c20d793d1840f98b4cb5409d26f9507d0d816e44b11b44cfc2d4f0ec779785d850c4403fbcc5fb32e2985fcd9d1bfbfe238e0b5a",
       "fullName": "QA Incubator Hub",
       "phone": "+2130700000001",
       "city": "Alger",
@@ -1885,13 +1885,13 @@
       "networkCreditsMax": 0,
       "avatarUrl": null,
       "locale": "fr",
-      "createdAt": "2026-08-21T19:50:34.470Z",
-      "updatedAt": "2026-08-21T19:50:34.470Z"
+      "createdAt": "2026-08-22T00:12:22.265Z",
+      "updatedAt": "2026-08-22T00:12:22.265Z"
     },
     {
       "id": "qa-builder-id",
       "email": "test.builder@metwork.test",
-      "passwordHash": "scrypt$68a0be6879e165066352c7159f033b7c$f72f4925d377c330a63d96faec89724c1c9ae437e2686fdd0a0cb4fa01f072154c016ef6836fca66c6ef8a8bc0f367301f2dcb8e56ddbea97f6ac24c9b0dc7e1",
+      "passwordHash": "scrypt$de2f1c8da78c2d85d873405093b54129$5bbc64003907b1620f1c1d4397908f2e55924d6e6f21fe8a0da3ae0b1f656c9d5a75ee69f3f9095dbac9f9f50e355d7d50104b5557922100e0b75719b8bcfe85",
       "fullName": "QA Builder Entrepreneur",
       "phone": "+2130700000002",
       "city": "Alger",
@@ -1905,13 +1905,13 @@
       "networkCreditsMax": 3,
       "avatarUrl": null,
       "locale": "fr",
-      "createdAt": "2026-08-21T19:50:34.470Z",
-      "updatedAt": "2026-08-21T19:50:34.470Z"
+      "createdAt": "2026-08-22T00:12:22.265Z",
+      "updatedAt": "2026-08-22T00:12:22.265Z"
     },
     {
       "id": "qa-founder-id",
       "email": "test.founder@metwork.test",
-      "passwordHash": "scrypt$fd397895e91d58d6554242102533be31$ab34ceb987778cf38bce37e9b067db494f5b6c41cf6e755593e954702e598de04a25403ec98da9e075a03ea7c167b9798e680154e09eaaa50f63a55f1545df54",
+      "passwordHash": "scrypt$ec253c637a9fd5c6cc061a8f96279a5b$63c3f86a1531b840324c11682173fe2c947c45c7d8cd8a876e95729712be7bc2f6f169d8d9e11ed4cd21f5bca181a58e5701249f899486d3a41a1060b3d731ae",
       "fullName": "QA Founder Entrepreneur",
       "phone": "+2130700000003",
       "city": "Alger",
@@ -1925,13 +1925,13 @@
       "networkCreditsMax": 10,
       "avatarUrl": null,
       "locale": "fr",
-      "createdAt": "2026-08-21T19:50:34.470Z",
-      "updatedAt": "2026-08-21T19:50:34.470Z"
+      "createdAt": "2026-08-22T00:12:22.265Z",
+      "updatedAt": "2026-08-22T00:12:22.265Z"
     },
     {
       "id": "qa-explorer-id",
       "email": "test.explorer@metwork.test",
-      "passwordHash": "scrypt$b1f9cdac26834a7effcc4a0ebf79dda4$a81f5535e7bf59dbc32ecce96deaebd05cbe1c8ef5da37bee771e71c0c3454c1e1d8607f519e6e25faa8c9da0e0118ee0f1609a6e8f8120940edc8a57a2f713f",
+      "passwordHash": "scrypt$c58097eaa962b3c1fd8e56aa73cbed5f$e36a800b3a94d27012e26c0f3e373e59737d821cee9ab2a994128f61a4b0503a85ca55ff2a9599ab5b42ff379189c53e8d3f77ef9c806b157fbdfea3a170b8af",
       "fullName": "QA Explorer Entrepreneur",
       "phone": "+2130700000004",
       "city": "Alger",
@@ -1945,13 +1945,13 @@
       "networkCreditsMax": 0,
       "avatarUrl": null,
       "locale": "fr",
-      "createdAt": "2026-08-21T19:50:34.470Z",
-      "updatedAt": "2026-08-21T19:50:34.470Z"
+      "createdAt": "2026-08-22T00:12:22.265Z",
+      "updatedAt": "2026-08-22T00:12:22.265Z"
     },
     {
       "id": "qa-investor-id",
       "email": "test.investor@metwork.test",
-      "passwordHash": "scrypt$a786290b8efed38ea955be022b55a56c$d23cda495497fc9e9710ca73faa1f28b41835c8cf69d3b925a4960a598d35df8c5716bb7ed0ca178f0d67d4f71270500044b1346fdce72812639d0a302ba0fff",
+      "passwordHash": "scrypt$8022b86e8212e5dc5f4cde635b8f1ea8$66945c705662f8f28bcb918599ea7f3e5dcc0673db683234e558e2e6f9dd56f25d06600fb0c0dc5f7f66ffb593b898fb6ff9e1ef7240a1e8c05bdf5346d1cab4",
       "fullName": "QA Investor",
       "phone": "+2130700000005",
       "city": "Alger",
@@ -1965,8 +1965,8 @@
       "networkCreditsMax": 0,
       "avatarUrl": null,
       "locale": "fr",
-      "createdAt": "2026-08-21T19:50:34.470Z",
-      "updatedAt": "2026-08-21T19:50:34.470Z"
+      "createdAt": "2026-08-22T00:12:22.265Z",
+      "updatedAt": "2026-08-22T00:12:22.265Z"
     }
   ],
   "sessions": [
@@ -3805,6 +3805,48 @@
       "userId": "qa-investor-id",
       "expiresAt": "2026-08-28T21:29:34.444Z",
       "createdAt": "2026-08-21T21:29:34.444Z"
+    },
+    {
+      "idHash": "b5c4166ab64ef1340480d196f439332bdbe415fd52d72fbfe18a20c732fd7713",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-08-29T00:12:56.173Z",
+      "createdAt": "2026-08-22T00:12:56.173Z"
+    },
+    {
+      "idHash": "25a1444ebbe141fe3accd7608d6dadfc78ba1a5af471c5b3157bfb769c78ee2c",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-08-29T00:13:46.204Z",
+      "createdAt": "2026-08-22T00:13:46.204Z"
+    },
+    {
+      "idHash": "b11d8dc35966a4eb07d543e67261b7c09ba2771e1a1807b6e000f4d97da67794",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-08-29T00:13:51.995Z",
+      "createdAt": "2026-08-22T00:13:51.995Z"
+    },
+    {
+      "idHash": "6a07c3626cb46157ac7cf9836f6d050c7cc05a86bb8bea5bd8d5f47de3009453",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-08-29T00:14:08.469Z",
+      "createdAt": "2026-08-22T00:14:08.469Z"
+    },
+    {
+      "idHash": "267caa537d20ae03d2825284fbf32ade0449312746f70294ae56c49abc8b2d0e",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-08-29T00:14:18.480Z",
+      "createdAt": "2026-08-22T00:14:18.480Z"
+    },
+    {
+      "idHash": "03695e072ee41e08b58dc8581c897122f967867f138d07bfc180ab1de1856214",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-08-29T00:14:25.350Z",
+      "createdAt": "2026-08-22T00:14:25.350Z"
+    },
+    {
+      "idHash": "55dfe693a62627260129884c1b16418df7d01a72cc0ade45775c284906047446",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-08-29T00:14:29.320Z",
+      "createdAt": "2026-08-22T00:14:29.320Z"
     }
   ],
   "otps": [],
@@ -14558,6 +14600,40 @@
       "status": "ACTIVE",
       "createdAt": "2026-08-21T21:29:55.400Z",
       "updatedAt": "2026-08-21T21:29:59.175Z"
+    },
+    {
+      "id": "09b7f7f6-1931-4eb4-b33e-33ce163cc354",
+      "name": "QA Admin Draft 1787357681849-i978e",
+      "description": "Automated e2e fixture — draft listing for admin page test. Safe to delete.",
+      "industry": "SaaS",
+      "fundingGoal": 500000,
+      "equityOffered": 10,
+      "valuation": null,
+      "maturityStage": "IDEA",
+      "pitchDeckUrl": null,
+      "websiteUrl": null,
+      "logoUrl": null,
+      "founderId": "qa-founder-id",
+      "status": "DRAFT",
+      "createdAt": "2026-08-22T00:14:46.295Z",
+      "updatedAt": "2026-08-22T00:14:46.295Z"
+    },
+    {
+      "id": "f31ec117-a4cf-4f4c-be30-767102db3c87",
+      "name": "QA Admin Active 1787357681849-i978e",
+      "description": "Automated e2e fixture — active listing for admin page test. Safe to delete.",
+      "industry": "FinTech",
+      "fundingGoal": 1000000,
+      "equityOffered": 15,
+      "valuation": null,
+      "maturityStage": "SEED",
+      "pitchDeckUrl": null,
+      "websiteUrl": null,
+      "logoUrl": null,
+      "founderId": "qa-founder-id",
+      "status": "ACTIVE",
+      "createdAt": "2026-08-22T00:14:46.427Z",
+      "updatedAt": "2026-08-22T00:14:51.168Z"
     }
   ],
   "mentors": [
@@ -18937,8 +19013,8 @@
       "subscriptionTier": "COMMISSION",
       "subscriptionStatus": "ACTIVE",
       "status": "ACTIVE",
-      "createdAt": "2026-08-21T19:50:34.470Z",
-      "updatedAt": "2026-08-21T19:50:34.470Z"
+      "createdAt": "2026-08-22T00:12:22.265Z",
+      "updatedAt": "2026-08-22T00:12:22.265Z"
     }
   ],
   "promoCodes": [
@@ -24134,8 +24210,8 @@
       "openingTime": "09:00",
       "closingTime": "18:00",
       "isActive": true,
-      "createdAt": "2026-08-21T19:50:34.470Z",
-      "updatedAt": "2026-08-21T19:50:34.470Z"
+      "createdAt": "2026-08-22T00:12:22.265Z",
+      "updatedAt": "2026-08-22T00:12:22.265Z"
     }
   ],
   "programs": [
@@ -27133,8 +27209,30 @@
       "createdAt": "2026-07-09T21:22:10.011Z"
     }
   ],
-  "investorContacts": [],
-  "savedStartups": [],
+  "investorContacts": [
+    {
+      "id": "7a07e55e-1118-4bd5-93d6-2e814f398756",
+      "investorId": "qa-investor-id",
+      "investorName": "QA Investor",
+      "investorEmail": "test.investor@metwork.test",
+      "startupId": "f31ec117-a4cf-4f4c-be30-767102db3c87",
+      "startupName": "QA Admin Active 1787357681849-i978e",
+      "founderName": "QA Founder Entrepreneur",
+      "message": "Automated e2e fixture — interested in learning more about this startup.",
+      "status": "PENDING",
+      "adminNote": null,
+      "createdAt": "2026-08-22T00:15:01.554Z",
+      "updatedAt": "2026-08-22T00:15:01.554Z"
+    }
+  ],
+  "savedStartups": [
+    {
+      "id": "f47d18b6-732e-484d-9254-3d2c94393825",
+      "userId": "qa-investor-id",
+      "startupId": "f31ec117-a4cf-4f4c-be30-767102db3c87",
+      "createdAt": "2026-08-22T00:14:56.386Z"
+    }
+  ],
   "investments": [],
   "withdrawalRequests": [
     {

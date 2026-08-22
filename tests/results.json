@@ -10,18 +10,14 @@
     "grep": {},
     "grepInvert": null,
     "maxFailures": 0,
-    "metadata": {
-      "actualWorkers": 1
-    },
+    "metadata": {},
     "preserveOutput": "always",
     "projects": [
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "admin",
         "name": "admin",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
@@ -29,15 +25,13 @@
         "testMatch": [
           "**/admin.spec.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "incubator",
         "name": "incubator",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
@@ -45,15 +39,13 @@
         "testMatch": [
           "**/incubator.spec.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "entrepreneur-builder",
         "name": "entrepreneur-builder",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
@@ -61,15 +53,13 @@
         "testMatch": [
           "**/entrepreneur-builder.spec.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "entrepreneur-founder",
         "name": "entrepreneur-founder",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
@@ -77,15 +67,13 @@
         "testMatch": [
           "**/entrepreneur-founder.spec.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "entrepreneur-explorer",
         "name": "entrepreneur-explorer",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
@@ -93,15 +81,13 @@
         "testMatch": [
           "**/entrepreneur-explorer.spec.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "spaces-granularity",
         "name": "spaces-granularity",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
@@ -109,15 +95,13 @@
         "testMatch": [
           "**/spaces-granularity.spec.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "cleanup",
         "name": "cleanup",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/cleanup",
@@ -125,15 +109,13 @@
         "testMatch": [
           "**/*.cleanup.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "invoices",
         "name": "invoices",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
@@ -142,15 +124,13 @@
           "**/invoice-*.spec.ts",
           "**/domiciliation-price.spec.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "consultation",
         "name": "consultation",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
@@ -159,15 +139,13 @@
           "**/api/consultation*.spec.ts",
           "**/consultation-i18n.spec.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "space-reservation-modes",
         "name": "space-reservation-modes",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
@@ -175,15 +153,13 @@
         "testMatch": [
           "**/api/space-reservation-modes.spec.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "membership-pricing",
         "name": "membership-pricing",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
@@ -191,15 +167,13 @@
         "testMatch": [
           "**/api/membership-pricing.spec.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "entrepreneur-fixes",
         "name": "entrepreneur-fixes",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
@@ -207,15 +181,13 @@
         "testMatch": [
           "**/api/membership-grant-topup.spec.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "entrepreneur-mobile",
         "name": "entrepreneur-mobile",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
@@ -223,15 +195,27 @@
         "testMatch": [
           "**/entrepreneur-mobile.spec.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
+        "id": "admin-startups",
+        "name": "admin-startups",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/admin-startups.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {},
         "id": "startup-logo",
         "name": "startup-logo",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
@@ -239,15 +223,13 @@
         "testMatch": [
           "**/startup-logo.spec.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       },
       {
         "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "withdrawals-ui",
         "name": "withdrawals-ui",
         "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
@@ -255,7 +237,7 @@
         "testMatch": [
           "**/withdrawal-ui.spec.ts"
         ],
-        "timeout": 90000
+        "timeout": 120000
       }
     ],
     "quiet": false,
@@ -290,64 +272,23 @@
     "workers": 1,
     "webServer": null
   },
-  "suites": [
+  "suites": [],
+  "errors": [
     {
-      "title": "startup-logo.spec.ts",
-      "file": "startup-logo.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Startup logo field",
-          "file": "startup-logo.spec.ts",
-          "line": 22,
-          "column": 6,
-          "specs": [
-            {
-              "title": "founder uploads a logo, it persists, and renders correctly across the marketplace",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "startup-logo",
-                  "projectName": "startup-logo",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 49813,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-21T21:29:51.933Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "18f1e0d2fc4aee9aeabd-f1bc6df9d4a85cfa201d",
-              "file": "startup-logo.spec.ts",
-              "line": 51,
-              "column": 7
-            }
-          ]
-        }
-      ]
+      "message": "TimeoutError: page.waitForURL: Timeout 30000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================",
+      "stack": "TimeoutError: page.waitForURL: Timeout 30000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================\n    at globalSetup (/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e/global-setup.ts:40:16)",
+      "location": {
+        "file": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e/global-setup.ts",
+        "column": 16,
+        "line": 40
+      },
+      "snippet": "   at global-setup.ts:40\n\n  38 |     await page.fill('#password', role.password);\n  39 |     await page.click('button[type=\"submit\"]');\n> 40 |     await page.waitForURL(/\\/en\\/dashboard/, { timeout: 30_000 });\n     |                ^\n  41 |\n  42 |     await context.storageState({ path: authStatePath(role.name) });\n  43 |     await context.close();"
     }
   ],
-  "errors": [],
   "stats": {
-    "startTime": "2026-08-21T21:28:15.701Z",
-    "duration": 154058.29200000002,
-    "expected": 1,
+    "startTime": "2026-08-22T00:12:34.936Z",
+    "duration": 37326.729,
+    "expected": 0,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

@@ -14,7 +14,7 @@ export default defineConfig({
     ['list'],
   ],
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:3010',
     headless: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -178,6 +178,19 @@ export default defineConfig({
         ...devices['iPhone 13'],
         browserName: 'chromium',
         storageState: authStatePath('builder'),
+      },
+    },
+    {
+      // Admin startups management — admin sees all statuses (DRAFT included),
+      // a non-admin gets 403 from the API, and hard-delete requires a
+      // confirm/cancel round trip before cascading per decision D2 (bookmarks
+      // gone, investor-contact history kept). Admin is the primary actor.
+      //   npx playwright test --project=admin-startups
+      name: 'admin-startups',
+      testMatch: '**/admin-startups.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authStatePath('admin'),
       },
     },
     {
