@@ -185,7 +185,13 @@ export interface ConsultantProgram {
   type: 'INCUBATION' | 'ACCELERATION' | 'TRAINING' | 'BOOTCAMP' | 'WORKSHOP' | 'WEBINAR';
   city: string;
   imageUrl: string | null;
+  imageUrls?: string[];
   price: number;
+  onlinePrice?: number | null;
+  cashPrice?: number | null;
+  acceptedPaymentMethods: ('ONLINE' | 'CASH')[];
+  cashDepositType?: 'FIXED' | 'PERCENT';
+  cashDepositValue?: number;
   seatsTotal: number;
   seatsTaken: number;
   deadline: string;
@@ -221,6 +227,13 @@ export interface ConsultantProgramInput {
   type: ConsultantProgram['type'];
   city: string;
   imageUrl?: string | null;
+  imageUrls?: string[];
+  price: number;
+  onlinePrice?: number | null;
+  cashPrice?: number | null;
+  acceptedPaymentMethods: ('ONLINE' | 'CASH')[];
+  cashDepositType?: 'FIXED' | 'PERCENT' | null;
+  cashDepositValue?: number | null;
   seatsTotal: number;
   deadline: string;
   startDate: string;
@@ -380,7 +393,7 @@ export const consultantService = {
   programs: () =>
     apiClient.get<{ items: ConsultantProgram[]; total: number }>('/consultant/programs'),
   createProgram: (body: ConsultantProgramInput) =>
-    apiClient.post<ConsultantProgram>('/consultant/programs', { ...body, price: 0 }),
+    apiClient.post<ConsultantProgram>('/consultant/programs', body),
   updateProgram: (id: string, body: Partial<ConsultantProgramInput> & { status?: 'DRAFT' | 'PUBLISHED' | 'CLOSED' }) =>
     apiClient.patch<{ program: ConsultantProgram }>(
       `/consultant/programs/${encodeURIComponent(id)}`,

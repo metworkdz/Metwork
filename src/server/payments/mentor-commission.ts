@@ -61,6 +61,23 @@ function resolveRate(value: number | null | undefined, fallback: number): number
 }
 
 /**
+ * Rebuild a rate pair from a rate that was FROZEN earlier (e.g. snapshotted onto
+ * a booking at creation). Returns null when there is no usable frozen value, so
+ * the caller falls back to resolving the live admin rule.
+ *
+ * This is what makes a later admin rate change non-retroactive: a booking that
+ * captured its rate up front is split with that rate forever, without this
+ * module ever hardcoding a number.
+ */
+export function ratesFromFrozen(
+  frozenPlatformRate: number | null | undefined,
+): MentorCommissionRates | null {
+  if (frozenPlatformRate == null || !Number.isFinite(frozenPlatformRate)) return null;
+  const platformRate = resolveRate(frozenPlatformRate, 0);
+  return { platformRate, mentorRate: 1 - platformRate };
+}
+
+/**
  * Resolve the effective platform / consultant split. Prefers the active
  * admin-configured rule for the given `kind`; otherwise the seeded default.
  * Mirrors the lookup used by the mentor-revenue report.
@@ -143,6 +160,12 @@ export function computeMentorPromoSplit(
   input: { basePrice: number; collectedAmount: number },
   rules?: readonly CommissionRuleRecord[] | null,
   context?: MentorCommissionContext | null,
+  /**
+   * Pre-resolved rates (from `ratesFromFrozen`) that WIN over `rules`. Used by
+   * bookings that snapshotted their rate at creation, so an admin editing the
+   * rule later cannot re-split them. Omit to resolve the live rule.
+   */
+  frozenRates?: MentorCommissionRates | null,
 ): MentorPromoSplit {
   const basePrice =
     Number.isFinite(input.basePrice) && input.basePrice > 0 ? Math.round(input.basePrice) : 0;
@@ -150,7 +173,8 @@ export function computeMentorPromoSplit(
     Number.isFinite(input.collectedAmount) && input.collectedAmount > 0
       ? Math.round(input.collectedAmount)
       : 0;
-  const { platformRate, mentorRate } = resolveMentorCommissionRates(rules, context);
+  const { platformRate, mentorRate } =
+    frozenRates ?? resolveMentorCommissionRates(rules, context);
   const consultantShare = Math.max(0, Math.round(basePrice * mentorRate));
   const platformShare = collectedAmount - consultantShare;
   return { basePrice, collectedAmount, consultantShare, platformShare, platformRate, mentorRate };

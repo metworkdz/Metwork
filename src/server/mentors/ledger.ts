@@ -6,21 +6,26 @@
  * deliberately mirror the user wallet + withdrawal flow so the admin UX and
  * audit trail stay consistent:
  *
- *   settle      → creditPendingEarning  (+net to PENDING, commission recorded)
- *   complete    → releaseToAvailable    (PENDING → AVAILABLE)
- *   cancel      → voidPendingEarning    (void an unreleased earning)
- *   withdraw    → requestMentorWithdrawal (escrow hold from AVAILABLE)
- *   admin acts  → resolveMentorWithdrawal (mark paid / refund)
+ *   ANY earning           → applyMentorEarningToDraft (THE canonical credit —
+ *                           consultations AND programs both go through it)
+ *   consultation settle   → creditPendingEarning     (async wrapper, → PENDING)
+ *   consultation complete → releaseToAvailable       (PENDING → AVAILABLE)
+ *   consultation cancel   → voidPendingEarning       (void an unreleased earning)
+ *   program settle        → applyMentorEarningToDraft (bucket AVAILABLE, no hold)
+ *   withdraw              → requestMentorWithdrawal  (escrow hold from AVAILABLE)
+ *   admin acts            → resolveMentorWithdrawal  (mark paid / refund)
  *
  * Guarantees:
  *  - Every mutation runs inside a single `db.update` critical section.
+ *    `applyMentorEarningToDraft` is deliberately synchronous-on-draft so the
+ *    program rail can run it inside card-payment.ts's own settlement
+ *    transaction (wallet credit + booking status commit together) rather than
+ *    opening a second, nested one; `creditPendingEarning` wraps it for callers
+ *    that own no transaction.
  *  - Every amount is integer DZD; `availableBalance` can never go negative.
  *  - Every state transition is idempotent via a per-mentor `reference` key, so
  *    settlement/cancellation replays (webhook + return, double click) move money
  *    at most once.
- *
- * NOTE: this module is dormant — nothing calls it yet. It is wired into the
- * booking/settlement path in a later prompt.
  */
 import { randomUUID } from 'node:crypto';
 import {
@@ -33,6 +38,7 @@ import {
 } from '@/server/db/store';
 import {
   computeMentorPromoSplit,
+  ratesFromFrozen,
   type MentorEarningKind,
   type MentorEarningSplit,
 } from '@/server/payments/mentor-commission';
@@ -120,24 +126,13 @@ export interface CreditPendingEarningResult {
   split: MentorEarningSplit;
 }
 
-/**
- * Credit a consultation's net earning to the mentor's PENDING balance and record
- * the platform's share (or subsidy) for audit. Idempotent per booking: a replay
- * returns the original split without crediting twice.
- *
- * Owner-locked split (2026-06-18): the consultant is paid on the FULL undiscounted
- * base price `consultantShareBase` (= fee × duration before tier+promo); the
- * platform absorbs every discount. `platformShare = collected − consultantShare`
- * and MAY be negative (platform pays out of pocket). When `consultantShareBase`
- * is omitted it defaults to `grossAmount`, reproducing the legacy 30/70-on-gross
- * behaviour exactly (back-compat for existing callers/tests). A zero base is a
- * no-op credit. The discount components are frozen here so the admin revenue P&L
- * never has to recompute them.
- */
-export async function creditPendingEarning(input: {
+/** Which balance an earning lands in. See `applyMentorEarningToDraft`. */
+export type MentorEarningBucket = 'PENDING' | 'AVAILABLE';
+
+export interface ApplyMentorEarningInput {
   mentorId: string;
   bookingId: string;
-  /** What the user actually paid (after tier + promo). Integer DZD. */
+  /** What the payer actually paid (after tier + promo). Integer DZD. */
   grossAmount: number;
   /** Absolute base price B (before discounts). Defaults to grossAmount. */
   consultantShareBase?: number | null;
@@ -147,119 +142,190 @@ export async function creditPendingEarning(input: {
   promoDiscountAmount?: number | null;
   /** Promo code applied, for the subsidy audit trail. */
   appliedPromoCode?: string | null;
-  /**
-   * What this earning is FOR — selects the commission rule. Omitted ⇒
-   * CONSULTATION, so every pre-existing caller is unchanged.
-   */
+  /** What this earning is FOR — selects the commission rule. Omitted ⇒ CONSULTATION. */
   kind?: MentorEarningKind | null;
-}): Promise<CreditPendingEarningResult> {
+  /**
+   * Where the credit lands. Omitted ⇒ PENDING (consultations: held until the
+   * session COMPLETES, released by `releaseToAvailable`). PROGRAM settlements
+   * pass AVAILABLE — program earnings are withdrawable immediately, mirroring
+   * how incubator-owned programs pay out at settlement with no hold either.
+   */
+  bucket?: MentorEarningBucket | null;
+  /**
+   * Platform rate snapshotted onto the booking EARLIER (at creation). When
+   * present it wins over the live admin rule, so an admin editing the rate
+   * afterwards cannot re-split an existing booking. Absent ⇒ resolve the rule
+   * live (consultations, which are pay-first so creation ≈ settlement).
+   */
+  frozenPlatformRate?: number | null;
+}
+
+/**
+ * THE canonical mentor-earning credit. Everything that pays a consultant —
+ * 1:1 consultations and consultant-owned programs alike — goes through this
+ * one function, so the split math, the idempotency key, the ledger shape and
+ * the audit trail can never diverge between the two rails.
+ *
+ * SYNCHRONOUS on an already-open draft: `db.update` calls cannot nest, and the
+ * program rail runs inside `card-payment.ts`'s own settlement transaction (so
+ * the wallet credit and the booking's CONFIRMED transition commit together, or
+ * not at all). `creditPendingEarning` below is the async wrapper for callers
+ * that own no transaction.
+ *
+ * Owner-locked split (2026-06-18): the consultant is paid on the FULL
+ * undiscounted base price `consultantShareBase`; the platform absorbs every
+ * discount. `platformShare = collected − consultantShare` and MAY be negative
+ * (platform pays out of pocket). When `consultantShareBase` is omitted it
+ * defaults to `grossAmount`. A zero base is a no-op credit. The resolved rates
+ * and discount components are frozen into the ledger rows here, so the admin
+ * revenue P&L never has to recompute them.
+ *
+ * Idempotent per booking via the `mentor-earning-${bookingId}` reference: a
+ * replay returns the ORIGINAL frozen split (read back off the prior row) and
+ * moves no money.
+ */
+export function applyMentorEarningToDraft(
+  d: StoreDraft,
+  input: ApplyMentorEarningInput,
+): CreditPendingEarningResult {
   const { mentorId, bookingId, grossAmount } = input;
   const basePrice =
     input.consultantShareBase != null && input.consultantShareBase > 0
       ? input.consultantShareBase
       : grossAmount;
   const kind: MentorEarningKind = input.kind ?? 'CONSULTATION';
+  const bucket: MentorEarningBucket = input.bucket ?? 'PENDING';
   const tierDiscountAmount = Math.max(0, Math.round(input.tierDiscountAmount ?? 0));
   const promoDiscountAmount = Math.max(0, Math.round(input.promoDiscountAmount ?? 0));
   const earningRef = `mentor-earning-${bookingId}`;
+  const isProgram = kind === 'PROGRAM';
 
-  return db.update<CreditPendingEarningResult>((d) => {
-    const wallet = ensureMentorWallet(d, mentorId);
-    // Rate is selected by what the earning is FOR (consultation vs program),
-    // resolved inside the same atomic update so the split and the rules read
-    // the same document version. The resolved rates are frozen into the txn
-    // metadata below, so a later rate change never rewrites this earning.
-    const promo = computeMentorPromoSplit(
-      { basePrice, collectedAmount: grossAmount },
-      d.commissionRules,
-      { kind },
-    );
-    // Shape kept MentorEarningSplit-compatible for existing consumers: gross =
-    // what was collected, platformCommission = the (signed) platform share.
-    const split: MentorEarningSplit = {
-      gross: promo.collectedAmount,
-      platformCommission: promo.platformShare,
-      mentorNet: promo.consultantShare,
-      platformRate: promo.platformRate,
-      mentorRate: promo.mentorRate,
+  const wallet = ensureMentorWallet(d, mentorId);
+
+  // ── Idempotency ────────────────────────────────────────────────────────
+  // A prior earning for this booking replays with the ORIGINAL split, read
+  // back off the frozen ledger metadata rather than recomputed — so even if
+  // the admin rate changed in between, a replay reports (and moves) exactly
+  // what the first settlement did.
+  const prior = findByReference(d, mentorId, earningRef);
+  if (prior) {
+    const meta = prior.metadata as {
+      gross?: number; platformShare?: number; platformRate?: number; mentorRate?: number;
     };
+    return {
+      replayed: true,
+      wallet,
+      split: {
+        gross: meta.gross ?? prior.amount,
+        platformCommission: meta.platformShare ?? 0,
+        mentorNet: prior.amount,
+        platformRate: meta.platformRate ?? 0,
+        mentorRate: meta.mentorRate ?? 1,
+      },
+    };
+  }
 
-    // Idempotency: a prior earning for this booking replays unchanged.
-    if (findByReference(d, mentorId, earningRef)) {
-      return { replayed: true, wallet, split };
-    }
+  // Rate is selected by what the earning is FOR (consultation vs program) and
+  // resolved inside this same atomic update, so the split and the rules read
+  // the same document version. A rate frozen at booking creation wins.
+  const promo = computeMentorPromoSplit(
+    { basePrice, collectedAmount: grossAmount },
+    d.commissionRules,
+    { kind },
+    ratesFromFrozen(input.frozenPlatformRate),
+  );
+  // Shape kept MentorEarningSplit-compatible for existing consumers: gross =
+  // what was collected, platformCommission = the (signed) platform share.
+  const split: MentorEarningSplit = {
+    gross: promo.collectedAmount,
+    platformCommission: promo.platformShare,
+    mentorNet: promo.consultantShare,
+    platformRate: promo.platformRate,
+    mentorRate: promo.mentorRate,
+  };
 
-    const now = new Date().toISOString();
+  const now = new Date().toISOString();
 
-    if (split.mentorNet > 0) {
-      wallet.pendingBalance += split.mentorNet;
-      wallet.updatedAt = now;
-    }
+  if (split.mentorNet > 0) {
+    if (bucket === 'AVAILABLE') wallet.availableBalance += split.mentorNet;
+    else wallet.pendingBalance += split.mentorNet;
+    wallet.updatedAt = now;
+  }
 
+  pushTxn(d, {
+    id: randomUUID(),
+    mentorId,
+    bookingId,
+    type: 'EARNING',
+    amount: split.mentorNet,
+    bucket,
+    status: 'COMPLETED',
+    reference: earningRef,
+    description: isProgram
+      ? 'Program earning'
+      : 'Consultation earning (held until completed)',
+    metadata: {
+      gross: split.gross,
+      basePrice: promo.basePrice,
+      consultantShare: promo.consultantShare,
+      platformShare: promo.platformShare,
+      platformCommission: split.platformCommission,
+      platformRate: split.platformRate,
+      mentorRate: split.mentorRate,
+    },
+    createdAt: now,
+    completedAt: now,
+  });
+
+  // Audit-only: the platform's net + the discounts it absorbed. Recorded
+  // against the booking, never added to the mentor wallet. Always written when
+  // there is a real base so the admin P&L can see subsidies (platformShare can
+  // be ≤ 0 under the subsidize model).
+  if (promo.basePrice > 0) {
+    const totalDiscountAbsorbed = tierDiscountAmount + promoDiscountAmount;
     pushTxn(d, {
       id: randomUUID(),
       mentorId,
       bookingId,
-      type: 'EARNING',
-      amount: split.mentorNet,
-      bucket: 'PENDING',
+      type: 'COMMISSION',
+      amount: -promo.platformShare,
+      bucket,
       status: 'COMPLETED',
-      reference: earningRef,
+      reference: `mentor-commission-${bookingId}`,
       description:
-        kind === 'PROGRAM'
-          ? 'Program earning (held until the program ends)'
-          : 'Consultation earning (held until completed)',
+        promo.platformShare >= 0
+          ? `Platform share on ${isProgram ? 'program' : 'consultation'}`
+          : `Platform subsidy on ${isProgram ? 'program' : 'consultation'} (discount absorbed)`,
       metadata: {
-        gross: split.gross,
+        gross: promo.collectedAmount,
         basePrice: promo.basePrice,
         consultantShare: promo.consultantShare,
         platformShare: promo.platformShare,
-        platformCommission: split.platformCommission,
-        platformRate: split.platformRate,
-        mentorRate: split.mentorRate,
+        tierDiscountAmount,
+        promoDiscountAmount,
+        totalDiscountAbsorbed,
+        platformRate: promo.platformRate,
+        mentorRate: promo.mentorRate,
+        appliedPromoCode: input.appliedPromoCode ?? null,
       },
       createdAt: now,
       completedAt: now,
     });
+  }
 
-    // Audit-only: the platform's net + the discounts it absorbed. Recorded
-    // against the booking, never added to the mentor wallet. Always written when
-    // there is a real base so the admin P&L can see subsidies (platformShare can
-    // be ≤ 0 under the subsidize model).
-    if (promo.basePrice > 0) {
-      const totalDiscountAbsorbed = tierDiscountAmount + promoDiscountAmount;
-      pushTxn(d, {
-        id: randomUUID(),
-        mentorId,
-        bookingId,
-        type: 'COMMISSION',
-        amount: -promo.platformShare,
-        bucket: 'PENDING',
-        status: 'COMPLETED',
-        reference: `mentor-commission-${bookingId}`,
-        description:
-          promo.platformShare >= 0
-            ? `Platform share on ${kind === 'PROGRAM' ? 'program' : 'consultation'}`
-            : `Platform subsidy on ${kind === 'PROGRAM' ? 'program' : 'consultation'} (discount absorbed)`,
-        metadata: {
-          gross: promo.collectedAmount,
-          basePrice: promo.basePrice,
-          consultantShare: promo.consultantShare,
-          platformShare: promo.platformShare,
-          tierDiscountAmount,
-          promoDiscountAmount,
-          totalDiscountAbsorbed,
-          platformRate: promo.platformRate,
-          mentorRate: promo.mentorRate,
-          appliedPromoCode: input.appliedPromoCode ?? null,
-        },
-        createdAt: now,
-        completedAt: now,
-      });
-    }
+  return { replayed: false, wallet, split };
+}
 
-    return { replayed: false, wallet, split };
-  });
+/**
+ * Async wrapper around {@link applyMentorEarningToDraft} for callers that do
+ * NOT already hold an open `db.update` — the consultation settlement paths.
+ * Opens the transaction and delegates; all behaviour lives in the canonical
+ * function above.
+ */
+export async function creditPendingEarning(
+  input: ApplyMentorEarningInput,
+): Promise<CreditPendingEarningResult> {
+  return db.update<CreditPendingEarningResult>((d) => applyMentorEarningToDraft(d, input));
 }
 
 export type ReleaseEarningResult =

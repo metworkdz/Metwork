@@ -44,6 +44,7 @@ import {
   type BookingPaymentMode,
   type BookingUnit,
   type IncubatorRecord,
+  type MentorRecord,
   type TransactionRecord,
   type WalletRecord,
 } from '@/server/db/store';
@@ -55,6 +56,9 @@ import {
   type ProviderPlan,
 } from '@/server/payments/commission';
 import { getEffectiveSubscriptionCode } from '@/server/incubator/service';
+import { isMentorApproved } from '@/lib/mentor-approval';
+import { applyMentorEarningToDraft } from '@/server/mentors/ledger';
+import { resolveMentorCommissionRates } from '@/server/payments/mentor-commission';
 import {
   computeQuantity,
   validateWorkingHours,
@@ -194,6 +198,14 @@ function findOwningIncubator(
   return d.incubators.find((i) => i.id === incubatorId) ?? null;
 }
 
+/** Resolve the consultant record that owns a mentor-owned PROGRAM (null for any other kind/owner). */
+function findOwningMentor(d: StoreDraft, kind: BookingItemKind, itemId: string): MentorRecord | null {
+  if (kind !== 'PROGRAM') return null;
+  const mentorId = d.programs?.find((p) => p.id === itemId)?.mentorId;
+  if (!mentorId) return null;
+  return (d.mentors ?? []).find((m) => m.id === mentorId) ?? null;
+}
+
 interface ResolvedItem {
   itemId: string;
   itemName: string;
@@ -294,20 +306,31 @@ function resolveTarget(
 
   if (input.target.itemKind === 'PROGRAM') {
     const rec = (data.programs ?? []).find((p) => p.id === (input.target as { programId: string }).programId);
-    // Consultant-owned programs are not card-purchasable yet: this checkout
-    // settles the online amount into the OWNING INCUBATOR's wallet, and a
-    // consultant has none (their earnings live in the parallel mentor ledger).
-    // Fail closed rather than let a payment settle to nobody.
-    if (!rec || !rec.isActive || !rec.incubatorId || !activeInc(rec.incubatorId)) {
+    if (!rec || !rec.isActive) return { ok: false, reason: 'ITEM_NOT_FOUND' };
+
+    // A program is owned by EXACTLY ONE of an incubator or a consultant (see
+    // ProgramRecord.mentorId in store.ts). Each owner type settles into its
+    // own ledger — incubator wallet vs. the parallel mentorId-keyed one — so
+    // each needs its own "is this owner in good standing" check.
+    let vendorName: string;
+    if (rec.incubatorId) {
+      if (!activeInc(rec.incubatorId)) return { ok: false, reason: 'ITEM_NOT_FOUND' };
+      vendorName = rec.incubatorName;
+    } else if (rec.mentorId) {
+      const mentor = (data.mentors ?? []).find((m) => m.id === rec.mentorId);
+      if (!mentor || !isMentorApproved(mentor)) return { ok: false, reason: 'ITEM_NOT_FOUND' };
+      vendorName = rec.mentorName ?? mentor.fullName;
+    } else {
       return { ok: false, reason: 'ITEM_NOT_FOUND' };
     }
+
     if (Date.parse(rec.deadline) <= Date.now()) return { ok: false, reason: 'DEADLINE_PASSED', detail: { deadline: rec.deadline } };
     return {
       ok: true,
       item: {
         itemId: rec.id,
         itemName: rec.title,
-        vendorName: rec.incubatorName,
+        vendorName,
         city: rec.city,
         unit: 'DAY',
         quantity: 1,
@@ -496,6 +519,15 @@ export async function createCardBookingIntent(
       config: d.meta?.platformConfig,
     });
 
+    // ── Freeze the MENTOR commission rate for a consultant-owned program ────
+    // Read from the admin-editable MENTOR_PROGRAM rule (never hardcoded) and
+    // snapshotted onto the booking NOW, so an admin editing the rule later can
+    // never re-split this booking — settlement reads the snapshot, not the rule.
+    const owningMentor = findOwningMentor(d, item.promoKind, item.itemId);
+    const mentorCommissionRate = owningMentor
+      ? resolveMentorCommissionRates(d.commissionRules, { kind: 'PROGRAM' }).platformRate
+      : undefined;
+
     const now = new Date().toISOString();
     const token = randomUUID();
     const booking: BookingRecord = {
@@ -527,6 +559,7 @@ export async function createCardBookingIntent(
       payerFeeAmount: feeQuote.payerFee,
       payerFeeRate: feeQuote.payerRate,
       onlineChargeAmount: feeQuote.grossChargedToPayer,
+      ...(mentorCommissionRate != null ? { mentorCommissionRate } : {}),
       paymentStatus: undefined,
       settledAt: null,
       payToken: token,
@@ -658,25 +691,33 @@ async function applyCardSettlement(bookingId: string, providerRef: string | null
     if (providerRef) booking.paymentProviderRef = providerRef;
     booking.updatedAt = now;
 
-    // ── Incubator wallet: +online base received, −receiver commission ─────
-    // Central commission engine. Receiver commission is taken on the ONLINE
-    // portion P (deposit D or full T) — never the cash remainder — so the net
-    // credited (P − commission) is always ≥ 0. FLAT/Pro incubators are exempt.
-    const incubator = findOwningIncubator(d, booking.itemKind, booking.itemId);
+    // ── Owner payout: incubator wallet OR mentor ledger, never both ────────
+    // A PROGRAM is owned by exactly one of an incubator or a consultant (see
+    // ProgramRecord.mentorId); SPACE/EVENT are always incubator-owned. Each
+    // owner type settles through its OWN canonical commission engine — the
+    // incubator's receiver/payer split (commission.ts, FLAT-plan exempt) or
+    // the mentor's program rate (mentor-commission.ts, MENTOR_PROGRAM, 5%
+    // default) — so `booking.commissionRate/Amount` always reflects whichever
+    // engine actually moved the money.
     const online = booking.onlinePaidAmount ?? 0;
-    const providerPlan: ProviderPlan = incubator
-      ? getEffectiveSubscriptionCode(incubator)
-      : 'COMMISSION';
-    const quote = quoteCommission({
-      transactionType: 'PAYMENT',
-      providerPlan,
-      baseAmount: online,
-      config: d.meta?.platformConfig,
-    });
-    const commission = quote.receiverCommission;
-    booking.commissionRate = quote.receiverRate;
-    booking.commissionAmount = commission;
+    const incubator = findOwningIncubator(d, booking.itemKind, booking.itemId);
+    const mentor = incubator ? null : findOwningMentor(d, booking.itemKind, booking.itemId);
+
     if (incubator?.managerId) {
+      // Central commission engine. Receiver commission is taken on the ONLINE
+      // portion P (deposit D or full T) — never the cash remainder — so the
+      // net credited (P − commission) is always ≥ 0. FLAT/Pro incubators are
+      // exempt.
+      const providerPlan: ProviderPlan = getEffectiveSubscriptionCode(incubator);
+      const quote = quoteCommission({
+        transactionType: 'PAYMENT',
+        providerPlan,
+        baseAmount: online,
+        config: d.meta?.platformConfig,
+      });
+      const commission = quote.receiverCommission;
+      booking.commissionRate = quote.receiverRate;
+      booking.commissionAmount = commission;
       const wallet = ensureWallet(d, incubator.managerId);
       // Credit the online card money received (deposit or full).
       if (online > 0 && wallet.status !== 'FROZEN') {
@@ -736,6 +777,29 @@ async function applyCardSettlement(bookingId: string, providerRef: string | null
         };
         d.transactions.push(commissionTx);
       }
+    } else if (mentor) {
+      // Mentor-owned program: credit the parallel mentorId-keyed ledger instead
+      // of a WalletRecord, through the SAME canonical earning function
+      // consultations use. Bucket AVAILABLE = immediate (no PENDING hold),
+      // mirroring how incubator programs pay out at settlement above.
+      //
+      // The rate comes from `mentorCommissionRate`, frozen onto this booking at
+      // creation — NOT from the live rule — so an admin rate change between
+      // booking and settlement cannot alter this split. Legacy rows created
+      // before that field existed fall back to resolving the rule live.
+      //
+      // Runs inside THIS db.update, so the wallet credit and the CONFIRMED
+      // transition above commit atomically together.
+      const { split } = applyMentorEarningToDraft(d, {
+        mentorId: mentor.id,
+        bookingId: booking.id,
+        grossAmount: online,
+        kind: 'PROGRAM',
+        bucket: 'AVAILABLE',
+        frozenPlatformRate: booking.mentorCommissionRate ?? null,
+      });
+      booking.commissionRate = split.platformRate;
+      booking.commissionAmount = split.platformCommission;
     }
 
     // ── Consume the promo exactly once, on the claiming transition ────────
