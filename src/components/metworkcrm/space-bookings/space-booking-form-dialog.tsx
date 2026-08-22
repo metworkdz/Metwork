@@ -201,7 +201,13 @@ export function SpaceBookingFormDialog({
             </FormField>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/*
+            grid-cols-1 not grid-cols-2: TWO native `datetime-local` widgets
+            side by side leaves ~140px each at 375px, clipping the rendered
+            date+time (the underlying value is unaffected, but the user can't
+            read what they set). Stacked below `sm`, side-by-side above.
+          */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField label="Début" htmlFor="book-start">
               <Input id="book-start" type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} />
             </FormField>

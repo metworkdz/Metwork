@@ -278,7 +278,14 @@ export function InteractionFormDialog({
             <Input id="int-subject" value={subject} onChange={(e) => setSubject(e.target.value)} required maxLength={200} />
           </FormField>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/*
+            grid-cols-1 not grid-cols-2: a native `datetime-local` widget needs
+            ~180px to render its date+time segments without clipping (measured
+            at 140px in a bare 2-col half at 375px — the value was intact, just
+            visually truncated). Stacking below `sm` gives it the full row;
+            side-by-side returns once there's room.
+          */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField label="Date et heure" htmlFor="int-occurred" required>
               <Input
                 id="int-occurred"
