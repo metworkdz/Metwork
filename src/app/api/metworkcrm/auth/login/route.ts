@@ -13,6 +13,7 @@ import { getCrmDb } from '@/server/metworkcrm/db/client';
 import { internalUsers } from '@/server/metworkcrm/db/schema';
 import { crmLoginSchema } from '@/server/metworkcrm/auth/schemas';
 import { createCrmSession, setCrmSessionCookie } from '@/server/metworkcrm/auth/session';
+import { crmErrorResponse } from '@/server/metworkcrm/http';
 
 // SQLite drivers are Node-only — never Edge.
 export const runtime = 'nodejs';
@@ -48,38 +49,49 @@ export async function POST(req: NextRequest) {
     return jsonError(429, 'RATE_LIMITED', 'Trop de tentatives. Réessayez dans quelques minutes.');
   }
 
-  const rows = await getCrmDb()
-    .select()
-    .from(internalUsers)
-    .where(eq(internalUsers.email, email));
-  const user = rows[0];
+  // Everything below touches the CRM database (a distinct SQLite/Turso
+  // connection from the platform's own store — see db/client.ts). A
+  // misconfigured or unreachable database must never crash into a raw,
+  // non-JSON 500: the login form's `res.json()` would then throw and the
+  // user would see a misleading "network error" that has nothing to do with
+  // their network. `crmErrorResponse` guarantees a valid JSON envelope no
+  // matter what breaks here, and logs the real cause server-side.
+  try {
+    const rows = await getCrmDb()
+      .select()
+      .from(internalUsers)
+      .where(eq(internalUsers.email, email));
+    const user = rows[0];
 
-  // Verify even when the account is missing, against a throwaway hash, so the
-  // response time does not reveal whether the email exists.
-  const storedHash =
-    user?.passwordHash ??
-    'scrypt$0000000000000000000000000000000000000000000000000000000000000000$00';
-  const passwordOk = await verifyPassword(password, storedHash);
+    // Verify even when the account is missing, against a throwaway hash, so
+    // the response time does not reveal whether the email exists.
+    const storedHash =
+      user?.passwordHash ??
+      'scrypt$0000000000000000000000000000000000000000000000000000000000000000$00';
+    const passwordOk = await verifyPassword(password, storedHash);
 
-  if (!user || !passwordOk || !user.isActive) {
-    return jsonError(401, 'CRM_INVALID_CREDENTIALS', GENERIC_FAILURE);
+    if (!user || !passwordOk || !user.isActive) {
+      return jsonError(401, 'CRM_INVALID_CREDENTIALS', GENERIC_FAILURE);
+    }
+
+    const issued = await createCrmSession(user.id, {
+      userAgent: req.headers.get('user-agent'),
+    });
+    await setCrmSessionCookie(issued);
+
+    await getCrmDb()
+      .update(internalUsers)
+      .set({ lastLoginAt: new Date().toISOString() })
+      .where(eq(internalUsers.id, user.id));
+
+    return json({
+      ok: true,
+      mustChangePassword: user.mustChangePassword,
+      // Where the client should go next. The server decides, so the redirect
+      // target can never be tampered with client-side.
+      next: user.mustChangePassword ? '/metworkcrm/change-password' : '/metworkcrm',
+    });
+  } catch (err) {
+    return crmErrorResponse(err);
   }
-
-  const issued = await createCrmSession(user.id, {
-    userAgent: req.headers.get('user-agent'),
-  });
-  await setCrmSessionCookie(issued);
-
-  await getCrmDb()
-    .update(internalUsers)
-    .set({ lastLoginAt: new Date().toISOString() })
-    .where(eq(internalUsers.id, user.id));
-
-  return json({
-    ok: true,
-    mustChangePassword: user.mustChangePassword,
-    // Where the client should go next. The server decides, so the redirect
-    // target can never be tampered with client-side.
-    next: user.mustChangePassword ? '/metworkcrm/change-password' : '/metworkcrm',
-  });
 }

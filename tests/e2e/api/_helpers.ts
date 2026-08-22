@@ -408,6 +408,11 @@ export interface BookingView {
   startsAt?: string;
   endsAt?: string;
   settledAt?: string | null;
+  /** Platform cut actually taken at settlement (integer DZD) + its rate. */
+  commissionAmount?: number;
+  commissionRate?: number;
+  /** Mentor-program commission rate FROZEN at booking creation (decimal 0–1). */
+  mentorCommissionRate?: number;
   /** Receipt / refund dedup stamps — assert "dispatched exactly once". */
   depositReceiptSentAt?: string | null;
   finalReceiptSentAt?: string | null;
@@ -425,6 +430,14 @@ export interface LocalDbView {
   startupListings: Array<{ id: string; name: string; founderId: string; status: string }>;
   savedStartups: Array<{ id: string; userId: string; startupId: string }>;
   investorContacts: Array<{ id: string; investorId: string; startupId: string; startupName: string }>;
+  /* Mentor (consultant) money rails — optional: absent on older/partial blobs. */
+  commissionRules?: Array<{ id: string; transactionType: string; rate: number; isActive: boolean }>;
+  mentorWallets?: Array<{ id: string; mentorId: string; pendingBalance: number; availableBalance: number; status: string }>;
+  mentorLedgerTxns?: Array<{
+    id: string; mentorId: string; bookingId: string | null; type: string; amount: number;
+    bucket: string; status: string; reference: string; metadata: Record<string, unknown>;
+  }>;
+  mentorWithdrawals?: Array<{ id: string; mentorId: string; amount: number; status: string }>;
 }
 
 /** Parse the local DB document (the server's source of truth in e2e mode). */

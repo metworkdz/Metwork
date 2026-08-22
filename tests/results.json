@@ -1,10 +1,10 @@
 {
   "config": {
-    "configFile": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/playwright.config.ts",
-    "rootDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+    "configFile": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/playwright.config.ts",
+    "rootDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
     "forbidOnly": false,
     "fullyParallel": false,
-    "globalSetup": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e/global-setup.ts",
+    "globalSetup": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e/global-setup.ts",
     "globalTeardown": null,
     "globalTimeout": 0,
     "grep": {},
@@ -16,7 +16,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -24,15 +24,15 @@
         },
         "id": "admin",
         "name": "admin",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/admin.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 45000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -40,15 +40,15 @@
         },
         "id": "incubator",
         "name": "incubator",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/incubator.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 45000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -56,15 +56,15 @@
         },
         "id": "entrepreneur-builder",
         "name": "entrepreneur-builder",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/entrepreneur-builder.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 45000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -72,15 +72,15 @@
         },
         "id": "entrepreneur-founder",
         "name": "entrepreneur-founder",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/entrepreneur-founder.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 45000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -88,31 +88,31 @@
         },
         "id": "entrepreneur-explorer",
         "name": "entrepreneur-explorer",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/entrepreneur-explorer.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 45000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
-        "retries": 1,
+        "retries": 0,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "spaces-granularity",
         "name": "spaces-granularity",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/spaces-granularity.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -120,97 +120,97 @@
         },
         "id": "cleanup",
         "name": "cleanup",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/cleanup",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/cleanup",
         "testIgnore": [],
         "testMatch": [
           "**/*.cleanup.ts"
         ],
-        "timeout": 120000
+        "timeout": 45000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
-        "retries": 1,
+        "retries": 0,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "invoices",
         "name": "invoices",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/invoice-*.spec.ts",
           "**/domiciliation-price.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
-        "retries": 1,
+        "retries": 0,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "consultation",
         "name": "consultation",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/api/consultation*.spec.ts",
           "**/consultation-i18n.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 45000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
-        "retries": 1,
+        "retries": 0,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "space-reservation-modes",
         "name": "space-reservation-modes",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/api/space-reservation-modes.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
-        "retries": 1,
+        "retries": 0,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "membership-pricing",
         "name": "membership-pricing",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/api/membership-pricing.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
-        "retries": 1,
+        "retries": 0,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "entrepreneur-fixes",
         "name": "entrepreneur-fixes",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/api/membership-grant-topup.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -218,15 +218,15 @@
         },
         "id": "entrepreneur-mobile",
         "name": "entrepreneur-mobile",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/entrepreneur-mobile.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -234,15 +234,15 @@
         },
         "id": "admin-startups",
         "name": "admin-startups",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/admin-startups.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 45000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -250,28 +250,28 @@
         },
         "id": "startup-logo",
         "name": "startup-logo",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/startup-logo.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 45000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results",
         "repeatEach": 1,
-        "retries": 1,
+        "retries": 0,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "withdrawals-ui",
         "name": "withdrawals-ui",
-        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/withdrawal-ui.spec.ts"
         ],
-        "timeout": 120000
+        "timeout": 45000
       }
     ],
     "quiet": false,
@@ -308,40 +308,40 @@
   },
   "suites": [
     {
-      "title": "admin-startups.spec.ts",
-      "file": "admin-startups.spec.ts",
+      "title": "api/consultation-booking.spec.ts",
+      "file": "api/consultation-booking.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Admin startups management",
-          "file": "admin-startups.spec.ts",
-          "line": 20,
-          "column": 6,
+          "title": "Consultation instant-book — booking & settlement",
+          "file": "api/consultation-booking.spec.ts",
+          "line": 30,
+          "column": 15,
           "specs": [
             {
-              "title": "non-admin (entrepreneur) is forbidden from the admin startups API",
+              "title": "1 — member books a paid slot → CONFIRMED instantly (mock SlickPay top-up, no admin step)",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 120000,
+                  "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin-startups",
-                  "projectName": "admin-startups",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
                   "results": [
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3984,
+                      "duration": 8384,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-22T00:14:41.683Z",
+                      "startTime": "2026-08-22T17:30:04.713Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -349,33 +349,328 @@
                   "status": "expected"
                 }
               ],
-              "id": "75fb3efe8ed762a13268-e2a577a7ba9b3e315d9d",
-              "file": "admin-startups.spec.ts",
+              "id": "66f3ed10e37c862f1ace-ccd743530e2002880c69",
+              "file": "api/consultation-booking.spec.ts",
+              "line": 54,
+              "column": 7
+            },
+            {
+              "title": "2 — free-intro (100% promo) slot → CONFIRMED with no payment step (member)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3121,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-22T17:30:47.925Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "66f3ed10e37c862f1ace-7010c689e81b675de35f",
+              "file": "api/consultation-booking.spec.ts",
+              "line": 69,
+              "column": 7
+            },
+            {
+              "title": "3a — a slot outside the availability template is rejected (409 SLOT_NOT_BOOKABLE)",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 295,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"SLOT_\u001b[7mNOT_BOOK\u001b[27mABLE\"\u001b[39m\nReceived: \u001b[31m\"SLOT_\u001b[7mUNAVAIL\u001b[27mABLE\"\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"SLOT_\u001b[7mNOT_BOOK\u001b[27mABLE\"\u001b[39m\nReceived: \u001b[31m\"SLOT_\u001b[7mUNAVAIL\u001b[27mABLE\"\u001b[39m\n    at /Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e/api/consultation-booking.spec.ts:84:32",
+                        "location": {
+                          "file": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e/api/consultation-booking.spec.ts",
+                          "column": 32,
+                          "line": 84
+                        },
+                        "snippet": "  82 |     const res = await instantBook(founder, { date: slots().date, time: '12:00', durationMinutes: 60 });\n  83 |     expect(res.status(), `expected 409, got ${await dump(res)}`).toBe(409);\n> 84 |     expect(await errCode(res)).toBe('SLOT_NOT_BOOKABLE');\n     |                                ^\n  85 |   });\n  86 |\n  87 |   test('3b — a slot inside the 24h advance window is rejected (422 TOO_SOON)', async () => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e/api/consultation-booking.spec.ts",
+                            "column": 32,
+                            "line": 84
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"SLOT_\u001b[7mNOT_BOOK\u001b[27mABLE\"\u001b[39m\nReceived: \u001b[31m\"SLOT_\u001b[7mUNAVAIL\u001b[27mABLE\"\u001b[39m\n\n  82 |     const res = await instantBook(founder, { date: slots().date, time: '12:00', durationMinutes: 60 });\n  83 |     expect(res.status(), `expected 409, got ${await dump(res)}`).toBe(409);\n> 84 |     expect(await errCode(res)).toBe('SLOT_NOT_BOOKABLE');\n     |                                ^\n  85 |   });\n  86 |\n  87 |   test('3b — a slot inside the 24h advance window is rejected (422 TOO_SOON)', async () => {\n    at /Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e/api/consultation-booking.spec.ts:84:32"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-22T17:30:51.071Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results/api-consultation-booking-C-93a82-cted-409-SLOT-NOT-BOOKABLE--consultation/error-context.md"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results/api-consultation-booking-C-93a82-cted-409-SLOT-NOT-BOOKABLE--consultation/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/test-results/api-consultation-booking-C-93a82-cted-409-SLOT-NOT-BOOKABLE--consultation/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/consultant-program-creation-audit-4661ed/tests/e2e/api/consultation-booking.spec.ts",
+                        "column": 32,
+                        "line": 84
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "66f3ed10e37c862f1ace-2101f92f5698ca3b0027",
+              "file": "api/consultation-booking.spec.ts",
+              "line": 80,
+              "column": 7
+            },
+            {
+              "title": "3b — a slot inside the 24h advance window is rejected (422 TOO_SOON)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-22T17:30:51.738Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "66f3ed10e37c862f1ace-b276fb100fdc9f10912d",
+              "file": "api/consultation-booking.spec.ts",
+              "line": 87,
+              "column": 7
+            },
+            {
+              "title": "4 — two members race the same slot → exactly one succeeds (lock holds)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-22T17:30:51.738Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "66f3ed10e37c862f1ace-92070f0d00b483ef8121",
+              "file": "api/consultation-booking.spec.ts",
+              "line": 97,
+              "column": 7
+            },
+            {
+              "title": "5 — a replayed member booking credits the consultant exactly once (idempotent)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-22T17:30:51.738Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "66f3ed10e37c862f1ace-29e64b90c614722b6547",
+              "file": "api/consultation-booking.spec.ts",
+              "line": 109,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "api/consultation-portal.spec.ts",
+      "file": "api/consultation-portal.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Consultation portal — access, lifecycle, payouts, reschedule",
+          "file": "api/consultation-portal.spec.ts",
+          "line": 48,
+          "column": 15,
+          "specs": [
+            {
+              "title": "6a — client PII is not exposed without a consultant session (401)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3415,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-22T17:30:53.243Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e50aa92818ca10ab66b3-a494db0c74b823151ab0",
+              "file": "api/consultation-portal.spec.ts",
+              "line": 71,
+              "column": 7
+            },
+            {
+              "title": "6b — a wrong OTP code is rejected (401 INVALID_OTP)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1000,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-22T17:31:18.380Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e50aa92818ca10ab66b3-24100e43a92dc5e8f089",
+              "file": "api/consultation-portal.spec.ts",
               "line": 81,
               "column": 7
             },
             {
-              "title": "admin sees all statuses (including DRAFT) via the API",
+              "title": "6c — sign-in attempts are rate-limited per IP (429)",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 120000,
+                  "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin-startups",
-                  "projectName": "admin-startups",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 170,
+                      "duration": 3703,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-22T00:15:05.811Z",
+                      "startTime": "2026-08-22T17:31:19.403Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -383,33 +678,33 @@
                   "status": "expected"
                 }
               ],
-              "id": "75fb3efe8ed762a13268-ad3e015841121a202cfa",
-              "file": "admin-startups.spec.ts",
-              "line": 86,
+              "id": "e50aa92818ca10ab66b3-0933f57fe7caac40915b",
+              "file": "api/consultation-portal.spec.ts",
+              "line": 98,
               "column": 7
             },
             {
-              "title": "admin UI: table shows DRAFT, delete requires confirmation, cascade behaves per D2",
+              "title": "7 — consultant adds an ONLINE meeting link → booking becomes READY",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 120000,
+                  "timeout": 45000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "admin-startups",
-                  "projectName": "admin-startups",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 77095,
+                      "duration": 6754,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-22T00:15:06.002Z",
+                      "startTime": "2026-08-22T17:31:23.150Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -417,23 +712,354 @@
                   "status": "expected"
                 }
               ],
-              "id": "75fb3efe8ed762a13268-fa0638c1c0ce38f44f22",
-              "file": "admin-startups.spec.ts",
-              "line": 105,
+              "id": "e50aa92818ca10ab66b3-d8fefbad3c1f7d73a13d",
+              "file": "api/consultation-portal.spec.ts",
+              "line": 123,
+              "column": 7
+            },
+            {
+              "title": "8 — offline booking: consultant sets an in-person address (no link required)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1617,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-22T17:31:29.927Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e50aa92818ca10ab66b3-1c268cc79e5a75691232",
+              "file": "api/consultation-portal.spec.ts",
+              "line": 143,
+              "column": 7
+            },
+            {
+              "title": "9 — consultant cancels → user wallet refunded, consultant credit reversed",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13450,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-22T17:31:31.577Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e50aa92818ca10ab66b3-0ea60649061bdd30c302",
+              "file": "api/consultation-portal.spec.ts",
+              "line": 157,
+              "column": 7
+            },
+            {
+              "title": "10 — complete → consultant requests withdrawal → admin approves → wallet debited",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 15177,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-22T17:31:45.065Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e50aa92818ca10ab66b3-199ad64fcb27bda4fd00",
+              "file": "api/consultation-portal.spec.ts",
+              "line": 185,
+              "column": 7
+            },
+            {
+              "title": "11 — reschedule from BOTH sides, then blocked at the cap",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13442,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-22T17:32:00.260Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e50aa92818ca10ab66b3-4f7e0aa8ac5119764189",
+              "file": "api/consultation-portal.spec.ts",
+              "line": 213,
+              "column": 7
+            },
+            {
+              "title": "11b — reschedule is blocked inside the notice window (422 TOO_LATE)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2866,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-22T17:32:13.750Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e50aa92818ca10ab66b3-60ba633a6ded0243f8c4",
+              "file": "api/consultation-portal.spec.ts",
+              "line": 235,
               "column": 7
             }
           ]
+        }
+      ]
+    },
+    {
+      "title": "api/consultation-promo.spec.ts",
+      "file": "api/consultation-promo.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Consultation promo split (subsidize, no cap)",
+          "file": "api/consultation-promo.spec.ts",
+          "line": 39,
+          "column": 15,
+          "specs": [
+            {
+              "title": "12a — 30% promo: user pays base−30%, consultant credited on full base, platform ≈ 0",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6593,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-22T17:32:17.060Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6d01bc979339ceac1ee2-a15da2a8457614fb08e5",
+              "file": "api/consultation-promo.spec.ts",
+              "line": 60,
+              "column": 7
+            },
+            {
+              "title": "12b — above-ratio (50%) promo is ABSORBED, not capped: consultant still on full base, platform negative",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "consultation",
+                  "projectName": "consultation",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1440,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-22T17:32:24.315Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6d01bc979339ceac1ee2-2548704d366b3f6d516d",
+              "file": "api/consultation-promo.spec.ts",
+              "line": 80,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "consultation-i18n.spec.ts",
+      "file": "consultation-i18n.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "13 — consultant profile + booking surface render in fr (ltr)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "consultation",
+              "projectName": "consultation",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 28209,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-22T17:32:25.812Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f877d024e5d9039d47bc-a99964ce8a581fa9046c",
+          "file": "consultation-i18n.spec.ts",
+          "line": 23,
+          "column": 7
+        },
+        {
+          "title": "13 — consultant profile + booking surface render in ar (rtl)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "consultation",
+              "projectName": "consultation",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 20580,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-22T17:32:54.490Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f877d024e5d9039d47bc-f40034de7e0e1da8d4ed",
+          "file": "consultation-i18n.spec.ts",
+          "line": 23,
+          "column": 7
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-22T00:13:30.551Z",
-    "duration": 174131.884,
-    "expected": 3,
-    "skipped": 0,
-    "unexpected": 0,
+    "startTime": "2026-08-22T17:29:02.437Z",
+    "duration": 253281.293,
+    "expected": 15,
+    "skipped": 3,
+    "unexpected": 1,
     "flaky": 0
   }
 }

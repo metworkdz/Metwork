@@ -8,9 +8,11 @@
  *   • list   — the consultant's own programs, publish/unpublish, delete
  *   • detail — registrants (with CSV export) for one program
  *
- * Money model: none. Consultant programs are free for now — paid ones cannot
- * settle into the consultant ledger yet, so the create form has no price field
- * and enrolment goes through the no-payment registration flow.
+ * Money model: programs may be free or paid. A paid program settles through
+ * the SAME card-payment path incubator programs use, crediting the
+ * consultant's own mentorId-keyed ledger instead of an incubator wallet — see
+ * `@/server/bookings/card-payment.ts` and `@/server/mentors/ledger.ts`. Free
+ * enrolment still goes through the no-payment registration flow.
  *
  * Mobile-first with Tailwind breakpoints only (no useMediaQuery), so server and
  * client render identically.
@@ -23,6 +25,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ApiClientError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
+import { GalleryUploadField } from '@/components/shared/gallery-upload-field';
+import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 import {
   consultantService,
   type ConsultantProgram,
@@ -30,10 +34,13 @@ import {
   type ConsultantRegistration,
 } from '@/services/consultant.service';
 import {
-  BrandButton, CP_GREEN_TEXT, CP_LIGHT_BORDER, CP_LIGHT_FAINT, CP_LIGHT_MUTED, CP_LIGHT_TEXT,
+  BrandButton, CP_GREEN, CP_GREEN_TEXT, CP_GREEN_TINT, CP_LIGHT_BORDER, CP_LIGHT_FAINT,
+  CP_LIGHT_MUTED, CP_LIGHT_TEXT,
   EmptyBlock, ErrorBanner, Field, FlowSheet, GhostButton, SectionCard, SectionHeading, Spinner,
   cpInputClassLight,
 } from './shared';
+
+type PaymentMethod = 'ONLINE' | 'CASH';
 
 const TYPES: ConsultantProgram['type'][] = [
   'TRAINING', 'WORKSHOP', 'WEBINAR', 'BOOTCAMP', 'INCUBATION', 'ACCELERATION',
@@ -61,6 +68,11 @@ function fmtDate(iso: string, locale: string): string {
 
 const emptyDraft: ConsultantProgramInput = {
   title: '', description: '', type: 'TRAINING', city: '',
+  imageUrls: [],
+  price: 0,
+  acceptedPaymentMethods: ['ONLINE', 'CASH'],
+  cashDepositType: 'PERCENT',
+  cashDepositValue: 10,
   seatsTotal: 20, deadline: '', startDate: '', endDate: '',
 };
 
@@ -94,7 +106,24 @@ export function ProgramsSection() {
     if (!draft.city.trim()) return t('errorCity');
     if (!draft.deadline || !draft.startDate || !draft.endDate) return t('errorDates');
     if (!(draft.deadline <= draft.startDate && draft.startDate < draft.endDate)) return t('errorDateOrder');
+    if (draft.acceptedPaymentMethods.includes('CASH')) {
+      const val = draft.cashDepositValue;
+      const invalidPercent = draft.cashDepositType === 'PERCENT' && (!val || val < 1 || val > 100);
+      const invalidFixed = draft.cashDepositType === 'FIXED' && (!val || val <= 0);
+      if (invalidPercent || invalidFixed) return t('errorDeposit');
+    }
     return null;
+  }
+
+  function toggleMethod(m: PaymentMethod) {
+    setDraft((d) => {
+      const has = d.acceptedPaymentMethods.includes(m);
+      if (has) {
+        const next = d.acceptedPaymentMethods.filter((x) => x !== m);
+        return next.length === 0 ? d : { ...d, acceptedPaymentMethods: next };
+      }
+      return { ...d, acceptedPaymentMethods: [...d.acceptedPaymentMethods, m] };
+    });
   }
 
   async function onCreate() {
@@ -103,6 +132,7 @@ export function ProgramsSection() {
     setSaving(true);
     setError(null);
     try {
+      const acceptsCash = draft.acceptedPaymentMethods.includes('CASH');
       await consultantService.createProgram({
         ...draft,
         title: draft.title.trim(),
@@ -111,6 +141,8 @@ export function ProgramsSection() {
         deadline: toIso(draft.deadline),
         startDate: toIso(draft.startDate),
         endDate: toIso(draft.endDate),
+        cashDepositType: acceptsCash ? draft.cashDepositType : null,
+        cashDepositValue: acceptsCash ? draft.cashDepositValue : null,
       });
       setOpenForm(false);
       setDraft(emptyDraft);
@@ -244,9 +276,17 @@ export function ProgramsSection() {
             />
           </Field>
           <Field label={t('labelCity')} htmlFor="p-city">
-            <input
-              id="p-city" className={cpInputClassLight} value={draft.city}
-              onChange={(e) => setDraft((d) => ({ ...d, city: e.target.value }))}
+            <AlgerianCitySelect
+              id="p-city" value={draft.city}
+              onChange={(city) => setDraft((d) => ({ ...d, city }))}
+            />
+          </Field>
+          <Field label={t('labelCoverImage')}>
+            <GalleryUploadField
+              value={draft.imageUrls ?? []}
+              onChange={(imageUrls) => setDraft((d) => ({ ...d, imageUrls }))}
+              endpoint="/api/consultant/upload"
+              uploadFields={{ kind: 'program' }}
             />
           </Field>
           <Field label={t('labelSeats')} htmlFor="p-seats">
@@ -279,7 +319,65 @@ export function ProgramsSection() {
             </Field>
           </div>
 
-          <p className="text-xs" style={{ color: CP_LIGHT_MUTED }}>{t('freeNotice')}</p>
+          <Field label={t('labelPrice')} htmlFor="p-price">
+            <input
+              id="p-price" type="number" min={0} className={cpInputClassLight} value={draft.price}
+              onChange={(e) => setDraft((d) => ({ ...d, price: Math.max(0, Number(e.target.value) || 0) }))}
+            />
+          </Field>
+
+          <div>
+            <p className="text-xs font-medium" style={{ color: CP_LIGHT_MUTED }}>{t('labelPaymentMethods')}</p>
+            <div className="mt-1.5 flex gap-2">
+              {(['ONLINE', 'CASH'] as PaymentMethod[]).map((m) => {
+                const active = draft.acceptedPaymentMethods.includes(m);
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => toggleMethod(m)}
+                    className="flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors"
+                    style={active
+                      ? { borderColor: CP_GREEN, background: CP_GREEN_TINT, color: CP_GREEN_TEXT }
+                      : { borderColor: CP_LIGHT_BORDER, color: CP_LIGHT_MUTED }}
+                  >
+                    {m === 'ONLINE' ? t('methodOnline') : t('methodCash')}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {draft.acceptedPaymentMethods.includes('CASH') && (
+            <div className="rounded-2xl border p-3" style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}>
+              <p className="text-xs font-medium" style={{ color: CP_LIGHT_TEXT }}>{t('labelDeposit')}</p>
+              <p className="mt-0.5 text-[11px]" style={{ color: CP_LIGHT_MUTED }}>{t('depositHint')}</p>
+              <div className="mt-2 flex items-center gap-2">
+                <div className="flex gap-1.5">
+                  {(['PERCENT', 'FIXED'] as const).map((dt) => (
+                    <button
+                      key={dt}
+                      type="button"
+                      onClick={() => setDraft((d) => ({ ...d, cashDepositType: dt }))}
+                      className="rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors"
+                      style={draft.cashDepositType === dt
+                        ? { borderColor: CP_GREEN, background: CP_GREEN_TINT, color: CP_GREEN_TEXT }
+                        : { borderColor: CP_LIGHT_BORDER, color: CP_LIGHT_MUTED }}
+                    >
+                      {dt === 'PERCENT' ? t('depositPercent') : t('depositFixed')}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="number" min={1} max={draft.cashDepositType === 'PERCENT' ? 100 : undefined}
+                  className={cn(cpInputClassLight, 'h-10')}
+                  value={draft.cashDepositValue ?? ''}
+                  onChange={(e) => setDraft((d) => ({ ...d, cashDepositValue: Number(e.target.value) || 0 }))}
+                  aria-label={t('labelDeposit')}
+                />
+              </div>
+            </div>
+          )}
 
           {error && <ErrorBanner message={error} tone="light" />}
 

@@ -18,6 +18,7 @@
     "crm:migrate": "tsx scripts/metworkcrm/migrate.ts",
     "crm:seed": "tsx scripts/metworkcrm/seed.ts",
     "crm:verify": "tsx scripts/metworkcrm/verify-schema.ts",
+    "crm:backup": "tsx scripts/metworkcrm/backup.ts",
     "crm:setup": "npm run crm:migrate && npm run crm:seed && npm run crm:verify",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

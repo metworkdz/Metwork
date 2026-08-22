@@ -76,8 +76,9 @@ export function ContactOrganizationsEditor({
   async function onSave() {
     setSaving(true);
     setError(null);
+    let res: Response;
     try {
-      const res = await fetch(`/api/metworkcrm/contacts/${contactId}/organizations`, {
+      res = await fetch(`/api/metworkcrm/contacts/${contactId}/organizations`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -88,19 +89,29 @@ export function ContactOrganizationsEditor({
           })),
         }),
       });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setError(data?.error?.message ?? 'Une erreur est survenue.');
-        setSaving(false);
-        return;
-      }
-      setSaving(false);
-      setOpen(false);
-      onSaved();
     } catch {
-      setError('Erreur réseau. Réessayez.');
+      setError('Impossible de contacter le serveur. Vérifiez votre connexion.');
       setSaving(false);
+      return;
     }
+
+    let data: { error?: { message?: string } };
+    try {
+      data = await res.json();
+    } catch {
+      setError(`Réponse du serveur invalide (code ${res.status}). Réessayez ou contactez l'équipe technique.`);
+      setSaving(false);
+      return;
+    }
+
+    if (!res.ok) {
+      setError(data?.error?.message ?? 'Une erreur est survenue.');
+      setSaving(false);
+      return;
+    }
+    setSaving(false);
+    setOpen(false);
+    onSaved();
   }
 
   return (

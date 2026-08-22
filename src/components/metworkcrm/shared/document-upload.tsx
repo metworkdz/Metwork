@@ -58,17 +58,43 @@ export function DocumentUpload({
     if (!file) return;
     setUploading(true);
     setError(null);
+    const form = new FormData();
+    form.set('file', file);
+
+    let uploadRes: Response;
     try {
-      const form = new FormData();
-      form.set('file', file);
-      const uploadRes = await fetch('/api/metworkcrm/upload', { method: 'POST', body: form });
-      const uploadData = await uploadRes.json().catch(() => null);
-      if (!uploadRes.ok) {
-        setError(uploadData?.error?.message ?? 'Échec du téléversement.');
-        setUploading(false);
-        return;
-      }
-      const attachRes = await fetch('/api/metworkcrm/documents', {
+      uploadRes = await fetch('/api/metworkcrm/upload', { method: 'POST', body: form });
+    } catch {
+      setError('Impossible de contacter le serveur. Vérifiez votre connexion.');
+      setUploading(false);
+      return;
+    }
+
+    let uploadData: {
+      url?: string;
+      fileName?: string;
+      mimeType?: string;
+      sizeBytes?: number;
+      cloudinaryPublicId?: string;
+      error?: { message?: string };
+    };
+    try {
+      uploadData = await uploadRes.json();
+    } catch {
+      setError(`Réponse du serveur invalide (code ${uploadRes.status}). Réessayez ou contactez l'équipe technique.`);
+      setUploading(false);
+      return;
+    }
+
+    if (!uploadRes.ok) {
+      setError(uploadData?.error?.message ?? 'Échec du téléversement.');
+      setUploading(false);
+      return;
+    }
+
+    let attachRes: Response;
+    try {
+      attachRes = await fetch('/api/metworkcrm/documents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -83,19 +109,29 @@ export function DocumentUpload({
           cloudinaryPublicId: uploadData.cloudinaryPublicId,
         }),
       });
-      const attachData = await attachRes.json().catch(() => null);
-      if (!attachRes.ok) {
-        setError(attachData?.error?.message ?? "Échec de l'enregistrement du document.");
-        setUploading(false);
-        return;
-      }
-      setRows((prev) => [attachData, ...prev]);
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch {
-      setError('Erreur réseau. Réessayez.');
+      setError('Impossible de contacter le serveur. Vérifiez votre connexion.');
       setUploading(false);
+      return;
     }
+
+    let attachData: DocumentRow & { error?: { message?: string } };
+    try {
+      attachData = await attachRes.json();
+    } catch {
+      setError(`Réponse du serveur invalide (code ${attachRes.status}). Réessayez ou contactez l'équipe technique.`);
+      setUploading(false);
+      return;
+    }
+
+    if (!attachRes.ok) {
+      setError(attachData?.error?.message ?? "Échec de l'enregistrement du document.");
+      setUploading(false);
+      return;
+    }
+    setRows((prev) => [attachData, ...prev]);
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   async function remove(id: string) {
