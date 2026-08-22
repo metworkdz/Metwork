@@ -3645,25 +3645,9 @@
       "userId": "1982fe82-06e4-45a6-a26e-0bd1402b4382",
       "expiresAt": "2026-08-27T21:31:55.443Z",
       "createdAt": "2026-08-20T21:31:55.443Z"
-    },
-    {
-      "idHash": "01a5946b7217edea802f6f5c8dd80172b8fdfa0a586efad366cdf2f2cd37b08f",
-      "userId": "qa-admin-id",
-      "expiresAt": "2026-08-29T11:40:31.574Z",
-      "createdAt": "2026-08-22T11:40:31.574Z"
     }
   ],
-  "otps": [
-    {
-      "id": "4898ad53eacaf5ef6244d8f6",
-      "userId": "mentor:qa-mentor-id",
-      "codeHash": "735761fcbb7fb29f1c6522219a63f93dc7f06cb66d56f32d828f1703deca4f48",
-      "expiresAt": "2026-08-22T11:51:33.653Z",
-      "attempts": 1,
-      "consumed": true,
-      "channel": "whatsapp"
-    }
-  ],
+  "otps": [],
   "emailTokens": [
     {
       "tokenHash": "63e358aae11768d710f7807e3cc524e1bc579d2edd7a450df8a44165d65da490",
@@ -14292,13 +14276,13 @@
       "consultationFee": 8000,
       "consultationAvailable": true,
       "email": "qa.mentor@metwork.test",
-      "phone": "+213770112233",
+      "phone": null,
       "linkedinUrl": "https://linkedin.com/in/qa-mentor",
       "avatarUrl": null,
       "city": "Alger",
       "isActive": true,
       "createdAt": "2026-05-21T21:55:59.726Z",
-      "updatedAt": "2026-08-22T11:42:47.464Z",
+      "updatedAt": "2026-05-21T21:55:59.726Z",
       "position": "Startup Growth Advisor",
       "topics": [
         "Fundraising",
@@ -14551,14 +14535,7 @@
       "accessTokenHash": "45c12d231bdae4e17b6358bcd53f5132d64991dfb762b7a59bb7d0725e3e6b35",
       "accessTokenRotatedAt": "2026-06-19T23:46:03.646Z",
       "pinHash": "scrypt$8935817e91e7660ed68125becc41a967$ec30867e0046ea5838a7c75f12b4c1b0c6358324b73724e5e56e153833ea73e5c491c8987f08345111fc97acc2072719c948be02f2a4f2076b5bf790e720b087",
-      "pinSetAt": "2026-06-19T14:07:57.576Z",
-      "phoneVerified": true,
-      "approvalStatus": "APPROVED",
-      "payoutAccount": {
-        "accountType": "bank",
-        "accountNumber": "00799999001234567890",
-        "holderName": "QA Mentor Expert"
-      }
+      "pinSetAt": "2026-06-19T14:07:57.576Z"
     },
     {
       "id": "edf8294d-06bb-4ab0-9a96-582e79a3216d",
@@ -18665,23 +18642,6 @@
       "status": "ACTIVE",
       "createdAt": "2026-07-06T01:20:47.024Z",
       "updatedAt": "2026-07-06T01:20:47.024Z"
-    },
-    {
-      "id": "5809f4dc-db23-407c-b569-18759404fdab",
-      "description": "",
-      "city": "Oran",
-      "managerId": "qa-admin-id",
-      "status": "ACTIVE",
-      "website": null,
-      "logoUrl": null,
-      "createdAt": "2026-08-22T11:36:32.247786Z",
-      "updatedAt": "2026-08-22T11:36:32.247786Z",
-      "name": "EURL METWORK",
-      "commercialRegNumber": "31/00-1234567 B 24",
-      "nif": "002431012345678",
-      "address": "12 rue des Frères Bouadou, Oran",
-      "email": "contact@metwork.dz",
-      "phone": "+213 770 00 00 00"
     }
   ],
   "promoCodes": [
@@ -26662,33 +26622,6 @@
         }
       },
       "createdAt": "2026-08-20T21:31:56.602Z"
-    },
-    {
-      "id": "c4acb405-ec5d-4df8-bb22-d54f2b78a6cf",
-      "adminId": "qa-admin-id",
-      "adminEmail": "test.admin@metwork.test",
-      "action": "CONTRACT_CREATED",
-      "targetType": "consultant_contract",
-      "targetId": "abea9f00-b6b1-44b3-a086-b4b0a29f6aa4",
-      "details": {
-        "consultantId": "qa-mentor-id",
-        "consultantName": "QA Mentor Expert"
-      },
-      "createdAt": "2026-08-22T11:40:51.462Z"
-    },
-    {
-      "id": "c9d05bf5-2534-4b1b-b52c-7e7b44db889f",
-      "adminId": "qa-admin-id",
-      "adminEmail": "test.admin@metwork.test",
-      "action": "CONTRACT_SENT",
-      "targetType": "consultant_contract",
-      "targetId": "abea9f00-b6b1-44b3-a086-b4b0a29f6aa4",
-      "details": {
-        "consultantId": "qa-mentor-id",
-        "commissionRate": 0.3,
-        "payoutMethod": "BANK_TRANSFER"
-      },
-      "createdAt": "2026-08-22T11:41:05.556Z"
     }
   ],
   "notifications": [
@@ -31756,65 +31689,11 @@
       "mentorId": "qa-mentor-id",
       "expiresAt": "2026-07-19T23:46:03.905Z",
       "createdAt": "2026-06-19T23:46:03.905Z"
-    },
-    {
-      "idHash": "a582512b12ddefd8557643546a483f4971625a6292138dd3bf9ab9ff1ccc49ed",
-      "mentorId": "qa-mentor-id",
-      "expiresAt": "2026-09-21T11:42:47.454Z",
-      "createdAt": "2026-08-22T11:42:47.454Z"
     }
   ],
   "mentorDeviceTokens": [],
-  "mentorEmailTokens": [
-    {
-      "tokenHash": "1a5622e88c75f002e1fe1a1a0a5efb503485e6abf4c87f2378e3deb745c1ae16",
-      "mentorId": "qa-mentor-id",
-      "expiresAt": "2026-08-23T11:42:47.474Z",
-      "consumed": false,
-      "createdAt": "2026-08-22T11:42:47.481Z"
-    }
-  ],
+  "mentorEmailTokens": [],
   "mentorSlotLocks": [],
-  "consultantContracts": [
-    {
-      "id": "abea9f00-b6b1-44b3-a086-b4b0a29f6aa4",
-      "consultantId": "qa-mentor-id",
-      "status": "PENDING_SIGNATURE",
-      "templateVersion": 1,
-      "contentSnapshot": "ENTRE LES SOUSSIGNÉS :\n\nEURL METWORK, ci-après « le Mandataire »,\n\nET\n\nQA Mentor Expert, ci-après « le Mandant ».\n\nArticle 1 — Objet. Le Mandant donne mandat au Mandataire à l'effet d'encaisser en son nom les honoraires de consultation, moyennant une commission convenue ci-dessous.",
-      "commissionRate": 0.3,
-      "payoutMethod": "BANK_TRANSFER",
-      "payoutDetails": "RIB ••••••••••••••••7890 — QA Mentor Expert",
-      "signerPhoneSnapshot": "+213770112233",
-      "signature": null,
-      "adminStamp": null,
-      "finalPdfPublicId": null,
-      "finalPdfUrl": null,
-      "finalPdfHash": null,
-      "otp": null,
-      "auditTrail": [
-        {
-          "event": "CREATED",
-          "actorId": "qa-admin-id",
-          "timestamp": "2026-08-22T11:40:51.424Z"
-        },
-        {
-          "event": "SENT",
-          "actorId": "qa-admin-id",
-          "timestamp": "2026-08-22T11:41:05.533Z"
-        },
-        {
-          "event": "VIEWED",
-          "actorId": "qa-mentor-id",
-          "timestamp": "2026-08-22T11:44:17.050Z"
-        }
-      ],
-      "createdAt": "2026-08-22T11:40:51.424Z",
-      "sentAt": "2026-08-22T11:41:05.533Z",
-      "signedAt": null,
-      "voidedAt": null
-    }
-  ],
   "networkVisits": [],
   "partnerMemberships": [],
   "partnerPromoCodes": [],

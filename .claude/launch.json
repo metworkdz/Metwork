@@ -46,19 +46,6 @@
         "PAYMENT_PROVIDER": "mock",
         "MOCK_PAYMENT_MODE": "sync"
       }
-    },
-    {
-      "name": "contract-verify",
-      "runtimeExecutable": "node",
-      "runtimeArgs": [
-        "/Users/macbookpro/Downloads/metwork/node_modules/next/dist/bin/next",
-        "dev"
-      ],
-      "port": 4199,
-      "env": {
-        "USE_LOCAL_DB": "true",
-        "API_INTERNAL_URL": "http://localhost:4199/api"
-      }
     }
   ]
 }
