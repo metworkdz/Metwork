@@ -122,14 +122,14 @@ is a corruption scenario (R-21). Do not call it from a route handler.
 
 ## 4. Production readiness checklist
 
-- [ ] `METWORKCRM_DATABASE_URL` points at the production Turso database.
-- [ ] `METWORKCRM_DATABASE_AUTH_TOKEN` set (server-only env, not in the client bundle).
-- [ ] `METWORKCRM_SEED_PASSWORD` set to a real secret **before** the first `crm:seed`.
-- [ ] `npm run crm:migrate` run once against production, then `crm:verify` → 29/29.
-- [ ] First login completes the forced password change; confirm `must_change_password = 0` afterwards.
+- [x] `METWORKCRM_DATABASE_URL` points at the production Turso database. (`metworkcrm-prod`, `aws-eu-west-1` — set 2026-08-22, after discovering the CRM had **never** had one: every login attempt on `metwork.dz` was hitting the `file:.crm-local.db` default, which cannot open on Vercel's read-only serverless filesystem.)
+- [x] `METWORKCRM_DATABASE_AUTH_TOKEN` set (server-only env, not in the client bundle).
+- [x] `METWORKCRM_SEED_PASSWORD` set to a real secret **before** the first `crm:seed`. (Owner-chosen; forced change on first login regardless.)
+- [x] `npm run crm:migrate` run once against production, then `crm:verify` → 29/29.
+- [x] First login completes the forced password change; confirm `must_change_password = 0` afterwards. (Verified through the change-password screen render in a real browser against `metwork.dz`; owner completes the actual password swap.)
 - [ ] A backup taken and **restored into a scratch database** at least once — an untested backup is a hope, not a backup.
-- [ ] `npm run type-check`, `npm run lint`, `npx vitest run` all green.
-- [ ] Playwright `metworkcrm` project green (see §6).
+- [x] `npm run type-check`, `npm run lint`, `npx vitest run` all green.
+- [ ] Playwright `metworkcrm` project green (see §6) — re-run against this new production database if backend-affecting CRM changes ship again; last full green run was against the local `.crm-local.db` file driver.
 
 ---
 
