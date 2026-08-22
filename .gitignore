@@ -47,6 +47,11 @@ yarn-error.log*
 .crm-local.db-shm
 /backups/
 
+# Playwright run output (traces/screenshots on failure). Produced by both the
+# platform suite and the CRM one; never belongs in a commit.
+/test-results/
+/playwright-report/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
