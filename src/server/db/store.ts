@@ -619,6 +619,18 @@ export interface BookingRecord {
   /** Receiver commission rate snapshot at settlement (decimal 0–1). */
   commissionRate?: number;
   /**
+   * Platform commission rate for a MENTOR-owned listing (consultant program),
+   * snapshotted at booking CREATION from the admin-editable `MENTOR_PROGRAM`
+   * commission rule (decimal 0–1). Additive & nullable — absent on every
+   * incubator-owned booking (those snapshot `commissionRate` at settlement
+   * instead) and on legacy rows.
+   *
+   * Frozen up front on purpose: an admin editing the rule later must not
+   * re-split a booking that is already pending or settled. Settlement reads
+   * THIS value, never the live rule.
+   */
+  mentorCommissionRate?: number;
+  /**
    * Payer-side fee added ON TOP of the online portion and charged to the buyer
    * (integer DZD). Central commission engine output. Additive & nullable —
    * legacy bookings settled before the engine leave this undefined (⇒ 0).

@@ -57,7 +57,8 @@ import {
 } from '@/server/payments/commission';
 import { getEffectiveSubscriptionCode } from '@/server/incubator/service';
 import { isMentorApproved } from '@/lib/mentor-approval';
-import { creditProgramEarningToDraft } from '@/server/mentors/ledger';
+import { applyMentorEarningToDraft } from '@/server/mentors/ledger';
+import { resolveMentorCommissionRates } from '@/server/payments/mentor-commission';
 import {
   computeQuantity,
   validateWorkingHours,
@@ -518,6 +519,15 @@ export async function createCardBookingIntent(
       config: d.meta?.platformConfig,
     });
 
+    // ── Freeze the MENTOR commission rate for a consultant-owned program ────
+    // Read from the admin-editable MENTOR_PROGRAM rule (never hardcoded) and
+    // snapshotted onto the booking NOW, so an admin editing the rule later can
+    // never re-split this booking — settlement reads the snapshot, not the rule.
+    const owningMentor = findOwningMentor(d, item.promoKind, item.itemId);
+    const mentorCommissionRate = owningMentor
+      ? resolveMentorCommissionRates(d.commissionRules, { kind: 'PROGRAM' }).platformRate
+      : undefined;
+
     const now = new Date().toISOString();
     const token = randomUUID();
     const booking: BookingRecord = {
@@ -549,6 +559,7 @@ export async function createCardBookingIntent(
       payerFeeAmount: feeQuote.payerFee,
       payerFeeRate: feeQuote.payerRate,
       onlineChargeAmount: feeQuote.grossChargedToPayer,
+      ...(mentorCommissionRate != null ? { mentorCommissionRate } : {}),
       paymentStatus: undefined,
       settledAt: null,
       payToken: token,
@@ -767,13 +778,25 @@ async function applyCardSettlement(bookingId: string, providerRef: string | null
         d.transactions.push(commissionTx);
       }
     } else if (mentor) {
-      // Mentor-owned program: credit the parallel mentorId-keyed ledger
-      // instead of a WalletRecord. Immediate (no PENDING hold), mirroring how
-      // incubator programs pay out at settlement above.
-      const { split } = creditProgramEarningToDraft(d, {
+      // Mentor-owned program: credit the parallel mentorId-keyed ledger instead
+      // of a WalletRecord, through the SAME canonical earning function
+      // consultations use. Bucket AVAILABLE = immediate (no PENDING hold),
+      // mirroring how incubator programs pay out at settlement above.
+      //
+      // The rate comes from `mentorCommissionRate`, frozen onto this booking at
+      // creation — NOT from the live rule — so an admin rate change between
+      // booking and settlement cannot alter this split. Legacy rows created
+      // before that field existed fall back to resolving the rule live.
+      //
+      // Runs inside THIS db.update, so the wallet credit and the CONFIRMED
+      // transition above commit atomically together.
+      const { split } = applyMentorEarningToDraft(d, {
         mentorId: mentor.id,
         bookingId: booking.id,
-        onlineAmount: online,
+        grossAmount: online,
+        kind: 'PROGRAM',
+        bucket: 'AVAILABLE',
+        frozenPlatformRate: booking.mentorCommissionRate ?? null,
       });
       booking.commissionRate = split.platformRate;
       booking.commissionAmount = split.platformCommission;
