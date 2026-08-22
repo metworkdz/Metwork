@@ -70,7 +70,8 @@
       "language": "Langue",
       "forgetDevice": "Oublier l'appareil et se déconnecter",
       "programs": "Programmes",
-      "contract": "Contrat"
+      "contract": "Contrat",
+      "more": "Plus"
     },
     "signin": {
       "heading": "Connexion consultant",

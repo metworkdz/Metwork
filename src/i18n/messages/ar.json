@@ -70,7 +70,8 @@
       "language": "اللغة",
       "forgetDevice": "نسيان الجهاز وتسجيل الخروج",
       "programs": "البرامج",
-      "contract": "العقد"
+      "contract": "العقد",
+      "more": "المزيد"
     },
     "signin": {
       "heading": "تسجيل دخول المستشار",

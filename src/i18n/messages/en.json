@@ -70,7 +70,8 @@
       "language": "Language",
       "forgetDevice": "Forget device & sign out",
       "programs": "Programs",
-      "contract": "Contract"
+      "contract": "Contract",
+      "more": "More"
     },
     "signin": {
       "heading": "Consultant sign-in",
