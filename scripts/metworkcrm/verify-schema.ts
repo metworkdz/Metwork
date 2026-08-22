@@ -11,7 +11,7 @@
  * run inside a transaction that is always rolled back.
  */
 import './_env';
-import { sql } from 'drizzle-orm';
+import { sql, TransactionRollbackError } from 'drizzle-orm';
 import { createCrmDb } from '../../src/server/metworkcrm/db/client';
 import { CRM_TABLE_NAMES } from '../../src/server/metworkcrm/db/schema';
 import { crmDriverKind } from '../../src/server/metworkcrm/env';
@@ -96,33 +96,46 @@ async function main() {
   );
 
   // Duplicate platform_listing_id — needs one real row first, so do it in a
-  // transaction we roll back.
+  // transaction we roll back. Uses drizzle's own `db.transaction()` rather
+  // than raw `BEGIN`/`ROLLBACK` SQL text: the latter does not reliably hold
+  // as one transaction over Turso's remote HTTP driver (each `db.run()` can
+  // land as an independent request), which was confirmed to silently leave
+  // a stray `probe-s1` row behind on first production run of this script.
   try {
-    await db.run(sql`BEGIN`);
-    await db.run(
-      sql`INSERT INTO crm_startups (id, platform_listing_id, pipeline_stage, stage_changed_at, created_at, updated_at)
-          VALUES ('probe-s1', 'listing-x', 'LEAD', ${now}, ${now}, ${now})`,
-    );
-    let duped = false;
-    try {
-      await db.run(
+    await db.transaction(async (tx) => {
+      await tx.run(
         sql`INSERT INTO crm_startups (id, platform_listing_id, pipeline_stage, stage_changed_at, created_at, updated_at)
-            VALUES ('probe-s2', 'listing-x', 'LEAD', ${now}, ${now}, ${now})`,
+            VALUES ('probe-s1', 'listing-x', 'LEAD', ${now}, ${now}, ${now})`,
       );
-      duped = true;
-    } catch {
-      /* expected */
-    }
-    check('duplicate platform_listing_id rejected', !duped);
+      let duped = false;
+      try {
+        await tx.run(
+          sql`INSERT INTO crm_startups (id, platform_listing_id, pipeline_stage, stage_changed_at, created_at, updated_at)
+              VALUES ('probe-s2', 'listing-x', 'LEAD', ${now}, ${now}, ${now})`,
+        );
+        duped = true;
+      } catch {
+        /* expected */
+      }
+      check('duplicate platform_listing_id rejected', !duped);
 
-    const gen = await db.all<{ link_status: string }>(
-      sql`SELECT link_status FROM crm_startups WHERE id = 'probe-s1'`,
-    );
-    check("generated link_status computes to 'LINKED'", gen[0]?.link_status === 'LINKED', String(gen[0]?.link_status));
-    await db.run(sql`ROLLBACK`);
+      const gen = await tx.all<{ link_status: string }>(
+        sql`SELECT link_status FROM crm_startups WHERE id = 'probe-s1'`,
+      );
+      check(
+        "generated link_status computes to 'LINKED'",
+        gen[0]?.link_status === 'LINKED',
+        String(gen[0]?.link_status),
+      );
+      tx.rollback();
+    });
   } catch (err) {
-    await quiet(sql`ROLLBACK`);
-    check('linked-startup probes', false, String(err));
+    // `tx.rollback()` throws `TransactionRollbackError` by design — that is
+    // the expected, successful path, not a failure.
+    if (!(err instanceof TransactionRollbackError)) {
+      await quiet(sql`ROLLBACK`);
+      check('linked-startup probes', false, String(err));
+    }
   }
 
   console.log(
