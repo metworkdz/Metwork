@@ -150,25 +150,36 @@ export function SpaceBookingFormDialog({
       opportunityId: opportunity?.id || undefined,
     };
 
+    let res: Response;
     try {
-      const res = await fetch(isEdit ? `/api/metworkcrm/space-bookings/${booking!.id}` : '/api/metworkcrm/space-bookings', {
+      res = await fetch(isEdit ? `/api/metworkcrm/space-bookings/${booking!.id}` : '/api/metworkcrm/space-bookings', {
         method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setError(data?.error?.message ?? 'Une erreur est survenue.');
-        setSaving(false);
-        return;
-      }
-      setSaving(false);
-      setOpen(false);
-      onSaved(data.id);
     } catch {
-      setError('Erreur réseau. Réessayez.');
+      setError('Impossible de contacter le serveur. Vérifiez votre connexion.');
       setSaving(false);
+      return;
     }
+
+    let data: { id?: string; error?: { message?: string } };
+    try {
+      data = await res.json();
+    } catch {
+      setError(`Réponse du serveur invalide (code ${res.status}). Réessayez ou contactez l'équipe technique.`);
+      setSaving(false);
+      return;
+    }
+
+    if (!res.ok) {
+      setError(data?.error?.message ?? 'Une erreur est survenue.');
+      setSaving(false);
+      return;
+    }
+    setSaving(false);
+    setOpen(false);
+    onSaved(data.id!);
   }
 
   return (

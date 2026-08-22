@@ -209,8 +209,9 @@ export function InteractionFormDialog({
       nextActionDone,
     };
 
+    let res: Response;
     try {
-      const res = await fetch(
+      res = await fetch(
         isEdit ? `/api/metworkcrm/interactions/${interaction!.id}` : '/api/metworkcrm/interactions',
         {
           method: isEdit ? 'PATCH' : 'POST',
@@ -218,19 +219,28 @@ export function InteractionFormDialog({
           body: JSON.stringify(payload),
         },
       );
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
-        setError(data?.error?.message ?? 'Une erreur est survenue.');
+    } catch {
+      setError('Impossible de contacter le serveur. Vérifiez votre connexion.');
+      setSaving(false);
+      return;
+    }
+
+    if (!res.ok) {
+      let data: { error?: { message?: string } };
+      try {
+        data = await res.json();
+      } catch {
+        setError(`Réponse du serveur invalide (code ${res.status}). Réessayez ou contactez l'équipe technique.`);
         setSaving(false);
         return;
       }
+      setError(data?.error?.message ?? 'Une erreur est survenue.');
       setSaving(false);
-      setOpen(false);
-      onSaved();
-    } catch {
-      setError('Erreur réseau. Réessayez.');
-      setSaving(false);
+      return;
     }
+    setSaving(false);
+    setOpen(false);
+    onSaved();
   }
 
   return (
