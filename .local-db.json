@@ -14617,23 +14617,6 @@
       "status": "DRAFT",
       "createdAt": "2026-08-22T00:14:46.295Z",
       "updatedAt": "2026-08-22T00:14:46.295Z"
-    },
-    {
-      "id": "f31ec117-a4cf-4f4c-be30-767102db3c87",
-      "name": "QA Admin Active 1787357681849-i978e",
-      "description": "Automated e2e fixture — active listing for admin page test. Safe to delete.",
-      "industry": "FinTech",
-      "fundingGoal": 1000000,
-      "equityOffered": 15,
-      "valuation": null,
-      "maturityStage": "SEED",
-      "pitchDeckUrl": null,
-      "websiteUrl": null,
-      "logoUrl": null,
-      "founderId": "qa-founder-id",
-      "status": "ACTIVE",
-      "createdAt": "2026-08-22T00:14:46.427Z",
-      "updatedAt": "2026-08-22T00:14:51.168Z"
     }
   ],
   "mentors": [
@@ -26995,6 +26978,18 @@
         }
       },
       "createdAt": "2026-08-20T21:31:56.602Z"
+    },
+    {
+      "id": "359e939e-523b-407c-b490-1767867ddccf",
+      "adminId": "qa-admin-id",
+      "adminEmail": "test.admin@metwork.test",
+      "action": "STARTUP_DELETED",
+      "targetType": "startup",
+      "targetId": "f31ec117-a4cf-4f4c-be30-767102db3c87",
+      "details": {
+        "deletedName": "QA Admin Active 1787357681849-i978e"
+      },
+      "createdAt": "2026-08-22T00:16:08.240Z"
     }
   ],
   "notifications": [
@@ -27225,14 +27220,7 @@
       "updatedAt": "2026-08-22T00:15:01.554Z"
     }
   ],
-  "savedStartups": [
-    {
-      "id": "f47d18b6-732e-484d-9254-3d2c94393825",
-      "userId": "qa-investor-id",
-      "startupId": "f31ec117-a4cf-4f4c-be30-767102db3c87",
-      "createdAt": "2026-08-22T00:14:56.386Z"
-    }
-  ],
+  "savedStartups": [],
   "investments": [],
   "withdrawalRequests": [
     {

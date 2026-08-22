@@ -26,7 +26,7 @@ import { request as pwRequest, expect, type APIRequestContext } from '@playwrigh
 import * as fs from 'node:fs';
 import { authStatePath } from '../global-setup';
 
-export const BASE = 'http://localhost:3010';
+export const BASE = 'http://localhost:3000';
 
 export type Role = 'admin' | 'incubator' | 'builder' | 'founder' | 'explorer' | 'investor';
 
