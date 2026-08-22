@@ -11,6 +11,7 @@ import { fromZod, json, jsonError } from '@/server/http/json';
 import { DEFAULT_PLATFORM_SETTINGS } from '@/server/admin/settings-defaults';
 import { LANDING_SECTIONS } from '@/config/landing-sections';
 import { MIN_EUR_DZD_RATE, MAX_EUR_DZD_RATE } from '@/server/payments/fx';
+import { appendAuditLog } from '@/server/audit/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,6 +34,12 @@ const schema = z.object({
     .min(MIN_EUR_DZD_RATE)
     .max(MAX_EUR_DZD_RATE)
     .optional(),
+  /**
+   * Metwork's stamp / authorised-signature image, composited into every signed
+   * consultant contract PDF. A URL from /api/upload (an ordinary public image,
+   * unlike the signed contracts themselves). Null clears it.
+   */
+  adminStampImageUrl: z.string().url().max(2_000).nullable().optional(),
 });
 
 export async function GET() {
@@ -61,6 +68,7 @@ export async function PATCH(req: NextRequest) {
   const now = new Date().toISOString();
   const { eurToDzdRate, ...rest } = input;
   const rateChanged = eurToDzdRate !== undefined;
+  const stampChanged = input.adminStampImageUrl !== undefined;
 
   const updated = await db.update((store) => {
     const current = store.platformSettings ?? { ...DEFAULT_PLATFORM_SETTINGS };
@@ -80,6 +88,19 @@ export async function PATCH(req: NextRequest) {
     };
     return { ...store.platformSettings };
   });
+
+  // The stamp appears on every future signed contract, so a change to it is
+  // recorded in the platform audit log alongside the other settings changes.
+  if (stampChanged) {
+    await appendAuditLog({
+      adminId: guard.user.id,
+      adminEmail: guard.user.email,
+      action: 'CONTRACT_STAMP_UPDATED',
+      targetType: 'platform_settings',
+      targetId: 'adminStampImageUrl',
+      details: { cleared: input.adminStampImageUrl === null },
+    });
+  }
 
   return json({ settings: updated });
 }

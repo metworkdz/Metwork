@@ -1924,7 +1924,8 @@
     "recentClients": "العملاء الجدد",
     "nothingYet": "لا يوجد شيء بعد",
     "payments": "المدفوعات",
-    "domiciliation": "التوطين"
+    "domiciliation": "التوطين",
+    "consultantContracts": "عقود المستشارين"
   },
   "pages": {
     "consultationPay": {
@@ -2737,6 +2738,10 @@
         "perks": {
           "title": "مزايا الشركاء",
           "subtitle": "أنشئ عروض الشركاء وأدر مخزون الأكواد والقسائم."
+        },
+        "contracts": {
+          "title": "عقود المستشارين",
+          "subtitle": "إصدار عقود العمولة التي يوقّعها المستشارون وإرسالها ومتابعتها."
         }
       }
     },
@@ -4414,7 +4419,14 @@
       "exchangeRateLabel": "سعر التحويل EUR ← DZD",
       "exchangeRateHint": "عدد الدينارات مقابل 1 يورو. يُستخدم فقط لتحصيل البطاقات الدولية (Visa / Mastercard). يُثبَّت السعر لحظة الدفع، وتغييره لا يؤثر أبدًا على معاملة جارية أو منتهية.",
       "exchangeRateUnsetWarning": "ما لم يتم تحديد سعر، يبقى الدفع بالبطاقة الدولية غير متاح.",
-      "exchangeRateUpdatedAt": "تم تعديل السعر في {date}"
+      "exchangeRateUpdatedAt": "تم تعديل السعر في {date}",
+      "sectionContractStamp": "ختم العقود",
+      "sectionContractStampDescription": "ختم Metwork أو التوقيع المعتمد، يُطبع على كل عقد مستشار يُوقّع من الآن فصاعداً.",
+      "contractStampLabel": "رفع ختم جديد",
+      "contractStampHint": "يُفضّل ملف PNG بخلفية شفافة. يُطبّق على العقود الموقّعة بعد الحفظ — أما المستندات الموقّعة سابقاً فتحتفظ بختمها الأصلي.",
+      "contractStampAlt": "ختم العقود الحالي",
+      "contractStampRemove": "إزالة",
+      "contractStampUnsetWarning": "لم يُحدَّد أي ختم. ستُوقَّع العقود بخانة توقيع Metwork فارغة."
     },
     "payments": {
       "cancel": "إلغاء",

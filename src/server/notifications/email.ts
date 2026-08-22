@@ -790,6 +790,29 @@ export function otpEmailHtml(code: string): string {
   `);
 }
 
+/**
+ * "Your contract is ready to sign" notice.
+ *
+ * FRENCH, deliberately: the contract itself is a French legal instrument and is
+ * not translated, so an email introducing it in another language would set up a
+ * mismatch the moment the consultant opens the portal.
+ *
+ * Carries no contract terms and no link that could sign anything — just a
+ * prompt to open the portal. The commission rate and payout details live behind
+ * the session, and a mailbox is not an authenticated channel.
+ */
+export function contractReadyEmailHtml(opts: { consultantName: string; portalUrl: string }): string {
+  return layout(`
+    ${h1('Votre contrat de commission est prêt')}
+    ${p(`Bonjour <strong>${opts.consultantName}</strong>,`)}
+    ${p("Metwork a établi votre contrat de mandat de recouvrement. Ce contrat encadre le reversement des honoraires que nous encaissons pour votre compte, déduction faite de la commission de la plateforme.")}
+    ${p("Connectez-vous à votre espace consultant pour le lire et le signer. La signature se fait en ligne : vous dessinez votre signature, puis vous la confirmez avec un code à usage unique envoyé sur votre téléphone.")}
+    ${button(opts.portalUrl, 'Lire et signer le contrat')}
+    ${p(`<span style="color:#71717a;font-size:13px;">Ou copiez ce lien dans votre navigateur :<br /><span style="word-break:break-all;">${opts.portalUrl}</span></span>`)}
+    ${p('<span style="color:#71717a;font-size:13px;">Aucun paiement n\'est demandé pour signer ce contrat. Si vous n\'attendiez pas ce message, contactez-nous avant de signer.</span>')}
+  `);
+}
+
 export function verificationEmailHtml(link: string): string {
   return layout(`
     ${h1('Verify your email address')}

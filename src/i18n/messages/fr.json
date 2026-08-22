@@ -1924,7 +1924,8 @@
     "recentClients": "Clients récents",
     "nothingYet": "Rien pour le moment",
     "payments": "Paiements",
-    "domiciliation": "Domiciliation"
+    "domiciliation": "Domiciliation",
+    "consultantContracts": "Contrats consultants"
   },
   "pages": {
     "consultationPay": {
@@ -2737,6 +2738,10 @@
         "perks": {
           "title": "Avantages partenaires",
           "subtitle": "Créez des offres partenaires et gérez les pools de codes et vouchers."
+        },
+        "contracts": {
+          "title": "Contrats consultants",
+          "subtitle": "Émettez, envoyez et suivez les contrats de commission signés par les consultants."
         }
       }
     },
@@ -4414,7 +4419,14 @@
       "exchangeRateLabel": "Taux de conversion EUR → DZD",
       "exchangeRateHint": "Nombre de DZD pour 1 EUR. Utilisé uniquement pour facturer les cartes internationales (Visa / Mastercard). Le taux est figé au moment du paiement : le modifier n'affecte jamais une transaction déjà engagée.",
       "exchangeRateUnsetWarning": "Tant qu'aucun taux n'est défini, le paiement par carte internationale reste indisponible.",
-      "exchangeRateUpdatedAt": "Taux modifié le {date}"
+      "exchangeRateUpdatedAt": "Taux modifié le {date}",
+      "sectionContractStamp": "Cachet des contrats",
+      "sectionContractStampDescription": "Le cachet ou la signature autorisée de Metwork, apposé sur chaque contrat consultant signé à partir de maintenant.",
+      "contractStampLabel": "Téléverser un nouveau cachet",
+      "contractStampHint": "Un PNG à fond transparent donne le meilleur résultat. Appliqué aux contrats signés après l'enregistrement — les documents déjà signés conservent leur cachet d'origine.",
+      "contractStampAlt": "Cachet actuel des contrats",
+      "contractStampRemove": "Supprimer",
+      "contractStampUnsetWarning": "Aucun cachet défini. Les contrats seront signés avec un bloc de signature Metwork vide."
     },
     "payments": {
       "cancel": "Annuler",

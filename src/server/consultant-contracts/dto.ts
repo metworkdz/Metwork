@@ -51,3 +51,46 @@ export function toConsultantContractDto(
     pdfUrl: options.pdfUrl ?? null,
   };
 }
+
+/* ─────────────────── Admin wire shape ─────────────────── */
+
+/**
+ * What an admin sees. A superset of the consultant view: the full audit trail
+ * (who did what, when — the whole point of the admin screen), the consultant's
+ * identity, and the integrity hash.
+ *
+ * Still an allowlist, and still without the OTP internals: an admin has no
+ * business reading send counters either, and the code hash lives in the shared
+ * OTP table regardless.
+ */
+export interface AdminContractDto extends ConsultantContractDto {
+  consultantId: string;
+  consultantName: string;
+  consultantEmail: string | null;
+  templateVersion: number;
+  createdAt: string;
+  voidedAt: string | null;
+  /** SHA-256 of the signed PDF bytes. Shown so an admin can verify a download. */
+  finalPdfHash: string | null;
+  auditTrail: ConsultantContractRecord['auditTrail'];
+}
+
+export function toAdminContractDto(
+  record: ConsultantContractRecord,
+  consultant: { fullName: string; email?: string | null } | null,
+  options: { pdfUrl?: string | null } = {},
+): AdminContractDto {
+  return {
+    ...toConsultantContractDto(record, options),
+    consultantId: record.consultantId,
+    // A contract can outlive the consultant record it names; the fallback keeps
+    // the admin list readable rather than rendering a blank row.
+    consultantName: consultant?.fullName ?? 'Unknown consultant',
+    consultantEmail: consultant?.email ?? null,
+    templateVersion: record.templateVersion,
+    createdAt: record.createdAt,
+    voidedAt: record.voidedAt,
+    finalPdfHash: record.finalPdfHash,
+    auditTrail: record.auditTrail,
+  };
+}

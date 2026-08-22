@@ -931,7 +931,16 @@ export type AuditAction =
   | 'MENTOR_APPROVED'
   | 'MENTOR_REJECTED'
   | 'MENTOR_PUBLISHED'
-  | 'MENTOR_UNPUBLISHED';
+  | 'MENTOR_UNPUBLISHED'
+  // Consultant commission contracts (e-signature). The contract's own
+  // `auditTrail` is the evidentiary record; these entries put the ADMIN side of
+  // the same actions into the platform-wide log the audit-log page reads.
+  | 'CONTRACT_CREATED'
+  | 'CONTRACT_UPDATED'
+  | 'CONTRACT_SENT'
+  | 'CONTRACT_VOIDED'
+  | 'CONTRACT_OTP_RESENT'
+  | 'CONTRACT_STAMP_UPDATED';
 
 export interface AuditLogRecord {
   id: string;

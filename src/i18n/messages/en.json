@@ -1924,7 +1924,8 @@
     "recentClients": "Recent clients",
     "nothingYet": "Nothing here yet",
     "payments": "Payments",
-    "domiciliation": "Domiciliation"
+    "domiciliation": "Domiciliation",
+    "consultantContracts": "Consultant contracts"
   },
   "pages": {
     "consultationPay": {
@@ -2737,6 +2738,10 @@
         "perks": {
           "title": "Partner Perks",
           "subtitle": "Create partner offers and manage code pools & vouchers."
+        },
+        "contracts": {
+          "title": "Consultant contracts",
+          "subtitle": "Issue, send and track the commission contracts consultants sign."
         }
       }
     },
@@ -4414,7 +4419,14 @@
       "exchangeRateLabel": "EUR → DZD conversion rate",
       "exchangeRateHint": "DZD per 1 EUR. Used only to bill international cards (Visa / Mastercard). The rate is frozen at payment time — changing it never affects a transaction already in flight or completed.",
       "exchangeRateUnsetWarning": "While no rate is set, international card payment stays unavailable.",
-      "exchangeRateUpdatedAt": "Rate updated {date}"
+      "exchangeRateUpdatedAt": "Rate updated {date}",
+      "sectionContractStamp": "Contract stamp",
+      "sectionContractStampDescription": "Metwork's stamp or authorised signature, applied to every consultant contract signed from now on.",
+      "contractStampLabel": "Upload a new stamp",
+      "contractStampHint": "PNG with a transparent background works best. Applied to contracts signed after you save — documents already signed keep the stamp they were signed with.",
+      "contractStampAlt": "Current contract stamp",
+      "contractStampRemove": "Remove",
+      "contractStampUnsetWarning": "No stamp set. Contracts will be signed with a blank Metwork signature block."
     },
     "payments": {
       "cancel": "Cancel",
