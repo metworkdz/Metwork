@@ -38,6 +38,7 @@ import { SpaceScheduler } from './space-scheduler';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { MembershipTierBadge } from '@/components/ui/membership-tier-badge';
 import { resolveTier } from '@/lib/tier-utils';
+import { isNetworkPassEnabled } from '@/config/feature-flags';
 import { memberSpaceDiscountFraction } from '@/lib/membership-benefits';
 import { computeClientDeposit } from '@/lib/deposit';
 import type { Locale } from '@/i18n/config';
@@ -337,10 +338,13 @@ export function SpaceBookingForm({
   const userTier = user ? resolveTier(user) : 'EXPLORER';
   const passCredits = user?.networkCredits ?? 0;
   const passCreditsMax = user?.networkCreditsMax ?? 0;
-  // Gated on the ACTUAL allowance, not just on holding a paid tier: a plan can
-  // grant zero passes (Builder does), and offering the option to those members
-  // would only produce a rejected booking.
-  const canUsePass = isAuthed && user !== null && passCreditsMax > 0 && (space.isPartnerInNetwork ?? false) && !isRequestMode;
+  // Gated on the feature flag first, then on the ACTUAL allowance rather than
+  // merely holding a paid tier: a plan can grant zero passes (Entrepreneur
+  // does), and offering the option to those members would only produce a
+  // rejected booking.
+  const canUsePass =
+    isNetworkPassEnabled() &&
+    isAuthed && user !== null && passCreditsMax > 0 && (space.isPartnerInNetwork ?? false) && !isRequestMode;
   const passResetDate = user?.networkCreditsResetDate
     ? new Date(user.networkCreditsResetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : null;
@@ -836,7 +840,7 @@ export function SpaceBookingForm({
         </div>
       )}
 
-      {/* ── Network Pass option (Builder / Founder only, partner spaces) ── */}
+      {/* ── Network Pass option (paid plans with an allowance, partner spaces) ── */}
       {canUsePass && (
         <div>
           <button

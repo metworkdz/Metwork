@@ -919,11 +919,11 @@
         "description": "Discover the ecosystem — no commitment"
       },
       "entrepreneur": {
-        "name": "Builder",
+        "name": "Entrepreneur",
         "description": "Everything you need to launch and grow your startup"
       },
       "startup": {
-        "name": "Founder",
+        "name": "Startup",
         "description": "Raise funds, get noticed, and build your empire"
       }
     },
@@ -936,7 +936,7 @@
       "bookPrograms": "15% off mentor consultations",
       "eventsDiscount": "Discounts on space reservations",
       "prioritySupport": "Access to exclusive member events",
-      "allEntrepreneur": "Everything in Builder",
+      "allEntrepreneur": "Everything in Entrepreneur",
       "listStartup": "List your startup in the marketplace",
       "fundraisingAccess": "Raise funds and attract investors",
       "investorMeetings": "Receive investor meeting requests",
@@ -2363,9 +2363,9 @@
             "sessionLabel": "Session ({duration})",
             "successBody": "Your session with {mentorName} is booked and paid. The consultant will send you the meeting details by email.",
             "successHeading": "Booking confirmed!",
-            "tierBuilder": "Builder",
+            "tierBuilder": "Entrepreneur",
             "tierDiscountLabel": "{tier} discount ({percent}% off)",
-            "tierFounder": "Founder",
+            "tierFounder": "Startup",
             "successBadge": "Confirmed"
           }
         },
@@ -2393,7 +2393,14 @@
         },
         "networkPass": {
           "title": "My Metwork Pass",
-          "subtitle": "Use your pass to check in at partner coworking spaces across the network."
+          "subtitle": "Use your pass to check in at partner coworking spaces across the network.",
+          "comingSoonTitle": "Network Pass — coming soon",
+          "comingSoonBody": "Check in at partner coworking spaces across Algeria with a single pass. We are putting the finishing touches on it — your plan and its benefits are unaffected in the meantime.",
+          "currentPlanLabel": "Your current plan",
+          "upgradeCta": "Upgrade your plan",
+          "upgradeHint": "Compare plans and see what each one includes.",
+          "noPassTitle": "No active Network Pass",
+          "noPassBody": "Your current plan does not include coworking passes. Upgrade to unlock monthly check-in access at partner spaces."
         }
       },
       "business": {
@@ -2601,6 +2608,13 @@
           "statRegistered": "Registered",
           "statActive": "Active",
           "statSuspended": "Suspended"
+        },
+        "startups": {
+          "title": "Startups",
+          "subtitle": "Review and manage every registered startup listing.",
+          "statTotal": "Total listings",
+          "statActive": "Active",
+          "statDraft": "Draft"
         },
         "memberships": {
           "title": "Memberships",
@@ -3270,7 +3284,7 @@
       "networkPassCredits": "{count} left · Resets {date}",
       "networkPassNoCredits": "No credits remaining this month",
       "networkPassWarning": "You have no credits left this month. Credits reset on the 1st.",
-      "founderDiscount": "Founder discount ({percent}% off)",
+      "founderDiscount": "Startup discount ({percent}% off)",
       "durationDiscount": "Duration discount ({percent}% off)",
       "promoLabel": "Promo",
       "networkPassTotal": "Network Pass (1 credit)",
@@ -3326,7 +3340,7 @@
       "passCreditsInfo": "Uses 1 credit — {count} of {max} left",
       "passResetsDate": "· Resets {date}",
       "hourlyCapAutoSwitch": "Hourly bookings: max 7 hours per day — exceeding this will automatically switch to the day rate",
-      "builderDiscount": "Builder discount ({percent}% off)",
+      "builderDiscount": "Entrepreneur discount ({percent}% off)",
       "depositDueNow": "Deposit due now",
       "balanceOnSite": "Balance on-site",
       "payDeposit": "Pay deposit — {amount}",
@@ -3702,8 +3716,8 @@
       "tierFilter": "Tier",
       "allTiers": "All tiers",
       "tierExplorer": "Explorer",
-      "tierBuilder": "Builder",
-      "tierFounder": "Founder",
+      "tierBuilder": "Entrepreneur",
+      "tierFounder": "Startup",
       "fromDate": "From",
       "toDate": "To",
       "exportCsv": "Export CSV",
@@ -3944,8 +3958,6 @@
       "engineHint": "Applies to commission-plan incubators and trainers. Pro (flat-fee) incubators are exempt from the receiver commission; their buyers still pay the payer fee.",
       "membershipTitle": "Membership plans",
       "membershipDescription": "Prices and benefits for new purchases. Members who already bought a plan keep the price and benefits they signed up for until they renew.",
-      "planBuilder": "Builder",
-      "planFounder": "Founder",
       "monthlyPrice": "Monthly price",
       "annualDiscount": "Annual discount",
       "consultationDiscount": "Consultation discount",
@@ -3959,7 +3971,9 @@
       "frozenHint": "Changes apply to new purchases only — active members keep their current terms until renewal.",
       "priceError": "Enter a valid amount",
       "passError": "Enter a whole number between 0 and 100",
-      "perMonth": "/ month"
+      "perMonth": "/ month",
+      "planEntrepreneur": "Entrepreneur",
+      "planStartup": "Startup"
     },
     "withdrawals": {
       "pendingReview": "Pending review",
@@ -4126,6 +4140,40 @@
       "emptyPendingDescription": "New signups will appear here for review.",
       "emptyArchivedTitle": "No archived incubators",
       "emptyArchivedDescription": "Archived incubators will appear here."
+    },
+    "startupsManager": {
+      "searchPlaceholder": "Search by name, founder, or industry…",
+      "statusFilter": "Status",
+      "allStatuses": "All statuses",
+      "statusDraft": "Draft",
+      "statusActive": "Active",
+      "statusClosed": "Closed",
+      "of": "of",
+      "startups": "startups",
+      "emptyTitle": "No startups match",
+      "emptyDescription": "Try clearing the search or changing the status filter.",
+      "colStartup": "Startup",
+      "colFounder": "Founder",
+      "colIndustry": "Industry",
+      "colFundingGoal": "Funding goal",
+      "colStatus": "Status",
+      "colCreated": "Created",
+      "colActions": "Actions",
+      "view": "View",
+      "delete": "Delete",
+      "viewTitle": "Startup details",
+      "loading": "Loading…",
+      "equityOffered": "Equity offered",
+      "valuation": "Pre-money valuation",
+      "maturityStage": "Maturity stage",
+      "description": "Description",
+      "viewPitchDeck": "View pitch deck",
+      "deleteDialogTitle": "Delete this startup permanently?",
+      "deleteDialogDescription": "This will permanently delete {name} and remove it from the investor marketplace.",
+      "deleteDialogNote": "Saved bookmarks for this listing will also be removed. Investor contact history is kept as a historical record.",
+      "deleteDialogWarning": "This cannot be undone.",
+      "deleteCancel": "Cancel",
+      "deleteConfirm": "Delete permanently"
     },
     "investorsManager": {
       "title": "Investors",
@@ -4890,8 +4938,8 @@
       "appliedCheckmark": "Applied ✓",
       "applyButton": "Apply",
       "off": "off",
-      "founderMembership": "Founder membership",
-      "builderMembership": "Builder membership",
+      "founderMembership": "Startup membership",
+      "builderMembership": "Entrepreneur membership",
       "membershipActive": "Your {tier} is now active at a {pct}% discount!"
     }
   },
@@ -4900,6 +4948,10 @@
       "basicInfoTitle": "Basic info",
       "startupNameLabel": "Startup name",
       "startupNamePlaceholder": "Acme Inc",
+      "logoLabel": "Startup logo",
+      "logoAlt": "Startup logo",
+      "logoChangeLabel": "Change logo",
+      "logoHint": "JPG, PNG or WEBP. Max {max} MB.",
       "industryLabel": "Industry",
       "fundingGoalLabel": "Funding goal (DZD)",
       "fundingGoalPlaceholder": "10,000,000",

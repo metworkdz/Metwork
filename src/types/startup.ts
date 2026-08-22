@@ -20,6 +20,8 @@ export interface StartupListing {
   pitchDeckUrl: string | null;
   /** Optional public website. */
   websiteUrl: string | null;
+  /** URL of the uploaded logo, or null if none uploaded. */
+  logoUrl: string | null;
   founderId: string;
   status: StartupListingStatus;
   createdAt: string;
@@ -35,6 +37,7 @@ export interface CreateStartupInput {
   valuation?: number | null;
   maturityStage: StartupMaturityStage;
   websiteUrl?: string | null;
+  logoUrl?: string | null;
 }
 
 /**
@@ -54,4 +57,6 @@ export interface PublicStartupListing {
   tagline: string;
   /** Boolean only — never exposes the funding amount. */
   isRaising: boolean;
+  /** URL of the uploaded logo, or null if none uploaded. Not sensitive — safe to expose publicly. */
+  logoUrl: string | null;
 }

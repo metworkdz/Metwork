@@ -6,6 +6,7 @@ export const CREDENTIALS = {
   builder:   { email: 'test.builder@metwork.test',   password: 'TestBuilder2026!'   },
   founder:   { email: 'test.founder@metwork.test',   password: 'TestFounder2026!'   },
   explorer:  { email: 'test.explorer@metwork.test',  password: 'TestExplorer2026!'  },
+  investor:  { email: 'test.investor@metwork.test',  password: 'TestInvestor2026!'  },
 };
 
 /**

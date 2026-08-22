@@ -73,11 +73,12 @@ export const DEFAULT_COMMISSION_RULES = [
  *   annual     = monthlyPrice × 12 × (1 − annualDiscount) (−30 %)
  *
  * With the values below:
- *   Builder — 1 500 /mo → 9 000 / 6 mo → 12 600 / yr
- *   Founder — 7 900 /mo → 47 400 / 6 mo → 66 360 / yr
+ *   Entrepreneur — 1 500 /mo → 9 000 / 6 mo → 12 600 / yr
+ *   Startup      — 3 500 /mo → 21 000 / 6 mo → 29 400 / yr
  *
  * Coworking pass counts are NOT here — they stay canonical in
- * `meta.platformConfig.{builder,founder}MonthlyCredits` (Builder 0, Founder 5).
+ * `meta.platformConfig.{builder,founder}MonthlyCredits` (Entrepreneur 0,
+ * Startup 5). Those field names still carry the plans' former tier names.
  */
 export const DEFAULT_MEMBERSHIP_PLAN_CONFIGS: readonly MembershipPlanConfigRecord[] =
   PAID_PLAN_CODES.map((planCode) => ({
@@ -88,9 +89,9 @@ export const DEFAULT_MEMBERSHIP_PLAN_CONFIGS: readonly MembershipPlanConfigRecor
   }));
 
 /**
- * Discount rates as they stood BEFORE the 2026-08 repricing (Builder 15 %,
- * Founder 20 %, asymmetric across both spaces and consultations). Used only to
- * backfill the frozen snapshot of memberships bought under the old terms.
+ * Discount rates as they stood BEFORE the 2026-08 repricing (15 % / 20 %,
+ * asymmetric across both spaces and consultations). Used only to backfill the
+ * frozen snapshot of memberships bought under the old terms.
  * Mirrors LEGACY_MONTHLY_PASS_COUNTS in the store.
  */
 export const LEGACY_PLAN_DISCOUNT_RATES = {

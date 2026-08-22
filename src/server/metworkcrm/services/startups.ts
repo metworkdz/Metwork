@@ -23,6 +23,8 @@ import {
 import type { StartupInput } from '../validation/startups';
 import { CrmNotFoundError, CrmServiceError } from './errors';
 import { checkStartupDeleteGuard, formatDeleteGuardMessage } from './delete-guard';
+import { deleteDocumentLinksFor, listDocumentsFor } from './documents';
+import { runStartupOnboardingAutomation } from './automations';
 
 function likeTerm(q: string): string {
   return `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -68,7 +70,7 @@ export async function getStartupDetail(id: string) {
   const startup = (await db.select().from(crmStartups).where(eq(crmStartups.id, id)))[0];
   if (!startup) throw new CrmNotFoundError('Startup');
 
-  const [organization, primaryContact, assignedExpert, tasks, interactions] = await Promise.all([
+  const [organization, primaryContact, assignedExpert, tasks, interactions, documents] = await Promise.all([
     startup.organizationId
       ? (await db.select().from(crmOrganizations).where(eq(crmOrganizations.id, startup.organizationId)))[0] ?? null
       : null,
@@ -80,9 +82,10 @@ export async function getStartupDetail(id: string) {
       : null,
     db.select().from(crmTasks).where(eq(crmTasks.startupId, id)).orderBy(desc(crmTasks.createdAt)),
     db.select().from(crmInteractions).where(eq(crmInteractions.startupId, id)).orderBy(desc(crmInteractions.occurredAt)),
+    listDocumentsFor('STARTUP', id),
   ]);
 
-  return { startup, organization, primaryContact, assignedExpert, tasks, interactions };
+  return { startup, organization, primaryContact, assignedExpert, tasks, interactions, documents };
 }
 
 export async function createStartup(input: StartupInput, actorId: string) {
@@ -128,12 +131,28 @@ export async function updateStartup(id: string, input: Partial<StartupInput>) {
 
   const now = new Date().toISOString();
   const patch: Record<string, unknown> = { ...input, updatedAt: now };
-  if (input.pipelineStage && input.pipelineStage !== existing.pipelineStage) {
+  const stageChanged = input.pipelineStage && input.pipelineStage !== existing.pipelineStage;
+  if (stageChanged) {
     patch.stageChangedAt = now;
   }
 
   await db.update(crmStartups).set(patch).where(eq(crmStartups.id, id));
-  return (await db.select().from(crmStartups).where(eq(crmStartups.id, id)))[0]!;
+  const updated = (await db.select().from(crmStartups).where(eq(crmStartups.id, id)))[0]!;
+
+  // Non-blocking automation (R-22/R-23, product spec §4.17) — runs AFTER the
+  // update above has committed; a failure here can never fail this request.
+  if (stageChanged && input.pipelineStage === 'ONBOARDING') {
+    await runStartupOnboardingAutomation({
+      id: updated.id,
+      displayName: updated.displayNameCache ?? updated.name ?? 'Startup',
+      organizationId: updated.organizationId,
+      primaryContactId: updated.primaryContactId,
+      assignedExpertId: updated.assignedExpertId,
+      stageChangedAt: updated.stageChangedAt,
+    });
+  }
+
+  return updated;
 }
 
 export async function deleteStartup(id: string): Promise<void> {
@@ -154,4 +173,5 @@ export async function deleteStartup(id: string): Promise<void> {
   } catch {
     throw new CrmServiceError(409, 'CRM_DELETE_BLOCKED', 'Impossible de supprimer cette startup — des éléments y sont encore rattachés.');
   }
+  await deleteDocumentLinksFor('STARTUP', id);
 }

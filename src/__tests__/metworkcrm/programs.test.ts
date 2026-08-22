@@ -10,7 +10,6 @@ import {
   addParticipant,
   addTrainer,
   createProgram,
-  createProgramPayment,
   deleteProgram,
   getProgramDetail,
   listPrograms,
@@ -18,6 +17,7 @@ import {
   updateProgram,
   updateTrainer,
 } from '@/server/metworkcrm/services/programs';
+import { createPayment } from '@/server/metworkcrm/services/payments';
 import { createExpert } from '@/server/metworkcrm/services/experts';
 import { createContact } from '@/server/metworkcrm/services/contacts';
 import { createOrganization } from '@/server/metworkcrm/services/organizations';
@@ -96,7 +96,7 @@ describe('Programs — money redaction (dev rules R-19)', () => {
 
   it('redacts payment amounts for TEAM_MEMBER too', async () => {
     const program = await createProgram({ title: 'Paid', type: 'FORMATION', stage: 'IDEE' }, ACTOR);
-    await createProgramPayment(program.id, { label: 'Acompte', amount: 20000, direction: 'IN', status: 'EN_ATTENTE' }, ACTOR);
+    await createPayment({ label: 'Acompte', amount: 20000, currency: 'DZD', direction: 'IN', status: 'EN_ATTENTE', programId: program.id }, ACTOR);
 
     const asMember = await getProgramDetail(program.id, { role: 'TEAM_MEMBER' });
     expect(asMember.payments[0]!.amount).toBeNull();
@@ -162,6 +162,9 @@ describe('Programs — delete guard', () => {
 
   it('allows deleting a program with no dependents', async () => {
     const program = await createProgram({ title: 'Free', type: 'FORMATION', stage: 'IDEE' }, ACTOR);
+    // Prompt 7: every created program gets its 10-item checklist automation
+    // (product spec §4.17) — clear it first so "no dependents" is actually true.
+    await db.run(sql`DELETE FROM crm_tasks WHERE program_id = ${program.id}`);
     await deleteProgram(program.id);
     await expect(getProgramDetail(program.id, { role: 'ADMIN' })).rejects.toBeInstanceOf(CrmNotFoundError);
   });
@@ -172,7 +175,10 @@ describe('Programs — delete guard', () => {
     // only checked those two would pass the pre-check, then have the raw DB
     // delete throw, surfacing the unhelpful generic catch-all message.
     const program = await createProgram({ title: 'Payment-blocked', type: 'FORMATION', stage: 'IDEE' }, ACTOR);
-    await createProgramPayment(program.id, { label: 'Acompte', amount: 5000, direction: 'IN', status: 'EN_ATTENTE' }, ACTOR);
+    // Prompt 7: strip the checklist automation's tasks so the payment is the
+    // ONLY blocker — this test isolates the payment-guard message specifically.
+    await db.run(sql`DELETE FROM crm_tasks WHERE program_id = ${program.id}`);
+    await createPayment({ label: 'Acompte', amount: 5000, currency: 'DZD', direction: 'IN', status: 'EN_ATTENTE', programId: program.id }, ACTOR);
 
     let error: unknown;
     try {
@@ -195,7 +201,10 @@ describe('Programs — delete guard', () => {
   it('allows deleting a program once its sole-link payment is given another link', async () => {
     const org = (await createOrganization({ name: 'Payer Org', type: 'ENTREPRISE', status: 'ACTIF', country: 'DZ' }, ACTOR));
     const program = await createProgram({ title: 'Payment-unblocked', type: 'FORMATION', stage: 'IDEE' }, ACTOR);
-    const payment = await createProgramPayment(program.id, { label: 'Acompte', amount: 5000, direction: 'IN', status: 'EN_ATTENTE' }, ACTOR);
+    // Prompt 7: strip the checklist automation's tasks so the payment is the
+    // ONLY blocker being resolved by this test.
+    await db.run(sql`DELETE FROM crm_tasks WHERE program_id = ${program.id}`);
+    const payment = await createPayment({ label: 'Acompte', amount: 5000, currency: 'DZD', direction: 'IN', status: 'EN_ATTENTE', programId: program.id }, ACTOR);
     await db.run(sql`UPDATE crm_payments SET organization_id = ${org.id} WHERE id = ${payment.id}`);
 
     await deleteProgram(program.id); // must not throw

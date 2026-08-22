@@ -18,6 +18,7 @@ import {
   SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
+import { StartupLogo } from '@/components/shared/startup-logo';
 import { formatCurrency } from '@/lib/format';
 import type { StartupListing } from '@/types/startup';
 import type { Locale } from '@/i18n/config';
@@ -275,7 +276,10 @@ function StartupCard({
           </button>
         </div>
 
-        <h3 className="mt-3 line-clamp-1 text-base font-semibold">{startup.name}</h3>
+        <div className="mt-3 flex items-center gap-3">
+          <StartupLogo logoUrl={startup.logoUrl} name={startup.name} size={40} />
+          <h3 className="line-clamp-1 text-base font-semibold">{startup.name}</h3>
+        </div>
         <p className="mt-1.5 line-clamp-3 text-sm text-muted-foreground leading-relaxed">
           {startup.description}
         </p>

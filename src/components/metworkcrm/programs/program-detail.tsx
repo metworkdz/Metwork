@@ -10,6 +10,7 @@ import { EntityPicker } from '@/components/metworkcrm/shared/entity-picker';
 import { Timeline } from '@/components/metworkcrm/interactions/timeline';
 import { StagePipeline } from '@/components/metworkcrm/shared/stage-pipeline';
 import { TaskFormDialog, type TaskRow } from '@/components/metworkcrm/tasks/task-form-dialog';
+import { DocumentUpload, type DocumentRow } from '@/components/metworkcrm/shared/document-upload';
 import {
   PARTICIPANT_STATUS_LABELS,
   PAYMENT_STATUS_BADGE,
@@ -56,6 +57,7 @@ export interface ProgramDetailData {
   partners: Partner[];
   tasks: TaskRow[];
   payments: Payment[];
+  documents: DocumentRow[];
 }
 
 const inlineSelectClass =
@@ -187,10 +189,13 @@ export function ProgramDetail({ initial, isAdmin }: { initial: ProgramDetailData
   async function addPayment() {
     if (!payLabel.trim() || !payAmount) return;
     setBusy(true);
-    await fetch(`/api/metworkcrm/programs/${program.id}/payments`, {
+    // Standalone ADMIN-only endpoint (product spec §4.14) — this mini-form is
+    // only ever rendered for `isAdmin`, but the route re-enforces the gate
+    // itself regardless (requireCrmApiAdmin), so this is safe either way.
+    await fetch('/api/metworkcrm/payments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ label: payLabel.trim(), amount: Number(payAmount) }),
+      body: JSON.stringify({ label: payLabel.trim(), amount: Number(payAmount), programId: program.id }),
     });
     setPayLabel('');
     setPayAmount('');
@@ -382,6 +387,8 @@ export function ProgramDetail({ initial, isAdmin }: { initial: ProgramDetailData
               </div>
             ) : null}
           </div>
+
+          <DocumentUpload entityType="PROGRAM" entityId={program.id} initial={data.documents} />
         </div>
       </div>
     </div>

@@ -891,6 +891,7 @@ export type InternalUser = typeof internalUsers.$inferSelect;
 export type NewInternalUser = typeof internalUsers.$inferInsert;
 export type CrmSession = typeof crmSessions.$inferSelect;
 export type CrmRole = (typeof CRM_ROLES)[number];
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 /**
  * Every table, for the schema-verification script and tests. Keep in sync when

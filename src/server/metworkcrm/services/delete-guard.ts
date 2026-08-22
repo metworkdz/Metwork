@@ -56,7 +56,8 @@ export interface DeleteGuardResult {
 
 type LinkColumnName =
   | 'organization_id' | 'contact_id' | 'opportunity_id' | 'startup_id'
-  | 'expert_id' | 'partnership_id' | 'program_id' | 'oi_project_id';
+  | 'expert_id' | 'partnership_id' | 'program_id' | 'oi_project_id'
+  | 'booking_id' | 'payment_id' | 'space_booking_id';
 
 /**
  * crm_payments has its OWN anti-orphan CHECK (schema doc §0), same failure
@@ -247,6 +248,40 @@ export async function checkProgramDeleteGuard(db: CrmDatabase, programId: string
 
 export async function checkOiProjectDeleteGuard(db: CrmDatabase, oiProjectId: string): Promise<DeleteGuardResult> {
   return checkLeafEntityGuard(db, 'oi_project_id', oiProjectId);
+}
+
+/**
+ * Space Bookings: `crm_tasks.booking_id` and `crm_payments.space_booking_id`
+ * are the only two columns that reference a booking. Interactions have no
+ * booking_id column at all (schema §5) — only Tasks and Payments can orphan.
+ */
+export async function checkSpaceBookingDeleteGuard(db: CrmDatabase, bookingId: string): Promise<DeleteGuardResult> {
+  const [orphanTasks, orphanPayments] = await Promise.all([
+    countOrphanedBy(db, crmTasks, 'booking_id', bookingId, [...ALL_LINK_COLUMNS, 'payment_id']),
+    countOrphanedBy(db, crmPayments, 'space_booking_id', bookingId, PAYMENT_LINK_COLUMNS.filter((c) => c !== 'space_booking_id')),
+  ]);
+
+  const blockers: DeleteBlocker[] = [
+    { label: 'tâches sans autre lien', count: orphanTasks },
+    { label: 'paiements sans autre lien', count: orphanPayments },
+  ].filter((b) => b.count > 0);
+
+  return { canDelete: blockers.length === 0, blockers, cascades: [] };
+}
+
+/**
+ * Payments: only `crm_tasks.payment_id` references a payment — Interactions
+ * have no payment_id column, and nothing else in the schema links to
+ * crm_payments.id.
+ */
+export async function checkPaymentDeleteGuard(db: CrmDatabase, paymentId: string): Promise<DeleteGuardResult> {
+  const orphanTasks = await countOrphanedBy(db, crmTasks, 'payment_id', paymentId, [...ALL_LINK_COLUMNS, 'booking_id']);
+
+  const blockers: DeleteBlocker[] = [
+    { label: 'tâches sans autre lien', count: orphanTasks },
+  ].filter((b) => b.count > 0);
+
+  return { canDelete: blockers.length === 0, blockers, cascades: [] };
 }
 
 export function formatDeleteGuardMessage(entity: string, result: DeleteGuardResult): string {

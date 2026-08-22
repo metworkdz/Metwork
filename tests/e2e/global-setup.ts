@@ -14,6 +14,7 @@ const ROLES = [
   { name: 'builder',   email: 'test.builder@metwork.test',   password: 'TestBuilder2026!'   },
   { name: 'founder',   email: 'test.founder@metwork.test',   password: 'TestFounder2026!'   },
   { name: 'explorer',  email: 'test.explorer@metwork.test',  password: 'TestExplorer2026!'  },
+  { name: 'investor',  email: 'test.investor@metwork.test',  password: 'TestInvestor2026!'  },
 ];
 
 export const AUTH_STATE_DIR = path.resolve('tests/.auth');

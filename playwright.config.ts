@@ -147,6 +147,21 @@ export default defineConfig({
       },
     },
     {
+      // Entrepreneur/Startup rename + THE price-consistency regression (public
+      // pricing page vs dashboard widget vs admin page vs what checkout charges)
+      // + Network Pass gating and its dashboard placeholder. SERIAL &
+      // state-sharing, and every money test signs up its OWN member. Retries
+      // disabled so a flake never re-runs a purchase.
+      //   npx playwright test --project=membership-rename --workers=1
+      name: 'membership-rename',
+      testMatch: '**/api/membership-rename.spec.ts',
+      retries: 0,
+      timeout: 90_000,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
       // Admin grant / revoke of a membership + the under-funded-wallet purchase
       // contract. SERIAL & state-sharing (one JSON doc) and every test signs up
       // its own member — run with `--workers=1`. Retries disabled so a flake
@@ -178,6 +193,32 @@ export default defineConfig({
         ...devices['iPhone 13'],
         browserName: 'chromium',
         storageState: authStatePath('builder'),
+      },
+    },
+    {
+      // Admin startups management — admin sees all statuses (DRAFT included),
+      // a non-admin gets 403 from the API, and hard-delete requires a
+      // confirm/cancel round trip before cascading per decision D2 (bookmarks
+      // gone, investor-contact history kept). Admin is the primary actor.
+      //   npx playwright test --project=admin-startups
+      name: 'admin-startups',
+      testMatch: '**/admin-startups.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authStatePath('admin'),
+      },
+    },
+    {
+      // Startup logo field — founder uploads a logo via the profile form; a
+      // second browser context (investor, via authStatePath) verifies it
+      // renders as a rounded avatar and that a no-logo listing falls back to
+      // initials at the same footprint. Founder is the primary actor.
+      //   npx playwright test --project=startup-logo
+      name: 'startup-logo',
+      testMatch: '**/startup-logo.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authStatePath('founder'),
       },
     },
     {

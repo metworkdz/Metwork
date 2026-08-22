@@ -932,6 +932,7 @@ export type AuditAction =
   | 'MENTOR_REJECTED'
   | 'MENTOR_PUBLISHED'
   | 'MENTOR_UNPUBLISHED'
+  | 'STARTUP_DELETED'
   // Consultant commission contracts (e-signature). The contract's own
   // `auditTrail` is the evidentiary record; these entries put the ADMIN side of
   // the same actions into the platform-wide log the audit-log page reads.
@@ -1052,6 +1053,12 @@ export interface StartupListingRecord {
   pitchDeckUrl?: string | null;
   /** Optional for backward compat — old records lack this field. URL-validated when present. */
   websiteUrl?: string | null;
+  /**
+   * Optional for backward compat — old records lack this field. Cloudinary
+   * (or disk-fallback) URL of the uploaded startup logo, displayed as a
+   * rounded avatar across the marketplace and investor-facing surfaces.
+   */
+  logoUrl?: string | null;
   /** References UserRecord.id — must be a ENTREPRENEUR role user. */
   founderId: string;
   status: StartupListingStatus;
@@ -2449,9 +2456,9 @@ export interface PlatformConfig {
   // THE canonical home for coworking pass counts — deliberately NOT duplicated
   // into MembershipPlanConfigRecord, so `setAdminCreditConfig` stays the single
   // writer. 0 is a valid allowance (Builder no longer includes passes).
-  /** Monthly pass credits for Builder-tier users. Default 0. */
+  /** Monthly pass credits for Entrepreneur-tier (BUILDER) users. Default 0. */
   builderMonthlyCredits?: number;
-  /** Monthly pass credits for Founder-tier users. Default 5. */
+  /** Monthly pass credits for Startup-tier (FOUNDER) users. Default 5. */
   founderMonthlyCredits?: number;
   /** ISO datetime — last time a credit-config change was saved. */
   creditConfigUpdatedAt?: string;
@@ -3245,6 +3252,14 @@ interface DbShape {
      * `ensureMembershipPlanConfigs`.
      */
     membershipLegacyTermsBackfilledAt?: string;
+    /**
+     * ISO timestamp — set once the stored STARTUP plan config has been moved to
+     * the 2026-08 Startup terms (3 500 DZD/mo, 20 % consultations). Guards the
+     * one-time repricing in `ensureMembershipPlanConfigs`; without it, editing
+     * the shipped defaults would never reach a deployment whose plan configs
+     * were already seeded. Active members are untouched — they hold snapshots.
+     */
+    membershipStartupRepricedAt?: string;
   };
 }
 

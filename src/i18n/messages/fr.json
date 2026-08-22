@@ -919,11 +919,11 @@
         "description": "Découvrez l'écosystème — sans engagement"
       },
       "entrepreneur": {
-        "name": "Bâtisseur",
+        "name": "Entrepreneur",
         "description": "Tout ce qu'il faut pour lancer et développer votre startup"
       },
       "startup": {
-        "name": "Fondateur",
+        "name": "Startup",
         "description": "Levez des fonds, faites-vous remarquer, bâtissez votre empire"
       }
     },
@@ -936,7 +936,7 @@
       "bookPrograms": "15 % de réduction sur les consultations mentor",
       "eventsDiscount": "Réductions sur les réservations d'espaces",
       "prioritySupport": "Accès aux événements membres exclusifs",
-      "allEntrepreneur": "Tout de l'offre Bâtisseur",
+      "allEntrepreneur": "Tout de l'offre Entrepreneur",
       "listStartup": "Listez votre startup dans la marketplace",
       "fundraisingAccess": "Levez des fonds et attirez des investisseurs",
       "investorMeetings": "Recevez des demandes de rendez-vous d'investisseurs",
@@ -2363,9 +2363,9 @@
             "sessionLabel": "Session ({duration})",
             "successBody": "Votre session avec {mentorName} est réservée et payée. Le consultant vous enverra les détails de la réunion par e-mail.",
             "successHeading": "Réservation confirmée !",
-            "tierBuilder": "Builder",
+            "tierBuilder": "Entrepreneur",
             "tierDiscountLabel": "Remise {tier} ({percent} % de réduction)",
-            "tierFounder": "Founder",
+            "tierFounder": "Startup",
             "successBadge": "Confirmée"
           }
         },
@@ -2393,7 +2393,14 @@
         },
         "networkPass": {
           "title": "Mon Metwork Pass",
-          "subtitle": "Utilisez votre pass pour vous enregistrer dans les espaces coworking partenaires."
+          "subtitle": "Utilisez votre pass pour vous enregistrer dans les espaces coworking partenaires.",
+          "comingSoonTitle": "Network Pass — bientôt disponible",
+          "comingSoonBody": "Accédez aux espaces de coworking partenaires partout en Algérie avec un seul pass. Nous y mettons la dernière main — votre formule et ses avantages restent inchangés d'ici là.",
+          "currentPlanLabel": "Votre formule actuelle",
+          "upgradeCta": "Changer de formule",
+          "upgradeHint": "Comparez les formules et voyez ce que chacune inclut.",
+          "noPassTitle": "Aucun Network Pass actif",
+          "noPassBody": "Votre formule actuelle n'inclut pas de pass coworking. Changez de formule pour débloquer l'accès mensuel aux espaces partenaires."
         }
       },
       "business": {
@@ -2601,6 +2608,13 @@
           "statRegistered": "Enregistrés",
           "statActive": "Actifs",
           "statSuspended": "Suspendus"
+        },
+        "startups": {
+          "title": "Startups",
+          "subtitle": "Consultez et gérez chaque fiche de startup enregistrée.",
+          "statTotal": "Total des fiches",
+          "statActive": "Actives",
+          "statDraft": "Brouillons"
         },
         "memberships": {
           "title": "Abonnements",
@@ -3270,7 +3284,7 @@
       "networkPassCredits": "{count} restant · Réinitialisation le {date}",
       "networkPassNoCredits": "Aucun crédit restant ce mois-ci",
       "networkPassWarning": "Vous n'avez plus de crédits ce mois-ci. Les crédits se réinitialisent le 1er.",
-      "founderDiscount": "Remise Fondateur ({percent} % de réduction)",
+      "founderDiscount": "Remise Startup ({percent} % de réduction)",
       "durationDiscount": "Remise sur la durée ({percent} % de réduction)",
       "promoLabel": "Promo",
       "networkPassTotal": "Network Pass (1 crédit)",
@@ -3326,7 +3340,7 @@
       "passCreditsInfo": "Utilise 1 crédit — {count} sur {max} restants",
       "passResetsDate": "· Réinitialisation le {date}",
       "hourlyCapAutoSwitch": "Réservations horaires : max 7 heures par jour — au-delà, le tarif journalier s'applique automatiquement",
-      "builderDiscount": "Remise Bâtisseur ({percent} % de réduction)",
+      "builderDiscount": "Remise Entrepreneur ({percent} % de réduction)",
       "depositDueNow": "Acompte à payer maintenant",
       "balanceOnSite": "Solde sur place",
       "payDeposit": "Payer l'acompte — {amount}",
@@ -3701,9 +3715,9 @@
       "deleteConfirm": "Supprimer définitivement",
       "tierFilter": "Palier",
       "allTiers": "Tous les paliers",
-      "tierExplorer": "Explorer",
-      "tierBuilder": "Builder",
-      "tierFounder": "Founder",
+      "tierExplorer": "Explorateur",
+      "tierBuilder": "Entrepreneur",
+      "tierFounder": "Startup",
       "fromDate": "Du",
       "toDate": "Au",
       "exportCsv": "Exporter CSV",
@@ -3944,8 +3958,6 @@
       "engineHint": "S'applique aux incubateurs au forfait commission et aux formateurs. Les incubateurs Pro (forfait fixe) sont exonérés de la commission bénéficiaire ; leurs acheteurs paient toujours les frais du payeur.",
       "membershipTitle": "Formules d'adhésion",
       "membershipDescription": "Tarifs et avantages pour les nouveaux achats. Les membres déjà abonnés conservent le tarif et les avantages souscrits jusqu'à leur renouvellement.",
-      "planBuilder": "Bâtisseur",
-      "planFounder": "Fondateur",
       "monthlyPrice": "Prix mensuel",
       "annualDiscount": "Remise annuelle",
       "consultationDiscount": "Remise consultations",
@@ -3959,7 +3971,9 @@
       "frozenHint": "Les changements ne s'appliquent qu'aux nouveaux achats — les membres actifs conservent leurs conditions jusqu'au renouvellement.",
       "priceError": "Saisissez un montant valide",
       "passError": "Saisissez un nombre entier entre 0 et 100",
-      "perMonth": "/ mois"
+      "perMonth": "/ mois",
+      "planEntrepreneur": "Entrepreneur",
+      "planStartup": "Startup"
     },
     "withdrawals": {
       "pendingReview": "Pending review",
@@ -4126,6 +4140,40 @@
       "emptyPendingDescription": "Les nouvelles inscriptions apparaîtront ici pour examen.",
       "emptyArchivedTitle": "Aucun incubateur archivé",
       "emptyArchivedDescription": "Les incubateurs archivés apparaîtront ici."
+    },
+    "startupsManager": {
+      "searchPlaceholder": "Rechercher par nom, fondateur ou secteur…",
+      "statusFilter": "Statut",
+      "allStatuses": "Tous les statuts",
+      "statusDraft": "Brouillon",
+      "statusActive": "Active",
+      "statusClosed": "Fermée",
+      "of": "sur",
+      "startups": "startups",
+      "emptyTitle": "Aucune startup ne correspond",
+      "emptyDescription": "Essayez d’effacer la recherche ou de changer le filtre de statut.",
+      "colStartup": "Startup",
+      "colFounder": "Fondateur",
+      "colIndustry": "Secteur",
+      "colFundingGoal": "Objectif de financement",
+      "colStatus": "Statut",
+      "colCreated": "Créée le",
+      "colActions": "Actions",
+      "view": "Voir",
+      "delete": "Supprimer",
+      "viewTitle": "Détails de la startup",
+      "loading": "Chargement…",
+      "equityOffered": "Équité proposée",
+      "valuation": "Valorisation pré-money",
+      "maturityStage": "Stade de maturité",
+      "description": "Description",
+      "viewPitchDeck": "Voir le pitch deck",
+      "deleteDialogTitle": "Supprimer définitivement cette startup ?",
+      "deleteDialogDescription": "Cela supprimera définitivement {name} et la retirera de la marketplace investisseurs.",
+      "deleteDialogNote": "Les favoris enregistrés pour cette fiche seront également supprimés. L’historique des contacts investisseurs est conservé comme trace historique.",
+      "deleteDialogWarning": "Cette action est irréversible.",
+      "deleteCancel": "Annuler",
+      "deleteConfirm": "Supprimer définitivement"
     },
     "investorsManager": {
       "title": "Investisseurs",
@@ -4890,8 +4938,8 @@
       "appliedCheckmark": "Appliqué ✓",
       "applyButton": "Appliquer",
       "off": "de réduction",
-      "founderMembership": "abonnement Fondateur",
-      "builderMembership": "abonnement Builder",
+      "founderMembership": "abonnement Startup",
+      "builderMembership": "abonnement Entrepreneur",
       "membershipActive": "Votre {tier} est maintenant actif avec une remise de {pct} % !"
     }
   },
@@ -4900,6 +4948,10 @@
       "basicInfoTitle": "Informations de base",
       "startupNameLabel": "Nom de la startup",
       "startupNamePlaceholder": "Acme Inc",
+      "logoLabel": "Logo de la startup",
+      "logoAlt": "Logo de la startup",
+      "logoChangeLabel": "Changer le logo",
+      "logoHint": "JPG, PNG ou WEBP. Max {max} Mo.",
       "industryLabel": "Secteur",
       "fundingGoalLabel": "Objectif de financement (DZD)",
       "fundingGoalPlaceholder": "10 000 000",

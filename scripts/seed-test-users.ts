@@ -80,6 +80,15 @@ const TEST_USERS = [
     networkCredits: 0,
     networkCreditsMax: 0,
   },
+  {
+    id: 'qa-investor-id',
+    email: 'test.investor@metwork.test',
+    password: 'TestInvestor2026!',
+    fullName: 'QA Investor',
+    role: 'INVESTOR' as const,
+    membershipCode: null,
+    membershipTier: 'EXPLORER' as const,
+  },
 ];
 
 async function seed() {

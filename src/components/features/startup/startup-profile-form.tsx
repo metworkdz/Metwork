@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { AvatarUpload } from '@/components/shared/avatar-upload';
 import {
   MAX_PITCH_DECK_BYTES,
   MAX_PITCH_DECK_MB,
@@ -80,6 +81,7 @@ export interface StartupProfileFormState {
   maturityStage: StartupMaturityStage | null;
   pitchDeckUrl:  string | null;
   websiteUrl:    string; // optional, empty string = null
+  logoUrl:       string | null;
   status:        'DRAFT' | 'ACTIVE' | 'CLOSED';
 }
 
@@ -90,6 +92,7 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
   const [pending, startTransition] = useTransition();
   const [deckBusy, setDeckBusy] = useState(false);
   const [deckError, setDeckError] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
 
   function update<K extends keyof StartupProfileFormState>(key: K, val: StartupProfileFormState[K]) {
     setFeedback(null);
@@ -244,6 +247,7 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
       valuation,
       maturityStage: values.maturityStage,
       websiteUrl,
+      logoUrl:       values.logoUrl,
       status:        values.status,
     };
 
@@ -297,6 +301,26 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
           <CardTitle className="text-base">{t('basicInfoTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
+          <div className="flex items-center gap-4 md:col-span-2">
+            <AvatarUpload
+              currentUrl={values.logoUrl}
+              fallbackInitials={values.name || '?'}
+              uploadUrl="/api/startups/logo"
+              photoAlt={t('logoAlt')}
+              changeLabel={t('logoChangeLabel')}
+              size="size-16"
+              onUpload={(url) => update('logoUrl', url)}
+              onError={(message) => setLogoError(message)}
+            />
+            <div>
+              <p className="text-sm font-medium">{t('logoLabel')}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t('logoHint', { max: 5 })}
+              </p>
+              {logoError && <p className="mt-0.5 text-xs text-destructive">{logoError}</p>}
+            </div>
+          </div>
+
           <Field label={t('startupNameLabel')} htmlFor="su-name" required>
             <Input
               id="su-name"
@@ -462,7 +486,7 @@ export function StartupProfileForm({ initial }: { initial: StartupProfileFormSta
             value={values.status}
             onValueChange={(v) => update('status', v as 'DRAFT' | 'ACTIVE' | 'CLOSED')}
           >
-            <SelectTrigger className="w-32 shrink-0">
+            <SelectTrigger id="su-status" className="w-32 shrink-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

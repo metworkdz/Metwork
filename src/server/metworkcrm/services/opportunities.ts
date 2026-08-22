@@ -22,6 +22,8 @@ import type { OpportunityInput } from '../validation/opportunities';
 import { redactMoney } from '../auth/guards';
 import { CrmNotFoundError, CrmServiceError } from './errors';
 import { checkOpportunityDeleteGuard, formatDeleteGuardMessage } from './delete-guard';
+import { deleteDocumentLinksFor, listDocumentsFor } from './documents';
+import { runProposalFollowupAutomation } from './automations';
 
 function likeTerm(q: string): string {
   return `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -72,7 +74,7 @@ export async function getOpportunityDetail(id: string, user: Pick<InternalUser, 
   const opp = (await db.select().from(crmOpportunities).where(eq(crmOpportunities.id, id)))[0];
   if (!opp) throw new CrmNotFoundError('Opportunité');
 
-  const [organization, contact, tasks, interactions, stageHistory] = await Promise.all([
+  const [organization, contact, tasks, interactions, stageHistory, documents] = await Promise.all([
     opp.organizationId
       ? (await db.select().from(crmOrganizations).where(eq(crmOrganizations.id, opp.organizationId)))[0] ?? null
       : null,
@@ -84,6 +86,7 @@ export async function getOpportunityDetail(id: string, user: Pick<InternalUser, 
       .from(crmOpportunityStageHistory)
       .where(eq(crmOpportunityStageHistory.opportunityId, id))
       .orderBy(desc(crmOpportunityStageHistory.changedAt)),
+    listDocumentsFor('OPPORTUNITY', id),
   ]);
 
   return {
@@ -93,6 +96,7 @@ export async function getOpportunityDetail(id: string, user: Pick<InternalUser, 
     tasks,
     interactions,
     stageHistory,
+    documents,
   };
 }
 
@@ -165,7 +169,22 @@ export async function updateOpportunity(id: string, input: Partial<OpportunityIn
   }
 
   await db.update(crmOpportunities).set(patch).where(eq(crmOpportunities.id, id));
-  return (await db.select().from(crmOpportunities).where(eq(crmOpportunities.id, id)))[0]!;
+  const updated = (await db.select().from(crmOpportunities).where(eq(crmOpportunities.id, id)))[0]!;
+
+  // Non-blocking automation (R-22/R-23, product spec §4.17) — runs AFTER the
+  // update above has committed; a failure here can never fail this request.
+  if (stageChanged && input.stage === 'PROPOSITION_ENVOYEE') {
+    await runProposalFollowupAutomation({
+      id: updated.id,
+      title: updated.title,
+      organizationId: updated.organizationId,
+      contactId: updated.contactId,
+      ownerId: updated.ownerId,
+      stageChangedAt: updated.stageChangedAt,
+    });
+  }
+
+  return updated;
 }
 
 export async function deleteOpportunity(id: string): Promise<void> {
@@ -186,4 +205,5 @@ export async function deleteOpportunity(id: string): Promise<void> {
   } catch {
     throw new CrmServiceError(409, 'CRM_DELETE_BLOCKED', 'Impossible de supprimer cette opportunité — des éléments y sont encore rattachés.');
   }
+  await deleteDocumentLinksFor('OPPORTUNITY', id);
 }

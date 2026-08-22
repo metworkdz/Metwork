@@ -83,20 +83,22 @@ test.describe('🟡 Entrepreneur Explorer Agent', () => {
     });
   }
 
-  // ── E3-11: Pricing page shows BUILDER and FOUNDER with discounts ──────────
+  // ── E3-11: Pricing page shows both paid plans with discounts ─────────────
   test('E3-11 — Pricing page shows discount percentages', async ({ page }) => {
     await page.goto('/en/pricing');
     await page.waitForLoadState('networkidle');
     await capture(page, 'explorer-E3-11-pricing');
     const text = (await mainText(page)).toLowerCase();
-    const hasBuilder = text.includes('builder');
-    const hasFounder = text.includes('founder');
-    const hasPercent = text.includes('%');
-    if (hasBuilder && hasFounder && hasPercent) {
-      log(A, 'E3-11', 'Pricing Has Tiers + Discounts', 'PASS');
+    // Plan CARD TITLES, not prose — see the note in entrepreneur-founder E2-09.
+    const titles = (await page.locator('h3').allInnerTexts()).map((t) => t.trim().toUpperCase());
+    const hasEntrepreneur = titles.includes('ENTREPRENEUR');
+    const hasStartup      = titles.includes('STARTUP');
+    const hasPercent      = text.includes('%');
+    if (hasEntrepreneur && hasStartup && hasPercent) {
+      log(A, 'E3-11', 'Pricing Has Plans + Discounts', 'PASS');
     } else {
-      log(A, 'E3-11', 'Pricing Has Tiers + Discounts', 'FAIL',
-        `builder:${hasBuilder} founder:${hasFounder} %:${hasPercent}`);
+      log(A, 'E3-11', 'Pricing Has Plans + Discounts', 'FAIL',
+        `entrepreneur:${hasEntrepreneur} startup:${hasStartup} %:${hasPercent}`);
     }
   });
 
@@ -144,20 +146,24 @@ test.describe('🟡 Entrepreneur Explorer Agent', () => {
     }
   });
 
-  // ── E3-15: Network pass shows 0 credits for explorer ─────────────────────
-  test('E3-15 — Network Pass shows 0 credits (Explorer tier)', async ({ page }) => {
+  // ── E3-15: Network Pass placeholder, no credits leaked to Explorer ───────
+  test('E3-15 — Network Pass shows the placeholder, never paid credits', async ({ page }) => {
     await page.goto(`${BASE}/network-pass`);
     await page.waitForLoadState('networkidle');
     await capture(page, 'explorer-E3-15-network-pass');
     const text = await mainText(page);
     // Page should load (not 404)
     expect(text.length).toBeGreaterThan(10);
-    // Should NOT show "3" or "10" credits
-    const hasPaidCredits = /\b(3|10)\s*(crédit|credit|session)/i.test(text);
-    if (hasPaidCredits) {
-      log(A, 'E3-15', 'Network Pass 0 Credits', 'FAIL', 'Shows paid credits for Explorer user');
+    // Network Pass is switched off, so nobody sees a balance — least of all a
+    // FREE account. Both halves are asserted so the check keeps its teeth if
+    // the flag is turned back on.
+    const hasPaidCredits = /\b(3|5|10)\s*(crédit|credit|session)/i.test(text);
+    const hasComingSoon = /coming soon|bientôt|قريبا|قريباً/i.test(text);
+    if (!hasPaidCredits && hasComingSoon) {
+      log(A, 'E3-15', 'Network Pass Placeholder', 'PASS', 'No credits shown (Explorer)');
     } else {
-      log(A, 'E3-15', 'Network Pass 0 Credits', 'PASS', '0 credits shown (Explorer)');
+      log(A, 'E3-15', 'Network Pass Placeholder', 'FAIL',
+        `paidCredits:${hasPaidCredits} comingSoon:${hasComingSoon}`);
     }
   });
 });

@@ -8,6 +8,7 @@ import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { Timeline } from '@/components/metworkcrm/interactions/timeline';
 import { TaskFormDialog, type TaskRow } from '@/components/metworkcrm/tasks/task-form-dialog';
 import { OpportunityFormDialog, type OpportunityRow } from '@/components/metworkcrm/opportunities/opportunity-form-dialog';
+import { DocumentUpload, type DocumentRow } from '@/components/metworkcrm/shared/document-upload';
 import {
   CONTACT_LANGUAGE_LABELS,
   OPPORTUNITY_STAGE_BADGE,
@@ -26,6 +27,7 @@ export interface ContactDetailData {
   organizations: LinkedOrganization[];
   tasks: TaskRow[];
   opportunities: OpportunityRow[];
+  documents: DocumentRow[];
 }
 
 export function ContactDetail({ initial }: { initial: ContactDetailData }) {
@@ -249,6 +251,8 @@ export function ContactDetail({ initial }: { initial: ContactDetailData }) {
               {data.opportunities.length === 0 ? <li className="text-sm text-neutral-400">Aucune opportunité.</li> : null}
             </ul>
           </div>
+
+          <DocumentUpload entityType="CONTACT" entityId={contact.id} initial={data.documents} />
         </div>
       </div>
     </div>

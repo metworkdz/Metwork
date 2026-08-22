@@ -30,6 +30,7 @@ import { findProgramById } from './program-catalog';
 import { findEventById } from './event-catalog';
 import { countAttendance } from '@/server/attendance';
 import { resolveMemberBenefits } from '@/server/memberships/service';
+import { isNetworkPassEnabled } from '@/config/feature-flags';
 import { validatePromoCodeSync as validatePromoCode, consumePromoCodeSync as consumePromoCode, ensurePromoCodesSeeded } from '@/server/promo-codes/service';
 import type {
   ApplyToProgramResult,
@@ -534,6 +535,12 @@ export async function createSpaceBooking(
 
     // ── Network Pass path: redeem a monthly credit, no wallet charge ───
     if (isNetworkPass) {
+      // Feature gate, checked before anything else in this branch: the UI hides
+      // the option, but a hand-rolled request must not be able to burn a credit
+      // and create a free confirmed booking while the feature is off.
+      if (!isNetworkPassEnabled()) {
+        return { ok: false, reason: 'NETWORK_PASS_DISABLED' };
+      }
       if (!spaceRec?.isPartnerInNetwork) {
         return { ok: false, reason: 'NOT_PARTNER_SPACE' };
       }

@@ -12,8 +12,8 @@
  *
  * Avatar ring behaviour:
  *   Explorer → no ring
- *   Builder  → 3px gold ring + soft gold glow
- *   Founder  → 3px platinum ring + soft platinum glow + shimmer pulse
+ *   Entrepreneur → 3px gold ring + soft gold glow
+ *   Startup      → 3px platinum ring + soft platinum glow + shimmer pulse
  */
 
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';

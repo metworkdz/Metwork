@@ -24,36 +24,6 @@ export function computePrice(feePerHour: number, durationMinutes: number): numbe
   return Math.round((durationMinutes / 60) * feePerHour);
 }
 
-// ---------------------------------------------------------------------------
-// Consultation membership discount — THE single canonical source
-// ---------------------------------------------------------------------------
-
-/**
- * Automatic consultation discount fraction per membership tier (mirrors the
- * SPACE_DISCOUNT pattern). Keyed by BOTH the old membershipCode
- * ('ENTREPRENEUR'/'STARTUP') and the new membershipTier ('BUILDER'/'FOUNDER')
- * so every caller resolves the same number regardless of which field it holds.
- *
- *   Builder / ENTREPRENEUR → 15 % off
- *   Founder / STARTUP      → 20 % off
- *
- * This lives in a client-safe module (no DB imports) so the booking API, the
- * price-breakdown UIs, and the server pricing helper all consume ONE definition.
- * `src/server/memberships/service.ts` re-exports it for server callers.
- */
-export const CONSULTATION_DISCOUNT: Record<string, number> = {
-  ENTREPRENEUR: 0.15, // Builder tier — 15 % off
-  BUILDER:      0.15,
-  STARTUP:      0.2,  // Founder tier — 20 % off
-  FOUNDER:      0.2,
-};
-
-/** Resolve the consultation discount fraction (0–1) for a membership code/tier. */
-export function consultationDiscountFraction(codeOrTier: string | null | undefined): number {
-  if (!codeOrTier) return 0;
-  return CONSULTATION_DISCOUNT[codeOrTier] ?? 0;
-}
-
 /** Which discount source was applied to a consultation charge. */
 export type ConsultationDiscountSource = 'none' | 'tier' | 'promo';
 

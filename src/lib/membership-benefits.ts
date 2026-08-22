@@ -18,7 +18,7 @@
  */
 import { resolveTier } from '@/lib/tier-utils';
 
-/** Canonical paid plan codes. Builder → ENTREPRENEUR, Founder → STARTUP. */
+/** Canonical paid plan codes. Entrepreneur → ENTREPRENEUR, Startup → STARTUP. */
 export const PAID_PLAN_CODES = ['ENTREPRENEUR', 'STARTUP'] as const;
 export type PaidPlanCode = (typeof PAID_PLAN_CODES)[number];
 
@@ -26,7 +26,8 @@ export type PaidPlanCode = (typeof PAID_PLAN_CODES)[number];
  * Normalize any membership code or tier to a canonical paid plan code.
  *
  * Four spellings exist for two plans — `ENTREPRENEUR`/`BUILDER` and
- * `STARTUP`/`FOUNDER` — and the partner-promo path historically wrote them
+ * `STARTUP`/`FOUNDER` (the tier field still carries the plans' former names,
+ * Builder and Founder) — and the partner-promo path historically wrote them
  * lowercase. Every lookup goes through here so no caller has to know that.
  * Returns null for FREE / EXPLORER / unrecognized values.
  */
@@ -52,12 +53,20 @@ export interface PlanBenefits {
  * `membershipPlanConfigs` on first admin load, and the last-resort fallback
  * everywhere else.
  *
- *   Builder — 1 500 /mo → 9 000 / 6 mo → 12 600 / yr
- *   Founder — 7 900 /mo → 47 400 / 6 mo → 66 360 / yr
+ *   Entrepreneur — 1 500 /mo → 9 000 / 6 mo → 12 600 / yr
+ *   Startup      — 3 500 /mo → 21 000 / 6 mo → 29 400 / yr
  *
- * Both plans share the unified 10 % consultation / 15 % space discount.
+ * Cycle prices are DERIVED from `monthlyPrice`, never stored — see
+ * `computeCyclePrices`. Nothing anywhere should restate 21 000 or 29 400.
+ *
+ * The two plans DIVERGE on consultations (Entrepreneur 10 %, Startup 20 %) and
+ * agree on spaces (15 %). That asymmetry is deliberate and reflects who absorbs
+ * the discount: the consultation discount comes out of Metwork's own 20 %
+ * commission — the consultant is still paid the full price — while the space
+ * discount comes out of the venue's share, not out of Metwork's 5 %.
+ *
  * Coworking pass counts are NOT here: they stay canonical in
- * `meta.platformConfig` (Builder 0, Founder 5).
+ * `meta.platformConfig` (Entrepreneur 0, Startup 5).
  */
 export const DEFAULT_PLAN_BENEFITS: Record<PaidPlanCode, PlanBenefits> = {
   ENTREPRENEUR: {
@@ -69,10 +78,10 @@ export const DEFAULT_PLAN_BENEFITS: Record<PaidPlanCode, PlanBenefits> = {
     recommended:              true,
   },
   STARTUP: {
-    monthlyPrice:             7_900,
+    monthlyPrice:             3_500,
     semesterlyMonths:         6,
     annualDiscountPercent:    30,
-    consultationDiscountRate: 0.10,
+    consultationDiscountRate: 0.20,
     spaceDiscountRate:        0.15,
     recommended:              false,
   },

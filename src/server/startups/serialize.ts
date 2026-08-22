@@ -13,6 +13,7 @@ export function toStartupDto(r: StartupListingRecord): StartupListing {
     maturityStage: r.maturityStage ?? null,
     pitchDeckUrl: r.pitchDeckUrl ?? null,
     websiteUrl: r.websiteUrl ?? null,
+    logoUrl: r.logoUrl ?? null,
     founderId: r.founderId,
     status: r.status,
     createdAt: r.createdAt,
@@ -34,7 +35,8 @@ function toTagline(description: string, maxLength = PUBLIC_TAGLINE_MAX_LENGTH): 
  * FLAG 2. Deliberately omits fundingGoal, equityOffered, valuation, the full
  * description, pitchDeckUrl, websiteUrl, and founder identity/contact.
  * `isRaising` is a boolean derived from status/fundingGoal presence only —
- * never the amount itself.
+ * never the amount itself. `logoUrl` is included — it's brand artwork, not
+ * sensitive economic or contact data.
  */
 export function toPublicStartupDto(
   r: StartupListingRecord,
@@ -48,5 +50,6 @@ export function toPublicStartupDto(
     maturityStage: r.maturityStage ?? null,
     tagline: toTagline(r.description),
     isRaising: r.status === 'ACTIVE' && r.fundingGoal != null,
+    logoUrl: r.logoUrl ?? null,
   };
 }

@@ -48,6 +48,8 @@ export function TaskFormDialog({
   lockedPartnershipId,
   lockedProgramId,
   lockedOiProjectId,
+  lockedBookingId,
+  lockedPaymentId,
   onSaved,
 }: {
   trigger: React.ReactNode;
@@ -64,6 +66,8 @@ export function TaskFormDialog({
   lockedPartnershipId?: string;
   lockedProgramId?: string;
   lockedOiProjectId?: string;
+  lockedBookingId?: string;
+  lockedPaymentId?: string;
   onSaved: () => void;
 }) {
   const isEdit = !!task;
@@ -149,6 +153,8 @@ export function TaskFormDialog({
       partnershipId: lockedPartnershipId,
       programId: lockedProgramId,
       oiProjectId: lockedOiProjectId,
+      bookingId: lockedBookingId,
+      paymentId: lockedPaymentId,
     };
 
     try {

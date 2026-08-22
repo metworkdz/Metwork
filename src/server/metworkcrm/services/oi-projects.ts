@@ -25,7 +25,7 @@ import type { OiProjectInput } from '../validation/oi-projects';
 import { redactMoney } from '../auth/guards';
 import { CrmNotFoundError, CrmServiceError } from './errors';
 import { checkOiProjectDeleteGuard, formatDeleteGuardMessage } from './delete-guard';
-import { listDocumentsFor } from './documents';
+import { deleteDocumentLinksFor, listDocumentsFor } from './documents';
 
 function likeTerm(q: string): string {
   return `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -167,6 +167,7 @@ export async function deleteOiProject(id: string): Promise<void> {
   } catch {
     throw new CrmServiceError(409, 'CRM_DELETE_BLOCKED', 'Impossible de supprimer ce projet — des éléments y sont encore rattachés.');
   }
+  await deleteDocumentLinksFor('OI_PROJECT', id);
 }
 
 /* ─────────────────────── Mobilization: startups ─────────────────────── */

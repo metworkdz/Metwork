@@ -21,6 +21,7 @@ import type { PartnershipInput } from '../validation/partnerships';
 import { redactMoney } from '../auth/guards';
 import { CrmNotFoundError, CrmServiceError } from './errors';
 import { checkPartnershipDeleteGuard, formatDeleteGuardMessage } from './delete-guard';
+import { deleteDocumentLinksFor, listDocumentsFor } from './documents';
 
 function likeTerm(q: string): string {
   return `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
@@ -69,7 +70,7 @@ export async function getPartnershipDetail(id: string, user: Pick<InternalUser, 
   const partnership = (await db.select().from(crmPartnerships).where(eq(crmPartnerships.id, id)))[0];
   if (!partnership) throw new CrmNotFoundError('Partenariat');
 
-  const [organization, contactLinks, tasks, interactions] = await Promise.all([
+  const [organization, contactLinks, tasks, interactions, documents] = await Promise.all([
     (await db.select().from(crmOrganizations).where(eq(crmOrganizations.id, partnership.organizationId)))[0] ?? null,
     db
       .select({ link: crmPartnershipContacts, contact: crmContacts })
@@ -78,12 +79,14 @@ export async function getPartnershipDetail(id: string, user: Pick<InternalUser, 
       .where(eq(crmPartnershipContacts.partnershipId, id)),
     db.select().from(crmTasks).where(eq(crmTasks.partnershipId, id)).orderBy(desc(crmTasks.createdAt)),
     db.select().from(crmInteractions).where(eq(crmInteractions.partnershipId, id)).orderBy(desc(crmInteractions.occurredAt)),
+    listDocumentsFor('PARTNERSHIP', id),
   ]);
 
   return {
     partnership: redactMoney(user, partnership, MONEY_FIELDS),
     organization,
     contacts: contactLinks.map((r) => ({ ...r.contact, role: r.link.role })),
+    documents,
     tasks,
     interactions,
   };
@@ -178,4 +181,5 @@ export async function deletePartnership(id: string): Promise<void> {
   } catch {
     throw new CrmServiceError(409, 'CRM_DELETE_BLOCKED', 'Impossible de supprimer ce partenariat — des éléments y sont encore rattachés.');
   }
+  await deleteDocumentLinksFor('PARTNERSHIP', id);
 }

@@ -34,7 +34,9 @@ export function DocumentUpload({
   entityId,
   initial,
 }: {
-  entityType: 'OI_PROJECT' | 'PROGRAM' | 'ORGANIZATION' | 'CONTACT' | 'OPPORTUNITY' | 'STARTUP' | 'EXPERT' | 'PARTNERSHIP';
+  entityType:
+    | 'OI_PROJECT' | 'PROGRAM' | 'ORGANIZATION' | 'CONTACT' | 'OPPORTUNITY' | 'STARTUP' | 'EXPERT' | 'PARTNERSHIP'
+    | 'SPACE_BOOKING' | 'PAYMENT' | 'TASK';
   entityId: string;
   initial: DocumentRow[];
 }) {

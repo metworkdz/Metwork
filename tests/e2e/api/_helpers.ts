@@ -28,7 +28,7 @@ import { authStatePath } from '../global-setup';
 
 export const BASE = 'http://localhost:3000';
 
-export type Role = 'admin' | 'incubator' | 'builder' | 'founder' | 'explorer';
+export type Role = 'admin' | 'incubator' | 'builder' | 'founder' | 'explorer' | 'investor';
 
 /** Seeded entity ids — see scripts/seed-test-users.ts. */
 export const SEED = {
@@ -38,6 +38,7 @@ export const SEED = {
   builderId: 'qa-builder-id',
   founderId: 'qa-founder-id',
   explorerId: 'qa-explorer-id',
+  investorId: 'qa-investor-id',
   spaceId: 'qa-space-id-001',
   mentorId: 'qa-mentor-id',
 } as const;
@@ -421,6 +422,9 @@ export interface LocalDbView {
   transactions: Array<Record<string, unknown>>;
   promoCodes: Array<{ id: string; code: string; isActive: boolean; usedCount: number; discountPercent: number }>;
   withdrawalRequests: Array<Record<string, unknown>>;
+  startupListings: Array<{ id: string; name: string; founderId: string; status: string }>;
+  savedStartups: Array<{ id: string; userId: string; startupId: string }>;
+  investorContacts: Array<{ id: string; investorId: string; startupId: string; startupName: string }>;
 }
 
 /** Parse the local DB document (the server's source of truth in e2e mode). */

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { Timeline } from '@/components/metworkcrm/interactions/timeline';
 import { TaskFormDialog, type TaskRow } from '@/components/metworkcrm/tasks/task-form-dialog';
+import { DocumentUpload, type DocumentRow } from '@/components/metworkcrm/shared/document-upload';
 import {
   STARTUP_STAGE_BADGE,
   STARTUP_STAGE_LABELS,
@@ -22,6 +23,7 @@ export interface StartupDetailData {
   primaryContact: { id: string; fullName: string | null; firstName: string; lastName: string } | null;
   assignedExpert: { id: string; name: string | null; displayNameCache: string | null } | null;
   tasks: TaskRow[];
+  documents: DocumentRow[];
 }
 
 export function StartupDetail({ initial }: { initial: StartupDetailData }) {
@@ -150,6 +152,8 @@ export function StartupDetail({ initial }: { initial: StartupDetailData }) {
               {data.tasks.length === 0 ? <li className="text-sm text-neutral-400">Aucune tâche.</li> : null}
             </ul>
           </div>
+
+          <DocumentUpload entityType="STARTUP" entityId={startup.id} initial={data.documents} />
         </div>
       </div>
     </div>

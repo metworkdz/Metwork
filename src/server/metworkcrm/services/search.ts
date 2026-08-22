@@ -10,10 +10,16 @@
 import { sql } from 'drizzle-orm';
 import { getCrmDb } from '../db/client';
 
+/**
+ * Payments is deliberately NOT searchable here — product spec §4.14 isolates
+ * it as a fully role-gated module (TEAM_MEMBER gets 403 on the route AND the
+ * API); a search result leaking a payment's existence through the shared
+ * search bar would undercut that isolation even without showing the amount.
+ */
 export type SearchResultKind =
   | 'ORGANIZATION' | 'CONTACT' | 'TASK' | 'INTERACTION'
   | 'OPPORTUNITY' | 'STARTUP' | 'EXPERT' | 'PARTNERSHIP'
-  | 'OI_PROJECT' | 'PROGRAM';
+  | 'OI_PROJECT' | 'PROGRAM' | 'SPACE_BOOKING' | 'DOCUMENT';
 
 export interface SearchResultRow {
   kind: SearchResultKind;
@@ -29,7 +35,7 @@ export interface SearchResultGroup {
 
 const GROUP_ORDER: SearchResultKind[] = [
   'ORGANIZATION', 'CONTACT', 'OPPORTUNITY', 'STARTUP', 'EXPERT', 'PARTNERSHIP',
-  'OI_PROJECT', 'PROGRAM', 'TASK', 'INTERACTION',
+  'OI_PROJECT', 'PROGRAM', 'SPACE_BOOKING', 'DOCUMENT', 'TASK', 'INTERACTION',
 ];
 const PER_KIND_LIMIT = 8;
 
@@ -97,6 +103,20 @@ export async function globalSearch(rawQuery: string): Promise<SearchResultGroup[
     SELECT * FROM (
       SELECT 'PROGRAM' AS kind, id, title AS title, stage AS subtitle, updated_at AS sort_key
       FROM crm_programs
+      WHERE title LIKE ${term} ESCAPE '\\' COLLATE NOCASE
+      ORDER BY updated_at DESC LIMIT ${PER_KIND_LIMIT}
+    )
+    UNION ALL
+    SELECT * FROM (
+      SELECT 'SPACE_BOOKING' AS kind, id, space_label AS title, reference AS subtitle, updated_at AS sort_key
+      FROM crm_space_bookings
+      WHERE space_label LIKE ${term} ESCAPE '\\' COLLATE NOCASE OR reference LIKE ${term} ESCAPE '\\' COLLATE NOCASE
+      ORDER BY updated_at DESC LIMIT ${PER_KIND_LIMIT}
+    )
+    UNION ALL
+    SELECT * FROM (
+      SELECT 'DOCUMENT' AS kind, id, title AS title, type AS subtitle, updated_at AS sort_key
+      FROM crm_documents
       WHERE title LIKE ${term} ESCAPE '\\' COLLATE NOCASE
       ORDER BY updated_at DESC LIMIT ${PER_KIND_LIMIT}
     )

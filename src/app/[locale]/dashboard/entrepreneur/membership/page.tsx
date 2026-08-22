@@ -13,18 +13,11 @@ import { MembershipUpgradeButton } from '@/components/features/entrepreneur/memb
 import { MembershipDowngradeButton } from '@/components/features/entrepreneur/membership-downgrade-button';
 import { ScheduledDowngradeBanner } from '@/components/features/entrepreneur/scheduled-downgrade-banner';
 import { getEffectiveMembershipCode } from '@/server/memberships/service';
+import { normalizePlanCode } from '@/lib/membership-benefits';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
 }
-
-const tierCopy: Record<string, { name: string; description: string }> = {
-  FREE:         { name: 'Explorer',     description: 'Get started, browse the ecosystem.' },
-  ENTREPRENEUR: { name: 'Builder',      description: 'Book spaces, join programs, attend events.' },
-  BUILDER:      { name: 'Builder',      description: 'Book spaces, join programs, attend events.' },
-  STARTUP:      { name: 'Founder',      description: 'Get listed, raise funds, meet investors.' },
-  FOUNDER:      { name: 'Founder',      description: 'Get listed, raise funds, meet investors.' },
-};
 
 // Tier ranking — higher = more premium. Used to decide upgrade vs downgrade.
 // Keyed by every value getEffectiveMembershipCode can return.
@@ -55,6 +48,24 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
   // also uses, so the two can no longer drift.
   const planViews = await getMembershipPlanViews();
 
+  /**
+   * Plan name + description for a stored code, in the reader's locale.
+   *
+   * This page used to carry its own English `tierCopy` map, so the dashboard
+   * showed English plan names to French and Arabic readers while the pricing
+   * page one click away showed translated ones. Resolving through the shared
+   * view model keeps a single set of names — and one place to rename them.
+   *
+   * Accepts every spelling `getEffectiveMembershipCode` can return: the tier
+   * field still carries the plans' former names (BUILDER / FOUNDER).
+   */
+  const copyFor = (codeOrTier: string): { name: string; description: string } => {
+    const code = normalizePlanCode(codeOrTier) ?? 'FREE';
+    const view = planViews.find((p) => p.code === code);
+    if (!view) return { name: codeOrTier, description: '' };
+    return { name: tm(view.nameKey), description: tm(view.descriptionKey) };
+  };
+
   return (
     <div className="space-y-6">
       <DashboardPageHeader
@@ -65,7 +76,7 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
       {/* Scheduled downgrade banner */}
       {scheduledChange && scheduledDate && (
         <ScheduledDowngradeBanner
-          targetName={tierCopy[scheduledChange]?.name ?? scheduledChange}
+          targetName={copyFor(scheduledChange).name}
           scheduledDate={scheduledDate}
           locale={lang}
         />
@@ -76,9 +87,9 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
         <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-primary-700">{tm('currentPlanLabel')}</p>
-            <p className="mt-1 text-xl font-semibold">{tierCopy[currentCode]?.name ?? currentCode}</p>
+            <p className="mt-1 text-xl font-semibold">{copyFor(currentCode).name}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {tierCopy[currentCode]?.description}
+              {copyFor(currentCode).description}
             </p>
             {expiresAt && currentCode !== 'FREE' && (
               <p className="mt-1 text-xs text-muted-foreground">
@@ -100,7 +111,7 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
           const targetRank = TIER_RANK[plan.code] ?? 0;
           const isCurrent = targetRank === currentRank;
           const isHighlighted = plan.recommended;
-          const copy = tierCopy[plan.code] ?? { name: plan.code, description: '' };
+          const copy = copyFor(plan.code);
           const isDowngrade = targetRank < currentRank;
           const isUpgrade = targetRank > currentRank;
           const isPaid = plan.prices.monthly > 0;
@@ -187,7 +198,7 @@ export default async function EntrepreneurMembershipPage({ params }: PageProps) 
         const currentIdx = planViews.findIndex((p) => (TIER_RANK[p.code] ?? 0) === currentRank);
         const nextTier = planViews[currentIdx + 1];
         if (!nextTier || nextTier.prices.monthly === 0) return null;
-        const nextCopy = tierCopy[nextTier.code] ?? { name: nextTier.code, description: '' };
+        const nextCopy = copyFor(nextTier.code);
         return (
           <MembershipPromoSection
             nextTierPrice={nextTier.prices.monthly}
