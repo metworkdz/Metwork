@@ -1,10 +1,10 @@
 {
   "config": {
-    "configFile": "/Users/macbookpro/Downloads/metwork/playwright.config.ts",
-    "rootDir": "/Users/macbookpro/Downloads/metwork/tests/e2e",
+    "configFile": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/playwright.config.ts",
+    "rootDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
     "forbidOnly": false,
     "fullyParallel": false,
-    "globalSetup": "/Users/macbookpro/Downloads/metwork/tests/e2e/global-setup.ts",
+    "globalSetup": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e/global-setup.ts",
     "globalTeardown": null,
     "globalTimeout": 0,
     "grep": {},
@@ -16,7 +16,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -24,15 +24,15 @@
         },
         "id": "admin",
         "name": "admin",
-        "testDir": "/Users/macbookpro/Downloads/metwork/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/admin.spec.ts"
         ],
-        "timeout": 45000
+        "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -40,15 +40,15 @@
         },
         "id": "incubator",
         "name": "incubator",
-        "testDir": "/Users/macbookpro/Downloads/metwork/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/incubator.spec.ts"
         ],
-        "timeout": 45000
+        "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -56,15 +56,15 @@
         },
         "id": "entrepreneur-builder",
         "name": "entrepreneur-builder",
-        "testDir": "/Users/macbookpro/Downloads/metwork/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/entrepreneur-builder.spec.ts"
         ],
-        "timeout": 45000
+        "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -72,15 +72,15 @@
         },
         "id": "entrepreneur-founder",
         "name": "entrepreneur-founder",
-        "testDir": "/Users/macbookpro/Downloads/metwork/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/entrepreneur-founder.spec.ts"
         ],
-        "timeout": 45000
+        "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -88,23 +88,23 @@
         },
         "id": "entrepreneur-explorer",
         "name": "entrepreneur-explorer",
-        "testDir": "/Users/macbookpro/Downloads/metwork/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/entrepreneur-explorer.spec.ts"
         ],
-        "timeout": 45000
+        "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
-        "retries": 0,
+        "retries": 1,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "spaces-granularity",
         "name": "spaces-granularity",
-        "testDir": "/Users/macbookpro/Downloads/metwork/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/spaces-granularity.spec.ts"
@@ -112,7 +112,7 @@
         "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
         "retries": 1,
         "metadata": {
@@ -120,23 +120,23 @@
         },
         "id": "cleanup",
         "name": "cleanup",
-        "testDir": "/Users/macbookpro/Downloads/metwork/tests/cleanup",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/cleanup",
         "testIgnore": [],
         "testMatch": [
           "**/*.cleanup.ts"
         ],
-        "timeout": 45000
+        "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
-        "retries": 0,
+        "retries": 1,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "invoices",
         "name": "invoices",
-        "testDir": "/Users/macbookpro/Downloads/metwork/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/invoice-*.spec.ts",
@@ -145,32 +145,32 @@
         "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
-        "retries": 0,
+        "retries": 1,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "consultation",
         "name": "consultation",
-        "testDir": "/Users/macbookpro/Downloads/metwork/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/api/consultation*.spec.ts",
           "**/consultation-i18n.spec.ts"
         ],
-        "timeout": 45000
+        "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
-        "retries": 0,
+        "retries": 1,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "space-reservation-modes",
         "name": "space-reservation-modes",
-        "testDir": "/Users/macbookpro/Downloads/metwork/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/api/space-reservation-modes.spec.ts"
@@ -178,15 +178,15 @@
         "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
-        "retries": 0,
+        "retries": 1,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "membership-pricing",
         "name": "membership-pricing",
-        "testDir": "/Users/macbookpro/Downloads/metwork/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/api/membership-pricing.spec.ts"
@@ -194,20 +194,68 @@
         "timeout": 90000
       },
       {
-        "outputDir": "/Users/macbookpro/Downloads/metwork/test-results",
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
         "repeatEach": 1,
-        "retries": 0,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "entrepreneur-fixes",
+        "name": "entrepreneur-fixes",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/api/membership-grant-topup.spec.ts"
+        ],
+        "timeout": 90000
+      },
+      {
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "entrepreneur-mobile",
+        "name": "entrepreneur-mobile",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/entrepreneur-mobile.spec.ts"
+        ],
+        "timeout": 90000
+      },
+      {
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "startup-logo",
+        "name": "startup-logo",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/startup-logo.spec.ts"
+        ],
+        "timeout": 90000
+      },
+      {
+        "outputDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/test-results",
+        "repeatEach": 1,
+        "retries": 1,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "withdrawals-ui",
         "name": "withdrawals-ui",
-        "testDir": "/Users/macbookpro/Downloads/metwork/tests/e2e",
+        "testDir": "/Users/macbookpro/Downloads/metwork/.claude/worktrees/startup-logo-field-11b768/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/withdrawal-ui.spec.ts"
         ],
-        "timeout": 45000
+        "timeout": 90000
       }
     ],
     "quiet": false,
@@ -244,20 +292,20 @@
   },
   "suites": [
     {
-      "title": "api/membership-pricing.spec.ts",
-      "file": "api/membership-pricing.spec.ts",
+      "title": "startup-logo.spec.ts",
+      "file": "startup-logo.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Membership pricing — config, purchase, frozen snapshot",
-          "file": "api/membership-pricing.spec.ts",
-          "line": 186,
+          "title": "Startup logo field",
+          "file": "startup-logo.spec.ts",
+          "line": 22,
           "column": 6,
           "specs": [
             {
-              "title": "public pricing page shows the configured terms, the cycle toggle, and Recommended on Builder only",
+              "title": "founder uploads a logo, it persists, and renders correctly across the marketplace",
               "ok": true,
               "tags": [],
               "tests": [
@@ -265,19 +313,19 @@
                   "timeout": 90000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "membership-pricing",
-                  "projectName": "membership-pricing",
+                  "projectId": "startup-logo",
+                  "projectName": "startup-logo",
                   "results": [
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 11761,
+                      "duration": 49813,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-20T21:31:08.024Z",
+                      "startTime": "2026-08-21T21:29:51.933Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -285,281 +333,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "ecde4baaa6a943f14bad-1941d2e23d4a4a7ff0c6",
-              "file": "api/membership-pricing.spec.ts",
-              "line": 224,
-              "column": 7
-            },
-            {
-              "title": "Builder charges exactly 9 000 semesterly and 12 600 annually",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "membership-pricing",
-                  "projectName": "membership-pricing",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 18309,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T21:31:23.574Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ecde4baaa6a943f14bad-3a31f196c8b8a2bc05b2",
-              "file": "api/membership-pricing.spec.ts",
-              "line": 265,
-              "column": 7
-            },
-            {
-              "title": "Founder charges exactly 47 400 semesterly and 66 360 annually",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "membership-pricing",
-                  "projectName": "membership-pricing",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 619,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T21:31:41.903Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ecde4baaa6a943f14bad-3ffe05407e6761a76b7a",
-              "file": "api/membership-pricing.spec.ts",
-              "line": 277,
-              "column": 7
-            },
-            {
-              "title": "a repeated purchase with the same clientReference never charges twice",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "membership-pricing",
-                  "projectName": "membership-pricing",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 515,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T21:31:42.541Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ecde4baaa6a943f14bad-490fbd1f79b994504e1a",
-              "file": "api/membership-pricing.spec.ts",
-              "line": 289,
-              "column": 7
-            },
-            {
-              "title": "a Builder member gets exactly 10 % off a consultation and 15 % off a space booking",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "membership-pricing",
-                  "projectName": "membership-pricing",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 5928,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T21:31:43.120Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ecde4baaa6a943f14bad-487f745eee03011d35c1",
-              "file": "api/membership-pricing.spec.ts",
-              "line": 311,
-              "column": 7
-            },
-            {
-              "title": "a Founder member gets 5 coworking passes and a Builder member gets none",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "membership-pricing",
-                  "projectName": "membership-pricing",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 770,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T21:31:49.074Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ecde4baaa6a943f14bad-ea78dafdd9ed4d17fd0c",
-              "file": "api/membership-pricing.spec.ts",
-              "line": 342,
-              "column": 7
-            },
-            {
-              "title": "an admin price change reaches new purchases only — an active member keeps the terms they bought",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "membership-pricing",
-                  "projectName": "membership-pricing",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2191,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T21:31:49.883Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ecde4baaa6a943f14bad-125b8a974c9091043ae4",
-              "file": "api/membership-pricing.spec.ts",
-              "line": 364,
-              "column": 7
-            },
-            {
-              "title": "a promo code and the membership discount never combine — only the larger applies",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "membership-pricing",
-                  "projectName": "membership-pricing",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2652,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T21:31:52.100Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ecde4baaa6a943f14bad-432b1f6626e8d3f20eea",
-              "file": "api/membership-pricing.spec.ts",
-              "line": 444,
-              "column": 7
-            },
-            {
-              "title": "a FREE-tier account gets no discount, no passes, and pays list price",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "membership-pricing",
-                  "projectName": "membership-pricing",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1251,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-20T21:31:54.776Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ecde4baaa6a943f14bad-19f23983bd825d407c12",
-              "file": "api/membership-pricing.spec.ts",
-              "line": 477,
+              "id": "18f1e0d2fc4aee9aeabd-f1bc6df9d4a85cfa201d",
+              "file": "startup-logo.spec.ts",
+              "line": 51,
               "column": 7
             }
           ]
@@ -569,9 +345,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-20T21:30:33.203Z",
-    "duration": 83595.76699999999,
-    "expected": 9,
+    "startTime": "2026-08-21T21:28:15.701Z",
+    "duration": 154058.29200000002,
+    "expected": 1,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

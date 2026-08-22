@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/dialog';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { StartupLogo } from '@/components/shared/startup-logo';
 import type { Locale } from '@/i18n/config';
 import type { StartupListing } from '@/types/startup';
 
@@ -525,7 +526,10 @@ export function StartupListingsManager() {
                 <StatusBadge status={l.status} />
               </div>
 
-              <h3 className="mt-3 line-clamp-1 text-base font-semibold">{l.name}</h3>
+              <div className="mt-3 flex items-center gap-3">
+                <StartupLogo logoUrl={l.logoUrl} name={l.name} size={36} />
+                <h3 className="line-clamp-1 text-base font-semibold">{l.name}</h3>
+              </div>
               <p className="mt-1.5 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
                 {l.description}
               </p>

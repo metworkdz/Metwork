@@ -7,6 +7,7 @@ import { Container } from '@/components/ui/container';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LockedNotice } from '@/components/features/startups/locked-notice';
+import { StartupLogo } from '@/components/shared/startup-logo';
 import { findStartupById } from '@/server/startups/service';
 import { toPublicStartupDto } from '@/server/startups/serialize';
 import { db } from '@/server/db/store';
@@ -73,9 +74,12 @@ export default async function StartupDetailPage({ params }: PageProps) {
           )}
           {startup.isRaising && <Badge variant="success">{t('raisingBadge')}</Badge>}
         </div>
-        <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-          {startup.name}
-        </h1>
+        <div className="flex items-center gap-3">
+          <StartupLogo logoUrl={startup.logoUrl} name={startup.name} size={48} />
+          <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+            {startup.name}
+          </h1>
+        </div>
         {startup.city && <p className="text-sm text-muted-foreground">{startup.city}</p>}
         <p className="text-base leading-relaxed text-muted-foreground">{startup.tagline}</p>
       </div>

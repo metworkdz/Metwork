@@ -1033,6 +1033,12 @@ export interface StartupListingRecord {
   pitchDeckUrl?: string | null;
   /** Optional for backward compat — old records lack this field. URL-validated when present. */
   websiteUrl?: string | null;
+  /**
+   * Optional for backward compat — old records lack this field. Cloudinary
+   * (or disk-fallback) URL of the uploaded startup logo, displayed as a
+   * rounded avatar across the marketplace and investor-facing surfaces.
+   */
+  logoUrl?: string | null;
   /** References UserRecord.id — must be a ENTREPRENEUR role user. */
   founderId: string;
   status: StartupListingStatus;

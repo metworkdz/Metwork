@@ -1,0 +1,25 @@
+{
+  "cookies": [
+    {
+      "name": "NEXT_LOCALE",
+      "value": "en",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "metwork_session",
+      "value": "n_NdhVMDNYpENNARYf0qTgWDDaS35g-TaMuKYP9WS0M",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1787952573.466203,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

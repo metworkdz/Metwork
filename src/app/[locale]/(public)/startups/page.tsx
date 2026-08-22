@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { LockedNotice } from '@/components/features/startups/locked-notice';
+import { StartupLogo } from '@/components/shared/startup-logo';
 import { listStartups } from '@/server/startups/service';
 import { toPublicStartupDto } from '@/server/startups/serialize';
 import { getServerSession } from '@/lib/session';
@@ -133,9 +134,12 @@ export default async function StartupsPage({ params }: PageProps) {
                       )}
                     </div>
 
-                    <h3 className="mt-3 line-clamp-1 text-lg font-semibold tracking-tight text-foreground">
-                      {startup.name}
-                    </h3>
+                    <div className="mt-3 flex items-center gap-3">
+                      <StartupLogo logoUrl={startup.logoUrl} name={startup.name} size={36} />
+                      <h3 className="line-clamp-1 text-lg font-semibold tracking-tight text-foreground">
+                        {startup.name}
+                      </h3>
+                    </div>
                     {startup.city && (
                       <p className="mt-0.5 text-xs text-muted-foreground">{startup.city}</p>
                     )}

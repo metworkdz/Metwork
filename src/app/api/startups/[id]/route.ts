@@ -8,7 +8,7 @@ import { z, ZodError } from 'zod';
 import { requireApiSession } from '@/server/auth/api-guards';
 import { findStartupById, updateStartup } from '@/server/startups/service';
 import { toStartupDto } from '@/server/startups/serialize';
-import { maturityStageSchema } from '@/server/startups/schemas';
+import { maturityStageSchema, logoUrlSchema } from '@/server/startups/schemas';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -45,6 +45,7 @@ const patchSchema = z.object({
   valuation:     z.number().int().positive().optional().nullable(),
   maturityStage: maturityStageSchema.optional(),
   websiteUrl:    z.string().url().max(300).optional().nullable(),
+  logoUrl:       logoUrlSchema,
   status:        z.enum(['DRAFT', 'ACTIVE', 'CLOSED']).optional(),
 });
 

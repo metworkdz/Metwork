@@ -62,6 +62,17 @@ export async function listPayments(filters: PaymentListFilters) {
   return { rows, total: Number(totalRows[0]?.n ?? 0) };
 }
 
+/** Shared with the dashboard's Urgent view — same overdue definition, one place. */
+export async function countOverduePayments(): Promise<number> {
+  const db = getCrmDb();
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(crmPayments)
+    .where(and(lt(crmPayments.dueDate, today), sql`${crmPayments.status} IN ('EN_ATTENTE', 'RELANCE_1', 'RELANCE_2')`));
+  return Number(rows[0]?.n ?? 0);
+}
+
 export async function getPaymentDetail(id: string) {
   const db = getCrmDb();
   const payment = (await db.select().from(crmPayments).where(eq(crmPayments.id, id)))[0];
