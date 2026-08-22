@@ -33,6 +33,10 @@ interface GalleryUploadFieldProps {
   hint?: string;
   /** Max allowed file size in bytes per image (default: 5 MB). */
   maxBytes?: number;
+  /** Upload endpoint (default: '/api/incubator/upload'). Must accept multipart `file` and return `{ url }`. */
+  endpoint?: string;
+  /** Extra multipart fields sent alongside `file` (e.g. `{ kind: 'program' }` for /api/consultant/upload). */
+  uploadFields?: Record<string, string>;
 }
 
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/avif';
@@ -46,6 +50,8 @@ export function GalleryUploadField({
   maxImages = DEFAULT_MAX_IMAGES,
   hint,
   maxBytes = DEFAULT_MAX_BYTES,
+  endpoint = '/api/incubator/upload',
+  uploadFields,
 }: GalleryUploadFieldProps) {
   const t = useTranslations('common');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +73,10 @@ export function GalleryUploadField({
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch('/api/incubator/upload', {
+      if (uploadFields) {
+        for (const [k, v] of Object.entries(uploadFields)) fd.append(k, v);
+      }
+      const res = await fetch(endpoint, {
         method: 'POST',
         credentials: 'include',
         body: fd,

@@ -9,9 +9,11 @@
  * population owns the row — resolved through `@/server/programs/ownership`, so
  * authorization can never drift between the two surfaces.
  *
- * Money model: none here. Paid consultant programs are not settleable yet (the
- * card/wallet paths reject mentor-owned rows rather than settle to nobody), so
- * creation is capped at free until the mentor-ledger wiring lands.
+ * Money model: paid consultant programs settle through the SAME card-payment
+ * path incubator programs use (`@/server/bookings/card-payment.ts`), crediting
+ * the consultant's own mentorId-keyed ledger (`@/server/mentors/ledger.ts`)
+ * instead of an incubator wallet. No cash-acceptance gate — every consultant
+ * may accept CASH, mirroring incubators (who have no such gate either).
  */
 import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
@@ -21,6 +23,7 @@ import { requireConsultant } from '@/server/mentors/access';
 import { findMentorById } from '@/server/mentors/service';
 import { listProgramsByMentor } from '@/server/bookings/program-catalog';
 import { isMentorApproved } from '@/lib/mentor-approval';
+import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { slugify, uniqueSlug } from '@/lib/slugify';
 
@@ -34,16 +37,18 @@ const createProgramSchema = z.object({
   city:        z.string().min(1).max(80),
   imageUrl:    z.string().url().optional().nullable(),
   imageUrls:   z.array(z.string().url()).max(8).optional(),
-  /**
-   * Free only, for now. A paid consultant program would have to settle into the
-   * mentor ledger, which is not wired yet — accepting a price here would let a
-   * consultant advertise a fee nobody can actually collect.
-   */
-  price:       z.literal(0).default(0),
+  price:       z.number().int().min(0),
+  /** Optional split pricing — fall back to `price` when omitted. */
+  onlinePrice: z.number().int().min(0).optional().nullable(),
+  cashPrice:   z.number().int().min(0).optional().nullable(),
   seatsTotal:  z.number().int().min(1).max(10_000),
   deadline:    z.string().datetime(),
   startDate:   z.string().datetime(),
   endDate:     z.string().datetime(),
+  acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).default(['ONLINE', 'CASH']),
+  /** Cash deposit (paid online by card). Required when CASH is accepted. */
+  cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
+  cashDepositValue: z.number().int().positive().optional().nullable(),
   slug:        z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
 }).refine(
   (d) => d.deadline <= d.startDate && d.startDate < d.endDate,
@@ -81,6 +86,11 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
+  const paymentMethods = input.acceptedPaymentMethods;
+  const depositError = validateCashDeposit(paymentMethods, input.cashDepositType, input.cashDepositValue);
+  if (depositError) return jsonError(400, 'INVALID_DEPOSIT', depositError);
+  const depositConfig = normalizeDepositConfig(paymentMethods, input.cashDepositType, input.cashDepositValue);
+
   const imageUrls = input.imageUrls?.length ? input.imageUrls : (input.imageUrl ? [input.imageUrl] : []);
   const coverUrl = imageUrls[0] ?? null;
 
@@ -107,16 +117,18 @@ export async function POST(req: NextRequest) {
       city:                   input.city.trim(),
       imageUrl:               coverUrl,
       imageUrls,
-      price:                  0,
-      onlinePrice:            null,
-      cashPrice:              null,
+      price:                  input.price,
+      onlinePrice:            input.onlinePrice ?? null,
+      cashPrice:              input.cashPrice ?? null,
       seatsTotal:             input.seatsTotal,
       deadline:               input.deadline,
       startDate:              input.startDate,
       endDate:                input.endDate,
-      // Free programs collect no money, so no payment method applies. The
-      // registration flow (POST /api/registrations) is the enrolment path.
-      acceptedPaymentMethods: [],
+      // Free programs (price 0) collect no money via the payment surfaces;
+      // the no-payment registration flow (POST /api/registrations) still
+      // works for them regardless of acceptedPaymentMethods.
+      acceptedPaymentMethods: paymentMethods,
+      ...depositConfig,
       isActive:               true,
       slug,
       createdAt:              now,

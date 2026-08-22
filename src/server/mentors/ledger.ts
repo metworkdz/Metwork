@@ -6,21 +6,22 @@
  * deliberately mirror the user wallet + withdrawal flow so the admin UX and
  * audit trail stay consistent:
  *
- *   settle      → creditPendingEarning  (+net to PENDING, commission recorded)
- *   complete    → releaseToAvailable    (PENDING → AVAILABLE)
- *   cancel      → voidPendingEarning    (void an unreleased earning)
- *   withdraw    → requestMentorWithdrawal (escrow hold from AVAILABLE)
- *   admin acts  → resolveMentorWithdrawal (mark paid / refund)
+ *   consultation settle   → creditPendingEarning     (+net to PENDING, commission recorded)
+ *   consultation complete → releaseToAvailable       (PENDING → AVAILABLE)
+ *   consultation cancel   → voidPendingEarning       (void an unreleased earning)
+ *   program settle        → creditProgramEarningToDraft (+net straight to AVAILABLE, no hold)
+ *   withdraw              → requestMentorWithdrawal  (escrow hold from AVAILABLE)
+ *   admin acts             → resolveMentorWithdrawal  (mark paid / refund)
  *
  * Guarantees:
- *  - Every mutation runs inside a single `db.update` critical section.
+ *  - Every mutation runs inside a single `db.update` critical section — except
+ *    `creditProgramEarningToDraft`, which is deliberately synchronous-on-draft
+ *    so it can run inside card-payment.ts's own settlement transaction instead
+ *    of opening a second, nested one.
  *  - Every amount is integer DZD; `availableBalance` can never go negative.
  *  - Every state transition is idempotent via a per-mentor `reference` key, so
  *    settlement/cancellation replays (webhook + return, double click) move money
  *    at most once.
- *
- * NOTE: this module is dormant — nothing calls it yet. It is wired into the
- * booking/settlement path in a later prompt.
  */
 import { randomUUID } from 'node:crypto';
 import {
@@ -32,6 +33,7 @@ import {
   type WithdrawalMethod,
 } from '@/server/db/store';
 import {
+  computeMentorEarningSplit,
   computeMentorPromoSplit,
   type MentorEarningKind,
   type MentorEarningSplit,
@@ -260,6 +262,102 @@ export async function creditPendingEarning(input: {
 
     return { replayed: false, wallet, split };
   });
+}
+
+export interface ProgramEarningResult {
+  wallet: MentorWalletRecord;
+  split: MentorEarningSplit;
+}
+
+/**
+ * Credit a mentor-owned PROGRAM booking's online-collected amount straight to
+ * the mentor's AVAILABLE balance — no PENDING hold. Unlike `creditPendingEarning`
+ * (1:1 consultations, held until the session COMPLETES), program earnings post
+ * immediately, mirroring how incubator-owned programs pay out at settlement
+ * with no hold either.
+ *
+ * SYNCHRONOUS on an already-open draft rather than opening its own `db.update`
+ * — `db.update` calls cannot nest, and this runs from inside card-payment.ts's
+ * own settlement transaction. Reuses `computeMentorEarningSplit` (kind:
+ * 'PROGRAM') so the 5%-default admin-configurable rate is resolved through the
+ * one commission lookup every mentor earning uses — not a second rate table.
+ *
+ * Idempotent via the same `mentor-earning-${bookingId}` reference every other
+ * mentor-ledger credit uses. Defense in depth: the caller already guarantees
+ * this runs at most once per booking (claimed via `booking.settledAt`).
+ */
+export function creditProgramEarningToDraft(
+  d: StoreDraft,
+  input: { mentorId: string; bookingId: string; onlineAmount: number },
+): ProgramEarningResult {
+  const wallet = ensureMentorWallet(d, input.mentorId);
+  const earningRef = `mentor-earning-${input.bookingId}`;
+
+  const prior = findByReference(d, input.mentorId, earningRef);
+  if (prior) {
+    const meta = prior.metadata as { gross?: number; platformCommission?: number; platformRate?: number; mentorRate?: number };
+    return {
+      wallet,
+      split: {
+        gross: meta.gross ?? prior.amount,
+        platformCommission: meta.platformCommission ?? 0,
+        mentorNet: prior.amount,
+        platformRate: meta.platformRate ?? 0,
+        mentorRate: meta.mentorRate ?? 1,
+      },
+    };
+  }
+
+  const split = computeMentorEarningSplit(input.onlineAmount, d.commissionRules, { kind: 'PROGRAM' });
+  const now = new Date().toISOString();
+
+  if (split.mentorNet > 0) {
+    wallet.availableBalance += split.mentorNet;
+    wallet.updatedAt = now;
+  }
+
+  pushTxn(d, {
+    id: randomUUID(),
+    mentorId: input.mentorId,
+    bookingId: input.bookingId,
+    type: 'EARNING',
+    amount: split.mentorNet,
+    bucket: 'AVAILABLE',
+    status: 'COMPLETED',
+    reference: earningRef,
+    description: 'Program earning',
+    metadata: {
+      gross: split.gross,
+      platformCommission: split.platformCommission,
+      platformRate: split.platformRate,
+      mentorRate: split.mentorRate,
+    },
+    createdAt: now,
+    completedAt: now,
+  });
+
+  if (split.platformCommission > 0) {
+    pushTxn(d, {
+      id: randomUUID(),
+      mentorId: input.mentorId,
+      bookingId: input.bookingId,
+      type: 'COMMISSION',
+      amount: -split.platformCommission,
+      bucket: 'AVAILABLE',
+      status: 'COMPLETED',
+      reference: `mentor-commission-${input.bookingId}`,
+      description: 'Platform commission on program',
+      metadata: {
+        gross: split.gross,
+        platformRate: split.platformRate,
+        mentorRate: split.mentorRate,
+      },
+      createdAt: now,
+      completedAt: now,
+    });
+  }
+
+  return { wallet, split };
 }
 
 export type ReleaseEarningResult =
