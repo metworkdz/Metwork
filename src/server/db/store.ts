@@ -953,7 +953,8 @@ export type AuditAction =
   | 'CONTRACT_SENT'
   | 'CONTRACT_VOIDED'
   | 'CONTRACT_OTP_RESENT'
-  | 'CONTRACT_STAMP_UPDATED';
+  | 'CONTRACT_STAMP_UPDATED'
+  | 'CONTRACT_TEMPLATE_UPDATED';
 
 export interface AuditLogRecord {
   id: string;
@@ -1025,6 +1026,22 @@ export interface PlatformSettingsRecord {
    * the signed contracts themselves.
    */
   adminStampImageUrl?: string | null;
+  /**
+   * The single reusable consultant-contract template — the admin's own
+   * pre-written commission mandate, with optional `{{tokens}}` (see
+   * `consultant-contracts/variables.ts`). Additive & nullable — absent ⇒
+   * no template set, and contract creation is refused until one is.
+   *
+   * Creating a contract merges this text with the selected consultant's live
+   * data ONCE, into that contract's own `contentSnapshot` — this field is
+   * never read again for a contract that already exists, so replacing the
+   * template never rewrites a contract already drafted from an older one.
+   */
+  consultantContractTemplate?: string | null;
+  /** ISO datetime the template was last saved. */
+  consultantContractTemplateUpdatedAt?: string | null;
+  /** UserRecord.id of the admin who last saved it. */
+  consultantContractTemplateUpdatedBy?: string | null;
   updatedAt: string;
 }
 

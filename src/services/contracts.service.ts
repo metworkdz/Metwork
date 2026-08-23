@@ -30,8 +30,13 @@ export interface AdminContract extends ConsultantContract {
   auditTrail: ContractAuditEntry[];
 }
 
+/** Creation is now just a consultant pick — the body/rate/payout are merged from the saved template. */
 export interface ContractDraftInput {
   consultantId: string;
+}
+
+/** What an existing DRAFT's terms can still be edited to before sending. */
+export interface ContractDraftEdit {
   contentSnapshot: string;
   payoutMethod: 'BANK_TRANSFER' | 'CCP' | 'CHEQUE';
   payoutDetails?: string | null;
@@ -61,7 +66,7 @@ export const contractsService = {
     apiClient.post<{ contract: AdminContract }>('/admin/contracts', body),
 
   /** Accepted only while DRAFT — the server refuses once the contract is sent. */
-  update: (id: string, body: Partial<Omit<ContractDraftInput, 'consultantId'>>) =>
+  update: (id: string, body: Partial<ContractDraftEdit>) =>
     apiClient.patch<{ contract: AdminContract }>(`/admin/contracts/${encodeURIComponent(id)}`, body),
 
   send: (id: string) =>

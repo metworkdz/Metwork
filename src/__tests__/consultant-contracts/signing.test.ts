@@ -41,7 +41,6 @@ import {
 } from '@/server/consultant-contracts/service';
 import { generateConsultantContractPdf, decodeDataUriPng, formatContractDateTime } from '@/server/consultant-contracts/contract-pdf';
 import { sha256Hex, buildContractPublicId, CONTRACT_FOLDER } from '@/server/consultant-contracts/storage';
-import { findMetworkParty, missingLegalFields } from '@/server/consultant-contracts/party';
 
 const ADMIN_ID = 'admin-1';
 const MENTOR_ID = 'mentor-1';
@@ -132,29 +131,32 @@ const METWORK: IncubatorRecord = {
   updatedAt: new Date('2026-01-01').toISOString(),
 } as IncubatorRecord;
 
-async function seed(opts: { legalComplete?: boolean } = {}): Promise<void> {
+const TEST_TEMPLATE =
+  "Le consultant {{consultant_name}} donne mandat à {{metwork_name}} à l'effet d'encaisser en son nom " +
+  'les honoraires de consultation, moyennant une commission de {{commission_rate}}.';
+
+async function seed(): Promise<void> {
   await db.update((d) => {
     d.mentors = [{ ...MENTOR }];
     d.users = [ADMIN_USER];
-    d.incubators = [
-      opts.legalComplete === false
-        ? ({ ...METWORK, nif: null, commercialRegNumber: null, address: null } as IncubatorRecord)
-        : { ...METWORK },
-    ];
+    d.incubators = [{ ...METWORK }];
+    d.platformSettings = {
+      appName: 'Metwork',
+      maintenanceMode: false,
+      signupsEnabled: true,
+      paymentsEnabled: true,
+      consultantContractTemplate: TEST_TEMPLATE,
+      updatedAt: new Date().toISOString(),
+    };
   });
 }
 
 async function makePending(): Promise<string> {
-  const draft = await createDraftContract({
-    consultantId: MENTOR_ID,
-    contentSnapshot:
-      "Le consultant donne mandat à EURL METWORK à l'effet d'encaisser en son nom les honoraires de consultation.",
-    payoutMethod: 'BANK_TRANSFER',
-    actorId: ADMIN_ID,
-  });
-  const sent = await sendContract(draft.id, ADMIN_ID);
+  const draft = await createDraftContract({ consultantId: MENTOR_ID, actorId: ADMIN_ID });
+  if (!draft.ok) throw new Error(`draft creation refused: ${draft.reason}`);
+  const sent = await sendContract(draft.contract.id, ADMIN_ID);
   expect(sent.ok).toBe(true);
-  return draft.id;
+  return draft.contract.id;
 }
 
 async function currentCode(contractId: string): Promise<string> {
@@ -174,17 +176,14 @@ beforeEach(async () => {
 describe('contract PDF', () => {
   it('produces a valid, non-trivial PDF buffer', async () => {
     const pdf = await generateConsultantContractPdf({
-      metwork: METWORK,
       contractId: 'contract-abc',
       consultantName: 'Yasmine Belkacem',
       body: 'Corps du contrat en français, avec accents : é à ç ù, et « guillemets ».',
-      commissionRate: 0.2,
-      payoutMethod: 'BANK_TRANSFER',
-      payoutDetails: 'RIB ••••7890 — Yasmine Belkacem',
       signerPhoneSnapshot: '+213770112233',
       signatureImagePng: SIGNATURE_PNG,
       signedAt: new Date('2026-08-21T10:00:00Z').toISOString(),
       adminStampUrl: null,
+      metworkName: 'EURL METWORK',
     });
 
     expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
@@ -194,15 +193,24 @@ describe('contract PDF', () => {
 
   it('renders without a signature image rather than throwing', async () => {
     const pdf = await generateConsultantContractPdf({
-      metwork: METWORK,
       contractId: 'c',
       consultantName: 'X',
       body: 'corps',
-      commissionRate: 0.2,
-      payoutMethod: 'CHEQUE',
-      payoutDetails: null,
       signerPhoneSnapshot: '+213770112233',
       signatureImagePng: 'not-a-data-uri',
+      signedAt: new Date().toISOString(),
+      adminStampUrl: null,
+    });
+    expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+  });
+
+  it('defaults the Metwork signature caption when no name is given', async () => {
+    const pdf = await generateConsultantContractPdf({
+      contractId: 'c',
+      consultantName: 'X',
+      body: 'corps',
+      signerPhoneSnapshot: '+213770112233',
+      signatureImagePng: SIGNATURE_PNG,
       signedAt: new Date().toISOString(),
       adminStampUrl: null,
     });
@@ -228,13 +236,9 @@ describe('contract PDF', () => {
 
   it('paginates a long body without losing the signature block', async () => {
     const pdf = await generateConsultantContractPdf({
-      metwork: METWORK,
       contractId: 'c',
       consultantName: 'Yasmine Belkacem',
       body: 'Article premier. '.repeat(4_000),
-      commissionRate: 0.2,
-      payoutMethod: 'BANK_TRANSFER',
-      payoutDetails: 'RIB ••••7890',
       signerPhoneSnapshot: '+213770112233',
       signatureImagePng: SIGNATURE_PNG,
       signedAt: new Date().toISOString(),
@@ -305,14 +309,8 @@ describe('signContract', () => {
 
   it('burns the admin stamp in when one is configured', async () => {
     await db.update((d) => {
-      d.platformSettings = {
-        appName: 'Metwork',
-        maintenanceMode: false,
-        signupsEnabled: true,
-        paymentsEnabled: true,
-        adminStampImageUrl: 'https://example.test/stamp.png',
-        updatedAt: new Date().toISOString(),
-      };
+      // Preserve the template `seed()` already set — this only adds the stamp.
+      d.platformSettings = { ...d.platformSettings!, adminStampImageUrl: 'https://example.test/stamp.png' };
     });
     const id = await makePending();
     const code = await currentCode(id);
@@ -399,36 +397,5 @@ describe('signed PDF links', () => {
   it('returns null for a contract with no stored pdf', async () => {
     const id = await makePending();
     expect(await getContractPdfUrl(id)).toBeNull();
-  });
-});
-
-/* ─────────────────── Metwork legal-block gate ─────────────────── */
-
-describe('Metwork legal block', () => {
-  it('blocks sending until RC, NIF and address are filled in', async () => {
-    await seed({ legalComplete: false });
-    const draft = await createDraftContract({
-      consultantId: MENTOR_ID,
-      contentSnapshot: 'corps',
-      payoutMethod: 'BANK_TRANSFER',
-      actorId: ADMIN_ID,
-    });
-
-    const result = await sendContract(draft.id, ADMIN_ID);
-    expect(result).toMatchObject({ ok: false, reason: 'METWORK_LEGAL_INCOMPLETE' });
-    expect((result as { missing: string[] }).missing.sort()).toEqual(['address', 'commercialRegNumber', 'nif']);
-    expect((await findContractById(draft.id))?.status).toBe('DRAFT');
-  });
-
-  it('resolves the Metwork party by ADMIN ownership, not by who clicked send', async () => {
-    const data = await db.read();
-    const party = findMetworkParty(data);
-    expect(party?.id).toBe('inc-metwork');
-    expect(missingLegalFields(party)).toEqual([]);
-  });
-
-  it('treats whitespace-only legal fields as missing', async () => {
-    expect(missingLegalFields({ ...METWORK, nif: '   ' } as IncubatorRecord)).toEqual(['nif']);
-    expect(missingLegalFields(null).sort()).toEqual(['address', 'commercialRegNumber', 'nif']);
   });
 });

@@ -4484,7 +4484,18 @@
       "contractStampHint": "PNG with a transparent background works best. Applied to contracts signed after you save — documents already signed keep the stamp they were signed with.",
       "contractStampAlt": "Current contract stamp",
       "contractStampRemove": "Remove",
-      "contractStampUnsetWarning": "No stamp set. Contracts will be signed with a blank Metwork signature block."
+      "contractStampUnsetWarning": "No stamp set. Contracts will be signed with a blank Metwork signature block.",
+      "sectionMetworkLegal": "Metwork legal identity",
+      "sectionMetworkLegalDescription": "Printed on the letterhead of every signed consultant commission contract. Required before a contract can be sent.",
+      "metworkLegalIncompleteWarning": "Incomplete. Sending a consultant contract is blocked until all three fields below are filled in.",
+      "metworkAddressLabel": "Address",
+      "metworkRcLabel": "Commercial register number (RC)",
+      "metworkNifLabel": "Tax ID (NIF)",
+      "sectionContractTemplate": "Consultant contract template",
+      "sectionContractTemplateDescription": "Your own commission contract, written once. Creating a new contract is then just picking a consultant — this text merges with their live data into that contract's own editable body.",
+      "contractTemplateLabel": "Template body (French)",
+      "contractTemplateVariablesLabel": "Available variables — click none, just type them into the text above:",
+      "contractTemplateUnsetWarning": "No template set. A contract cannot be created until one is saved here."
     },
     "payments": {
       "cancel": "Cancel",

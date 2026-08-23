@@ -40,6 +40,12 @@ const schema = z.object({
    * unlike the signed contracts themselves). Null clears it.
    */
   adminStampImageUrl: z.string().url().max(2_000).nullable().optional(),
+  /**
+   * The single reusable consultant-contract template. Length-capped so it
+   * can't bloat the single-document store. Null clears it (creation is then
+   * refused until a new one is saved).
+   */
+  consultantContractTemplate: z.string().max(100_000).nullable().optional(),
 });
 
 export async function GET() {
@@ -66,9 +72,10 @@ export async function PATCH(req: NextRequest) {
   }
 
   const now = new Date().toISOString();
-  const { eurToDzdRate, ...rest } = input;
+  const { eurToDzdRate, consultantContractTemplate, ...rest } = input;
   const rateChanged = eurToDzdRate !== undefined;
   const stampChanged = input.adminStampImageUrl !== undefined;
+  const templateChanged = consultantContractTemplate !== undefined;
 
   const updated = await db.update((store) => {
     const current = store.platformSettings ?? { ...DEFAULT_PLATFORM_SETTINGS };
@@ -82,6 +89,15 @@ export async function PATCH(req: NextRequest) {
             eurToDzdRate,
             eurToDzdRateUpdatedAt: now,
             eurToDzdRateUpdatedBy: guard.user.id,
+          }
+        : {}),
+      // Only ever read at contract CREATION (createDraftContract) — a change
+      // here never touches a contract that already exists.
+      ...(templateChanged
+        ? {
+            consultantContractTemplate,
+            consultantContractTemplateUpdatedAt: now,
+            consultantContractTemplateUpdatedBy: guard.user.id,
           }
         : {}),
       updatedAt: now,
@@ -99,6 +115,16 @@ export async function PATCH(req: NextRequest) {
       targetType: 'platform_settings',
       targetId: 'adminStampImageUrl',
       details: { cleared: input.adminStampImageUrl === null },
+    });
+  }
+  if (templateChanged) {
+    await appendAuditLog({
+      adminId: guard.user.id,
+      adminEmail: guard.user.email,
+      action: 'CONTRACT_TEMPLATE_UPDATED',
+      targetType: 'platform_settings',
+      targetId: 'consultantContractTemplate',
+      details: { cleared: consultantContractTemplate === null },
     });
   }
 

@@ -27,10 +27,6 @@ export const dynamic = 'force-dynamic';
 
 const createSchema = z.object({
   consultantId: z.string().min(1),
-  /** French body. Length-capped so one contract cannot bloat the single-document store. */
-  contentSnapshot: z.string().min(1).max(100_000),
-  payoutMethod: z.enum(['BANK_TRANSFER', 'CCP', 'CHEQUE']),
-  payoutDetails: z.string().max(500).nullable().optional(),
 });
 
 export async function GET() {
@@ -74,26 +70,33 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
-  const data = await db.read();
-  const mentor = (data.mentors ?? []).find((m) => m.id === input.consultantId);
-  if (!mentor) return jsonError(404, 'CONSULTANT_NOT_FOUND', 'Consultant not found');
-
-  const contract = await createDraftContract({
+  const result = await createDraftContract({
     consultantId: input.consultantId,
-    contentSnapshot: input.contentSnapshot,
-    payoutMethod: input.payoutMethod,
-    payoutDetails: input.payoutDetails ?? null,
     actorId: guard.user.id,
   });
+
+  if (!result.ok) {
+    if (result.reason === 'CONSULTANT_NOT_FOUND') {
+      return jsonError(404, 'CONSULTANT_NOT_FOUND', 'Consultant not found');
+    }
+    return jsonError(
+      409,
+      'NO_TEMPLATE',
+      'No contract template is set. Add one under Settings before creating a contract.',
+    );
+  }
+
+  const data = await db.read();
+  const mentor = (data.mentors ?? []).find((m) => m.id === result.contract.consultantId) ?? null;
 
   await appendAuditLog({
     adminId: guard.user.id,
     adminEmail: guard.user.email,
     action: 'CONTRACT_CREATED',
     targetType: 'consultant_contract',
-    targetId: contract.id,
-    details: { consultantId: mentor.id, consultantName: mentor.fullName },
+    targetId: result.contract.id,
+    details: { consultantId: result.contract.consultantId, consultantName: mentor?.fullName },
   });
 
-  return json({ contract: toAdminContractDto(contract, mentor) }, { status: 201 });
+  return json({ contract: toAdminContractDto(result.contract, mentor) }, { status: 201 });
 }

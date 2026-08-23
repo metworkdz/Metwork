@@ -33,12 +33,17 @@ import {
   type ConsultantContractOtpState,
   type ConsultantContractPayoutMethod,
   type ConsultantContractRecord,
-  type MentorRecord,
 } from '@/server/db/store';
 import { resolveMentorCommissionRates } from '@/server/payments/mentor-commission';
 import { generateConsultantContractPdf } from './contract-pdf';
-import { findMetworkParty, missingLegalFields, type MetworkLegalField } from './party';
+import { findMetworkParty } from './party';
 import { mintContractPdfUrl, storeSignedContractPdf } from './storage';
+import {
+  describePayoutAccount,
+  inferPayoutMethod,
+  renderConsultantContractTemplate,
+  resolveConsultantContractVariables,
+} from './variables';
 import {
   evaluateSendPolicy,
   isLockedOut,
@@ -194,51 +199,94 @@ export async function appendContractAudit(
 
 export interface CreateDraftContractInput {
   consultantId: string;
-  /** French contract body, `{{variables}}` already substituted. */
-  contentSnapshot: string;
-  payoutMethod: ConsultantContractPayoutMethod;
-  payoutDetails?: string | null;
   /** UserRecord.id of the creating admin. */
   actorId: string;
 }
 
+export type CreateDraftContractResult =
+  | { ok: true; contract: ConsultantContractRecord }
+  | { ok: false; reason: 'CONSULTANT_NOT_FOUND' }
+  | { ok: false; reason: 'NO_TEMPLATE' };
+
 /**
- * Create a DRAFT. Nothing is frozen yet — every field here stays editable
- * until `sendContract` captures the snapshot.
+ * Create a DRAFT from the single admin-authored template.
+ *
+ * The template is merged with the selected consultant's LIVE data exactly
+ * once, here, at creation — the result becomes an ordinary editable
+ * `contentSnapshot`, identical in kind to text an admin typed by hand. Editing
+ * it afterward (`editDraftContract`) never re-merges the template, so a manual
+ * tweak is never silently clobbered by a later template change or a
+ * consultant profile edit.
+ *
+ * The commission rate merged into the TEXT is a live, display-only read —
+ * the structured `commissionRate` field on the record stays 0 until
+ * `sendContract` resolves and freezes it, exactly as before. The two can, in
+ * principle, diverge if an admin edits the commission rule between draft
+ * creation and send; that is no different from the pre-existing risk that any
+ * other hand-typed number in the body might not match the frozen field, and
+ * is visible/correctable the same way — by editing the draft.
  */
 export async function createDraftContract(
   input: CreateDraftContractInput,
-): Promise<ConsultantContractRecord> {
+): Promise<CreateDraftContractResult> {
   const now = new Date().toISOString();
-  const record: ConsultantContractRecord = {
-    id: randomUUID(),
-    consultantId: input.consultantId,
-    status: 'DRAFT',
-    templateVersion: 1,
-    contentSnapshot: input.contentSnapshot,
-    // Placeholder only. The binding rate is resolved and frozen at send-time;
-    // a draft that sits for a week must not carry a stale number into the PDF.
-    commissionRate: 0,
-    payoutMethod: input.payoutMethod,
-    payoutDetails: input.payoutDetails ?? null,
-    signerPhoneSnapshot: '',
-    signature: null,
-    adminStamp: null,
-    finalPdfPublicId: null,
-    finalPdfUrl: null,
-    finalPdfHash: null,
-    otp: null,
-    auditTrail: [{ event: 'CREATED', actorId: input.actorId, timestamp: now }],
-    createdAt: now,
-    sentAt: null,
-    signedAt: null,
-    voidedAt: null,
-  };
 
-  await db.update((d) => {
+  const outcome = await db.update<CreateDraftContractResult>((d) => {
+    const mentor = (d.mentors ?? []).find((m) => m.id === input.consultantId);
+    if (!mentor) return { ok: false, reason: 'CONSULTANT_NOT_FOUND' };
+
+    const template = d.platformSettings?.consultantContractTemplate?.trim();
+    if (!template) return { ok: false, reason: 'NO_TEMPLATE' };
+
+    const { platformRate } = resolveMentorCommissionRates(d.commissionRules, { kind: 'CONSULTATION' });
+    const payoutMethod = inferPayoutMethod(mentor);
+    const metwork = findMetworkParty(d);
+
+    const contentSnapshot = renderConsultantContractTemplate(
+      template,
+      resolveConsultantContractVariables({
+        mentor,
+        commissionRate: platformRate,
+        payoutMethod,
+        payoutDetails: describePayoutAccount(mentor),
+        metwork,
+      }),
+    );
+
+    const record: ConsultantContractRecord = {
+      id: randomUUID(),
+      consultantId: input.consultantId,
+      status: 'DRAFT',
+      templateVersion: 1,
+      contentSnapshot,
+      // Placeholder only. The binding rate is resolved and frozen at
+      // send-time; a draft that sits for a week must not carry a stale
+      // number into the structured field, even though the TEXT above already
+      // shows the live rate as of creation.
+      commissionRate: 0,
+      payoutMethod,
+      // inferPayoutMethod never returns CHEQUE, so this is always the
+      // consultant's own account description (or null if they haven't set one).
+      payoutDetails: describePayoutAccount(mentor),
+      signerPhoneSnapshot: '',
+      signature: null,
+      adminStamp: null,
+      finalPdfPublicId: null,
+      finalPdfUrl: null,
+      finalPdfHash: null,
+      otp: null,
+      auditTrail: [{ event: 'CREATED', actorId: input.actorId, timestamp: now }],
+      createdAt: now,
+      sentAt: null,
+      signedAt: null,
+      voidedAt: null,
+    };
+
     allContracts(d).push(record);
+    return { ok: true, contract: record };
   });
-  return record;
+
+  return outcome;
 }
 
 export type EditDraftResult =
@@ -274,25 +322,9 @@ export async function editDraftContract(
 
 /* ─────────────────── Send (DRAFT → PENDING_SIGNATURE) ─────────────────── */
 
-/**
- * Render a payout account into the one-line description printed on the
- * contract. The account number is masked to its last 4 digits: the contract
- * must identify the account unambiguously to its holder without turning every
- * copy of the PDF into a full set of bank details.
- */
-export function describePayoutAccount(mentor: MentorRecord): string | null {
-  const account = mentor.payoutAccount;
-  if (!account?.accountNumber) return null;
-  const digits = account.accountNumber.replace(/\s+/g, '');
-  const masked = digits.length > 4 ? `${'•'.repeat(Math.max(0, digits.length - 4))}${digits.slice(-4)}` : digits;
-  const label = account.accountType === 'ccp' ? 'CCP' : 'RIB';
-  return `${label} ${masked} — ${account.holderName}`;
-}
-
 export type SendContractResult =
   | { ok: true; contract: ConsultantContractRecord }
-  | { ok: false; reason: 'NOT_FOUND' | 'NOT_DRAFT' | 'CONSULTANT_NOT_FOUND' | 'NO_VERIFIED_PHONE' | 'EMPTY_CONTENT' }
-  | { ok: false; reason: 'METWORK_LEGAL_INCOMPLETE'; missing: MetworkLegalField[] };
+  | { ok: false; reason: 'NOT_FOUND' | 'NOT_DRAFT' | 'CONSULTANT_NOT_FOUND' | 'NO_VERIFIED_PHONE' | 'EMPTY_CONTENT' };
 
 /**
  * Freeze the terms and put the contract in front of the consultant.
@@ -327,12 +359,6 @@ export async function sendContract(
 
     const phone = mentor.phone?.trim();
     if (!phone || !mentor.phoneVerified) return { ok: false, reason: 'NO_VERIFIED_PHONE' };
-
-    // A contract that cannot name Metwork's commercial register number and tax
-    // identifier proves nothing to a tax authority. Blocked here rather than
-    // rendered with blank lines — see `party.ts`.
-    const missing = missingLegalFields(findMetworkParty(d));
-    if (missing.length) return { ok: false, reason: 'METWORK_LEGAL_INCOMPLETE', missing };
 
     const { platformRate } = resolveMentorCommissionRates(d.commissionRules, { kind: 'CONSULTATION' });
 
@@ -500,7 +526,6 @@ export type SignContractResult =
   | { ok: true; contract: ConsultantContractRecord }
   | { ok: false; reason: 'NOT_FOUND' | 'NOT_PENDING' | 'LOCKED' | 'INVALID' | 'EXPIRED' | 'TOO_MANY_ATTEMPTS' }
   | { ok: false; reason: 'BAD_SIGNATURE' }
-  | { ok: false; reason: 'METWORK_LEGAL_INCOMPLETE'; missing: MetworkLegalField[] }
   | { ok: false; reason: 'STORAGE_FAILED'; message: string };
 
 export interface SignContractInput {
@@ -555,34 +580,28 @@ export async function signContract(
   const verified = await verifySigningOtp(contractId, input.otpCode, input.actorId);
   if (!verified.ok) return { ok: false, reason: verified.reason };
 
-  // Re-read the parties inside a single snapshot so the PDF is built from one
-  // consistent view of the document.
+  // Re-read inside a single snapshot so the PDF is built from one consistent
+  // view of the document.
   const data = await db.read();
-  const metwork = findMetworkParty(data);
-  const missing = missingLegalFields(metwork);
-  if (missing.length) return { ok: false, reason: 'METWORK_LEGAL_INCOMPLETE', missing };
-
   const mentor = (data.mentors ?? []).find((m) => m.id === contract.consultantId);
+  const metwork = findMetworkParty(data);
   const adminStampUrl = data.platformSettings?.adminStampImageUrl ?? null;
   const signedAt = new Date().toISOString();
 
   let stored;
   try {
     const pdf = await generateConsultantContractPdf({
-      metwork: metwork!,
       contractId: contract.id,
       consultantName: mentor?.fullName ?? 'Consultant',
-      // Every printed term comes from the frozen record, never the live
-      // profile — re-rendering this contract in five years must produce the
-      // same document.
+      // The frozen contentSnapshot IS the document — every term a reader sees
+      // was already merged in at creation and is whatever the admin edited it
+      // to since. Nothing here is re-read from the live profile.
       body: contract.contentSnapshot,
-      commissionRate: contract.commissionRate,
-      payoutMethod: contract.payoutMethod,
-      payoutDetails: contract.payoutDetails,
       signerPhoneSnapshot: contract.signerPhoneSnapshot,
       signatureImagePng: input.signatureImagePng,
       signedAt,
       adminStampUrl,
+      metworkName: metwork?.name,
     });
     stored = await storeSignedContractPdf(pdf, contract.id);
   } catch (err) {

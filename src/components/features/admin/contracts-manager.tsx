@@ -77,8 +77,8 @@ function describeError(e: unknown): string {
   switch (e.code) {
     case 'NO_VERIFIED_PHONE':
       return 'This consultant has no verified phone number. They must verify it in their portal before a contract can be sent — the signing code is what ties the signature to them.';
-    case 'METWORK_LEGAL_INCOMPLETE':
-      return `Metwork's legal identifiers are incomplete (${(details?.missing ?? []).join(', ')}). Fill them in under Settings before issuing contracts.`;
+    case 'NO_TEMPLATE':
+      return 'No contract template is set. Add one under Settings → Consultant contract template before creating a contract.';
     case 'NOT_DRAFT':
       return 'This contract has already been sent and can no longer be edited. Void it and create a new one.';
     case 'NOT_PENDING':
@@ -213,13 +213,20 @@ export function ContractsManager() {
         </CardContent>
       </Card>
 
-      {(creating || editing) && (
-        <ContractFormDialog
-          open
-          contract={editing}
+      {creating && (
+        <CreateContractDialog
           consultants={consultants}
-          onClose={() => { setCreating(false); setEditing(null); }}
-          onSaved={async () => { setCreating(false); setEditing(null); await load(); }}
+          onClose={() => setCreating(false)}
+          onSaved={async () => { setCreating(false); await load(); }}
+          onError={setError}
+        />
+      )}
+
+      {editing && (
+        <EditContractDialog
+          contract={editing}
+          onClose={() => setEditing(null)}
+          onSaved={async () => { setEditing(null); await load(); }}
           onError={setError}
         />
       )}
@@ -310,41 +317,31 @@ function RowActions({
 
 /* ─────────────────── Create / edit ─────────────────── */
 
-function ContractFormDialog({
-  open, contract, consultants, onClose, onSaved, onError,
+/**
+ * New contract: pick a consultant, nothing else.
+ *
+ * The body, commission rate and payout method are no longer typed here — they
+ * come from the single admin-authored template (Settings → Consultant
+ * contract template), merged with this consultant's own live data the moment
+ * the draft is created. The result lands as an ordinary editable draft; use
+ * "Edit" afterward to review or tweak the merged text before sending.
+ */
+function CreateContractDialog({
+  consultants, onClose, onSaved, onError,
 }: {
-  open: boolean;
-  contract: AdminContract | null;
   consultants: ContractConsultantOption[];
   onClose: () => void;
   onSaved: () => Promise<void>;
   onError: (message: string | null) => void;
 }) {
-  const isEdit = contract !== null;
-  const [consultantId, setConsultantId] = useState(contract?.consultantId ?? '');
-  const [body, setBody] = useState(contract?.contentSnapshot ?? '');
-  const [payoutMethod, setPayoutMethod] = useState<AdminContract['payoutMethod']>(contract?.payoutMethod ?? 'BANK_TRANSFER');
-  const [payoutDetails, setPayoutDetails] = useState(contract?.payoutDetails ?? '');
+  const [consultantId, setConsultantId] = useState('');
   const [busy, setBusy] = useState(false);
 
-  async function save() {
+  async function create() {
     setBusy(true);
     onError(null);
     try {
-      if (isEdit) {
-        await contractsService.update(contract.id, {
-          contentSnapshot: body,
-          payoutMethod,
-          payoutDetails: payoutDetails.trim() || null,
-        });
-      } else {
-        await contractsService.create({
-          consultantId,
-          contentSnapshot: body,
-          payoutMethod,
-          payoutDetails: payoutDetails.trim() || null,
-        });
-      }
+      await contractsService.create({ consultantId });
       await onSaved();
     } catch (e) {
       onError(describeError(e));
@@ -354,54 +351,107 @@ function ContractFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>New commission contract</DialogTitle>
+          <DialogDescription>
+            The contract is generated from your saved template, filled in with this consultant&apos;s
+            own name, phone, commission rate and payout details. You can review and edit the result
+            before sending it.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="contract-consultant">Consultant</Label>
+          <select
+            id="contract-consultant"
+            value={consultantId}
+            onChange={(e) => setConsultantId(e.target.value)}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value="">Select a consultant…</option>
+            {consultants.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.fullName}{m.phoneVerified ? '' : ' — phone not verified'}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            A contract can only be sent to a consultant with a verified phone: the signing code is
+            what ties the signature to them.
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+          <Button onClick={() => void create()} disabled={busy || !consultantId}>
+            {busy && <Loader2 className="size-4 animate-spin" />}
+            Create draft
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Edit a DRAFT's terms. The server refuses this once the contract has been
+ * sent (409 NOT_DRAFT) — this dialog is only ever reachable from a DRAFT row's
+ * menu, so that refusal is a defence against a stale UI, not a path anyone
+ * should normally hit.
+ */
+function EditContractDialog({
+  contract, onClose, onSaved, onError,
+}: {
+  contract: AdminContract;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+  onError: (message: string | null) => void;
+}) {
+  const [body, setBody] = useState(contract.contentSnapshot);
+  const [payoutMethod, setPayoutMethod] = useState<AdminContract['payoutMethod']>(contract.payoutMethod);
+  const [payoutDetails, setPayoutDetails] = useState(contract.payoutDetails ?? '');
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    onError(null);
+    try {
+      await contractsService.update(contract.id, {
+        contentSnapshot: body,
+        payoutMethod,
+        payoutDetails: payoutDetails.trim() || null,
+      });
+      await onSaved();
+    } catch (e) {
+      onError(describeError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit draft contract' : 'New commission contract'}</DialogTitle>
+          <DialogTitle>Edit draft contract</DialogTitle>
           <DialogDescription>
-            The contract body is French — it is the legal instrument itself and is not translated.
-            The commission rate is not set here: it is resolved from the active commission rule and
-            frozen when the contract is sent.
+            {contract.consultantName}. The contract body is French and is not translated — it is the
+            legal instrument itself, generated from your template and editable here before sending.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="contract-consultant">Consultant</Label>
-            <select
-              id="contract-consultant"
-              value={consultantId}
-              onChange={(e) => setConsultantId(e.target.value)}
-              // The consultant is frozen at creation: re-pointing a contract at
-              // a different person would silently change who is bound by it.
-              disabled={isEdit}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm disabled:opacity-50"
-            >
-              <option value="">Select a consultant…</option>
-              {consultants.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.fullName}{m.phoneVerified ? '' : ' — phone not verified'}
-                </option>
-              ))}
-            </select>
-            {!isEdit && (
-              <p className="text-xs text-muted-foreground">
-                A contract can only be sent to a consultant with a verified phone: the signing code
-                is what ties the signature to them.
-              </p>
-            )}
-          </div>
-
           <div className="space-y-1.5">
             <Label htmlFor="contract-body">Contract body (French)</Label>
             <Textarea
               id="contract-body"
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              rows={14}
+              rows={16}
               dir="ltr"
               lang="fr"
-              placeholder="ENTRE LES SOUSSIGNÉS : …"
               className="font-mono text-xs"
             />
           </div>
@@ -421,26 +471,21 @@ function ContractFormDialog({
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="contract-payout-details">Payout details (optional)</Label>
+              <Label htmlFor="contract-payout-details">Payout details</Label>
               <Input
                 id="contract-payout-details"
                 value={payoutDetails}
                 onChange={(e) => setPayoutDetails(e.target.value)}
-                placeholder="Filled from their payout account on send"
               />
-              <p className="text-xs text-muted-foreground">
-                Left blank, this is filled from the consultant&apos;s own payout account when the
-                contract is sent, with the account number masked.
-              </p>
             </div>
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
-          <Button onClick={() => void save()} disabled={busy || !body.trim() || (!isEdit && !consultantId)}>
+          <Button onClick={() => void save()} disabled={busy || !body.trim()}>
             {busy && <Loader2 className="size-4 animate-spin" />}
-            {isEdit ? 'Save draft' : 'Create draft'}
+            Save draft
           </Button>
         </DialogFooter>
       </DialogContent>

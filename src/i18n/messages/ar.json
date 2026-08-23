@@ -4484,7 +4484,18 @@
       "contractStampHint": "يُفضّل ملف PNG بخلفية شفافة. يُطبّق على العقود الموقّعة بعد الحفظ — أما المستندات الموقّعة سابقاً فتحتفظ بختمها الأصلي.",
       "contractStampAlt": "ختم العقود الحالي",
       "contractStampRemove": "إزالة",
-      "contractStampUnsetWarning": "لم يُحدَّد أي ختم. ستُوقَّع العقود بخانة توقيع Metwork فارغة."
+      "contractStampUnsetWarning": "لم يُحدَّد أي ختم. ستُوقَّع العقود بخانة توقيع Metwork فارغة.",
+      "sectionMetworkLegal": "الهوية القانونية لـ Metwork",
+      "sectionMetworkLegalDescription": "تُطبع على ترويسة كل عقد عمولة مستشار موقّع. مطلوبة قبل إمكانية إرسال أي عقد.",
+      "metworkLegalIncompleteWarning": "غير مكتملة. إرسال عقد المستشار محظور إلى أن تُملأ الحقول الثلاثة أدناه.",
+      "metworkAddressLabel": "العنوان",
+      "metworkRcLabel": "رقم السجل التجاري (RC)",
+      "metworkNifLabel": "رقم التعريف الجبائي (NIF)",
+      "sectionContractTemplate": "نموذج عقد المستشار",
+      "sectionContractTemplateDescription": "عقد العمولة الخاص بك، يُكتب مرة واحدة. إنشاء عقد جديد يصبح بعدها مجرد اختيار مستشار — يُدمج هذا النص مع بياناته الحقيقية في المتن القابل للتعديل لذلك العقد.",
+      "contractTemplateLabel": "نص النموذج (بالفرنسية)",
+      "contractTemplateVariablesLabel": "المتغيرات المتاحة — اكتبها مباشرة داخل النص أعلاه:",
+      "contractTemplateUnsetWarning": "لم يُحدَّد أي نموذج. لا يمكن إنشاء عقد إلى أن يُحفظ نموذج هنا."
     },
     "payments": {
       "cancel": "إلغاء",

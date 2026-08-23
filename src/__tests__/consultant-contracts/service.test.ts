@@ -1,9 +1,11 @@
 /**
  * Unit tests for the consultant contract service
- * (src/server/consultant-contracts/{service,otp}.ts).
+ * (src/server/consultant-contracts/{service,otp,variables}.ts).
  *
  * These records are tax evidence, so the tests pin the properties that make
  * them evidentiary rather than merely present:
+ *   • a contract is created by merging the single admin template with the
+ *     selected consultant's LIVE data — no free-text entry at creation,
  *   • snapshots frozen at send-time survive a later profile edit,
  *   • a SIGNED record refuses every content mutation at the data layer,
  *   • the audit trail is append-only in every status,
@@ -24,8 +26,8 @@ import {
   appendContractAudit,
   findContractById,
   findPendingContractForConsultant,
-  describePayoutAccount,
 } from '@/server/consultant-contracts/service';
+import { describePayoutAccount } from '@/server/consultant-contracts/variables';
 import {
   contractOtpKey,
   evaluateSendPolicy,
@@ -54,11 +56,7 @@ const MENTOR: MentorRecord = {
   createdAt: new Date('2026-01-01').toISOString(),
 };
 
-/**
- * Metwork's own legal identity. `sendContract` refuses to issue a contract that
- * cannot name the company's commercial register number and tax identifier, so
- * every fixture that sends one has to seed this party.
- */
+/** Metwork's own legal identity — optional now, but seeded to prove {{metwork_*}} tokens resolve. */
 const METWORK = {
   id: 'inc-metwork',
   name: 'EURL METWORK',
@@ -75,21 +73,38 @@ const METWORK = {
   updatedAt: new Date('2026-01-01').toISOString(),
 } as unknown as IncubatorRecord;
 
+/** The single reusable template, exercising every consultant token at once. */
+const TEST_TEMPLATE =
+  'Mandat de recouvrement — {{metwork_name}}.\n\n' +
+  'Consultant : {{consultant_name}} ({{consultant_phone}}).\n' +
+  'Commission : {{commission_rate}} / Part consultant : {{consultant_share}}.\n' +
+  'Règlement : {{payout_method}} — {{payout_details}}.';
+
 async function seedMentor(overrides: Partial<MentorRecord> = {}): Promise<void> {
   await db.update((d) => {
     d.mentors = [{ ...MENTOR, ...overrides }];
     d.users = [{ id: ADMIN_ID, role: 'ADMIN', email: 'admin@metwork.dz' } as UserRecord];
     d.incubators = [{ ...METWORK }];
+    d.platformSettings = {
+      appName: 'Metwork',
+      maintenanceMode: false,
+      signupsEnabled: true,
+      paymentsEnabled: true,
+      consultantContractTemplate: TEST_TEMPLATE,
+      updatedAt: new Date().toISOString(),
+    };
   });
 }
 
+/** Unwraps a successful `createDraftContract` call; fails loudly if creation was refused. */
+async function createDraft(consultantId = MENTOR_ID): Promise<ConsultantContractRecord> {
+  const result = await createDraftContract({ consultantId, actorId: ADMIN_ID });
+  if (!result.ok) throw new Error(`draft creation refused: ${result.reason}`);
+  return result.contract;
+}
+
 async function makeSentContract(): Promise<ConsultantContractRecord> {
-  const draft = await createDraftContract({
-    consultantId: MENTOR_ID,
-    contentSnapshot: 'Mandat de recouvrement — EURL METWORK.',
-    payoutMethod: 'BANK_TRANSFER',
-    actorId: ADMIN_ID,
-  });
+  const draft = await createDraft();
   const sent = await sendContract(draft.id, ADMIN_ID);
   expect(sent.ok).toBe(true);
   return (sent as { ok: true; contract: ConsultantContractRecord }).contract;
@@ -99,47 +114,97 @@ beforeEach(async () => {
   await seedMentor();
 });
 
-/* ─────────────────── Creation & draft editing ─────────────────── */
+/* ─────────────────── Creation from the template ─────────────────── */
 
-describe('draft lifecycle', () => {
-  it('creates a DRAFT with an unfrozen commission rate and a CREATED audit entry', async () => {
-    const c = await createDraftContract({
-      consultantId: MENTOR_ID,
-      contentSnapshot: 'Projet de contrat.',
-      payoutMethod: 'BANK_TRANSFER',
-      actorId: ADMIN_ID,
-    });
+describe('draft creation', () => {
+  it('merges the template with the consultant\'s live data into an editable DRAFT', async () => {
+    const c = await createDraft();
 
     expect(c.status).toBe('DRAFT');
+    expect(c.contentSnapshot).toContain('EURL METWORK');
+    expect(c.contentSnapshot).toContain('Yasmine Belkacem');
+    expect(c.contentSnapshot).toContain('+213770112233');
+    // Seeded default MENTOR_CONSULTATION rate — a live read for display, not
+    // the frozen structured field (which stays 0 until send; see below).
+    expect(c.contentSnapshot).toContain('20 %');
+    expect(c.contentSnapshot).toContain('80 %');
+    expect(c.contentSnapshot).toContain('Virement bancaire');
+    expect(c.contentSnapshot).toContain('7890');
+
     // Deliberately 0 until send-time: a draft must not carry a rate that could
-    // go stale before the consultant ever sees it.
+    // go stale before the consultant ever sees it, even though the TEXT above
+    // already shows the live rate as of creation.
     expect(c.commissionRate).toBe(0);
     expect(c.signerPhoneSnapshot).toBe('');
     expect(c.auditTrail).toHaveLength(1);
     expect(c.auditTrail[0]?.event).toBe('CREATED');
   });
 
-  it('allows editing while DRAFT and bumps templateVersion', async () => {
-    const c = await createDraftContract({
-      consultantId: MENTOR_ID,
-      contentSnapshot: 'v1',
-      payoutMethod: 'BANK_TRANSFER',
-      actorId: ADMIN_ID,
+  it('infers the payout method from the consultant\'s own account', async () => {
+    await seedMentor({ payoutAccount: { accountType: 'ccp', accountNumber: '11112222333344445555', holderName: 'Yasmine Belkacem' } });
+    const c = await createDraft();
+    expect(c.payoutMethod).toBe('CCP');
+    expect(c.contentSnapshot).toContain('CCP');
+  });
+
+  it('refuses when no template has been saved', async () => {
+    await db.update((d) => {
+      d.platformSettings!.consultantContractTemplate = null;
+    });
+    expect(await createDraftContract({ consultantId: MENTOR_ID, actorId: ADMIN_ID })).toEqual({
+      ok: false,
+      reason: 'NO_TEMPLATE',
+    });
+  });
+
+  it('refuses an unknown consultant', async () => {
+    expect(await createDraftContract({ consultantId: 'nobody', actorId: ADMIN_ID })).toEqual({
+      ok: false,
+      reason: 'CONSULTANT_NOT_FOUND',
+    });
+  });
+
+  it('leaves unrelated or unknown tokens blank rather than throwing', async () => {
+    await db.update((d) => {
+      d.platformSettings!.consultantContractTemplate = 'Bonjour {{consultant_name}}, ref {{not_a_real_token}}.';
+    });
+    const c = await createDraft();
+    expect(c.contentSnapshot).toBe('Bonjour Yasmine Belkacem, ref .');
+  });
+});
+
+/* ─────────────────── Draft editing ─────────────────── */
+
+describe('draft editing', () => {
+  it('allows editing the merged text while DRAFT and bumps templateVersion', async () => {
+    const c = await createDraft();
+
+    const edited = await editDraftContract(c.id, { contentSnapshot: 'Texte modifié à la main.' });
+    expect(edited.ok).toBe(true);
+    expect((edited as { ok: true; contract: ConsultantContractRecord }).contract.contentSnapshot).toBe('Texte modifié à la main.');
+    expect((edited as { ok: true; contract: ConsultantContractRecord }).contract.templateVersion).toBe(2);
+  });
+
+  it('a template change never rewrites a contract already created from an earlier version', async () => {
+    const c = await createDraft();
+    const originalBody = c.contentSnapshot;
+
+    await db.update((d) => {
+      d.platformSettings!.consultantContractTemplate = 'Un tout autre modèle : {{consultant_name}}.';
     });
 
-    const edited = await editDraftContract(c.id, { contentSnapshot: 'v2', payoutMethod: 'CHEQUE' });
-    expect(edited.ok).toBe(true);
-    expect((edited as { ok: true; contract: ConsultantContractRecord }).contract.contentSnapshot).toBe('v2');
-    expect((edited as { ok: true; contract: ConsultantContractRecord }).contract.templateVersion).toBe(2);
+    const fresh = await findContractById(c.id);
+    expect(fresh?.contentSnapshot).toBe(originalBody);
   });
 
   it('refuses to edit a contract that has already been sent', async () => {
     const sent = await makeSentContract();
+    const original = sent.contentSnapshot;
     const edited = await editDraftContract(sent.id, { contentSnapshot: 'sneaky rewrite' });
 
     expect(edited).toEqual({ ok: false, reason: 'NOT_DRAFT' });
     const fresh = await findContractById(sent.id);
-    expect(fresh?.contentSnapshot).toBe('Mandat de recouvrement — EURL METWORK.');
+    expect(fresh?.contentSnapshot).toBe(original);
   });
 });
 
@@ -195,12 +260,7 @@ describe('frozen snapshots', () => {
 
   it('refuses to send when the consultant has no verified phone', async () => {
     await seedMentor({ phoneVerified: false });
-    const draft = await createDraftContract({
-      consultantId: MENTOR_ID,
-      contentSnapshot: 'x',
-      payoutMethod: 'BANK_TRANSFER',
-      actorId: ADMIN_ID,
-    });
+    const draft = await createDraft();
 
     expect(await sendContract(draft.id, ADMIN_ID)).toEqual({ ok: false, reason: 'NO_VERIFIED_PHONE' });
   });
@@ -211,9 +271,8 @@ describe('frozen snapshots', () => {
 describe('immutability', () => {
   async function makeSigned(): Promise<ConsultantContractRecord> {
     const sent = await makeSentContract();
-    // Reach past the service on purpose: Phase 1 has no signing step yet, and
-    // the point of the test is that the GATEWAY refuses writes regardless of
-    // how the record reached SIGNED.
+    // Reach past the service on purpose: the point of the test is that the
+    // GATEWAY refuses writes regardless of how the record reached SIGNED.
     await db.update((d) => {
       const c = d.consultantContracts!.find((x) => x.id === sent.id)!;
       c.status = 'SIGNED';
@@ -364,8 +423,8 @@ describe('signing OTP', () => {
     expect(verified.ok).toBe(true);
 
     const fresh = await findContractById(sent.id);
-    // Phase 1 proves identity only — the SIGNED transition needs the PDF,
-    // its hash and its stored location to land together (Phase 2).
+    // Verification proves identity only — the SIGNED transition needs the
+    // PDF, its hash and its stored location to land together.
     expect(fresh?.status).toBe('PENDING_SIGNATURE');
     expect(fresh?.auditTrail.at(-1)?.event).toBe('OTP_VERIFIED');
   });
@@ -394,12 +453,7 @@ describe('signing OTP', () => {
   });
 
   it('refuses to send or verify against a contract that is not awaiting signature', async () => {
-    const draft = await createDraftContract({
-      consultantId: MENTOR_ID,
-      contentSnapshot: 'x',
-      payoutMethod: 'CHEQUE',
-      actorId: ADMIN_ID,
-    });
+    const draft = await createDraft();
     expect(await sendSigningOtp(draft.id, MENTOR_ID)).toEqual({ ok: false, reason: 'NOT_PENDING' });
     expect(await verifySigningOtp(draft.id, '123456', MENTOR_ID)).toEqual({ ok: false, reason: 'NOT_PENDING' });
   });
@@ -476,12 +530,7 @@ describe('additive schema', () => {
     expect(await findPendingContractForConsultant(MENTOR_ID)).toBeNull();
 
     // And a write against that document still works.
-    const c = await createDraftContract({
-      consultantId: MENTOR_ID,
-      contentSnapshot: 'x',
-      payoutMethod: 'CHEQUE',
-      actorId: ADMIN_ID,
-    });
+    const c = await createDraft();
     expect(await findContractById(c.id)).not.toBeNull();
   });
 });

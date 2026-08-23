@@ -2,34 +2,29 @@
  * The Metwork side of a consultant contract.
  *
  * A contract has two parties. The consultant is a `MentorRecord`; Metwork's own
- * legal identity lives on the admin-managed `IncubatorRecord` — the same record
- * the receipt and invoice letterheads already read (`getOrCreateAdminIncubator`
- * provisions it). This module is the one place that resolves it and decides
- * whether it is complete enough to put on a legal document.
+ * legal identity — when the admin chooses to reference it — lives on the
+ * admin-managed `IncubatorRecord`, the same record the receipt and invoice
+ * letterheads already read (`getOrCreateAdminIncubator` provisions it).
  *
- * The completeness gate matters more here than on a receipt. A contract whose
- * purpose is to show a tax authority who collected whose money is worth nothing
- * if the party claiming to have collected it is identified only by the name
- * "Metwork" — the commercial register number and tax identifier are what make
- * it evidence. So sending is blocked until they are filled in, rather than
- * silently rendering a PDF with blank lines where they should be.
+ * There is deliberately NO completeness gate here. The contract document is
+ * the admin's own template, verbatim — they may write "EURL METWORK, RC
+ * 31/00-…" directly as prose, use the optional `{{metwork_rc}}` / `{{metwork_nif}}`
+ * / `{{metwork_address}}` tokens (see `variables.ts`), or reference Metwork's
+ * identity some other way entirely. Blocking every contract on three specific
+ * admin-record fields — as an earlier version of this module did — forced a
+ * second place to enter information the admin had often already typed once,
+ * and was the actual cause of "why do I need this, I already wrote it in the
+ * contract." A token an admin doesn't fill in simply renders blank, same as
+ * any other unresolved token.
  */
 import type { DbLike, IncubatorRecord, UserRecord } from './types';
-
-/** Legal fields a contract PDF cannot go out without. */
-const REQUIRED_LEGAL_FIELDS = [
-  'commercialRegNumber',
-  'nif',
-  'address',
-] as const satisfies readonly (keyof IncubatorRecord)[];
-
-export type MetworkLegalField = (typeof REQUIRED_LEGAL_FIELDS)[number];
 
 /**
  * The incubator record that represents Metwork itself.
  *
- * Resolved by ADMIN ownership rather than by the id of whoever clicked send, so
- * two different admins sending two contracts always name the same legal party.
+ * Resolved by ADMIN ownership rather than by the id of whoever created a
+ * contract, so every admin's `{{metwork_*}}` tokens resolve to the same
+ * legal identity regardless of who is signed in.
  */
 export function findMetworkParty(d: DbLike): IncubatorRecord | null {
   const adminIds = new Set(
@@ -38,16 +33,4 @@ export function findMetworkParty(d: DbLike): IncubatorRecord | null {
   // `managerId` is nullable on legacy incubator records; an unowned one can
   // never be the admin's.
   return (d.incubators ?? []).find((i) => i.managerId != null && adminIds.has(i.managerId)) ?? null;
-}
-
-/**
- * Which required legal identifiers are still blank. Empty array ⇒ ready to send.
- * A whitespace-only value counts as missing.
- */
-export function missingLegalFields(incubator: IncubatorRecord | null): MetworkLegalField[] {
-  if (!incubator) return [...REQUIRED_LEGAL_FIELDS];
-  return REQUIRED_LEGAL_FIELDS.filter((field) => {
-    const value = incubator[field];
-    return typeof value !== 'string' || value.trim() === '';
-  });
 }

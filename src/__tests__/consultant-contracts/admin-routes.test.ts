@@ -5,11 +5,13 @@
  * courtesy; the server is the control, so each of these drives the route
  * directly, the way a curl call or a tampered client would:
  *
+ *   • a contract can only be created by picking a consultant — no free text —
+ *     and is refused when no template has been saved,
  *   • a sent contract cannot be edited, no matter what the client sends,
  *   • voiding without an explicit confirmation is refused,
  *   • a signed contract can never be voided,
  *   • admin resend shares the consultant's throttle rather than bypassing it,
- *   • sending is blocked on an unverified phone or an incomplete legal block,
+ *   • sending is blocked on an unverified phone,
  *   • every admin action lands in the platform audit log.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -43,7 +45,7 @@ import { POST as otpAdmin } from '@/app/api/admin/contracts/[id]/otp/route';
 
 const ADMIN_ID = 'admin-1';
 const MENTOR_ID = 'mentor-a';
-const BODY = 'Mandat de recouvrement — EURL METWORK.';
+const TEST_TEMPLATE = 'Mandat de recouvrement — {{metwork_name}}. Consultant : {{consultant_name}}.';
 
 const MENTOR: MentorRecord = {
   id: MENTOR_ID, fullName: 'Yasmine Belkacem', position: 'Consultant', imageUrl: '',
@@ -69,18 +71,27 @@ function req(body?: unknown, method = 'POST'): NextRequest {
 }
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 
-async function seed(overrides: Partial<MentorRecord> = {}, legalComplete = true): Promise<void> {
+async function seed(overrides: Partial<MentorRecord> = {}, opts: { withTemplate?: boolean } = {}): Promise<void> {
+  const withTemplate = opts.withTemplate ?? true;
   await db.update((d) => {
     d.mentors = [{ ...MENTOR, ...overrides }];
     d.users = [{ id: ADMIN_ID, role: 'ADMIN', email: 'admin@metwork.dz' } as UserRecord];
-    d.incubators = [legalComplete ? { ...METWORK } : ({ ...METWORK, nif: null } as IncubatorRecord)];
+    d.incubators = [{ ...METWORK }];
     d.auditLogs = [];
     d.consultantContracts = [];
+    d.platformSettings = {
+      appName: 'Metwork',
+      maintenanceMode: false,
+      signupsEnabled: true,
+      paymentsEnabled: true,
+      consultantContractTemplate: withTemplate ? TEST_TEMPLATE : null,
+      updatedAt: new Date().toISOString(),
+    };
   });
 }
 
 async function createDraft(): Promise<string> {
-  const res = await createAdmin(req({ consultantId: MENTOR_ID, contentSnapshot: BODY, payoutMethod: 'BANK_TRANSFER' }));
+  const res = await createAdmin(req({ consultantId: MENTOR_ID }));
   expect(res.status).toBe(201);
   return (await res.json()).contract.id;
 }
@@ -97,11 +108,13 @@ beforeEach(async () => {
 /* ─────────────────── Create & list ─────────────────── */
 
 describe('create and list', () => {
-  it('creates a DRAFT and records it in the platform audit log', async () => {
+  it('creates a DRAFT from the template, merged with the consultant\'s live data, and logs it', async () => {
     const id = await createDraft();
 
     const stored = await findContractById(id);
     expect(stored?.status).toBe('DRAFT');
+    expect(stored?.contentSnapshot).toContain('EURL METWORK');
+    expect(stored?.contentSnapshot).toContain('Yasmine Belkacem');
     // The rate is resolved at send-time, not creation — a draft that sits for a
     // week must not carry a stale number.
     expect(stored?.commissionRate).toBe(0);
@@ -109,8 +122,15 @@ describe('create and list', () => {
   });
 
   it('rejects an unknown consultant', async () => {
-    const res = await createAdmin(req({ consultantId: 'nope', contentSnapshot: BODY, payoutMethod: 'CHEQUE' }));
+    const res = await createAdmin(req({ consultantId: 'nope' }));
     expect(res.status).toBe(404);
+  });
+
+  it('refuses to create when no template has been saved', async () => {
+    await seed({}, { withTemplate: false });
+    const res = await createAdmin(req({ consultantId: MENTOR_ID }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error.code).toBe('NO_TEMPLATE');
   });
 
   it('lists contracts with the consultant identity and full audit trail', async () => {
@@ -156,6 +176,7 @@ describe('edit', () => {
 
   it('refuses to edit a sent contract via a direct API call', async () => {
     const id = await createDraft();
+    const original = (await findContractById(id))!.contentSnapshot;
     expect((await sendAdmin(req(), ctx(id))).status).toBe(200);
 
     // Exactly what a tampered client (or curl) would do once the UI hides Edit.
@@ -163,7 +184,7 @@ describe('edit', () => {
 
     expect(res.status).toBe(409);
     expect((await res.json()).error.code).toBe('NOT_DRAFT');
-    expect((await findContractById(id))?.contentSnapshot).toBe(BODY);
+    expect((await findContractById(id))?.contentSnapshot).toBe(original);
   });
 });
 
@@ -196,17 +217,6 @@ describe('send', () => {
     expect((await res.json()).error.code).toBe('NO_VERIFIED_PHONE');
     expect((await findContractById(id))?.status).toBe('DRAFT');
     expect(sendContractReadyEmail).not.toHaveBeenCalled();
-  });
-
-  it("blocks sending while Metwork's legal identifiers are incomplete", async () => {
-    await seed({}, false);
-    const id = await createDraft();
-
-    const res = await sendAdmin(req(), ctx(id));
-    expect(res.status).toBe(409);
-    const body = await res.json();
-    expect(body.error.code).toBe('METWORK_LEGAL_INCOMPLETE');
-    expect(body.error.details.missing).toEqual(['nif']);
   });
 
   it('cannot send the same contract twice', async () => {

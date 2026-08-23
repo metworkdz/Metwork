@@ -92,9 +92,6 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         return jsonError(401, 'INVALID_OTP', 'Invalid or expired code');
       case 'BAD_SIGNATURE':
         return jsonError(400, 'BAD_SIGNATURE', 'Please draw your signature before confirming.');
-      case 'METWORK_LEGAL_INCOMPLETE':
-        // Not the consultant's fault and not something they can fix.
-        return jsonError(503, 'UNAVAILABLE', 'Signing is temporarily unavailable. Please try again later.');
       default:
         console.error('[consultant/contracts/sign] storage failure:', result.message);
         return jsonError(500, 'SIGN_FAILED', 'Could not finalise the contract. Please try again.');

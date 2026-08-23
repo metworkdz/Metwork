@@ -41,17 +41,11 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
       case 'CONSULTANT_NOT_FOUND':
         return jsonError(404, 'CONSULTANT_NOT_FOUND', 'Consultant not found');
       case 'NO_VERIFIED_PHONE':
+      default:
         return jsonError(
           409,
           'NO_VERIFIED_PHONE',
           'This consultant has no verified phone number. The signing code is the identity proof behind the signature, so it cannot be sent to an unverified number.',
-        );
-      default:
-        return jsonError(
-          409,
-          'METWORK_LEGAL_INCOMPLETE',
-          "Metwork's legal identifiers are incomplete. Fill in the commercial register number, tax identifier and address in Settings before issuing contracts.",
-          { missing: result.missing },
         );
     }
   }

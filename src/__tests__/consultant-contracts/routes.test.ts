@@ -119,17 +119,15 @@ function req(body?: unknown): NextRequest {
 
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 
+const TEST_TEMPLATE = 'Mandat de recouvrement — {{metwork_name}}. Consultant : {{consultant_name}}.';
+
 /** A PENDING_SIGNATURE contract for the given consultant. */
 async function pendingFor(consultantId: string): Promise<string> {
-  const draft = await createDraftContract({
-    consultantId,
-    contentSnapshot: "Mandat de recouvrement — EURL METWORK.",
-    payoutMethod: 'BANK_TRANSFER',
-    actorId: ADMIN_ID,
-  });
-  const sent = await sendContract(draft.id, ADMIN_ID);
+  const draft = await createDraftContract({ consultantId, actorId: ADMIN_ID });
+  if (!draft.ok) throw new Error(`draft creation refused: ${draft.reason}`);
+  const sent = await sendContract(draft.contract.id, ADMIN_ID);
   expect(sent.ok).toBe(true);
-  return draft.id;
+  return draft.contract.id;
 }
 
 beforeEach(async () => {
@@ -139,6 +137,14 @@ beforeEach(async () => {
     d.mentors = [mentor(MENTOR_A, 'Yasmine Belkacem'), mentor(MENTOR_B, 'Karim Haddad')];
     d.users = [{ id: ADMIN_ID, role: 'ADMIN', email: 'admin@metwork.dz' } as UserRecord];
     d.incubators = [{ ...METWORK }];
+    d.platformSettings = {
+      appName: 'Metwork',
+      maintenanceMode: false,
+      signupsEnabled: true,
+      paymentsEnabled: true,
+      consultantContractTemplate: TEST_TEMPLATE,
+      updatedAt: new Date().toISOString(),
+    };
   });
 });
 
