@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { ORG_SIZE_LABELS, ORG_TYPE_LABELS, RECORD_STATUS_LABELS } from '@/components/metworkcrm/shared/labels';
+import { extractApiErrorMessage } from '@/components/metworkcrm/shared/api-error';
 
 export interface OrganizationRow {
   id: string;
@@ -133,7 +134,7 @@ export function OrganizationFormDialog({
       return;
     }
 
-    let data: { id?: string; error?: { message?: string } };
+    let data: { id?: string; error?: { message?: string; details?: { fieldErrors?: Record<string, string[]> } } };
     try {
       data = await res.json();
     } catch {
@@ -143,7 +144,7 @@ export function OrganizationFormDialog({
     }
 
     if (!res.ok) {
-      setError(data?.error?.message ?? 'Une erreur est survenue.');
+      setError(extractApiErrorMessage(data));
       setSaving(false);
       return;
     }

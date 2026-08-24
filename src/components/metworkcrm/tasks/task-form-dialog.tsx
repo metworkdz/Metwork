@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { EntityPicker } from '@/components/metworkcrm/shared/entity-picker';
 import { TASK_PRIORITY_LABELS, TASK_STATUS_LABELS } from '@/components/metworkcrm/shared/labels';
+import { extractApiErrorMessage } from '@/components/metworkcrm/shared/api-error';
 
 export interface TaskRow {
   id: string;
@@ -171,7 +172,7 @@ export function TaskFormDialog({
     }
 
     if (!res.ok) {
-      let data: { error?: { message?: string } };
+      let data: { error?: { message?: string; details?: { fieldErrors?: Record<string, string[]> } } };
       try {
         data = await res.json();
       } catch {
@@ -179,7 +180,7 @@ export function TaskFormDialog({
         setSaving(false);
         return;
       }
-      setError(data?.error?.message ?? 'Une erreur est survenue.');
+      setError(extractApiErrorMessage(data));
       setSaving(false);
       return;
     }

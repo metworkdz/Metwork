@@ -17,6 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { EntityPicker } from '@/components/metworkcrm/shared/entity-picker';
+import { extractApiErrorMessage } from '@/components/metworkcrm/shared/api-error';
 import { cn } from '@/lib/utils';
 
 export interface LinkedOrganization {
@@ -95,7 +96,7 @@ export function ContactOrganizationsEditor({
       return;
     }
 
-    let data: { error?: { message?: string } };
+    let data: { error?: { message?: string; details?: { fieldErrors?: Record<string, string[]> } } };
     try {
       data = await res.json();
     } catch {
@@ -105,7 +106,7 @@ export function ContactOrganizationsEditor({
     }
 
     if (!res.ok) {
-      setError(data?.error?.message ?? 'Une erreur est survenue.');
+      setError(extractApiErrorMessage(data));
       setSaving(false);
       return;
     }

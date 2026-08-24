@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { EntityPicker } from '@/components/metworkcrm/shared/entity-picker';
 import { INTERACTION_DIRECTION_LABELS, INTERACTION_TYPE_LABELS } from '@/components/metworkcrm/shared/labels';
+import { extractApiErrorMessage } from '@/components/metworkcrm/shared/api-error';
 
 export interface InteractionRow {
   id: string;
@@ -226,7 +227,7 @@ export function InteractionFormDialog({
     }
 
     if (!res.ok) {
-      let data: { error?: { message?: string } };
+      let data: { error?: { message?: string; details?: { fieldErrors?: Record<string, string[]> } } };
       try {
         data = await res.json();
       } catch {
@@ -234,7 +235,7 @@ export function InteractionFormDialog({
         setSaving(false);
         return;
       }
-      setError(data?.error?.message ?? 'Une erreur est survenue.');
+      setError(extractApiErrorMessage(data));
       setSaving(false);
       return;
     }

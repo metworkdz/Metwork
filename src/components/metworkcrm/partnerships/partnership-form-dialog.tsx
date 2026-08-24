@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { EntityPicker } from '@/components/metworkcrm/shared/entity-picker';
 import { PARTNERSHIP_STAGE_LABELS, PARTNERSHIP_TYPE_LABELS } from '@/components/metworkcrm/shared/labels';
+import { extractApiErrorMessage } from '@/components/metworkcrm/shared/api-error';
 
 export interface PartnershipRow {
   id: string;
@@ -129,7 +130,7 @@ export function PartnershipFormDialog({
       return;
     }
 
-    let data: { id?: string; error?: { message?: string } };
+    let data: { id?: string; error?: { message?: string; details?: { fieldErrors?: Record<string, string[]> } } };
     try {
       data = await res.json();
     } catch {
@@ -139,7 +140,7 @@ export function PartnershipFormDialog({
     }
 
     if (!res.ok) {
-      setError(data?.error?.message ?? 'Une erreur est survenue.');
+      setError(extractApiErrorMessage(data));
       setSaving(false);
       return;
     }

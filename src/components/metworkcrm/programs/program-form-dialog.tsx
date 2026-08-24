@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { PROGRAM_STAGE_LABELS, PROGRAM_TYPE_LABELS } from '@/components/metworkcrm/shared/labels';
+import { extractApiErrorMessage } from '@/components/metworkcrm/shared/api-error';
 
 export interface ProgramRow {
   id: string;
@@ -103,7 +104,7 @@ export function ProgramFormDialog({
       return;
     }
 
-    let data: { id?: string; error?: { message?: string } };
+    let data: { id?: string; error?: { message?: string; details?: { fieldErrors?: Record<string, string[]> } } };
     try {
       data = await res.json();
     } catch {
@@ -113,7 +114,7 @@ export function ProgramFormDialog({
     }
 
     if (!res.ok) {
-      setError(data?.error?.message ?? 'Une erreur est survenue.');
+      setError(extractApiErrorMessage(data));
       setSaving(false);
       return;
     }
