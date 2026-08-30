@@ -20,7 +20,26 @@
  *                                   template's language; override if it changes)
  */
 
+import { normalizePhone } from '@/server/auth/serialize';
+
 const OTP_MSG = (code: string) => `Your Metwork verification code is: ${code}`;
+
+/**
+ * Infobip wire format for a recipient MSISDN: international digits, no '+',
+ * no spaces. Reuses the canonical Algerian normalizer (`normalizePhone`) so a
+ * number stored as "+213 770 53 53 46", "0770535346" or "770535346" all resolve
+ * to the same "213770535346" — there is no second phone-parsing rule here.
+ *
+ * Applied INSIDE every sender below rather than left to callers: a recipient
+ * that reaches the API with spaces is rejected outright with
+ * REJECTED_PREFIX_MISSING, which is exactly how OTP delivery was silently
+ * failing for consultants whose phone was stored in a spaced format. Two of the
+ * senders used to do their own `replace(/\D/g,'')` and the OTP senders did
+ * nothing at all — that inconsistency is what this collapses.
+ */
+function toRecipient(phone: string): string {
+  return normalizePhone(phone).replace(/^\+/, '');
+}
 
 /**
  * Send any custom text message via WhatsApp (Infobip).
@@ -40,7 +59,7 @@ export async function sendWhatsAppMessage(phone: string, text: string): Promise<
     },
     body: JSON.stringify({
       from: cfg.waSender,
-      to: phone,
+      to: toRecipient(phone),
       content: { text },
     }),
   });
@@ -108,7 +127,7 @@ export async function sendWhatsAppOTP(phone: string, code: string): Promise<void
       messages: [
         {
           from: cfg.waSender,
-          to: phone,
+          to: toRecipient(phone),
           content: {
             templateName,
             templateData: {
@@ -173,10 +192,7 @@ export async function sendWhatsAppNewBookingTemplate(
   const templateName = process.env.INFOBIP_WHATSAPP_NEW_BOOKING_TEMPLATE?.trim() || 'consultation_new_booking';
   const language = process.env.INFOBIP_WHATSAPP_NEW_BOOKING_LANG?.trim() || 'fr';
 
-  // The recipient phone is free-text (admin/consultant forms accept '+', spaces,
-  // dashes). Infobip's WhatsApp `to` wants international digits only — normalize
-  // so a stored "+213 549 …" still delivers.
-  const recipient = phone.replace(/\D/g, '');
+  const recipient = toRecipient(phone);
 
   const res = await fetch(`${cfg.baseUrl}/whatsapp/1/message/template`, {
     method: 'POST',
@@ -248,9 +264,7 @@ export async function sendWhatsAppIncubatorBookingTemplate(
   const templateName = process.env.INFOBIP_WHATSAPP_INCUBATOR_BOOKING_TEMPLATE?.trim() || 'incubator_booking';
   const language = process.env.INFOBIP_WHATSAPP_INCUBATOR_BOOKING_LANG?.trim() || 'fr';
 
-  // Same free-text phone shapes as the other WhatsApp senders — normalize to
-  // international digits only.
-  const recipient = phone.replace(/\D/g, '');
+  const recipient = toRecipient(phone);
 
   const res = await fetch(`${cfg.baseUrl}/whatsapp/1/message/template`, {
     method: 'POST',
@@ -303,7 +317,7 @@ export async function sendSMSMessage(phone: string, text: string): Promise<void>
       messages: [
         {
           from: cfg.smsSender,
-          destinations: [{ to: phone }],
+          destinations: [{ to: toRecipient(phone) }],
           text,
         },
       ],

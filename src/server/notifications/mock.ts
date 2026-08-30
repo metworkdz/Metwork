@@ -175,19 +175,33 @@ export function sendOtpEmail(email: string, code: string): Promise<boolean> {
  * freezes once the response is sent, so unawaited sends silently die.
  */
 /**
- * Deliver a consultant OTP through the first channel that works:
- * WhatsApp → SMS → email. STRICTLY sequential — the chain stops at the first
- * success, so exactly one channel receives the code.
+ * Deliver a consultant OTP to BOTH the phone and the email, in parallel.
  *
- * The SAME code is passed to every attempt; nothing is ever re-generated, so a
- * code that reaches the consultant on any channel stays valid.
+ * NOT a stop-at-first-success chain. It used to be, and that was the bug behind
+ * "the consultant never gets the code": SMS to Algeria is accepted by Infobip
+ * (HTTP 200 / PENDING_ACCEPTED) but then sits in PENDING_ENROUTE and silently
+ * expires — never delivered. A "sent" SMS therefore consumed the success slot
+ * and the email, the one channel that actually works, was never attempted. The
+ * consultant received nothing at all.
  *
- * The returned channel is what verification keys off: a code that landed on the
- * phone proves the phone, one that fell back to email proves the email.
- * `null` means every channel failed — the caller should surface a real error
- * rather than tell the consultant to check a device that got nothing.
+ * So: email ALWAYS sends when an address is on file — it is the deliverability
+ * floor, and the consultant explicitly wants a copy there regardless. The phone
+ * side still degrades WhatsApp → SMS, because those two are alternatives to each
+ * other (same device, same code) rather than to email; SMS is only attempted if
+ * WhatsApp genuinely failed, which keeps the ~$0.23 dead-end SMS off the happy
+ * path.
  *
- * Per-attempt outcomes are logged for debugging WITHOUT the code itself.
+ * The SAME code goes to every channel; nothing is ever re-generated, so whichever
+ * copy the consultant opens stays valid.
+ *
+ * RETURN VALUE — deliberately unchanged in meaning: the highest-priority channel
+ * that succeeded (whatsapp > sms > email). Verification stamps this to decide
+ * which contact detail a confirmed code proves, and keeping the old priority
+ * order means the phoneVerified/emailVerified semantics are byte-identical to
+ * before; the only difference is that a second copy also went out by email.
+ * `null` still means everything failed.
+ *
+ * Per-channel outcomes are logged for debugging WITHOUT the code itself.
  */
 export async function sendConsultantOtp(opts: {
   email?: string | null;
@@ -197,31 +211,44 @@ export async function sendConsultantOtp(opts: {
   const phone = opts.phone?.trim();
   const email = opts.email?.trim();
 
-  const attempts: Array<{ channel: OtpChannel; run: () => Promise<boolean> }> = [];
-  if (phone) {
-    attempts.push({ channel: 'whatsapp', run: () => sendOtpWhatsApp(phone, opts.code) });
-    attempts.push({ channel: 'sms', run: () => sendOtpSms(phone, opts.code) });
-  }
-  if (email) attempts.push({ channel: 'email', run: () => sendOtpEmail(email, opts.code) });
-
-  for (const attempt of attempts) {
+  const guard = async (channel: OtpChannel, run: () => Promise<boolean>): Promise<boolean> => {
     let ok = false;
     try {
-      ok = await attempt.run();
+      ok = await run();
     } catch (err) {
-      // A sender should self-catch, but never let one throw break the chain.
+      // A sender should self-catch, but never let one throw break the fan-out.
       // eslint-disable-next-line no-console
-      console.error(`${banner} OTP attempt threw on ${attempt.channel} →`, (err as Error).message);
+      console.error(`${banner} OTP attempt threw on ${channel} →`, (err as Error).message);
       ok = false;
     }
     // eslint-disable-next-line no-console
-    console.log(`${banner} OTP attempt :: channel=${attempt.channel} outcome=${ok ? 'sent' : 'failed'}`);
-    if (ok) return attempt.channel;
-  }
+    console.log(`${banner} OTP attempt :: channel=${channel} outcome=${ok ? 'sent' : 'failed'}`);
+    return ok;
+  };
 
-  // eslint-disable-next-line no-console
-  console.error(`${banner} OTP delivery failed on every channel`);
-  return null;
+  // Kick the email off FIRST so it overlaps the (slower) phone attempts, and is
+  // never skipped no matter what the phone side does.
+  const emailPromise = email ? guard('email', () => sendOtpEmail(email, opts.code)) : null;
+
+  // Phone side: WhatsApp, then SMS only as its fallback.
+  const phonePromise = (async (): Promise<OtpChannel | null> => {
+    if (!phone) return null;
+    if (await guard('whatsapp', () => sendOtpWhatsApp(phone, opts.code))) return 'whatsapp';
+    if (await guard('sms', () => sendOtpSms(phone, opts.code))) return 'sms';
+    return null;
+  })();
+
+  const [phoneChannel, emailOk] = await Promise.all([
+    phonePromise,
+    emailPromise ?? Promise.resolve(false),
+  ]);
+
+  const delivered = phoneChannel ?? (emailOk ? ('email' as const) : null);
+  if (!delivered) {
+    // eslint-disable-next-line no-console
+    console.error(`${banner} OTP delivery failed on every channel`);
+  }
+  return delivered;
 }
 
 /* ─────────────────────────── Email ─────────────────────────── */
