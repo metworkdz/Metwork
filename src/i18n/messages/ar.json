@@ -69,7 +69,9 @@
       "wallet": "المحفظة",
       "language": "اللغة",
       "forgetDevice": "نسيان الجهاز وتسجيل الخروج",
-      "programs": "البرامج"
+      "programs": "البرامج",
+      "contract": "العقد",
+      "more": "المزيد"
     },
     "signin": {
       "heading": "تسجيل دخول المستشار",
@@ -468,6 +470,59 @@
       "codeSentWhatsApp": "تم إرسال الرمز عبر واتساب",
       "codeSentSms": "تم إرسال الرمز عبر SMS",
       "fallbackSms": "لم تصلك رسالة واتساب؟ استلم الرمز عبر SMS"
+    },
+    "contract": {
+      "bannerTitle": "هناك عقد بانتظار توقيعك",
+      "bannerBody": "وقّع عقد العمولة حتى نتمكن من تحويل المبالغ المحصّلة لحسابك.",
+      "title": "عقد العمولة",
+      "subtitle": "الاتفاق الذي ينظّم تحويل أتعاب الاستشارات المحصّلة لحسابك.",
+      "empty": "ليس لديك عقد بعد. سترسل لك Metwork عقداً عند جاهزيته.",
+      "pendingTitle": "في انتظار توقيعك",
+      "pendingBody": "اقرأ العقد ووقّعه، ثم أكّد بالرمز المُرسل إلى هاتفك.",
+      "startSigning": "اقرأ ووقّع",
+      "back": "رجوع",
+      "continueToCode": "متابعة",
+      "confirmSignature": "تأكيد التوقيع",
+      "redraw": "أعد التوقيع",
+      "clear": "مسح",
+      "signatureHint": "وقّع هنا",
+      "signatureLegal": "توقيعك المرسوم له نفس قيمة التوقيع على الورق.",
+      "signatureCanvasLabel": "مساحة التوقيع",
+      "codeLabel": "رمز التأكيد",
+      "codeSentWhatsApp": "تم إرسال الرمز عبر واتساب إلى {phone}. صالح لمدة 5 دقائق.",
+      "codeSentSms": "تم إرسال الرمز عبر رسالة نصية إلى {phone}. صالح لمدة 5 دقائق.",
+      "resendWhatsApp": "إعادة الإرسال عبر واتساب",
+      "resendSms": "الإرسال عبر رسالة نصية",
+      "signedTitle": "تم توقيع العقد",
+      "signedBody": "وُقّع في {date}. أُرسلت نسخة إلى بريدك الإلكتروني.",
+      "downloadPdf": "تحميل العقد الموقّع",
+      "terms": {
+        "lockedNote": "مثبّتة عند إصدار العقد — غير قابلة للتعديل.",
+        "commission": "عمولة Metwork",
+        "yourShare": "حصتك",
+        "payoutMethod": "طريقة الدفع",
+        "payoutDetails": "بيانات الدفع",
+        "signerPhone": "الهاتف المُوثّق"
+      },
+      "payoutMethod": {
+        "BANK_TRANSFER": "تحويل بنكي",
+        "CCP": "تحويل بريدي CCP (بريد الجزائر)",
+        "CHEQUE": "شيك"
+      },
+      "errors": {
+        "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+        "invalidCode": "رمز غير صحيح. تحقق منه وحاول مجدداً.",
+        "expiredCode": "انتهت صلاحية هذا الرمز. اطلب رمزاً جديداً.",
+        "locked": "محاولات كثيرة جداً. حاول لاحقاً.",
+        "throttled": "يرجى الانتظار قبل طلب رمز جديد.",
+        "waitSeconds": "يرجى الانتظار {seconds} ثانية قبل طلب رمز جديد.",
+        "deliveryFailed": "تعذّر إرسال الرمز. جرّب القناة الأخرى.",
+        "badSignature": "يرجى التوقيع قبل المتابعة.",
+        "notPending": "لم يعد هذا العقد في انتظار التوقيع.",
+        "pdfUnavailable": "تعذّر فتح المستند. يرجى المحاولة مجدداً.",
+        "signFailed": "تعذّر إتمام عقدك. يرجى المحاولة بعد قليل.",
+        "unavailable": "التوقيع غير متاح مؤقتاً. يرجى المحاولة لاحقاً."
+      }
     }
   },
   "common": {
@@ -874,11 +929,11 @@
         "description": "اكتشف المنظومة — بدون أي التزام"
       },
       "entrepreneur": {
-        "name": "باني",
+        "name": "رائد أعمال",
         "description": "كل ما تحتاجه لإطلاق شركتك الناشئة وتنميتها"
       },
       "startup": {
-        "name": "مؤسِّس",
+        "name": "شركة ناشئة",
         "description": "اجمع التمويل، ابرز للعالم، وابنِ إمبراطوريتك"
       }
     },
@@ -891,7 +946,7 @@
       "bookPrograms": "خصم 15٪ على استشارات المرشدين",
       "eventsDiscount": "تخفيضات على حجوزات المساحات",
       "prioritySupport": "وصول إلى الفعاليات الحصرية للأعضاء",
-      "allEntrepreneur": "كل ميزات باقة باني",
+      "allEntrepreneur": "كل ميزات باقة رائد أعمال",
       "listStartup": "أدرج شركتك الناشئة في السوق",
       "fundraisingAccess": "اجمع تمويلاً واستقطب المستثمرين",
       "investorMeetings": "احصل على طلبات اجتماع من المستثمرين",
@@ -1879,7 +1934,8 @@
     "recentClients": "العملاء الجدد",
     "nothingYet": "لا يوجد شيء بعد",
     "payments": "المدفوعات",
-    "domiciliation": "التوطين"
+    "domiciliation": "التوطين",
+    "consultantContracts": "عقود المستشارين"
   },
   "pages": {
     "consultationPay": {
@@ -2317,9 +2373,9 @@
             "sessionLabel": "جلسة ({duration})",
             "successBody": "تم حجز جلستك مع {mentorName} ودفعها. سيرسل إليك المستشار تفاصيل الاجتماع عبر البريد الإلكتروني.",
             "successHeading": "تم تأكيد الحجز!",
-            "tierBuilder": "Builder",
+            "tierBuilder": "رائد أعمال",
             "tierDiscountLabel": "خصم {tier} ({percent}٪ خصم)",
-            "tierFounder": "Founder",
+            "tierFounder": "شركة ناشئة",
             "successBadge": "مؤكَّد"
           }
         },
@@ -2347,7 +2403,14 @@
         },
         "networkPass": {
           "title": "Metwork Pass الخاص بي",
-          "subtitle": "استخدم بطاقتك لتسجيل الحضور في فضاءات العمل المشترك الشريكة عبر الشبكة."
+          "subtitle": "استخدم بطاقتك لتسجيل الحضور في فضاءات العمل المشترك الشريكة عبر الشبكة.",
+          "comingSoonTitle": "Network Pass — قريباً",
+          "comingSoonBody": "سجّل دخولك إلى مساحات العمل المشتركة الشريكة في جميع أنحاء الجزائر ببطاقة واحدة. نضع اللمسات الأخيرة عليها — تبقى باقتك ومزاياها دون تغيير حتى ذلك الحين.",
+          "currentPlanLabel": "باقتك الحالية",
+          "upgradeCta": "ترقية باقتك",
+          "upgradeHint": "قارن بين الباقات واطّلع على ما تتضمنه كل واحدة.",
+          "noPassTitle": "لا توجد بطاقة Network Pass نشطة",
+          "noPassBody": "باقتك الحالية لا تتضمن بطاقات العمل المشترك. قم بالترقية لفتح الدخول الشهري إلى المساحات الشريكة."
         }
       },
       "business": {
@@ -2699,6 +2762,10 @@
         "perks": {
           "title": "مزايا الشركاء",
           "subtitle": "أنشئ عروض الشركاء وأدر مخزون الأكواد والقسائم."
+        },
+        "contracts": {
+          "title": "عقود المستشارين",
+          "subtitle": "إصدار عقود العمولة التي يوقّعها المستشارون وإرسالها ومتابعتها."
         }
       }
     },
@@ -3227,7 +3294,7 @@
       "networkPassCredits": "{count} متبقية · تجديد {date}",
       "networkPassNoCredits": "لا توجد رصيد متبقٍ هذا الشهر",
       "networkPassWarning": "لم يتبقَّ لديك أي رصيد هذا الشهر. يتجدد الرصيد في الأول من الشهر.",
-      "founderDiscount": "خصم المؤسِّس ({percent}٪)",
+      "founderDiscount": "خصم الشركة الناشئة ({percent}٪)",
       "durationDiscount": "خصم حسب المدة ({percent}٪)",
       "promoLabel": "خصم",
       "networkPassTotal": "بطاقة الشبكة (رصيد واحد)",
@@ -3283,7 +3350,7 @@
       "passCreditsInfo": "يستخدم رصيداً واحداً — {count} من {max} متبقية",
       "passResetsDate": "· يُعاد في {date}",
       "hourlyCapAutoSwitch": "الحجوزات بالساعة: حد أقصى 7 ساعات يومياً — تجاوز ذلك يحوّل تلقائياً إلى السعر اليومي",
-      "builderDiscount": "خصم الباني ({percent}٪)",
+      "builderDiscount": "خصم رائد الأعمال ({percent}٪)",
       "depositDueNow": "العربون المستحق الآن",
       "balanceOnSite": "الرصيد المتبقي في المكان",
       "payDeposit": "ادفع العربون — {amount}",
@@ -3658,9 +3725,9 @@
       "deleteConfirm": "حذف نهائياً",
       "tierFilter": "الفئة",
       "allTiers": "كل الفئات",
-      "tierExplorer": "Explorer",
-      "tierBuilder": "Builder",
-      "tierFounder": "Founder",
+      "tierExplorer": "مستكشف",
+      "tierBuilder": "رائد أعمال",
+      "tierFounder": "شركة ناشئة",
       "fromDate": "من",
       "toDate": "إلى",
       "exportCsv": "تصدير CSV",
@@ -3901,8 +3968,6 @@
       "engineHint": "يُطبَّق على الحاضنات ذات خطة العمولة والمدرّبين. الحاضنات Pro (الاشتراك الثابت) معفاة من عمولة المستلم؛ ومع ذلك يدفع مشتروها رسوم الدافع.",
       "membershipTitle": "باقات العضوية",
       "membershipDescription": "الأسعار والمزايا للاشتراكات الجديدة. الأعضاء المشتركون حالياً يحتفظون بالسعر والمزايا التي اشتركوا بها حتى التجديد.",
-      "planBuilder": "باني",
-      "planFounder": "مؤسِّس",
       "monthlyPrice": "السعر الشهري",
       "annualDiscount": "الخصم السنوي",
       "consultationDiscount": "خصم الاستشارات",
@@ -3916,7 +3981,9 @@
       "frozenHint": "تنطبق التغييرات على الاشتراكات الجديدة فقط — يحتفظ الأعضاء النشطون بشروطهم حتى التجديد.",
       "priceError": "أدخل مبلغاً صالحاً",
       "passError": "أدخل عدداً صحيحاً بين 0 و100",
-      "perMonth": "/ شهر"
+      "perMonth": "/ شهر",
+      "planEntrepreneur": "رائد أعمال",
+      "planStartup": "شركة ناشئة"
     },
     "withdrawals": {
       "pendingReview": "Pending review",
@@ -4410,7 +4477,25 @@
       "exchangeRateLabel": "سعر التحويل EUR ← DZD",
       "exchangeRateHint": "عدد الدينارات مقابل 1 يورو. يُستخدم فقط لتحصيل البطاقات الدولية (Visa / Mastercard). يُثبَّت السعر لحظة الدفع، وتغييره لا يؤثر أبدًا على معاملة جارية أو منتهية.",
       "exchangeRateUnsetWarning": "ما لم يتم تحديد سعر، يبقى الدفع بالبطاقة الدولية غير متاح.",
-      "exchangeRateUpdatedAt": "تم تعديل السعر في {date}"
+      "exchangeRateUpdatedAt": "تم تعديل السعر في {date}",
+      "sectionContractStamp": "ختم العقود",
+      "sectionContractStampDescription": "ختم Metwork أو التوقيع المعتمد، يُطبع على كل عقد مستشار يُوقّع من الآن فصاعداً.",
+      "contractStampLabel": "رفع ختم جديد",
+      "contractStampHint": "يُفضّل ملف PNG بخلفية شفافة. يُطبّق على العقود الموقّعة بعد الحفظ — أما المستندات الموقّعة سابقاً فتحتفظ بختمها الأصلي.",
+      "contractStampAlt": "ختم العقود الحالي",
+      "contractStampRemove": "إزالة",
+      "contractStampUnsetWarning": "لم يُحدَّد أي ختم. ستُوقَّع العقود بخانة توقيع Metwork فارغة.",
+      "sectionMetworkLegal": "الهوية القانونية لـ Metwork",
+      "sectionMetworkLegalDescription": "تُطبع على ترويسة كل عقد عمولة مستشار موقّع. مطلوبة قبل إمكانية إرسال أي عقد.",
+      "metworkLegalIncompleteWarning": "غير مكتملة. إرسال عقد المستشار محظور إلى أن تُملأ الحقول الثلاثة أدناه.",
+      "metworkAddressLabel": "العنوان",
+      "metworkRcLabel": "رقم السجل التجاري (RC)",
+      "metworkNifLabel": "رقم التعريف الجبائي (NIF)",
+      "sectionContractTemplate": "نموذج عقد المستشار",
+      "sectionContractTemplateDescription": "عقد العمولة الخاص بك، يُكتب مرة واحدة. إنشاء عقد جديد يصبح بعدها مجرد اختيار مستشار — يُدمج هذا النص مع بياناته الحقيقية في المتن القابل للتعديل لذلك العقد.",
+      "contractTemplateLabel": "نص النموذج (بالفرنسية)",
+      "contractTemplateVariablesLabel": "المتغيرات المتاحة — اكتبها مباشرة داخل النص أعلاه:",
+      "contractTemplateUnsetWarning": "لم يُحدَّد أي نموذج. لا يمكن إنشاء عقد إلى أن يُحفظ نموذج هنا."
     },
     "payments": {
       "cancel": "إلغاء",
@@ -4874,8 +4959,8 @@
       "appliedCheckmark": "مُطبَّق ✓",
       "applyButton": "تطبيق",
       "off": "خصم",
-      "founderMembership": "عضوية المؤسس",
-      "builderMembership": "عضوية البناء",
+      "founderMembership": "عضوية شركة ناشئة",
+      "builderMembership": "عضوية رائد أعمال",
       "membershipActive": "عضويتك {tier} نشطة الآن بخصم {pct}%!"
     }
   },

@@ -12,6 +12,7 @@
  * config, so admin edits flow into the copy without a code change.
  */
 import { db } from '@/server/db/store';
+import { isNetworkPassEnabled } from '@/config/feature-flags';
 import {
   getMembershipPlanConfigs,
   pricesForConfig,
@@ -70,9 +71,13 @@ export async function getMembershipPlanViews(): Promise<MembershipPlanView[]> {
   const founderConsult = Math.round(founder.consultationDiscountRate * 100);
   const founderSpace   = Math.round(founder.spaceDiscountRate * 100);
 
-  /** Pass credits are advertised only when the plan actually grants some. */
+  /**
+   * Pass credits are advertised only when the plan actually grants some AND
+   * the feature is live. Gating the ADVERTISEMENT here rather than at each card
+   * means no surface can market a benefit the booking API would refuse.
+   */
   const passFeature = (count: number): FeatureDescriptor[] =>
-    count > 0 ? [{ key: 'networkPass', values: { count } }] : [];
+    isNetworkPassEnabled() && count > 0 ? [{ key: 'networkPass', values: { count } }] : [];
 
   return [
     {

@@ -18,43 +18,51 @@ test.describe('🔵 Entrepreneur Founder Agent', () => {
     log(A, 'E2-01', 'Login & Dashboard', 'PASS');
   });
 
-  // ── E2-02: Dashboard mentions Founder tier ───────────────────────────────
-  test('E2-02 — Dashboard shows FOUNDER membership tier', async ({ page }) => {
+  // ── E2-02: Dashboard mentions the Startup plan ───────────────────────────
+  test('E2-02 — Dashboard shows the Startup membership plan', async ({ page }) => {
     await page.goto(BASE);
     await page.waitForLoadState('networkidle');
     await capture(page, 'founder-E2-02-dashboard-tier');
     const text = (await mainText(page)).toLowerCase();
-    if (text.includes('founder')) {
-      log(A, 'E2-02', 'Dashboard Shows FOUNDER', 'PASS');
+    if (text.includes('startup')) {
+      log(A, 'E2-02', 'Dashboard Shows Startup', 'PASS');
     } else {
-      log(A, 'E2-02', 'Dashboard Shows FOUNDER', 'FAIL', 'Word "founder" not on dashboard');
+      log(A, 'E2-02', 'Dashboard Shows Startup', 'FAIL', 'Word "startup" not on dashboard');
     }
   });
 
-  // ── E2-03: Membership page shows FOUNDER benefits ────────────────────────
-  test('E2-03 — Membership page shows FOUNDER tier', async ({ page }) => {
+  // ── E2-03: Membership page shows the Startup plan ────────────────────────
+  test('E2-03 — Membership page shows the Startup plan', async ({ page }) => {
     await page.goto(`${BASE}/membership`);
     await page.waitForLoadState('networkidle');
     await capture(page, 'founder-E2-03-membership');
     const text = (await mainText(page)).toLowerCase();
-    if (text.includes('founder')) {
-      log(A, 'E2-03', 'Membership Shows FOUNDER', 'PASS');
+    // The retired name must be absent: this account's tier value is still
+    // FOUNDER internally, so "Founder" on the page means a raw value leaked.
+    const hasStartup = text.includes('startup');
+    const hasRetired = text.includes('founder');
+    if (hasStartup && !hasRetired) {
+      log(A, 'E2-03', 'Membership Shows Startup', 'PASS');
     } else {
-      log(A, 'E2-03', 'Membership Shows FOUNDER', 'FAIL', 'No "founder" on membership page');
+      log(A, 'E2-03', 'Membership Shows Startup', 'FAIL',
+        `startup:${hasStartup} retired-"founder":${hasRetired}`);
     }
   });
 
-  // ── E2-04: Network Pass shows 10 credits ─────────────────────────────────
-  test('E2-04 — Network Pass shows 10 free sessions', async ({ page }) => {
+  // ── E2-04: Network Pass placeholder while the feature is off ─────────────
+  test('E2-04 — Network Pass shows the coming-soon placeholder', async ({ page }) => {
     await page.goto(`${BASE}/network-pass`);
     await page.waitForLoadState('networkidle');
     await capture(page, 'founder-E2-04-network-pass');
     const text = await mainText(page);
-    const has10 = text.includes('10') && /crédit|credit|session/i.test(text);
-    if (has10) {
-      log(A, 'E2-04', 'Network Pass 10 Sessions', 'PASS');
+    // Network Pass is switched off (src/config/feature-flags.ts). A Startup
+    // member still HOLDS an allowance — it is simply not redeemable or shown.
+    const hasComingSoon = /coming soon|bientôt|قريبا|قريباً/i.test(text);
+    const noQr = !/refresh qr|actualiser qr/i.test(text);
+    if (hasComingSoon && noQr) {
+      log(A, 'E2-04', 'Network Pass Placeholder', 'PASS');
     } else {
-      log(A, 'E2-04', 'Network Pass 10 Sessions', 'FAIL', 'Did not see 10 sessions/credits');
+      log(A, 'E2-04', 'Network Pass Placeholder', 'FAIL', `comingSoon:${hasComingSoon} noQr:${noQr}`);
     }
   });
 
@@ -125,18 +133,22 @@ test.describe('🔵 Entrepreneur Founder Agent', () => {
     }
   });
 
-  // ── E2-09: Pricing page shows all tiers ──────────────────────────────────
-  test('E2-09 — Pricing page shows BUILDER and FOUNDER tiers', async ({ page }) => {
+  // ── E2-09: Pricing page shows all plans ──────────────────────────────────
+  test('E2-09 — Pricing page shows the Entrepreneur and Startup plans', async ({ page }) => {
     await page.goto('/en/pricing');
     await page.waitForLoadState('networkidle');
     await capture(page, 'founder-E2-09-pricing');
-    const text = (await mainText(page)).toLowerCase();
-    const hasBuilder  = text.includes('builder');
-    const hasFounder  = text.includes('founder');
-    if (hasBuilder && hasFounder) {
-      log(A, 'E2-09', 'Pricing Shows All Tiers', 'PASS');
+    // Plan CARD TITLES, not page prose: the titles are uppercased by CSS, and
+    // the marketing copy on this page says "founders" in several places, which
+    // would false-positive any page-wide search for the retired name.
+    const titles = (await page.locator('h3').allInnerTexts()).map((t) => t.trim().toUpperCase());
+    const hasEntrepreneur = titles.includes('ENTREPRENEUR');
+    const hasStartup      = titles.includes('STARTUP');
+    if (hasEntrepreneur && hasStartup) {
+      log(A, 'E2-09', 'Pricing Shows All Plans', 'PASS');
     } else {
-      log(A, 'E2-09', 'Pricing Shows All Tiers', 'FAIL', `builder:${hasBuilder} founder:${hasFounder}`);
+      log(A, 'E2-09', 'Pricing Shows All Plans', 'FAIL',
+        `entrepreneur:${hasEntrepreneur} startup:${hasStartup}`);
     }
   });
 

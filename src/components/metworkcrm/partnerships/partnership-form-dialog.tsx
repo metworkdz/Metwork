@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { EntityPicker } from '@/components/metworkcrm/shared/entity-picker';
 import { PARTNERSHIP_STAGE_LABELS, PARTNERSHIP_TYPE_LABELS } from '@/components/metworkcrm/shared/labels';
+import { extractApiErrorMessage } from '@/components/metworkcrm/shared/api-error';
 
 export interface PartnershipRow {
   id: string;
@@ -116,25 +117,36 @@ export function PartnershipFormDialog({
       renewalDate: renewalDate || undefined,
     };
 
+    let res: Response;
     try {
-      const res = await fetch(isEdit ? `/api/metworkcrm/partnerships/${partnership!.id}` : '/api/metworkcrm/partnerships', {
+      res = await fetch(isEdit ? `/api/metworkcrm/partnerships/${partnership!.id}` : '/api/metworkcrm/partnerships', {
         method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setError(data?.error?.message ?? 'Une erreur est survenue.');
-        setSaving(false);
-        return;
-      }
-      setSaving(false);
-      setOpen(false);
-      onSaved(data.id);
     } catch {
-      setError('Erreur réseau. Réessayez.');
+      setError('Impossible de contacter le serveur. Vérifiez votre connexion.');
       setSaving(false);
+      return;
     }
+
+    let data: { id?: string; error?: { message?: string; details?: { fieldErrors?: Record<string, string[]> } } };
+    try {
+      data = await res.json();
+    } catch {
+      setError(`Réponse du serveur invalide (code ${res.status}). Réessayez ou contactez l'équipe technique.`);
+      setSaving(false);
+      return;
+    }
+
+    if (!res.ok) {
+      setError(extractApiErrorMessage(data));
+      setSaving(false);
+      return;
+    }
+    setSaving(false);
+    setOpen(false);
+    onSaved(data.id!);
   }
 
   return (

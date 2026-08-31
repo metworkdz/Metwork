@@ -28,6 +28,7 @@ import {
   bookingCancelledUnpaidEmailHtml,
   bookingUpdatedEmailHtml,
   bookingProviderCancelledEmailHtml,
+  contractReadyEmailHtml,
   withdrawalRequestedEmailHtml,
   withdrawalProcessedEmailHtml,
   withdrawalApprovedEmailHtml,
@@ -878,6 +879,43 @@ export function sendBookingCancelledUnpaidEmail(
     .catch((err: Error) =>
       // eslint-disable-next-line no-console
       console.error(`${banner} Resend booking-cancelled-unpaid email failed →`, err.message),
+    );
+}
+
+/**
+ * Tell a consultant a contract is waiting for their signature.
+ *
+ * EMAIL ONLY, and that is a constraint rather than a choice: business-initiated
+ * WhatsApp requires a Meta-approved template, and none exists for this message
+ * (the approved set is metwork_otp / consultation_new_booking /
+ * incubator_booking). Sending without one fails with
+ * EC_INVALID_TEMPLATE_ARGS. The signing OTP itself does go over WhatsApp, via
+ * the approved auth template.
+ *
+ * Fire-and-forget, like every sender here: the contract is already SENT and
+ * visible in the portal before this runs, so a mail failure must never roll
+ * that back — it would leave the admin unable to re-send a contract that was
+ * in fact already issued.
+ */
+export function sendContractReadyEmail(
+  email: string,
+  opts: { consultantName: string; portalUrl: string },
+): void {
+  recordE2eEmail('contract-ready', { to: email });
+  sendResendEmail({
+    to: email,
+    subject: 'Votre contrat de commission Metwork est prêt à signer',
+    html: contractReadyEmailHtml(opts),
+  })
+    .then((sent) => {
+      if (!sent) {
+        // eslint-disable-next-line no-console
+        console.log(`${banner} EMAIL (contract-ready) → ${email}`);
+      }
+    })
+    .catch((err: Error) =>
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Resend contract-ready email failed →`, err.message),
     );
 }
 

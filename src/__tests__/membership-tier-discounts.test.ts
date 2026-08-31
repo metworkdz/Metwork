@@ -4,9 +4,14 @@
  * Guards the two historical failure modes:
  *   - partner-promo redemptions wrote membershipCode in lowercase
  *     ('builder'/'founder'), which every uppercase-keyed discount map missed;
- *   - SPACE_DISCOUNT lacked the BUILDER/FOUNDER keys that
- *     CONSULTATION_DISCOUNT already had, so tier-keyed users got 0 % on
+ *   - the space-discount table lacked the BUILDER/FOUNDER keys its
+ *     consultation counterpart already had, so tier-keyed users got 0 % on
  *     spaces/events even with correct casing.
+ *
+ * Both maps are gone: every rate now resolves through `resolveMemberBenefits`.
+ * The cases below therefore assert the BEHAVIOUR those bugs broke — all four
+ * code/tier spellings resolving to a real rate — rather than the shape of a
+ * constant, which is what let the two tables drift apart in the first place.
  */
 import { describe, it, expect } from 'vitest';
 import { db, type UserMembershipRecord } from '@/server/db/store';
@@ -16,8 +21,6 @@ import {
   getConsultationDiscountForUser,
   getMemberBenefits,
   getMonthlyPassCountForUser,
-  SPACE_DISCOUNT,
-  CONSULTATION_DISCOUNT,
 } from '@/server/memberships/service';
 
 const FUTURE = '2030-01-01T00:00:00.000Z';
@@ -82,18 +85,25 @@ describe('getEffectiveMembershipCode', () => {
   });
 });
 
-describe('legacy discount maps', () => {
-  // These maps are no longer the live rate — they record the PRE-repricing
-  // terms that grandfathered members are still entitled to. The four-key
-  // coverage is the original regression: a missing BUILDER/FOUNDER key silently
-  // gave tier-keyed users 0 %.
-  it('SPACE_DISCOUNT and CONSULTATION_DISCOUNT cover all four code/tier keys', () => {
-    for (const map of [SPACE_DISCOUNT, CONSULTATION_DISCOUNT]) {
-      expect(map.ENTREPRENEUR).toBe(0.15);
-      expect(map.BUILDER).toBe(0.15);
-      expect(map.STARTUP).toBe(0.2);
-      expect(map.FOUNDER).toBe(0.2);
-    }
+describe('all four code/tier spellings resolve to a real rate', () => {
+  // The original regression, restated against the resolver: a user carrying
+  // ENTREPRENEUR, BUILDER, STARTUP or FOUNDER must never silently fall through
+  // to 0 % just because of which field or casing their record happens to use.
+  it.each([
+    ['ENTREPRENEUR', 'ENTREPRENEUR', null],
+    ['BUILDER',      null,           'BUILDER'],
+    ['STARTUP',      'STARTUP',      null],
+    ['FOUNDER',      null,           'FOUNDER'],
+  ])('%s resolves to the live plan config', async (_label, code, tier) => {
+    const id = await seedUser({
+      membershipCode: code,
+      membershipTier: tier,
+      membershipExpiresAt: FUTURE,
+    });
+    const benefits = await getMemberBenefits(id);
+    expect(benefits.source).toBe('config');
+    expect(benefits.spaceDiscountRate).toBeGreaterThan(0);
+    expect(benefits.consultationDiscountRate).toBeGreaterThan(0);
   });
 });
 
@@ -120,9 +130,10 @@ async function seedMembership(
 
 describe('per-user discount resolution (no snapshot ⇒ live config)', () => {
   // Members with neither a frozen snapshot nor a user-record mirror fall
-  // through to the live plan config: 10 % consultations / 15 % spaces on BOTH
-  // tiers after the 2026-08 repricing.
-  it('partner-promo user with legacy lowercase code resolves to current terms', async () => {
+  // through to the live plan config. The two plans agree on spaces (15 %) and
+  // DIVERGE on consultations — Entrepreneur 10 %, Startup 20 % — which is the
+  // point of these two cases.
+  it('partner-promo Entrepreneur with legacy lowercase code resolves to current terms', async () => {
     const id = await seedUser({
       membershipCode: 'builder',
       membershipTier: 'BUILDER',
@@ -132,14 +143,14 @@ describe('per-user discount resolution (no snapshot ⇒ live config)', () => {
     expect(await getConsultationDiscountForUser(id)).toBe(0.10);
   });
 
-  it('tier-only FOUNDER user resolves to the unified current terms', async () => {
+  it('tier-only Startup (FOUNDER) user gets the higher consultation rate', async () => {
     const id = await seedUser({
       membershipCode: null,
       membershipTier: 'FOUNDER',
       membershipExpiresAt: FUTURE,
     });
     expect(await getSpaceDiscountForUser(id)).toBe(0.15);
-    expect(await getConsultationDiscountForUser(id)).toBe(0.10);
+    expect(await getConsultationDiscountForUser(id)).toBe(0.20);
   });
 
   it('expired membership gets no discount', async () => {

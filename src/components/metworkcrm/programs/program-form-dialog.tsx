@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { PROGRAM_STAGE_LABELS, PROGRAM_TYPE_LABELS } from '@/components/metworkcrm/shared/labels';
+import { extractApiErrorMessage } from '@/components/metworkcrm/shared/api-error';
 
 export interface ProgramRow {
   id: string;
@@ -90,25 +91,36 @@ export function ProgramFormDialog({
       description: description || undefined,
     };
 
+    let res: Response;
     try {
-      const res = await fetch(isEdit ? `/api/metworkcrm/programs/${program!.id}` : '/api/metworkcrm/programs', {
+      res = await fetch(isEdit ? `/api/metworkcrm/programs/${program!.id}` : '/api/metworkcrm/programs', {
         method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setError(data?.error?.message ?? 'Une erreur est survenue.');
-        setSaving(false);
-        return;
-      }
-      setSaving(false);
-      setOpen(false);
-      onSaved(data.id);
     } catch {
-      setError('Erreur réseau. Réessayez.');
+      setError('Impossible de contacter le serveur. Vérifiez votre connexion.');
       setSaving(false);
+      return;
     }
+
+    let data: { id?: string; error?: { message?: string; details?: { fieldErrors?: Record<string, string[]> } } };
+    try {
+      data = await res.json();
+    } catch {
+      setError(`Réponse du serveur invalide (code ${res.status}). Réessayez ou contactez l'équipe technique.`);
+      setSaving(false);
+      return;
+    }
+
+    if (!res.ok) {
+      setError(extractApiErrorMessage(data));
+      setSaving(false);
+      return;
+    }
+    setSaving(false);
+    setOpen(false);
+    onSaved(data.id!);
   }
 
   return (

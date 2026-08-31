@@ -11,6 +11,7 @@ import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { recordCheckIn, authorizeSpaceCheckIn } from '@/server/network/checkin-service';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { isNetworkPassEnabled } from '@/config/feature-flags';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,13 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Feature gate — Network Pass is switched off platform-wide. Enforced at the
+  // endpoint, not only in the UI: a stale tab or a direct call must not be able
+  // to work a redemption path the product is not offering yet.
+  if (!isNetworkPassEnabled()) {
+    return jsonError(403, 'NETWORK_PASS_DISABLED', 'Network Pass is not available yet.');
+  }
+
   // Reception is run by the partner space's owning incubator (or an admin).
   const guard = await requireApiRole(['INCUBATOR', 'ADMIN']);
   if (!guard.ok) return guard.response;

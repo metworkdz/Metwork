@@ -18,6 +18,7 @@ import {
   currentCrmSessionHash,
   deleteAllCrmSessionsForUser,
 } from '@/server/metworkcrm/auth/session';
+import { crmErrorResponse } from '@/server/metworkcrm/http';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -42,23 +43,30 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return fromZod(parsed.error);
   const { currentPassword, newPassword } = parsed.data;
 
-  if (!(await verifyPassword(currentPassword, user.passwordHash))) {
-    return jsonError(400, 'CRM_WRONG_PASSWORD', 'Mot de passe actuel incorrect.');
+  // Same reasoning as the login route: any unexpected failure here (e.g. an
+  // unreachable CRM database) must still return valid JSON, or the client's
+  // `res.json()` throws and surfaces a misleading "network error".
+  try {
+    if (!(await verifyPassword(currentPassword, user.passwordHash))) {
+      return jsonError(400, 'CRM_WRONG_PASSWORD', 'Mot de passe actuel incorrect.');
+    }
+
+    await getCrmDb()
+      .update(internalUsers)
+      .set({
+        passwordHash: await hashPassword(newPassword),
+        mustChangePassword: false,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(internalUsers.id, user.id));
+
+    // Any other device still holding the old credential is logged out; the
+    // caller's own session survives so they are not bounced back to login.
+    const keep = await currentCrmSessionHash();
+    await deleteAllCrmSessionsForUser(user.id, { exceptIdHash: keep ?? undefined });
+
+    return json({ ok: true, next: '/metworkcrm' });
+  } catch (err) {
+    return crmErrorResponse(err);
   }
-
-  await getCrmDb()
-    .update(internalUsers)
-    .set({
-      passwordHash: await hashPassword(newPassword),
-      mustChangePassword: false,
-      updatedAt: new Date().toISOString(),
-    })
-    .where(eq(internalUsers.id, user.id));
-
-  // Any other device still holding the old credential is logged out; the
-  // caller's own session survives so they are not bounced back to login.
-  const keep = await currentCrmSessionHash();
-  await deleteAllCrmSessionsForUser(user.id, { exceptIdHash: keep ?? undefined });
-
-  return json({ ok: true, next: '/metworkcrm' });
 }

@@ -69,7 +69,9 @@
       "wallet": "Wallet",
       "language": "Language",
       "forgetDevice": "Forget device & sign out",
-      "programs": "Programs"
+      "programs": "Programs",
+      "contract": "Contract",
+      "more": "More"
     },
     "signin": {
       "heading": "Consultant sign-in",
@@ -468,6 +470,59 @@
       "codeSentWhatsApp": "Code sent on WhatsApp",
       "codeSentSms": "Code sent by SMS",
       "fallbackSms": "Didn't get the WhatsApp message? Get the code by SMS"
+    },
+    "contract": {
+      "bannerTitle": "A contract is waiting for your signature",
+      "bannerBody": "Sign your commission agreement so we can pay out what we collect for you.",
+      "title": "Commission contract",
+      "subtitle": "The agreement covering how consultation income collected for you is paid out.",
+      "empty": "You have no contract yet. Metwork will send you one when it's ready.",
+      "pendingTitle": "Awaiting your signature",
+      "pendingBody": "Read the contract, sign it, then confirm with the code we send to your phone.",
+      "startSigning": "Read and sign",
+      "back": "Back",
+      "continueToCode": "Continue",
+      "confirmSignature": "Confirm signature",
+      "redraw": "Draw again",
+      "clear": "Clear",
+      "signatureHint": "Sign here",
+      "signatureLegal": "Your drawn signature has the same value as a handwritten one.",
+      "signatureCanvasLabel": "Signature drawing area",
+      "codeLabel": "Confirmation code",
+      "codeSentWhatsApp": "Code sent on WhatsApp to {phone}. It is valid for 5 minutes.",
+      "codeSentSms": "Code sent by SMS to {phone}. It is valid for 5 minutes.",
+      "resendWhatsApp": "Resend on WhatsApp",
+      "resendSms": "Send by SMS instead",
+      "signedTitle": "Contract signed",
+      "signedBody": "Signed on {date}. A copy was emailed to you.",
+      "downloadPdf": "Download the signed contract",
+      "terms": {
+        "lockedNote": "Fixed when this contract was issued — not editable.",
+        "commission": "Metwork commission",
+        "yourShare": "Your share",
+        "payoutMethod": "Payment method",
+        "payoutDetails": "Payment details",
+        "signerPhone": "Verified phone"
+      },
+      "payoutMethod": {
+        "BANK_TRANSFER": "Bank transfer",
+        "CCP": "CCP transfer (Algérie Poste)",
+        "CHEQUE": "Cheque"
+      },
+      "errors": {
+        "generic": "Something went wrong. Please try again.",
+        "invalidCode": "Incorrect code. Check it and try again.",
+        "expiredCode": "This code has expired. Request a new one.",
+        "locked": "Too many attempts. Try again later.",
+        "throttled": "Please wait before requesting another code.",
+        "waitSeconds": "Please wait {seconds} seconds before requesting another code.",
+        "deliveryFailed": "We couldn't send the code. Try the other channel.",
+        "badSignature": "Please draw your signature before continuing.",
+        "notPending": "This contract is no longer awaiting signature.",
+        "pdfUnavailable": "Could not open the document. Please try again.",
+        "signFailed": "We couldn't finalise your contract. Please try again in a moment.",
+        "unavailable": "Signing is temporarily unavailable. Please try again later."
+      }
     }
   },
   "common": {
@@ -874,11 +929,11 @@
         "description": "Discover the ecosystem — no commitment"
       },
       "entrepreneur": {
-        "name": "Builder",
+        "name": "Entrepreneur",
         "description": "Everything you need to launch and grow your startup"
       },
       "startup": {
-        "name": "Founder",
+        "name": "Startup",
         "description": "Raise funds, get noticed, and build your empire"
       }
     },
@@ -891,7 +946,7 @@
       "bookPrograms": "15% off mentor consultations",
       "eventsDiscount": "Discounts on space reservations",
       "prioritySupport": "Access to exclusive member events",
-      "allEntrepreneur": "Everything in Builder",
+      "allEntrepreneur": "Everything in Entrepreneur",
       "listStartup": "List your startup in the marketplace",
       "fundraisingAccess": "Raise funds and attract investors",
       "investorMeetings": "Receive investor meeting requests",
@@ -1879,7 +1934,8 @@
     "recentClients": "Recent clients",
     "nothingYet": "Nothing here yet",
     "payments": "Payments",
-    "domiciliation": "Domiciliation"
+    "domiciliation": "Domiciliation",
+    "consultantContracts": "Consultant contracts"
   },
   "pages": {
     "consultationPay": {
@@ -2317,9 +2373,9 @@
             "sessionLabel": "Session ({duration})",
             "successBody": "Your session with {mentorName} is booked and paid. The consultant will send you the meeting details by email.",
             "successHeading": "Booking confirmed!",
-            "tierBuilder": "Builder",
+            "tierBuilder": "Entrepreneur",
             "tierDiscountLabel": "{tier} discount ({percent}% off)",
-            "tierFounder": "Founder",
+            "tierFounder": "Startup",
             "successBadge": "Confirmed"
           }
         },
@@ -2347,7 +2403,14 @@
         },
         "networkPass": {
           "title": "My Metwork Pass",
-          "subtitle": "Use your pass to check in at partner coworking spaces across the network."
+          "subtitle": "Use your pass to check in at partner coworking spaces across the network.",
+          "comingSoonTitle": "Network Pass — coming soon",
+          "comingSoonBody": "Check in at partner coworking spaces across Algeria with a single pass. We are putting the finishing touches on it — your plan and its benefits are unaffected in the meantime.",
+          "currentPlanLabel": "Your current plan",
+          "upgradeCta": "Upgrade your plan",
+          "upgradeHint": "Compare plans and see what each one includes.",
+          "noPassTitle": "No active Network Pass",
+          "noPassBody": "Your current plan does not include coworking passes. Upgrade to unlock monthly check-in access at partner spaces."
         }
       },
       "business": {
@@ -2699,6 +2762,10 @@
         "perks": {
           "title": "Partner Perks",
           "subtitle": "Create partner offers and manage code pools & vouchers."
+        },
+        "contracts": {
+          "title": "Consultant contracts",
+          "subtitle": "Issue, send and track the commission contracts consultants sign."
         }
       }
     },
@@ -3227,7 +3294,7 @@
       "networkPassCredits": "{count} left · Resets {date}",
       "networkPassNoCredits": "No credits remaining this month",
       "networkPassWarning": "You have no credits left this month. Credits reset on the 1st.",
-      "founderDiscount": "Founder discount ({percent}% off)",
+      "founderDiscount": "Startup discount ({percent}% off)",
       "durationDiscount": "Duration discount ({percent}% off)",
       "promoLabel": "Promo",
       "networkPassTotal": "Network Pass (1 credit)",
@@ -3283,7 +3350,7 @@
       "passCreditsInfo": "Uses 1 credit — {count} of {max} left",
       "passResetsDate": "· Resets {date}",
       "hourlyCapAutoSwitch": "Hourly bookings: max 7 hours per day — exceeding this will automatically switch to the day rate",
-      "builderDiscount": "Builder discount ({percent}% off)",
+      "builderDiscount": "Entrepreneur discount ({percent}% off)",
       "depositDueNow": "Deposit due now",
       "balanceOnSite": "Balance on-site",
       "payDeposit": "Pay deposit — {amount}",
@@ -3659,8 +3726,8 @@
       "tierFilter": "Tier",
       "allTiers": "All tiers",
       "tierExplorer": "Explorer",
-      "tierBuilder": "Builder",
-      "tierFounder": "Founder",
+      "tierBuilder": "Entrepreneur",
+      "tierFounder": "Startup",
       "fromDate": "From",
       "toDate": "To",
       "exportCsv": "Export CSV",
@@ -3901,8 +3968,6 @@
       "engineHint": "Applies to commission-plan incubators and trainers. Pro (flat-fee) incubators are exempt from the receiver commission; their buyers still pay the payer fee.",
       "membershipTitle": "Membership plans",
       "membershipDescription": "Prices and benefits for new purchases. Members who already bought a plan keep the price and benefits they signed up for until they renew.",
-      "planBuilder": "Builder",
-      "planFounder": "Founder",
       "monthlyPrice": "Monthly price",
       "annualDiscount": "Annual discount",
       "consultationDiscount": "Consultation discount",
@@ -3916,7 +3981,9 @@
       "frozenHint": "Changes apply to new purchases only — active members keep their current terms until renewal.",
       "priceError": "Enter a valid amount",
       "passError": "Enter a whole number between 0 and 100",
-      "perMonth": "/ month"
+      "perMonth": "/ month",
+      "planEntrepreneur": "Entrepreneur",
+      "planStartup": "Startup"
     },
     "withdrawals": {
       "pendingReview": "Pending review",
@@ -4410,7 +4477,25 @@
       "exchangeRateLabel": "EUR → DZD conversion rate",
       "exchangeRateHint": "DZD per 1 EUR. Used only to bill international cards (Visa / Mastercard). The rate is frozen at payment time — changing it never affects a transaction already in flight or completed.",
       "exchangeRateUnsetWarning": "While no rate is set, international card payment stays unavailable.",
-      "exchangeRateUpdatedAt": "Rate updated {date}"
+      "exchangeRateUpdatedAt": "Rate updated {date}",
+      "sectionContractStamp": "Contract stamp",
+      "sectionContractStampDescription": "Metwork's stamp or authorised signature, applied to every consultant contract signed from now on.",
+      "contractStampLabel": "Upload a new stamp",
+      "contractStampHint": "PNG with a transparent background works best. Applied to contracts signed after you save — documents already signed keep the stamp they were signed with.",
+      "contractStampAlt": "Current contract stamp",
+      "contractStampRemove": "Remove",
+      "contractStampUnsetWarning": "No stamp set. Contracts will be signed with a blank Metwork signature block.",
+      "sectionMetworkLegal": "Metwork legal identity",
+      "sectionMetworkLegalDescription": "Printed on the letterhead of every signed consultant commission contract. Required before a contract can be sent.",
+      "metworkLegalIncompleteWarning": "Incomplete. Sending a consultant contract is blocked until all three fields below are filled in.",
+      "metworkAddressLabel": "Address",
+      "metworkRcLabel": "Commercial register number (RC)",
+      "metworkNifLabel": "Tax ID (NIF)",
+      "sectionContractTemplate": "Consultant contract template",
+      "sectionContractTemplateDescription": "Your own commission contract, written once. Creating a new contract is then just picking a consultant — this text merges with their live data into that contract's own editable body.",
+      "contractTemplateLabel": "Template body (French)",
+      "contractTemplateVariablesLabel": "Available variables — click none, just type them into the text above:",
+      "contractTemplateUnsetWarning": "No template set. A contract cannot be created until one is saved here."
     },
     "payments": {
       "cancel": "Cancel",
@@ -4874,8 +4959,8 @@
       "appliedCheckmark": "Applied ✓",
       "applyButton": "Apply",
       "off": "off",
-      "founderMembership": "Founder membership",
-      "builderMembership": "Builder membership",
+      "founderMembership": "Startup membership",
+      "builderMembership": "Entrepreneur membership",
       "membershipActive": "Your {tier} is now active at a {pct}% discount!"
     }
   },

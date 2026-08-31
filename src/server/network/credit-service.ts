@@ -27,6 +27,7 @@ import {
 } from '@/server/db/store';
 import { appendAuditLog } from '@/server/audit/service';
 import { resolveMemberBenefits } from '@/server/memberships/service';
+import { isNetworkPassEnabled } from '@/config/feature-flags';
 import { createNotification } from '@/server/notifications/create-notification';
 import {
   sendResendEmail,
@@ -283,6 +284,10 @@ export async function resetMonthlyCredits(): Promise<ResetCreditsResult> {
  * Email sending is attempted but errors are swallowed.
  */
 async function sendResetNotifications(): Promise<void> {
+  // Credits keep accruing while the feature is off (so nobody's balance is
+  // silently lost), but telling people about a pass they cannot redeem would
+  // be worse than silence.
+  if (!isNetworkPassEnabled()) return;
   try {
     const data = await db.read();
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz';
@@ -441,6 +446,7 @@ export async function setAdminCreditConfig(
  * Safe to call on every booking deduction — it self-throttles.
  */
 export async function sendCreditLowWarning(userId: string): Promise<void> {
+  if (!isNetworkPassEnabled()) return;
   try {
     const data = await db.read();
     const user = data.users.find((u) => u.id === userId);
@@ -537,6 +543,7 @@ export async function getCreditsExpiringToday(): Promise<UserRecord[]> {
  * Designed to be called by the daily cron job (`0 9 * * *` UTC).
  */
 export async function sendExpiryReminders(): Promise<{ sent: number; errors: string[] }> {
+  if (!isNetworkPassEnabled()) return { sent: 0, errors: [] };
   const users = await getCreditsExpiringToday();
   if (users.length === 0) return { sent: 0, errors: [] };
 

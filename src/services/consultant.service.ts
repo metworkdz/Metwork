@@ -240,6 +240,28 @@ export interface ConsultantProgramInput {
   endDate: string;
 }
 
+/**
+ * A commission contract as the consultant sees it. Mirrors the server DTO in
+ * `src/server/consultant-contracts/dto.ts` — deliberately narrower than the
+ * stored record: no OTP counters, no audit trail.
+ */
+export interface ConsultantContract {
+  id: string;
+  status: 'DRAFT' | 'PENDING_SIGNATURE' | 'SIGNED' | 'VOIDED';
+  contentSnapshot: string;
+  /** Frozen at send-time, 0–1. Read-only everywhere in the UI. */
+  commissionRate: number;
+  payoutMethod: 'BANK_TRANSFER' | 'CCP' | 'CHEQUE';
+  payoutDetails: string | null;
+  signerPhoneSnapshot: string;
+  sentAt: string | null;
+  signedAt: string | null;
+  /** True while a lockout blocks further signing attempts. */
+  locked: boolean;
+  /** Short-lived signed link; only present once signed. */
+  pdfUrl: string | null;
+}
+
 export const consultantService = {
   me: () => apiClient.get<ConsultantMe>('/consultant/me'),
 
@@ -398,4 +420,19 @@ export const consultantService = {
       entityId,
       fields,
     }),
+
+  // ── Commission contracts (e-signature) ──
+  contracts: () => apiClient.get<{ contracts: ConsultantContract[] }>('/consultant/contracts'),
+  sendContractOtp: (id: string, channel?: 'whatsapp' | 'sms') =>
+    apiClient.post<{ ok: true; channel: 'whatsapp' | 'sms'; expiresAt: string }>(
+      `/consultant/contracts/${encodeURIComponent(id)}/otp`,
+      { channel },
+    ),
+  signContract: (id: string, body: { signatureImagePng: string; code: string }) =>
+    apiClient.post<{ contract: ConsultantContract }>(
+      `/consultant/contracts/${encodeURIComponent(id)}/sign`,
+      body,
+    ),
+  contractPdfUrl: (id: string) =>
+    apiClient.get<{ url: string }>(`/consultant/contracts/${encodeURIComponent(id)}/pdf`),
 };

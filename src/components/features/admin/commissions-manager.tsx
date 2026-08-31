@@ -109,7 +109,7 @@ function MembershipPricingCard({
   const [space, setSpace] = useState((initial.config.spaceDiscountRate * 100).toFixed(0));
   const [passes, setPasses] = useState(String(initial.monthlyPassCount));
 
-  const planLabel = plan.config.planCode === 'STARTUP' ? t('planFounder') : t('planBuilder');
+  const planLabel = plan.config.planCode === 'STARTUP' ? t('planStartup') : t('planEntrepreneur');
 
   function startEdit() {
     setPrice(String(plan.config.monthlyPrice));

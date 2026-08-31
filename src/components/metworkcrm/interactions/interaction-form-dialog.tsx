@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { EntityPicker } from '@/components/metworkcrm/shared/entity-picker';
 import { INTERACTION_DIRECTION_LABELS, INTERACTION_TYPE_LABELS } from '@/components/metworkcrm/shared/labels';
+import { extractApiErrorMessage } from '@/components/metworkcrm/shared/api-error';
 
 export interface InteractionRow {
   id: string;
@@ -209,8 +210,9 @@ export function InteractionFormDialog({
       nextActionDone,
     };
 
+    let res: Response;
     try {
-      const res = await fetch(
+      res = await fetch(
         isEdit ? `/api/metworkcrm/interactions/${interaction!.id}` : '/api/metworkcrm/interactions',
         {
           method: isEdit ? 'PATCH' : 'POST',
@@ -218,19 +220,28 @@ export function InteractionFormDialog({
           body: JSON.stringify(payload),
         },
       );
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
-        setError(data?.error?.message ?? 'Une erreur est survenue.');
+    } catch {
+      setError('Impossible de contacter le serveur. Vérifiez votre connexion.');
+      setSaving(false);
+      return;
+    }
+
+    if (!res.ok) {
+      let data: { error?: { message?: string; details?: { fieldErrors?: Record<string, string[]> } } };
+      try {
+        data = await res.json();
+      } catch {
+        setError(`Réponse du serveur invalide (code ${res.status}). Réessayez ou contactez l'équipe technique.`);
         setSaving(false);
         return;
       }
+      setError(extractApiErrorMessage(data));
       setSaving(false);
-      setOpen(false);
-      onSaved();
-    } catch {
-      setError('Erreur réseau. Réessayez.');
-      setSaving(false);
+      return;
     }
+    setSaving(false);
+    setOpen(false);
+    onSaved();
   }
 
   return (
@@ -278,7 +289,14 @@ export function InteractionFormDialog({
             <Input id="int-subject" value={subject} onChange={(e) => setSubject(e.target.value)} required maxLength={200} />
           </FormField>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/*
+            grid-cols-1 not grid-cols-2: a native `datetime-local` widget needs
+            ~180px to render its date+time segments without clipping (measured
+            at 140px in a bare 2-col half at 375px — the value was intact, just
+            visually truncated). Stacking below `sm` gives it the full row;
+            side-by-side returns once there's room.
+          */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField label="Date et heure" htmlFor="int-occurred" required>
               <Input
                 id="int-occurred"

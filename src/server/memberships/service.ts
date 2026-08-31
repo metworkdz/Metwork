@@ -1,33 +1,26 @@
 /**
  * Membership service — tier logic and discounts.
  *
- * Source of truth for:
+ * THE source of truth for:
  *   - Effective membership code (checks expiry)
- *   - Per-member space / consultation / event discount, resolved through the
- *     frozen snapshot first (see `resolveMemberBenefits`)
- *   - Per-tier consultation discount constants (re-exported from the client-safe lib)
+ *   - Per-member space / consultation / event discount and pass allowance,
+ *     resolved through the frozen snapshot first (see `resolveMemberBenefits`)
  *
- * NOTE ON PRICING: what a NEW purchase costs now comes from
- * `@/server/memberships/plan-config` (DB-backed, admin-editable). The
- * MEMBERSHIP_PRICES / SPACE_DISCOUNT constants below survive only as the
- * last-resort fallback and as the record of pre-repricing terms.
+ * Nothing in this module hardcodes a rate or a price. What a NEW purchase costs
+ * and grants comes from `@/server/memberships/plan-config` (DB-backed,
+ * admin-editable); what an ALREADY-ACTIVE membership is entitled to comes from
+ * the frozen snapshot on its record. The old per-tier constant tables that used
+ * to live here (MEMBERSHIP_PRICES / SPACE_DISCOUNT / CONSULTATION_DISCOUNT)
+ * were removed once every caller resolved through `resolveMemberBenefits` —
+ * they had become a second set of numbers that could disagree with the config.
  */
 import { db, type UserMembershipRecord, type MembershipPlanConfigRecord, type PlatformConfig } from '@/server/db/store';
-import {
-  CONSULTATION_DISCOUNT,
-  consultationDiscountFraction,
-} from '@/lib/consultation-pricing';
 import {
   normalizePlanCode,
   planConfigsFrom,
   passCountFrom,
   type PaidPlanCode,
 } from '@/server/memberships/plan-config';
-
-// Re-export the canonical consultation-discount constant + resolver so server
-// callers have a single import surface. The definition lives in the client-safe
-// lib (client price-breakdown UIs can't import this DB-backed module).
-export { CONSULTATION_DISCOUNT, consultationDiscountFraction };
 
 // ---------------------------------------------------------------------------
 // Types
@@ -40,42 +33,6 @@ export interface MembershipUserLike {
   /** New-style tier field (EXPLORER | BUILDER | FOUNDER). Optional for backward compat. */
   membershipTier?: string | null;
 }
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-/**
- * LEGACY space-booking discount fractions — the asymmetric Builder 15 % /
- * Founder 20 % split that applied before the 2026-08 repricing.
- *
- * NO LONGER THE LIVE RATE. Live rates resolve through `resolveMemberBenefits`
- * (frozen snapshot → user mirror → plan config). This map is kept because
- * memberships bought under these terms are grandfathered onto them, and it is
- * the shape the historical regression test asserts against.
- * Keyed by both old membershipCode and new membershipTier.
- */
-export const SPACE_DISCOUNT: Record<string, number> = {
-  ENTREPRENEUR: 0.15, // Builder tier — 15 % off
-  BUILDER:      0.15,
-  STARTUP:      0.2,  // Founder tier — 20 % off
-  FOUNDER:      0.2,
-};
-
-/**
- * LEGACY membership prices in integer DZD (pre-2026-08 repricing).
- *
- * NO LONGER THE CHARGED PRICE — the purchase route reads
- * `getPlanConfig()` + `computeCyclePrices()`. Retained so historical analytics
- * rows whose transactions predate `basePrice` metadata can still be valued.
- */
-export const MEMBERSHIP_PRICES: Record<
-  string,
-  { monthly: number; semesterly: number; yearly: number }
-> = {
-  ENTREPRENEUR: { monthly: 3_500, semesterly: 3_500 * 6, yearly: Math.round(3_500 * 12 * 0.7) },
-  STARTUP:      { monthly: 6_500, semesterly: 6_500 * 6, yearly: Math.round(6_500 * 12 * 0.7) },
-};
 
 // ---------------------------------------------------------------------------
 // Helpers

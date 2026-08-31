@@ -28,6 +28,7 @@ import {
   invalidateCheckInCode,
 } from '@/server/network/checkin-service';
 import { json, jsonError } from '@/server/http/json';
+import { isNetworkPassEnabled } from '@/config/feature-flags';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -134,6 +135,13 @@ async function issueResponseForUser(
 }
 
 export async function GET() {
+  // Feature gate — Network Pass is switched off platform-wide. Enforced at the
+  // endpoint, not only in the UI: a stale tab or a direct call must not be able
+  // to work a redemption path the product is not offering yet.
+  if (!isNetworkPassEnabled()) {
+    return jsonError(403, 'NETWORK_PASS_DISABLED', 'Network Pass is not available yet.');
+  }
+
   const guard = await requireApiSession();
   if (!guard.ok) return guard.response;
 
@@ -156,6 +164,13 @@ export async function GET() {
 }
 
 export async function POST() {
+  // Feature gate — Network Pass is switched off platform-wide. Enforced at the
+  // endpoint, not only in the UI: a stale tab or a direct call must not be able
+  // to work a redemption path the product is not offering yet.
+  if (!isNetworkPassEnabled()) {
+    return jsonError(403, 'NETWORK_PASS_DISABLED', 'Network Pass is not available yet.');
+  }
+
   const guard = await requireApiSession();
   if (!guard.ok) return guard.response;
 

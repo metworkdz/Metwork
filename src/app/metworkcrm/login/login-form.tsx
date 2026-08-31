@@ -21,27 +21,48 @@ export function CrmLoginForm() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
+    // Split fetch() from res.json(): each fails for a DIFFERENT reason, and
+    // conflating them under one "Erreur réseau" message actively misleads —
+    // a server-side crash (uncaught exception, unreachable database) shows up
+    // as a non-JSON response, and blaming the user's network sends them
+    // retrying something that will never succeed until the server is fixed.
+    let res: Response;
     try {
-      const res = await fetch('/api/metworkcrm/auth/login', {
+      res = await fetch('/api/metworkcrm/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = (await res.json()) as LoginResponse;
-
-      if (!res.ok) {
-        setError(data.error?.message ?? 'Connexion impossible.');
-        setLoading(false);
-        return;
-      }
-
-      // The server decides the destination, so it cannot be tampered with here.
-      router.push(data.next ?? '/metworkcrm');
-      router.refresh();
     } catch {
-      setError('Erreur réseau. Réessayez.');
+      // fetch() itself rejected — no response was ever received (offline,
+      // DNS failure, connection refused). A genuine network problem.
+      setError('Impossible de contacter le serveur. Vérifiez votre connexion.');
       setLoading(false);
+      return;
     }
+
+    let data: LoginResponse;
+    try {
+      data = (await res.json()) as LoginResponse;
+    } catch {
+      // A response came back but its body isn't valid JSON — almost always
+      // means the server errored before it could build a proper response
+      // (e.g. an unhandled exception rendering an HTML error page). Say so.
+      setError(`Réponse du serveur invalide (code ${res.status}). Réessayez ou contactez l'équipe technique.`);
+      setLoading(false);
+      return;
+    }
+
+    if (!res.ok) {
+      setError(data.error?.message ?? 'Connexion impossible.');
+      setLoading(false);
+      return;
+    }
+
+    // The server decides the destination, so it cannot be tampered with here.
+    router.push(data.next ?? '/metworkcrm');
+    router.refresh();
   }
 
   return (

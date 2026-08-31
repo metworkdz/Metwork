@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CrmButton } from '@/components/metworkcrm/ui/button';
 import { EntityPicker } from '@/components/metworkcrm/shared/entity-picker';
 import { CONTACT_LANGUAGE_LABELS, RECORD_STATUS_LABELS } from '@/components/metworkcrm/shared/labels';
+import { extractApiErrorMessage } from '@/components/metworkcrm/shared/api-error';
 
 export interface ContactRow {
   id: string;
@@ -119,26 +120,37 @@ export function ContactFormDialog({
       payload.organizations = [{ organizationId: primaryOrg.id, isPrimary: true }];
     }
 
+    let res: Response;
     try {
-      const res = await fetch(isEdit ? `/api/metworkcrm/contacts/${contact!.id}` : '/api/metworkcrm/contacts', {
+      res = await fetch(isEdit ? `/api/metworkcrm/contacts/${contact!.id}` : '/api/metworkcrm/contacts', {
         method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setError(data?.error?.message ?? 'Une erreur est survenue.');
-        setSaving(false);
-        return;
-      }
-      setSaving(false);
-      setOpen(false);
-      // create returns { contact, ... } (getContactDetail shape); update does too.
-      onSaved(data.contact?.id ?? data.id);
     } catch {
-      setError('Erreur réseau. Réessayez.');
+      setError('Impossible de contacter le serveur. Vérifiez votre connexion.');
       setSaving(false);
+      return;
     }
+
+    let data: { id?: string; contact?: { id: string }; error?: { message?: string; details?: { fieldErrors?: Record<string, string[]> } } };
+    try {
+      data = await res.json();
+    } catch {
+      setError(`Réponse du serveur invalide (code ${res.status}). Réessayez ou contactez l'équipe technique.`);
+      setSaving(false);
+      return;
+    }
+
+    if (!res.ok) {
+      setError(extractApiErrorMessage(data));
+      setSaving(false);
+      return;
+    }
+    setSaving(false);
+    setOpen(false);
+    // create returns { contact, ... } (getContactDetail shape); update does too.
+    onSaved(data.contact?.id ?? data.id!);
   }
 
   return (
