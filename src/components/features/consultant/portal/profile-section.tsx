@@ -22,6 +22,10 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
 
   const [phone, setPhone] = useState(mentor.phone ?? '');
   const [city, setCity] = useState(mentor.city ?? '');
+  // Contract identity. Named `legalAddress` on purpose: `address` below is
+  // already the in-person MEETING address, a different thing entirely.
+  const [legalAddress, setLegalAddress] = useState(mentor.address ?? '');
+  const [idNumber, setIdNumber] = useState(mentor.idNumber ?? '');
   const [bio, setBio] = useState(mentor.bio ?? '');
   const [topics, setTopics] = useState<string[]>(mentor.topics ?? []);
   const [topicDraft, setTopicDraft] = useState('');
@@ -77,11 +81,18 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
   async function save() {
     // Phone is mandatory for the consultant — it's the WhatsApp recipient.
     if (!phone.trim()) { setError(t('phoneRequired')); return; }
+    // Required: both identify the consultant as a party on their contract, and
+    // the contract merges them ONCE at creation — a blank here becomes a
+    // permanently blank contract.
+    if (!legalAddress.trim()) { setError(t('legalAddressRequired')); return; }
+    if (!idNumber.trim()) { setError(t('idNumberRequired')); return; }
     setSaving(true); setSaved(false); setError(null);
     try {
       const { mentor: updated } = await consultantService.updateProfile({
         phone: phone.trim(),
         city: city.trim() || null,
+        address: legalAddress.trim() || null,
+        idNumber: idNumber.trim() || null,
         bio: bio.trim() || null,
         topics,
         consultationFee: fee === '' ? 0 : Math.max(0, Math.round(Number(fee))),
@@ -161,6 +172,25 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
           <input
             id="cp-city" type="text" value={city} maxLength={120}
             onChange={(e) => setCity(e.target.value)} placeholder={t('cityPlaceholder')} disabled={saving}
+            className={cpInputClassLight}
+          />
+        </Field>
+
+        {/* Contract identity — private, used to identify the consultant as a
+            party on their Metwork contract. Both required. */}
+        <Field label={t('legalAddressLabel')} hint={t('legalAddressHint')} htmlFor="cp-legal-address">
+          <textarea
+            id="cp-legal-address" rows={2} value={legalAddress} maxLength={300}
+            onChange={(e) => setLegalAddress(e.target.value)}
+            placeholder={t('legalAddressPlaceholder')} disabled={saving}
+            className={cpInputClassLight}
+          />
+        </Field>
+        <Field label={t('idNumberLabel')} hint={t('idNumberHint')} htmlFor="cp-id-number">
+          <input
+            id="cp-id-number" type="text" value={idNumber} maxLength={60} dir="ltr"
+            onChange={(e) => setIdNumber(e.target.value)}
+            placeholder={t('idNumberPlaceholder')} disabled={saving}
             className={cpInputClassLight}
           />
         </Field>

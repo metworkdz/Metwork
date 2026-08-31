@@ -38,6 +38,7 @@ import {
   makeDoc,
 } from '@/server/notifications/receipt';
 import { fontFor } from '@/server/pdf/fonts';
+import { splitAtSignatureMarker } from './variables';
 
 type Doc = InstanceType<typeof PDFDocument>;
 
@@ -216,14 +217,24 @@ export async function generateConsultantContractPdf(input: ContractPdfInput): Pr
   const stamp = await fetchImageBuffer(input.adminStampUrl);
 
   const doc = makeDoc();
+  const [before, after] = splitAtSignatureMarker(input.body || '');
 
-  setFont(doc).fillColor('#27272a').fontSize(10.5).text(input.body || '', MARGIN, MARGIN, {
-    width: CONTENT_W,
-    align: 'justify',
-    lineGap: 3,
-  });
+  const writeBody = (text: string, atTop: boolean): void => {
+    if (!text) return;
+    const opts = { width: CONTENT_W, align: 'justify' as const, lineGap: 3 };
+    setFont(doc).fillColor('#27272a').fontSize(10.5);
+    // Only the first segment is positioned explicitly; a later one must flow
+    // from wherever the signature block left the cursor.
+    if (atTop) doc.text(text, MARGIN, MARGIN, opts);
+    else doc.text(text, MARGIN, doc.y, opts);
+  };
 
+  writeBody(before, true);
   drawSignatures(doc, signature, stamp, input);
+  // Text the admin placed AFTER the marker (annexes, extra clauses) follows the
+  // block. Absent for the common case, where the marker ends the template or
+  // isn't used at all.
+  writeBody(after, false);
   drawProvenanceFooter(doc, input);
 
   return collectBuffer(doc);

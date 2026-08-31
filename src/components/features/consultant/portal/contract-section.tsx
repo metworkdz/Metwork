@@ -40,6 +40,7 @@ import {
   SectionHeading,
   Spinner,
 } from './shared';
+import { stripSignatureMarker } from '@/server/consultant-contracts/variables';
 
 type Step = 'read' | 'sign' | 'code';
 
@@ -130,6 +131,10 @@ function LockedTerms({ contract }: { contract: ConsultantContract }) {
 
 /** The contract body, verbatim French, read-only. */
 function ContractBody({ body }: { body: string }) {
+  // The signature-block marker is a layout instruction for the PDF, not text —
+  // the consultant must never read a raw {{signature_block}} in what is
+  // presented to them as the final contract.
+  const text = stripSignatureMarker(body);
   return (
     <div
       // Always LTR: the document is French even when the portal is Arabic.
@@ -138,7 +143,7 @@ function ContractBody({ body }: { body: string }) {
       className="max-h-[45vh] overflow-y-auto whitespace-pre-wrap rounded-2xl border p-3.5 text-[13px] leading-relaxed text-[#26262b]"
       style={{ borderColor: CP_LIGHT_BORDER }}
     >
-      {body}
+      {text}
     </div>
   );
 }

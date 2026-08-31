@@ -67,6 +67,14 @@ export interface Mentor {
   phone?: string | null;
   /** Consultant's city — PUBLIC (shown pre-booking for in-person sessions). */
   city?: string | null;
+  /**
+   * Full legal domicile — PRIVATE (consultant-self / admin DTO only). Used to
+   * identify the consultant as a contracting party; NOT the in-person session
+   * address (`defaultMeetingAddress`) and not the public `city`.
+   */
+  address?: string | null;
+  /** National ID (CNI / passport) — PRIVATE, contract identity only. */
+  idNumber?: string | null;
   /** Consultation domain (e.g. "Fiscalité") — PUBLIC. Distinct from `topics` tags. */
   field?: string | null;
   /**
@@ -140,6 +148,9 @@ export interface MentorInput {
   phone?: string | null;
   /** Consultant's city (public). */
   city?: string | null;
+  /** Full legal domicile + national ID — contract identity (private). */
+  address?: string | null;
+  idNumber?: string | null;
   consultationFee?: number;
   minNoticeHours?: number | null;
   bufferMinutes?: number | null;

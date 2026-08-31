@@ -54,6 +54,11 @@ export function toMentorPrivateDto(m: MentorRecord): Mentor {
   return {
     ...toMentorDto(m),
     phone: m.phone ?? null,
+    // Contract identity — PRIVATE. Present here so the consultant's own profile
+    // form can round-trip them; deliberately absent from `toMentorDto`, which
+    // is what every public route serialises.
+    address: m.address ?? null,
+    idNumber: m.idNumber ?? null,
     defaultMeetingAddress: m.defaultMeetingAddress ?? null,
     defaultMeetingMapsLink: m.defaultMeetingMapsLink ?? null,
     // Approval gate — absent ⇒ APPROVED (legacy admin-added mentors).

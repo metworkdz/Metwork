@@ -28,6 +28,9 @@ export const createMentorSchema = z.object({
   email: z.string().email().max(200).optional().nullable(),
   phone: phoneField,
   city: cityField,
+  /** Full legal domicile + national ID — contract identity. PRIVATE. */
+  address: z.string().max(300).optional().nullable(),
+  idNumber: z.string().max(60).optional().nullable(),
   consultationFee: z.number().int().min(0).max(1_000_000).optional(),
   // ─── Booking policy (additive, all optional/nullable) ──────────────────
   minNoticeHours: z.number().int().min(0).max(720).optional().nullable(),
@@ -202,6 +205,13 @@ export const consultantProfileSchema = z.object({
   // partial profile saves never 422 on an unrelated field.
   phone: phoneField,
   city: cityField,
+  // Contract identity: full legal domicile + national ID. The portal marks both
+  // required in the form, but the SCHEMA stays lenient for the same reason the
+  // fields above do — a partial save of an unrelated section must never 422 on
+  // one the consultant wasn't editing. The binding requirement is enforced
+  // where it actually matters, at contract creation.
+  address: z.string().max(300).nullable().optional(),
+  idNumber: z.string().max(60).nullable().optional(),
   defaultMeetingMode: z.enum(['ONLINE', 'OFFLINE']).optional(),
   defaultMeetingLink: z.string().url().max(500).nullable().optional(),
   // In-person defaults: free-text address + Google Maps link.

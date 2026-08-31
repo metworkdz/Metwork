@@ -62,6 +62,12 @@ export interface ConsultantMentor {
   phoneVerified?: boolean;
   /** Consultant's city (public). */
   city?: string | null;
+  /**
+   * Full legal domicile + national ID — PRIVATE, consultant-self DTO only.
+   * Contract identity; not the in-person meeting address.
+   */
+  address?: string | null;
+  idNumber?: string | null;
   /** Consultation domain code (see `src/config/consultation-fields.ts`). */
   field?: string | null;
   consultationFee?: number;
@@ -302,6 +308,9 @@ export const consultantService = {
     defaultMeetingMapsLink?: string | null;
     phone?: string | null;
     city?: string | null;
+    /** Contract identity — full legal domicile + national ID. */
+    address?: string | null;
+    idNumber?: string | null;
     bio?: string | null;
     topics?: string[];
     /** Live per-hour rate (DZD) — the canonical fee the charge engine reads. */

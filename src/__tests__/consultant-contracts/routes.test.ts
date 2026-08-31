@@ -87,6 +87,7 @@ function mentor(id: string, name: string): MentorRecord {
   return {
     id, fullName: name, position: 'Consultant', imageUrl: '', bio: null, linkedinUrl: null,
     email: `${id}@example.dz`, phone: '+21377011223' + (id === MENTOR_A ? '3' : '4'), phoneVerified: true,
+    address: '12 Rue Didouche Mourad, Alger Centre', city: 'Alger', idNumber: '109412345678',
     payoutAccount: { accountType: 'bank', accountNumber: '00799999001234567890', holderName: name },
     createdAt: '2026-01-01T00:00:00.000Z',
   };

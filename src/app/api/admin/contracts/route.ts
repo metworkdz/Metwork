@@ -79,6 +79,16 @@ export async function POST(req: NextRequest) {
     if (result.reason === 'CONSULTANT_NOT_FOUND') {
       return jsonError(404, 'CONSULTANT_NOT_FOUND', 'Consultant not found');
     }
+    if (result.reason === 'INCOMPLETE_CONSULTANT_PROFILE') {
+      // Name the fields so the admin can tell the consultant exactly what to
+      // fill in, rather than seeing a contract with blank party details.
+      return jsonError(
+        409,
+        'INCOMPLETE_CONSULTANT_PROFILE',
+        'This consultant has not completed their contract details yet. Ask them to fill in their full address and ID number in their profile settings.',
+        { missing: result.missing },
+      );
+    }
     return jsonError(
       409,
       'NO_TEMPLATE',

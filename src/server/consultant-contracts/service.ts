@@ -33,6 +33,7 @@ import {
   type ConsultantContractOtpState,
   type ConsultantContractPayoutMethod,
   type ConsultantContractRecord,
+  type MentorRecord,
 } from '@/server/db/store';
 import { resolveMentorCommissionRates } from '@/server/payments/mentor-commission';
 import { generateConsultantContractPdf } from './contract-pdf';
@@ -206,7 +207,29 @@ export interface CreateDraftContractInput {
 export type CreateDraftContractResult =
   | { ok: true; contract: ConsultantContractRecord }
   | { ok: false; reason: 'CONSULTANT_NOT_FOUND' }
-  | { ok: false; reason: 'NO_TEMPLATE' };
+  | { ok: false; reason: 'NO_TEMPLATE' }
+  | { ok: false; reason: 'INCOMPLETE_CONSULTANT_PROFILE'; missing: ConsultantIdentityField[] };
+
+/** Consultant profile fields a contract cannot legally identify a party without. */
+export type ConsultantIdentityField = 'address' | 'idNumber';
+
+/**
+ * Which contract-identity fields the consultant has not filled in yet.
+ *
+ * These are BLOCKING (owner decision 2026-08-31) rather than rendering as blank
+ * tokens like the optional `{{metwork_*}}` ones: the document's whole evidential
+ * purpose is to identify the two parties, and tokens are merged once at creation
+ * and then frozen — so a contract drafted against an empty profile is
+ * permanently wrong and can only be fixed by voiding and recreating it.
+ */
+export function missingConsultantIdentity(
+  mentor: Pick<MentorRecord, 'address' | 'idNumber'>,
+): ConsultantIdentityField[] {
+  const missing: ConsultantIdentityField[] = [];
+  if (!mentor.address?.trim()) missing.push('address');
+  if (!mentor.idNumber?.trim()) missing.push('idNumber');
+  return missing;
+}
 
 /**
  * Create a DRAFT from the single admin-authored template.
@@ -237,6 +260,12 @@ export async function createDraftContract(
 
     const template = d.platformSettings?.consultantContractTemplate?.trim();
     if (!template) return { ok: false, reason: 'NO_TEMPLATE' };
+
+    // Refuse before anything is written: the merge below is one-shot and frozen.
+    const missing = missingConsultantIdentity(mentor);
+    if (missing.length > 0) {
+      return { ok: false, reason: 'INCOMPLETE_CONSULTANT_PROFILE', missing };
+    }
 
     const { platformRate } = resolveMentorCommissionRates(d.commissionRules, { kind: 'CONSULTATION' });
     const payoutMethod = inferPayoutMethod(mentor);

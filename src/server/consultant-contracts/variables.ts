@@ -19,6 +19,9 @@ export type ConsultantContractToken =
   | 'consultant_phone'
   | 'consultant_email'
   | 'consultant_position'
+  | 'consultant_address'
+  | 'consultant_city'
+  | 'consultant_id_number'
   | 'commission_rate'
   | 'consultant_share'
   | 'payout_method'
@@ -35,6 +38,9 @@ export const CONSULTANT_CONTRACT_VARIABLES: readonly ConsultantContractToken[] =
   'consultant_phone',
   'consultant_email',
   'consultant_position',
+  'consultant_address',
+  'consultant_city',
+  'consultant_id_number',
   'commission_rate',
   'consultant_share',
   'payout_method',
@@ -68,7 +74,10 @@ function fmtDateFr(iso: string): string {
 }
 
 export interface ResolveConsultantVariablesInput {
-  mentor: Pick<MentorRecord, 'fullName' | 'phone' | 'email' | 'position'>;
+  mentor: Pick<
+    MentorRecord,
+    'fullName' | 'phone' | 'email' | 'position' | 'address' | 'city' | 'idNumber'
+  >;
   /** The LIVE resolved rate at the moment of merging — a display value only; the record's own frozen rate is still resolved again at send-time. */
   commissionRate: number;
   payoutMethod: 'BANK_TRANSFER' | 'CCP' | 'CHEQUE';
@@ -88,6 +97,9 @@ export function resolveConsultantContractVariables(
     consultant_phone: mentor.phone ?? '',
     consultant_email: mentor.email ?? '',
     consultant_position: mentor.position ?? '',
+    consultant_address: mentor.address ?? '',
+    consultant_city: mentor.city ?? '',
+    consultant_id_number: mentor.idNumber ?? '',
     commission_rate: fmtRate(commissionRate),
     consultant_share: fmtRate(1 - commissionRate),
     payout_method: PAYOUT_METHOD_LABEL_FR[payoutMethod],
@@ -98,6 +110,47 @@ export function resolveConsultantContractVariables(
     metwork_rc: metwork?.commercialRegNumber ?? '',
     metwork_nif: metwork?.nif ?? '',
   };
+}
+
+/**
+ * Layout marker letting an admin choose WHERE the signature + stamp block lands
+ * in the document. Deliberately NOT one of the tokens above: those substitute
+ * text, this positions images, so it is handled by the PDF renderer and must
+ * survive `renderConsultantContractTemplate` untouched (hence it is absent from
+ * KNOWN_TOKENS — unknown tokens are stripped, which would defeat it... so it is
+ * explicitly preserved in the replacer below).
+ *
+ * Lives HERE rather than in `contract-pdf.ts` because the on-screen previews
+ * (admin queue + consultant portal) are client components that cannot import
+ * the pdfkit renderer, and all three surfaces must agree on one definition.
+ *
+ * Absent ⇒ the block goes at the end, exactly as before.
+ */
+export const SIGNATURE_MARKER = '{{signature_block}}';
+const SIGNATURE_MARKER_SOURCE = '\\{\\{\\s*signature_block\\s*\\}\\}';
+export const SIGNATURE_MARKER_RE = new RegExp(SIGNATURE_MARKER_SOURCE);
+
+/**
+ * Split a body into the text before and after the marker. No marker ⇒
+ * everything is "before", so the block appends at the end. Only the FIRST
+ * occurrence positions the block; any further ones are stripped, since two
+ * signature blocks is never what an admin means.
+ */
+export function splitAtSignatureMarker(body: string): [before: string, after: string] {
+  const match = SIGNATURE_MARKER_RE.exec(body);
+  if (!match) return [body, ''];
+  const before = body.slice(0, match.index).trimEnd();
+  const after = body.slice(match.index + match[0].length).trimStart();
+  return [before, stripSignatureMarker(after).trimStart()];
+}
+
+/**
+ * Remove every marker from a body — what the on-screen previews render, so the
+ * reader never sees a raw `{{signature_block}}` in what is presented as the
+ * final legal text.
+ */
+export function stripSignatureMarker(body: string): string {
+  return body.replace(new RegExp(SIGNATURE_MARKER_SOURCE, 'g'), '');
 }
 
 const TOKEN_RE = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g;
@@ -111,7 +164,10 @@ export function renderConsultantContractTemplate(
   body: string,
   values: Partial<Record<string, string>>,
 ): string {
-  return body.replace(TOKEN_RE, (_match, token: string) => {
+  return body.replace(TOKEN_RE, (match, token: string) => {
+    // The layout marker is not a value token — leave it in place for the PDF
+    // renderer, which consumes it after this merge.
+    if (token === 'signature_block') return match;
     if (!KNOWN_TOKENS.has(token)) return '';
     return values[token] ?? '';
   });

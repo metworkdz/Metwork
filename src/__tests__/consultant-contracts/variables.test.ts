@@ -17,14 +17,22 @@ import {
   inferPayoutMethod,
   renderConsultantContractTemplate,
   resolveConsultantContractVariables,
+  splitAtSignatureMarker,
+  stripSignatureMarker,
 } from '@/server/consultant-contracts/variables';
 import type { MentorRecord } from '@/server/consultant-contracts/types';
 
-const MENTOR: Pick<MentorRecord, 'fullName' | 'phone' | 'email' | 'position'> = {
+const MENTOR: Pick<
+  MentorRecord,
+  'fullName' | 'phone' | 'email' | 'position' | 'address' | 'city' | 'idNumber'
+> = {
   fullName: 'Yasmine Belkacem',
   phone: '+213770112233',
   email: 'yasmine@example.dz',
   position: 'Expert-comptable',
+  address: '12 Rue Didouche Mourad, Alger Centre',
+  city: 'Alger',
+  idNumber: '109412345678',
 };
 
 describe('resolveConsultantContractVariables', () => {
@@ -195,5 +203,100 @@ describe('describePayoutAccount', () => {
   it('returns null when there is no account on file', () => {
     expect(describePayoutAccount({ payoutAccount: null })).toBeNull();
     expect(describePayoutAccount({ payoutAccount: undefined })).toBeNull();
+  });
+});
+
+/* ───────────── Contract identity: address / city / ID number ───────────── */
+
+describe('consultant identity tokens', () => {
+  const resolve = (m: Partial<typeof MENTOR>) =>
+    resolveConsultantContractVariables({
+      mentor: { ...MENTOR, ...m },
+      commissionRate: 0.2,
+      payoutMethod: 'BANK_TRANSFER',
+      payoutDetails: null,
+      metwork: null,
+    });
+
+  it('resolves the full legal address, city and ID number', () => {
+    const v = resolve({});
+    expect(v.consultant_address).toBe('12 Rue Didouche Mourad, Alger Centre');
+    expect(v.consultant_city).toBe('Alger');
+    expect(v.consultant_id_number).toBe('109412345678');
+  });
+
+  it('renders them into a template body', () => {
+    const body = renderConsultantContractTemplate(
+      'Demeurant à {{consultant_address}}, pièce n° {{consultant_id_number}}. Fait à {{consultant_city}}.',
+      resolve({}),
+    );
+    expect(body).toBe(
+      'Demeurant à 12 Rue Didouche Mourad, Alger Centre, pièce n° 109412345678. Fait à Alger.',
+    );
+  });
+
+  it('renders blank — never "undefined" — when the consultant has not filled them in', () => {
+    const v = resolve({ address: null, city: null, idNumber: null });
+    expect(v.consultant_address).toBe('');
+    expect(v.consultant_city).toBe('');
+    expect(v.consultant_id_number).toBe('');
+    // The blocking gate lives in createDraftContract; the ENGINE must still
+    // degrade to blanks rather than printing the string "undefined".
+    expect(renderConsultantContractTemplate('[{{consultant_id_number}}]', v)).toBe('[]');
+  });
+
+  it('exposes all three in the catalogue the admin editor lists', () => {
+    expect(CONSULTANT_CONTRACT_VARIABLES).toContain('consultant_address');
+    expect(CONSULTANT_CONTRACT_VARIABLES).toContain('consultant_city');
+    expect(CONSULTANT_CONTRACT_VARIABLES).toContain('consultant_id_number');
+  });
+});
+
+/* ───────────────── Signature-block placement marker ───────────────── */
+
+describe('signature block marker', () => {
+  it('survives the token merge — it is a layout instruction, not a value', () => {
+    const merged = renderConsultantContractTemplate(
+      'Corps.\n{{signature_block}}\nAnnexe {{consultant_city}}.',
+      resolveConsultantContractVariables({
+        mentor: MENTOR,
+        commissionRate: 0.2,
+        payoutMethod: 'BANK_TRANSFER',
+        payoutDetails: null,
+        metwork: null,
+      }),
+    );
+    expect(merged).toContain('{{signature_block}}');
+    expect(merged).toContain('Annexe Alger.');
+  });
+
+  it('splits a body into before/after at the marker', () => {
+    const [before, after] = splitAtSignatureMarker('Les clauses.\n\n{{signature_block}}\n\nANNEXE A');
+    expect(before).toBe('Les clauses.');
+    expect(after).toBe('ANNEXE A');
+  });
+
+  it('treats a body with no marker as all-before, so the block appends at the end', () => {
+    const [before, after] = splitAtSignatureMarker('Tout le contrat.');
+    expect(before).toBe('Tout le contrat.');
+    expect(after).toBe('');
+  });
+
+  it('honours only the FIRST marker and strips any others', () => {
+    const [before, after] = splitAtSignatureMarker('A{{signature_block}}B{{signature_block}}C');
+    expect(before).toBe('A');
+    expect(after).toBe('BC');
+    expect(after).not.toContain('signature_block');
+  });
+
+  it('tolerates inner whitespace', () => {
+    const [before, after] = splitAtSignatureMarker('A{{  signature_block  }}B');
+    expect(before).toBe('A');
+    expect(after).toBe('B');
+  });
+
+  it('strips the marker for on-screen preview so a reader never sees it', () => {
+    expect(stripSignatureMarker('Clauses.\n{{signature_block}}\nFin.')).toBe('Clauses.\n\nFin.');
+    expect(stripSignatureMarker('No marker here.')).toBe('No marker here.');
   });
 });
