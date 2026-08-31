@@ -38,6 +38,7 @@ import {
   type ContractAuditEntry,
   type ContractConsultantOption,
 } from '@/services/contracts.service';
+import { stripSignatureMarker } from '@/server/consultant-contracts/variables';
 
 /* ─────────────────── Presentation helpers ─────────────────── */
 
@@ -656,7 +657,7 @@ function DetailDialog({
               lang="fr"
               className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-lg border border-border p-3 text-xs leading-relaxed"
             >
-              {contract.contentSnapshot}
+              {stripSignatureMarker(contract.contentSnapshot)}
             </div>
           </div>
         </div>

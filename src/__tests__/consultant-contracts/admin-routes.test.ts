@@ -51,6 +51,7 @@ const MENTOR: MentorRecord = {
   id: MENTOR_ID, fullName: 'Yasmine Belkacem', position: 'Consultant', imageUrl: '',
   bio: null, linkedinUrl: null, email: 'yasmine@example.dz',
   phone: '+213770112233', phoneVerified: true,
+  address: '12 Rue Didouche Mourad, Alger Centre', city: 'Alger', idNumber: '109412345678',
   payoutAccount: { accountType: 'bank', accountNumber: '00799999001234567890', holderName: 'Yasmine Belkacem' },
   createdAt: '2026-01-01T00:00:00.000Z',
 };

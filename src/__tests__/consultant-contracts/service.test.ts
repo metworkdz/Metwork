@@ -52,6 +52,10 @@ const MENTOR: MentorRecord = {
   email: 'yasmine@example.dz',
   phone: '+213770112233',
   phoneVerified: true,
+  // Contract identity — required before a draft may be created.
+  address: '12 Rue Didouche Mourad, Alger Centre',
+  city: 'Alger',
+  idNumber: '109412345678',
   payoutAccount: { accountType: 'bank', accountNumber: '00799999001234567890', holderName: 'Yasmine Belkacem' },
   createdAt: new Date('2026-01-01').toISOString(),
 };
@@ -77,6 +81,7 @@ const METWORK = {
 const TEST_TEMPLATE =
   'Mandat de recouvrement — {{metwork_name}}.\n\n' +
   'Consultant : {{consultant_name}} ({{consultant_phone}}).\n' +
+  'Demeurant à {{consultant_address}}, pièce n° {{consultant_id_number}}.\n' +
   'Commission : {{commission_rate}} / Part consultant : {{consultant_share}}.\n' +
   'Règlement : {{payout_method}} — {{payout_details}}.';
 
@@ -532,5 +537,56 @@ describe('additive schema', () => {
     // And a write against that document still works.
     const c = await createDraft();
     expect(await findContractById(c.id)).not.toBeNull();
+  });
+});
+
+/* ────────── Contract identity is required before a draft exists ────────── */
+
+describe('createDraftContract — consultant identity gate', () => {
+  it('merges the address and ID number into the frozen snapshot', async () => {
+    const contract = await createDraft();
+    expect(contract.contentSnapshot).toContain('12 Rue Didouche Mourad, Alger Centre');
+    expect(contract.contentSnapshot).toContain('109412345678');
+  });
+
+  it('refuses to create a draft when the address is missing', async () => {
+    await seedMentor({ address: null });
+    expect(await createDraftContract({ consultantId: MENTOR_ID, actorId: ADMIN_ID })).toEqual({
+      ok: false,
+      reason: 'INCOMPLETE_CONSULTANT_PROFILE',
+      missing: ['address'],
+    });
+  });
+
+  it('refuses when the ID number is missing', async () => {
+    await seedMentor({ idNumber: null });
+    expect(await createDraftContract({ consultantId: MENTOR_ID, actorId: ADMIN_ID })).toEqual({
+      ok: false,
+      reason: 'INCOMPLETE_CONSULTANT_PROFILE',
+      missing: ['idNumber'],
+    });
+  });
+
+  it('names BOTH when neither is filled in', async () => {
+    await seedMentor({ address: null, idNumber: null });
+    expect(await createDraftContract({ consultantId: MENTOR_ID, actorId: ADMIN_ID })).toEqual({
+      ok: false,
+      reason: 'INCOMPLETE_CONSULTANT_PROFILE',
+      missing: ['address', 'idNumber'],
+    });
+  });
+
+  it('treats whitespace-only values as missing', async () => {
+    await seedMentor({ address: '   ', idNumber: '\t' });
+    const result = await createDraftContract({ consultantId: MENTOR_ID, actorId: ADMIN_ID });
+    expect(result.ok).toBe(false);
+    expect(result.ok === false && result.reason).toBe('INCOMPLETE_CONSULTANT_PROFILE');
+  });
+
+  it('writes NOTHING when it refuses — no half-created draft is left behind', async () => {
+    await seedMentor({ idNumber: null });
+    await createDraftContract({ consultantId: MENTOR_ID, actorId: ADMIN_ID });
+    const data = await db.read();
+    expect(data.consultantContracts ?? []).toHaveLength(0);
   });
 });

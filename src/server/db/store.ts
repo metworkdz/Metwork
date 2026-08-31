@@ -2060,6 +2060,26 @@ export interface MentorRecord {
    * fields on MentorBookingRecord). Absent ⇒ not set.
    */
   city?: string | null;
+  /**
+   * Consultant's full legal domicile — PRIVATE. Distinct from `city` (public,
+   * shown to clients) and from `defaultMeetingAddress` (where an in-person
+   * SESSION happens). This one identifies the consultant as a contracting
+   * party on the consultant contract, so it must not be conflated with either.
+   *
+   * Additive & nullable: absent on every consultant created before contracts
+   * needed it. Contract creation refuses to proceed without it — see
+   * `createDraftContract`.
+   */
+  address?: string | null;
+  /**
+   * National identity document number (CNI / passport) — PRIVATE, and the most
+   * sensitive field on this record. Exists solely to identify the consultant as
+   * a contracting party; never serialised to any public DTO.
+   *
+   * Additive & nullable for legacy rows, but REQUIRED before a contract can be
+   * drafted (owner decision 2026-08-31).
+   */
+  idNumber?: string | null;
   /** Optional per-session fee in DZD. 0 or absent = free. */
   consultationFee?: number;
   createdAt: string;

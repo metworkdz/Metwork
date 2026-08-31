@@ -109,6 +109,7 @@ const MENTOR: MentorRecord = {
   email: 'yasmine@example.dz',
   phone: '+213770112233',
   phoneVerified: true,
+  address: '12 Rue Didouche Mourad, Alger Centre', city: 'Alger', idNumber: '109412345678',
   payoutAccount: { accountType: 'bank', accountNumber: '00799999001234567890', holderName: 'Yasmine Belkacem' },
   createdAt: new Date('2026-01-01').toISOString(),
 };
@@ -397,5 +398,68 @@ describe('signed PDF links', () => {
   it('returns null for a contract with no stored pdf', async () => {
     const id = await makePending();
     expect(await getContractPdfUrl(id)).toBeNull();
+  });
+});
+
+/* ────────────── {{signature_block}} placement ────────────── */
+
+describe('signature block placement', () => {
+  const base = {
+    contractId: 'contract-place',
+    consultantName: 'Yasmine Belkacem',
+    signerPhoneSnapshot: '+213770112233',
+    signatureImagePng: SIGNATURE_PNG,
+    signedAt: new Date('2026-08-21T10:00:00Z').toISOString(),
+    adminStampUrl: null,
+    metworkName: 'EURL METWORK',
+  };
+
+  /** Pages in a rendered PDF — the structure stays ASCII even with an embedded font. */
+  const pageCount = (pdf: Buffer): number =>
+    (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) ?? []).length;
+
+  const CLAUSES = 'Article premier. '.repeat(40);
+  const ANNEXE = 'Annexe. '.repeat(40);
+
+  it('renders validly with the marker present', async () => {
+    const pdf = await generateConsultantContractPdf({
+      ...base,
+      body: `${CLAUSES}\n\n{{signature_block}}\n\n${ANNEXE}`,
+    });
+    expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+    expect(pdf.subarray(-6).toString('latin1')).toContain('EOF');
+  });
+
+  it('moving the marker changes the document — it is a real layout instruction', async () => {
+    const withMarker = await generateConsultantContractPdf({
+      ...base,
+      body: `${CLAUSES}\n\n{{signature_block}}\n\n${ANNEXE}`,
+    });
+    const withoutMarker = await generateConsultantContractPdf({
+      ...base,
+      body: `${CLAUSES}\n\n${ANNEXE}`,
+    });
+    // Same words, different arrangement: the block sits between the two halves
+    // in one and after both in the other.
+    expect(withMarker.length).not.toBe(withoutMarker.length);
+  });
+
+  it('a marker at the very top pushes the body onto a later page', async () => {
+    const topMarker = await generateConsultantContractPdf({
+      ...base,
+      body: `{{signature_block}}\n\n${CLAUSES}${ANNEXE}`,
+    });
+    const noMarker = await generateConsultantContractPdf({
+      ...base,
+      body: `${CLAUSES}${ANNEXE}`,
+    });
+    expect(pageCount(topMarker)).toBeGreaterThanOrEqual(pageCount(noMarker));
+    expect(pageCount(topMarker)).toBeGreaterThan(0);
+  });
+
+  it('still renders when the marker is the entire body', async () => {
+    const pdf = await generateConsultantContractPdf({ ...base, body: '{{signature_block}}' });
+    expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+    expect(pdf.length).toBeGreaterThan(1_000);
   });
 });

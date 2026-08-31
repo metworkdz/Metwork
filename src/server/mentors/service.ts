@@ -243,6 +243,10 @@ export async function updateMentor(
       m.phone = nextPhone;
     }
     if (patch.city !== undefined) m.city = patch.city?.trim() || null;
+    // Contract identity (PRIVATE) — full domicile + national ID. Blank-to-null
+    // like every other optional text field, so clearing works the same way.
+    if (patch.address !== undefined) m.address = patch.address?.trim() || null;
+    if (patch.idNumber !== undefined) m.idNumber = patch.idNumber?.trim() || null;
     if (patch.consultationFee !== undefined) m.consultationFee = patch.consultationFee;
     if (patch.minNoticeHours !== undefined) m.minNoticeHours = patch.minNoticeHours;
     if (patch.bufferMinutes !== undefined) m.bufferMinutes = patch.bufferMinutes;

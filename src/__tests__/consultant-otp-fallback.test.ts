@@ -1,10 +1,13 @@
 /**
- * Consultant OTP delivery — strict sequential fallback (WhatsApp → SMS → email)
- * and the channel→verification semantics it feeds.
+ * Consultant OTP delivery — parallel fan-out (phone AND email) and the
+ * channel→verification semantics it feeds.
  *
- * The chain must STOP at the first channel that succeeds, must reuse the SAME
- * code for every attempt, and must never print the code in production. The
- * channel it lands on decides which contact detail a confirmed code proves.
+ * Email must ALWAYS be attempted when an address is on file: SMS to Algeria is
+ * accepted by Infobip then silently expires undelivered, so a stop-at-first-
+ * success chain left the consultant with nothing. The phone side still degrades
+ * WhatsApp → SMS (alternatives to each other), the SAME code goes everywhere,
+ * the code is never printed in production, and the RETURNED channel keeps its
+ * old priority order so phoneVerified/emailVerified semantics are unchanged.
  */
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
@@ -48,23 +51,28 @@ async function load() {
 
 const OPTS = { email: 'c@example.com', phone: '+213555000111', code: '123456' };
 
-describe('sendConsultantOtp — strict sequential fallback', () => {
-  it('stops at WhatsApp when it succeeds', async () => {
+describe('sendConsultantOtp — parallel fan-out', () => {
+  it('sends WhatsApp AND email together when both work', async () => {
     waMock.mockResolvedValue(undefined);
+    emailMock.mockResolvedValue(true);
     const { sendConsultantOtp } = await load();
 
     const channel = await sendConsultantOtp(OPTS);
 
+    // Reported channel keeps the old priority order (phone wins) …
     expect(channel).toBe('whatsapp');
     expect(waMock).toHaveBeenCalledTimes(1);
-    // The whole point of sequential: the later channels are NOT attempted.
+    // … but email is no longer skipped. This is the regression that stranded
+    // consultants when the phone channel "succeeded" without delivering.
+    expect(emailMock).toHaveBeenCalledTimes(1);
+    // SMS is WhatsApp's fallback, so a healthy WhatsApp must not burn one.
     expect(smsMock).not.toHaveBeenCalled();
-    expect(emailMock).not.toHaveBeenCalled();
   });
 
-  it('falls through to SMS when WhatsApp fails, and stops there', async () => {
+  it('falls back to SMS when WhatsApp fails, and still emails', async () => {
     waMock.mockRejectedValue(new Error('template rejected'));
     smsMock.mockResolvedValue(undefined);
+    emailMock.mockResolvedValue(true);
     const { sendConsultantOtp } = await load();
 
     const channel = await sendConsultantOtp(OPTS);
@@ -72,10 +80,23 @@ describe('sendConsultantOtp — strict sequential fallback', () => {
     expect(channel).toBe('sms');
     expect(waMock).toHaveBeenCalledTimes(1);
     expect(smsMock).toHaveBeenCalledTimes(1);
-    expect(emailMock).not.toHaveBeenCalled();
+    expect(emailMock).toHaveBeenCalledTimes(1);
   });
 
-  it('falls through to email when both phone channels fail', async () => {
+  it('still emails when the phone channels report success — the Algeria SMS trap', async () => {
+    // Infobip accepts an Algerian SMS (HTTP 200) and then never delivers it.
+    // Email must go out regardless, or the consultant gets nothing at all.
+    waMock.mockRejectedValue(new Error('no whatsapp account'));
+    smsMock.mockResolvedValue(undefined);
+    emailMock.mockResolvedValue(true);
+    const { sendConsultantOtp } = await load();
+
+    await sendConsultantOtp(OPTS);
+
+    expect(emailMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports email when both phone channels fail', async () => {
     waMock.mockRejectedValue(new Error('wa down'));
     smsMock.mockRejectedValue(new Error('sms down'));
     emailMock.mockResolvedValue(true);
