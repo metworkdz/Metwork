@@ -245,6 +245,18 @@ describe('consultant identity tokens', () => {
     expect(renderConsultantContractTemplate('[{{consultant_id_number}}]', v)).toBe('[]');
   });
 
+  it('renders a stored city CODE as the French wilaya name, never the slug', () => {
+    // The picker stores 'algiers'; a contract reading "Fait à algiers" would be
+    // a legal document with a URL slug in it.
+    const v = resolve({ city: 'algiers' });
+    expect(v.consultant_city).toBe('Alger');
+    expect(v.consultant_city).not.toBe('algiers');
+  });
+
+  it('still renders a legacy free-text city as typed', () => {
+    expect(resolve({ city: 'Bouira' }).consultant_city).toBe('Bouira');
+  });
+
   it('exposes all three in the catalogue the admin editor lists', () => {
     expect(CONSULTANT_CONTRACT_VARIABLES).toContain('consultant_address');
     expect(CONSULTANT_CONTRACT_VARIABLES).toContain('consultant_city');
