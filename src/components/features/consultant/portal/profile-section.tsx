@@ -11,6 +11,8 @@ import { useTranslations } from 'next-intl';
 import { CheckCircle2, FileText, ImageUp, Loader2, Plus, Sparkles, X } from 'lucide-react';
 import { ApiClientError } from '@/lib/api-client';
 import { consultantService, type ConsultantMentor } from '@/services/consultant.service';
+import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
+import { findCityCode } from '@/config/cities';
 import { cn } from '@/lib/utils';
 import {
   BrandButton, CP_GREEN, CP_GREEN_TEXT, CP_LIGHT_BORDER, CP_LIGHT_FAINT, CP_LIGHT_MUTED, ErrorBanner, Field,
@@ -21,7 +23,10 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
   const t = useTranslations('consultantPortal.profile');
 
   const [phone, setPhone] = useState(mentor.phone ?? '');
-  const [city, setCity] = useState(mentor.city ?? '');
+  // Stored values may be a code ('algiers') OR legacy free text ('Alger') typed
+  // before this was a dropdown — normalize so the picker pre-selects rather
+  // than showing empty, which would quietly blank the city on the next save.
+  const [city, setCity] = useState(findCityCode(mentor.city) ?? '');
   // Contract identity. Named `legalAddress` on purpose: `address` below is
   // already the in-person MEETING address, a different thing entirely.
   const [legalAddress, setLegalAddress] = useState(mentor.address ?? '');
@@ -90,7 +95,7 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
     try {
       const { mentor: updated } = await consultantService.updateProfile({
         phone: phone.trim(),
-        city: city.trim() || null,
+        city: city || null,
         address: legalAddress.trim() || null,
         idNumber: idNumber.trim() || null,
         bio: bio.trim() || null,
@@ -169,10 +174,11 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
           />
         </Field>
         <Field label={t('cityLabel')} hint={t('cityHint')} htmlFor="cp-city">
-          <input
-            id="cp-city" type="text" value={city} maxLength={120}
-            onChange={(e) => setCity(e.target.value)} placeholder={t('cityPlaceholder')} disabled={saving}
-            className={cpInputClassLight}
+          <AlgerianCitySelect
+            id="cp-city"
+            value={city}
+            onChange={setCity}
+            placeholder={t('cityPlaceholder')}
           />
         </Field>
 

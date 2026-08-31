@@ -29,3 +29,53 @@ export function getCityName(code: string, locale: 'en' | 'fr' | 'ar'): string {
   if (locale === 'fr') return city.nameFr;
   return city.nameEn;
 }
+
+/**
+ * Strip accents + case so "Sétif", "setif" and "SETIF" all compare equal.
+ * NFD splits an accented letter into base + combining mark; the range below
+ * removes the marks.
+ */
+function fold(value: string): string {
+  return value.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+/**
+ * Resolve any stored city value to its canonical code.
+ *
+ * Accepts a code ('algiers') or a display name in ANY locale ('Alger',
+ * 'Algiers', 'الجزائر'), accent- and case-insensitively. Returns null when the
+ * value matches no known wilaya.
+ *
+ * Exists because several records predate the dropdown and hold free text the
+ * user typed. Those values must keep working — both so the picker can
+ * pre-select the right option instead of appearing empty, and so a legacy value
+ * is never silently overwritten just because it was stored as a name.
+ */
+export function findCityCode(value: string | null | undefined): AlgerianCityCode | null {
+  if (!value) return null;
+  const needle = fold(value);
+  const match = algerianCities.find(
+    (c) =>
+      c.code === needle ||
+      fold(c.nameEn) === needle ||
+      fold(c.nameFr) === needle ||
+      c.nameAr.trim() === value.trim(),
+  );
+  return match?.code ?? null;
+}
+
+/**
+ * Display label for a stored city value, whatever form it is in.
+ *
+ * A known code or name resolves to the localized wilaya name; anything else
+ * (legacy free text for a wilaya not in the list) is returned unchanged rather
+ * than blanked — showing what the user actually typed beats showing nothing.
+ */
+export function formatCityLabel(
+  value: string | null | undefined,
+  locale: 'en' | 'fr' | 'ar',
+): string {
+  if (!value) return '';
+  const code = findCityCode(value);
+  return code ? getCityName(code, locale) : value;
+}

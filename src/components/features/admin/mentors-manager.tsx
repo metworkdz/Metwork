@@ -39,6 +39,7 @@ import { MentorAvailabilityDialog } from './mentor-availability-dialog';
 import { LandingMentorCard } from '@/components/features/mentors/landing-mentor-card';
 import type { Mentor } from '@/types/mentor';
 import type { MentorCategoryRecord } from '@/server/db/store';
+import { formatCityLabel } from '@/config/cities';
 
 /** Today as YYYY-MM-DD, for export filenames. */
 function todayStamp(): string {
@@ -355,7 +356,7 @@ export function MentorsManager({
                   )}
                 </dd>
                 <dt className="text-muted-foreground">{t('reviewCity')}</dt>
-                <dd>{reviewing.city ?? '—'}</dd>
+                <dd>{formatCityLabel(reviewing.city, fieldLocale) || '—'}</dd>
                 <dt className="text-muted-foreground">{t('reviewField')}</dt>
                 <dd>{reviewing.field ? getConsultationFieldLabel(reviewing.field, fieldLocale) : '—'}</dd>
               </dl>

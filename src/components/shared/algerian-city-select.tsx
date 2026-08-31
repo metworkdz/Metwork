@@ -2,10 +2,15 @@
 
 /**
  * Reusable dropdown for Algerian wilayas.
- * Used in space, program, and event creation/edit forms.
- * Renders with the existing Radix Select UI component.
+ * Used in space, program, and event creation/edit forms, and the consultant
+ * portal's profile settings.
+ *
+ * The VALUE is always the stable `city.code` ('algiers'); only the label is
+ * localized — so switching UI language never rewrites stored data. Labels used
+ * to be hardcoded French, which read badly in the Arabic portal.
  */
-import { algerianCities } from '@/config/cities';
+import { useLocale } from 'next-intl';
+import { algerianCities, getCityName } from '@/config/cities';
 import {
   Select,
   SelectContent,
@@ -28,6 +33,7 @@ export function AlgerianCitySelect({
   onChange,
   placeholder = 'Select a city…',
 }: AlgerianCitySelectProps) {
+  const locale = useLocale() as 'en' | 'fr' | 'ar';
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger id={id}>
@@ -36,7 +42,7 @@ export function AlgerianCitySelect({
       <SelectContent>
         {algerianCities.map((city) => (
           <SelectItem key={city.code} value={city.code}>
-            {city.nameFr}
+            {getCityName(city.code, locale)}
           </SelectItem>
         ))}
       </SelectContent>

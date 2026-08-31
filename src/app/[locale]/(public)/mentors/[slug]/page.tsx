@@ -22,6 +22,7 @@ import { DURATION_OPTIONS, computePrice, resolveMentorPricing } from '@/lib/cons
 import { formatCurrency } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 import { assertLandingVisible } from '@/lib/landing-visibility';
+import { formatCityLabel } from '@/config/cities';
 
 export const dynamic = 'force-dynamic';
 
@@ -115,7 +116,7 @@ export default async function MentorProfilePage({ params }: PageProps) {
               {mentor.city && (
                 <p className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
                   <MapPin className="size-4 shrink-0" />
-                  {mentor.city}
+                  {formatCityLabel(mentor.city, locale as 'en' | 'fr' | 'ar')}
                 </p>
               )}
               {linkedinHref && (

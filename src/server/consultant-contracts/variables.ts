@@ -12,6 +12,7 @@
  * different token set, different record shapes. Sharing one whitelist would
  * let a token meant for one document silently work in the other.
  */
+import { formatCityLabel } from '@/config/cities';
 import type { IncubatorRecord, MentorRecord } from './types';
 
 export type ConsultantContractToken =
@@ -98,7 +99,9 @@ export function resolveConsultantContractVariables(
     consultant_email: mentor.email ?? '',
     consultant_position: mentor.position ?? '',
     consultant_address: mentor.address ?? '',
-    consultant_city: mentor.city ?? '',
+    // The picker stores a stable code ('algiers'); the contract is French and
+    // must print the wilaya NAME. Legacy free-text values pass through as typed.
+    consultant_city: formatCityLabel(mentor.city, 'fr'),
     consultant_id_number: mentor.idNumber ?? '',
     commission_rate: fmtRate(commissionRate),
     consultant_share: fmtRate(1 - commissionRate),
