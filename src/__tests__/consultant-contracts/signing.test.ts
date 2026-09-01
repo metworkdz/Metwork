@@ -39,7 +39,7 @@ import {
   getContractPdfUrl,
   updateContract,
 } from '@/server/consultant-contracts/service';
-import { generateConsultantContractPdf, decodeDataUriPng, formatContractDateTime } from '@/server/consultant-contracts/contract-pdf';
+import { generateConsultantContractPdf, decodeDataUriPng, formatContractDateTime, isHeadingLine } from '@/server/consultant-contracts/contract-pdf';
 import { sha256Hex, buildContractPublicId, CONTRACT_FOLDER } from '@/server/consultant-contracts/storage';
 
 const ADMIN_ID = 'admin-1';
@@ -539,5 +539,88 @@ describe('document furniture', () => {
     expect(pages).toBeGreaterThan(1);
     // bufferPages must be on, or writing a footer back onto page 1 is impossible.
     expect(pdf.subarray(-6).toString('latin1')).toContain('EOF');
+  });
+});
+
+/* ────────── Regression: the draft watermark must not runaway-paginate ────────── */
+
+describe('draft pagination', () => {
+  /** A realistic 14-article contract — the shape that exposed the bug. */
+  const REAL_BODY = [
+    'ENTRE LES SOUSSIGNÉS :',
+    '',
+    'EURL METWORK, société à responsabilité unipersonnelle de droit algérien, au capital de 200.000 DA, représentée par son gérant Mohammed Benhamada.',
+    '',
+    ...Array.from({ length: 14 }, (_, i) => [
+      `Article ${i + 1} — Clause numéro ${i + 1}`,
+      'Le présent contrat a pour objet de définir les conditions dans lesquelles le Consultant utilise la plateforme METWORK pour proposer et dispenser, à titre onéreux, des consultations individuelles ainsi que des programmes et formations.',
+      '',
+    ]).flat(),
+    'Fait à Oran, le 01 septembre 2026.',
+    '',
+    '{{signature_block}}',
+  ].join('\n');
+
+  const base = {
+    contractId: 'c-pagination',
+    consultantName: 'Naima Djebari',
+    body: REAL_BODY,
+    signerPhoneSnapshot: '+213549688144',
+    signedAt: new Date('2026-09-01T09:30:00Z').toISOString(),
+    adminStampUrl: null,
+    metworkName: 'EURL METWORK',
+    metworkManager: 'Mohammed Benhamada',
+  };
+  const pageCount = (pdf: Buffer) =>
+    (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) ?? []).length;
+
+  it('a draft has the SAME page count as the signed document', async () => {
+    // The watermark used to be drawn from a `pageAdded` listener. Its own
+    // doc.text() could overflow, which adds a page, which fires the listener
+    // again — turning a 3-page contract into 49 pages. Watermarking now happens
+    // in one pass after the body has flowed, so re-entry is impossible.
+    const draft = await generateConsultantContractPdf({
+      ...base, signatureImagePng: '', draft: true,
+    });
+    const signed = await generateConsultantContractPdf({
+      ...base, signatureImagePng: SIGNATURE_PNG, draft: false,
+    });
+    expect(pageCount(draft)).toBe(pageCount(signed));
+  });
+
+  it('stays within a sane page count for a full-length contract', async () => {
+    const draft = await generateConsultantContractPdf({
+      ...base, signatureImagePng: '', draft: true,
+    });
+    // 14 articles at 12pt is a handful of pages. Anything near double digits
+    // means pagination has run away again.
+    expect(pageCount(draft)).toBeGreaterThan(1);
+    expect(pageCount(draft)).toBeLessThan(8);
+  });
+});
+
+describe('article headings', () => {
+  it('recognises the heading forms an admin actually types', () => {
+    for (const line of [
+      'Article 1 — Objet du contrat',
+      'article 12 - Confidentialité',
+      'ARTICLE 3 : Commission',
+      'Chapitre 2 — Dispositions',
+    ]) {
+      expect(isHeadingLine(line)).toBe(true);
+    }
+  });
+
+  it('does NOT promote ordinary prose that merely mentions an article', () => {
+    // A false positive sets a whole paragraph at heading size — far worse than
+    // a missed heading.
+    for (const line of [
+      "déduction faite de la commission prévue à l'Article 3.",
+      'Le présent contrat a pour objet de définir les conditions.',
+      '',
+      'Article premier de la loi n° 18-07 relative à la protection des personnes physiques dans le traitement des données à caractère personnel et autres dispositions.',
+    ]) {
+      expect(isHeadingLine(line)).toBe(false);
+    }
   });
 });

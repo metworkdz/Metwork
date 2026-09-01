@@ -32,6 +32,17 @@ export const FONT = {
   bold: 'Body-Bold',
   italic: 'Body-Italic',
   arabic: 'Arabic',
+  /**
+   * Tinos — metric-compatible with Times New Roman, SIL OFL. Used by the
+   * consultant CONTRACT, which is a legal document the company issues in Times.
+   * Not the Monotype original: that is licensed per-machine and cannot be
+   * bundled into a repo or shipped to a server. Tinos matches its metrics and
+   * shape, and unlike pdfkit's built-in Times it is a full Unicode face, so the
+   * ● bullets and narrow no-break spaces in the contract template render.
+   */
+  serifTimes: 'Times',
+  serifTimesBold: 'Times-Bold',
+  serifTimesItalic: 'Times-Italic',
   /** Space Grotesk — brand face used by invoice PDFs (receipts keep DejaVu). */
   grotesk: 'Grotesk',
   groteskMedium: 'Grotesk-Medium',
@@ -43,6 +54,9 @@ const FILES: Record<string, string> = {
   [FONT.bold]: 'DejaVuSerif-Bold.ttf',
   [FONT.italic]: 'DejaVuSerif-Italic.ttf',
   [FONT.arabic]: 'Amiri-Regular.ttf',
+  [FONT.serifTimes]: 'Tinos-Regular.ttf',
+  [FONT.serifTimesBold]: 'Tinos-Bold.ttf',
+  [FONT.serifTimesItalic]: 'Tinos-Italic.ttf',
   [FONT.grotesk]: 'SpaceGrotesk-Regular.ttf',
   [FONT.groteskMedium]: 'SpaceGrotesk-Medium.ttf',
   [FONT.groteskBold]: 'SpaceGrotesk-Bold.ttf',
