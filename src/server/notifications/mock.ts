@@ -299,8 +299,21 @@ export function sendVerificationEmail(email: string, link: string): void {
     );
 }
 
-export function sendPasswordResetEmail(email: string, link: string): void {
-  sendResendEmail({
+/**
+ * Password-reset link.
+ *
+ * RETURNS THE PROMISE, and the caller MUST await it. Fire-and-forget does not
+ * survive deployment: Vercel freezes the lambda as soon as the response is
+ * returned, so a floating send is dropped — and a reset mail that never arrives
+ * locks the user out of their account entirely.
+ *
+ * Self-catching, so awaiting can never throw into the caller: the token has
+ * already been issued by then, and failing the request would tell an attacker
+ * the address exists.
+ */
+export function sendPasswordResetEmail(email: string, link: string): Promise<void> {
+  recordE2eEmail('password-reset', { to: email });
+  return sendResendEmail({
     to: email,
     subject: 'Reset your Metwork password',
     html: passwordResetEmailHtml(link),
@@ -311,10 +324,10 @@ export function sendPasswordResetEmail(email: string, link: string): void {
         console.log(`${banner} EMAIL → ${email} :: Reset your password → ${link}`);
       }
     })
-    .catch((err: Error) =>
+    .catch((err: Error) => {
       // eslint-disable-next-line no-console
-      console.error(`${banner} Resend email failed →`, err.message),
-    );
+      console.error(`${banner} Resend email failed →`, err.message);
+    });
 }
 
 /**
