@@ -569,17 +569,14 @@ function DetailDialog({
    * Fetch the link at click time. The one in the list response was minted when
    * the page loaded and will usually have expired by now.
    */
-  async function openPdf() {
-    setBusy(true);
-    onError(null);
-    try {
-      const { url } = await contractsService.pdfUrl(contract.id);
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } catch (e) {
-      onError(describeError(e));
-    } finally {
-      setBusy(false);
-    }
+  function openPdf() {
+    // Opens OUR route, which streams application/pdf inline. Handing out the
+    // Cloudinary link instead is what made the document open as a blank tab.
+    window.open(
+      `/api/admin/contracts/${encodeURIComponent(contract.id)}/pdf`,
+      '_blank',
+      'noopener,noreferrer',
+    );
   }
 
   return (

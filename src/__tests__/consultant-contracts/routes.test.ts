@@ -134,6 +134,13 @@ async function pendingFor(consultantId: string): Promise<string> {
 beforeEach(async () => {
   jar.clear();
   uploads.length = 0;
+  // The pdf route now fetches the stored asset server-side and streams it, so
+  // the "download" has to answer with the bytes that were uploaded.
+  vi.stubGlobal('fetch', async (url: string) => {
+    const match = uploads.find((u) => decodeURIComponent(String(url)).includes(u.publicId));
+    if (!match) return new Response('not found', { status: 404 });
+    return new Response(new Uint8Array(match.buffer), { status: 200 });
+  });
   await db.update((d) => {
     d.mentors = [mentor(MENTOR_A, 'Yasmine Belkacem'), mentor(MENTOR_B, 'Karim Haddad')];
     d.users = [{ id: ADMIN_ID, role: 'ADMIN', email: 'admin@metwork.dz' } as UserRecord];
@@ -306,11 +313,17 @@ describe('signing through the API', () => {
     expect(signRes.status).toBe(200);
     expect((await signRes.json()).contract.status).toBe('SIGNED');
 
+    // The route STREAMS the pdf rather than handing back a Cloudinary link —
+    // that link answers octet-stream/attachment and renders as a blank tab.
     const pdfRes = await getPdf(new Request('http://localhost/x'), ctx(id));
     expect(pdfRes.status).toBe(200);
-    const { url } = await pdfRes.json();
-    expect(url).toContain('expires_at=');
-    expect(url).not.toContain('res.cloudinary.com');
+    expect(pdfRes.headers.get('content-type')).toBe('application/pdf');
+    // `inline`, and a filename ending .pdf, are what make a browser render it.
+    const disposition = pdfRes.headers.get('content-disposition') ?? '';
+    expect(disposition).toMatch(/^inline;/);
+    expect(disposition).toMatch(/\.pdf"$/);
+    const bytes = Buffer.from(await pdfRes.arrayBuffer());
+    expect(bytes.subarray(0, 5).toString('latin1')).toBe('%PDF-');
   });
 
   it('surfaces the resend throttle as 429 with a retry hint', async () => {

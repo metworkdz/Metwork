@@ -103,3 +103,36 @@ export function mintContractPdfUrl(publicId: string, expiresInSeconds?: number):
 }
 
 export { SIGNED_URL_TTL_SECONDS };
+
+/**
+ * Fetch a stored contract's bytes, server-side, using a freshly-minted signed
+ * link.
+ *
+ * Exists because handing the Cloudinary link to the browser DOES NOT WORK for
+ * a document the user is meant to read. That endpoint answers with
+ * `Content-Type: application/octet-stream` and
+ * `Content-Disposition: attachment`, and the filename it derives from our
+ * extensionless public_id has no `.pdf` — so `window.open()` yields a blank tab
+ * plus a download the OS cannot open by double-click. Verified against the live
+ * asset, not assumed.
+ *
+ * Serving the bytes ourselves lets the route set a real `application/pdf`
+ * content type and an inline disposition, which is what actually renders. The
+ * asset stays `authenticated` on Cloudinary; only this server can mint the link.
+ *
+ * Returns null when the link cannot be fetched, so a caller can answer 404
+ * rather than stream an HTML error page as if it were a PDF.
+ */
+export async function fetchContractPdfBytes(publicId: string): Promise<Buffer | null> {
+  if (!isConfigured()) return null;
+  try {
+    const res = await fetch(signedRawDownloadUrl(publicId), { redirect: 'follow' });
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    // A signed-link failure can still answer 200 with an HTML/JSON error body.
+    // Only real PDF bytes may reach a caller that will label them application/pdf.
+    return buf.subarray(0, 5).toString('latin1') === '%PDF-' ? buf : null;
+  } catch {
+    return null;
+  }
+}

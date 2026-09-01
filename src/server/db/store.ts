@@ -1027,6 +1027,15 @@ export interface PlatformSettingsRecord {
    */
   adminStampImageUrl?: string | null;
   /**
+   * Metwork's share capital as printed on contracts (e.g. "200.000 DA") and the
+   * gérant who signs them. Free text, because both are legal wording the admin
+   * should control verbatim rather than have the app format. Additive &
+   * nullable — absent renders the matching token blank, like every other
+   * optional contract token.
+   */
+  metworkCapital?: string | null;
+  metworkManagerName?: string | null;
+  /**
    * The single reusable consultant-contract template — the admin's own
    * pre-written commission mandate, with optional `{{tokens}}` (see
    * `consultant-contracts/variables.ts`). Additive & nullable — absent ⇒
@@ -2080,6 +2089,12 @@ export interface MentorRecord {
    * drafted (owner decision 2026-08-31).
    */
   idNumber?: string | null;
+  /**
+   * Tax identification number (NIF) — PRIVATE, and OPTIONAL: the contract
+   * prints it "le cas échéant", so a consultant without one is not blocked.
+   * Unlike `address`/`idNumber` this is NOT required to draft a contract.
+   */
+  nif?: string | null;
   /** Optional per-session fee in DZD. 0 or absent = free. */
   consultationFee?: number;
   createdAt: string;

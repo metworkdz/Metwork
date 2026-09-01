@@ -32,6 +32,7 @@ import {
   GRAY,
   MARGIN,
   PAGE_H,
+  PAGE_W,
   RULE,
   collectBuffer,
   fetchImageBuffer,
@@ -62,6 +63,16 @@ export interface ContractPdfInput {
   adminStampUrl: string | null;
   /** Printed under Metwork's signature line. Defaults to 'EURL METWORK'. */
   metworkName?: string | null;
+  /** Metwork's signatory, printed under its column. Defaults to the gérant. */
+  metworkManager?: string | null;
+  /**
+   * DRAFT mode — the copy a consultant reads BEFORE signing.
+   *
+   * Renders the same body from the same frozen snapshot, but with empty
+   * signature lines, no provenance footer, and a watermark on every page, so a
+   * draft can never be mistaken for (or passed off as) the executed contract.
+   */
+  draft?: boolean;
 }
 
 /* ─────────────────── Helpers ─────────────────── */
@@ -118,12 +129,104 @@ export function decodeDataUriPng(dataUri: string): Buffer | null {
   }
 }
 
+/**
+ * The metwork wordmark, read from the app's own asset rather than fetched.
+ *
+ * Cached after the first read: every contract renders the same mark, and a
+ * disk hit per page would be wasted work. A missing file is not an error — the
+ * letterhead simply omits the logo.
+ */
+let brandLogoCache: Buffer | null | undefined;
+async function loadBrandLogo(): Promise<Buffer | null> {
+  if (brandLogoCache !== undefined) return brandLogoCache;
+  try {
+    const { readFile } = await import('node:fs/promises');
+    const path = await import('node:path');
+    brandLogoCache = await readFile(path.join(process.cwd(), 'public/assets/metworklogo.png'));
+  } catch {
+    brandLogoCache = null;
+  }
+  return brandLogoCache;
+}
+
+/** Logo box, top-right, mirroring the receipt letterhead's proportions. */
+const LOGO_W = 132;
+const LOGO_H = 28;
+
+/**
+ * Logo + centred title, drawn once at the top of page 1.
+ *
+ * The supplied contract template leads with the metwork wordmark top-right and
+ * an underlined two-line title; reproducing it here is what makes a generated
+ * contract look like the document the company already sends.
+ */
+function drawLetterhead(doc: Doc, logo: Buffer | null): void {
+  if (logo) {
+    try {
+      doc.image(logo, PAGE_W - MARGIN - LOGO_W, MARGIN, { fit: [LOGO_W, LOGO_H], align: 'right' });
+    } catch {
+      /* a missing logo must never stop a contract rendering */
+    }
+  }
+  doc.y = MARGIN + LOGO_H + 34;
+
+  setFont(doc, true).fillColor(DARK).fontSize(16)
+    .text('CONTRAT DE PARTENARIAT', MARGIN, doc.y, { width: CONTENT_W, align: 'center', underline: true });
+  doc.moveDown(0.35);
+  setFont(doc, true).fillColor(DARK).fontSize(11)
+    .text('ENTRE METWORK ET LE CONSULTANT / FORMATEUR', MARGIN, doc.y, {
+      width: CONTENT_W, align: 'center', underline: true,
+    });
+  doc.moveDown(1.6);
+}
+
+/**
+ * Diagonal "PROJET — NON SIGNÉ" wash across a draft page.
+ *
+ * Drawn under the text (called before the body) and kept faint so the document
+ * stays readable — the point is that a printed or forwarded draft is
+ * self-evidently not the signed contract.
+ */
+function drawDraftWatermark(doc: Doc): void {
+  doc.save();
+  doc.rotate(-38, { origin: [PAGE_W / 2, PAGE_H / 2] });
+  setFont(doc, true).fillColor('#c8c8cf').fontSize(52).opacity(0.28)
+    .text('PROJET — NON SIGNÉ', 0, PAGE_H / 2 - 30, { width: PAGE_W, align: 'center' });
+  doc.opacity(1).restore();
+}
+
+/**
+ * "Page N / T" centred in the bottom margin of every page.
+ *
+ * The bottom margin is zeroed for the duration: writing below it makes pdfkit
+ * auto-paginate, which silently appended a BLANK page and pushed the footer
+ * onto it. `lineBreak: false` stops the same thing happening on overflow.
+ */
+function drawPageNumbers(doc: Doc): void {
+  const range = doc.bufferedPageRange();
+  for (let i = 0; i < range.count; i++) {
+    doc.switchToPage(range.start + i);
+    const bottom = doc.page.margins.bottom;
+    doc.page.margins.bottom = 0;
+    setFont(doc).fillColor(GRAY).fontSize(8)
+      .text(`Page ${i + 1} / ${range.count}`, MARGIN, PAGE_H - MARGIN + 16, {
+        width: CONTENT_W,
+        align: 'center',
+        lineBreak: false,
+      });
+    doc.page.margins.bottom = bottom;
+  }
+}
+
 /** Height reserved for the two signature blocks, including their captions. */
 const SIGNATURE_BLOCK_H = 190;
 
 /**
- * The two signature blocks, side by side: the consultant's drawn signature on
- * the left, Metwork's stamp on the right.
+ * The two signature blocks, side by side.
+ *
+ * Column order follows the company's own contract template: METWORK on the
+ * LEFT (stamp + gérant), the Consultant on the RIGHT. It used to be the other
+ * way round, which put the wrong party under each caption.
  *
  * Moved to a fresh page when the remaining space cannot hold the whole block —
  * a signature stranded alone on a trailing page, or clipped at the margin, is
@@ -138,45 +241,54 @@ function drawSignatures(doc: Doc, signature: Buffer | null, stamp: Buffer | null
   const rightX = MARGIN + colW + 40;
   const IMG_H = 80;
   const metworkName = input.metworkName?.trim() || 'EURL METWORK';
+  const manager = input.metworkManager?.trim() || '';
 
-  setFont(doc, true).fillColor(DARK).fontSize(10).text('Le consultant', MARGIN, top, { width: colW });
-  setFont(doc, true).fillColor(DARK).fontSize(10).text(`Pour ${metworkName}`, rightX, top, { width: colW });
+  setFont(doc, true).fillColor(DARK).fontSize(10).text('Pour METWORK', MARGIN, top, { width: colW });
+  setFont(doc, true).fillColor(DARK).fontSize(10).text('Pour le Consultant', rightX, top, { width: colW });
 
   const imgTop = top + 20;
 
-  if (signature) {
+  // Metwork's stamp (left) and the consultant's drawn signature (right).
+  if (stamp) {
     try {
-      doc.image(signature, MARGIN, imgTop, { fit: [colW, IMG_H] });
+      doc.image(stamp, MARGIN, imgTop, { fit: [colW, IMG_H] });
     } catch {
       /* fall through to the ruled line below */
     }
   }
-  if (stamp) {
+  if (signature) {
     try {
-      doc.image(stamp, rightX, imgTop, { fit: [colW, IMG_H] });
+      doc.image(signature, rightX, imgTop, { fit: [colW, IMG_H] });
     } catch {
       /* fall through to the ruled line below */
     }
   }
 
   // Ruled lines under both, drawn whether or not an image landed — they frame
-  // the images and stand in for them when one is missing.
+  // the images and stand in for them when one is missing (always, in a draft).
   const lineY = imgTop + IMG_H + 6;
   doc.strokeColor(RULE).lineWidth(0.75);
   doc.moveTo(MARGIN, lineY).lineTo(MARGIN + colW, lineY).stroke();
   doc.moveTo(rightX, lineY).lineTo(rightX + colW, lineY).stroke();
 
-  setFont(doc).fillColor(GRAY).fontSize(8.5);
-  doc.text(`${input.consultantName}\nSigné le ${formatContractDateTime(input.signedAt)} (UTC)`, MARGIN, lineY + 6, {
-    width: colW,
-    lineGap: 1,
-  });
-  doc.text(`${metworkName}\nCachet de l'entreprise`, rightX, lineY + 6, {
-    width: colW,
-    lineGap: 1,
-  });
+  // Captions mirror the company template: name, role, then what goes on the line.
+  setFont(doc, true).fillColor(DARK).fontSize(9);
+  doc.text(manager.toUpperCase() || metworkName, MARGIN, lineY + 6, { width: colW });
+  doc.text(input.consultantName, rightX, lineY + 6, { width: colW });
 
-  doc.y = lineY + 40;
+  setFont(doc).fillColor(GRAY).fontSize(8.5);
+  const roleY = doc.y;
+  doc.text(`Gérant\nSignature et cachet :`, MARGIN, roleY, { width: colW, lineGap: 1 });
+  doc.text(
+    input.draft
+      ? 'Consultant\nSignature :'
+      : `Consultant\nSigné le ${formatContractDateTime(input.signedAt)} (UTC)`,
+    rightX,
+    roleY,
+    { width: colW, lineGap: 1 },
+  );
+
+  doc.y = lineY + 46;
 }
 
 /**
@@ -213,19 +325,33 @@ function drawProvenanceFooter(doc: Doc, input: ContractPdfInput): void {
  * old contract years later produces the same document.
  */
 export async function generateConsultantContractPdf(input: ContractPdfInput): Promise<Buffer> {
-  const signature = decodeDataUriPng(input.signatureImagePng);
-  const stamp = await fetchImageBuffer(input.adminStampUrl);
+  // A draft has no signature or stamp to draw, whatever it was handed.
+  const signature = input.draft ? null : decodeDataUriPng(input.signatureImagePng);
+  const stamp = input.draft ? null : await fetchImageBuffer(input.adminStampUrl);
+  const logo = await loadBrandLogo();
 
-  const doc = makeDoc();
+  // bufferPages: the "Page N / T" footer can only be written once the total
+  // is known, i.e. after the whole body has flowed.
+  const doc = makeDoc({ bufferPages: true });
   const [before, after] = splitAtSignatureMarker(input.body || '');
+
+  // Watermark FIRST on each page so it sits under the text, and again on every
+  // page the body spills onto.
+  if (input.draft) {
+    drawDraftWatermark(doc);
+    doc.on('pageAdded', () => drawDraftWatermark(doc));
+  }
+
+  drawLetterhead(doc, logo);
+  const bodyTop = doc.y;
 
   const writeBody = (text: string, atTop: boolean): void => {
     if (!text) return;
     const opts = { width: CONTENT_W, align: 'justify' as const, lineGap: 3 };
     setFont(doc).fillColor('#27272a').fontSize(10.5);
-    // Only the first segment is positioned explicitly; a later one must flow
-    // from wherever the signature block left the cursor.
-    if (atTop) doc.text(text, MARGIN, MARGIN, opts);
+    // Only the first segment is positioned explicitly (just under the title);
+    // a later one must flow from wherever the signature block left the cursor.
+    if (atTop) doc.text(text, MARGIN, bodyTop, opts);
     else doc.text(text, MARGIN, doc.y, opts);
   };
 
@@ -235,7 +361,11 @@ export async function generateConsultantContractPdf(input: ContractPdfInput): Pr
   // block. Absent for the common case, where the marker ends the template or
   // isn't used at all.
   writeBody(after, false);
-  drawProvenanceFooter(doc, input);
+  // A draft carries no provenance line: nothing has been signed or attested yet.
+  if (!input.draft) drawProvenanceFooter(doc, input);
+
+  // Page numbers last — the total is only known once the body has flowed.
+  drawPageNumbers(doc);
 
   return collectBuffer(doc);
 }

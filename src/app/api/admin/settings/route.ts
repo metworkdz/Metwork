@@ -40,6 +40,8 @@ const schema = z.object({
    * unlike the signed contracts themselves). Null clears it.
    */
   adminStampImageUrl: z.string().url().max(2_000).nullable().optional(),
+  metworkCapital: z.string().max(120).nullable().optional(),
+  metworkManagerName: z.string().max(160).nullable().optional(),
   /**
    * The single reusable consultant-contract template. Length-capped so it
    * can't bloat the single-document store. Null clears it (creation is then

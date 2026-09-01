@@ -281,11 +281,20 @@ function setFont(doc: Doc, opts: { bold?: boolean; italic?: boolean; arabic?: bo
 
 /* ─────────────────── PDF lifecycle ─────────────────── */
 
-export function makeDoc(): InstanceType<typeof PDFDocument> {
+/**
+ * `bufferPages` holds every page open until `end()` instead of flushing each as
+ * it completes. Only needed by documents that must write to an EARLIER page
+ * once the total is known — "Page 1 / 4" footers. Off by default so receipts
+ * and invoices keep streaming exactly as before.
+ */
+export function makeDoc(
+  options: { bufferPages?: boolean } = {},
+): InstanceType<typeof PDFDocument> {
   const doc = new PDFDocument({
     size: 'A4',
     margin: MARGIN,
     info: { Creator: 'Metwork', Producer: 'Metwork' },
+    bufferPages: options.bufferPages ?? false,
   });
   registerPdfFonts(doc);
   return doc;

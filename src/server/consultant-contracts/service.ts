@@ -38,7 +38,7 @@ import {
 import { resolveMentorCommissionRates } from '@/server/payments/mentor-commission';
 import { generateConsultantContractPdf } from './contract-pdf';
 import { findMetworkParty } from './party';
-import { mintContractPdfUrl, storeSignedContractPdf } from './storage';
+import { fetchContractPdfBytes, mintContractPdfUrl, storeSignedContractPdf } from './storage';
 import {
   describePayoutAccount,
   inferPayoutMethod,
@@ -268,6 +268,8 @@ export async function createDraftContract(
     }
 
     const { platformRate } = resolveMentorCommissionRates(d.commissionRules, { kind: 'CONSULTATION' });
+    // The contract quotes both rates; programs are commissioned separately.
+    const { platformRate: programRate } = resolveMentorCommissionRates(d.commissionRules, { kind: 'PROGRAM' });
     const payoutMethod = inferPayoutMethod(mentor);
     const metwork = findMetworkParty(d);
 
@@ -276,9 +278,12 @@ export async function createDraftContract(
       resolveConsultantContractVariables({
         mentor,
         commissionRate: platformRate,
+        programCommissionRate: programRate,
         payoutMethod,
         payoutDetails: describePayoutAccount(mentor),
         metwork,
+        metworkCapital: d.platformSettings?.metworkCapital ?? null,
+        metworkManager: d.platformSettings?.metworkManagerName ?? null,
       }),
     );
 
@@ -631,6 +636,7 @@ export async function signContract(
       signedAt,
       adminStampUrl,
       metworkName: metwork?.name,
+      metworkManager: data.platformSettings?.metworkManagerName ?? null,
     });
     stored = await storeSignedContractPdf(pdf, contract.id);
   } catch (err) {
@@ -691,6 +697,52 @@ export async function getContractPdfUrl(contractId: string): Promise<string | nu
   const url = mintContractPdfUrl(contract.finalPdfPublicId);
   await updateContract(contractId, (c) => { c.finalPdfUrl = url; });
   return url;
+}
+
+/**
+ * The signed PDF's bytes, for a route that will serve them inline.
+ *
+ * Preferred over `getContractPdfUrl` for anything a human is meant to READ —
+ * see `fetchContractPdfBytes` for why the raw Cloudinary link renders blank.
+ */
+export async function getContractPdfBytes(contractId: string): Promise<Buffer | null> {
+  const contract = await findContractById(contractId);
+  if (!contract?.finalPdfPublicId) return null;
+  return fetchContractPdfBytes(contract.finalPdfPublicId);
+}
+
+/**
+ * Render the DRAFT a consultant reads before signing.
+ *
+ * Built on demand from the SAME frozen `contentSnapshot` the signature will be
+ * applied to, and never stored — so what they read cannot drift from what they
+ * sign. Watermarked and signature-free (see `ContractPdfInput.draft`), so a
+ * forwarded copy is self-evidently not the executed contract.
+ *
+ * Available in any status: a consultant may re-read a contract that is still a
+ * DRAFT with the admin, one awaiting their signature, or one already signed.
+ */
+export async function generateContractPreviewPdf(contractId: string): Promise<Buffer | null> {
+  const contract = await findContractById(contractId);
+  if (!contract) return null;
+
+  const data = await db.read();
+  const mentor = (data.mentors ?? []).find((m) => m.id === contract.consultantId);
+  const metwork = findMetworkParty(data);
+
+  return generateConsultantContractPdf({
+    contractId: contract.id,
+    consultantName: mentor?.fullName ?? 'Consultant',
+    body: contract.contentSnapshot,
+    // Draft mode ignores all three, but the shape is shared with the signed path.
+    signerPhoneSnapshot: contract.signerPhoneSnapshot,
+    signatureImagePng: '',
+    signedAt: contract.signedAt ?? new Date().toISOString(),
+    adminStampUrl: null,
+    metworkName: metwork?.name,
+    metworkManager: data.platformSettings?.metworkManagerName ?? null,
+    draft: true,
+  });
 }
 
 /** Record that the consultant opened the contract. Best-effort, never throws. */

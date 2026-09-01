@@ -530,7 +530,9 @@
         "pdfUnavailable": "Impossible d'ouvrir le document. Veuillez réessayer.",
         "signFailed": "Nous n'avons pas pu finaliser votre contrat. Veuillez réessayer dans un instant.",
         "unavailable": "La signature est momentanément indisponible. Veuillez réessayer plus tard."
-      }
+      },
+      "readPdf": "Lire le contrat (PDF)",
+      "readPdfHint": "Conseil : ouvrez le PDF pour lire l'intégralité du contrat avant de signer."
     }
   },
   "common": {

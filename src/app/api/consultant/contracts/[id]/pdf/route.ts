@@ -1,17 +1,24 @@
 /**
  * GET /api/consultant/contracts/:id/pdf
  *
- * A freshly-minted, short-lived link to the consultant's own signed contract.
+ * Streams the consultant's own signed contract as a real PDF.
  *
- * Returns the URL rather than proxying the bytes: the asset is private on
- * Cloudinary and the signed link is what grants access, so handing it back
- * keeps this function out of the download path entirely. The link is minted per
- * request because the stored one will usually have expired.
+ * It used to return the Cloudinary signed URL for the client to open. That is
+ * why the signed contract appeared as a blank page: Cloudinary's download
+ * endpoint answers `Content-Type: application/octet-stream` with
+ * `Content-Disposition: attachment` and a filename derived from our
+ * extensionless public_id — so `window.open()` produced an empty tab plus an
+ * unopenable file. Serving the bytes here lets us set the content type and an
+ * INLINE disposition, which is what a browser actually renders.
+ *
+ * The asset stays private on Cloudinary; only this server can mint a link to it.
  */
 import { requireConsultant } from '@/server/mentors/access';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
-import { json, jsonError } from '@/server/http/json';
-import { findContractById, getContractPdfUrl } from '@/server/consultant-contracts/service';
+import { jsonError } from '@/server/http/json';
+import { findContractById, getContractPdfBytes } from '@/server/consultant-contracts/service';
+import { findMentorById } from '@/server/mentors/service';
+import { contractPdfFilename, pdfResponse } from '@/server/consultant-contracts/pdf-response';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,8 +35,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     return jsonError(404, 'NOT_FOUND', 'Contract not found');
   }
 
-  const url = await getContractPdfUrl(id);
-  if (!url) return jsonError(404, 'NO_PDF', 'This contract has no signed document yet.');
+  const bytes = await getContractPdfBytes(id);
+  if (!bytes) return jsonError(404, 'NO_PDF', 'This contract has no signed document yet.');
 
-  return json({ url });
+  // Name the file after the consultant, not their id — this lands in their
+  // Downloads folder and needs to be recognisable a year from now.
+  const mentor = await findMentorById(guard.mentorId);
+  return pdfResponse(bytes, contractPdfFilename(mentor?.fullName ?? '', contract.signedAt));
 }
