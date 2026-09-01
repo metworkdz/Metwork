@@ -299,8 +299,21 @@ export function sendVerificationEmail(email: string, link: string): void {
     );
 }
 
-export function sendPasswordResetEmail(email: string, link: string): void {
-  sendResendEmail({
+/**
+ * Password-reset link.
+ *
+ * RETURNS THE PROMISE, and the caller MUST await it. Fire-and-forget does not
+ * survive deployment: Vercel freezes the lambda as soon as the response is
+ * returned, so a floating send is dropped — and a reset mail that never arrives
+ * locks the user out of their account entirely.
+ *
+ * Self-catching, so awaiting can never throw into the caller: the token has
+ * already been issued by then, and failing the request would tell an attacker
+ * the address exists.
+ */
+export function sendPasswordResetEmail(email: string, link: string): Promise<void> {
+  recordE2eEmail('password-reset', { to: email });
+  return sendResendEmail({
     to: email,
     subject: 'Reset your Metwork password',
     html: passwordResetEmailHtml(link),
@@ -311,10 +324,10 @@ export function sendPasswordResetEmail(email: string, link: string): void {
         console.log(`${banner} EMAIL → ${email} :: Reset your password → ${link}`);
       }
     })
-    .catch((err: Error) =>
+    .catch((err: Error) => {
       // eslint-disable-next-line no-console
-      console.error(`${banner} Resend email failed →`, err.message),
-    );
+      console.error(`${banner} Resend email failed →`, err.message);
+    });
 }
 
 /**
@@ -897,12 +910,24 @@ export function sendBookingCancelledUnpaidEmail(
  * that back — it would leave the admin unable to re-send a contract that was
  * in fact already issued.
  */
+/**
+ * Tell a consultant their contract is waiting for signature.
+ *
+ * RETURNS THE PROMISE, and the caller MUST await it. Fire-and-forget does not
+ * work here: on Vercel the lambda is frozen the moment the response is
+ * returned, so a floating send is simply never delivered — which is exactly why
+ * consultants were not receiving this email. Same rule the consultant OTP
+ * routes already follow.
+ *
+ * Self-catching, so awaiting it can never throw into the caller: a mail failure
+ * must not roll back a contract that has genuinely been issued.
+ */
 export function sendContractReadyEmail(
   email: string,
   opts: { consultantName: string; portalUrl: string },
-): void {
+): Promise<void> {
   recordE2eEmail('contract-ready', { to: email });
-  sendResendEmail({
+  return sendResendEmail({
     to: email,
     subject: 'Votre contrat de commission Metwork est prêt à signer',
     html: contractReadyEmailHtml(opts),
@@ -913,10 +938,10 @@ export function sendContractReadyEmail(
         console.log(`${banner} EMAIL (contract-ready) → ${email}`);
       }
     })
-    .catch((err: Error) =>
+    .catch((err: Error) => {
       // eslint-disable-next-line no-console
-      console.error(`${banner} Resend contract-ready email failed →`, err.message),
-    );
+      console.error(`${banner} Resend contract-ready email failed →`, err.message);
+    });
 }
 
 export function sendWithdrawalRequestedEmail(

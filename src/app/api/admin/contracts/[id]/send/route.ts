@@ -68,7 +68,12 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
 
   if (mentor?.email) {
     const base = clientEnvVars.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
-    sendContractReadyEmail(mentor.email, {
+    // AWAITED on purpose. Unawaited, this never actually sent in production:
+    // Vercel freezes the lambda as soon as the response returns, so the send
+    // was abandoned mid-flight and the consultant was never told their contract
+    // was waiting. The sender self-catches, so awaiting cannot fail the request
+    // — a mail problem must never un-send a contract that was issued.
+    await sendContractReadyEmail(mentor.email, {
       consultantName: mentor.fullName,
       portalUrl: `${base}/mentordashboard`,
     });
