@@ -30,6 +30,7 @@ import {
   CONTENT_W,
   DARK,
   GRAY,
+  INK,
   MARGIN,
   PAGE_H,
   PAGE_W,
@@ -38,7 +39,7 @@ import {
   fetchImageBuffer,
   makeDoc,
 } from '@/server/notifications/receipt';
-import { fontFor } from '@/server/pdf/fonts';
+import { FONT } from '@/server/pdf/fonts';
 import { splitAtSignatureMarker } from './variables';
 
 type Doc = InstanceType<typeof PDFDocument>;
@@ -77,8 +78,30 @@ export interface ContractPdfInput {
 
 /* ─────────────────── Helpers ─────────────────── */
 
+/**
+ * The contract is set in Times, matching the document the company already
+ * issues. `FONT.serifTimes` is Tinos — metric-compatible with Times New Roman
+ * and SIL-licensed; see the note in `@/server/pdf/fonts`.
+ */
 function setFont(doc: Doc, bold = false): Doc {
-  return doc.font(fontFor({ bold }));
+  return doc.font(bold ? FONT.serifTimesBold : FONT.serifTimes);
+}
+
+/** Type scale, as specified: 16pt title, 14pt article headings, 12pt body. */
+const SIZE = { title: 16, subtitle: 14, heading: 14, body: 12 } as const;
+
+/**
+ * Is this body line an article heading?
+ *
+ * Matches "Article 3 — Commission" and the bare "ARTICLE 3 :" variants an admin
+ * might type, in French or English. Kept deliberately narrow: a false positive
+ * would set a whole paragraph at heading size, which is far more disfiguring
+ * than a missed heading, so anything long or mid-sentence is left as body.
+ */
+export function isHeadingLine(line: string): boolean {
+  const t = line.trim();
+  if (!t || t.length > 90) return false;
+  return /^(article|chapitre)\s+([0-9]{1,2}|premier|[ivxl]{1,5})\b/i.test(t);
 }
 
 /**
@@ -142,7 +165,13 @@ async function loadBrandLogo(): Promise<Buffer | null> {
   try {
     const { readFile } = await import('node:fs/promises');
     const path = await import('node:path');
-    brandLogoCache = await readFile(path.join(process.cwd(), 'public/assets/metworklogo.png'));
+    // Read from src/server/pdf/assets, NOT public/. `public/` is served by the
+    // CDN and is not present on the serverless filesystem, so the logo silently
+    // vanished in production while working locally. The font directory next to
+    // it is already proven to load there.
+    brandLogoCache = await readFile(
+      path.join(process.cwd(), 'src/server/pdf/assets/metwork-logo.png'),
+    );
   } catch {
     brandLogoCache = null;
   }
@@ -170,10 +199,10 @@ function drawLetterhead(doc: Doc, logo: Buffer | null): void {
   }
   doc.y = MARGIN + LOGO_H + 34;
 
-  setFont(doc, true).fillColor(DARK).fontSize(16)
+  setFont(doc, true).fillColor(DARK).fontSize(SIZE.title)
     .text('CONTRAT DE PARTENARIAT', MARGIN, doc.y, { width: CONTENT_W, align: 'center', underline: true });
   doc.moveDown(0.35);
-  setFont(doc, true).fillColor(DARK).fontSize(11)
+  setFont(doc, true).fillColor(DARK).fontSize(SIZE.subtitle)
     .text('ENTRE METWORK ET LE CONSULTANT / FORMATEUR', MARGIN, doc.y, {
       width: CONTENT_W, align: 'center', underline: true,
     });
@@ -181,18 +210,36 @@ function drawLetterhead(doc: Doc, logo: Buffer | null): void {
 }
 
 /**
- * Diagonal "PROJET — NON SIGNÉ" wash across a draft page.
+ * Diagonal "PROJET — NON SIGNÉ" wash on every page of a draft.
  *
- * Drawn under the text (called before the body) and kept faint so the document
- * stays readable — the point is that a printed or forwarded draft is
- * self-evidently not the signed contract.
+ * Stamped in ONE pass at the end, over the buffered pages — never from a
+ * `pageAdded` listener. That listener is what produced a 49-page contract from
+ * a 3-page body: the watermark's own `doc.text()` could overflow, which adds a
+ * page, which fires `pageAdded`, which draws again… Doing it after the body has
+ * flowed means no content can be added while it runs, so re-entry is impossible.
+ *
+ * `lineBreak: false` and zeroed margins belt-and-brace it: the text is placed
+ * absolutely and may never trigger pagination on its own.
  */
 function drawDraftWatermark(doc: Doc): void {
-  doc.save();
-  doc.rotate(-38, { origin: [PAGE_W / 2, PAGE_H / 2] });
-  setFont(doc, true).fillColor('#c8c8cf').fontSize(52).opacity(0.28)
-    .text('PROJET — NON SIGNÉ', 0, PAGE_H / 2 - 30, { width: PAGE_W, align: 'center' });
-  doc.opacity(1).restore();
+  const range = doc.bufferedPageRange();
+  for (let i = 0; i < range.count; i++) {
+    doc.switchToPage(range.start + i);
+    const { top, bottom } = doc.page.margins;
+    doc.page.margins.top = 0;
+    doc.page.margins.bottom = 0;
+    doc.save();
+    doc.rotate(-38, { origin: [PAGE_W / 2, PAGE_H / 2] });
+    setFont(doc, true).fillColor('#c9c9d0').fontSize(46).opacity(0.22)
+      .text('PROJET — NON SIGNÉ', 0, PAGE_H / 2 - 26, {
+        width: PAGE_W,
+        align: 'center',
+        lineBreak: false,
+      });
+    doc.opacity(1).restore();
+    doc.page.margins.top = top;
+    doc.page.margins.bottom = bottom;
+  }
 }
 
 /**
@@ -335,24 +382,31 @@ export async function generateConsultantContractPdf(input: ContractPdfInput): Pr
   const doc = makeDoc({ bufferPages: true });
   const [before, after] = splitAtSignatureMarker(input.body || '');
 
-  // Watermark FIRST on each page so it sits under the text, and again on every
-  // page the body spills onto.
-  if (input.draft) {
-    drawDraftWatermark(doc);
-    doc.on('pageAdded', () => drawDraftWatermark(doc));
-  }
-
   drawLetterhead(doc, logo);
   const bodyTop = doc.y;
 
   const writeBody = (text: string, atTop: boolean): void => {
     if (!text) return;
-    const opts = { width: CONTENT_W, align: 'justify' as const, lineGap: 3 };
-    setFont(doc).fillColor('#27272a').fontSize(10.5);
-    // Only the first segment is positioned explicitly (just under the title);
-    // a later one must flow from wherever the signature block left the cursor.
-    if (atTop) doc.text(text, MARGIN, bodyTop, opts);
-    else doc.text(text, MARGIN, doc.y, opts);
+    let first = true;
+    // Rendered line-by-line rather than as one block so article headings can
+    // carry their own size/weight. A single doc.text() call cannot mix them.
+    for (const line of text.split('\n')) {
+      const heading = isHeadingLine(line);
+      setFont(doc, heading)
+        .fillColor(heading ? DARK : INK)
+        .fontSize(heading ? SIZE.heading : SIZE.body);
+      const opts = {
+        width: CONTENT_W,
+        align: (heading ? 'left' : 'justify') as 'left' | 'justify',
+        lineGap: heading ? 2 : 3,
+      };
+      // Only the very first line is positioned explicitly (just under the
+      // title); everything after flows, including across the signature block.
+      if (first && atTop) doc.text(line || ' ', MARGIN, bodyTop, opts);
+      else doc.text(line || ' ', MARGIN, doc.y, opts);
+      if (heading) doc.moveDown(0.15);
+      first = false;
+    }
   };
 
   writeBody(before, true);
@@ -364,7 +418,10 @@ export async function generateConsultantContractPdf(input: ContractPdfInput): Pr
   // A draft carries no provenance line: nothing has been signed or attested yet.
   if (!input.draft) drawProvenanceFooter(doc, input);
 
-  // Page numbers last — the total is only known once the body has flowed.
+  // Both of these write back over ALREADY-FLOWED pages, so they must come last:
+  // the page total is only known now, and stamping the watermark here is what
+  // makes it impossible for it to trigger pagination of its own.
+  if (input.draft) drawDraftWatermark(doc);
   drawPageNumbers(doc);
 
   return collectBuffer(doc);
