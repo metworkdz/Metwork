@@ -66,6 +66,20 @@ const nextConfig = {
     // contracts would silently fall back to Helvetica on Vercel).
     outputFileTracingIncludes: {
       '/api/incubator/bookings/[id]/contract': ['./src/server/contracts/fonts/**'],
+      // Same reason, for the CONSULTANT contract: its PDF is set in Tinos
+      // (src/server/pdf/fonts) and read through process.cwd(). Untraced, the
+      // font is missing from the lambda and `doc.font()` throws — taking the
+      // whole signature request down rather than degrading. Every route that
+      // renders one needs the fonts:
+      //   sign    → generates the signed PDF
+      //   preview → generates the pre-signature draft
+      //   pdf     → re-serves a stored PDF (no render, listed for safety)
+      // The LOGO is deliberately not here: it is a base64 source constant
+      // precisely so it cannot depend on tracing at all.
+      '/api/consultant/contracts/[id]/sign': ['./src/server/pdf/fonts/**'],
+      '/api/consultant/contracts/[id]/preview': ['./src/server/pdf/fonts/**'],
+      '/api/consultant/contracts/[id]/pdf': ['./src/server/pdf/fonts/**'],
+      '/api/admin/contracts/[id]/pdf': ['./src/server/pdf/fonts/**'],
     },
   },
 

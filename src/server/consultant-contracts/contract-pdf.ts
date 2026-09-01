@@ -41,6 +41,7 @@ import {
 } from '@/server/notifications/receipt';
 import { FONT } from '@/server/pdf/fonts';
 import { splitAtSignatureMarker } from './variables';
+import { METWORK_LOGO_PNG_BASE64 } from '@/server/pdf/assets/metwork-logo';
 
 type Doc = InstanceType<typeof PDFDocument>;
 
@@ -153,25 +154,27 @@ export function decodeDataUriPng(dataUri: string): Buffer | null {
 }
 
 /**
- * The metwork wordmark, read from the app's own asset rather than fetched.
+ * The metwork wordmark.
  *
- * Cached after the first read: every contract renders the same mark, and a
- * disk hit per page would be wasted work. A missing file is not an error — the
- * letterhead simply omits the logo.
+ * Decoded from a source constant, NOT read from disk. Reading it failed in
+ * production from both `public/assets/` and `src/server/pdf/assets/`: the path
+ * is built from `process.cwd()`, which Next's file tracer cannot analyse, so
+ * the PNG was never bundled into the lambda and the logo silently disappeared
+ * while working perfectly in dev. See the note in `./assets/metwork-logo`.
+ *
+ * Cached after the first decode — every contract draws the same mark.
  */
 let brandLogoCache: Buffer | null | undefined;
-async function loadBrandLogo(): Promise<Buffer | null> {
+function loadBrandLogo(): Buffer | null {
   if (brandLogoCache !== undefined) return brandLogoCache;
   try {
-    const { readFile } = await import('node:fs/promises');
-    const path = await import('node:path');
-    // Read from src/server/pdf/assets, NOT public/. `public/` is served by the
-    // CDN and is not present on the serverless filesystem, so the logo silently
-    // vanished in production while working locally. The font directory next to
-    // it is already proven to load there.
-    brandLogoCache = await readFile(
-      path.join(process.cwd(), 'src/server/pdf/assets/metwork-logo.png'),
-    );
+    const buf = Buffer.from(METWORK_LOGO_PNG_BASE64, 'base64');
+    // Guard the magic number: a truncated constant must degrade to "no logo"
+    // rather than make pdfkit throw and take the whole contract down.
+    const isPng =
+      buf.length > 8 &&
+      buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    brandLogoCache = isPng ? buf : null;
   } catch {
     brandLogoCache = null;
   }
@@ -375,7 +378,7 @@ export async function generateConsultantContractPdf(input: ContractPdfInput): Pr
   // A draft has no signature or stamp to draw, whatever it was handed.
   const signature = input.draft ? null : decodeDataUriPng(input.signatureImagePng);
   const stamp = input.draft ? null : await fetchImageBuffer(input.adminStampUrl);
-  const logo = await loadBrandLogo();
+  const logo = loadBrandLogo();
 
   // bufferPages: the "Page N / T" footer can only be written once the total
   // is known, i.e. after the whole body has flowed.
