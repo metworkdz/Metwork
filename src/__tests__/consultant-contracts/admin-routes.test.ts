@@ -209,6 +209,34 @@ describe('send', () => {
     expect(vi.mocked(sendContractReadyEmail).mock.calls[0]![0]).toBe('yasmine@example.dz');
   });
 
+  it('AWAITS the contract-ready email — a floating send never leaves the lambda', async () => {
+    // The regression this guards: the route used to call the sender without
+    // awaiting it. Vercel freezes the function the moment the response is
+    // returned, so the send was abandoned and the consultant was never told
+    // their contract was waiting. Here the mock resolves only after a tick; if
+    // the route stopped awaiting, the flag would still be false on return.
+    let delivered = false;
+    vi.mocked(sendContractReadyEmail).mockImplementationOnce(
+      () => new Promise<void>((resolve) => setTimeout(() => { delivered = true; resolve(); }, 5)),
+    );
+
+    const id = await createDraft();
+    const res = await sendAdmin(req(), ctx(id));
+
+    expect(res.status).toBe(200);
+    expect(delivered).toBe(true);
+  });
+
+  it('still sends the contract when the email fails', async () => {
+    // The sender self-catches, so awaiting it can never fail the request — a
+    // mail problem must not un-send a contract that was genuinely issued.
+    vi.mocked(sendContractReadyEmail).mockImplementationOnce(async () => {});
+    const id = await createDraft();
+    const res = await sendAdmin(req(), ctx(id));
+    expect(res.status).toBe(200);
+    expect((await findContractById(id))!.status).toBe('PENDING_SIGNATURE');
+  });
+
   it('blocks sending to a consultant with an unverified phone', async () => {
     await seed({ phoneVerified: false });
     const id = await createDraft();
