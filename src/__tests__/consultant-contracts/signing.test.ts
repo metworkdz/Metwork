@@ -40,6 +40,7 @@ import {
   updateContract,
 } from '@/server/consultant-contracts/service';
 import { generateConsultantContractPdf, decodeDataUriPng, formatContractDateTime, isHeadingLine } from '@/server/consultant-contracts/contract-pdf';
+import { METWORK_LOGO_PNG_BASE64 } from '@/server/pdf/assets/metwork-logo';
 import { sha256Hex, buildContractPublicId, CONTRACT_FOLDER } from '@/server/consultant-contracts/storage';
 
 const ADMIN_ID = 'admin-1';
@@ -622,5 +623,44 @@ describe('article headings', () => {
     ]) {
       expect(isHeadingLine(line)).toBe(false);
     }
+  });
+});
+
+/* ────────── Regression: the logo must survive deployment ────────── */
+
+describe('brand logo', () => {
+  const base = {
+    contractId: 'c-logo',
+    consultantName: 'Naima Djebari',
+    body: 'Corps du contrat.',
+    signerPhoneSnapshot: '+213770112233',
+    signatureImagePng: '',
+    signedAt: new Date('2026-09-01T09:30:00Z').toISOString(),
+    adminStampUrl: null,
+    metworkName: 'EURL METWORK',
+    metworkManager: 'Mohammed Benhamada',
+  };
+
+  it('is a valid PNG in the source constant, not a path that may not deploy', () => {
+    // Read from disk, the logo vanished in production twice: process.cwd()
+    // paths are not statically traceable, so the file never entered the lambda.
+    // A source constant cannot fail that way — but it CAN be truncated by a bad
+    // edit, so assert the magic number.
+    const buf = Buffer.from(METWORK_LOGO_PNG_BASE64, 'base64');
+    expect(buf.subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    );
+    expect(buf.length).toBeGreaterThan(2_000);
+  });
+
+  it('is actually embedded in a rendered contract', async () => {
+    const withLogo = await generateConsultantContractPdf(base);
+    // An image XObject only appears if pdfkit accepted and drew the buffer.
+    expect(withLogo.toString('latin1')).toMatch(/\/Subtype\s*\/Image/);
+  });
+
+  it('is present on the draft too — the copy the consultant reads first', async () => {
+    const draft = await generateConsultantContractPdf({ ...base, draft: true });
+    expect(draft.toString('latin1')).toMatch(/\/Subtype\s*\/Image/);
   });
 });
