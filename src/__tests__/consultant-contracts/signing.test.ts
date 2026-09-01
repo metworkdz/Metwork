@@ -463,3 +463,81 @@ describe('signature block placement', () => {
     expect(pdf.length).toBeGreaterThan(1_000);
   });
 });
+
+/* ────────────── Draft preview + document furniture ────────────── */
+
+describe('draft preview PDF', () => {
+  const base = {
+    contractId: 'contract-draft',
+    consultantName: 'Yasmine Belkacem',
+    signerPhoneSnapshot: '+213770112233',
+    signedAt: new Date('2026-08-21T10:00:00Z').toISOString(),
+    metworkName: 'EURL METWORK',
+    metworkManager: 'Mohammed Benhamada',
+    body: 'Corps du contrat.\n\n{{signature_block}}',
+  };
+
+  it('renders without a signature and without throwing', async () => {
+    const pdf = await generateConsultantContractPdf({
+      ...base,
+      signatureImagePng: '',
+      adminStampUrl: null,
+      draft: true,
+    });
+    expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+    expect(pdf.length).toBeGreaterThan(1_000);
+  });
+
+  it('IGNORES a signature and stamp even if handed them', async () => {
+    // A draft must never show a signature: it is the copy read BEFORE signing,
+    // and a forwarded one must be self-evidently unexecuted.
+    const draft = await generateConsultantContractPdf({
+      ...base, signatureImagePng: SIGNATURE_PNG, adminStampUrl: null, draft: true,
+    });
+    const signed = await generateConsultantContractPdf({
+      ...base, signatureImagePng: SIGNATURE_PNG, adminStampUrl: null, draft: false,
+    });
+    // The signed one embeds the drawn signature image; the draft does not.
+    const imagesIn = (b: Buffer) => (b.toString('latin1').match(/\/Subtype\s*\/Image/g) ?? []).length;
+    expect(imagesIn(draft)).toBeLessThan(imagesIn(signed));
+  });
+
+  it('differs from the signed document', async () => {
+    const draft = await generateConsultantContractPdf({
+      ...base, signatureImagePng: SIGNATURE_PNG, adminStampUrl: null, draft: true,
+    });
+    const signed = await generateConsultantContractPdf({
+      ...base, signatureImagePng: SIGNATURE_PNG, adminStampUrl: null, draft: false,
+    });
+    expect(draft.length).not.toBe(signed.length);
+  });
+});
+
+describe('document furniture', () => {
+  const base = {
+    contractId: 'c-furniture',
+    consultantName: 'Yasmine Belkacem',
+    signerPhoneSnapshot: '+213770112233',
+    signatureImagePng: SIGNATURE_PNG,
+    signedAt: new Date('2026-08-21T10:00:00Z').toISOString(),
+    adminStampUrl: null,
+    metworkName: 'EURL METWORK',
+    metworkManager: 'Mohammed Benhamada',
+  };
+
+  it('embeds the brand logo', async () => {
+    const pdf = await generateConsultantContractPdf({ ...base, body: 'Corps.' });
+    // Logo + signature = at least two embedded images.
+    const images = (pdf.toString('latin1').match(/\/Subtype\s*\/Image/g) ?? []).length;
+    expect(images).toBeGreaterThanOrEqual(2);
+  });
+
+  it('numbers every page, including a multi-page body', async () => {
+    const long = 'Article premier. '.repeat(400);
+    const pdf = await generateConsultantContractPdf({ ...base, body: long });
+    const pages = (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) ?? []).length;
+    expect(pages).toBeGreaterThan(1);
+    // bufferPages must be on, or writing a footer back onto page 1 is impossible.
+    expect(pdf.subarray(-6).toString('latin1')).toContain('EOF');
+  });
+});

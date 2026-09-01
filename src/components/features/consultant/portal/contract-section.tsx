@@ -161,6 +161,10 @@ function PendingContract({
   const padRef = useRef<SignaturePadHandle | null>(null);
 
   const [step, setStep] = useState<Step>('read');
+  // Whether the consultant has opened the rendered PDF. Advisory only — it
+  // nudges rather than blocks, so a browser that swallows the popup can never
+  // trap someone who is ready to sign.
+  const [readPdf, setReadPdf] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -254,9 +258,30 @@ function PendingContract({
         <>
           <ContractBody body={contract.contentSnapshot} />
           <LockedTerms contract={contract} />
+          {/* The formatted document, as it will actually be signed. Opening it
+              is what the audit trail records as "read before signing". */}
+          <GhostButton
+            tone="light"
+            className="w-full"
+            onClick={() => {
+              setReadPdf(true);
+              window.open(
+                `/api/consultant/contracts/${encodeURIComponent(contract.id)}/preview`,
+                '_blank',
+                'noopener,noreferrer',
+              );
+            }}
+          >
+            <FileText className="size-4" /> {t('readPdf')}
+          </GhostButton>
           <BrandButton tone="light" className="w-full" onClick={() => { setStep('sign'); setError(null); }}>
             {t('startSigning')}
           </BrandButton>
+          {!readPdf && (
+            <p className="text-center text-[11px]" style={{ color: CP_LIGHT_MUTED }}>
+              {t('readPdfHint')}
+            </p>
+          )}
         </>
       )}
 
@@ -363,21 +388,19 @@ function SignedContract({ contract }: { contract: ConsultantContract }) {
     : '';
 
   /**
-   * Fetch a fresh link at click time rather than reusing the one from the list
-   * response — signed Cloudinary links expire within minutes, so a page left
-   * open would otherwise hand the consultant a dead link.
+   * Opens OUR route, which streams the bytes as `application/pdf; inline`.
+   *
+   * It used to fetch a Cloudinary signed link and `window.open` that, which is
+   * what produced a blank tab: that endpoint answers octet-stream/attachment
+   * with an extensionless filename. Nothing to fetch first any more — the route
+   * mints its own link server-side, so there is also no expiry race.
    */
-  async function openPdf() {
-    setBusy(true);
-    setError(null);
-    try {
-      const { url } = await consultantService.contractPdfUrl(contract.id);
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } catch {
-      setError(t('errors.pdfUnavailable'));
-    } finally {
-      setBusy(false);
-    }
+  function openPdf() {
+    window.open(
+      `/api/consultant/contracts/${encodeURIComponent(contract.id)}/pdf`,
+      '_blank',
+      'noopener,noreferrer',
+    );
   }
 
   return (
@@ -398,7 +421,7 @@ function SignedContract({ contract }: { contract: ConsultantContract }) {
 
       {error && <ErrorBanner message={error} tone="light" />}
 
-      <GhostButton tone="light" className="w-full" onClick={() => void openPdf()} disabled={busy}>
+      <GhostButton tone="light" className="w-full" onClick={openPdf}>
         {busy ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
         {t('downloadPdf')}
       </GhostButton>

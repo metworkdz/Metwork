@@ -23,15 +23,20 @@ export type ConsultantContractToken =
   | 'consultant_address'
   | 'consultant_city'
   | 'consultant_id_number'
+  | 'consultant_nif'
   | 'commission_rate'
   | 'consultant_share'
+  | 'program_commission_rate'
+  | 'program_consultant_share'
   | 'payout_method'
   | 'payout_details'
   | 'today'
   | 'metwork_name'
   | 'metwork_address'
   | 'metwork_rc'
-  | 'metwork_nif';
+  | 'metwork_nif'
+  | 'metwork_capital'
+  | 'metwork_manager';
 
 /** Ordered token catalogue, shown as a reference chip list in the template editor. */
 export const CONSULTANT_CONTRACT_VARIABLES: readonly ConsultantContractToken[] = [
@@ -42,8 +47,11 @@ export const CONSULTANT_CONTRACT_VARIABLES: readonly ConsultantContractToken[] =
   'consultant_address',
   'consultant_city',
   'consultant_id_number',
+  'consultant_nif',
   'commission_rate',
   'consultant_share',
+  'program_commission_rate',
+  'program_consultant_share',
   'payout_method',
   'payout_details',
   'today',
@@ -51,6 +59,8 @@ export const CONSULTANT_CONTRACT_VARIABLES: readonly ConsultantContractToken[] =
   'metwork_address',
   'metwork_rc',
   'metwork_nif',
+  'metwork_capital',
+  'metwork_manager',
 ];
 
 const KNOWN_TOKENS = new Set<string>(CONSULTANT_CONTRACT_VARIABLES);
@@ -77,10 +87,19 @@ function fmtDateFr(iso: string): string {
 export interface ResolveConsultantVariablesInput {
   mentor: Pick<
     MentorRecord,
-    'fullName' | 'phone' | 'email' | 'position' | 'address' | 'city' | 'idNumber'
+    'fullName' | 'phone' | 'email' | 'position' | 'address' | 'city' | 'idNumber' | 'nif'
   >;
   /** The LIVE resolved rate at the moment of merging — a display value only; the record's own frozen rate is still resolved again at send-time. */
   commissionRate: number;
+  /**
+   * Platform rate on consultant-owned PROGRAMS (the MENTOR_PROGRAM rule).
+   * A separate number from `commissionRate`: the contract quotes both, because
+   * consultations and programs are commissioned differently.
+   */
+  programCommissionRate: number;
+  /** Metwork's share capital + signing gérant, as the admin typed them. */
+  metworkCapital?: string | null;
+  metworkManager?: string | null;
   payoutMethod: 'BANK_TRANSFER' | 'CCP' | 'CHEQUE';
   /** Same masked description `sendContract` freezes onto the record. */
   payoutDetails: string | null;
@@ -92,7 +111,7 @@ export interface ResolveConsultantVariablesInput {
 export function resolveConsultantContractVariables(
   input: ResolveConsultantVariablesInput,
 ): Record<ConsultantContractToken, string> {
-  const { mentor, commissionRate, payoutMethod, payoutDetails, metwork } = input;
+  const { mentor, commissionRate, programCommissionRate, payoutMethod, payoutDetails, metwork } = input;
   return {
     consultant_name: mentor.fullName ?? '',
     consultant_phone: mentor.phone ?? '',
@@ -103,8 +122,11 @@ export function resolveConsultantContractVariables(
     // must print the wilaya NAME. Legacy free-text values pass through as typed.
     consultant_city: formatCityLabel(mentor.city, 'fr'),
     consultant_id_number: mentor.idNumber ?? '',
+    consultant_nif: mentor.nif ?? '',
     commission_rate: fmtRate(commissionRate),
     consultant_share: fmtRate(1 - commissionRate),
+    program_commission_rate: fmtRate(programCommissionRate),
+    program_consultant_share: fmtRate(1 - programCommissionRate),
     payout_method: PAYOUT_METHOD_LABEL_FR[payoutMethod],
     payout_details: payoutDetails ?? '',
     today: fmtDateFr(new Date().toISOString()),
@@ -112,6 +134,8 @@ export function resolveConsultantContractVariables(
     metwork_address: metwork?.address ?? '',
     metwork_rc: metwork?.commercialRegNumber ?? '',
     metwork_nif: metwork?.nif ?? '',
+    metwork_capital: input.metworkCapital ?? '',
+    metwork_manager: input.metworkManager ?? '',
   };
 }
 

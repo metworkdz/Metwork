@@ -24,7 +24,7 @@ import type { MentorRecord } from '@/server/consultant-contracts/types';
 
 const MENTOR: Pick<
   MentorRecord,
-  'fullName' | 'phone' | 'email' | 'position' | 'address' | 'city' | 'idNumber'
+  'fullName' | 'phone' | 'email' | 'position' | 'address' | 'city' | 'idNumber' | 'nif'
 > = {
   fullName: 'Yasmine Belkacem',
   phone: '+213770112233',
@@ -33,6 +33,7 @@ const MENTOR: Pick<
   address: '12 Rue Didouche Mourad, Alger Centre',
   city: 'Alger',
   idNumber: '109412345678',
+  nif: '002431112519476',
 };
 
 describe('resolveConsultantContractVariables', () => {
@@ -40,6 +41,7 @@ describe('resolveConsultantContractVariables', () => {
     const values = resolveConsultantContractVariables({
       mentor: MENTOR,
       commissionRate: 0.2,
+      programCommissionRate: 0.05,
       payoutMethod: 'BANK_TRANSFER',
       payoutDetails: 'RIB ••••7890 — Yasmine Belkacem',
       metwork: null,
@@ -59,6 +61,7 @@ describe('resolveConsultantContractVariables', () => {
     const values = resolveConsultantContractVariables({
       mentor: MENTOR,
       commissionRate: 0.3,
+      programCommissionRate: 0.05,
       payoutMethod: 'CCP',
       payoutDetails: null,
       metwork: null,
@@ -72,6 +75,7 @@ describe('resolveConsultantContractVariables', () => {
     const values = resolveConsultantContractVariables({
       mentor: MENTOR,
       commissionRate: 0.2,
+      programCommissionRate: 0.05,
       payoutMethod: 'CHEQUE',
       payoutDetails: null,
       metwork: null,
@@ -84,6 +88,7 @@ describe('resolveConsultantContractVariables', () => {
     const withParty = resolveConsultantContractVariables({
       mentor: MENTOR,
       commissionRate: 0.2,
+      programCommissionRate: 0.05,
       payoutMethod: 'BANK_TRANSFER',
       payoutDetails: null,
       metwork: { name: 'EURL METWORK', address: '12 rue, Oran', commercialRegNumber: '31/00-1234567 B 24', nif: '002431012345678' },
@@ -96,6 +101,7 @@ describe('resolveConsultantContractVariables', () => {
     const withoutParty = resolveConsultantContractVariables({
       mentor: MENTOR,
       commissionRate: 0.2,
+      programCommissionRate: 0.05,
       payoutMethod: 'BANK_TRANSFER',
       payoutDetails: null,
       metwork: null,
@@ -108,6 +114,7 @@ describe('resolveConsultantContractVariables', () => {
     const values = resolveConsultantContractVariables({
       mentor: { fullName: 'Karim Haddad', phone: undefined, email: undefined, position: 'Consultant' },
       commissionRate: 0.2,
+      programCommissionRate: 0.05,
       payoutMethod: 'BANK_TRANSFER',
       payoutDetails: null,
       metwork: null,
@@ -122,6 +129,7 @@ describe('renderConsultantContractTemplate', () => {
     const values = resolveConsultantContractVariables({
       mentor: MENTOR,
       commissionRate: 0.2,
+      programCommissionRate: 0.05,
       payoutMethod: 'BANK_TRANSFER',
       payoutDetails: 'RIB ••••7890',
       metwork: { name: 'EURL METWORK', address: null, commercialRegNumber: null, nif: null },
@@ -213,6 +221,7 @@ describe('consultant identity tokens', () => {
     resolveConsultantContractVariables({
       mentor: { ...MENTOR, ...m },
       commissionRate: 0.2,
+      programCommissionRate: 0.05,
       payoutMethod: 'BANK_TRANSFER',
       payoutDetails: null,
       metwork: null,
@@ -273,6 +282,7 @@ describe('signature block marker', () => {
       resolveConsultantContractVariables({
         mentor: MENTOR,
         commissionRate: 0.2,
+        programCommissionRate: 0.05,
         payoutMethod: 'BANK_TRANSFER',
         payoutDetails: null,
         metwork: null,

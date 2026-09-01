@@ -530,7 +530,9 @@
         "pdfUnavailable": "Could not open the document. Please try again.",
         "signFailed": "We couldn't finalise your contract. Please try again in a moment.",
         "unavailable": "Signing is temporarily unavailable. Please try again later."
-      }
+      },
+      "readPdf": "Read the contract (PDF)",
+      "readPdfHint": "Tip: open the PDF to read the full contract before signing."
     }
   },
   "common": {
