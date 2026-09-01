@@ -38,6 +38,8 @@ if (!CONTRACT_ID) {
   console.error('Usage: npx tsx scripts/delete-consultant-contract.ts <contractId> [--confirm] [--with-asset] [--with-audit]');
   process.exit(1);
 }
+/** Narrowed once: the guard above cannot narrow inside main()'s closure. */
+const ID: string = CONTRACT_ID;
 
 // ── Creds from the repo's .env.local (same as backup-app-state.ts) ─────────
 const MAIN_ENV = path.resolve(process.cwd(), '.env.local');
@@ -47,7 +49,9 @@ if (!fs.existsSync(MAIN_ENV)) {
 }
 for (const line of fs.readFileSync(MAIN_ENV, 'utf8').split('\n')) {
   const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-  if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim().replace(/^["']|["']$/g, '');
+  if (!m) continue;
+  const key = m[1]!;
+  if (!process.env[key]) process.env[key] = m[2]!.trim().replace(/^["']|["']$/g, '');
 }
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -75,16 +79,16 @@ async function main(): Promise<void> {
   }
   const store = row.data as Store;
 
-  const contract = (store.consultantContracts ?? []).find((c) => c.id === CONTRACT_ID);
+  const contract = (store.consultantContracts ?? []).find((c) => c.id === ID);
   if (!contract) {
-    console.log(`✔ Nothing to do — no contract ${CONTRACT_ID} in the store (already removed?).`);
+    console.log(`✔ Nothing to do — no contract ${ID} in the store (already removed?).`);
     return;
   }
 
   const mentor = (store.mentors ?? []).find((m) => m.id === contract.consultantId);
-  const otpKey = `contract-sign:${CONTRACT_ID}`;
+  const otpKey = `contract-sign:${ID}`;
   const otps = (store.otps ?? []).filter((o) => o.userId === otpKey);
-  const audits = (store.auditLogs ?? []).filter((a) => JSON.stringify(a).includes(CONTRACT_ID));
+  const audits = (store.auditLogs ?? []).filter((a) => JSON.stringify(a).includes(ID));
 
   console.log(CONFIRM ? '⚠  LIVE WRITE MODE (--confirm)' : '🔎 DRY RUN — nothing will be written');
   console.log('');
@@ -107,10 +111,10 @@ async function main(): Promise<void> {
 
   const after: Store = {
     ...store,
-    consultantContracts: (store.consultantContracts ?? []).filter((c) => c.id !== CONTRACT_ID),
+    consultantContracts: (store.consultantContracts ?? []).filter((c) => c.id !== ID),
     otps: (store.otps ?? []).filter((o) => o.userId !== otpKey),
     ...(WITH_AUDIT
-      ? { auditLogs: (store.auditLogs ?? []).filter((a) => !JSON.stringify(a).includes(CONTRACT_ID)) }
+      ? { auditLogs: (store.auditLogs ?? []).filter((a) => !JSON.stringify(a).includes(ID)) }
       : {}),
   };
 
@@ -140,7 +144,7 @@ async function main(): Promise<void> {
 
   // Read back, so the result is confirmed against the server rather than assumed.
   const { data: check } = await supabase.from('app_state').select('data').eq('id', 1).single();
-  const left = ((check?.data as Store)?.consultantContracts ?? []).filter((c) => c.id === CONTRACT_ID);
+  const left = ((check?.data as Store)?.consultantContracts ?? []).filter((c) => c.id === ID);
   console.log(left.length === 0 ? '✔ Verified: contract is gone.' : '✘ Contract still present!');
 }
 
