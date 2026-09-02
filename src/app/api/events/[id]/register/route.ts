@@ -94,7 +94,7 @@ export async function POST(
         const incubator = event ? await findIncubatorById(event.incubatorId) : null;
         if (!incubator) return;
         const lang = user.locale === 'en' ? 'en' : 'fr';
-        sendBookingReceiptEmail({ booking: result.booking, clientName: user.fullName, clientEmail: user.email, incubator, lang });
+        await sendBookingReceiptEmail({ booking: result.booking, clientName: user.fullName, clientEmail: user.email, incubator, lang });
 
         // Incubator alert (email + WhatsApp) — event registrations are
         // already CONFIRMED at creation, no approval step, so this is FYI only.
@@ -113,7 +113,7 @@ export async function POST(
           result.booking.paymentMethod === 'wallet' ? 'En ligne (portefeuille)'
           : result.booking.paymentMethod === 'manual' ? 'Espèces sur place'
           : result.booking.paymentMethod ?? '—';
-        sendAdminOrderNotification({
+        await sendAdminOrderNotification({
           orderKind:     'EVENT',
           customerName:  user.fullName,
           customerEmail: user.email,

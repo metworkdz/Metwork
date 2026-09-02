@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Commission contract section.
+ * Consultant contract section.
  *
  * Three states, one component:
  *  • nothing to show      — an empty block,

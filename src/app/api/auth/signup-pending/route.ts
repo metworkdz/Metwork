@@ -214,7 +214,11 @@ export async function POST(req: NextRequest) {
 
   // Email is the primary channel for this flow; WhatsApp/SMS stay available via
   // the resend switcher on the OTP page.
-  sendOtpEmail(email, otpCode);
+  //
+  // AWAITED: unawaited it was dropped on Vercel, leaving the visitor waiting for
+  // a code that never left. Self-catching, so a mail failure cannot fail the
+  // request that already created the pending record.
+  await sendOtpEmail(email, otpCode);
 
   return json(
     { userId: id, maskedEmail: maskEmail(email), maskedPhone: maskPhone(phone) },

@@ -18,7 +18,11 @@ import { requireApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { appendAuditLog } from '@/server/audit/service';
-import { createDraftContract, listContracts } from '@/server/consultant-contracts/service';
+import {
+  createDraftContract,
+  listContracts,
+  missingConsultantIdentity,
+} from '@/server/consultant-contracts/service';
 import { mintContractPdfUrl } from '@/server/consultant-contracts/storage';
 import { toAdminContractDto } from '@/server/consultant-contracts/dto';
 
@@ -42,14 +46,17 @@ export async function GET() {
         pdfUrl: c.finalPdfPublicId ? mintContractPdfUrl(c.finalPdfPublicId) : null,
       }),
     ),
-    // Minimal picker payload — identity plus the one flag that decides whether
-    // a contract can actually be sent to them.
+    // Minimal picker payload — identity plus everything that decides whether a
+    // contract can actually be issued to them. `missingIdentity` comes from the
+    // SAME function `createDraftContract` refuses on, so the picker can never
+    // disagree with what the server will do.
     consultants: (data.mentors ?? [])
       .map((m) => ({
         id: m.id,
         fullName: m.fullName,
         email: m.email ?? null,
         phoneVerified: m.phoneVerified === true,
+        missingIdentity: missingConsultantIdentity(m),
       }))
       .sort((a, b) => a.fullName.localeCompare(b.fullName)),
   });

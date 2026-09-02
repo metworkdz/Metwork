@@ -414,10 +414,10 @@ export async function dispatchPaymentLinkNotificationsIfDue(id: string): Promise
 
     const lang: 'en' | 'fr' = c.link.locale === 'en' ? 'en' : 'fr';
     if (c.sendReceipt) {
-      sendPaymentLinkReceiptEmail({ link: c.link, incubator: c.incubator, lang });
+      await sendPaymentLinkReceiptEmail({ link: c.link, incubator: c.incubator, lang });
     }
     if (c.notifyIncubator) {
-      sendPaymentLinkPaidIncubatorEmail({ link: c.link, incubator: c.incubator, lang });
+      await sendPaymentLinkPaidIncubatorEmail({ link: c.link, incubator: c.incubator, lang });
     }
   } catch {
     // Notifications are non-critical — swallow so settlement is unaffected.

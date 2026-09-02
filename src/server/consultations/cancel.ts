@@ -144,7 +144,8 @@ export async function cancelByConsultant(input: {
         ? (await db.read()).users.find((u) => u.id === result.booking.userId)
         : null;
       try {
-        sendConsultationCancelledEmail({
+        // Awaited: an unawaited send is dropped when the lambda freezes.
+        await sendConsultationCancelledEmail({
           booking: result.booking,
           mentor,
           lang: user?.locale ?? result.booking.guestLocale,

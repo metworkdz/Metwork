@@ -148,7 +148,7 @@ export function ContractsManager() {
             <InlineEmptyState
               icon={<FileSignature className="size-8 opacity-30" />}
               title="No contracts yet"
-              description="Create a commission contract for a consultant, then send it for signature."
+              description="Create a consultant contract, then send it for signature."
             />
           ) : (
             <div className="overflow-x-auto">
@@ -337,6 +337,33 @@ function CreateContractDialog({
 }) {
   const [consultantId, setConsultantId] = useState('');
   const [busy, setBusy] = useState(false);
+  const [nudged, setNudged] = useState<string | null>(null);
+
+  const selected = consultants.find((m) => m.id === consultantId) ?? null;
+  // The same list createDraftContract refuses on, so the dialog can never
+  // disagree with what the server will do.
+  const missing = selected?.missingIdentity ?? [];
+  const blocked = missing.length > 0 || (selected != null && !selected.phoneVerified);
+
+  const FIELD_LABEL: Record<'address' | 'idNumber', string> = {
+    address: 'full address',
+    idNumber: 'ID number',
+  };
+
+  /** Email the consultant asking them to fill in what the contract needs. */
+  async function requestDetails() {
+    if (!selected) return;
+    setBusy(true);
+    onError(null);
+    try {
+      const { sentTo } = await contractsService.requestDetails(selected.id);
+      setNudged(sentTo);
+    } catch (e) {
+      onError(describeError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function create() {
     setBusy(true);
@@ -355,7 +382,7 @@ function CreateContractDialog({
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>New commission contract</DialogTitle>
+          <DialogTitle>New consultant contract</DialogTitle>
           <DialogDescription>
             The contract is generated from your saved template, filled in with this consultant&apos;s
             own name, phone, commission rate and payout details. You can review and edit the result
@@ -372,21 +399,57 @@ function CreateContractDialog({
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
           >
             <option value="">Select a consultant…</option>
-            {consultants.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.fullName}{m.phoneVerified ? '' : ' — phone not verified'}
-              </option>
-            ))}
+            {consultants.map((m) => {
+              // Surface every blocker in the option itself, so the admin sees
+              // who is ready without selecting them one at a time.
+              const gaps = [
+                ...(m.phoneVerified ? [] : ['phone not verified']),
+                ...m.missingIdentity.map((f) => `no ${FIELD_LABEL[f]}`),
+              ];
+              return (
+                <option key={m.id} value={m.id}>
+                  {m.fullName}{gaps.length ? ` — ${gaps.join(', ')}` : ' ✓ ready'}
+                </option>
+              );
+            })}
           </select>
           <p className="text-xs text-muted-foreground">
             A contract can only be sent to a consultant with a verified phone: the signing code is
             what ties the signature to them.
           </p>
+
+          {missing.length > 0 && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs">
+              <p className="font-medium text-amber-900">
+                {selected?.fullName} hasn&apos;t filled in their{' '}
+                {missing.map((f) => FIELD_LABEL[f]).join(' and ')}.
+              </p>
+              <p className="mt-1 text-amber-800">
+                The contract names them as a party, so it can&apos;t be created until they add
+                {missing.length > 1 ? ' these' : ' this'} in their profile settings.
+              </p>
+              {nudged ? (
+                <p className="mt-2 font-medium text-amber-900">Reminder sent to {nudged}.</p>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  disabled={busy || !selected?.email}
+                  onClick={() => void requestDetails()}
+                >
+                  {busy && <Loader2 className="size-4 animate-spin" />}
+                  {selected?.email ? 'Email them a reminder' : 'No email on file'}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
-          <Button onClick={() => void create()} disabled={busy || !consultantId}>
+          <Button onClick={() => void create()} disabled={busy || !consultantId || blocked}>
             {busy && <Loader2 className="size-4 animate-spin" />}
             Create draft
           </Button>

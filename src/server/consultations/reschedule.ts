@@ -132,7 +132,8 @@ export async function rescheduleBooking(input: {
   if (result.ok) {
     const lang: 'en' | 'fr' = result.booking.guestLocale === 'en' ? 'en' : 'fr';
     try {
-      sendConsultationRescheduledEmail({ booking: result.booking, mentor, lang, to: result.notify });
+      // Awaited: an unawaited send is dropped when the lambda freezes.
+      await sendConsultationRescheduledEmail({ booking: result.booking, mentor, lang, to: result.notify });
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error(

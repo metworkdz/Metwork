@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       try {
         const token = await issueMentorEmailToken(mentor.id);
         const base = clientEnvVars.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
-        sendVerificationEmail(
+        await sendVerificationEmail(
           mentor.email!.trim(),
           `${base}/api/consultant/verify-email?token=${encodeURIComponent(token)}`,
         );

@@ -29,6 +29,7 @@ import {
   bookingUpdatedEmailHtml,
   bookingProviderCancelledEmailHtml,
   contractReadyEmailHtml,
+  contractDetailsRequestEmailHtml,
   withdrawalRequestedEmailHtml,
   withdrawalProcessedEmailHtml,
   withdrawalApprovedEmailHtml,
@@ -254,13 +255,13 @@ export async function sendConsultantOtp(opts: {
 
 /* ─────────────────────────── Email ─────────────────────────── */
 
-export function sendWelcomeEmail(opts: {
+export async function sendWelcomeEmail(opts: {
   email: string;
   fullName: string;
   role: string;
   dashboardUrl: string;
-}): void {
-  sendResendEmail({
+}): Promise<void> {
+  await sendResendEmail({
     to: opts.email,
     subject: `Welcome to Metwork, ${opts.fullName}!`,
     html: welcomeEmailHtml({
@@ -281,8 +282,8 @@ export function sendWelcomeEmail(opts: {
     );
 }
 
-export function sendVerificationEmail(email: string, link: string): void {
-  sendResendEmail({
+export async function sendVerificationEmail(email: string, link: string): Promise<void> {
+  await sendResendEmail({
     to: email,
     subject: 'Verify your Metwork email address',
     html: verificationEmailHtml(link),
@@ -663,9 +664,9 @@ function bookingWhen(booking: MentorConfirmationInput['booking']): string {
  * recipient side ('user' when the consultant moved it, 'consultant' when the
  * user did). Fire-and-forget; never throws into the caller.
  */
-export function sendConsultationRescheduledEmail(
+export async function sendConsultationRescheduledEmail(
   input: MentorConfirmationInput & { to: 'user' | 'consultant' },
-): void {
+): Promise<void> {
   const { booking, mentor, lang, to } = input;
   const isFr = lang === 'fr';
   const recipientEmail = to === 'consultant' ? (mentor.email ?? '') : booking.userEmail;
@@ -683,7 +684,7 @@ export function sendConsultationRescheduledEmail(
       : `Your consultation with ${to === 'consultant' ? booking.userName : mentor.fullName} has been rescheduled${when ? ` to <strong>${when}</strong>` : ''}.`,
   ]);
 
-  sendResendEmail({ to: recipientEmail, subject, html })
+  await sendResendEmail({ to: recipientEmail, subject, html })
     .then((sent) => {
       if (!sent)
         // eslint-disable-next-line no-console
@@ -758,9 +759,9 @@ const CONSULT_CANCELLED_COPY: Record<
  * full amount was refunded to their Metwork wallet. Fire-and-forget.
  * Localized en/fr/ar; any other input locale falls back to fr.
  */
-export function sendConsultationCancelledEmail(
+export async function sendConsultationCancelledEmail(
   input: Omit<MentorConfirmationInput, 'lang'> & { lang?: string | null; refundedAmount: number },
-): void {
+): Promise<void> {
   const { booking, mentor, refundedAmount } = input;
   const lang = normalizeEmailLang(input.lang);
   if (!booking.userEmail) return;
@@ -775,7 +776,7 @@ export function sendConsultationCancelledEmail(
     lang === 'ar' ? 'rtl' : 'ltr',
   );
 
-  sendResendEmail({ to: booking.userEmail, subject, html })
+  await sendResendEmail({ to: booking.userEmail, subject, html })
     .then((sent) => {
       if (!sent)
         // eslint-disable-next-line no-console
@@ -804,7 +805,7 @@ export function sendConsultationCancelledEmail(
 
 /* ─────────────────────────── Booking lifecycle emails ─────────────────────── */
 
-export function sendBookingConfirmedWithQrEmail(
+export async function sendBookingConfirmedWithQrEmail(
   email: string,
   opts: {
     customerName: string;
@@ -818,8 +819,8 @@ export function sendBookingConfirmedWithQrEmail(
     totalAmount: number;
     createdAt: string;
   },
-): void {
-  sendResendEmail({
+): Promise<void> {
+  await sendResendEmail({
     to: email,
     subject: `Booking confirmed — ${opts.itemName}`,
     html: bookingConfirmedWithQrEmailHtml(opts),
@@ -836,7 +837,7 @@ export function sendBookingConfirmedWithQrEmail(
     );
 }
 
-export function sendBookingDeclinedEmail(
+export async function sendBookingDeclinedEmail(
   email: string,
   opts: {
     customerName: string;
@@ -847,8 +848,8 @@ export function sendBookingDeclinedEmail(
     totalAmount: number;
     declineReason?: string;
   },
-): void {
-  sendResendEmail({
+): Promise<void> {
+  await sendResendEmail({
     to: email,
     subject: `Booking update — ${opts.itemName}`,
     html: bookingDeclinedEmailHtml(opts),
@@ -869,16 +870,16 @@ export function sendBookingDeclinedEmail(
  * Sent when a provider cancels a client's UNPAID booking. States explicitly
  * that no payment was taken (no refund — nothing was charged). Fire-and-forget.
  */
-export function sendBookingCancelledUnpaidEmail(
+export async function sendBookingCancelledUnpaidEmail(
   email: string,
   opts: { customerName: string; bookingId: string; itemName: string; vendorName: string },
   lang: 'en' | 'fr' | 'ar' = 'en',
-): void {
+): Promise<void> {
   const subject =
     lang === 'fr' ? `Réservation annulée — ${opts.itemName}`
     : lang === 'ar' ? `تم إلغاء الحجز — ${opts.itemName}`
     : `Booking cancelled — ${opts.itemName}`;
-  sendResendEmail({
+  await sendResendEmail({
     to: email,
     subject,
     html: bookingCancelledUnpaidEmailHtml(opts, lang),
@@ -911,6 +912,35 @@ export function sendBookingCancelledUnpaidEmail(
  * in fact already issued.
  */
 /**
+ * Ask a consultant to fill in the identity details their contract needs.
+ *
+ * AWAITED by its route, like every other sender here — see the note on
+ * `sendContractReadyEmail`. Self-catching, so a mail failure cannot fail the
+ * admin's request.
+ */
+export function sendContractDetailsRequestEmail(
+  email: string,
+  opts: { consultantName: string; portalUrl: string; missingLabels: string[] },
+): Promise<void> {
+  recordE2eEmail('contract-details-request', { to: email, missing: opts.missingLabels });
+  return sendResendEmail({
+    to: email,
+    subject: 'Complétez votre profil pour recevoir votre contrat Metwork',
+    html: contractDetailsRequestEmailHtml(opts),
+  })
+    .then((sent) => {
+      if (!sent) {
+        // eslint-disable-next-line no-console
+        console.log(`${banner} EMAIL (contract-details-request) → ${email}`);
+      }
+    })
+    .catch((err: Error) => {
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Resend details-request email failed →`, err.message);
+    });
+}
+
+/**
  * Tell a consultant their contract is waiting for signature.
  *
  * RETURNS THE PROMISE, and the caller MUST await it. Fire-and-forget does not
@@ -929,7 +959,7 @@ export function sendContractReadyEmail(
   recordE2eEmail('contract-ready', { to: email });
   return sendResendEmail({
     to: email,
-    subject: 'Votre contrat de commission Metwork est prêt à signer',
+    subject: 'Votre contrat consultant Metwork est prêt à signer',
     html: contractReadyEmailHtml(opts),
   })
     .then((sent) => {
@@ -944,11 +974,11 @@ export function sendContractReadyEmail(
     });
 }
 
-export function sendWithdrawalRequestedEmail(
+export async function sendWithdrawalRequestedEmail(
   email: string,
   opts: { userName: string; amount: number; accountDetails: string },
-): void {
-  sendResendEmail({
+): Promise<void> {
+  await sendResendEmail({
     to: email,
     subject: `Withdrawal request received — ${opts.amount.toLocaleString()} DZD`,
     html: withdrawalRequestedEmailHtml(opts),
@@ -965,12 +995,12 @@ export function sendWithdrawalRequestedEmail(
     );
 }
 
-export function sendWithdrawalProcessedEmail(
+export async function sendWithdrawalProcessedEmail(
   email: string,
   opts: { userName: string; amount: number; status: 'APPROVED' | 'REJECTED'; adminNote?: string },
-): void {
+): Promise<void> {
   recordE2eEmail(`withdrawal-${opts.status.toLowerCase()}`, { to: email, amount: opts.amount });
-  sendResendEmail({
+  await sendResendEmail({
     to: email,
     subject: opts.status === 'APPROVED'
       ? `Withdrawal approved — ${opts.amount.toLocaleString()} DZD`
@@ -994,7 +1024,7 @@ export function sendWithdrawalProcessedEmail(
  * localised en/fr/ar. Fire-and-forget like every sender here — an email
  * failure never propagates into the approval money path.
  */
-export function sendWithdrawalApprovedEmail(
+export async function sendWithdrawalApprovedEmail(
   email: string,
   opts: {
     name: string;
@@ -1003,7 +1033,7 @@ export function sendWithdrawalApprovedEmail(
     adminNote?: string | null;
   },
   lang: 'en' | 'fr' | 'ar' = 'fr',
-): void {
+): Promise<void> {
   const fmtAmt = `${opts.amount.toLocaleString('fr-DZ')} DZD`;
   const subject =
     lang === 'fr' ? `Retrait traité — ${fmtAmt}`
@@ -1011,7 +1041,7 @@ export function sendWithdrawalApprovedEmail(
     : `Withdrawal processed — ${fmtAmt}`;
 
   recordE2eEmail('withdrawal-approved', { to: email, amount: opts.amount, method: opts.method });
-  sendResendEmail({
+  await sendResendEmail({
     to: email,
     subject,
     html: withdrawalApprovedEmailHtml(opts, lang),
@@ -1028,15 +1058,15 @@ export function sendWithdrawalApprovedEmail(
     );
 }
 
-export function sendContactNotification(submission: {
+export async function sendContactNotification(submission: {
   name: string;
   email: string;
   message: string;
-}): void {
+}): Promise<void> {
   const adminEmail =
     process.env.CONTACT_EMAIL ?? process.env.EMAIL_FROM ?? 'contact@metwork.dz';
 
-  sendResendEmail({
+  await sendResendEmail({
     to: adminEmail,
     subject: `New contact form submission from ${submission.name}`,
     html: contactNotificationHtml(submission.name, submission.email, submission.message),
@@ -1135,8 +1165,8 @@ export async function sendBookingReceiptEmailAsync(input: BookingReceiptInput): 
  * Fire-and-forget wrapper for callers that don't need to await delivery.
  * Prefer `sendBookingReceiptEmailAsync` inside serverless request handlers.
  */
-export function sendBookingReceiptEmail(input: BookingReceiptInput): void {
-  void sendBookingReceiptEmailAsync(input);
+export async function sendBookingReceiptEmail(input: BookingReceiptInput): Promise<void> {
+  await sendBookingReceiptEmailAsync(input);
 }
 
 /**
@@ -1204,11 +1234,11 @@ export async function sendBookingProviderCancelledEmail(
  * link settlement. Fire-and-forget — errors are logged, never surfaced to the
  * settlement flow.
  */
-export function sendPaymentLinkReceiptEmail(input: {
+export async function sendPaymentLinkReceiptEmail(input: {
   link: PaymentLinkRecord;
   incubator: IncubatorRecord;
   lang: 'en' | 'fr';
-}): void {
+}): Promise<void> {
   const { link, incubator, lang } = input;
   const isFr = lang === 'fr';
   if (!link.payerEmail) return;
@@ -1219,7 +1249,10 @@ export function sendPaymentLinkReceiptEmail(input: {
   const reference = link.id.slice(0, 8).toUpperCase();
   const filename = `receipt-${reference}.pdf`;
 
-  generatePaymentLinkReceiptPdf({ link, incubator, lang })
+  // Return the WHOLE chain: the pdf is generated first, so awaiting only the
+  // inner send would not wait for the generation step (and `await` inside a
+  // non-async .then callback is not even legal).
+  return generatePaymentLinkReceiptPdf({ link, incubator, lang })
     .then((pdfBuffer) =>
       sendResendEmail({
         to: link.payerEmail!,
@@ -1257,11 +1290,11 @@ export function sendPaymentLinkReceiptEmail(input: {
  * Notify the incubator owner of a new payment received via a payment link.
  * Skipped silently when the incubator record has no email. Fire-and-forget.
  */
-export function sendPaymentLinkPaidIncubatorEmail(input: {
+export async function sendPaymentLinkPaidIncubatorEmail(input: {
   link: PaymentLinkRecord;
   incubator: IncubatorRecord;
   lang: 'en' | 'fr';
-}): void {
+}): Promise<void> {
   const { link, incubator, lang } = input;
   const isFr = lang === 'fr';
   const to = incubator.email;
@@ -1277,7 +1310,7 @@ export function sendPaymentLinkPaidIncubatorEmail(input: {
   const reference = link.id.slice(0, 8).toUpperCase();
   const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/incubator/wallet`;
 
-  sendResendEmail({
+  await sendResendEmail({
     to,
     subject: isFr
       ? `Nouveau paiement reçu — ${link.serviceName}`
@@ -1420,21 +1453,21 @@ export async function sendConsultationConfirmationEmail(input: MentorConfirmatio
  * Contains the confirmed schedule + amount + single-use pay button.
  * Fire-and-forget — never blocks the admin approval response.
  */
-export function sendConsultationPayLinkEmail(input: {
+export async function sendConsultationPayLinkEmail(input: {
   booking:    MentorConfirmationInput['booking'];
   mentor:     MentorConfirmationInput['mentor'];
   lang:       'en' | 'fr';
   payUrl:     string;
   amount:     number;
   expiresAt:  string;
-}): void {
+}): Promise<void> {
   const { booking, mentor, lang, payUrl, amount, expiresAt } = input;
   const isFr = lang === 'fr';
   const subject = isFr
     ? `Paiement requis — consultation avec ${mentor.fullName}`
     : `Payment required — consultation with ${mentor.fullName}`;
 
-  sendResendEmail({
+  await sendResendEmail({
     to:      booking.userEmail,
     subject,
     html:    consultationPayLinkEmailHtml({
@@ -1524,19 +1557,19 @@ export async function sendConsultationRequestReceivedEmail(input: MentorConfirma
 /**
  * Notify the client that their consultation request was rejected.
  */
-export function sendConsultationRejectedEmail(input: {
+export async function sendConsultationRejectedEmail(input: {
   booking:   MentorConfirmationInput['booking'];
   mentor:    MentorConfirmationInput['mentor'];
   adminNote: string | null;
   lang:      'en' | 'fr';
-}): void {
+}): Promise<void> {
   const { booking, mentor, adminNote, lang } = input;
   const isFr = lang === 'fr';
   const subject = isFr
     ? `Demande de consultation refusée – ${mentor.fullName}`
     : `Consultation request declined – ${mentor.fullName}`;
 
-  sendResendEmail({
+  await sendResendEmail({
     to:   booking.userEmail,
     subject,
     html: consultationRejectedEmailHtml({
@@ -1564,14 +1597,14 @@ export function sendConsultationRejectedEmail(input: {
  * Notify the admin of a new paid order (space booking, program application, event registration).
  * Fire-and-forget — errors are logged, never surfaced.
  */
-export function sendAdminOrderNotification(params: AdminOrderNotifParams): void {
+export async function sendAdminOrderNotification(params: AdminOrderNotifParams): Promise<void> {
   const adminEmail = process.env.CONTACT_EMAIL ?? process.env.EMAIL_FROM ?? 'contact@metwork.dz';
   const kindLabel  =
     params.orderKind === 'SPACE'   ? 'Espace'
     : params.orderKind === 'PROGRAM' ? 'Programme'
     : 'Événement';
 
-  sendResendEmail({
+  await sendResendEmail({
     to:      adminEmail,
     subject: `[Metwork] Nouvelle commande ${kindLabel} — ${params.customerName} (${params.amount > 0 ? `${params.amount.toLocaleString()} DZD` : 'Gratuit'})`,
     html:    adminOrderNotificationHtml(params),
@@ -1594,7 +1627,7 @@ export function sendAdminOrderNotification(params: AdminOrderNotifParams): void 
  * Notify the admin when a new INCUBATOR account is verified.
  * Fire-and-forget — errors are logged, never surfaced.
  */
-export function sendAdminNewIncubatorNotification(params: {
+export async function sendAdminNewIncubatorNotification(params: {
   fullName:  string;
   email:     string;
   phone?:    string;
@@ -1603,11 +1636,11 @@ export function sendAdminNewIncubatorNotification(params: {
   incubatorName?: string;
   website?:  string | null;
   instagram?: string | null;
-}): void {
+}): Promise<void> {
   const adminEmail = process.env.CONTACT_EMAIL ?? process.env.EMAIL_FROM ?? 'contact@metwork.dz';
   const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/admin/incubators`;
 
-  sendResendEmail({
+  await sendResendEmail({
     to:      adminEmail,
     subject: `[Metwork] Nouvel incubateur inscrit — ${params.incubatorName ?? params.fullName}`,
     html:    adminIncubatorNotificationHtml({ ...params, reviewUrl }),
@@ -1630,18 +1663,18 @@ export function sendAdminNewIncubatorNotification(params: {
  * Notify the admin when a new INVESTOR account is verified (review required).
  * Fire-and-forget — errors are logged, never surfaced.
  */
-export function sendAdminNewInvestorNotification(params: {
+export async function sendAdminNewInvestorNotification(params: {
   fullName:  string;
   email:     string;
   phone?:    string;
   userId:    string;
   createdAt: string;
   linkedin?: string | null;
-}): void {
+}): Promise<void> {
   const adminEmail = process.env.CONTACT_EMAIL ?? process.env.EMAIL_FROM ?? 'contact@metwork.dz';
   const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/admin/investors`;
 
-  sendResendEmail({
+  await sendResendEmail({
     to:      adminEmail,
     subject: `[Metwork] Nouvel investisseur inscrit — ${params.fullName}`,
     html:    adminInvestorNotificationHtml({ ...params, reviewUrl }),
@@ -1665,7 +1698,7 @@ export function sendAdminNewInvestorNotification(params: {
  * Reuses the provider-notification template (business behaves like a provider).
  * Fire-and-forget — errors are logged, never surfaced.
  */
-export function sendAdminNewBusinessNotification(params: {
+export async function sendAdminNewBusinessNotification(params: {
   fullName:  string;
   email:     string;
   phone?:    string;
@@ -1675,12 +1708,12 @@ export function sendAdminNewBusinessNotification(params: {
   subTypeLabel?: string;
   website?:  string | null;
   instagram?: string | null;
-}): void {
+}): Promise<void> {
   const adminEmail = process.env.CONTACT_EMAIL ?? process.env.EMAIL_FROM ?? 'contact@metwork.dz';
   const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/admin/approvals`;
   const label = params.subTypeLabel ?? 'Business';
 
-  sendResendEmail({
+  await sendResendEmail({
     to:      adminEmail,
     subject: `[Metwork] Nouveau compte ${label} inscrit — ${params.businessName ?? params.fullName}`,
     html:    adminIncubatorNotificationHtml({
@@ -1752,11 +1785,11 @@ export async function sendMentorSessionConfirmedEmail(input: MentorConfirmationI
 /**
  * Notify the admin that a new consultation request has been submitted.
  */
-export function sendAdminConsultationNotification(input: MentorConfirmationInput): void {
+export async function sendAdminConsultationNotification(input: MentorConfirmationInput): Promise<void> {
   const { booking, mentor } = input;
   const adminEmail = process.env.CONTACT_EMAIL ?? process.env.EMAIL_FROM ?? 'contact@metwork.dz';
 
-  sendResendEmail({
+  await sendResendEmail({
     to:      adminEmail,
     subject: `[Metwork] Nouvelle demande de consultation — ${booking.userName} → ${mentor.fullName}`,
     html:    adminConsultationNotificationHtml({
@@ -1800,10 +1833,10 @@ export interface ReservationEmailDetails {
 /**
  * Client email — "Request sent, awaiting host approval". Fire-and-forget.
  */
-export function sendBookingRequestReceivedEmail(
+export async function sendBookingRequestReceivedEmail(
   to: string,
   opts: { customerName: string; details: ReservationEmailDetails; lang?: EmailLang },
-): void {
+): Promise<void> {
   const { customerName, details, lang } = opts;
   const subject =
     lang === 'en' ? `Request sent — ${details.itemName}`
@@ -1811,7 +1844,7 @@ export function sendBookingRequestReceivedEmail(
     : `Demande envoyée — ${details.itemName}`;
 
   recordE2eEmail('booking-request-received', { to, bookingId: details.bookingId });
-  sendResendEmail({
+  await sendResendEmail({
     to,
     subject,
     html: bookingRequestReceivedEmailHtml({
@@ -1862,10 +1895,10 @@ function sendIncubatorBookingWhatsApp(incubator: IncubatorRecord, itemName: stri
  * WhatsApp. Each channel is skipped independently when the incubator record
  * lacks that contact method; fire-and-forget.
  */
-export function sendIncubatorBookingRequestEmail(
+export async function sendIncubatorBookingRequestEmail(
   incubator: IncubatorRecord,
   opts: { customerName: string; details: ReservationEmailDetails; lang?: EmailLang },
-): void {
+): Promise<void> {
   const { customerName, details, lang } = opts;
   const to = incubator.email;
   if (!to) {
@@ -1879,7 +1912,7 @@ export function sendIncubatorBookingRequestEmail(
       : `Nouvelle demande de réservation — ${details.itemName}`;
 
     recordE2eEmail('booking-request-incubator', { to, bookingId: details.bookingId });
-    sendResendEmail({
+    await sendResendEmail({
       to,
       subject,
       html: incubatorBookingRequestEmailHtml({
@@ -2049,7 +2082,7 @@ export async function notifyIncubatorDomiciliationRequest(
  * e2e sink (USE_LOCAL_DB only) so tests can retrieve it — the DB stores only
  * the token's SHA-256 hash.
  */
-export function sendBookingApprovedPayEmail(
+export async function sendBookingApprovedPayEmail(
   to: string,
   opts: {
     customerName: string;
@@ -2058,7 +2091,7 @@ export function sendBookingApprovedPayEmail(
     expiresAt: string;
     lang?: EmailLang;
   },
-): void {
+): Promise<void> {
   const { customerName, details, payUrl, expiresAt, lang } = opts;
   const subject =
     lang === 'en' ? `Booking approved — complete payment — ${details.itemName}`
@@ -2066,7 +2099,7 @@ export function sendBookingApprovedPayEmail(
     : `Réservation approuvée — finalisez le paiement — ${details.itemName}`;
 
   recordE2eEmail('booking-approved-pay-link', { to, bookingId: details.bookingId, payUrl });
-  sendResendEmail({
+  await sendResendEmail({
     to,
     subject,
     html: bookingApprovedPayEmailHtml({
@@ -2099,10 +2132,10 @@ export function sendBookingApprovedPayEmail(
  * Incubator email — "Booking paid & confirmed" once the client settles a
  * REQUEST-mode reservation. Skipped when the record has no email.
  */
-export function sendBookingPaidIncubatorEmail(
+export async function sendBookingPaidIncubatorEmail(
   incubator: IncubatorRecord,
   opts: { customerName: string; details: ReservationEmailDetails; lang?: EmailLang },
-): void {
+): Promise<void> {
   const { customerName, details, lang } = opts;
   const to = incubator.email;
   if (!to) {
@@ -2117,7 +2150,7 @@ export function sendBookingPaidIncubatorEmail(
     : `Réservation payée et confirmée — ${details.itemName}`;
 
   recordE2eEmail('booking-paid-incubator', { to, bookingId: details.bookingId });
-  sendResendEmail({
+  await sendResendEmail({
     to,
     subject,
     html: bookingPaidIncubatorEmailHtml({

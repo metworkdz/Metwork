@@ -371,7 +371,7 @@ export async function PATCH(
           : 'fr';
         const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz';
         const payUrl = `${appUrl}/${locale}/booking/${result.id}/pay?token=${result.requestApproval.rawToken}`;
-        sendBookingApprovedPayEmail(result.customerEmail, {
+        await sendBookingApprovedPayEmail(result.customerEmail, {
           customerName: result.customerName,
           details: {
             bookingId:   result.id,
@@ -403,7 +403,7 @@ export async function PATCH(
     if (input.status === 'CANCELLED' && result.reservationMode === 'REQUEST' && !result.paidAt) {
       if (result.customerEmail) {
         if (input.declineReason) {
-          sendBookingDeclinedEmail(result.customerEmail, {
+          await sendBookingDeclinedEmail(result.customerEmail, {
             customerName: result.customerName,
             bookingId: result.id,
             itemName: result.itemName,
@@ -417,7 +417,7 @@ export async function PATCH(
             result.customerLocale === 'en' ? 'en'
             : result.customerLocale === 'ar' ? 'ar'
             : 'fr';
-          sendBookingCancelledUnpaidEmail(result.customerEmail, {
+          await sendBookingCancelledUnpaidEmail(result.customerEmail, {
             customerName: result.customerName,
             bookingId: result.id,
             itemName: result.itemName,
@@ -439,7 +439,7 @@ export async function PATCH(
 
     if (input.status === 'CONFIRMED') {
       if (result.customerEmail) {
-        sendBookingConfirmedWithQrEmail(result.customerEmail, {
+        await sendBookingConfirmedWithQrEmail(result.customerEmail, {
           customerName: result.customerName,
           bookingId: result.id,
           itemName: result.itemName,
@@ -463,7 +463,7 @@ export async function PATCH(
       }
     } else if (input.status === 'CANCELLED') {
       if (result.customerEmail) {
-        sendBookingDeclinedEmail(result.customerEmail, {
+        await sendBookingDeclinedEmail(result.customerEmail, {
           customerName: result.customerName,
           bookingId: result.id,
           itemName: result.itemName,

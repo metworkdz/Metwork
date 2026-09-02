@@ -792,6 +792,38 @@ export function otpEmailHtml(code: string): string {
 }
 
 /**
+ * Ask a consultant to complete the identity details their contract needs.
+ *
+ * Sent when an admin tries to issue a contract and the profile is missing the
+ * legal address or ID number — the two fields the document needs to name them
+ * as a party. Lists exactly what is missing, so the consultant does not have to
+ * guess which of their details is at fault.
+ *
+ * Carries no contract and no terms: nothing is issued until they have filled
+ * these in.
+ */
+export function contractDetailsRequestEmailHtml(opts: {
+  consultantName: string;
+  portalUrl: string;
+  /** Human-readable French labels for the missing fields. */
+  missingLabels: string[];
+}): string {
+  const items = opts.missingLabels
+    .map((l) => `<li style="margin:0 0 6px;">${l}</li>`)
+    .join('');
+  return layout(`
+    ${h1('Complétez votre profil consultant')}
+    ${p(`Bonjour <strong>${opts.consultantName}</strong>,`)}
+    ${p("Nous préparons votre contrat consultant Metwork. Pour l'établir, il nous manque encore les informations suivantes dans votre profil :")}
+    ${p(`<ul style="margin:0 0 16px;padding-left:20px;color:#3f3f46;font-size:15px;line-height:1.6;">${items}</ul>`)}
+    ${p("Ces informations servent uniquement à vous identifier en tant que partie au contrat. Elles ne sont jamais affichées publiquement sur votre profil.")}
+    ${button(opts.portalUrl, 'Compléter mon profil')}
+    ${p(`<span style="color:#71717a;font-size:13px;">Ou copiez ce lien dans votre navigateur :<br /><span style="word-break:break-all;">${opts.portalUrl}</span></span>`)}
+    ${p("<span style=\"color:#71717a;font-size:13px;\">Dès que votre profil est complet, nous vous enverrons le contrat à signer.</span>")}
+  `);
+}
+
+/**
  * "Your contract is ready to sign" notice.
  *
  * FRENCH, deliberately: the contract itself is a French legal instrument and is
@@ -801,10 +833,14 @@ export function otpEmailHtml(code: string): string {
  * Carries no contract terms and no link that could sign anything — just a
  * prompt to open the portal. The commission rate and payout details live behind
  * the session, and a mailbox is not an authenticated channel.
+ *
+ * Called the "contrat consultant", not the "contrat de commission": commission
+ * is one clause of it, and naming the document after that clause made the mail
+ * read like a bill rather than the partnership agreement it is.
  */
 export function contractReadyEmailHtml(opts: { consultantName: string; portalUrl: string }): string {
   return layout(`
-    ${h1('Votre contrat de commission est prêt')}
+    ${h1('Votre contrat consultant est prêt')}
     ${p(`Bonjour <strong>${opts.consultantName}</strong>,`)}
     ${p("Metwork a établi votre contrat de mandat de recouvrement. Ce contrat encadre le reversement des honoraires que nous encaissons pour votre compte, déduction faite de la commission de la plateforme.")}
     ${p("Connectez-vous à votre espace consultant pour le lire et le signer. La signature se fait en ligne : vous dessinez votre signature, puis vous la confirmez avec un code à usage unique envoyé sur votre téléphone.")}

@@ -222,7 +222,7 @@ export async function POST(
     await (async () => {
       try {
         if (customerEmail) {
-          sendBookingConfirmedWithQrEmail(customerEmail, {
+          await sendBookingConfirmedWithQrEmail(customerEmail, {
             customerName,
             bookingId:   booking.id,
             itemName:    booking.itemName,
@@ -247,7 +247,7 @@ export async function POST(
         if (incubatorId) {
           const incubator = await findIncubatorById(incubatorId);
           if (incubator) {
-            sendBookingPaidIncubatorEmail(incubator, {
+            await sendBookingPaidIncubatorEmail(incubator, {
               customerName,
               details: {
                 bookingId:   booking.id,
