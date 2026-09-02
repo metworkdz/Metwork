@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     });
   });
 
-  sendContactNotification(input);
+  await sendContactNotification(input);
 
   return json({ ok: true }, { status: 201 });
 }

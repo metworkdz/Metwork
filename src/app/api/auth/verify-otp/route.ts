@@ -138,22 +138,31 @@ export async function POST(req: NextRequest) {
     const base = clientEnvVars.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
     const dashboardPath = dashboardPathForRole(user.role);
 
-    // Email-verification link (fire-and-forget)
-    const emailToken = await issueEmailToken(user.id);
-    sendVerificationEmail(user.email, buildVerifyEmailLink(emailToken, user.locale as Locale));
+    // Every mail below is AWAITED, together, before the response returns.
+    // Unawaited they were simply dropped: Vercel freezes the lambda the moment
+    // the response is sent, so the verification link, the welcome mail and the
+    // admin review alerts were all abandoned mid-flight. Run concurrently so
+    // four sends cost one round trip rather than four, and collected so a
+    // failure in one cannot skip the others — each sender already self-catches,
+    // so this can never throw and un-verify an account that IS verified.
+    const mails: Array<Promise<unknown>> = [];
 
-    // Welcome email (fire-and-forget)
-    sendWelcomeEmail({
+    const emailToken = await issueEmailToken(user.id);
+    mails.push(
+      sendVerificationEmail(user.email, buildVerifyEmailLink(emailToken, user.locale as Locale)),
+    );
+
+    mails.push(sendWelcomeEmail({
       email: user.email,
       fullName: user.fullName,
       role: user.role,
       dashboardUrl: `${base}/${user.locale}${dashboardPath}`,
-    });
+    }));
 
     // Notify admin when a new incubator account is verified (review required).
     if (user.role === 'INCUBATOR') {
       const inc = (await db.read()).incubators.find((i) => i.managerId === user.id);
-      sendAdminNewIncubatorNotification({
+      mails.push(sendAdminNewIncubatorNotification({
         fullName:      user.fullName,
         email:         user.email,
         phone:         user.phone ?? undefined,
@@ -162,20 +171,22 @@ export async function POST(req: NextRequest) {
         incubatorName: inc?.name,
         website:       inc?.website,
         instagram:     inc?.instagram,
-      });
+      }));
     }
 
     // Notify admin when a new investor account is verified (review required).
     if (user.role === 'INVESTOR') {
-      sendAdminNewInvestorNotification({
+      mails.push(sendAdminNewInvestorNotification({
         fullName:  user.fullName,
         email:     user.email,
         phone:     user.phone ?? undefined,
         userId:    user.id,
         createdAt: user.createdAt,
         linkedin:  user.linkedin ?? undefined,
-      });
+      }));
     }
+
+    await Promise.all(mails);
 
     const issued = await createSession(user.id);
     await setSessionCookie(issued);

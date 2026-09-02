@@ -97,8 +97,16 @@ export async function POST(req: NextRequest) {
   });
 
   // Primary: WhatsApp (Infobip). Secondary: email as reliable fallback.
-  sendOtpWhatsApp(phone, otpCode);
-  sendOtpEmail(email, otpCode);
+  //
+  // AWAITED, and concurrently. Unawaited these were abandoned when Vercel froze
+  // the lambda on response — meaning a new user could be told to check for a
+  // code that was never sent, and could never finish signing up. Both senders
+  // self-catch and resolve to a boolean, so this cannot throw: a dead channel
+  // must not fail a signup whose account row already exists.
+  await Promise.all([
+    sendOtpWhatsApp(phone, otpCode),
+    sendOtpEmail(email, otpCode),
+  ]);
 
   return json(
     { userId: id, requiresOtp: true, maskedPhone: maskPhone(phone), maskedEmail: maskEmail(email) },

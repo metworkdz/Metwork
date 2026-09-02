@@ -360,7 +360,8 @@ async function notifyWithdrawalApproved(
     }
 
     if (!email) return;
-    sendWithdrawalApprovedEmail(
+    // Awaited: an unawaited send is dropped when the lambda freezes.
+    await sendWithdrawalApprovedEmail(
       email,
       {
         name,
@@ -497,7 +498,8 @@ async function notifyWithdrawalRejected(
         : (data.mentors ?? []).find((m) => m.id === (request as MentorWithdrawalRecord).mentorId)
             ?.fullName;
     if (!email) return;
-    sendWithdrawalProcessedEmail(email, {
+    // Awaited: an unawaited send is dropped when the lambda freezes.
+    await sendWithdrawalProcessedEmail(email, {
       userName: name ?? email,
       amount: request.amount,
       status: 'REJECTED',

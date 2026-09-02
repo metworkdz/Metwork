@@ -186,12 +186,12 @@ export async function POST(req: NextRequest) {
             endsAt:      result.booking.endsAt,
             totalAmount: result.booking.totalAmount,
           };
-          sendBookingRequestReceivedEmail(user.email, {
+          await sendBookingRequestReceivedEmail(user.email, {
             customerName: user.fullName,
             details,
             lang,
           });
-          sendIncubatorBookingRequestEmail(incubator, {
+          await sendIncubatorBookingRequestEmail(incubator, {
             customerName: user.fullName,
             details,
             lang: 'fr',
@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
             });
           }
         } else {
-          sendBookingReceiptEmail({
+          await sendBookingReceiptEmail({
             booking:     result.booking,
             clientName:  user.fullName,
             clientEmail: user.email,
@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
           // "confirmed" email (QR + receipt) is sent at creation time —
           // the incubator PATCH that normally sends it never runs.
           if (result.booking.reservationMode === 'INSTANT' && result.booking.status === 'CONFIRMED') {
-            sendBookingConfirmedWithQrEmail(user.email, {
+            await sendBookingConfirmedWithQrEmail(user.email, {
               customerName: user.fullName,
               bookingId:    result.booking.id,
               itemName:     result.booking.itemName,
@@ -254,7 +254,7 @@ export async function POST(req: NextRequest) {
           : result.booking.paymentMethod === 'manual' ? 'Espèces sur place'
           : result.booking.paymentMethod === 'NETWORK_PASS' ? 'Network Pass'
           : result.booking.paymentMethod ?? '—';
-        sendAdminOrderNotification({
+        await sendAdminOrderNotification({
           orderKind:     'SPACE',
           customerName:  user.fullName,
           customerEmail: user.email,

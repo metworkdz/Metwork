@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  sendWithdrawalRequestedEmail(guard.user.email, {
+  await sendWithdrawalRequestedEmail(guard.user.email, {
     userName: guard.user.fullName ?? guard.user.email,
     amount: input.amount,
     accountDetails: result.request.accountDetails,
