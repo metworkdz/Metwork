@@ -247,7 +247,7 @@ export interface ConsultantProgramInput {
 }
 
 /**
- * A commission contract as the consultant sees it. Mirrors the server DTO in
+ * A consultant contract as the consultant sees it. Mirrors the server DTO in
  * `src/server/consultant-contracts/dto.ts` — deliberately narrower than the
  * stored record: no OTP counters, no audit trail.
  */
@@ -430,7 +430,7 @@ export const consultantService = {
       fields,
     }),
 
-  // ── Commission contracts (e-signature) ──
+  // ── Consultant contracts (e-signature) ──
   contracts: () => apiClient.get<{ contracts: ConsultantContract[] }>('/consultant/contracts'),
   sendContractOtp: (id: string, channel?: 'whatsapp' | 'sms') =>
     apiClient.post<{ ok: true; channel: 'whatsapp' | 'sms'; expiresAt: string }>(

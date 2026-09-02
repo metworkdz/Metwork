@@ -116,7 +116,7 @@ function Dashboard({
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
-  /* Commission contracts. Fetched once here rather than inside the section so
+  /* Consultant contracts. Fetched once here rather than inside the section so
      the banner and the tab always agree about whether one is outstanding.
      Silent to the CONSULTANT on failure — a contract they cannot fetch must
      not break the rest of their dashboard — but logged, so a failure that

@@ -54,12 +54,27 @@ export interface ContractConsultantOption {
   fullName: string;
   email: string | null;
   phoneVerified: boolean;
+  /**
+   * Contract-identity fields the consultant has not filled in yet.
+   *
+   * Empty ⇒ a contract can be drafted. Non-empty ⇒ `createDraftContract`
+   * WILL refuse, because this is the very list it refuses on — so the picker
+   * shows the block up front instead of surfacing it as a failed request.
+   */
+  missingIdentity: Array<'address' | 'idNumber'>;
 }
 
 export const contractsService = {
   list: () =>
     apiClient.get<{ contracts: AdminContract[]; consultants: ContractConsultantOption[] }>(
       '/admin/contracts',
+    ),
+
+  /** Ask a consultant to complete the identity fields their contract needs. */
+  requestDetails: (consultantId: string) =>
+    apiClient.post<{ ok: true; sentTo: string }>(
+      `/admin/contracts/request-details`,
+      { consultantId },
     ),
 
   create: (body: ContractDraftInput) =>

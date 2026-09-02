@@ -29,6 +29,7 @@ import {
   bookingUpdatedEmailHtml,
   bookingProviderCancelledEmailHtml,
   contractReadyEmailHtml,
+  contractDetailsRequestEmailHtml,
   withdrawalRequestedEmailHtml,
   withdrawalProcessedEmailHtml,
   withdrawalApprovedEmailHtml,
@@ -910,6 +911,35 @@ export async function sendBookingCancelledUnpaidEmail(
  * that back — it would leave the admin unable to re-send a contract that was
  * in fact already issued.
  */
+/**
+ * Ask a consultant to fill in the identity details their contract needs.
+ *
+ * AWAITED by its route, like every other sender here — see the note on
+ * `sendContractReadyEmail`. Self-catching, so a mail failure cannot fail the
+ * admin's request.
+ */
+export function sendContractDetailsRequestEmail(
+  email: string,
+  opts: { consultantName: string; portalUrl: string; missingLabels: string[] },
+): Promise<void> {
+  recordE2eEmail('contract-details-request', { to: email, missing: opts.missingLabels });
+  return sendResendEmail({
+    to: email,
+    subject: 'Complétez votre profil pour recevoir votre contrat Metwork',
+    html: contractDetailsRequestEmailHtml(opts),
+  })
+    .then((sent) => {
+      if (!sent) {
+        // eslint-disable-next-line no-console
+        console.log(`${banner} EMAIL (contract-details-request) → ${email}`);
+      }
+    })
+    .catch((err: Error) => {
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Resend details-request email failed →`, err.message);
+    });
+}
+
 /**
  * Tell a consultant their contract is waiting for signature.
  *

@@ -945,12 +945,14 @@ export type AuditAction =
   | 'MENTOR_PUBLISHED'
   | 'MENTOR_UNPUBLISHED'
   | 'STARTUP_DELETED'
-  // Consultant commission contracts (e-signature). The contract's own
+  // Consultant contracts (e-signature). The contract's own
   // `auditTrail` is the evidentiary record; these entries put the ADMIN side of
   // the same actions into the platform-wide log the audit-log page reads.
   | 'CONTRACT_CREATED'
   | 'CONTRACT_UPDATED'
   | 'CONTRACT_SENT'
+  /** Admin asked a consultant to fill in the identity fields their contract needs. */
+  | 'CONTRACT_DETAILS_REQUESTED'
   | 'CONTRACT_VOIDED'
   | 'CONTRACT_OTP_RESENT'
   | 'CONTRACT_STAMP_UPDATED'
