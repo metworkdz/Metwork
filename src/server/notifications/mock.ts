@@ -929,7 +929,7 @@ export function sendContractReadyEmail(
   recordE2eEmail('contract-ready', { to: email });
   return sendResendEmail({
     to: email,
-    subject: 'Votre contrat de commission Metwork est prêt à signer',
+    subject: 'Votre contrat consultant Metwork est prêt à signer',
     html: contractReadyEmailHtml(opts),
   })
     .then((sent) => {

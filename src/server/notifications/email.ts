@@ -801,10 +801,14 @@ export function otpEmailHtml(code: string): string {
  * Carries no contract terms and no link that could sign anything — just a
  * prompt to open the portal. The commission rate and payout details live behind
  * the session, and a mailbox is not an authenticated channel.
+ *
+ * Called the "contrat consultant", not the "contrat de commission": commission
+ * is one clause of it, and naming the document after that clause made the mail
+ * read like a bill rather than the partnership agreement it is.
  */
 export function contractReadyEmailHtml(opts: { consultantName: string; portalUrl: string }): string {
   return layout(`
-    ${h1('Votre contrat de commission est prêt')}
+    ${h1('Votre contrat consultant est prêt')}
     ${p(`Bonjour <strong>${opts.consultantName}</strong>,`)}
     ${p("Metwork a établi votre contrat de mandat de recouvrement. Ce contrat encadre le reversement des honoraires que nous encaissons pour votre compte, déduction faite de la commission de la plateforme.")}
     ${p("Connectez-vous à votre espace consultant pour le lire et le signer. La signature se fait en ligne : vous dessinez votre signature, puis vous la confirmez avec un code à usage unique envoyé sur votre téléphone.")}
