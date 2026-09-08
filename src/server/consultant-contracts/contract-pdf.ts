@@ -30,7 +30,6 @@ import {
   CONTENT_W,
   DARK,
   GRAY,
-  INK,
   MARGIN,
   PAGE_H,
   PAGE_W,
@@ -40,8 +39,22 @@ import {
   makeDoc,
 } from '@/server/notifications/receipt';
 import { FONT } from '@/server/pdf/fonts';
+import {
+  SIZE,
+  drawContractLogo,
+  drawPageNumbers,
+  loadBrandLogo,
+  typographyFor,
+  writeContractBody,
+} from '@/server/pdf/contract-layout';
 import { splitAtSignatureMarker } from './variables';
-import { METWORK_LOGO_PNG_BASE64 } from '@/server/pdf/assets/metwork-logo';
+
+/**
+ * Re-exported: the space-rental contract and this one share one definition of
+ * what a heading looks like, and callers of this module (tests included) should
+ * not have to know which file it moved to.
+ */
+export { isHeadingLine } from '@/server/pdf/contract-layout';
 
 type Doc = InstanceType<typeof PDFDocument>;
 
@@ -86,23 +99,6 @@ export interface ContractPdfInput {
  */
 function setFont(doc: Doc, bold = false): Doc {
   return doc.font(bold ? FONT.serifTimesBold : FONT.serifTimes);
-}
-
-/** Type scale, as specified: 16pt title, 14pt article headings, 12pt body. */
-const SIZE = { title: 16, subtitle: 14, heading: 14, body: 12 } as const;
-
-/**
- * Is this body line an article heading?
- *
- * Matches "Article 3 — Commission" and the bare "ARTICLE 3 :" variants an admin
- * might type, in French or English. Kept deliberately narrow: a false positive
- * would set a whole paragraph at heading size, which is far more disfiguring
- * than a missed heading, so anything long or mid-sentence is left as body.
- */
-export function isHeadingLine(line: string): boolean {
-  const t = line.trim();
-  if (!t || t.length > 90) return false;
-  return /^(article|chapitre)\s+([0-9]{1,2}|premier|[ivxl]{1,5})\b/i.test(t);
 }
 
 /**
@@ -154,38 +150,6 @@ export function decodeDataUriPng(dataUri: string): Buffer | null {
 }
 
 /**
- * The metwork wordmark.
- *
- * Decoded from a source constant, NOT read from disk. Reading it failed in
- * production from both `public/assets/` and `src/server/pdf/assets/`: the path
- * is built from `process.cwd()`, which Next's file tracer cannot analyse, so
- * the PNG was never bundled into the lambda and the logo silently disappeared
- * while working perfectly in dev. See the note in `./assets/metwork-logo`.
- *
- * Cached after the first decode — every contract draws the same mark.
- */
-let brandLogoCache: Buffer | null | undefined;
-function loadBrandLogo(): Buffer | null {
-  if (brandLogoCache !== undefined) return brandLogoCache;
-  try {
-    const buf = Buffer.from(METWORK_LOGO_PNG_BASE64, 'base64');
-    // Guard the magic number: a truncated constant must degrade to "no logo"
-    // rather than make pdfkit throw and take the whole contract down.
-    const isPng =
-      buf.length > 8 &&
-      buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
-    brandLogoCache = isPng ? buf : null;
-  } catch {
-    brandLogoCache = null;
-  }
-  return brandLogoCache;
-}
-
-/** Logo box, top-right, mirroring the receipt letterhead's proportions. */
-const LOGO_W = 132;
-const LOGO_H = 28;
-
-/**
  * Logo + centred title, drawn once at the top of page 1.
  *
  * The supplied contract template leads with the metwork wordmark top-right and
@@ -193,15 +157,7 @@ const LOGO_H = 28;
  * contract look like the document the company already sends.
  */
 function drawLetterhead(doc: Doc, logo: Buffer | null): void {
-  if (logo) {
-    try {
-      doc.image(logo, PAGE_W - MARGIN - LOGO_W, MARGIN, { fit: [LOGO_W, LOGO_H], align: 'right' });
-    } catch {
-      /* a missing logo must never stop a contract rendering */
-    }
-  }
-  doc.y = MARGIN + LOGO_H + 34;
-
+  drawContractLogo(doc, logo);
   setFont(doc, true).fillColor(DARK).fontSize(SIZE.title)
     .text('CONTRAT DE PARTENARIAT', MARGIN, doc.y, { width: CONTENT_W, align: 'center', underline: true });
   doc.moveDown(0.35);
@@ -241,29 +197,6 @@ function drawDraftWatermark(doc: Doc): void {
       });
     doc.opacity(1).restore();
     doc.page.margins.top = top;
-    doc.page.margins.bottom = bottom;
-  }
-}
-
-/**
- * "Page N / T" centred in the bottom margin of every page.
- *
- * The bottom margin is zeroed for the duration: writing below it makes pdfkit
- * auto-paginate, which silently appended a BLANK page and pushed the footer
- * onto it. `lineBreak: false` stops the same thing happening on overflow.
- */
-function drawPageNumbers(doc: Doc): void {
-  const range = doc.bufferedPageRange();
-  for (let i = 0; i < range.count; i++) {
-    doc.switchToPage(range.start + i);
-    const bottom = doc.page.margins.bottom;
-    doc.page.margins.bottom = 0;
-    setFont(doc).fillColor(GRAY).fontSize(8)
-      .text(`Page ${i + 1} / ${range.count}`, MARGIN, PAGE_H - MARGIN + 16, {
-        width: CONTENT_W,
-        align: 'center',
-        lineBreak: false,
-      });
     doc.page.margins.bottom = bottom;
   }
 }
@@ -440,29 +373,9 @@ export async function generateConsultantContractPdf(input: ContractPdfInput): Pr
   drawLetterhead(doc, logo);
   const bodyTop = doc.y;
 
-  const writeBody = (text: string, atTop: boolean): void => {
-    if (!text) return;
-    let first = true;
-    // Rendered line-by-line rather than as one block so article headings can
-    // carry their own size/weight. A single doc.text() call cannot mix them.
-    for (const line of text.split('\n')) {
-      const heading = isHeadingLine(line);
-      setFont(doc, heading)
-        .fillColor(heading ? DARK : INK)
-        .fontSize(heading ? SIZE.heading : SIZE.body);
-      const opts = {
-        width: CONTENT_W,
-        align: (heading ? 'left' : 'justify') as 'left' | 'justify',
-        lineGap: heading ? 2 : 3,
-      };
-      // Only the very first line is positioned explicitly (just under the
-      // title); everything after flows, including across the signature block.
-      if (first && atTop) doc.text(line || ' ', MARGIN, bodyTop, opts);
-      else doc.text(line || ' ', MARGIN, doc.y, opts);
-      if (heading) doc.moveDown(0.15);
-      first = false;
-    }
-  };
+  const typo = typographyFor(false);
+  const writeBody = (text: string, atTop: boolean): void =>
+    writeContractBody(doc, text, typo, atTop ? { startY: bodyTop } : {});
 
   writeBody(before, true);
   drawSignatures(doc, signature, stamp, input);
@@ -477,7 +390,7 @@ export async function generateConsultantContractPdf(input: ContractPdfInput): Pr
   // the page total is only known now, and stamping the watermark here is what
   // makes it impossible for it to trigger pagination of its own.
   if (input.draft) drawDraftWatermark(doc);
-  drawPageNumbers(doc);
+  drawPageNumbers(doc, FONT.serifTimes);
 
   return collectBuffer(doc);
 }

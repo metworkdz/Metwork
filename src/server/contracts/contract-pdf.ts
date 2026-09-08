@@ -1,30 +1,33 @@
 /**
- * Contract PDF generator.
+ * Space-rental contract PDF (coworking, training room, private office,
+ * domiciliation).
  *
- * Renders a filled contract (variables already substituted upstream by the
- * variable engine) to an A4 PDF buffer. Letterhead style (no coloured banner):
- *   ┌───────────────────────────────────────────────┐
- *   │ Company info block (name + RC/NIF/…)   [ LOGO ]│
- *   │                                                │
- *   │            CONTRACT TITLE (centered)           │
- *   │              N° … · issued on …                │
- *   │                                                │
- *   │  body …                                        │
- *   └───────────────────────────────────────────────┘
- * Reuses the receipt generator's pdfkit primitives (page geometry, colours,
- * logo fetch, doc lifecycle) so contracts share the platform's document stack.
+ * Renders a filled contract — variables already substituted upstream by the
+ * variable engine — as the SAME document the consultant contract is: wordmark
+ * top-right, centred underlined title, Times body at 12 pt with 14 pt article
+ * headings, "Page N / T" in the foot. That shared look lives in
+ * `@/server/pdf/contract-layout`; this module owns only what is particular to a
+ * rental contract, which is the title and contract-number line.
  *
- * Arabic ('ar') templates render right-to-left using an embedded Amiri TTF (a
- * traditional naskh face) — pdfkit/fontkit applies Arabic contextual shaping
- * and mark positioning (tashkeel/diacritics) automatically for embedded
- * OpenType fonts. The built-in Helvetica used for en/fr cannot render Arabic
- * glyphs, so any Arabic surface (company name, body) is drawn with the embedded
- * font instead. Amiri also covers Latin, so an Arabic client name inside an
- * en/fr contract still renders.
+ * NO SIGNATURE BLOCK is drawn, and there is no e-signature. These contracts are
+ * generated, downloaded and signed by hand, and the templates already end with
+ * their own "Pour EURL METWORK / Nom / Signature : ____" lines.
  *
- * NOTE: Amiri was chosen over Noto Naskh Arabic specifically because Noto
- * Naskh's GPOS mark-anchor tables trigger a null-anchor crash in the bundled
- * fontkit when positioning diacritics; Amiri shapes the same text cleanly.
+ * THE TEMPLATE IS THE WHOLE DOCUMENT. This module used to also draw a
+ * letterhead block — company name, RC, NIF, address — above the body. Dropped
+ * deliberately: the real templates open by naming the parties in prose ("EURL
+ * METWORK, société à responsabilité unipersonnelle …, RC …, NIF …"), so the
+ * generated block printed the same identity a second time. Anyone who prefers
+ * the other arrangement still has the `{{incubator_name}}`,
+ * `{{incubator_address}}`, `{{incubator_cr}}` and `{{incubator_nif}}` tokens.
+ * This is the same decision the consultant contract already made, for the same
+ * reason.
+ *
+ * Arabic ('ar') templates render right-to-left in Amiri: Tinos (the Times face)
+ * has no Arabic coverage at all, and fontkit applies Arabic contextual shaping
+ * automatically for embedded OpenType fonts. Amiri also covers Latin, so an
+ * Arabic client name inside a French contract still renders — see
+ * `typographyFor` and `hasArabic`.
  */
 import type PDFDocument from 'pdfkit';
 import type { IncubatorRecord } from '@/server/db/store';
@@ -33,44 +36,33 @@ import {
   DARK,
   GRAY,
   MARGIN,
-  PAGE_H,
-  PAGE_W,
   collectBuffer,
   fetchImageBuffer,
   makeDoc,
 } from '@/server/notifications/receipt';
-import { fontFor, hasArabic } from '@/server/pdf/fonts';
+import { hasArabic } from '@/server/pdf/fonts';
+import {
+  SIZE,
+  drawContractLogo,
+  drawPageNumbers,
+  loadBrandLogo,
+  typographyFor,
+  writeContractBody,
+} from '@/server/pdf/contract-layout';
 import type { ContractLang } from './variables';
 
 /* ─────────────────── i18n labels ─────────────────── */
 
-interface ContractLabels {
-  title:     string;
-  number:    string;
-  issuedOn:  string;
-  poweredBy: string;
-}
-
-const LABELS: Record<ContractLang, ContractLabels> = {
-  en: { title: 'CONTRACT', number: 'No.',       issuedOn: 'Issued on',  poweredBy: 'Powered by Metwork' },
-  fr: { title: 'CONTRAT',  number: 'N°',        issuedOn: 'Établi le',  poweredBy: 'Propulsé par Metwork' },
-  ar: { title: 'عقد',      number: 'رقم',       issuedOn: 'حرر في',     poweredBy: 'مُشغَّل بواسطة Metwork' },
-};
-
-/** Company-info line labels (letterhead block). */
-const INFO_LABELS: Record<ContractLang, { rc: string; nif: string; address: string; phone: string; email: string }> = {
-  en: { rc: 'RC', nif: 'NIF', address: 'Address', phone: 'Phone', email: 'Email' },
-  fr: { rc: 'RC', nif: 'NIF', address: 'Adresse', phone: 'Tél',   email: 'Email' },
-  ar: { rc: 'السجل التجاري', nif: 'رقم التعريف الجبائي', address: 'العنوان', phone: 'الهاتف', email: 'البريد الإلكتروني' },
+const LABELS: Record<ContractLang, { title: string; number: string; issuedOn: string }> = {
+  en: { title: 'CONTRACT', number: 'No.', issuedOn: 'Issued on' },
+  fr: { title: 'CONTRAT',  number: 'N°',  issuedOn: 'Établi le' },
+  ar: { title: 'عقد',      number: 'رقم', issuedOn: 'حرر في' },
 };
 
 /* ─────────────────── Input ─────────────────── */
 
 export interface ContractPdfInput {
-  incubator: Pick<
-    IncubatorRecord,
-    'name' | 'email' | 'phone' | 'city' | 'logoUrl' | 'address' | 'commercialRegNumber' | 'registrationNumber' | 'nif'
-  >;
+  incubator: Pick<IncubatorRecord, 'name' | 'logoUrl'>;
   lang: ContractLang;
   /** Displayed contract title (the template name). Falls back to a generic word. */
   title?: string;
@@ -78,150 +70,78 @@ export interface ContractPdfInput {
   contractNumber: string;
   /** Fully-rendered contract body — `{{tokens}}` already substituted. */
   body: string;
-}
-
-/* ─────────────────── Helpers ─────────────────── */
-
-type Doc = InstanceType<typeof PDFDocument>;
-
-/**
- * Apply the right embedded font. Arabic templates use Amiri (naskh shaping);
- * Latin (en/fr) uses the embedded DejaVu Serif — NOT the pdfkit built-in
- * Helvetica, whose CP1252-only encoding garbles the narrow/thin no-break spaces
- * and typographic marks that French contract text pasted from Word is full of.
- */
-function setFont(doc: Doc, lang: ContractLang, bold: boolean): void {
-  doc.font(fontFor({ bold, arabic: lang === 'ar' }));
-}
-
-/**
- * Letterhead header: company-info block on the leading side and a large logo on
- * the trailing side (mirrored for RTL). No coloured banner. Leaves `doc.y` just
- * below the taller of the two columns.
- */
-function drawContractHeader(doc: Doc, incubator: ContractPdfInput['incubator'], logoBuffer: Buffer | null, lang: ContractLang): void {
-  const isAr = lang === 'ar';
-  const al: 'left' | 'right' = isAr ? 'right' : 'left';
-  const startY = MARGIN;
-
-  const LOGO_W = 150;
-  const LOGO_H = 72;
-  const GAP = 20;
-  const hasLogo = !!logoBuffer;
-
-  const companyW = hasLogo ? CONTENT_W - LOGO_W - GAP : CONTENT_W;
-  const companyX = isAr && hasLogo ? MARGIN + LOGO_W + GAP : MARGIN;
-  const logoX = isAr ? MARGIN : PAGE_W - MARGIN - LOGO_W;
-
-  // Logo (larger than a corner icon; aspect preserved within the box). pdfkit
-  // only supports align right/center inside the fit box — for LTR we right-align
-  // it to hug the right margin; for RTL the default (top-left) hugs the left.
-  if (hasLogo) {
-    try {
-      doc.image(
-        logoBuffer as Buffer,
-        logoX,
-        startY,
-        isAr ? { fit: [LOGO_W, LOGO_H] } : { fit: [LOGO_W, LOGO_H], align: 'right' },
-      );
-    } catch { /* skip logo on error */ }
-  }
-
-  // Company name (bold).
-  setFont(doc, lang, true);
-  doc.fillColor(DARK).fontSize(13).text(incubator.name || '', companyX, startY, { width: companyW, align: al });
-
-  // Legal / contact lines.
-  const L = INFO_LABELS[lang];
-  const cr = incubator.commercialRegNumber ?? incubator.registrationNumber ?? null;
-  const lines: string[] = [];
-  if (cr)                lines.push(`${L.rc} : ${cr}`);
-  if (incubator.nif)     lines.push(`${L.nif} : ${incubator.nif}`);
-  if (incubator.address) lines.push(`${L.address} : ${incubator.address}`);
-  if (incubator.phone)   lines.push(`${L.phone} : ${incubator.phone}`);
-  if (incubator.email)   lines.push(`${L.email} : ${incubator.email}`);
-  if (lines.length) {
-    setFont(doc, lang, false);
-    doc.fillColor('#3f3f46').fontSize(9.5).text(lines.join('\n'), companyX, doc.y + 2, { width: companyW, align: al, lineGap: 2 });
-  }
-
-  // Advance below the taller of the company block / logo.
-  const companyBottom = doc.y;
-  const logoBottom = hasLogo ? startY + LOGO_H : startY;
-  doc.y = Math.max(companyBottom, logoBottom);
+  /**
+   * Is the issuing party Metwork itself?
+   *
+   * Metwork's own spaces are let under the admin-as-incubator profile, and
+   * those contracts carry the Metwork wordmark. A third-party incubator letting
+   * their own space is a different legal person, so their contract carries
+   * THEIR logo — putting our mark on someone else's contract would misstate who
+   * is bound by it. Decided by the caller, which is the only place that knows.
+   */
+  metworkBrand?: boolean;
 }
 
 /* ─────────────────── Main ─────────────────── */
 
-export async function generateContractPdf(input: ContractPdfInput): Promise<Buffer> {
-  const { incubator, lang, contractNumber, body, title } = input;
-  const isAr = lang === 'ar';
-  const labels = LABELS[lang];
-  const align: 'left' | 'right' = isAr ? 'right' : 'left';
+type Doc = InstanceType<typeof PDFDocument>;
 
-  // Logo prefetch is non-blocking & null-safe (returns null on any error).
-  const logoBuffer = await fetchImageBuffer(incubator.logoUrl);
+/**
+ * Title and contract number, centred under the wordmark.
+ *
+ * The title is the template's own name — "CONTRAT DE LOCATION D'ESPACE DE
+ * COWORKING", "CONTRAT DE LOCATION DE LA SALLE DE FORMATION" — so a new kind of
+ * contract needs a new template, not new code.
+ */
+function drawTitle(doc: Doc, input: ContractPdfInput, bold: string, regular: string): void {
+  const isAr = input.lang === 'ar';
+  const labels = LABELS[input.lang];
+  const raw = (input.title && input.title.trim()) || labels.title;
 
-  // Use the Arabic-capable font for the body when the template is Arabic OR the
-  // resolved body contains Arabic characters (e.g. an Arabic client name inside
-  // a French/English contract — common in Algeria). Amiri covers both scripts.
-  const bodyArabic = isAr || hasArabic(body);
+  doc.font(bold).fillColor(DARK).fontSize(SIZE.title)
+    .text(isAr ? raw : raw.toUpperCase(), MARGIN, doc.y, {
+      width: CONTENT_W,
+      align: 'center',
+      underline: true,
+    });
 
-  // makeDoc() already registers every embedded face (DejaVu Serif + Amiri).
-  const doc = makeDoc();
-
-  // ── Letterhead header (company info + logo) ──
-  drawContractHeader(doc, incubator, logoBuffer, lang);
-
-  // ── Title (centered, underlined) + contract number / date ──
-  const todayStr = new Date().toLocaleDateString(
-    lang === 'fr' ? 'fr-DZ' : lang === 'ar' ? 'ar-DZ' : 'en-GB',
+  const today = new Date().toLocaleDateString(
+    input.lang === 'fr' ? 'fr-DZ' : input.lang === 'ar' ? 'ar-DZ' : 'en-GB',
     { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' },
   );
-  const rawTitle = (title && title.trim()) || labels.title;
-  const displayTitle = isAr ? rawTitle : rawTitle.toUpperCase();
-
-  doc.moveDown(1.6);
-  setFont(doc, lang, true);
-  doc.fillColor(DARK).fontSize(15).text(displayTitle, MARGIN, doc.y, { width: CONTENT_W, align: 'center', underline: true });
-
   doc.moveDown(0.4);
-  setFont(doc, lang, false);
-  doc
-    .fillColor(GRAY)
-    .fontSize(9)
-    .text(`${labels.number} ${contractNumber}  ·  ${labels.issuedOn} ${todayStr}`, MARGIN, doc.y, {
+  doc.font(regular).fillColor(GRAY).fontSize(9)
+    .text(`${labels.number} ${input.contractNumber}  ·  ${labels.issuedOn} ${today}`, MARGIN, doc.y, {
       width: CONTENT_W,
       align: 'center',
       underline: false,
     });
-
-  // ── Body (rendered template) ──
   doc.moveDown(1.6);
-  doc.font(fontFor({ arabic: bodyArabic }));
-  doc
-    .fillColor('#27272a')
-    .fontSize(11)
-    .text(body || '', MARGIN, doc.y, {
-      width: CONTENT_W,
-      align,
-      // Arabic contextual shaping (joining forms) is applied automatically by
-      // fontkit for embedded fonts. We deliberately do NOT pass explicit
-      // OpenType `features` — forcing them engages GPOS mark/anchor lookups that
-      // throw on some font/fontkit version combos.
-      lineGap: 3,
-    });
+}
 
-  // ── Footer note ──
-  doc.moveDown(2);
-  setFont(doc, lang, false);
-  doc
-    .fillColor(GRAY)
-    .fontSize(8)
-    .text(`© ${new Date().getFullYear()} ${incubator.name}  ·  ${labels.poweredBy}`, MARGIN, Math.min(doc.y, PAGE_H - 50), {
-      width: CONTENT_W,
-      align,
-    });
+export async function generateContractPdf(input: ContractPdfInput): Promise<Buffer> {
+  // Amiri whenever the document IS Arabic or merely contains Arabic (an Arabic
+  // client name in a French contract is routine in Algeria).
+  const typo = typographyFor(input.lang === 'ar' || hasArabic(input.body));
+
+  // Metwork's mark is embedded in the bundle; an incubator's is a remote URL,
+  // and the fetch is null-safe — a logo that won't load must not stop a
+  // contract from being generated.
+  const logo = input.metworkBrand ? loadBrandLogo() : await fetchImageBuffer(input.incubator.logoUrl);
+
+  // bufferPages: the "Page N / T" footer can only be written once the total is
+  // known, i.e. after the whole body has flowed.
+  const doc = makeDoc({ bufferPages: true });
+
+  // Top-right in every language, including Arabic: this is the platform's
+  // letterhead position, and the two contract documents are meant to be
+  // recognisably the same stationery.
+  drawContractLogo(doc, logo);
+  drawTitle(doc, input, typo.bold, typo.regular);
+
+  writeContractBody(doc, input.body, typo, { startY: doc.y });
+
+  drawPageNumbers(doc, typo.regular);
 
   return collectBuffer(doc);
 }

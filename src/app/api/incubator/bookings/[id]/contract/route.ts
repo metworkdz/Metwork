@@ -20,6 +20,7 @@ import {
   resolveContractVariables,
 } from '@/server/contracts/variables';
 import { generateContractPdf } from '@/server/contracts/contract-pdf';
+import { findMetworkParty } from '@/server/consultant-contracts/party';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -81,6 +82,10 @@ export async function GET(
       title: template.name,
       contractNumber,
       body,
+      // Metwork's own spaces are let under the admin-as-incubator profile, so
+      // those contracts carry the Metwork wordmark; a third-party incubator is
+      // a different legal person and gets their own logo instead.
+      metworkBrand: findMetworkParty(data)?.id === inc.id,
     });
   } catch {
     return jsonError(500, 'PDF_FAILED', 'Failed to generate the contract PDF');
