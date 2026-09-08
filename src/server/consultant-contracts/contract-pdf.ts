@@ -268,8 +268,55 @@ function drawPageNumbers(doc: Doc): void {
   }
 }
 
-/** Height reserved for the two signature blocks, including their captions. */
-const SIGNATURE_BLOCK_H = 190;
+/**
+ * Image-box heights for the two columns.
+ *
+ * The company stamp is drawn half again as large as the consultant's
+ * signature. It is a 632 × 455 px image, so pdfkit's `fit` scales it by HEIGHT
+ * — 111 × 80 pt at `IMG_H` — and raising its box to 120 pt is therefore an
+ * exact 1.5× in both directions. The resulting 166 pt still leaves ~55 pt of
+ * clearance before the consultant's column, so the columns need no rebalancing.
+ */
+const IMG_H = 80;
+const METWORK_IMG_H = 120;
+
+/**
+ * Vertical space the block needs, so it is never split across a page break.
+ *
+ * DERIVED from the parts it is built out of rather than typed as a number:
+ * every one of these gaps is used again below, and a reservation that silently
+ * stops matching the thing it reserves for is how a signature ends up stranded
+ * on a trailing page.
+ */
+const SIG_LEAD_IN = 34;    // moveDown(2) above the block
+const SIG_HEADING_H = 20;  // "Pour EURL METWORK" → top of the image band
+const SIG_LINE_GAP = 6;    // image band → ruled line
+const SIG_CAPTIONS_H = 46; // ruled line → end of the role captions
+const SIGNATURE_BLOCK_H =
+  SIG_LEAD_IN + SIG_HEADING_H + Math.max(IMG_H, METWORK_IMG_H) + SIG_LINE_GAP + SIG_CAPTIONS_H;
+
+/**
+ * Metwork's name with its legal form, for the column heading.
+ *
+ * The party record's `name` is just "Metwork" — enough for a letterhead, but a
+ * signature block on a contract names the legal person. Rather than force the
+ * record to be renamed everywhere it appears (receipts, invoices, emails), the
+ * legal form is prepended here when the stored name doesn't already carry one.
+ */
+const LEGAL_FORM_RE = /^(EURL|SARL|SPA|SNC|SCS|SASU?|EPE|ETS|SPRL)\b/i;
+export function metworkLegalName(raw: string | null | undefined): string {
+  const name = (raw ?? '').trim() || 'METWORK';
+  return (LEGAL_FORM_RE.test(name) ? name : `EURL ${name}`).toUpperCase();
+}
+
+/**
+ * Fallback signatory, used when no gérant is set under Platform Settings.
+ *
+ * Deliberately NOT the company name, which is what this used to fall back to:
+ * printing "METWORK" above the caption "Gérant" states that the company is its
+ * own manager, which is not a thing. A person signs; name the person.
+ */
+const DEFAULT_METWORK_MANAGER = 'Mohammed Benhamada';
 
 /**
  * The two signature blocks, side by side.
@@ -277,6 +324,10 @@ const SIGNATURE_BLOCK_H = 190;
  * Column order follows the company's own contract template: METWORK on the
  * LEFT (stamp + gérant), the Consultant on the RIGHT. It used to be the other
  * way round, which put the wrong party under each caption.
+ *
+ * Both images are bottom-aligned within a band as tall as the LARGER of the
+ * two, so the two ruled lines stay level with each other and each mark sits ON
+ * its line rather than floating above it.
  *
  * Moved to a fresh page when the remaining space cannot hold the whole block —
  * a signature stranded alone on a trailing page, or clipped at the margin, is
@@ -289,26 +340,27 @@ function drawSignatures(doc: Doc, signature: Buffer | null, stamp: Buffer | null
   const top = doc.y;
   const colW = (CONTENT_W - 40) / 2;
   const rightX = MARGIN + colW + 40;
-  const IMG_H = 80;
-  const metworkName = input.metworkName?.trim() || 'EURL METWORK';
-  const manager = input.metworkManager?.trim() || '';
+  const manager = input.metworkManager?.trim() || DEFAULT_METWORK_MANAGER;
 
-  setFont(doc, true).fillColor(DARK).fontSize(10).text('Pour METWORK', MARGIN, top, { width: colW });
+  setFont(doc, true).fillColor(DARK).fontSize(10).text(`Pour ${metworkLegalName(input.metworkName)}`, MARGIN, top, { width: colW });
   setFont(doc, true).fillColor(DARK).fontSize(10).text('Pour le Consultant', rightX, top, { width: colW });
 
-  const imgTop = top + 20;
+  const imgTop = top + SIG_HEADING_H;
+  // The band is as tall as the taller image box; the shorter one hangs from its
+  // bottom edge (`valign`), which is what keeps both marks on their own lines.
+  const bandH = Math.max(IMG_H, METWORK_IMG_H);
 
   // Metwork's stamp (left) and the consultant's drawn signature (right).
   if (stamp) {
     try {
-      doc.image(stamp, MARGIN, imgTop, { fit: [colW, IMG_H] });
+      doc.image(stamp, MARGIN, imgTop + bandH - METWORK_IMG_H, { fit: [colW, METWORK_IMG_H], valign: 'bottom' });
     } catch {
       /* fall through to the ruled line below */
     }
   }
   if (signature) {
     try {
-      doc.image(signature, rightX, imgTop, { fit: [colW, IMG_H] });
+      doc.image(signature, rightX, imgTop + bandH - IMG_H, { fit: [colW, IMG_H], valign: 'bottom' });
     } catch {
       /* fall through to the ruled line below */
     }
@@ -316,14 +368,14 @@ function drawSignatures(doc: Doc, signature: Buffer | null, stamp: Buffer | null
 
   // Ruled lines under both, drawn whether or not an image landed — they frame
   // the images and stand in for them when one is missing (always, in a draft).
-  const lineY = imgTop + IMG_H + 6;
+  const lineY = imgTop + bandH + SIG_LINE_GAP;
   doc.strokeColor(RULE).lineWidth(0.75);
   doc.moveTo(MARGIN, lineY).lineTo(MARGIN + colW, lineY).stroke();
   doc.moveTo(rightX, lineY).lineTo(rightX + colW, lineY).stroke();
 
   // Captions mirror the company template: name, role, then what goes on the line.
   setFont(doc, true).fillColor(DARK).fontSize(9);
-  doc.text(manager.toUpperCase() || metworkName, MARGIN, lineY + 6, { width: colW });
+  doc.text(manager, MARGIN, lineY + 6, { width: colW });
   doc.text(input.consultantName, rightX, lineY + 6, { width: colW });
 
   setFont(doc).fillColor(GRAY).fontSize(8.5);
@@ -338,7 +390,7 @@ function drawSignatures(doc: Doc, signature: Buffer | null, stamp: Buffer | null
     { width: colW, lineGap: 1 },
   );
 
-  doc.y = lineY + 46;
+  doc.y = lineY + SIG_CAPTIONS_H;
 }
 
 /**
