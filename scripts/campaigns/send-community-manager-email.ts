@@ -22,7 +22,12 @@ import { loadScriptEnv } from '../_env';
 const TARGET = loadScriptEnv();
 
 import { db } from '../../src/server/db/store';
-import { communityManagerEmailHtml, SUBJECTS, type CampaignFacts } from './community-manager-email';
+import {
+  communityManagerEmailHtml,
+  emailPosterUrl,
+  SUBJECTS,
+  type CampaignFacts,
+} from './community-manager-email';
 
 const SLUG = 'formation-devenir-un-community-manager';
 const REGISTER_URL = `https://metwork.dz/programs/${SLUG}`;
@@ -79,8 +84,6 @@ async function facts(posterUrl: string | null): Promise<CampaignFacts> {
   const taken = (d.registrations ?? []).filter(
     (r) => r.entityId === p.id && r.status === 'CONFIRMED',
   ).length;
-  const promo = (d.promoCodes ?? []).find((c) => c.code === 'METWORK10' && c.isActive);
-
   return {
     registerUrl: REGISTER_URL,
     dates: humanDateRange(p.startDate, p.endDate),
@@ -93,10 +96,10 @@ async function facts(posterUrl: string | null): Promise<CampaignFacts> {
     deposit: p.cashDepositType === 'FIXED' ? (p.cashDepositValue ?? null) : null,
     seatsLeft: Math.max(0, p.seatsTotal - taken),
     deadline: humanDate(p.deadline),
-    promo: promo
-      ? { code: promo.code, percent: promo.discountPercent, maxUses: promo.usageLimit ?? null }
-      : null,
-    posterUrl,
+    // Default to the program's OWN cover — it is already hosted and is the
+    // poster the host uploaded, so there is nothing to pass by hand. `--poster`
+    // overrides it when a different visual is wanted.
+    posterUrl: posterUrl ?? p.imageUrl ?? p.imageUrls?.[0] ?? null,
   };
 }
 
@@ -124,8 +127,7 @@ async function main(): Promise<void> {
   console.log(`\n  ${f.dates}${f.startTime ? ` · ${f.startTime}` : ''} · ${f.city}`);
   console.log(`  ${f.onlinePrice} by card / ${f.cashPrice} cash` + (f.deposit ? ` · deposit ${f.deposit}` : ''));
   console.log(`  ${f.seatsLeft} seat(s) left · closes ${f.deadline}`);
-  console.log(`  promo: ${f.promo ? `${f.promo.code} −${f.promo.percent}% (max ${f.promo.maxUses ?? '∞'})` : 'none'}`);
-  console.log(`  poster: ${posterUrl ?? '(none — pass --poster <url>)'}`);
+  console.log(`  poster: ${f.posterUrl ? emailPosterUrl(f.posterUrl) : '(none)'}`);
   console.log(`\n  subject: ${subject}`);
 
   const out = path.resolve('campaign-preview.html');
