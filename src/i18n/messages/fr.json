@@ -1242,7 +1242,11 @@
       "emptyDescription": "Créez des programmes d'incubation, d'accélération ou de formation.",
       "actionEdit": "Modifier",
       "actionDelete": "Supprimer",
-      "actionRegistrations": "Gérer les inscriptions"
+      "actionRegistrations": "Gérer les inscriptions",
+      "free": "Gratuit",
+      "confirmDelete": "Supprimer ce programme ? Cette action est irréversible.",
+      "errorLoad": "Impossible de charger vos programmes. Veuillez actualiser.",
+      "errorDelete": "Impossible de supprimer ce programme. Veuillez réessayer."
     },
     "spaces": {
       "colSpace": "Espace",

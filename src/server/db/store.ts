@@ -1396,10 +1396,29 @@ export interface RegistrationFormFieldRecord {
   incubatorId: string | null;
   /** Owning consultant (MentorRecord.id). Additive & nullable — see ProgramRecord.mentorId. */
   mentorId?: string | null;
+  /**
+   * The question as text. ALWAYS populated — it is what the dashboard, the CSV
+   * export and every non-localised surface read, and the only thing a
+   * host-written question has.
+   */
   label: string;
+  /**
+   * Key under the `defaultQuestions` i18n namespace, when this field came from
+   * the seeded default application form. The PUBLIC form prefers it, so an
+   * Arabic visitor reads the question in Arabic instead of whatever locale the
+   * host happened to be authoring in.
+   *
+   * The seeded set used to be resolved to text once, at program-creation time,
+   * and frozen — which made "translate the questions" impossible without a
+   * data migration. Absent on every host-written question, and CLEARED the
+   * moment a host edits the label (their words win over the template).
+   */
+  labelKey?: string | null;
   type: RegistrationFieldType;
   /** For DROPDOWN / MULTIPLE_CHOICE / CHECKBOX — the list of choices. */
   options: string[] | null;
+  /** Per-option counterpart of `labelKey`, positionally aligned with `options`. */
+  optionKeys?: string[] | null;
   required: boolean;
   /** Display order (0-indexed). */
   order: number;

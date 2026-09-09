@@ -1242,7 +1242,11 @@
       "emptyDescription": "أنشئ برامج حضانة أو تسريع أو تدريب.",
       "actionEdit": "تعديل",
       "actionDelete": "حذف",
-      "actionRegistrations": "إدارة التسجيلات"
+      "actionRegistrations": "إدارة التسجيلات",
+      "free": "مجاني",
+      "confirmDelete": "حذف هذا البرنامج؟ لا يمكن التراجع عن هذا الإجراء.",
+      "errorLoad": "تعذّر تحميل برامجك. يرجى التحديث.",
+      "errorDelete": "تعذّر حذف هذا البرنامج. يرجى المحاولة مرة أخرى."
     },
     "spaces": {
       "colSpace": "الفضاء",

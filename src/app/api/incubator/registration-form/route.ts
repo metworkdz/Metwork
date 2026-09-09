@@ -35,8 +35,15 @@ const FIELD_TYPES = [
 
 const fieldSchema = z.object({
   label:    z.string().min(1).max(200).transform((s) => s.trim()),
+  /**
+   * `defaultQuestions` i18n key for a seeded question, so the PUBLIC form can
+   * render it in the visitor's locale instead of the author's. Absent on a
+   * host-written question; the builder clears it when the label is edited.
+   */
+  labelKey:   z.string().min(1).max(80).nullable().optional().transform((v) => v ?? null),
   type:     z.enum(FIELD_TYPES),
   options:  z.array(z.string().min(1).max(200)).nullable().optional().transform((v) => v ?? null),
+  optionKeys: z.array(z.string().min(1).max(80)).nullable().optional().transform((v) => v ?? null),
   required: z.boolean().default(false),
   order:    z.number().int().min(0).default(0),
 });
@@ -118,8 +125,15 @@ export async function POST(req: NextRequest) {
     incubatorScope(inc.id),
     input.fields.map((f, i) => ({
       label:    f.label,
+      // Only keep option keys that still line up with the options they name —
+      // a host who edits one choice must not get the template's wording back.
+      labelKey: f.labelKey,
       type:     f.type,
       options:  f.options ?? null,
+      optionKeys:
+        f.optionKeys && f.options && f.optionKeys.length === f.options.length
+          ? f.optionKeys
+          : null,
       required: f.required,
       order:    i,
     })),

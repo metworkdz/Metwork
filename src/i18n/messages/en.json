@@ -1242,7 +1242,11 @@
       "emptyDescription": "Create incubation, acceleration, or training programs.",
       "actionEdit": "Edit",
       "actionDelete": "Delete",
-      "actionRegistrations": "Manage Registrations"
+      "actionRegistrations": "Manage Registrations",
+      "free": "Free",
+      "confirmDelete": "Delete this program? This cannot be undone.",
+      "errorLoad": "Could not load your programs. Please refresh.",
+      "errorDelete": "Could not delete this program. Please try again."
     },
     "spaces": {
       "colSpace": "Space",

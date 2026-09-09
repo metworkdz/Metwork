@@ -16,7 +16,12 @@ import {
   type RegistrationFieldType,
   type RegistrationStatus,
 } from '@/server/db/store';
-import { sendResendEmail, layout } from '@/server/notifications/email';
+import {
+  sendResendEmail,
+  layout,
+  normalizeEmailLang,
+  type EmailLang,
+} from '@/server/notifications/email';
 import { countAttendance } from '@/server/attendance';
 import { getProgramOwner, isProgramPubliclyReachable } from '@/server/programs/ownership';
 
@@ -233,8 +238,10 @@ export async function replaceFormFields(
       entityId,
       ...ownerFields(owner),
       label: f.label,
+      labelKey: f.labelKey ?? null,
       type: f.type,
       options: f.options,
+      optionKeys: f.optionKeys ?? null,
       required: f.required,
       order: i,
       createdAt: now,
@@ -510,6 +517,96 @@ export interface RegistrationPaymentSummary {
   dueOnSite: number;
 }
 
+/**
+ * Registration-confirmation copy, per locale.
+ *
+ * This email was hardcoded English — subject, banner, every table heading —
+ * while the form that produced it was fully translated. Someone registering in
+ * Arabic filled an Arabic form and then got an English receipt. It now follows
+ * the same EmailLang / RTL pattern the consultation senders use.
+ */
+const CONFIRMATION_COPY: Record<EmailLang, {
+  subjectConfirmed: (title: string) => string;
+  subjectWaitlist: (title: string) => string;
+  headingConfirmed: string;
+  headingWaitlist: string;
+  greeting: (name: string) => string;
+  bannerConfirmed: string;
+  bannerWaitlistTitle: string;
+  bannerWaitlistBody: string;
+  entityProgram: string;
+  entityEvent: string;
+  hostedBy: (host: string) => string;
+  paidOnline: string;
+  dueOnSite: string;
+  paidInFull: string;
+  rowName: string;
+  rowEmail: string;
+  rowPhone: string;
+  questions: (email: string) => string;
+}> = {
+  en: {
+    subjectConfirmed: (t) => `Registration confirmed — ${t}`,
+    subjectWaitlist: (t) => `You're on the waitlist — ${t}`,
+    headingConfirmed: 'Registration confirmed',
+    headingWaitlist: 'Waitlist confirmed',
+    greeting: (n) => `Hi <strong>${n}</strong>,`,
+    bannerConfirmed: '✅ Your registration is confirmed',
+    bannerWaitlistTitle: "📋 You're on the waitlist",
+    bannerWaitlistBody: "We'll notify you if a spot opens up.",
+    entityProgram: 'Program',
+    entityEvent: 'Event',
+    hostedBy: (h) => `Hosted by ${h}`,
+    paidOnline: 'Paid online',
+    dueOnSite: 'To pay on site',
+    paidInFull: 'Paid in full — nothing to settle on the day.',
+    rowName: 'Name',
+    rowEmail: 'Email',
+    rowPhone: 'Phone',
+    questions: (e) => `Questions? Contact <a href="mailto:${e}" style="color:#30a735;">${e}</a>`,
+  },
+  fr: {
+    subjectConfirmed: (t) => `Inscription confirmée — ${t}`,
+    subjectWaitlist: (t) => `Vous êtes sur liste d'attente — ${t}`,
+    headingConfirmed: 'Inscription confirmée',
+    headingWaitlist: "Liste d'attente confirmée",
+    greeting: (n) => `Bonjour <strong>${n}</strong>,`,
+    bannerConfirmed: '✅ Votre inscription est confirmée',
+    bannerWaitlistTitle: "📋 Vous êtes sur liste d'attente",
+    bannerWaitlistBody: 'Nous vous préviendrons si une place se libère.',
+    entityProgram: 'Programme',
+    entityEvent: 'Événement',
+    hostedBy: (h) => `Organisé par ${h}`,
+    paidOnline: 'Payé en ligne',
+    dueOnSite: 'À payer sur place',
+    paidInFull: 'Payé intégralement — rien à régler le jour J.',
+    rowName: 'Nom',
+    rowEmail: 'Email',
+    rowPhone: 'Téléphone',
+    questions: (e) => `Des questions ? Contactez <a href="mailto:${e}" style="color:#30a735;">${e}</a>`,
+  },
+  ar: {
+    subjectConfirmed: (t) => `تم تأكيد التسجيل — ${t}`,
+    subjectWaitlist: (t) => `أنت على قائمة الانتظار — ${t}`,
+    headingConfirmed: 'تم تأكيد التسجيل',
+    headingWaitlist: 'تم تأكيد إدراجك في قائمة الانتظار',
+    greeting: (n) => `مرحباً <strong>${n}</strong>،`,
+    bannerConfirmed: '✅ تم تأكيد تسجيلك',
+    bannerWaitlistTitle: '📋 أنت على قائمة الانتظار',
+    bannerWaitlistBody: 'سنخطرك إذا توفر مقعد.',
+    entityProgram: 'البرنامج',
+    entityEvent: 'الفعالية',
+    hostedBy: (h) => `من تنظيم ${h}`,
+    paidOnline: 'المدفوع عبر الإنترنت',
+    dueOnSite: 'المطلوب في المكان',
+    paidInFull: 'تم الدفع بالكامل — لا شيء مستحق يوم الحدث.',
+    rowName: 'الاسم',
+    rowEmail: 'البريد الإلكتروني',
+    rowPhone: 'رقم الهاتف',
+    questions: (e) => `لديك أسئلة؟ تواصل عبر <a href="mailto:${e}" style="color:#30a735;">${e}</a>`,
+  },
+};
+
 async function sendConfirmationEmail(
   reg: RegistrationRecord,
   data: DbData,
@@ -530,65 +627,73 @@ async function sendConfirmationEmail(
     const incubatorName = mentor?.fullName ?? incubator?.name ?? 'Metwork';
     const contactEmail = mentor?.email ?? incubator?.email ?? null;
 
-    const isWaitlisted = reg.status === 'WAITLISTED';
+    // The locale the visitor actually filled the form in — captured on the row
+    // at registration, so this never guesses from the host's settings.
+    const lang = normalizeEmailLang(reg.locale);
+    const dir = lang === 'ar' ? 'rtl' : 'ltr';
+    const align = lang === 'ar' ? 'right' : 'left';
+    const c = CONFIRMATION_COPY[lang];
 
+    const isWaitlisted = reg.status === 'WAITLISTED';
     const subject = isWaitlisted
-      ? `You're on the waitlist — ${entityTitle}`
-      : `Registration confirmed — ${entityTitle}`;
+      ? c.subjectWaitlist(entityTitle)
+      : c.subjectConfirmed(entityTitle);
 
     const statusBannerHtml = isWaitlisted
       ? `<div style="background:#fef3c7;border-radius:8px;padding:16px 24px;margin-bottom:20px;">
-           <p style="margin:0;color:#92400e;font-size:14px;font-weight:600;">📋 You're on the waitlist</p>
-           <p style="margin:4px 0 0;color:#92400e;font-size:13px;">We'll notify you if a spot opens up.</p>
+           <p style="margin:0;color:#92400e;font-size:14px;font-weight:600;">${c.bannerWaitlistTitle}</p>
+           <p style="margin:4px 0 0;color:#92400e;font-size:13px;">${c.bannerWaitlistBody}</p>
          </div>`
       : `<div style="background:#dcfce7;border-radius:8px;padding:16px 24px;margin-bottom:20px;">
-           <p style="margin:0;color:#15803d;font-size:14px;font-weight:600;">✅ Your registration is confirmed</p>
+           <p style="margin:0;color:#15803d;font-size:14px;font-weight:600;">${c.bannerConfirmed}</p>
          </div>`;
 
     // What was settled, for a PAID registration. The card receipt covers the
     // accounting; this line is the operational one — how much to bring on the
     // day. Getting that wrong is the fastest way to a doorstep argument.
-    const fmtDzd = (n: number) => `${n.toLocaleString('fr-DZ')} DZD`;
+    const fmtDzd = (n: number) => `${n.toLocaleString(lang === 'en' ? 'en-GB' : 'fr-DZ')} DZD`;
+    const cell = `padding:10px 16px;font-size:13px;text-align:${align};`;
     const paymentHtml = payment
       ? `<table width="100%" cellpadding="0" cellspacing="0"
                 style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin-bottom:20px;">
            <tr>
-             <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;width:160px;border-bottom:1px solid #f4f4f5;">Paid online</td>
-             <td style="padding:10px 16px;font-size:13px;color:#09090b;font-weight:600;border-bottom:1px solid #f4f4f5;">${fmtDzd(payment.paidOnline)}</td>
+             <td style="${cell}color:#71717a;font-weight:600;width:160px;border-bottom:1px solid #f4f4f5;">${c.paidOnline}</td>
+             <td style="${cell}color:#09090b;font-weight:600;border-bottom:1px solid #f4f4f5;">${fmtDzd(payment.paidOnline)}</td>
            </tr>
            ${payment.dueOnSite > 0
              ? `<tr>
-                  <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;">To pay on site</td>
-                  <td style="padding:10px 16px;font-size:13px;color:#b45309;font-weight:700;">${fmtDzd(payment.dueOnSite)}</td>
+                  <td style="${cell}color:#71717a;font-weight:600;">${c.dueOnSite}</td>
+                  <td style="${cell}color:#b45309;font-weight:700;">${fmtDzd(payment.dueOnSite)}</td>
                 </tr>`
              : `<tr>
-                  <td colspan="2" style="padding:10px 16px;font-size:13px;color:#15803d;font-weight:600;">Paid in full — nothing to settle on the day.</td>
+                  <td colspan="2" style="${cell}color:#15803d;font-weight:600;">${c.paidInFull}</td>
                 </tr>`}
          </table>`
       : '';
 
     // Use the shared layout() so this email gets the Metwork white logo + green header
     const html = layout(`
+      <div dir="${dir}" style="text-align:${align};">
       <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#09090b;letter-spacing:-0.3px;">
-        ${isWaitlisted ? 'Waitlist confirmed' : 'Registration confirmed'}
+        ${isWaitlisted ? c.headingWaitlist : c.headingConfirmed}
       </h1>
       <p style="margin:0 0 20px;font-size:15px;color:#3f3f46;line-height:1.6;">
-        Hi <strong>${escHtml(reg.fullName)}</strong>,
+        ${c.greeting(escHtml(reg.fullName))}
       </p>
       ${statusBannerHtml}
       <table width="100%" cellpadding="0" cellspacing="0"
              style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin-bottom:20px;">
         <tr>
-          <td style="padding:20px 24px;">
+          <td style="padding:20px 24px;text-align:${align};">
             <p style="margin:0 0 4px;font-size:11px;font-weight:600;text-transform:uppercase;
                        letter-spacing:.05em;color:#9ca3af;">
-              ${entityType === 'PROGRAM' ? 'Program' : 'Event'}
+              ${entityType === 'PROGRAM' ? c.entityProgram : c.entityEvent}
             </p>
             <p style="margin:0;font-size:18px;font-weight:600;color:#09090b;">
               ${escHtml(entityTitle)}
             </p>
             <p style="margin:4px 0 0;font-size:13px;color:#71717a;">
-              Hosted by ${escHtml(incubatorName)}
+              ${c.hostedBy(escHtml(incubatorName))}
             </p>
           </td>
         </tr>
@@ -597,23 +702,24 @@ async function sendConfirmationEmail(
       <table width="100%" cellpadding="0" cellspacing="0"
              style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin-bottom:20px;">
         <tr>
-          <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;width:100px;border-bottom:1px solid #f4f4f5;">Name</td>
-          <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;">${escHtml(reg.fullName)}</td>
+          <td style="${cell}color:#71717a;font-weight:600;width:100px;border-bottom:1px solid #f4f4f5;">${c.rowName}</td>
+          <td style="${cell}color:#09090b;border-bottom:1px solid #f4f4f5;">${escHtml(reg.fullName)}</td>
         </tr>
         <tr>
-          <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;border-bottom:1px solid #f4f4f5;">Email</td>
-          <td style="padding:10px 16px;font-size:13px;color:#09090b;border-bottom:1px solid #f4f4f5;">${escHtml(reg.email)}</td>
+          <td style="${cell}color:#71717a;font-weight:600;border-bottom:1px solid #f4f4f5;">${c.rowEmail}</td>
+          <td style="${cell}color:#09090b;border-bottom:1px solid #f4f4f5;" dir="ltr">${escHtml(reg.email)}</td>
         </tr>
         <tr>
-          <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;">Phone</td>
-          <td style="padding:10px 16px;font-size:13px;color:#09090b;">${escHtml(reg.phone)}</td>
+          <td style="${cell}color:#71717a;font-weight:600;">${c.rowPhone}</td>
+          <td style="${cell}color:#09090b;" dir="ltr">${escHtml(reg.phone)}</td>
         </tr>
       </table>
       ${contactEmail
         ? `<p style="margin:0;font-size:13px;color:#71717a;">
-             Questions? Contact <a href="mailto:${escHtml(contactEmail)}" style="color:#30a735;">${escHtml(contactEmail)}</a>
+             ${c.questions(escHtml(contactEmail))}
            </p>`
         : ''}
+      </div>
     `);
 
     await sendResendEmail({ to: reg.email, subject, html });

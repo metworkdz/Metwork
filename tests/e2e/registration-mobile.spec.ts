@@ -22,6 +22,9 @@
  */
 import { test, expect, devices, type Page } from '@playwright/test';
 import { roleContext, createProgram, setRegistrationForm } from './api/_helpers';
+import ar from '../../src/i18n/messages/ar.json';
+import enMessages from '../../src/i18n/messages/en.json';
+import { buildDefaultApplicationFields } from '../../src/server/programs/default-application-questions';
 
 test.use({ ...devices['iPhone 13'], browserName: 'chromium' });
 
@@ -34,6 +37,10 @@ const MIN_TARGET_PX = 44;
 
 let slug: string;
 let questionCount: number;
+/** A program seeded with the DEFAULT question set, for the i18n check. */
+let seededSlug: string;
+
+const EN_DEFAULTS = (enMessages as { defaultQuestions: Record<string, string> }).defaultQuestions;
 
 test.beforeAll(async () => {
   const inc = await roleContext('incubator');
@@ -57,6 +64,33 @@ test.beforeAll(async () => {
     ]);
     slug = program.slug;
     questionCount = fields.length;
+
+    // A second fixture carrying the SEEDED default questions, keys and all —
+    // the case where the visitor's locale has to win over the author's.
+    const seeded = await createProgram(inc, {
+      title: `QA Seeded Questions ${Date.now()}`,
+      type: 'TRAINING',
+      price: 0,
+      seatsTotal: 20,
+    });
+    const enDefaults = buildDefaultApplicationFields((k) => k); // labels irrelevant here
+    await setRegistrationForm(
+      inc,
+      'PROGRAM',
+      seeded.id,
+      enDefaults.slice(0, 3).map((f) => ({
+        // Authored in ENGLISH on purpose — an Arabic visitor must still read Arabic.
+        label: (EN_DEFAULTS as Record<string, string>)[f.labelKey]!,
+        labelKey: f.labelKey,
+        type: f.type,
+        options: f.optionKeys
+          ? f.optionKeys.map((k) => (EN_DEFAULTS as Record<string, string>)[k]!)
+          : null,
+        optionKeys: f.optionKeys,
+        required: false,
+      })),
+    );
+    seededSlug = seeded.slug;
   } finally {
     await inc.dispose();
   }
@@ -229,4 +263,30 @@ test('choice options are full-size tap targets', async ({ page }) => {
     const h = (await box.boundingBox())?.height ?? 0;
     expect(h, 'a choice row is under the 44px minimum').toBeGreaterThanOrEqual(MIN_TARGET_PX);
   }
+});
+
+test('a seeded question is read in the VISITOR\'s language, not the author\'s', async ({ page }) => {
+  // The questions were authored in English. The seeded set carries i18n keys,
+  // so an Arabic visitor must read Arabic — the whole point of not freezing
+  // the wording into the database at creation time.
+  const AR = (ar as { defaultQuestions: Record<string, string> }).defaultQuestions;
+
+  await page.goto(`/ar/programs/${seededSlug}`);
+  await page.waitForLoadState('networkidle');
+
+  const form = page.locator('form');
+  await page.locator('#reg-name').fill('أمينة بن علي');
+  await page.locator('#reg-email').fill(`qa.ar.${Date.now()}@metwork.test`);
+  await page.locator('#reg-phone').fill('+213770112266');
+  await form.locator('button[type=submit]').click();
+
+  // First seeded question — Arabic, not the English it was stored as.
+  await expect(form.locator('h3')).toHaveText(AR.city!);
+  await form.locator('button[type=submit]').click();
+  await expect(form.locator('h3')).toHaveText(AR.startupName!);
+  await form.locator('button[type=submit]').click();
+
+  // A choice question localises its OPTIONS too, not just the prompt.
+  await expect(form.locator('h3')).toHaveText(AR.stage!);
+  await expect(form.locator('select')).toContainText(AR.stageIdea!);
 });

@@ -35,6 +35,7 @@ import { bookingService } from '@/services/booking.service';
 import { ApiClientError } from '@/lib/api-client';
 import { formatCurrency } from '@/lib/format';
 import { resolveListingPricing } from '@/lib/listing-price';
+import { questionLabel, questionOptions } from '@/lib/registration-question';
 import { computeClientDeposit } from '@/lib/deposit';
 import { safeUUID } from '@/lib/safe-uuid';
 import { cn } from '@/lib/utils';
@@ -90,6 +91,9 @@ export function RegistrationForm({
   pricing,
 }: RegistrationFormProps) {
   const t = useTranslations('registration');
+  // Seeded questions carry a `defaultQuestions` key, so they render in the
+  // VISITOR's language. Host-written ones are text and stay exactly as typed.
+  const tq = useTranslations('defaultQuestions');
   const locale = useLocale() as Locale;
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<SubmitResult | null>(null);
@@ -409,6 +413,8 @@ export function RegistrationForm({
           <QuestionStep
             key={step.field.id}
             field={step.field}
+            label={questionLabel(step.field, tq)}
+            options={questionOptions(step.field, tq)}
             value={form.answers[step.field.id]}
             error={fieldErrors[step.field.id]}
             onChange={(v) => setAnswer(step.field.id, v)}
@@ -566,6 +572,8 @@ function IdentityStep({
 
 function QuestionStep({
   field,
+  label,
+  options,
   value,
   error,
   onChange,
@@ -574,6 +582,9 @@ function QuestionStep({
   multiHint,
 }: {
   field: RegistrationFormField;
+  /** Already resolved for this visitor — see `@/lib/registration-question`. */
+  label: string;
+  options: string[] | null;
   value: string | string[] | undefined;
   error?: string;
   onChange: (v: string | string[]) => void;
@@ -588,7 +599,7 @@ function QuestionStep({
   return (
     <div>
       <StepHeading
-        title={field.label}
+        title={label}
         hint={field.type === 'CHECKBOX' ? multiHint : undefined}
       />
 
@@ -635,7 +646,7 @@ function QuestionStep({
         />
       )}
 
-      {field.type === 'DROPDOWN' && field.options && (
+      {field.type === 'DROPDOWN' && options && (
         <select
           id={inputId}
           autoFocus
@@ -644,7 +655,7 @@ function QuestionStep({
           className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 sm:text-sm"
         >
           <option value="">{selectPlaceholder}</option>
-          {field.options.map((opt) => (
+          {options.map((opt) => (
             <option key={opt} value={opt}>
               {opt}
             </option>
@@ -652,9 +663,9 @@ function QuestionStep({
         </select>
       )}
 
-      {field.type === 'MULTIPLE_CHOICE' && field.options && (
+      {field.type === 'MULTIPLE_CHOICE' && options && (
         <div className="flex flex-col gap-2">
-          {field.options.map((opt) => (
+          {options.map((opt) => (
             <ChoiceRow
               key={opt}
               selected={stringValue === opt}
@@ -667,9 +678,9 @@ function QuestionStep({
         </div>
       )}
 
-      {field.type === 'CHECKBOX' && field.options && (
+      {field.type === 'CHECKBOX' && options && (
         <div className="flex flex-col gap-2">
-          {field.options.map((opt) => (
+          {options.map((opt) => (
             <ChoiceRow
               key={opt}
               selected={arrayValue.includes(opt)}

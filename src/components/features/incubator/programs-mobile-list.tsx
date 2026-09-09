@@ -11,7 +11,8 @@ import type { Locale } from '@/i18n/config';
 
 interface ProgramsMobileListProps {
   programs: Program[];
-  typeLabel: Record<ProgramType, string>;
+  /** Localised name for a program type — see programs-manager. */
+  typeLabel: (type: ProgramType) => string;
   createSlot: ReactNode;
   onRegistrations: (program: Program) => void;
   onEdit: (program: Program) => void;
@@ -64,7 +65,7 @@ export function ProgramsMobileList({
                   </div>
                 )}
                 <span className="absolute end-2 top-2 rounded-full bg-background/90 px-2 py-0.5 text-[0.6875rem] font-medium text-foreground">
-                  {p.price === 0 ? 'Free' : formatCurrency(p.price, locale)}
+                  {p.price === 0 ? t('free') : formatCurrency(p.price, locale)}
                 </span>
               </div>
 
@@ -74,7 +75,7 @@ export function ProgramsMobileList({
                     <p className="truncate font-semibold leading-tight">{p.title}</p>
                     <p className="truncate text-xs text-muted-foreground">{p.city}</p>
                   </div>
-                  <Badge variant="info" className="shrink-0">{typeLabel[p.type]}</Badge>
+                  <Badge variant="info" className="shrink-0">{typeLabel(p.type)}</Badge>
                 </div>
 
                 <p className="mt-1.5 text-xs text-muted-foreground">

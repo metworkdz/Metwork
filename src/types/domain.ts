@@ -175,8 +175,16 @@ export interface RegistrationFormField {
   entityType: 'PROGRAM' | 'EVENT';
   entityId: string;
   label: string;
+  /**
+   * Key under the `defaultQuestions` namespace for a seeded question. The
+   * public form renders THIS in the visitor's locale and falls back to
+   * `label`. Absent on host-written questions — see the store record.
+   */
+  labelKey?: string | null;
   type: RegistrationFieldType;
   options: string[] | null;
+  /** Positional counterpart of `labelKey` for the choices. */
+  optionKeys?: string[] | null;
   required: boolean;
   order: number;
 }

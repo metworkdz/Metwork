@@ -166,6 +166,9 @@ export async function setRegistrationForm(
     type: 'SHORT_TEXT' | 'LONG_TEXT' | 'EMAIL' | 'PHONE' | 'URL' | 'DROPDOWN' | 'MULTIPLE_CHOICE' | 'CHECKBOX';
     options?: string[] | null;
     required?: boolean;
+    /** `defaultQuestions` i18n key — makes the question render in the VISITOR's locale. */
+    labelKey?: string | null;
+    optionKeys?: string[] | null;
   }>,
 ): Promise<Array<{ id: string; label: string; required: boolean }>> {
   const res = await inc.post('/api/incubator/registration-form', {
@@ -174,8 +177,10 @@ export async function setRegistrationForm(
       entityId,
       fields: fields.map((f, i) => ({
         label: f.label,
+        labelKey: f.labelKey ?? null,
         type: f.type,
         options: f.options ?? null,
+        optionKeys: f.optionKeys ?? null,
         required: f.required ?? false,
         order: i,
       })),
