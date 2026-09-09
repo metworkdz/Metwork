@@ -14,6 +14,7 @@ import { ProgramImage } from './program-image';
 import { programTypeLabel } from './program-meta';
 import { ProgramApplyForm, ProgramApplySuccess } from './program-apply-form';
 import { FixedDateCalendar } from '@/components/shared/fixed-date-calendar';
+import { ListingPriceBlock } from '@/components/shared/listing-price-block';
 import { bookingService } from '@/services/booking.service';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
@@ -116,9 +117,13 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                   icon={<Badge variant="primary" className="text-[10px]">{t('fee')}</Badge>}
                   label={t('applicationFee')}
                   value={
-                    program.price === 0
-                      ? t('free')
-                      : formatCurrency(program.price, locale)
+                    <ListingPriceBlock
+                      variant="tile"
+                      price={program.price}
+                      onlinePrice={program.onlinePrice}
+                      cashPrice={program.cashPrice}
+                      acceptedPaymentMethods={program.acceptedPaymentMethods}
+                    />
                   }
                 />
               </div>
@@ -180,7 +185,7 @@ function DetailTile({
 }: {
   icon: React.ReactNode;
   label: string;
-  value: string;
+  value: React.ReactNode;
   hint?: string;
   hintTone?: 'default' | 'danger';
 }) {

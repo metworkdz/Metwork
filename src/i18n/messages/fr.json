@@ -3644,7 +3644,10 @@
       "balanceOnSite": "Solde sur place",
       "payDeposit": "Payer l'acompte — {amount}",
       "payNow": "Payer maintenant — {amount}",
-      "errorContact": "Veuillez saisir un nom, un e-mail et un numéro de téléphone valides."
+      "errorContact": "Veuillez saisir un nom, un e-mail et un numéro de téléphone valides.",
+      "priceSwitchToOnline": "Payez par carte et le tarif passe à {amount}.",
+      "priceSwitchToCash": "Le paiement en espèces coûte {amount}.",
+      "cardFeeNote": "Des frais de traitement par carte sont ajoutés au paiement."
     },
     "explorer": {
       "all": "Tous les programmes",
@@ -5315,5 +5318,12 @@
       "internationalProcessor": "Les paiements par carte internationale sont traités par {company}, société affiliée à Metwork établie au {country}. Le débit apparaîtra sur votre relevé bancaire sous le nom {company}.",
       "internationalCountryName": "Royaume-Uni"
     }
+  },
+  "listingPrice": {
+    "free": "Gratuit",
+    "byCard": "{amount} par carte",
+    "inCash": "{amount} en espèces",
+    "payingByCard": "par carte",
+    "payingInCash": "en espèces"
   }
 }

@@ -16,6 +16,7 @@ import { findEventBySlugOrId, listFormFields } from '@/server/registrations/serv
 import { getEventAttendance } from '@/server/bookings/service';
 import { RegistrationForm } from '@/components/features/registrations/registration-form';
 import { ImageCarousel } from '@/components/shared/image-carousel';
+import { ListingPriceBlock } from '@/components/shared/listing-price-block';
 import { readSession } from '@/server/auth/session';
 import { formatCurrency, formatDate } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
@@ -171,14 +172,15 @@ export default async function EventDetailPage({ params }: PageProps) {
         {/* ── Right: pricing + registration ── */}
         <div className="lg:col-span-2">
           <div className="sticky top-20 rounded-2xl border border-border bg-card p-6 space-y-5">
-            {/* Price */}
-            <div className="text-center pb-4 border-b border-border">
-              <p className="text-3xl font-bold tabular-nums">
-                {event.price === 0 ? t('free') : formatCurrency(event.price, locale as Locale)}
-              </p>
-              {event.price > 0 && (
-                <p className="text-xs text-muted-foreground mt-0.5">{t('perAttendee')}</p>
-              )}
+            {/* Price — split-aware, same component as the program page. */}
+            <div className="pb-4 border-b border-border">
+              <ListingPriceBlock
+                price={event.price}
+                onlinePrice={event.onlinePrice}
+                cashPrice={event.cashPrice}
+                acceptedPaymentMethods={event.acceptedPaymentMethods}
+                caption={t('perAttendee')}
+              />
             </div>
 
             {/* Registration form or status */}

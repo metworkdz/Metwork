@@ -28,6 +28,7 @@ import {
 } from '@/server/spaces/availability';
 import { findProgramById } from './program-catalog';
 import { findEventById } from './event-catalog';
+import { effectiveListingPrice } from './listing-payment';
 import { countAttendance } from '@/server/attendance';
 import { resolveMemberBenefits } from '@/server/memberships/service';
 import { isNetworkPassEnabled } from '@/config/feature-flags';
@@ -975,7 +976,14 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
       return { ok: false, reason: 'CAPACITY_EXCEEDED', capacity: program.seatsTotal, taken };
     }
 
-    const baseTotal = program.price;
+    // Split pricing: a listing may price ONLINE and CASH differently. The
+    // SAME resolver the card path uses (card-payment.ts) — never `program.price`
+    // directly, or a wallet payer is charged the cash price for an online seat.
+    const baseTotal = effectiveListingPrice(
+      program.price,
+      program,
+      isCash ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
+    );
     let wallet = d.wallets.find((w) => w.userId === args.userId);
     if (!wallet) {
       wallet = newWallet(args.userId);
@@ -1171,10 +1179,17 @@ export async function registerForEvent(
     // Apply tier membership discount to the base ticket price (server-side
     // mirror of the booking-form's preview). Builder = 15 %, Founder = 20 %.
     const membershipFraction = Math.min(1, Math.max(0, args.membershipDiscount ?? 0));
+    // Split pricing first (ONLINE vs CASH), THEN the membership discount — the
+    // same order card-payment.ts uses, so both surfaces agree to the dinar.
+    const listingBase = effectiveListingPrice(
+      event.price,
+      event,
+      isCash ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
+    );
     const baseTotal =
-      membershipFraction > 0 && event.price > 0
-        ? Math.round(event.price * (1 - membershipFraction))
-        : event.price;
+      membershipFraction > 0 && listingBase > 0
+        ? Math.round(listingBase * (1 - membershipFraction))
+        : listingBase;
     let wallet = d.wallets.find((w) => w.userId === args.userId);
     if (!wallet) {
       wallet = newWallet(args.userId);

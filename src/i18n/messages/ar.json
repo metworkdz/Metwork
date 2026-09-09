@@ -3644,7 +3644,10 @@
       "balanceOnSite": "الرصيد المتبقي في المكان",
       "payDeposit": "ادفع العربون — {amount}",
       "payNow": "ادفع الآن — {amount}",
-      "errorContact": "يرجى إدخال اسم وبريد إلكتروني ورقم هاتف صالح."
+      "errorContact": "يرجى إدخال اسم وبريد إلكتروني ورقم هاتف صالح.",
+      "priceSwitchToOnline": "ادفع بالبطاقة بدلاً من ذلك ليصبح السعر {amount}.",
+      "priceSwitchToCash": "الدفع نقداً يكلّف {amount}.",
+      "cardFeeNote": "تُضاف رسوم معالجة البطاقة عند إتمام الدفع."
     },
     "explorer": {
       "all": "جميع البرامج",
@@ -5315,5 +5318,12 @@
       "internationalProcessor": "تُعالَج المدفوعات بالبطاقة الدولية عبر {company}، وهي شركة تابعة لـ Metwork ومقرّها {country}. وسيظهر الخصم في كشف حسابك البنكي باسم {company}.",
       "internationalCountryName": "المملكة المتحدة"
     }
+  },
+  "listingPrice": {
+    "free": "مجاني",
+    "byCard": "{amount} بالبطاقة",
+    "inCash": "{amount} نقداً",
+    "payingByCard": "الدفع بالبطاقة",
+    "payingInCash": "الدفع نقداً"
   }
 }

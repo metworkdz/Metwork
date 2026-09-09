@@ -3644,7 +3644,10 @@
       "balanceOnSite": "Balance on-site",
       "payDeposit": "Pay deposit — {amount}",
       "payNow": "Pay now — {amount}",
-      "errorContact": "Please enter a valid name, email, and phone number."
+      "errorContact": "Please enter a valid name, email, and phone number.",
+      "priceSwitchToOnline": "Pay by card instead and it is {amount}.",
+      "priceSwitchToCash": "Paying in cash costs {amount}.",
+      "cardFeeNote": "A card processing fee is added at checkout."
     },
     "explorer": {
       "all": "All programs",
@@ -5315,5 +5318,12 @@
       "internationalProcessor": "International card payments are processed by {company}, a Metwork affiliate based in the {country}. The charge will appear on your bank statement under the name {company}.",
       "internationalCountryName": "United Kingdom"
     }
+  },
+  "listingPrice": {
+    "free": "Free",
+    "byCard": "{amount} by card",
+    "inCash": "{amount} in cash",
+    "payingByCard": "paying by card",
+    "payingInCash": "paying in cash"
   }
 }
