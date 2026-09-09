@@ -222,6 +222,43 @@ export default defineConfig({
       },
     },
     {
+      // THE launch suite for the platform's first paid training. Asserts money
+      // and seats from server state: split pricing on both surfaces, the answers
+      // surviving the hosted checkout, the free route refusing a paid listing,
+      // idempotency on replay, capacity binding at settlement, and rate limits
+      // sized for a real cohort behind one carrier NAT.
+      // SERIAL & state-sharing (one dev server, one JSON doc) and every test
+      // moves money — run with `--workers=1`, retries off so a flake never
+      // re-charges. REQUIRES the mock provider:
+      //   PAYMENT_PROVIDER=mock MOCK_PAYMENT_MODE=sync USE_LOCAL_DB=true
+      //   npx playwright test --project=paid-registration --workers=1
+      name: 'paid-registration',
+      testMatch: '**/api/paid-registration.spec.ts',
+      retries: 0,
+      timeout: 90_000,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
+      // The public registration link at phone width — no iOS zoom (16px floor
+      // on every field), no horizontal scroll in fr/ar/en, 44px tap targets,
+      // one question per screen, and the payment step repricing when the method
+      // changes. Creates its own fixture but never completes a payment.
+      //   npx playwright test --project=registration-mobile --workers=1
+      name: 'registration-mobile',
+      testMatch: '**/registration-mobile.spec.ts',
+      retries: 0,
+      timeout: 90_000,
+      use: {
+        // iPhone 13 metrics on Chromium: the repo only provisions Chromium, and
+        // the descriptor's default (WebKit) is not installed. Mobile emulation
+        // (viewport, DPR, touch, UA) is what these assertions depend on.
+        ...devices['iPhone 13'],
+        browserName: 'chromium',
+      },
+    },
+    {
       // Manual withdrawal — requester UI (payout-account gate, RIB/RIP form) +
       // a hydration guard on the pages this feature touched. Default session is
       // the entrepreneur `builder` (a clean wallet not used by the api

@@ -113,6 +113,15 @@ export interface ProgramOpts {
   deadlineDays?: number;
   type?: 'INCUBATION' | 'ACCELERATION' | 'TRAINING' | 'BOOTCAMP' | 'WORKSHOP';
   title?: string;
+  /** Split pricing — what an ONLINE_FULL payer owes. Omit to use `price`. */
+  onlinePrice?: number | null;
+  /** Split pricing — what a CASH payer owes IN TOTAL. Omit to use `price`. */
+  cashPrice?: number | null;
+  /** Accepted surfaces. Defaults to ['ONLINE']. */
+  acceptedPaymentMethods?: ('ONLINE' | 'CASH')[];
+  /** Cash deposit (paid online by card). Required when CASH is accepted. */
+  cashDepositType?: 'FIXED' | 'PERCENT';
+  cashDepositValue?: number;
 }
 
 /** Create a program fixture as the incubator. Returns the full ProgramRecord (has `id` UUID). */
@@ -133,11 +142,49 @@ export async function createProgram(
       // startDate/endDate must be valid ISO; keep them after the deadline.
       startDate: isoFromNow(Math.max(deadlineDays, 0) + 10),
       endDate: isoFromNow(Math.max(deadlineDays, 0) + 40),
-      acceptedPaymentMethods: ['ONLINE'],
+      acceptedPaymentMethods: opts.acceptedPaymentMethods ?? ['ONLINE'],
+      ...(opts.onlinePrice !== undefined ? { onlinePrice: opts.onlinePrice } : {}),
+      ...(opts.cashPrice !== undefined ? { cashPrice: opts.cashPrice } : {}),
+      ...(opts.cashDepositType ? { cashDepositType: opts.cashDepositType } : {}),
+      ...(opts.cashDepositValue !== undefined ? { cashDepositValue: opts.cashDepositValue } : {}),
     },
   });
   expect(res.status(), `createProgram failed → ${res.status()} ${await res.text()}`).toBe(201);
   return res.json();
+}
+
+/**
+ * Replace a program's / event's custom application questions, as the
+ * incubator. Mirrors what the form builder sends.
+ */
+export async function setRegistrationForm(
+  inc: APIRequestContext,
+  entityType: 'PROGRAM' | 'EVENT',
+  entityId: string,
+  fields: Array<{
+    label: string;
+    type: 'SHORT_TEXT' | 'LONG_TEXT' | 'EMAIL' | 'PHONE' | 'URL' | 'DROPDOWN' | 'MULTIPLE_CHOICE' | 'CHECKBOX';
+    options?: string[] | null;
+    required?: boolean;
+  }>,
+): Promise<Array<{ id: string; label: string; required: boolean }>> {
+  const res = await inc.post('/api/incubator/registration-form', {
+    data: {
+      entityType,
+      entityId,
+      fields: fields.map((f, i) => ({
+        label: f.label,
+        type: f.type,
+        options: f.options ?? null,
+        required: f.required ?? false,
+        order: i,
+      })),
+    },
+  });
+  expect(res.status(), `setRegistrationForm → ${res.status()} ${await res.text()}`).toBeLessThan(300);
+  const body = (await res.json()) as { fields?: Array<{ id: string; label: string; required: boolean }> }
+    | Array<{ id: string; label: string; required: boolean }>;
+  return Array.isArray(body) ? body : (body.fields ?? []);
 }
 
 export interface EventOpts {
@@ -224,7 +271,16 @@ export async function createSpace(
       ...(opts.durationDiscounts ? { durationDiscounts: opts.durationDiscounts } : {}),
       ...(opts.cashDepositType ? { cashDepositType: opts.cashDepositType } : {}),
       ...(opts.cashDepositValue !== undefined ? { cashDepositValue: opts.cashDepositValue } : {}),
-      ...(opts.deskNames ? { deskNames: opts.deskNames } : {}),
+      // COWORKING has required desks since the category-specific spaces work
+      // (`validateDeskNames`), and capacity is DERIVED from them. Without a
+      // default every legacy caller gets INVALID_DESKS, which silently took
+      // the space regression suites offline. Derive one from `capacity` so the
+      // resulting space still has the capacity the caller asked for.
+      ...(opts.deskNames
+        ? { deskNames: opts.deskNames }
+        : (opts.category ?? 'COWORKING') === 'COWORKING'
+          ? { deskNames: Array.from({ length: opts.capacity ?? 20 }, (_, i) => `Desk ${i + 1}`) }
+          : {}),
       ...(opts.domiciliationSlots !== undefined ? { domiciliationSlots: opts.domiciliationSlots } : {}),
       ...(opts.reservationMode ? { reservationMode: opts.reservationMode } : {}),
     },
@@ -262,7 +318,12 @@ export async function manualBooking(
     totalAmount?: number;
     clientName?: string;
     clientPhone?: string;
-    /** Desk / office unit — REQUIRED for COWORKING / PRIVATE_OFFICE manual bookings. */
+    /**
+     * Desk / office unit. COWORKING and PRIVATE_OFFICE manual bookings REQUIRE
+     * one (DESK_REQUIRED). Defaults to the first desk `createSpace` names, so
+     * specs written before desks existed keep working; pass an explicit value
+     * to target a particular desk.
+     */
     deskName?: string;
   },
 ) {
@@ -277,7 +338,7 @@ export async function manualBooking(
       endsAt: body.endsAt,
       quantity: body.quantity ?? 1,
       totalAmount: body.totalAmount ?? 0,
-      ...(body.deskName ? { deskName: body.deskName } : {}),
+      ...(body.itemKind === 'SPACE' ? { deskName: body.deskName ?? 'Desk 1' } : {}),
     },
   });
 }
@@ -411,6 +472,17 @@ export interface BookingView {
   /** Platform cut actually taken at settlement (integer DZD) + its rate. */
   commissionAmount?: number;
   commissionRate?: number;
+  /** Payer-side fee added ON TOP of the online portion, frozen at intent. */
+  payerFeeAmount?: number;
+  payerFeeRate?: number;
+  /** Gross charged to the buyer online = online portion + payer fee. */
+  onlineChargeAmount?: number;
+  /** Public-registration answers carried to settlement (PROGRAM / EVENT). */
+  registrationDraft?: {
+    entityType: 'PROGRAM' | 'EVENT';
+    answers: Array<{ fieldId: string; value: string | string[] }>;
+    locale?: string | null;
+  } | null;
   /** Mentor-program commission rate FROZEN at booking creation (decimal 0–1). */
   mentorCommissionRate?: number;
   /** Receipt / refund dedup stamps — assert "dispatched exactly once". */
@@ -430,6 +502,15 @@ export interface LocalDbView {
   startupListings: Array<{ id: string; name: string; founderId: string; status: string }>;
   savedStartups: Array<{ id: string; userId: string; startupId: string }>;
   investorContacts: Array<{ id: string; investorId: string; startupId: string; startupName: string }>;
+  /** Public registrations (free and paid). Optional — absent on older blobs. */
+  registrations?: Array<{
+    id: string; entityType: string; entityId: string; incubatorId: string | null;
+    userId: string | null; fullName: string; email: string; phone: string;
+    answers: Array<{ fieldId: string; value: string | string[] }>;
+    status: string; clientId: string | null;
+    bookingId?: string | null; locale?: string | null; confirmationSentAt?: string | null;
+  }>;
+  registrationFormFields?: Array<{ id: string; entityId: string; label: string; required: boolean }>;
   /* Mentor (consultant) money rails — optional: absent on older/partial blobs. */
   commissionRules?: Array<{ id: string; transactionType: string; rate: number; isActive: boolean }>;
   mentorWallets?: Array<{ id: string; mentorId: string; pendingBalance: number; availableBalance: number; status: string }>;
@@ -449,6 +530,11 @@ export function readLocalDb(): LocalDbView {
 /** Find a SPACE/PROGRAM/EVENT booking by its clientReference (or undefined). */
 export function findBookingByRef(ref: string): BookingView | undefined {
   return readLocalDb().bookings.find((b) => b.clientReference === ref);
+}
+
+/** Every registration recorded against one program / event. */
+export function registrationsFor(entityId: string) {
+  return (readLocalDb().registrations ?? []).filter((r) => r.entityId === entityId);
 }
 
 /** Find a booking by its pay token (card/guest hosted-checkout intent). */
@@ -666,6 +752,9 @@ export function cardIntent(
     customer: { fullName: string; email: string; phone: string };
     clientReference: string;
     promoCode?: string;
+    /** Public-registration answers carried on the intent (PROGRAM / EVENT). */
+    registrationAnswers?: Array<{ fieldId: string; value: string | string[] }>;
+    locale?: 'en' | 'fr' | 'ar';
   },
 ) {
   return ctx.post('/api/bookings/card', { headers: xff(), data: body });
