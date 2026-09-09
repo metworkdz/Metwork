@@ -1242,7 +1242,11 @@
       "emptyDescription": "أنشئ برامج حضانة أو تسريع أو تدريب.",
       "actionEdit": "تعديل",
       "actionDelete": "حذف",
-      "actionRegistrations": "إدارة التسجيلات"
+      "actionRegistrations": "إدارة التسجيلات",
+      "free": "مجاني",
+      "confirmDelete": "حذف هذا البرنامج؟ لا يمكن التراجع عن هذا الإجراء.",
+      "errorLoad": "تعذّر تحميل برامجك. يرجى التحديث.",
+      "errorDelete": "تعذّر حذف هذا البرنامج. يرجى المحاولة مرة أخرى."
     },
     "spaces": {
       "colSpace": "الفضاء",
@@ -3381,7 +3385,8 @@
       "requestSentTitle": "تم إرسال الطلب",
       "requestSentMessage": "تم إشعار المضيف. ستصلك رسالة برابط الدفع فور الموافقة على طلبك — لم يتم خصم أي مبلغ.",
       "amountAfterApproval": "المبلغ بعد الموافقة",
-      "awaitingApproval": "في انتظار الموافقة"
+      "awaitingApproval": "في انتظار الموافقة",
+      "cardFeeNote": "تُضاف رسوم معالجة البطاقة عند إتمام الدفع."
     },
     "scheduler": {
       "noAvailabilityThisMonth": "لا توجد مواعيد متاحة هذا الشهر",
@@ -3644,7 +3649,10 @@
       "balanceOnSite": "الرصيد المتبقي في المكان",
       "payDeposit": "ادفع العربون — {amount}",
       "payNow": "ادفع الآن — {amount}",
-      "errorContact": "يرجى إدخال اسم وبريد إلكتروني ورقم هاتف صالح."
+      "errorContact": "يرجى إدخال اسم وبريد إلكتروني ورقم هاتف صالح.",
+      "priceSwitchToOnline": "ادفع بالبطاقة بدلاً من ذلك ليصبح السعر {amount}.",
+      "priceSwitchToCash": "الدفع نقداً يكلّف {amount}.",
+      "cardFeeNote": "تُضاف رسوم معالجة البطاقة عند إتمام الدفع."
     },
     "explorer": {
       "all": "جميع البرامج",
@@ -3691,7 +3699,8 @@
       "fullText": "هذا البرنامج ممتلئ.",
       "seatsRemainingOne": "مقعد واحد متبقٍ",
       "seatsRemainingMany": "{count} مقاعد متبقية",
-      "continueAsGuest": "المتابعة كضيف"
+      "continueAsGuest": "المتابعة كضيف",
+      "close": "إغلاق"
     }
   },
   "admin": {
@@ -4895,7 +4904,13 @@
       "guestSuccessMessage": "تم تسجيل حجزك مع {mentorName}. سنرسل إليك عبر البريد الإلكتروني رابطًا آمنًا للدفع وتأكيد جلستك — ثم يتولى المستشار الأمر.",
       "loadingPaymentMethods": "جارٍ تحميل طرق الدفع…",
       "paymentMethodsUnavailable": "تعذّر تحميل طرق الدفع. تحقّق من اتصالك ثم أعد المحاولة.",
-      "finalAmountNote": "هذا هو المبلغ النهائي. تدفع الآن وتُؤكَّد الجلسة فورًا — دون أي خطوة موافقة."
+      "finalAmountNote": "هذا هو المبلغ النهائي. تدفع الآن وتُؤكَّد الجلسة فورًا — دون أي خطوة موافقة.",
+      "sessionOfDuration": "جلسة {duration}",
+      "tierDiscountLabel": "خصم {tier} ({percent}%)",
+      "tierFounder": "Founder",
+      "tierBuilder": "Builder",
+      "totalLabel": "المجموع",
+      "cardFeeNote": "تُضاف رسوم معالجة البطاقة عند إتمام الدفع."
     },
     "landing": {
       "badge": "مرشدونا",
@@ -5145,9 +5160,9 @@
     "successBody": "تم تأكيد تسجيلك في {title}.",
     "successEmail": "تم إرسال بريد تأكيد إلى {email}.",
     "waitlistTitle": "أنت على قائمة الانتظار",
-    "waitlistBody": "الفعالية ممتلئة. سنخطرك إذا توفر مقعد.",
+    "waitlistBody": "اكتمل العدد حالياً. سنخبرك إذا توفر مقعد.",
     "alreadyTitle": "مسجل مسبقاً",
-    "alreadyBody": "أنت مسجل بالفعل في هذه الفعالية.",
+    "alreadyBody": "أنت مسجّل بالفعل بهذا البريد الإلكتروني.",
     "errorRequired": "هذا الحقل مطلوب",
     "errorInvalidEmail": "أدخل عنوان بريد إلكتروني صحيح",
     "errorInvalidPhone": "أدخل رقم هاتف صحيح",
@@ -5156,7 +5171,32 @@
     "errorGeneric": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
     "errorNetwork": "خطأ في الشبكة. تحقق من اتصالك.",
     "privacyNote": "ستُستخدم معلوماتك فقط من قِبَل المنظِّم.",
-    "shareLink": "شارك هذا الرابط"
+    "shareLink": "شارك هذا الرابط",
+    "stepCounter": "الخطوة {current} من {total}",
+    "optionalLabel": "اختياري",
+    "stepIdentityTitle": "لنبدأ بمعلوماتك",
+    "stepIdentityHint": "سيصلك التأكيد على هذا البريد الإلكتروني.",
+    "next": "متابعة",
+    "back": "رجوع",
+    "selectPlaceholder": "اختر خياراً",
+    "multiHint": "اختر كل ما ينطبق.",
+    "paymentTitle": "كيف تفضّل الدفع؟",
+    "payByCard": "الدفع بالبطاقة",
+    "payByCardDesc": "CIB / الذهبية — ادفع المبلغ كاملاً الآن",
+    "payInCash": "الدفع نقداً",
+    "payInCashDesc": "ادفع عربوناً بالبطاقة الآن، والباقي في المكان",
+    "summaryTotal": "المجموع",
+    "summaryDueNow": "المطلوب الآن",
+    "summaryDueOnSite": "المطلوب في المكان",
+    "payCta": "ادفع {amount}",
+    "cardFeeNote": "تُضاف رسوم معالجة البطاقة عند إتمام الدفع.",
+    "secureNote": "دفع آمن. يتم تأكيد مقعدك فور نجاح العملية.",
+    "errorPaymentFailed": "تعذّر بدء عملية الدفع. يرجى المحاولة مرة أخرى.",
+    "errorFull": "اكتمل العدد — لم تعد هناك مقاعد.",
+    "errorLoginRequired": "يرجى تسجيل الدخول لإتمام هذا التسجيل.",
+    "accountRequiredTitle": "سجّل الدخول للتسجيل",
+    "accountRequiredBody": "هذه فعالية مدفوعة — تحتاج إلى حساب Metwork لإتمام الدفع.",
+    "signIn": "تسجيل الدخول"
   },
   "formBuilder": {
     "title": "نموذج التسجيل",
@@ -5315,5 +5355,12 @@
       "internationalProcessor": "تُعالَج المدفوعات بالبطاقة الدولية عبر {company}، وهي شركة تابعة لـ Metwork ومقرّها {country}. وسيظهر الخصم في كشف حسابك البنكي باسم {company}.",
       "internationalCountryName": "المملكة المتحدة"
     }
+  },
+  "listingPrice": {
+    "free": "مجاني",
+    "byCard": "{amount} بالبطاقة",
+    "inCash": "{amount} نقداً",
+    "payingByCard": "الدفع بالبطاقة",
+    "payingInCash": "الدفع نقداً"
   }
 }

@@ -80,16 +80,30 @@ function minutesToHHMM(mins: number): string {
 }
 
 /**
- * Server-matching unit price. `createSpaceBooking` prices a cash reservation
- * from the BASE `pricePer*` (its `unitPrice` call uses the default
- * ONLINE_FULL mode), so the preview must read the same field — using
- * `cashPricePer*` here would show a total the server never charges.
+ * Server-matching unit price.
+ *
+ * A consultant reservation is ALWAYS cash-on-site, so it is priced from
+ * `cashPricePer*` when the space sets one, falling back to the base rate —
+ * exactly what `unitPrice(space, unit, 'CASH_DEPOSIT')` does server-side.
+ *
+ * This used to deliberately read the BASE price instead, because
+ * `createSpaceBooking` forgot to pass the mode and charged the online rate.
+ * The preview was bent to match the bug rather than the bug being fixed; both
+ * are corrected now, and they must stay in step.
  */
 function unitPriceOf(space: ConsultantSpace, unit: Unit): number | null {
-  if (unit === 'HOUR') return space.pricePerHour;
-  if (unit === 'HALF_DAY') return space.pricePerHalfDay ?? null;
-  if (unit === 'DAY') return space.pricePerDay;
-  return space.pricePerMonth;
+  const base =
+    unit === 'HOUR' ? space.pricePerHour
+    : unit === 'HALF_DAY' ? (space.pricePerHalfDay ?? null)
+    : unit === 'DAY' ? space.pricePerDay
+    : space.pricePerMonth;
+  if (base == null) return null;
+  const cash =
+    unit === 'HOUR' ? space.cashPricePerHour
+    : unit === 'HALF_DAY' ? space.cashPricePerHalfDay
+    : unit === 'DAY' ? space.cashPricePerDay
+    : space.cashPricePerMonth;
+  return cash ?? base;
 }
 
 function availableUnitsOf(space: ConsultantSpace): Unit[] {

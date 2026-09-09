@@ -63,6 +63,13 @@ export interface CreateCardBookingInput {
   clientReference: string;
   promoCode?: string;
   locale?: 'en' | 'fr' | 'ar';
+  /**
+   * Public-registration answers (PROGRAM / EVENT). Carried on the intent and
+   * written out as a registration at settlement, so the application and the
+   * payment can never end up separated. Required fields are re-checked
+   * server-side before the intent is created.
+   */
+  registrationAnswers?: Array<{ fieldId: string; value: string | string[] }>;
 }
 
 export interface CreateCardBookingResponse {

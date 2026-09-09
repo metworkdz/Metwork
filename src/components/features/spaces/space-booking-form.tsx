@@ -62,13 +62,30 @@ interface SpaceBookingFormProps {
 
 /* ── helpers ── */
 
-function availableUnits(space: Space): { unit: BookingUnit; price: number }[] {
-  const out: { unit: BookingUnit; price: number }[] = [];
-  if (space.pricePerHour != null) out.push({ unit: 'HOUR', price: space.pricePerHour });
-  if (space.pricePerHalfDay != null) out.push({ unit: 'HALF_DAY', price: space.pricePerHalfDay });
-  if (space.pricePerDay  != null) out.push({ unit: 'DAY',  price: space.pricePerDay  });
-  if (space.pricePerMonth != null) out.push({ unit: 'MONTH', price: space.pricePerMonth });
-  return out;
+/**
+ * The per-unit rates to show, for the payment surface the visitor picked.
+ *
+ * A space may set `cashPricePer*`, and the server prices a CASH_DEPOSIT
+ * booking from it (`unitPrice(space, unit, 'CASH_DEPOSIT')`). This used to
+ * read the base rate unconditionally, so choosing "pay part in cash" left
+ * every number on screen unchanged while the server charged a different one.
+ * A cash rate never enables a unit on its own — the base price decides that,
+ * exactly as it does server-side.
+ */
+function availableUnits(space: Space, isCash: boolean): { unit: BookingUnit; price: number }[] {
+  const rate = (base: number | null | undefined, cash: number | null | undefined): number | null => {
+    if (base == null) return null;
+    return isCash ? (cash ?? base) : base;
+  };
+  const rows: Array<[BookingUnit, number | null]> = [
+    ['HOUR', rate(space.pricePerHour, space.cashPricePerHour)],
+    ['HALF_DAY', rate(space.pricePerHalfDay, space.cashPricePerHalfDay)],
+    ['DAY', rate(space.pricePerDay, space.cashPricePerDay)],
+    ['MONTH', rate(space.pricePerMonth, space.cashPricePerMonth)],
+  ];
+  return rows
+    .filter((r): r is [BookingUnit, number] => r[1] != null)
+    .map(([unit, price]) => ({ unit, price }));
 }
 
 function todayStr(): string {
@@ -269,7 +286,9 @@ export function SpaceBookingForm({
   const { user, refresh } = useAuth();
   const isAuthed = user !== null;
 
-  const units    = useMemo(() => availableUnits(space), [space]);
+  // Which units exist at all. A cash rate never enables a unit on its own, so
+  // this list is surface-independent and safe to use for the initial selection.
+  const units    = useMemo(() => availableUnits(space, false), [space]);
   const firstUnit = units[0]?.unit ?? 'DAY';
 
   const [unit,      setUnit]      = useState<BookingUnit>(firstUnit);
@@ -388,9 +407,12 @@ export function SpaceBookingForm({
     bookingRef.current = '';
   }, [effectiveUnit, startIso, endIso, payChoice, useNetworkPass]);
 
+  // The SAME rates the server will charge for the chosen surface: a 50/50 split
+  // is a CASH_DEPOSIT booking, priced from `cashPricePer*` when the host set one.
+  const pricedUnits = useMemo(() => availableUnits(space, isSplit), [space, isSplit]);
   const unitPrice = useMemo(
-    () => units.find((u) => u.unit === effectiveUnit)?.price ?? 0,
-    [effectiveUnit, units],
+    () => pricedUnits.find((u) => u.unit === effectiveUnit)?.price ?? 0,
+    [effectiveUnit, pricedUnits],
   );
   const qty   = validRange ? quantity(startIso, endIso, effectiveUnit) : 0;
   const total = unitPrice * qty;
@@ -699,7 +721,7 @@ export function SpaceBookingForm({
         <div>
           <span className="text-sm font-medium">{t('bookingType')}</span>
           <div className={cn('mt-1.5 grid gap-2', units.length === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
-            {units.map((u) => {
+            {pricedUnits.map((u) => {
               const Icon = u.unit === 'HOUR' || u.unit === 'HALF_DAY' ? Clock : CalendarDays;
               const label =
                 u.unit === 'HOUR' ? t('modeHourly')
@@ -961,6 +983,12 @@ export function SpaceBookingForm({
                 <span className="tabular-nums">{formatCurrency(cashBalance, locale)}</span>
               </div>
             </div>
+          )}
+          {/* The card processor's fee is quoted server-side at intent time. Say
+              it is coming rather than let the checkout total appear from
+              nowhere after the redirect. */}
+          {(isCardFull || isSplit) && finalTotal > 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">{t('cardFeeNote')}</p>
           )}
         </div>
       )}

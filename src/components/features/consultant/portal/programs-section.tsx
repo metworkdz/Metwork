@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { ApiClientError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { GalleryUploadField } from '@/components/shared/gallery-upload-field';
+import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 import {
   consultantService,
@@ -78,6 +79,7 @@ const emptyDraft: ConsultantProgramInput = {
 
 export function ProgramsSection() {
   const t = useTranslations('consultantPortal.programs');
+  const tQuestions = useTranslations('defaultQuestions');
   const locale = useLocale();
 
   const [items, setItems] = useState<ConsultantProgram[] | null>(null);
@@ -126,6 +128,26 @@ export function ProgramsSection() {
     });
   }
 
+  /**
+   * Pre-populate a NEW program's application form with the default question
+   * set, carrying the i18n keys so each question renders in the VISITOR's
+   * locale rather than the consultant's. Best-effort: seeding must never block
+   * program creation.
+   */
+  async function seedDefaultQuestions(programId: string) {
+    try {
+      const fields = buildDefaultApplicationFields((k) => tQuestions(k));
+      await fetch('/api/consultant/registration-form', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entityType: 'PROGRAM', entityId: programId, fields }),
+      });
+    } catch {
+      // swallow — seeding is non-critical
+    }
+  }
+
   async function onCreate() {
     const invalid = draftError();
     if (invalid) { setError(invalid); return; }
@@ -133,7 +155,7 @@ export function ProgramsSection() {
     setError(null);
     try {
       const acceptsCash = draft.acceptedPaymentMethods.includes('CASH');
-      await consultantService.createProgram({
+      const created = await consultantService.createProgram({
         ...draft,
         title: draft.title.trim(),
         description: draft.description.trim(),
@@ -144,6 +166,11 @@ export function ProgramsSection() {
         cashDepositType: acceptsCash ? draft.cashDepositType : null,
         cashDepositValue: acceptsCash ? draft.cashDepositValue : null,
       });
+      // Seed the application form, exactly as the incubator dialog does.
+      // Without this a consultant's public page asked for a name and a card and
+      // nothing else, while an incubator's asked the full question set — the
+      // two populations share one registration system and must behave alike.
+      if (created?.id) await seedDefaultQuestions(created.id);
       setOpenForm(false);
       setDraft(emptyDraft);
       await load();

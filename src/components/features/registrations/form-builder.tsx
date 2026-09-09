@@ -34,6 +34,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
+import { keysSurvivingEdit } from '@/lib/registration-question';
 import type { RegistrationFieldType, RegistrationFormField } from '@/types/domain';
 
 const FIELD_TYPE_OPTIONS: { value: RegistrationFieldType; labelKey: string }[] = [
@@ -56,6 +57,22 @@ interface BuilderField {
   type: RegistrationFieldType;
   options: string[];
   required: boolean;
+  /**
+   * The seeded question this row came from, if any — kept so the PUBLIC form
+   * can render it in the VISITOR's locale rather than the author's. Carried
+   * through untouched, and dropped on save the moment the wording is edited
+   * (`keysSurvivingEdit`): the host's own words must never be overwritten by
+   * the template's translation.
+   */
+  labelKey: string | null;
+  optionKeys: string[] | null;
+  /**
+   * The wording this row was loaded/seeded with, kept as the baseline the save
+   * path compares against. Editing the label away from it drops the key;
+   * editing back to it restores the key, which is what a host who changes
+   * their mind expects.
+   */
+  _seed: { label: string; options: string[] } | null;
 }
 
 interface RegistrationFormBuilderProps {
@@ -75,11 +92,18 @@ function toBuilderField(f: RegistrationFormField): BuilderField {
     type: f.type,
     options: f.options ?? [],
     required: f.required,
+    labelKey: f.labelKey ?? null,
+    optionKeys: f.optionKeys ?? null,
+    _seed: f.labelKey ? { label: f.label, options: f.options ?? [] } : null,
   };
 }
 
+/** A question the host wrote themselves — never template-translated. */
 function emptyField(): BuilderField {
-  return { _key: newKey(), label: '', type: 'SHORT_TEXT', options: [], required: false };
+  return {
+    _key: newKey(), label: '', type: 'SHORT_TEXT', options: [], required: false,
+    labelKey: null, optionKeys: null, _seed: null,
+  };
 }
 
 export function RegistrationFormBuilder({
@@ -109,6 +133,9 @@ export function RegistrationFormBuilder({
       type: f.type,
       options: f.options ?? [],
       required: f.required,
+      labelKey: f.labelKey,
+      optionKeys: f.optionKeys,
+      _seed: { label: f.label, options: f.options ?? [] },
     }));
     setFields((prev) => [...prev, ...defaults]);
     setSaved(false);
@@ -198,15 +225,28 @@ export function RegistrationFormBuilder({
           body: JSON.stringify({
             entityType,
             entityId,
-            fields: fields.map((f, i) => ({
-              label: f.label.trim(),
-              type: f.type,
-              options: CHOICE_TYPES.includes(f.type)
+            fields: fields.map((f, i) => {
+              const options = CHOICE_TYPES.includes(f.type)
                 ? f.options.filter((o) => o.trim())
-                : null,
-              required: f.required,
-              order: i,
-            })),
+                : null;
+              // An edited question stops being the template's — see
+              // keysSurvivingEdit for why the key has to go with the wording.
+              const { labelKey, optionKeys } = keysSurvivingEdit(
+                f._seed
+                  ? { label: f._seed.label, labelKey: f.labelKey, options: f._seed.options, optionKeys: f.optionKeys }
+                  : undefined,
+                { label: f.label.trim(), options: options ?? [] },
+              );
+              return {
+                label: f.label.trim(),
+                labelKey,
+                type: f.type,
+                options,
+                optionKeys,
+                required: f.required,
+                order: i,
+              };
+            }),
           }),
         });
         if (!res.ok) {

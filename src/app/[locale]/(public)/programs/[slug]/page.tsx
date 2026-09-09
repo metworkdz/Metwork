@@ -20,9 +20,11 @@ import { getProgramAttendance } from '@/server/bookings/service';
 import { programTypeLabel } from '@/components/features/programs/program-meta';
 import { RegistrationForm } from '@/components/features/registrations/registration-form';
 import { ImageCarousel } from '@/components/shared/image-carousel';
+import { ListingPriceBlock } from '@/components/shared/listing-price-block';
 import { readSession } from '@/server/auth/session';
+import { guestCheckoutAllowedFor } from '@/server/bookings/status';
 import type { ProgramType } from '@/types/domain';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 import { assertLandingVisible } from '@/lib/landing-visibility';
 
@@ -167,14 +169,16 @@ export default async function ProgramDetailPage({ params }: PageProps) {
         {/* ── Right: pricing + registration ── */}
         <div className="lg:col-span-2">
           <div className="sticky top-20 rounded-2xl border border-border bg-card p-6 space-y-5">
-            {/* Price */}
-            <div className="text-center pb-4 border-b border-border">
-              <p className="text-3xl font-bold tabular-nums">
-                {program.price === 0 ? t('free') : formatCurrency(program.price, locale as Locale)}
-              </p>
-              {program.price > 0 && (
-                <p className="text-xs text-muted-foreground mt-0.5">{t('enrollmentFee')}</p>
-              )}
+            {/* Price — resolves the online/cash split, so a visitor sees the
+                two amounts they can actually choose between, not the base. */}
+            <div className="pb-4 border-b border-border">
+              <ListingPriceBlock
+                price={program.price}
+                onlinePrice={program.onlinePrice}
+                cashPrice={program.cashPrice}
+                acceptedPaymentMethods={program.acceptedPaymentMethods}
+                caption={t('enrollmentFee')}
+              />
             </div>
 
             {/* Registration form or status message */}
@@ -187,6 +191,17 @@ export default async function ProgramDetailPage({ params }: PageProps) {
                   entityTitle={program.title}
                   formFields={formFields}
                   prefill={prefill}
+                  isAuthed={session !== null}
+                  guestCheckoutAllowed={guestCheckoutAllowedFor('PROGRAM')}
+                  signInNext={`/programs/${slug}`}
+                  pricing={{
+                    price: program.price,
+                    onlinePrice: program.onlinePrice,
+                    cashPrice: program.cashPrice,
+                    acceptedPaymentMethods: program.acceptedPaymentMethods,
+                    cashDepositType: program.cashDepositType,
+                    cashDepositValue: program.cashDepositValue,
+                  }}
                 />
               </div>
             ) : (

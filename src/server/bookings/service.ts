@@ -28,6 +28,7 @@ import {
 } from '@/server/spaces/availability';
 import { findProgramById } from './program-catalog';
 import { findEventById } from './event-catalog';
+import { effectiveListingPrice } from './listing-payment';
 import { countAttendance } from '@/server/attendance';
 import { resolveMemberBenefits } from '@/server/memberships/service';
 import { isNetworkPassEnabled } from '@/config/feature-flags';
@@ -281,7 +282,13 @@ export async function createSpaceBooking(
     }
   }
 
-  const price = unitPrice(space, args.unit);
+  // Split pricing: a space may charge a different rate for a cash reservation
+  // (`cashPricePer*`). `unitPrice` has always taken a mode — this caller was
+  // the only one not passing it, so a cash booking was quoted and recorded at
+  // the ONLINE rate. Consultants can only ever book cash, so every consultant
+  // space reservation was mispriced.
+  const isCashReserve = args.paymentMethod === 'manual';
+  const price = unitPrice(space, args.unit, isCashReserve ? 'CASH_DEPOSIT' : 'ONLINE_FULL');
   if (price == null) {
     return { ok: false, reason: 'UNIT_NOT_AVAILABLE', available: availableUnits(space) };
   }
@@ -975,7 +982,14 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
       return { ok: false, reason: 'CAPACITY_EXCEEDED', capacity: program.seatsTotal, taken };
     }
 
-    const baseTotal = program.price;
+    // Split pricing: a listing may price ONLINE and CASH differently. The
+    // SAME resolver the card path uses (card-payment.ts) — never `program.price`
+    // directly, or a wallet payer is charged the cash price for an online seat.
+    const baseTotal = effectiveListingPrice(
+      program.price,
+      program,
+      isCash ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
+    );
     let wallet = d.wallets.find((w) => w.userId === args.userId);
     if (!wallet) {
       wallet = newWallet(args.userId);
@@ -1171,10 +1185,17 @@ export async function registerForEvent(
     // Apply tier membership discount to the base ticket price (server-side
     // mirror of the booking-form's preview). Builder = 15 %, Founder = 20 %.
     const membershipFraction = Math.min(1, Math.max(0, args.membershipDiscount ?? 0));
+    // Split pricing first (ONLINE vs CASH), THEN the membership discount — the
+    // same order card-payment.ts uses, so both surfaces agree to the dinar.
+    const listingBase = effectiveListingPrice(
+      event.price,
+      event,
+      isCash ? 'CASH_DEPOSIT' : 'ONLINE_FULL',
+    );
     const baseTotal =
-      membershipFraction > 0 && event.price > 0
-        ? Math.round(event.price * (1 - membershipFraction))
-        : event.price;
+      membershipFraction > 0 && listingBase > 0
+        ? Math.round(listingBase * (1 - membershipFraction))
+        : listingBase;
     let wallet = d.wallets.find((w) => w.userId === args.userId);
     if (!wallet) {
       wallet = newWallet(args.userId);

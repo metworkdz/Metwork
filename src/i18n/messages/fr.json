@@ -1242,7 +1242,11 @@
       "emptyDescription": "Créez des programmes d'incubation, d'accélération ou de formation.",
       "actionEdit": "Modifier",
       "actionDelete": "Supprimer",
-      "actionRegistrations": "Gérer les inscriptions"
+      "actionRegistrations": "Gérer les inscriptions",
+      "free": "Gratuit",
+      "confirmDelete": "Supprimer ce programme ? Cette action est irréversible.",
+      "errorLoad": "Impossible de charger vos programmes. Veuillez actualiser.",
+      "errorDelete": "Impossible de supprimer ce programme. Veuillez réessayer."
     },
     "spaces": {
       "colSpace": "Espace",
@@ -3381,7 +3385,8 @@
       "requestSentTitle": "Demande envoyée",
       "requestSentMessage": "L'hôte a été notifié. Vous recevrez un lien de paiement par e-mail dès que votre demande sera approuvée — rien n'a été débité.",
       "amountAfterApproval": "À payer après approbation",
-      "awaitingApproval": "En attente d'approbation"
+      "awaitingApproval": "En attente d'approbation",
+      "cardFeeNote": "Des frais de traitement par carte sont ajoutés au paiement."
     },
     "scheduler": {
       "noAvailabilityThisMonth": "Aucune disponibilité ce mois-ci",
@@ -3644,7 +3649,10 @@
       "balanceOnSite": "Solde sur place",
       "payDeposit": "Payer l'acompte — {amount}",
       "payNow": "Payer maintenant — {amount}",
-      "errorContact": "Veuillez saisir un nom, un e-mail et un numéro de téléphone valides."
+      "errorContact": "Veuillez saisir un nom, un e-mail et un numéro de téléphone valides.",
+      "priceSwitchToOnline": "Payez par carte et le tarif passe à {amount}.",
+      "priceSwitchToCash": "Le paiement en espèces coûte {amount}.",
+      "cardFeeNote": "Des frais de traitement par carte sont ajoutés au paiement."
     },
     "explorer": {
       "all": "Tous les programmes",
@@ -3691,7 +3699,8 @@
       "fullText": "Ce programme est complet.",
       "seatsRemainingOne": "1 place restante",
       "seatsRemainingMany": "{count} places restantes",
-      "continueAsGuest": "Continuer en tant qu'invité"
+      "continueAsGuest": "Continuer en tant qu'invité",
+      "close": "Fermer"
     }
   },
   "admin": {
@@ -4895,7 +4904,13 @@
       "guestSuccessMessage": "Votre réservation avec {mentorName} est enregistrée. Nous vous enverrons par e-mail un lien sécurisé pour payer en ligne et confirmer votre session — le consultant prend le relais ensuite.",
       "loadingPaymentMethods": "Chargement des moyens de paiement…",
       "paymentMethodsUnavailable": "Impossible de charger les moyens de paiement. Vérifiez votre connexion et réessayez.",
-      "finalAmountNote": "C'est le montant final. Vous payez maintenant et la session est confirmée instantanément — sans étape de validation."
+      "finalAmountNote": "C'est le montant final. Vous payez maintenant et la session est confirmée instantanément — sans étape de validation.",
+      "sessionOfDuration": "Séance de {duration}",
+      "tierDiscountLabel": "Remise {tier} ({percent}%)",
+      "tierFounder": "Founder",
+      "tierBuilder": "Builder",
+      "totalLabel": "Total",
+      "cardFeeNote": "Des frais de traitement par carte sont ajoutés au paiement."
     },
     "landing": {
       "badge": "Nos mentors",
@@ -5145,9 +5160,9 @@
     "successBody": "Votre inscription à {title} est confirmée.",
     "successEmail": "Un email de confirmation a été envoyé à {email}.",
     "waitlistTitle": "Vous êtes sur liste d'attente",
-    "waitlistBody": "L'événement est complet. Nous vous notifierons si une place se libère.",
+    "waitlistBody": "Complet pour le moment. Nous vous préviendrons si une place se libère.",
     "alreadyTitle": "Déjà inscrit",
-    "alreadyBody": "Vous êtes déjà inscrit à cet événement.",
+    "alreadyBody": "Vous êtes déjà inscrit avec cette adresse email.",
     "errorRequired": "Ce champ est obligatoire",
     "errorInvalidEmail": "Entrez une adresse email valide",
     "errorInvalidPhone": "Entrez un numéro de téléphone valide",
@@ -5156,7 +5171,32 @@
     "errorGeneric": "Une erreur s'est produite. Veuillez réessayer.",
     "errorNetwork": "Erreur réseau. Vérifiez votre connexion.",
     "privacyNote": "Vos informations seront utilisées uniquement par l'organisateur.",
-    "shareLink": "Partager ce lien"
+    "shareLink": "Partager ce lien",
+    "stepCounter": "Étape {current} sur {total}",
+    "optionalLabel": "Facultatif",
+    "stepIdentityTitle": "Commençons par vous",
+    "stepIdentityHint": "Votre confirmation sera envoyée à cette adresse.",
+    "next": "Continuer",
+    "back": "Retour",
+    "selectPlaceholder": "Choisissez une option",
+    "multiHint": "Choisissez tout ce qui s’applique.",
+    "paymentTitle": "Comment souhaitez-vous payer ?",
+    "payByCard": "Payer par carte",
+    "payByCardDesc": "CIB / Edahabia — payez la totalité maintenant",
+    "payInCash": "Payer en espèces",
+    "payInCashDesc": "Versez un acompte par carte, le reste sur place",
+    "summaryTotal": "Total",
+    "summaryDueNow": "À payer maintenant",
+    "summaryDueOnSite": "À payer sur place",
+    "payCta": "Payer {amount}",
+    "cardFeeNote": "Des frais de traitement par carte sont ajoutés au paiement.",
+    "secureNote": "Paiement sécurisé. Votre place est confirmée dès validation.",
+    "errorPaymentFailed": "Le paiement n’a pas pu démarrer. Veuillez réessayer.",
+    "errorFull": "Complet — il ne reste plus de places.",
+    "errorLoginRequired": "Connectez-vous pour finaliser cette inscription.",
+    "accountRequiredTitle": "Connectez-vous pour vous inscrire",
+    "accountRequiredBody": "Cet événement est payant — un compte Metwork est nécessaire pour finaliser le paiement.",
+    "signIn": "Se connecter"
   },
   "formBuilder": {
     "title": "Formulaire d'inscription",
@@ -5315,5 +5355,12 @@
       "internationalProcessor": "Les paiements par carte internationale sont traités par {company}, société affiliée à Metwork établie au {country}. Le débit apparaîtra sur votre relevé bancaire sous le nom {company}.",
       "internationalCountryName": "Royaume-Uni"
     }
+  },
+  "listingPrice": {
+    "free": "Gratuit",
+    "byCard": "{amount} par carte",
+    "inCash": "{amount} en espèces",
+    "payingByCard": "par carte",
+    "payingInCash": "en espèces"
   }
 }

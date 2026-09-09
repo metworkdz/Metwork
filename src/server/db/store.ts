@@ -693,6 +693,27 @@ export interface BookingRecord {
   /** ISO expiry of the payment link; past it the booking is swept to CANCELLED. */
   paymentLinkExpiresAt?: string | null;
 
+  /* ── Paid public registration (PROGRAM / EVENT) — additive ───────────── */
+  /**
+   * Application answers captured on the public registration page BEFORE the
+   * visitor was sent to the hosted checkout, held here until settlement
+   * materialises them into a RegistrationRecord.
+   *
+   * They live on the booking rather than in a provisional registration row on
+   * purpose: a PENDING_PAYMENT intent must hold no seat, and a registration
+   * row that holds no seat would need a new status plus changes to
+   * `countAttendance`. Carrying the draft means an abandoned checkout leaves
+   * nothing behind but the dead intent, exactly like every other card flow.
+   *
+   * Absent on every other booking (explorer applications, spaces, offline).
+   */
+  registrationDraft?: {
+    entityType: 'PROGRAM' | 'EVENT';
+    answers: Array<{ fieldId: string; value: string | string[] }>;
+    /** Locale the visitor registered in — used for the confirmation email. */
+    locale?: string | null;
+  } | null;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -1375,10 +1396,29 @@ export interface RegistrationFormFieldRecord {
   incubatorId: string | null;
   /** Owning consultant (MentorRecord.id). Additive & nullable — see ProgramRecord.mentorId. */
   mentorId?: string | null;
+  /**
+   * The question as text. ALWAYS populated — it is what the dashboard, the CSV
+   * export and every non-localised surface read, and the only thing a
+   * host-written question has.
+   */
   label: string;
+  /**
+   * Key under the `defaultQuestions` i18n namespace, when this field came from
+   * the seeded default application form. The PUBLIC form prefers it, so an
+   * Arabic visitor reads the question in Arabic instead of whatever locale the
+   * host happened to be authoring in.
+   *
+   * The seeded set used to be resolved to text once, at program-creation time,
+   * and frozen — which made "translate the questions" impossible without a
+   * data migration. Absent on every host-written question, and CLEARED the
+   * moment a host edits the label (their words win over the template).
+   */
+  labelKey?: string | null;
   type: RegistrationFieldType;
   /** For DROPDOWN / MULTIPLE_CHOICE / CHECKBOX — the list of choices. */
   options: string[] | null;
+  /** Per-option counterpart of `labelKey`, positionally aligned with `options`. */
+  optionKeys?: string[] | null;
   required: boolean;
   /** Display order (0-indexed). */
   order: number;
@@ -1411,6 +1451,17 @@ export interface RegistrationRecord {
   status: RegistrationStatus;
   /** FK to ClientRecord.id — set when a CRM client was matched or created. */
   clientId: string | null;
+  /**
+   * FK to BookingRecord.id — set only on a PAID registration, materialised at
+   * card settlement from `BookingRecord.registrationDraft`. Doubles as the
+   * settlement idempotency key: a replayed settlement finds the row already
+   * written and does nothing. Absent on every free registration.
+   */
+  bookingId?: string | null;
+  /** Locale the visitor registered in, for the confirmation email. */
+  locale?: string | null;
+  /** Dedup stamp — the confirmation email has been dispatched for this row. */
+  confirmationSentAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
