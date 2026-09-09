@@ -24,19 +24,21 @@
  *   • Only ever ADDS the two key fields; no label, option, type, order or
  *     answer is ever touched, so a re-run cannot corrupt anything.
  *
+ * Reads Supabase credentials from `.env.local` (a bare tsx run gets no
+ * automatic env loading) and refuses to start against a placeholder URL.
+ *
  *   npx tsx scripts/backfill-registration-form-keys.ts              # dry run
  *   npx tsx scripts/backfill-registration-form-keys.ts --confirm    # write
  *   USE_LOCAL_DB=true npx tsx scripts/backfill-registration-form-keys.ts
  */
 
-// Set env BEFORE any imports so env.ts validation passes.
-(process.env as Record<string, string | undefined>).NODE_ENV ??= 'development';
-process.env.SUPABASE_URL ??= 'https://placeholder.supabase.co';
-process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'placeholder-not-used-in-local-mode';
-process.env.AUTH_SECRET ??= 'local-dev-secret-at-least-32-characters-long-padding-here';
-process.env.NEXT_PUBLIC_APP_URL ??= 'http://localhost:3000';
-process.env.NEXT_PUBLIC_API_URL ??= 'http://localhost:3000/api';
-process.env.API_INTERNAL_URL ??= 'http://localhost:3000/api';
+// Credentials BEFORE any import that touches store.ts — the store reads them
+// at construction time, and without them it silently points at a placeholder
+// Supabase URL. `loadScriptEnv` refuses that outright and tells the operator
+// which database this run is about to touch.
+import { loadScriptEnv } from './_env';
+
+const TARGET = loadScriptEnv();
 
 import { db } from '../src/server/db/store';
 import { DEFAULT_APPLICATION_QUESTIONS } from '../src/server/programs/default-application-questions';
@@ -96,6 +98,15 @@ export function matchSeededQuestion(field: {
 
 async function main(): Promise<void> {
   const confirm = process.argv.includes('--confirm');
+
+  // Always say WHAT is being read. A maintenance script that reports "nothing
+  // to do" without naming its database is indistinguishable from one that
+  // never connected.
+  console.log(
+    `\n→ ${TARGET.kind === 'local' ? 'LOCAL JSON store' : 'SUPABASE'}: ${TARGET.label}` +
+      `  (${confirm ? 'WILL WRITE' : 'dry run'})`,
+  );
+
   const data = await db.read();
   const fields = data.registrationFormFields ?? [];
 
