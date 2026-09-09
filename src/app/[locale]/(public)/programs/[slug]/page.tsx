@@ -25,6 +25,7 @@ import { readSession } from '@/server/auth/session';
 import { guestCheckoutAllowedFor } from '@/server/bookings/status';
 import type { ProgramType } from '@/types/domain';
 import { formatDate } from '@/lib/format';
+import { isClockTime } from '@/lib/booking-when';
 import type { Locale } from '@/i18n/config';
 import { assertLandingVisible } from '@/lib/landing-visibility';
 
@@ -159,7 +160,16 @@ export default async function ProgramDetailPage({ params }: PageProps) {
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
                 <Calendar className="inline size-3 mr-1" />{t('startsLabel')}
               </p>
-              <p className="text-sm font-medium">{formatDate(program.startDate, locale as Locale)}</p>
+              <p className="text-sm font-medium">
+                {formatDate(program.startDate, locale as Locale)}
+                {/* Only when the host published one — a program without a start
+                    time shows the date alone, never the storage anchor. */}
+                {isClockTime(program.startTime) && (
+                  <span className="block text-xs text-muted-foreground">
+                    {t('startsAtTime', { time: program.startTime! })}
+                  </span>
+                )}
+              </p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">

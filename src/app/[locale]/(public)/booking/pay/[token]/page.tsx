@@ -48,7 +48,7 @@ export default async function BookingPayPage({ params }: PageProps) {
   // anchor reads back as 11:00, and the client saw that on the screen where
   // they pay. `formatBookingWhen` shows a time only when the listing has one.
   const fmtDate = (iso: string | null | undefined) =>
-    formatBookingWhen(iso, { intlLocale: intlLocale(locale), kind: view.booking?.itemKind });
+    formatBookingWhen(iso, { intlLocale: intlLocale(locale), kind: view.booking });
   const fmtAmount = (n: number) => `${n.toLocaleString(intlLocale(locale))} DZD`;
 
   const isDeposit = view.paymentMode === 'CASH_DEPOSIT';
@@ -84,7 +84,7 @@ export default async function BookingPayPage({ params }: PageProps) {
                       time — label the row for what is actually shown. */}
                   {fmtDate(view.booking.startsAt) && (
                     <Row
-                      label={listingHasClockTime(view.booking.itemKind) ? t('date') : t('dateOnly')}
+                      label={listingHasClockTime(view.booking) ? t('date') : t('dateOnly')}
                       value={fmtDate(view.booking.startsAt)!}
                     />
                   )}

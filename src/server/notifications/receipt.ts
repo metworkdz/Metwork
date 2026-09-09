@@ -289,14 +289,14 @@ function fmtPeriod(
   endsAt: string,
   unit: BookingRecord['unit'],
   lang: ReceiptLang,
-  itemKind?: BookingRecord['itemKind'],
+  source: { itemKind?: BookingRecord['itemKind']; startsAtHasClockTime?: boolean } = {},
 ): string {
   try {
     const s = new Date(startsAt), e = new Date(endsAt);
     const d = (x: Date) => x.toLocaleDateString(lang === 'fr' ? 'fr-DZ' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
     const t = (x: Date) => x.toLocaleTimeString(lang === 'fr' ? 'fr-DZ' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC', hour12: false });
     const sameDay = d(s) === d(e);
-    const timed = listingHasClockTime(itemKind) && (unit === 'HOUR' || unit === 'HALF_DAY');
+    const timed = listingHasClockTime(source) && (unit === 'HOUR' || unit === 'HALF_DAY' || source.startsAtHasClockTime === true);
     if (timed) return `${d(s)} ${t(s)}–${t(e)}`;
     return sameDay ? d(s) : `${d(s)} → ${d(e)}`;
   } catch { return ''; }
@@ -537,7 +537,7 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
   const kind = booking.itemKind === 'SPACE' ? c.space : booking.itemKind === 'PROGRAM' ? c.program : c.event;
   drawDetailsTable(doc, c, [{
     service: booking.itemName || kind,
-    period:  fmtPeriod(booking.startsAt, booking.endsAt, booking.unit, lang, booking.itemKind),
+    period:  fmtPeriod(booking.startsAt, booking.endsAt, booking.unit, lang, booking),
     amount:  booking.totalAmount === 0 ? c.free : booking.totalAmount.toLocaleString('fr-DZ').replace(/ | /g, ' '),
   }]);
 

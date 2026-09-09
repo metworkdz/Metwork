@@ -29,6 +29,7 @@ import {
 import { findProgramById } from './program-catalog';
 import { findEventById } from './event-catalog';
 import { effectiveListingPrice } from './listing-payment';
+import { applyClockTime, isClockTime } from '@/lib/booking-when';
 import { countAttendance } from '@/server/attendance';
 import { resolveMemberBenefits } from '@/server/memberships/service';
 import { isNetworkPassEnabled } from '@/config/feature-flags';
@@ -1009,7 +1010,9 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
         city: program.city,
         unit: 'DAY',
         quantity: 1,
-        startsAt: program.startDate,
+        // A program may carry a real start time — see card-payment.ts.
+        startsAt: applyClockTime(program.startDate, program.startTime),
+        ...(isClockTime(program.startTime) ? { startsAtHasClockTime: true } : {}),
         endsAt: program.endDate,
         totalAmount: baseTotal,
         status: 'PENDING_PAYMENT',
@@ -1090,7 +1093,8 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
       city: program.city,
       unit: 'DAY', // program duration is fixed; unit is purely informational here
       quantity: 1,
-      startsAt: program.startDate,
+      startsAt: applyClockTime(program.startDate, program.startTime),
+      ...(isClockTime(program.startTime) ? { startsAtHasClockTime: true } : {}),
       endsAt: program.endDate,
       totalAmount: total,
       status: 'PENDING',

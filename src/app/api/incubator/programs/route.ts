@@ -4,6 +4,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
+import { CLOCK_TIME_PATTERN } from '@/lib/booking-when';
 import { z, ZodError } from 'zod';
 import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db, type ProgramRecord } from '@/server/db/store';
@@ -30,6 +31,8 @@ const createProgramSchema = z.object({
   seatsTotal:  z.number().int().min(1).max(10_000),
   deadline:    z.string().datetime(),
   startDate:   z.string().datetime(),
+  /** Local wall-clock start time "HH:MM" (24h). Optional. */
+  startTime:   z.string().regex(CLOCK_TIME_PATTERN, 'startTime must be HH:MM').nullable().optional(),
   endDate:     z.string().datetime(),
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).default(['ONLINE', 'CASH']),
   /** Cash deposit (paid online by card). Required when CASH is accepted. */
@@ -108,6 +111,7 @@ export async function POST(req: NextRequest) {
       seatsTotal:             input.seatsTotal,
       deadline:               input.deadline,
       startDate:              input.startDate,
+      startTime:              input.startTime ?? null,
       endDate:                input.endDate,
       acceptedPaymentMethods: paymentMethods,
       ...depositConfig,

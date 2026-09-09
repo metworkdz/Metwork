@@ -74,7 +74,7 @@ const emptyDraft: ConsultantProgramInput = {
   acceptedPaymentMethods: ['ONLINE', 'CASH'],
   cashDepositType: 'PERCENT',
   cashDepositValue: 10,
-  seatsTotal: 20, deadline: '', startDate: '', endDate: '',
+  seatsTotal: 20, deadline: '', startDate: '', startTime: '', endDate: '',
 };
 
 export function ProgramsSection() {
@@ -162,6 +162,8 @@ export function ProgramsSection() {
         city: draft.city.trim(),
         deadline: toIso(draft.deadline),
         startDate: toIso(draft.startDate),
+        // Empty = no published start time, matching the incubator form.
+        startTime: draft.startTime?.trim() ? draft.startTime : null,
         endDate: toIso(draft.endDate),
         cashDepositType: acceptsCash ? draft.cashDepositType : null,
         cashDepositValue: acceptsCash ? draft.cashDepositValue : null,
@@ -335,6 +337,13 @@ export function ProgramsSection() {
                 id="p-start" type="date" min={todayISO()} className={cpInputClassLight}
                 value={draft.startDate}
                 onChange={(e) => setDraft((d) => ({ ...d, startDate: e.target.value }))}
+              />
+            </Field>
+            <Field label={t('labelStartTime')} htmlFor="p-start-time">
+              <input
+                id="p-start-time" type="time" className={cpInputClassLight}
+                value={draft.startTime ?? ''}
+                onChange={(e) => setDraft((d) => ({ ...d, startTime: e.target.value }))}
               />
             </Field>
             <Field label={t('labelEnd')} htmlFor="p-end">

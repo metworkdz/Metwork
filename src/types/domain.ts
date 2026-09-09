@@ -121,6 +121,8 @@ export interface Program {
   seatsTaken: number;
   deadline: string;
   startDate: string;
+  /** Local wall-clock start time "HH:MM". Absent ⇒ no time is shown. */
+  startTime?: string | null;
   endDate: string;
   acceptedPaymentMethods: PaymentMethod[];
   /** Cash deposit config — present only when CASH is accepted. */

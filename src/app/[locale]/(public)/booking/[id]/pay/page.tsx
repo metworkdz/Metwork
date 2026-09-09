@@ -92,7 +92,7 @@ export default async function RequestBookingPayPage({ params, searchParams }: Pa
   // This page is REQUEST-mode, which is space-only today, but routing it through
   // the shared rule keeps it correct if that ever widens.
   const fmtDate = (iso: string | null | undefined) =>
-    formatBookingWhen(iso, { intlLocale: intlLocale(locale), kind: booking?.itemKind });
+    formatBookingWhen(iso, { intlLocale: intlLocale(locale), kind: booking });
   const fmtAmount = (n: number) => `${n.toLocaleString(intlLocale(locale))} DZD`;
 
   const payPath = `/booking/${id}/pay?token=${encodeURIComponent(token ?? '')}`;

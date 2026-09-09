@@ -37,7 +37,12 @@ vi.mock('@/server/notifications/email', async (importOriginal) => {
 import { db } from '@/server/db/store';
 import { settleCardBookingFromWebhook } from '@/server/bookings/card-payment';
 import { sendBookingReceiptEmailAsync } from '@/server/notifications/mock';
-import { listingHasClockTime, formatBookingWhen } from '@/lib/booking-when';
+import {
+  listingHasClockTime,
+  formatBookingWhen,
+  isClockTime,
+  applyClockTime,
+} from '@/lib/booking-when';
 
 const INC = 'inc-r';
 const MGR = 'mgr-r';
@@ -214,5 +219,97 @@ describe('booking timestamps', () => {
     expect(html).toMatch(/2030/);
     expect(html, 'the receipt still prints the noon anchor as a start time')
       .not.toMatch(/01 février 2030[^<]*11:00/);
+  });
+});
+
+/* ══════════ 3. A program that DOES publish a start time ══════════ */
+
+describe('a program with a published start time', () => {
+  it('accepts only a well-formed HH:MM', () => {
+    expect(isClockTime('18:30')).toBe(true);
+    expect(isClockTime('00:00')).toBe(true);
+    expect(isClockTime('23:59')).toBe(true);
+    expect(isClockTime('24:00')).toBe(false);
+    expect(isClockTime('9:30')).toBe(false);
+    expect(isClockTime('18:60')).toBe(false);
+    expect(isClockTime('')).toBe(false);
+    expect(isClockTime(null)).toBe(false);
+  });
+
+  it('replaces the noon anchor with the real hour, keeping the day', () => {
+    const out = applyClockTime(NOON_ANCHOR, '18:30');
+    expect(out.slice(0, 10)).toBe('2030-02-01');
+    expect(out).toContain('T18:30');
+  });
+
+  it('leaves the anchor alone when there is no time to apply', () => {
+    expect(applyClockTime(NOON_ANCHOR, null)).toBe(NOON_ANCHOR);
+    expect(applyClockTime(NOON_ANCHOR, 'nonsense')).toBe(NOON_ANCHOR);
+  });
+
+  it('renders a 24-hour clock — fr-DZ and ar-DZ default to 12-hour', () => {
+    // CLDR resolves both Algerian locales to a 12-hour clock, so an 18:30
+    // session came out as "6:30 PM" / "6:30 م" — neither how Algeria writes
+    // time nor what the host typed into a 24-hour input.
+    for (const intlLocale of ['fr-DZ', 'ar-DZ', 'en-GB']) {
+      const out = formatBookingWhen('2030-02-01T18:30:00.000Z', {
+        intlLocale,
+        kind: { itemKind: 'PROGRAM', startsAtHasClockTime: true },
+      })!;
+      expect(out, `${intlLocale} fell back to a 12-hour clock`).not.toMatch(/AM|PM|ص|م\b/);
+      expect(out).toMatch(/18[:h.]30/);
+    }
+  });
+
+  it('is shown on the booking once the host sets one', () => {
+    // Without a time the program still shows the date alone...
+    expect(listingHasClockTime({ itemKind: 'PROGRAM' })).toBe(false);
+    // ...and with one, the clock is real and printed.
+    expect(listingHasClockTime({ itemKind: 'PROGRAM', startsAtHasClockTime: true })).toBe(true);
+    const shown = formatBookingWhen('2030-02-01T18:30:00.000Z', {
+      intlLocale: 'fr-DZ',
+      kind: { itemKind: 'PROGRAM', startsAtHasClockTime: true },
+    })!;
+    expect(shown).toMatch(/\d[:h.]\d\d/);
+  });
+
+  it('carries the time from the program onto a paid booking', async () => {
+    await seed('incubator', 'ONLINE_FULL');
+    await db.update((d) => {
+      d.programs[0]!.startTime = '18:30';
+      // Reset the intent so it is re-resolved from the program.
+      d.bookings = [];
+    });
+
+    const { createCardBookingIntent } = await import('@/server/bookings/card-payment');
+    const res = await createCardBookingIntent({
+      target: { itemKind: 'PROGRAM', programId: PROG },
+      paymentMode: 'ONLINE_FULL',
+      customer: { fullName: 'Karim', email: CLIENT, phone: '+213700112233' },
+      clientReference: 'ref-timed-1',
+      locale: 'fr',
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.booking.startsAt).toContain('T18:30');
+    expect(res.booking.startsAtHasClockTime).toBe(true);
+  });
+
+  it('leaves a booking untimed when the program has no start time', async () => {
+    await seed('incubator', 'ONLINE_FULL');
+    await db.update((d) => { d.bookings = []; });
+
+    const { createCardBookingIntent } = await import('@/server/bookings/card-payment');
+    const res = await createCardBookingIntent({
+      target: { itemKind: 'PROGRAM', programId: PROG },
+      paymentMode: 'ONLINE_FULL',
+      customer: { fullName: 'Karim', email: CLIENT, phone: '+213700112233' },
+      clientReference: 'ref-untimed-1',
+      locale: 'fr',
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.booking.startsAt).toBe(NOON_ANCHOR);
+    expect(res.booking.startsAtHasClockTime).toBeUndefined();
   });
 });

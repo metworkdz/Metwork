@@ -146,8 +146,8 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
   // A clock only for listings that have one. Programs and events store a noon
   // anchor rather than a chosen time, so printing hh:mm showed the incubator a
   // start time nobody entered — the same invented "11:00" the client saw.
-  const fmtRange = (startsAt: string, endsAt: string, itemKind?: string | null) => {
-    const opts = listingHasClockTime(itemKind)
+  const fmtRange = (startsAt: string, endsAt: string, b?: { itemKind?: string | null; startsAtHasClockTime?: boolean }) => {
+    const opts = listingHasClockTime(b)
       ? ({ dateStyle: 'short', timeStyle: 'short' } as const)
       : ({ dateStyle: 'short' } as const);
     return { start: formatDate(startsAt, lang, opts), end: formatDate(endsAt, lang, opts) };
@@ -213,7 +213,7 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                 </TableHeader>
                 <TableBody>
                   {rows.map((b) => {
-                    const { start, end } = fmtRange(b.startsAt, b.endsAt, b.itemKind);
+                    const { start, end } = fmtRange(b.startsAt, b.endsAt, b);
                     return (
                       <TableRow key={b.id}>
                         <TableCell>

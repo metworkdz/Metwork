@@ -15,6 +15,7 @@ import { programTypeLabel } from './program-meta';
 import { ProgramApplyForm, ProgramApplySuccess } from './program-apply-form';
 import { FixedDateCalendar } from '@/components/shared/fixed-date-calendar';
 import { ListingPriceBlock } from '@/components/shared/listing-price-block';
+import { isClockTime } from '@/lib/booking-when';
 import { bookingService } from '@/services/booking.service';
 import { formatDate, formatRelativeTime } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
@@ -95,6 +96,7 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                   icon={<CalendarRange className="size-4" />}
                   label={t('cohortDates')}
                   value={`${formatDate(program.startDate, locale)} → ${formatDate(program.endDate, locale)}`}
+                  hint={isClockTime(program.startTime) ? t('startsAtTime', { time: program.startTime! }) : undefined}
                 />
                 <DetailTile
                   icon={<Clock className="size-4" />}

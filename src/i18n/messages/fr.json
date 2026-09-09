@@ -323,7 +323,8 @@
         "CONFIRMED": "Confirmé",
         "WAITLISTED": "Liste d'attente",
         "CANCELLED": "Annulé"
-      }
+      },
+      "labelStartTime": "Heure de début (facultatif)"
     },
     "earnings": {
       "pending": "En attente",
@@ -1698,7 +1699,9 @@
       "labelSplitPricing": "Tarifs en ligne et espèces (facultatif)",
       "splitPricingHint": "Laissez vide pour utiliser le prix de base pour les deux. Définissez un prix différent pour le paiement en ligne par carte ou en espèces.",
       "labelOnlinePrice": "Prix en ligne",
-      "labelCashPrice": "Prix en espèces"
+      "labelCashPrice": "Prix en espèces",
+      "labelStartTime": "Heure de début (facultatif)",
+      "startTimeHint": "Affichée aux candidats. Laissez vide si les séances n’ont pas d’heure fixe."
     },
     "receiptModal": {
       "loading": "Chargement…",
@@ -3701,7 +3704,8 @@
       "seatsRemainingOne": "1 place restante",
       "seatsRemainingMany": "{count} places restantes",
       "continueAsGuest": "Continuer en tant qu'invité",
-      "close": "Fermer"
+      "close": "Fermer",
+      "startsAtTime": "à partir de {time}"
     }
   },
   "admin": {

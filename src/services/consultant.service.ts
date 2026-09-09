@@ -243,6 +243,8 @@ export interface ConsultantProgramInput {
   seatsTotal: number;
   deadline: string;
   startDate: string;
+  /** Local wall-clock start time "HH:MM". Null ⇒ no published start time. */
+  startTime?: string | null;
   endDate: string;
 }
 

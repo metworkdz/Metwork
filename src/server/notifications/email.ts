@@ -1730,6 +1730,8 @@ interface ReceiptEmailParams {
   lang:           'en' | 'fr';
   /** Listing kind — decides whether a clock time is shown. See booking-when.ts. */
   itemKind?:      string | null;
+  /** Explicit override from the booking; a program may carry a real start time. */
+  hasClockTime?:  boolean;
 }
 
 export function bookingReceiptEmailHtml(params: ReceiptEmailParams): string {
@@ -1747,8 +1749,9 @@ export function bookingReceiptEmailHtml(params: ReceiptEmailParams): string {
     try {
       return new Date(iso).toLocaleString(isFr ? 'fr-DZ' : 'en-GB', {
         day: '2-digit', month: 'long', year: 'numeric',
-        ...(listingHasClockTime(params.itemKind)
-          ? { hour: '2-digit' as const, minute: '2-digit' as const }
+        // h23: fr-DZ / ar-DZ otherwise render an 18:30 session as "6:30 PM".
+        ...(listingHasClockTime({ itemKind: params.itemKind, startsAtHasClockTime: params.hasClockTime })
+          ? { hour: '2-digit' as const, minute: '2-digit' as const, hourCycle: 'h23' as const }
           : {}),
         timeZone: 'UTC',
       });

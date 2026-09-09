@@ -673,6 +673,12 @@ export interface BookingRecord {
   paymentProviderRef?: string | null;
   /** Locale to render the hosted-checkout return + receipts in. */
   bookingLocale?: string | null;
+  /**
+   * Does `startsAt` carry a real chosen clock time? True for a SPACE, and for a
+   * PROGRAM whose host set `startTime`. Absent on bookings made before programs
+   * could have one — the listing kind is the fallback (see booking-when.ts).
+   */
+  startsAtHasClockTime?: boolean;
 
   /* ── REQUEST-mode reservation (approve-then-pay) — all additive ────────
    * Present only on bookings created against a space with a reservationMode
@@ -1316,6 +1322,18 @@ export interface ProgramRecord {
   seatsTotal: number;
   deadline: string;
   startDate: string;
+  /**
+   * Local wall-clock start time, "HH:MM" (24h). Optional: a program without one
+   * simply shows no time, which is how every program behaved before this field
+   * existed.
+   *
+   * Kept SEPARATE from `startDate` rather than folded into it. `startDate` is a
+   * date anchored at noon local so the day survives timezone conversion, and
+   * every deadline / ordering comparison in the codebase relies on that. A
+   * plain "HH:MM" alongside it is also the shape consultations already use
+   * (`MentorBookingRecord.consultationDate` + `consultationTime`).
+   */
+  startTime?: string | null;
   endDate: string;
   acceptedPaymentMethods: PaymentMethod[];
   /** Deposit model for CASH bookings. Unset = legacy listing (no deposit configured). */

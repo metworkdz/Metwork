@@ -323,7 +323,8 @@
         "CONFIRMED": "مؤكّد",
         "WAITLISTED": "قائمة الانتظار",
         "CANCELLED": "ملغى"
-      }
+      },
+      "labelStartTime": "وقت البدء (اختياري)"
     },
     "earnings": {
       "pending": "معلّق",
@@ -1698,7 +1699,9 @@
       "labelSplitPricing": "أسعار الدفع عبر الإنترنت والنقدي (اختياري)",
       "splitPricingHint": "اتركه فارغًا لاستخدام السعر الأساسي لكليهما. حدد سعرًا مختلفًا للدفع بالبطاقة عبر الإنترنت أو الحجوزات النقدية.",
       "labelOnlinePrice": "السعر عبر الإنترنت",
-      "labelCashPrice": "السعر النقدي"
+      "labelCashPrice": "السعر النقدي",
+      "labelStartTime": "وقت البدء (اختياري)",
+      "startTimeHint": "يظهر للمتقدمين. اتركه فارغاً إذا لم يكن للجلسات وقت محدد."
     },
     "receiptModal": {
       "loading": "جارٍ التحميل…",
@@ -3701,7 +3704,8 @@
       "seatsRemainingOne": "مقعد واحد متبقٍ",
       "seatsRemainingMany": "{count} مقاعد متبقية",
       "continueAsGuest": "المتابعة كضيف",
-      "close": "إغلاق"
+      "close": "إغلاق",
+      "startsAtTime": "ابتداءً من {time}"
     }
   },
   "admin": {

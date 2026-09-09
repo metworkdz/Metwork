@@ -1144,6 +1144,7 @@ export async function sendBookingReceiptEmailAsync(input: BookingReceiptInput): 
         paymentMethod:  paymentLabel,
         lang,
         itemKind:       booking.itemKind,
+        hasClockTime:   booking.startsAtHasClockTime ?? undefined,
       }),
       attachments: [{ filename, content: pdfBuffer }],
     });

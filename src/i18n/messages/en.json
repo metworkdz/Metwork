@@ -323,7 +323,8 @@
         "CONFIRMED": "Confirmed",
         "WAITLISTED": "Waitlist",
         "CANCELLED": "Cancelled"
-      }
+      },
+      "labelStartTime": "Start time (optional)"
     },
     "earnings": {
       "pending": "Pending",
@@ -1698,7 +1699,9 @@
       "labelSplitPricing": "Online & cash pricing (optional)",
       "splitPricingHint": "Leave empty to use the base price for both. Set a different price for online card payment or cash bookings.",
       "labelOnlinePrice": "Online price",
-      "labelCashPrice": "Cash price"
+      "labelCashPrice": "Cash price",
+      "labelStartTime": "Start time (optional)",
+      "startTimeHint": "Shown to applicants. Leave empty if sessions have no fixed hour."
     },
     "receiptModal": {
       "loading": "Loading…",
@@ -3701,7 +3704,8 @@
       "seatsRemainingOne": "1 seat remaining",
       "seatsRemainingMany": "{count} seats remaining",
       "continueAsGuest": "Continue as guest",
-      "close": "Close"
+      "close": "Close",
+      "startsAtTime": "from {time}"
     }
   },
   "admin": {

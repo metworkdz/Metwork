@@ -43,7 +43,7 @@ interface ProgramFormDialogProps {
   initialData?: {
     title?: string; description?: string; type?: ProgramType; city?: string;
     price?: number; onlinePrice?: number | null; cashPrice?: number | null;
-    seatsTotal?: number; deadline?: string; startDate?: string;
+    seatsTotal?: number; deadline?: string; startDate?: string; startTime?: string | null;
     endDate?: string; acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
     imageUrls?: string[] | null;
     cashDepositType?: 'FIXED' | 'PERCENT'; cashDepositValue?: number;
@@ -73,6 +73,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
   const [seatsTotal, setSeatsTotal] = useState('20');
   const [deadline, setDeadline] = useState('');
   const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('');
   const [endDate, setEndDate] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
   const [depositType, setDepositType] = useState<'FIXED' | 'PERCENT'>('PERCENT');
@@ -93,6 +94,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
       // FIX: BUG-2 — convert ISO date strings back to YYYY-MM-DD for date inputs
       setDeadline(initialData.deadline ? initialData.deadline.substring(0, 10) : '');
       setStartDate(initialData.startDate ? initialData.startDate.substring(0, 10) : '');
+      setStartTime(initialData.startTime ?? '');
       setEndDate(initialData.endDate ? initialData.endDate.substring(0, 10) : '');
       setAcceptedMethods(initialData.acceptedPaymentMethods ?? ['ONLINE', 'CASH']);
       setDepositType(initialData.cashDepositType ?? 'PERCENT');
@@ -119,7 +121,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
   function reset() {
     setTitle(''); setDescription(''); setType('INCUBATION'); setCity('');
     setPrice('0'); setOnlinePrice(''); setCashPrice('');
-    setSeatsTotal('20'); setDeadline(''); setStartDate(''); setEndDate('');
+    setSeatsTotal('20'); setDeadline(''); setStartDate(''); setStartTime(''); setEndDate('');
     setAcceptedMethods(['ONLINE', 'CASH']);
     setDepositType('PERCENT'); setDepositValue('10');
     setImageUrls([]);
@@ -170,6 +172,9 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
           seatsTotal: Number(seatsTotal),
           deadline: toIso(deadline),
           startDate: toIso(startDate),
+          // Empty = the program has no published start time, which is how every
+          // program behaved before this field existed.
+          startTime: startTime.trim() === '' ? null : startTime,
           endDate: toIso(endDate),
           acceptedPaymentMethods: acceptedMethods,
           ...(acceptedMethods.includes('CASH')
@@ -288,6 +293,11 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
             <div>
               <Label htmlFor="p-start">{t('labelStartDate')}</Label>
               <Input id="p-start" type="date" className="mt-1" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+            </div>
+            <div>
+              <Label htmlFor="p-start-time">{t('labelStartTime')}</Label>
+              <Input id="p-start-time" type="time" className="mt-1" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+              <p className="mt-1 text-xs text-muted-foreground">{t('startTimeHint')}</p>
             </div>
             <div>
               <Label htmlFor="p-end">{t('labelEndDate')}</Label>

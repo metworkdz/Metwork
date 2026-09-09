@@ -3,6 +3,7 @@
  * DELETE /api/incubator/programs/[id]  — delete a program
  */
 import type { NextRequest } from 'next/server';
+import { CLOCK_TIME_PATTERN } from '@/lib/booking-when';
 import { z, ZodError } from 'zod';
 import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
@@ -37,6 +38,7 @@ const patchSchema = z.object({
   seatsTotal: z.number().int().positive().optional(),
   deadline:  isoDate.optional(),
   startDate: isoDate.optional(),
+  startTime: z.string().regex(CLOCK_TIME_PATTERN, 'startTime must be HH:MM').nullable().optional(),
   endDate:   isoDate.optional(),
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).optional(),
   cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
@@ -120,6 +122,7 @@ export async function PATCH(
     if (input.seatsTotal !== undefined) p.seatsTotal = input.seatsTotal;
     if (input.deadline !== undefined) p.deadline = input.deadline;
     if (input.startDate !== undefined) p.startDate = input.startDate;
+    if (input.startTime !== undefined) p.startTime = input.startTime;
     if (input.endDate !== undefined) p.endDate = input.endDate;
     if (input.status !== undefined) p.isActive = input.status === 'PUBLISHED';
     if (input.slug !== undefined) p.slug = input.slug ?? undefined;

@@ -51,6 +51,7 @@ import {
 import { countAttendance } from '@/server/attendance';
 import { computeDeposit } from './pricing';
 import { effectiveListingPrice } from './listing-payment';
+import { applyClockTime, isClockTime } from '@/lib/booking-when';
 import {
   computeCommission as quoteCommission,
   type ProviderPlan,
@@ -225,6 +226,8 @@ interface ResolvedItem {
   unit: BookingUnit;
   quantity: number;
   startsAt: string;
+  /** True when `startsAt` carries a real chosen time (see booking-when.ts). */
+  startsAtHasClockTime?: boolean;
   endsAt: string;
   /** Pre-promo total T after any membership discount. */
   total: number;
@@ -345,7 +348,11 @@ function resolveTarget(
         city: rec.city,
         unit: 'DAY',
         quantity: 1,
-        startsAt: rec.startDate,
+        // A program may now carry a real start time; fold it into the instant
+        // so the checkout and the receipt show what the host actually set,
+        // instead of the noon anchor `startDate` is stored at.
+        startsAt: applyClockTime(rec.startDate, rec.startTime),
+        startsAtHasClockTime: isClockTime(rec.startTime),
         endsAt: rec.endDate,
         total: effectiveListingPrice(rec.price, rec, priceMode),
         acceptedPaymentMethods: rec.acceptedPaymentMethods,
@@ -558,6 +565,7 @@ export async function createCardBookingIntent(
       unit: item.unit,
       quantity: item.quantity,
       startsAt: item.startsAt,
+      ...(item.startsAtHasClockTime ? { startsAtHasClockTime: true } : {}),
       endsAt: item.endsAt,
       totalAmount: total,
       status: 'PENDING_PAYMENT',
