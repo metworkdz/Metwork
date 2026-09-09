@@ -253,6 +253,47 @@ export async function replaceFormFields(
   });
 }
 
+/* ─────────────────────────── Delete cascade ─────────────────────────── */
+
+/**
+ * Remove everything that belongs to a listing and is meaningless without it.
+ *
+ * Deleting a program or event used to splice the listing and stop there, so its
+ * application form and its registrations were left pointing at an id that no
+ * longer resolved. Nothing reads them — the dashboard scopes every query by
+ * entity — so they just accumulated invisibly. Production had 11 such rows from
+ * two deleted programs.
+ *
+ * What is deliberately NOT pruned: BOOKINGS and their transactions. Money that
+ * moved has to stay auditable even when the listing is gone, and a receipt
+ * already in someone's inbox must still correspond to a record. An orphaned
+ * booking is inert (`countAttendance` is always scoped to a live listing), so
+ * keeping it costs nothing and losing it would cost the audit trail.
+ *
+ * Synchronous and draft-mutating: callers already hold a `db.update`, and the
+ * prune has to commit in the same mutation as the delete itself.
+ */
+export function pruneListingChildrenSync(
+  d: StoreDraft,
+  entityType: 'PROGRAM' | 'EVENT',
+  entityId: string,
+): { formFields: number; registrations: number } {
+  const fieldsBefore = (d.registrationFormFields ?? []).length;
+  d.registrationFormFields = (d.registrationFormFields ?? []).filter(
+    (f) => !(f.entityType === entityType && f.entityId === entityId),
+  );
+
+  const regsBefore = (d.registrations ?? []).length;
+  d.registrations = (d.registrations ?? []).filter(
+    (r) => !(r.entityType === entityType && r.entityId === entityId),
+  );
+
+  return {
+    formFields: fieldsBefore - d.registrationFormFields.length,
+    registrations: regsBefore - (d.registrations ?? []).length,
+  };
+}
+
 /* ─────────────────────────── Registrations CRUD ─────────────────────────── */
 
 /**

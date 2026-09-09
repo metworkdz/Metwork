@@ -7,6 +7,7 @@ import { CLOCK_TIME_PATTERN } from '@/lib/booking-when';
 import { z, ZodError } from 'zod';
 import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
+import { pruneListingChildrenSync } from '@/server/registrations/service';
 import { canDeleteProgram, canEditProgram, type ProgramActor } from '@/server/programs/ownership';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
@@ -160,6 +161,9 @@ export async function DELETE(
     const decision = canDeleteProgram(programs[idx], actor, d.incubators);
     if (decision !== 'ALLOW') return decision;
     programs.splice(idx, 1);
+    // Same mutation: the form and the registrations are meaningless
+    // without the listing and were previously left orphaned.
+    pruneListingChildrenSync(d, 'PROGRAM', id);
     return 'OK';
   });
 

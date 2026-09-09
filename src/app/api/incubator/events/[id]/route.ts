@@ -6,6 +6,7 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
+import { pruneListingChildrenSync } from '@/server/registrations/service';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -126,6 +127,9 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     );
     if (idx === -1) return false;
     events.splice(idx, 1);
+    // Same mutation: the form and the registrations are meaningless without
+    // the listing and were previously left orphaned.
+    pruneListingChildrenSync(d, 'EVENT', id);
     return true;
   });
 
