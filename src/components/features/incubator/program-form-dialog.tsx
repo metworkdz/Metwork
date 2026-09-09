@@ -43,7 +43,7 @@ interface ProgramFormDialogProps {
   initialData?: {
     title?: string; description?: string; type?: ProgramType; city?: string;
     price?: number; onlinePrice?: number | null; cashPrice?: number | null;
-    seatsTotal?: number; deadline?: string; startDate?: string; startTime?: string | null;
+    seatsTotal?: number; deadline?: string; startDate?: string; startTime?: string | null; endTime?: string | null;
     endDate?: string; acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
     imageUrls?: string[] | null;
     cashDepositType?: 'FIXED' | 'PERCENT'; cashDepositValue?: number;
@@ -74,6 +74,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
   const [deadline, setDeadline] = useState('');
   const [startDate, setStartDate] = useState('');
   const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [endDate, setEndDate] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
   const [depositType, setDepositType] = useState<'FIXED' | 'PERCENT'>('PERCENT');
@@ -95,6 +96,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
       setDeadline(initialData.deadline ? initialData.deadline.substring(0, 10) : '');
       setStartDate(initialData.startDate ? initialData.startDate.substring(0, 10) : '');
       setStartTime(initialData.startTime ?? '');
+      setEndTime(initialData.endTime ?? '');
       setEndDate(initialData.endDate ? initialData.endDate.substring(0, 10) : '');
       setAcceptedMethods(initialData.acceptedPaymentMethods ?? ['ONLINE', 'CASH']);
       setDepositType(initialData.cashDepositType ?? 'PERCENT');
@@ -121,7 +123,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
   function reset() {
     setTitle(''); setDescription(''); setType('INCUBATION'); setCity('');
     setPrice('0'); setOnlinePrice(''); setCashPrice('');
-    setSeatsTotal('20'); setDeadline(''); setStartDate(''); setStartTime(''); setEndDate('');
+    setSeatsTotal('20'); setDeadline(''); setStartDate(''); setStartTime(''); setEndTime(''); setEndDate('');
     setAcceptedMethods(['ONLINE', 'CASH']);
     setDepositType('PERCENT'); setDepositValue('10');
     setImageUrls([]);
@@ -175,10 +177,15 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
           // Empty = the program has no published start time, which is how every
           // program behaved before this field existed.
           startTime: startTime.trim() === '' ? null : startTime,
+          endTime: endTime.trim() === '' ? null : endTime,
           endDate: toIso(endDate),
           acceptedPaymentMethods: acceptedMethods,
           ...(acceptedMethods.includes('CASH')
-            ? { cashDepositType: depositType, cashDepositValue: Number(depositValue) }
+            // Blank or 0 ⇒ no deposit; the server stores it as "none".
+            ? {
+                cashDepositType: depositType,
+                cashDepositValue: depositValue.trim() === '' ? 0 : Number(depositValue),
+              }
             : { cashDepositType: null, cashDepositValue: null }),
           imageUrls,
         }),
@@ -300,6 +307,10 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
               <p className="mt-1 text-xs text-muted-foreground">{t('startTimeHint')}</p>
             </div>
             <div>
+              <Label htmlFor="p-end-time">{t('labelEndTime')}</Label>
+              <Input id="p-end-time" type="time" className="mt-1" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+            </div>
+            <div>
               <Label htmlFor="p-end">{t('labelEndDate')}</Label>
               <Input id="p-end" type="date" className="mt-1" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
             </div>
@@ -363,6 +374,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
             <div className="rounded-lg border border-border bg-muted/30 p-3">
               <p className="text-sm font-medium">{t('labelDeposit')}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">{t('depositHint')}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t('depositZeroHint')}</p>
               <div className="mt-2 flex items-center gap-3">
                 <div className="flex gap-2">
                   {(['PERCENT', 'FIXED'] as const).map((dt) => (
@@ -382,14 +394,17 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
                   ))}
                 </div>
                 <div className="flex-1">
+                  {/* min 0 and NOT required: 0 or blank means "no deposit —
+                      they pay the whole amount on site". `min="1" required`
+                      made that impossible to enter at all, which is the
+                      blocker hosts actually hit. */}
                   <Input
                     type="number"
-                    min="1"
+                    min="0"
                     max={depositType === 'PERCENT' ? '100' : undefined}
                     className="w-full"
                     value={depositValue}
                     onChange={(e) => setDepositValue(e.target.value)}
-                    required
                     aria-label={t('labelDeposit')}
                   />
                 </div>

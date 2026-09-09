@@ -1334,6 +1334,14 @@ export interface ProgramRecord {
    * (`MentorBookingRecord.consultationDate` + `consultationTime`).
    */
   startTime?: string | null;
+  /**
+   * Local wall-clock end time, "HH:MM". Optional and independent of
+   * `startTime` — a host may publish when sessions begin without committing to
+   * when they finish. Not ordered against `startTime`: an evening bootcamp
+   * running past midnight is legitimate, and blocking it to catch a typo would
+   * cost more than it saves.
+   */
+  endTime?: string | null;
   endDate: string;
   acceptedPaymentMethods: PaymentMethod[];
   /** Deposit model for CASH bookings. Unset = legacy listing (no deposit configured). */

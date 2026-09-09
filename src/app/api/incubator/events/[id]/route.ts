@@ -27,7 +27,10 @@ const patchSchema = z.object({
   eventDate: z.string().datetime({ offset: true }).optional(),
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).optional(),
   cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
-  cashDepositValue: z.number().int().positive().optional().nullable(),
+  // nonnegative, not positive: 0 is how a host says "no deposit, they pay
+  // everything on site". `.positive()` rejected it before validateCashDeposit
+  // ever saw it, so there was no way to express that at all.
+  cashDepositValue: z.number().int().nonnegative().optional().nullable(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'CANCELLED']).optional(),
   slug: z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
 });

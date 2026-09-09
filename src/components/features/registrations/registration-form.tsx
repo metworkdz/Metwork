@@ -40,6 +40,7 @@ import { resolveListingPricing } from '@/lib/listing-price';
 import { questionLabel, questionOptions } from '@/lib/registration-question';
 import { computeClientDeposit } from '@/lib/deposit';
 import { safeUUID } from '@/lib/safe-uuid';
+import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { cn } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 import type { CashDepositType, PaymentMethod, RegistrationFormField } from '@/types/domain';
@@ -137,12 +138,15 @@ export function RegistrationForm({
     : (['ONLINE'] as PaymentMethod[]);
   const hasDeposit = pricing?.cashDepositType != null && pricing?.cashDepositValue != null;
   const isPaid = resolved.online > 0 || resolved.cash > 0;
-  // Cash is only offered when a deposit is configured: the visitor is a guest
-  // here, so there must be something to charge the card for. Without one there
-  // is no way to hold the seat, and a free-reserve would be the old bug again.
-  const cashOffered = isPaid && methods.includes('CASH') && hasDeposit;
+  const takesCash = isPaid && methods.includes('CASH');
+  // Cash WITH a deposit goes through the card checkout (there is something to
+  // charge). Cash with NO deposit is a reservation: the host collects the whole
+  // amount on site, which plenty of them want and which used to be impossible
+  // to even configure. Both are "cash" to the visitor; only the mechanics differ.
+  const cashOffered = takesCash && hasDeposit;
+  const cashOnSiteOffered = takesCash && !hasDeposit;
   const onlineOffered = isPaid && methods.includes('ONLINE');
-  const showMethodPicker = onlineOffered && cashOffered;
+  const showMethodPicker = onlineOffered && (cashOffered || cashOnSiteOffered);
   // A paid listing this visitor cannot pay for as a guest. Nothing they type
   // could succeed, so the form is replaced by a sign-in prompt rather than
   // ending in a 401 after eleven questions.
@@ -157,26 +161,48 @@ export function RegistrationForm({
       ? 'ONLINE'
       : 'CASH';
   const isCash = method === 'CASH';
+  // A promo priced against the other surface must not linger. The input is
+  // remounted (key={method}) so its own "applied" chip clears with it.
+  const [promo, setPromo] = useState<PromoResult | null>(null);
+  useEffect(() => {
+    setPromo(null);
+  }, [method]);
+
+  /** Cash with nothing to charge online — a reservation, settled on site. */
+  const isCashOnSite = isCash && cashOnSiteOffered;
   const total = isCash ? resolved.cash : resolved.online;
   const deposit = isCash
     ? computeClientDeposit(total, pricing?.cashDepositType, pricing?.cashDepositValue)
     : null;
-  const dueNow = deposit ?? total;
-  const dueOnSite = deposit != null ? Math.max(0, total - deposit) : 0;
+  // Nothing is charged now for a pay-on-site reservation; the whole amount is
+  // due at the door, so the summary must not claim a payment is happening.
+  /** After any promo. The server re-applies it; this is the preview. */
+  const payable = promo?.finalAmount ?? total;
+  const discount = promo?.discountAmount ?? 0;
+  const promoDeposit = isCash
+    ? computeClientDeposit(payable, pricing?.cashDepositType, pricing?.cashDepositValue)
+    : null;
+  const dueNow = isCashOnSite ? 0 : (promoDeposit ?? payable);
+  const dueOnSite = isCashOnSite
+    ? payable
+    : promoDeposit != null
+      ? Math.max(0, payable - promoDeposit)
+      : 0;
+  void deposit;
 
-  // A new method means a new intent — don't replay the previous one's key.
+  // A new method or promo means a new intent — don't replay the previous key.
   useEffect(() => {
     payRef.current = '';
-  }, [method]);
+  }, [method, promo?.code]);
 
   /* ── Steps ─────────────────────────────────────────────────────────────── */
 
   const steps = useMemo<Step[]>(() => {
     const list: Step[] = [{ kind: 'identity' }];
     for (const field of formFields) list.push({ kind: 'question', field });
-    if (isPaid && (onlineOffered || cashOffered)) list.push({ kind: 'payment' });
+    if (isPaid && (onlineOffered || cashOffered || cashOnSiteOffered)) list.push({ kind: 'payment' });
     return list;
-  }, [formFields, isPaid, onlineOffered, cashOffered]);
+  }, [formFields, isPaid, onlineOffered, cashOffered, cashOnSiteOffered]);
 
   const step = steps[Math.min(stepIndex, steps.length - 1)]!;
   const isLast = stepIndex >= steps.length - 1;
@@ -258,6 +284,7 @@ export function RegistrationForm({
             phone: form.phone.trim(),
             answers: collectAnswers(),
             locale,
+            ...(isCashOnSite ? { paymentMethod: 'CASH' as const } : {}),
           }),
         });
 
@@ -311,6 +338,7 @@ export function RegistrationForm({
           },
           clientReference: payRef.current,
           registrationAnswers: collectAnswers(),
+          promoCode: promo?.code,
           locale,
         });
         // Leave the SPA for the hosted-checkout pay page.
@@ -342,7 +370,9 @@ export function RegistrationForm({
       setStepIndex((i) => i + 1);
       return;
     }
-    if (step.kind === 'payment') submitPaid();
+    // A pay-on-site reservation charges nothing, so it takes the registration
+    // route (which records the amount owed) rather than the card checkout.
+    if (step.kind === 'payment' && !isCashOnSite) submitPaid();
     else submitFree();
   }
 
@@ -469,15 +499,27 @@ export function RegistrationForm({
             total={total}
             dueNow={dueNow}
             dueOnSite={dueOnSite}
+            discount={discount}
+            isCashOnSite={isCashOnSite}
+            promoSlot={
+              <PromoCodeInput
+                key={method}
+                originalAmount={total}
+                onApplied={setPromo}
+                disabled={isPending}
+              />
+            }
             labels={{
               card: t('payByCard'),
               cardDesc: t('payByCardDesc'),
               cash: t('payInCash'),
-              cashDesc: t('payInCashDesc'),
+              cashDesc: cashOnSiteOffered ? t('payInCashOnSiteDesc') : t('payInCashDesc'),
               total: t('summaryTotal'),
               dueNow: t('summaryDueNow'),
               dueOnSite: t('summaryDueOnSite'),
+              discount: t('promoDiscount'),
               feeNote: t('cardFeeNote'),
+              onSiteNote: t('onSiteNote'),
               secure: t('secureNote'),
             }}
           />
@@ -505,7 +547,9 @@ export function RegistrationForm({
           ) : !isLast ? (
             t('next')
           ) : step.kind === 'payment' ? (
-            t('payCta', { amount: formatCurrency(dueNow, locale) })
+            isCashOnSite
+              ? t('reserveCta')
+              : t('payCta', { amount: formatCurrency(dueNow, locale) })
           ) : (
             t('submit')
           )}
@@ -786,6 +830,9 @@ function PaymentStep({
   total,
   dueNow,
   dueOnSite,
+  discount,
+  isCashOnSite,
+  promoSlot,
   labels,
 }: {
   title: string;
@@ -796,6 +843,10 @@ function PaymentStep({
   total: number;
   dueNow: number;
   dueOnSite: number;
+  discount: number;
+  /** Nothing is charged now — the whole amount is settled on site. */
+  isCashOnSite: boolean;
+  promoSlot: React.ReactNode;
   labels: Record<string, string>;
 }) {
   return (
@@ -821,28 +872,51 @@ function PaymentStep({
         </div>
       )}
 
+      {/* Promo code — above the summary so applying one visibly moves it. */}
+      <div className="mb-3">{promoSlot}</div>
+
       <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
         <div className="flex items-center justify-between text-muted-foreground">
           <span>{labels.total}</span>
           <span className="tabular-nums">{formatCurrency(total, locale)}</span>
         </div>
-        <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2 text-base font-semibold">
-          <span>{labels.dueNow}</span>
-          <span className="tabular-nums">{formatCurrency(dueNow, locale)}</span>
-        </div>
+        {discount > 0 && (
+          <div className="mt-1 flex items-center justify-between text-emerald-700">
+            <span>{labels.discount}</span>
+            <span className="tabular-nums">−{formatCurrency(discount, locale)}</span>
+          </div>
+        )}
+        {!isCashOnSite && (
+          <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2 text-base font-semibold">
+            <span>{labels.dueNow}</span>
+            <span className="tabular-nums">{formatCurrency(dueNow, locale)}</span>
+          </div>
+        )}
         {dueOnSite > 0 && (
-          <div className="mt-1 flex items-center justify-between text-muted-foreground">
+          <div
+            className={cn(
+              'flex items-center justify-between',
+              isCashOnSite
+                ? 'mt-2 border-t border-border/60 pt-2 text-base font-semibold'
+                : 'mt-1 text-muted-foreground',
+            )}
+          >
             <span>{labels.dueOnSite}</span>
             <span className="tabular-nums">{formatCurrency(dueOnSite, locale)}</span>
           </div>
         )}
-        <p className="mt-2 text-xs text-muted-foreground">{labels.feeNote}</p>
+        {/* No card is charged for a pay-on-site reservation, so no card fee. */}
+        <p className="mt-2 text-xs text-muted-foreground">
+          {isCashOnSite ? labels.onSiteNote : labels.feeNote}
+        </p>
       </div>
 
-      <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
-        <ShieldCheck className="size-3.5 shrink-0" />
-        {labels.secure}
-      </p>
+      {!isCashOnSite && (
+        <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+          <ShieldCheck className="size-3.5 shrink-0" />
+          {labels.secure}
+        </p>
+      )}
     </div>
   );
 }

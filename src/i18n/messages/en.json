@@ -324,7 +324,8 @@
         "WAITLISTED": "Waitlist",
         "CANCELLED": "Cancelled"
       },
-      "labelStartTime": "Start time (optional)"
+      "labelStartTime": "Start time (optional)",
+      "labelEndTime": "End time (optional)"
     },
     "earnings": {
       "pending": "Pending",
@@ -1701,7 +1702,9 @@
       "labelOnlinePrice": "Online price",
       "labelCashPrice": "Cash price",
       "labelStartTime": "Start time (optional)",
-      "startTimeHint": "Shown to applicants. Leave empty if sessions have no fixed hour."
+      "startTimeHint": "Shown to applicants. Leave empty if sessions have no fixed hour.",
+      "labelEndTime": "End time (optional)",
+      "depositZeroHint": "Enter 0 (or leave blank) to take no deposit — the client pays the full amount on site."
     },
     "receiptModal": {
       "loading": "Loading…",
@@ -5201,7 +5204,11 @@
     "errorLoginRequired": "Please sign in to complete this registration.",
     "accountRequiredTitle": "Sign in to register",
     "accountRequiredBody": "This is a paid event — you need a Metwork account to complete the payment.",
-    "signIn": "Sign in"
+    "signIn": "Sign in",
+    "promoDiscount": "Promo code",
+    "onSiteNote": "Nothing is charged now — you pay the organiser on site.",
+    "reserveCta": "Reserve my place",
+    "payInCashOnSiteDesc": "Reserve now, pay the full amount on site"
   },
   "formBuilder": {
     "title": "Registration Form",

@@ -245,6 +245,8 @@ export interface ConsultantProgramInput {
   startDate: string;
   /** Local wall-clock start time "HH:MM". Null ⇒ no published start time. */
   startTime?: string | null;
+  /** Local wall-clock end time "HH:MM". Independent of `startTime`. */
+  endTime?: string | null;
   endDate: string;
 }
 

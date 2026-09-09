@@ -18,6 +18,7 @@ import { z, ZodError } from 'zod';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { createRegistration, findMissingRequiredAnswer } from '@/server/registrations/service';
 import { resolveListingPricing } from '@/lib/listing-price';
+import { applyClockTime, isClockTime } from '@/lib/booking-when';
 import { readSession } from '@/server/auth/session';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { db } from '@/server/db/store';
@@ -39,6 +40,12 @@ const registrationSchema = z.object({
   ).default([]),
   /** Locale the visitor filled the form in, carried onto the row for emails. */
   locale: z.enum(['en', 'fr', 'ar']).optional(),
+  /**
+   * 'CASH' reserves a seat on a paid listing that takes cash with NO deposit —
+   * the host collects everything on site. Refused on any listing where there
+   * IS something to charge online.
+   */
+  paymentMethod: z.enum(['CASH']).optional(),
 });
 
 /** Does this listing charge anything on EITHER payment surface? */
@@ -49,6 +56,24 @@ function isPaidListing(listing: {
 }): boolean {
   const p = resolveListingPricing(listing.price, listing);
   return p.online > 0 || p.cash > 0;
+}
+
+/**
+ * May this PAID listing be reserved here, with the money collected on site?
+ *
+ * Only when it accepts CASH and has no deposit configured — i.e. there is
+ * genuinely nothing to charge online. A listing with a deposit, or one that
+ * takes card, must go through the checkout; otherwise this route would become
+ * a way to skip a payment that IS collectable.
+ */
+function allowsCashOnSite(listing: {
+  acceptedPaymentMethods?: string[] | null;
+  cashDepositType?: string | null;
+  cashDepositValue?: number | null;
+}): boolean {
+  const takesCash = listing.acceptedPaymentMethods?.includes('CASH') ?? false;
+  const hasDeposit = listing.cashDepositType != null && listing.cashDepositValue != null;
+  return takesCash && !hasDeposit;
 }
 
 export async function POST(req: NextRequest) {
@@ -82,6 +107,9 @@ export async function POST(req: NextRequest) {
 
   // Verify the entity exists and is active
   const data = await db.read();
+  /** Set when this is a paid listing being reserved for cash on site. */
+  let cashReservation: Parameters<typeof createRegistration>[0]['cashReservation'] = null;
+
   if (input.entityType === 'PROGRAM') {
     const prog = (data.programs ?? []).find((p) => p.id === input.entityId && p.isActive);
     if (!prog) return jsonError(404, 'NOT_FOUND', 'Program not found or inactive');
@@ -95,13 +123,45 @@ export async function POST(req: NextRequest) {
     // by POSTing here directly. Checked on BOTH surfaces — either price being
     // positive makes the listing paid.
     if (isPaidListing(prog)) {
-      return jsonError(422, 'PAYMENT_REQUIRED', 'This program requires payment to register');
+      // ...unless the host takes cash with no deposit, in which case there is
+      // nothing to charge online and this IS the intended flow.
+      if (!(input.paymentMethod === 'CASH' && allowsCashOnSite(prog))) {
+        return jsonError(422, 'PAYMENT_REQUIRED', 'This program requires payment to register');
+      }
+      cashReservation = {
+        listing: {
+          id: prog.id,
+          title: prog.title,
+          vendorName: prog.incubatorName ?? prog.mentorName ?? 'Metwork',
+          city: prog.city,
+          startsAt: applyClockTime(prog.startDate, prog.startTime),
+          startsAtHasClockTime: isClockTime(prog.startTime),
+          endsAt: prog.endDate,
+        },
+        // The cash surface's price — never the online one.
+        amountDue: resolveListingPricing(prog.price, prog).cash,
+        clientReference: `cash-${prog.id}-${input.email}`,
+      };
     }
   } else {
     const ev = (data.events ?? []).find((e) => e.id === input.entityId && e.isActive);
     if (!ev) return jsonError(404, 'NOT_FOUND', 'Event not found or inactive');
     if (isPaidListing(ev)) {
-      return jsonError(422, 'PAYMENT_REQUIRED', 'This event requires payment to register');
+      if (!(input.paymentMethod === 'CASH' && allowsCashOnSite(ev))) {
+        return jsonError(422, 'PAYMENT_REQUIRED', 'This event requires payment to register');
+      }
+      cashReservation = {
+        listing: {
+          id: ev.id,
+          title: ev.title,
+          vendorName: ev.incubatorName,
+          city: ev.city,
+          startsAt: ev.eventDate,
+          endsAt: ev.eventDate,
+        },
+        amountDue: resolveListingPricing(ev.price, ev).cash,
+        clientReference: `cash-${ev.id}-${input.email}`,
+      };
     }
     // Past event check
     if (new Date(ev.eventDate) < new Date()) {
@@ -131,6 +191,7 @@ export async function POST(req: NextRequest) {
     phone: input.phone,
     answers: input.answers,
     locale: input.locale ?? session?.user?.locale ?? null,
+    cashReservation,
   });
 
   if (alreadyRegistered) {

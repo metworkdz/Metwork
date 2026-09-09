@@ -74,7 +74,7 @@ const emptyDraft: ConsultantProgramInput = {
   acceptedPaymentMethods: ['ONLINE', 'CASH'],
   cashDepositType: 'PERCENT',
   cashDepositValue: 10,
-  seatsTotal: 20, deadline: '', startDate: '', startTime: '', endDate: '',
+  seatsTotal: 20, deadline: '', startDate: '', startTime: '', endTime: '', endDate: '',
 };
 
 export function ProgramsSection() {
@@ -109,9 +109,11 @@ export function ProgramsSection() {
     if (!draft.deadline || !draft.startDate || !draft.endDate) return t('errorDates');
     if (!(draft.deadline <= draft.startDate && draft.startDate < draft.endDate)) return t('errorDateOrder');
     if (draft.acceptedPaymentMethods.includes('CASH')) {
-      const val = draft.cashDepositValue;
-      const invalidPercent = draft.cashDepositType === 'PERCENT' && (!val || val < 1 || val > 100);
-      const invalidFixed = draft.cashDepositType === 'FIXED' && (!val || val <= 0);
+      // 0 (or blank) is a valid choice: no deposit, the client pays the whole
+      // amount on site. Only a positive-but-nonsensical value is an error.
+      const val = draft.cashDepositValue ?? 0;
+      const invalidPercent = draft.cashDepositType === 'PERCENT' && val > 0 && (val < 1 || val > 100);
+      const invalidFixed = draft.cashDepositType === 'FIXED' && val < 0;
       if (invalidPercent || invalidFixed) return t('errorDeposit');
     }
     return null;
@@ -164,6 +166,7 @@ export function ProgramsSection() {
         startDate: toIso(draft.startDate),
         // Empty = no published start time, matching the incubator form.
         startTime: draft.startTime?.trim() ? draft.startTime : null,
+        endTime: draft.endTime?.trim() ? draft.endTime : null,
         endDate: toIso(draft.endDate),
         cashDepositType: acceptsCash ? draft.cashDepositType : null,
         cashDepositValue: acceptsCash ? draft.cashDepositValue : null,
@@ -346,6 +349,13 @@ export function ProgramsSection() {
                 onChange={(e) => setDraft((d) => ({ ...d, startTime: e.target.value }))}
               />
             </Field>
+            <Field label={t('labelEndTime')} htmlFor="p-end-time">
+              <input
+                id="p-end-time" type="time" className={cpInputClassLight}
+                value={draft.endTime ?? ''}
+                onChange={(e) => setDraft((d) => ({ ...d, endTime: e.target.value }))}
+              />
+            </Field>
             <Field label={t('labelEnd')} htmlFor="p-end">
               <input
                 id="p-end" type="date" min={todayISO()} className={cpInputClassLight}
@@ -404,8 +414,9 @@ export function ProgramsSection() {
                     </button>
                   ))}
                 </div>
+                {/* min 0: 0 means "no deposit, paid in full on site". */}
                 <input
-                  type="number" min={1} max={draft.cashDepositType === 'PERCENT' ? 100 : undefined}
+                  type="number" min={0} max={draft.cashDepositType === 'PERCENT' ? 100 : undefined}
                   className={cn(cpInputClassLight, 'h-10')}
                   value={draft.cashDepositValue ?? ''}
                   onChange={(e) => setDraft((d) => ({ ...d, cashDepositValue: Number(e.target.value) || 0 }))}

@@ -37,6 +37,7 @@ const patchSchema = z.object({
   deadline:  isoDate.optional(),
   startDate: isoDate.optional(),
   startTime: z.string().regex(CLOCK_TIME_PATTERN, 'startTime must be HH:MM').nullable().optional(),
+  endTime: z.string().regex(CLOCK_TIME_PATTERN, 'endTime must be HH:MM').nullable().optional(),
   endDate:   isoDate.optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'CLOSED']).optional(),
   slug: z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
@@ -88,6 +89,7 @@ export async function PATCH(
     if (input.deadline !== undefined) p.deadline = input.deadline;
     if (input.startDate !== undefined) p.startDate = input.startDate;
     if (input.startTime !== undefined) p.startTime = input.startTime;
+    if (input.endTime !== undefined) p.endTime = input.endTime;
     if (input.endDate !== undefined) p.endDate = input.endDate;
     if (input.status !== undefined) p.isActive = input.status === 'PUBLISHED';
     if (input.slug !== undefined) p.slug = input.slug ?? undefined;

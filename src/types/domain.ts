@@ -123,6 +123,8 @@ export interface Program {
   startDate: string;
   /** Local wall-clock start time "HH:MM". Absent ⇒ no time is shown. */
   startTime?: string | null;
+  /** Local wall-clock end time "HH:MM". Independent of `startTime`. */
+  endTime?: string | null;
   endDate: string;
   acceptedPaymentMethods: PaymentMethod[];
   /** Cash deposit config — present only when CASH is accepted. */

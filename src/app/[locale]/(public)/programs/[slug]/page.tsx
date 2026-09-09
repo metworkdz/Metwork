@@ -25,7 +25,7 @@ import { readSession } from '@/server/auth/session';
 import { guestCheckoutAllowedFor } from '@/server/bookings/status';
 import type { ProgramType } from '@/types/domain';
 import { formatDate } from '@/lib/format';
-import { isClockTime } from '@/lib/booking-when';
+import { formatSessionHours, isClockTime } from '@/lib/booking-when';
 import type { Locale } from '@/i18n/config';
 import { assertLandingVisible } from '@/lib/landing-visibility';
 
@@ -164,9 +164,13 @@ export default async function ProgramDetailPage({ params }: PageProps) {
                 {formatDate(program.startDate, locale as Locale)}
                 {/* Only when the host published one — a program without a start
                     time shows the date alone, never the storage anchor. */}
-                {isClockTime(program.startTime) && (
+                {/* A range reads plainly ("18:30 – 21:30"); a lone start needs
+                    "from", or it looks like the session lasts a minute. */}
+                {formatSessionHours(program.startTime, program.endTime) && (
                   <span className="block text-xs text-muted-foreground">
-                    {t('startsAtTime', { time: program.startTime! })}
+                    {isClockTime(program.endTime)
+                      ? formatSessionHours(program.startTime, program.endTime)
+                      : t('startsAtTime', { time: program.startTime! })}
                   </span>
                 )}
               </p>

@@ -88,6 +88,29 @@ export interface InsertRegistrationInput extends CreateRegistrationInput {
    * path; also the settlement idempotency key.
    */
   bookingId?: string | null;
+  /**
+   * Reserve a seat on a PAID listing that takes cash with NO deposit — the
+   * host collects the whole amount on site. Writes a PENDING_PAYMENT booking
+   * alongside the registration so the money owed shows up in the host's
+   * bookings dashboard and can be marked collected there.
+   *
+   * Deliberately narrow: allowed only where there is nothing to charge online,
+   * so it can never become a way to skip a payment that IS collectable.
+   */
+  cashReservation?: {
+    listing: {
+      id: string;
+      title: string;
+      vendorName: string;
+      city: string;
+      startsAt: string;
+      endsAt: string;
+      startsAtHasClockTime?: boolean;
+    };
+    /** Full amount owed on site (integer DZD). */
+    amountDue: number;
+    clientReference: string;
+  } | null;
 }
 
 /** The mutable draft handed to a `db.update` callback. */
@@ -414,6 +437,49 @@ export function insertRegistrationSync(
     updatedAt: now,
   };
   d.registrations.push(rec);
+
+  // Cash-on-site reservation: record what is owed so the host sees it in their
+  // bookings dashboard. PENDING_PAYMENT holds no seat by itself
+  // (`bookingHoldsSeat`) — the CONFIRMED registration above is what reserves
+  // the place, and this row is the money side of the same act.
+  const cash = input.cashReservation;
+  if (cash) {
+    const already = d.bookings.find(
+      (b) => b.clientReference === cash.clientReference && b.itemId === cash.listing.id,
+    );
+    if (!already) {
+      d.bookings.push({
+        id: randomUUID(),
+        userId: input.userId,
+        source: 'online',
+        paymentMethod: 'manual',
+        clientName: rec.fullName,
+        clientEmail: rec.email,
+        clientPhone: rec.phone,
+        itemKind: input.entityType,
+        itemId: cash.listing.id,
+        itemName: cash.listing.title,
+        vendorName: cash.listing.vendorName,
+        city: cash.listing.city,
+        unit: 'DAY',
+        quantity: 1,
+        startsAt: cash.listing.startsAt,
+        ...(cash.listing.startsAtHasClockTime ? { startsAtHasClockTime: true } : {}),
+        endsAt: cash.listing.endsAt,
+        totalAmount: cash.amountDue,
+        status: 'PENDING_PAYMENT',
+        clientReference: cash.clientReference,
+        transactionId: null,
+        paymentMode: 'CASH_DEPOSIT',
+        onlinePaidAmount: 0,
+        cashRemainingAmount: cash.amountDue,
+        bookingLocale: input.locale ?? null,
+        createdAt: now,
+        updatedAt: now,
+      } as never);
+    }
+  }
+
   return { registration: rec, alreadyRegistered: false };
 }
 
@@ -424,7 +490,7 @@ export function insertRegistrationSync(
  *  - CRM client upsert
  *  - confirmation email
  */
-export async function createRegistration(input: CreateRegistrationInput): Promise<{
+export async function createRegistration(input: InsertRegistrationInput): Promise<{
   registration: RegistrationRecord;
   alreadyRegistered: boolean;
 }> {

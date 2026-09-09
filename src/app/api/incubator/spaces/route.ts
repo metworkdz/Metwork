@@ -48,7 +48,10 @@ const createSpaceSchema = z.object({
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).default(['ONLINE', 'CASH']),
   /** Cash deposit (paid online by card). Required when CASH is accepted. */
   cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
-  cashDepositValue: z.number().int().positive().optional().nullable(),
+  // nonnegative, not positive: 0 is how a host says "no deposit, they pay
+  // everything on site". `.positive()` rejected it before validateCashDeposit
+  // ever saw it, so there was no way to express that at all.
+  cashDepositValue: z.number().int().nonnegative().optional().nullable(),
   /** Working days: 0=Sun…6=Sat. Defaults to Mon–Fri. */
   workingDays:  z.array(z.number().int().min(0).max(6)).min(1).default([1, 2, 3, 4, 5]),
   /** "HH:MM" 24h. */

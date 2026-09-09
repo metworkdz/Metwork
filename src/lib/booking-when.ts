@@ -115,3 +115,16 @@ export function applyClockTime(iso: string, time: string | null | undefined): st
   d.setUTCHours(h, m, 0, 0);
   return d.toISOString();
 }
+
+/**
+ * The published session hours, e.g. "18:30 – 21:30", or just "18:30" when the
+ * host gave a start without an end. Null when there is no start time at all —
+ * an end alone says nothing useful.
+ */
+export function formatSessionHours(
+  startTime: string | null | undefined,
+  endTime: string | null | undefined,
+): string | null {
+  if (!isClockTime(startTime)) return null;
+  return isClockTime(endTime) ? `${startTime} – ${endTime}` : startTime;
+}

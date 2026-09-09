@@ -33,11 +33,16 @@ const createProgramSchema = z.object({
   startDate:   z.string().datetime(),
   /** Local wall-clock start time "HH:MM" (24h). Optional. */
   startTime:   z.string().regex(CLOCK_TIME_PATTERN, 'startTime must be HH:MM').nullable().optional(),
+  /** Local wall-clock end time "HH:MM" (24h). Optional. */
+  endTime:     z.string().regex(CLOCK_TIME_PATTERN, 'endTime must be HH:MM').nullable().optional(),
   endDate:     z.string().datetime(),
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).default(['ONLINE', 'CASH']),
   /** Cash deposit (paid online by card). Required when CASH is accepted. */
   cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
-  cashDepositValue: z.number().int().positive().optional().nullable(),
+  // nonnegative, not positive: 0 is how a host says "no deposit, they pay
+  // everything on site". `.positive()` rejected it before validateCashDeposit
+  // ever saw it, so there was no way to express that at all.
+  cashDepositValue: z.number().int().nonnegative().optional().nullable(),
   /** Optional custom slug. Auto-generated from title if omitted. */
   slug:        z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
 });
@@ -112,6 +117,7 @@ export async function POST(req: NextRequest) {
       deadline:               input.deadline,
       startDate:              input.startDate,
       startTime:              input.startTime ?? null,
+      endTime:              input.endTime ?? null,
       endDate:                input.endDate,
       acceptedPaymentMethods: paymentMethods,
       ...depositConfig,
