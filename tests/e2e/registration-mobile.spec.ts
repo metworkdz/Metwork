@@ -96,11 +96,36 @@ test.beforeAll(async () => {
   }
 });
 
-async function documentOverflow(page: Page) {
-  return page.evaluate(() => ({
-    scrollWidth: document.documentElement.scrollWidth,
-    clientWidth: document.documentElement.clientWidth,
-  }));
+/**
+ * Anything actually sticking out past the right edge.
+ *
+ * This used to compare `document.documentElement.scrollWidth` against
+ * `clientWidth`, which is worthless here: the app shell wraps everything in
+ * `overflow-x-hidden`, so the document NEVER reports a horizontal scroll — the
+ * overflow is silently CLIPPED instead. The test passed while real content was
+ * cut off the right edge on a 320–360px phone. Measure the elements themselves.
+ */
+async function elementsPastRightEdge(page: Page) {
+  return page.evaluate(() => {
+    const vw = document.documentElement.clientWidth;
+    const out: Array<{ tag: string; cls: string; pastBy: number; text: string }> = [];
+    document.querySelectorAll('main, main *').forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return;
+      const pastBy = Math.round(r.right - vw);
+      if (pastBy <= 1) return;
+      // Report the outermost offender on each branch, not every descendant.
+      const childAlsoPast = [...el.children].some((c) => c.getBoundingClientRect().right > vw + 1);
+      if (childAlsoPast) return;
+      out.push({
+        tag: el.tagName.toLowerCase(),
+        cls: (el.className || '').toString().slice(0, 60),
+        pastBy,
+        text: (el.textContent || '').trim().slice(0, 40),
+      });
+    });
+    return out;
+  });
 }
 
 /** Every focusable control currently on screen, with what a phone cares about. */
@@ -130,13 +155,38 @@ async function nextStep(page: Page) {
   await page.locator('form button[type=submit]').click();
 }
 
+/**
+ * The widths that matter in Algeria. 390 (iPhone 13) is the roomiest of them
+ * and was the ONLY one this suite used to check — which is how a layout with a
+ * 347px floor shipped: it fit at 390 and 375, and was clipped at 360 and 320.
+ * 360px is the single most common Android width; 320 is the small end.
+ */
+const PHONE_WIDTHS = [320, 360, 390] as const;
+
+for (const width of PHONE_WIDTHS) {
+  test(`nothing is cut off at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 780 });
+    await page.goto(`/fr/programs/${slug}`);
+    await page.waitForLoadState('networkidle');
+
+    const past = await elementsPastRightEdge(page);
+    expect(
+      past,
+      `${width}px: content is cut off the right edge — ${JSON.stringify(past)}`,
+    ).toEqual([]);
+  });
+}
+
 for (const locale of ['fr', 'ar', 'en'] as const) {
   test(`${locale} — the page fits the phone and nothing zooms on focus`, async ({ page }) => {
     await page.goto(`/${locale}/programs/${slug}`);
     await page.waitForLoadState('networkidle');
 
-    const { scrollWidth, clientWidth } = await documentOverflow(page);
-    expect(scrollWidth, `${locale} scrolls sideways`).toBeLessThanOrEqual(clientWidth + 1);
+    const past = await elementsPastRightEdge(page);
+    expect(
+      past,
+      `${locale}: content is cut off the right edge — ${JSON.stringify(past)}`,
+    ).toEqual([]);
 
     if (locale === 'ar') {
       await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');

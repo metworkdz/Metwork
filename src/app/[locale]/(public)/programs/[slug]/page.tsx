@@ -102,7 +102,11 @@ export default async function ProgramDetailPage({ params }: PageProps) {
 
       <div className="grid gap-8 lg:grid-cols-5">
         {/* ── Left: image + meta ── */}
-        <div className="lg:col-span-3 space-y-6">
+        {/* min-w-0: a grid item defaults to min-width:auto and will not
+            shrink below its content. One nowrap string inside (the share
+            link) was setting a ~347px floor for the whole page, which
+            pushed every column off-screen on a 320–360px phone. */}
+        <div className="min-w-0 lg:col-span-3 space-y-6">
           {/* Image gallery */}
           {galleryImages.length > 0 ? (
             <ImageCarousel images={galleryImages} alt={program.title} />
@@ -130,7 +134,7 @@ export default async function ProgramDetailPage({ params }: PageProps) {
                 </Badge>
               )}
             </div>
-            <h1 className="text-3xl font-semibold tracking-tight">{program.title}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-balance break-words sm:text-3xl">{program.title}</h1>
             <p className="mt-1 text-muted-foreground">{programHostName(program)}</p>
           </div>
 
@@ -167,7 +171,7 @@ export default async function ProgramDetailPage({ params }: PageProps) {
         </div>
 
         {/* ── Right: pricing + registration ── */}
-        <div className="lg:col-span-2">
+        <div className="min-w-0 lg:col-span-2">
           <div className="sticky top-20 rounded-2xl border border-border bg-card p-6 space-y-5">
             {/* Price — resolves the online/cash split, so a visitor sees the
                 two amounts they can actually choose between, not the base. */}
@@ -224,7 +228,7 @@ export default async function ProgramDetailPage({ params }: PageProps) {
             {program.slug && (
               <div className="border-t border-border/60 pt-4">
                 <p className="text-xs text-muted-foreground mb-1">{tReg('shareLink')}</p>
-                <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-2">
+                <div className="flex min-w-0 items-center gap-2 rounded-md bg-muted px-3 py-2">
                   <ExternalLink className="size-3 shrink-0 text-muted-foreground" />
                   <code className="text-xs text-muted-foreground truncate">
                     /programs/{program.slug}
