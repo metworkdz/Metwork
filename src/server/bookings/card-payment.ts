@@ -80,6 +80,10 @@ import { getSlickPayTransferStatus } from '@/server/payments/slickpay-provider';
 import { ProviderNotConfiguredError } from '@/server/payments/errors';
 import { sendBookingReceiptEmail } from '@/server/notifications/mock';
 import { createNotification } from '@/server/notifications/create-notification';
+import {
+  insertRegistrationSync,
+  dispatchRegistrationConfirmationIfDue,
+} from '@/server/registrations/service';
 
 /** Pay tokens live for 7 days — long enough to finish a hosted checkout. */
 const PAY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -112,6 +116,13 @@ export interface CreateCardBookingInput {
   membershipDiscount?: number;
   /** Locale for the hosted-checkout return + receipts. */
   locale?: string;
+  /**
+   * Application answers from the public registration page, carried on the
+   * intent and materialised into a RegistrationRecord at settlement. PROGRAM /
+   * EVENT only — see `BookingRecord.registrationDraft` for why they ride the
+   * booking rather than a provisional registration row.
+   */
+  registrationAnswers?: Array<{ fieldId: string; value: string | string[] }> | null;
 }
 
 export type CreateCardBookingReason =
@@ -566,6 +577,17 @@ export async function createCardBookingIntent(
       payTokenExpiresAt: new Date(Date.now() + PAY_TOKEN_TTL_MS).toISOString(),
       paymentProviderRef: null,
       bookingLocale: input.locale ?? 'fr',
+      // Held until settlement, then written out as a RegistrationRecord. An
+      // abandoned checkout leaves nothing behind but this dead intent.
+      ...(item.promoKind !== 'SPACE' && input.registrationAnswers
+        ? {
+            registrationDraft: {
+              entityType: item.promoKind,
+              answers: input.registrationAnswers,
+              locale: input.locale ?? null,
+            },
+          }
+        : {}),
       createdAt: now,
       updatedAt: now,
     };
@@ -802,6 +824,25 @@ async function applyCardSettlement(bookingId: string, providerRef: string | null
       booking.commissionAmount = split.platformCommission;
     }
 
+    // ── Materialise the public-registration answers ───────────────────────
+    // Same mutation as the CONFIRMED transition, so the paid seat and the
+    // application row commit together. `insertRegistrationSync` dedupes on
+    // bookingId, so a replayed settlement writes nothing twice. Attendance
+    // dedupes booking + registration by email, so this stays ONE seat.
+    if (booking.registrationDraft && booking.itemKind !== 'SPACE') {
+      insertRegistrationSync(d, {
+        entityType: booking.registrationDraft.entityType,
+        entityId: booking.itemId,
+        userId: booking.userId,
+        fullName: booking.clientName ?? 'Client',
+        email: booking.clientEmail ?? '',
+        phone: booking.clientPhone ?? '',
+        answers: booking.registrationDraft.answers,
+        locale: booking.registrationDraft.locale ?? booking.bookingLocale ?? null,
+        bookingId: booking.id,
+      });
+    }
+
     // ── Consume the promo exactly once, on the claiming transition ────────
     if (booking.promoCodeId) consumePromoCodeSync(d.promoCodes ?? [], booking.promoCodeId);
 
@@ -994,6 +1035,7 @@ export async function verifyAndSettleCardBooking(token: string): Promise<CardPay
     return viewFor(after, 'SLOT_TAKEN');
   }
   void dispatchCardReceiptIfDue(booking.id);
+  void dispatchRegistrationConfirmationIfDue(booking.id);
   return viewFor(after, 'CONFIRMED');
 }
 
@@ -1022,6 +1064,7 @@ export async function settleCardBookingFromWebhook(
     return 'VOIDED';
   }
   void dispatchCardReceiptIfDue(bookingId);
+  void dispatchRegistrationConfirmationIfDue(bookingId);
   return 'SETTLED';
 }
 
@@ -1094,7 +1137,10 @@ export async function initCardBookingPayment(
   if (result.status === 'COMPLETED') {
     const outcome = await applyCardSettlement(booking.id, result.providerRef);
     if (outcome.kind === 'SLOT_TAKEN') void notifyVoidedAfterPayment(booking.id);
-    else void dispatchCardReceiptIfDue(booking.id);
+    else {
+      void dispatchCardReceiptIfDue(booking.id);
+      void dispatchRegistrationConfirmationIfDue(booking.id);
+    }
     return { ok: true, redirectUrl: returnUrl };
   }
 

@@ -693,6 +693,27 @@ export interface BookingRecord {
   /** ISO expiry of the payment link; past it the booking is swept to CANCELLED. */
   paymentLinkExpiresAt?: string | null;
 
+  /* ── Paid public registration (PROGRAM / EVENT) — additive ───────────── */
+  /**
+   * Application answers captured on the public registration page BEFORE the
+   * visitor was sent to the hosted checkout, held here until settlement
+   * materialises them into a RegistrationRecord.
+   *
+   * They live on the booking rather than in a provisional registration row on
+   * purpose: a PENDING_PAYMENT intent must hold no seat, and a registration
+   * row that holds no seat would need a new status plus changes to
+   * `countAttendance`. Carrying the draft means an abandoned checkout leaves
+   * nothing behind but the dead intent, exactly like every other card flow.
+   *
+   * Absent on every other booking (explorer applications, spaces, offline).
+   */
+  registrationDraft?: {
+    entityType: 'PROGRAM' | 'EVENT';
+    answers: Array<{ fieldId: string; value: string | string[] }>;
+    /** Locale the visitor registered in — used for the confirmation email. */
+    locale?: string | null;
+  } | null;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -1411,6 +1432,17 @@ export interface RegistrationRecord {
   status: RegistrationStatus;
   /** FK to ClientRecord.id — set when a CRM client was matched or created. */
   clientId: string | null;
+  /**
+   * FK to BookingRecord.id — set only on a PAID registration, materialised at
+   * card settlement from `BookingRecord.registrationDraft`. Doubles as the
+   * settlement idempotency key: a replayed settlement finds the row already
+   * written and does nothing. Absent on every free registration.
+   */
+  bookingId?: string | null;
+  /** Locale the visitor registered in, for the confirmation email. */
+  locale?: string | null;
+  /** Dedup stamp — the confirmation email has been dispatched for this row. */
+  confirmationSentAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -3694,7 +3694,8 @@
       "fullText": "هذا البرنامج ممتلئ.",
       "seatsRemainingOne": "مقعد واحد متبقٍ",
       "seatsRemainingMany": "{count} مقاعد متبقية",
-      "continueAsGuest": "المتابعة كضيف"
+      "continueAsGuest": "المتابعة كضيف",
+      "close": "إغلاق"
     }
   },
   "admin": {
@@ -5148,9 +5149,9 @@
     "successBody": "تم تأكيد تسجيلك في {title}.",
     "successEmail": "تم إرسال بريد تأكيد إلى {email}.",
     "waitlistTitle": "أنت على قائمة الانتظار",
-    "waitlistBody": "الفعالية ممتلئة. سنخطرك إذا توفر مقعد.",
+    "waitlistBody": "اكتمل العدد حالياً. سنخبرك إذا توفر مقعد.",
     "alreadyTitle": "مسجل مسبقاً",
-    "alreadyBody": "أنت مسجل بالفعل في هذه الفعالية.",
+    "alreadyBody": "أنت مسجّل بالفعل بهذا البريد الإلكتروني.",
     "errorRequired": "هذا الحقل مطلوب",
     "errorInvalidEmail": "أدخل عنوان بريد إلكتروني صحيح",
     "errorInvalidPhone": "أدخل رقم هاتف صحيح",
@@ -5159,7 +5160,29 @@
     "errorGeneric": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
     "errorNetwork": "خطأ في الشبكة. تحقق من اتصالك.",
     "privacyNote": "ستُستخدم معلوماتك فقط من قِبَل المنظِّم.",
-    "shareLink": "شارك هذا الرابط"
+    "shareLink": "شارك هذا الرابط",
+    "stepCounter": "الخطوة {current} من {total}",
+    "optionalLabel": "اختياري",
+    "stepIdentityTitle": "لنبدأ بمعلوماتك",
+    "stepIdentityHint": "سيصلك التأكيد على هذا البريد الإلكتروني.",
+    "next": "متابعة",
+    "back": "رجوع",
+    "selectPlaceholder": "اختر خياراً",
+    "multiHint": "اختر كل ما ينطبق.",
+    "paymentTitle": "كيف تفضّل الدفع؟",
+    "payByCard": "الدفع بالبطاقة",
+    "payByCardDesc": "CIB / الذهبية — ادفع المبلغ كاملاً الآن",
+    "payInCash": "الدفع نقداً",
+    "payInCashDesc": "ادفع عربوناً بالبطاقة الآن، والباقي في المكان",
+    "summaryTotal": "المجموع",
+    "summaryDueNow": "المطلوب الآن",
+    "summaryDueOnSite": "المطلوب في المكان",
+    "payCta": "ادفع {amount}",
+    "cardFeeNote": "تُضاف رسوم معالجة البطاقة عند إتمام الدفع.",
+    "secureNote": "دفع آمن. يتم تأكيد مقعدك فور نجاح العملية.",
+    "errorPaymentFailed": "تعذّر بدء عملية الدفع. يرجى المحاولة مرة أخرى.",
+    "errorFull": "اكتمل العدد — لم تعد هناك مقاعد.",
+    "errorLoginRequired": "يرجى تسجيل الدخول لإتمام هذا التسجيل."
   },
   "formBuilder": {
     "title": "نموذج التسجيل",

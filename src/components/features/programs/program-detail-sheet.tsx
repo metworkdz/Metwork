@@ -16,7 +16,7 @@ import { ProgramApplyForm, ProgramApplySuccess } from './program-apply-form';
 import { FixedDateCalendar } from '@/components/shared/fixed-date-calendar';
 import { ListingPriceBlock } from '@/components/shared/listing-price-block';
 import { bookingService } from '@/services/booking.service';
-import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/format';
+import { formatDate, formatRelativeTime } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 import type { Program } from '@/types/domain';
 import type { BookingDto, ItemAttendanceStatus } from '@/types/booking';
@@ -155,7 +155,7 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                   />
                   <SheetClose asChild>
                     <Button variant="outline" className="w-full">
-                      Close
+                      {t('close')}
                     </Button>
                   </SheetClose>
                 </div>

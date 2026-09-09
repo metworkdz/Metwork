@@ -18,7 +18,7 @@ import { RegistrationForm } from '@/components/features/registrations/registrati
 import { ImageCarousel } from '@/components/shared/image-carousel';
 import { ListingPriceBlock } from '@/components/shared/listing-price-block';
 import { readSession } from '@/server/auth/session';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 import { assertLandingVisible } from '@/lib/landing-visibility';
 
@@ -193,6 +193,14 @@ export default async function EventDetailPage({ params }: PageProps) {
                   entityTitle={event.title}
                   formFields={formFields}
                   prefill={prefill}
+                  pricing={{
+                    price: event.price,
+                    onlinePrice: event.onlinePrice,
+                    cashPrice: event.cashPrice,
+                    acceptedPaymentMethods: event.acceptedPaymentMethods,
+                    cashDepositType: event.cashDepositType,
+                    cashDepositValue: event.cashDepositValue,
+                  }}
                 />
               </div>
             ) : (

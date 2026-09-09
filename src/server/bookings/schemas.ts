@@ -116,8 +116,30 @@ export const createCardBookingSchema = z
     clientReference: z.string().min(8).max(128),
     promoCode: promoCodeField,
     locale: z.enum(['en', 'fr', 'ar']).optional(),
+    /**
+     * Application answers from the public registration page (PROGRAM / EVENT).
+     * Held on the intent and written out as a RegistrationRecord at settlement,
+     * so a paid applicant answers the SAME questions a free one does. Required
+     * fields are enforced server-side against the entity's form.
+     */
+    registrationAnswers: z
+      .array(
+        z.object({
+          fieldId: z.string().uuid(),
+          value: z.union([z.string().max(5000), z.array(z.string().max(500)).max(50)]),
+        }),
+      )
+      .max(60)
+      .optional(),
   })
   .superRefine((d, ctx) => {
+    if (d.registrationAnswers && d.target.itemKind === 'SPACE') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'registrationAnswers apply to programs and events only',
+        path: ['registrationAnswers'],
+      });
+    }
     if (
       d.target.itemKind === 'SPACE' &&
       new Date(d.target.endsAt) <= new Date(d.target.startsAt)

@@ -3694,7 +3694,8 @@
       "fullText": "This program is full.",
       "seatsRemainingOne": "1 seat remaining",
       "seatsRemainingMany": "{count} seats remaining",
-      "continueAsGuest": "Continue as guest"
+      "continueAsGuest": "Continue as guest",
+      "close": "Close"
     }
   },
   "admin": {
@@ -5148,9 +5149,9 @@
     "successBody": "Your registration for {title} is confirmed.",
     "successEmail": "A confirmation email has been sent to {email}.",
     "waitlistTitle": "You're on the waitlist",
-    "waitlistBody": "This event is full. We'll notify you if a spot opens up.",
+    "waitlistBody": "This is full for now. We'll let you know if a spot opens up.",
     "alreadyTitle": "Already registered",
-    "alreadyBody": "You are already registered for this event.",
+    "alreadyBody": "You are already registered with this email address.",
     "errorRequired": "This field is required",
     "errorInvalidEmail": "Enter a valid email address",
     "errorInvalidPhone": "Enter a valid phone number",
@@ -5159,7 +5160,29 @@
     "errorGeneric": "Something went wrong. Please try again.",
     "errorNetwork": "Network error. Please check your connection.",
     "privacyNote": "Your information will only be used by the organizer.",
-    "shareLink": "Share this link"
+    "shareLink": "Share this link",
+    "stepCounter": "Step {current} of {total}",
+    "optionalLabel": "Optional",
+    "stepIdentityTitle": "Let's start with you",
+    "stepIdentityHint": "Your confirmation is sent to this email.",
+    "next": "Continue",
+    "back": "Back",
+    "selectPlaceholder": "Choose an option",
+    "multiHint": "Choose all that apply.",
+    "paymentTitle": "How would you like to pay?",
+    "payByCard": "Pay by card",
+    "payByCardDesc": "CIB / Edahabia — pay the full amount now",
+    "payInCash": "Pay in cash",
+    "payInCashDesc": "Pay a deposit by card now, the rest on site",
+    "summaryTotal": "Total",
+    "summaryDueNow": "To pay now",
+    "summaryDueOnSite": "To pay on site",
+    "payCta": "Pay {amount}",
+    "cardFeeNote": "A card processing fee is added at checkout.",
+    "secureNote": "Secure payment. Your seat is confirmed once it goes through.",
+    "errorPaymentFailed": "We could not start the payment. Please try again.",
+    "errorFull": "This is now full — no seats remaining.",
+    "errorLoginRequired": "Please sign in to complete this registration."
   },
   "formBuilder": {
     "title": "Registration Form",

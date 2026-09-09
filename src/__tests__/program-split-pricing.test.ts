@@ -271,8 +271,10 @@ describe('applyToProgram charges the price for the CHOSEN method', () => {
       paymentMethod: 'wallet',
     });
     expect(res.ok).toBe(false);
-    if (res.ok) return;
-    expect(res.reason).toBe('INSUFFICIENT_FUNDS');
+    if (res.ok || res.reason !== 'INSUFFICIENT_FUNDS') {
+      expect.unreachable('expected INSUFFICIENT_FUNDS');
+      return;
+    }
     expect(res.required).toBe(ONLINE_PRICE);
   });
 

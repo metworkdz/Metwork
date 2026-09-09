@@ -72,7 +72,21 @@ export interface CreateRegistrationInput {
   email: string;
   phone: string;
   answers: Array<{ fieldId: string; value: string | string[] }>;
+  /** Locale the visitor registered in, carried onto the row for emails. */
+  locale?: string | null;
 }
+
+/** What `insertRegistrationSync` needs. A paid row also carries its booking. */
+export interface InsertRegistrationInput extends CreateRegistrationInput {
+  /**
+   * The settled card booking that paid for this seat. Present only on the paid
+   * path; also the settlement idempotency key.
+   */
+  bookingId?: string | null;
+}
+
+/** The mutable draft handed to a `db.update` callback. */
+type StoreDraft = Parameters<Parameters<typeof db.update>[0]>[0];
 
 export interface CreateFormFieldInput {
   entityType: 'PROGRAM' | 'EVENT';
@@ -235,7 +249,128 @@ export async function replaceFormFields(
 /* ─────────────────────────── Registrations CRUD ─────────────────────────── */
 
 /**
- * Create a registration. Handles:
+ * Insert a registration — the SYNCHRONOUS core, run inside a `db.update`
+ * critical section.
+ *
+ * The capacity check, the duplicate-email guard and the insert used to sit on
+ * either side of the lock: `db.read()` decided the seat count and then a
+ * separate `db.update()` pushed the row without re-checking. Two people
+ * submitting the last seat at the same moment both passed, and the same email
+ * could land twice. Everything that decides now runs against the draft it is
+ * about to mutate.
+ *
+ * Exported because card settlement materialises a PAID registration from
+ * `BookingRecord.registrationDraft` inside ITS own mutation — the row and the
+ * CONFIRMED booking have to commit together or not at all.
+ */
+export function insertRegistrationSync(
+  d: StoreDraft,
+  input: InsertRegistrationInput,
+): { registration: RegistrationRecord; alreadyRegistered: boolean } {
+  if (!Array.isArray(d.registrations)) d.registrations = [];
+
+  const email = input.email.trim().toLowerCase();
+
+  // Settlement idempotency: a replayed settlement (refresh, double return,
+  // webhook + return) finds the row it already wrote and moves nothing.
+  if (input.bookingId) {
+    const fromBooking = d.registrations.find((r) => r.bookingId === input.bookingId);
+    if (fromBooking) return { registration: fromBooking, alreadyRegistered: true };
+  }
+
+  // Duplicate guard — one live registration per (entity, email).
+  const existing = d.registrations.find(
+    (r) =>
+      r.entityType === input.entityType &&
+      r.entityId === input.entityId &&
+      r.email.toLowerCase() === email &&
+      r.status !== 'CANCELLED',
+  );
+  if (existing) {
+    // A paid registration reaching an email that already registered for free
+    // adopts the existing row rather than creating a second seat — the payer
+    // must still end up attached to their booking.
+    if (input.bookingId && !existing.bookingId) {
+      existing.bookingId = input.bookingId;
+      existing.status = 'CONFIRMED';
+      existing.updatedAt = new Date().toISOString();
+    }
+    return { registration: existing, alreadyRegistered: true };
+  }
+
+  // Capacity — unified count (confirmed registrations + active bookings) so the
+  // waitlist trigger agrees with the public seat badge and the booking gate.
+  // A PAID registration is never waitlisted: the seat is already held by the
+  // settled booking that paid for it.
+  const capacity = getEntityCapacity(d, input.entityType, input.entityId);
+  const taken = countAttendance(d, input.entityType, input.entityId);
+  const status: RegistrationStatus = input.bookingId
+    ? 'CONFIRMED'
+    : capacity !== null && taken >= capacity
+      ? 'WAITLISTED'
+      : 'CONFIRMED';
+
+  // Owner scope comes from the entity itself: a consultant-owned program
+  // registers against the consultant, an incubator-owned one (and every event)
+  // against the incubator.
+  const owner = getEntityOwner(d, input.entityType, input.entityId);
+  // CRM clients are an INCUBATOR-side concept (ClientRecord.incubatorId), so
+  // only incubator-owned entities upsert one. Consultant registrations are
+  // still fully recorded on the RegistrationRecord itself.
+  const incubatorId = owner?.kind === 'INCUBATOR' ? owner.incubatorId : null;
+
+  const now = new Date().toISOString();
+
+  // CRM client upsert
+  let clientId: string | null = null;
+  if (incubatorId) {
+    if (!Array.isArray(d.clients)) d.clients = [];
+    const existingClient = d.clients.find(
+      (c) => c.incubatorId === incubatorId && c.email.toLowerCase() === email,
+    );
+    if (existingClient) {
+      clientId = existingClient.id;
+    } else {
+      const newClient = {
+        id: randomUUID(),
+        incubatorId,
+        fullName: input.fullName.trim(),
+        email,
+        phone: input.phone.trim(),
+        idCardNumber: null,
+        companyName: null,
+        notes: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      d.clients.push(newClient);
+      clientId = newClient.id;
+    }
+  }
+
+  const rec: RegistrationRecord = {
+    id: randomUUID(),
+    entityType: input.entityType,
+    entityId: input.entityId,
+    ...(owner ? ownerFields(owner) : { incubatorId: null, mentorId: null }),
+    userId: input.userId,
+    fullName: input.fullName.trim(),
+    email,
+    phone: input.phone.trim(),
+    answers: input.answers,
+    status,
+    clientId,
+    bookingId: input.bookingId ?? null,
+    locale: input.locale ?? null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  d.registrations.push(rec);
+  return { registration: rec, alreadyRegistered: false };
+}
+
+/**
+ * Create a FREE registration (the public no-payment path). Handles:
  *  - capacity check (returns WAITLISTED when full)
  *  - duplicate-email guard per entity
  *  - CRM client upsert
@@ -245,89 +380,15 @@ export async function createRegistration(input: CreateRegistrationInput): Promis
   registration: RegistrationRecord;
   alreadyRegistered: boolean;
 }> {
+  const result = await db.update((d) => insertRegistrationSync(d, input));
+  if (result.alreadyRegistered) return result;
+
+  // Confirmation email (fire-and-forget). Re-read so the sender sees the row
+  // it is describing.
   const data = await db.read();
+  void sendConfirmationEmail(result.registration, data, input.entityType, input.entityId);
 
-  // Duplicate guard
-  const existing = (data.registrations ?? []).find(
-    (r) =>
-      r.entityType === input.entityType &&
-      r.entityId === input.entityId &&
-      r.email.toLowerCase() === input.email.toLowerCase() &&
-      r.status !== 'CANCELLED',
-  );
-  if (existing) return { registration: existing, alreadyRegistered: true };
-
-  // Capacity check — unified count (confirmed registrations + active bookings)
-  // so the waitlist trigger agrees with the public seat badge and the booking
-  // capacity gate.
-  const capacity = getEntityCapacity(data, input.entityType, input.entityId);
-  const taken = countAttendance(data, input.entityType, input.entityId);
-  const status: RegistrationStatus = capacity !== null && taken >= capacity ? 'WAITLISTED' : 'CONFIRMED';
-
-  // Owner scope comes from the entity itself: a consultant-owned program
-  // registers against the consultant, an incubator-owned one (and every event)
-  // against the incubator.
-  const owner = getEntityOwner(data, input.entityType, input.entityId);
-  // CRM clients are an INCUBATOR-side concept (ClientRecord.incubatorId), so
-  // only incubator-owned entities upsert one. Consultant registrations are
-  // still fully recorded on the RegistrationRecord itself.
-  const incubatorId = owner?.kind === 'INCUBATOR' ? owner.incubatorId : null;
-
-  const registration = await db.update<RegistrationRecord>((d) => {
-    if (!Array.isArray(d.registrations)) d.registrations = [];
-
-    // CRM client upsert
-    let clientId: string | null = null;
-    if (incubatorId) {
-      if (!Array.isArray(d.clients)) d.clients = [];
-      const existingClient = d.clients.find(
-        (c) => c.incubatorId === incubatorId && c.email.toLowerCase() === input.email.toLowerCase(),
-      );
-      if (existingClient) {
-        clientId = existingClient.id;
-      } else {
-        const now = new Date().toISOString();
-        const newClient = {
-          id: randomUUID(),
-          incubatorId,
-          fullName: input.fullName.trim(),
-          email: input.email.trim().toLowerCase(),
-          phone: input.phone.trim(),
-          idCardNumber: null,
-          companyName: null,
-          notes: null,
-          createdAt: now,
-          updatedAt: now,
-        };
-        d.clients.push(newClient);
-        clientId = newClient.id;
-      }
-    }
-
-    const now = new Date().toISOString();
-    const rec: RegistrationRecord = {
-      id: randomUUID(),
-      entityType: input.entityType,
-      entityId: input.entityId,
-      ...(owner ? ownerFields(owner) : { incubatorId: null, mentorId: null }),
-      userId: input.userId,
-      fullName: input.fullName.trim(),
-      email: input.email.trim().toLowerCase(),
-      phone: input.phone.trim(),
-      answers: input.answers,
-      status,
-      clientId,
-      createdAt: now,
-      updatedAt: now,
-    };
-    d.registrations.push(rec);
-    return rec;
-  });
-
-  // Confirmation email (fire-and-forget)
-  void sendConfirmationEmail(registration, data, input.entityType, input.entityId);
-
-  return { registration, alreadyRegistered: false };
+  return result;
 }
 
 /** List registrations for an entity, newest first. */
@@ -365,6 +426,32 @@ export async function cancelRegistration(
 /* ─────────────────────────── Program/Event lookup helpers ─────────────────────────── */
 
 type DbData = Awaited<ReturnType<typeof db.read>>;
+
+/**
+ * First required custom field the submission left blank, or null when the
+ * answers are complete. Shared by the free registration route and the paid
+ * checkout route so a paid applicant can't skip questions a free one can't —
+ * and so the two can never drift apart.
+ */
+export function findMissingRequiredAnswer(
+  data: Pick<DbData, 'registrationFormFields'>,
+  entityType: 'PROGRAM' | 'EVENT',
+  entityId: string,
+  answers: Array<{ fieldId: string; value: string | string[] }>,
+): { fieldId: string; label: string } | null {
+  const fields = (data.registrationFormFields ?? []).filter(
+    (f) => f.entityType === entityType && f.entityId === entityId,
+  );
+  for (const field of fields) {
+    if (!field.required) continue;
+    const answer = answers.find((a) => a.fieldId === field.id);
+    const missing =
+      !answer ||
+      (Array.isArray(answer.value) ? answer.value.length === 0 : !String(answer.value).trim());
+    if (missing) return { fieldId: field.id, label: field.label };
+  }
+  return null;
+}
 
 function getEntityCapacity(
   data: DbData,
@@ -415,11 +502,20 @@ function getEntityTitle(
 
 /* ─────────────────────────── Confirmation email ─────────────────────────── */
 
+/** What a PAID registrant settled, so the email can say so. Integer DZD. */
+export interface RegistrationPaymentSummary {
+  /** Charged online by card now (deposit, or the full amount). */
+  paidOnline: number;
+  /** Still to be handed over on site. 0 when paid in full. */
+  dueOnSite: number;
+}
+
 async function sendConfirmationEmail(
   reg: RegistrationRecord,
   data: DbData,
   entityType: 'PROGRAM' | 'EVENT',
   entityId: string,
+  payment?: RegistrationPaymentSummary | null,
 ): Promise<void> {
   try {
     const entityTitle = getEntityTitle(data, entityType, entityId);
@@ -449,6 +545,28 @@ async function sendConfirmationEmail(
            <p style="margin:0;color:#15803d;font-size:14px;font-weight:600;">✅ Your registration is confirmed</p>
          </div>`;
 
+    // What was settled, for a PAID registration. The card receipt covers the
+    // accounting; this line is the operational one — how much to bring on the
+    // day. Getting that wrong is the fastest way to a doorstep argument.
+    const fmtDzd = (n: number) => `${n.toLocaleString('fr-DZ')} DZD`;
+    const paymentHtml = payment
+      ? `<table width="100%" cellpadding="0" cellspacing="0"
+                style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin-bottom:20px;">
+           <tr>
+             <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;width:160px;border-bottom:1px solid #f4f4f5;">Paid online</td>
+             <td style="padding:10px 16px;font-size:13px;color:#09090b;font-weight:600;border-bottom:1px solid #f4f4f5;">${fmtDzd(payment.paidOnline)}</td>
+           </tr>
+           ${payment.dueOnSite > 0
+             ? `<tr>
+                  <td style="padding:10px 16px;font-size:13px;color:#71717a;font-weight:600;">To pay on site</td>
+                  <td style="padding:10px 16px;font-size:13px;color:#b45309;font-weight:700;">${fmtDzd(payment.dueOnSite)}</td>
+                </tr>`
+             : `<tr>
+                  <td colspan="2" style="padding:10px 16px;font-size:13px;color:#15803d;font-weight:600;">Paid in full — nothing to settle on the day.</td>
+                </tr>`}
+         </table>`
+      : '';
+
     // Use the shared layout() so this email gets the Metwork white logo + green header
     const html = layout(`
       <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#09090b;letter-spacing:-0.3px;">
@@ -475,6 +593,7 @@ async function sendConfirmationEmail(
           </td>
         </tr>
       </table>
+      ${paymentHtml}
       <table width="100%" cellpadding="0" cellspacing="0"
              style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin-bottom:20px;">
         <tr>
@@ -500,6 +619,46 @@ async function sendConfirmationEmail(
     await sendResendEmail({ to: reg.email, subject, html });
   } catch {
     // Non-critical — silently fail
+  }
+}
+
+/**
+ * Send the registration confirmation for a PAID registration, exactly once.
+ *
+ * Settlement runs from up to three places (the pay-page return, the provider
+ * webhook, and the synchronous mock path) and each can fire on a refresh, so
+ * the send is claimed with a stamp inside one store mutation rather than being
+ * left to whichever caller got there first.
+ *
+ * Fire-and-forget: never throws into the money path.
+ */
+export async function dispatchRegistrationConfirmationIfDue(bookingId: string): Promise<void> {
+  try {
+    let claimed: RegistrationRecord | null = null;
+
+    await db.update((d) => {
+      const reg = (d.registrations ?? []).find((r) => r.bookingId === bookingId);
+      if (!reg || reg.confirmationSentAt) return;
+      reg.confirmationSentAt = new Date().toISOString();
+      claimed = { ...reg };
+    });
+
+    // Mutated inside the closure, so TS flow-types it as null out here.
+    const reg = claimed as RegistrationRecord | null;
+    if (!reg) return;
+
+    const data = await db.read();
+    const booking = data.bookings.find((b) => b.id === bookingId);
+    const payment: RegistrationPaymentSummary | null = booking
+      ? {
+          paidOnline: booking.onlineChargeAmount ?? booking.onlinePaidAmount ?? 0,
+          dueOnSite: booking.cashRemainingAmount ?? 0,
+        }
+      : null;
+
+    await sendConfirmationEmail(reg, data, reg.entityType, reg.entityId, payment);
+  } catch {
+    // Non-critical — a failed email must never affect a settled payment.
   }
 }
 

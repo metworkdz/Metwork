@@ -3694,7 +3694,8 @@
       "fullText": "Ce programme est complet.",
       "seatsRemainingOne": "1 place restante",
       "seatsRemainingMany": "{count} places restantes",
-      "continueAsGuest": "Continuer en tant qu'invité"
+      "continueAsGuest": "Continuer en tant qu'invité",
+      "close": "Fermer"
     }
   },
   "admin": {
@@ -5148,9 +5149,9 @@
     "successBody": "Votre inscription à {title} est confirmée.",
     "successEmail": "Un email de confirmation a été envoyé à {email}.",
     "waitlistTitle": "Vous êtes sur liste d'attente",
-    "waitlistBody": "L'événement est complet. Nous vous notifierons si une place se libère.",
+    "waitlistBody": "Complet pour le moment. Nous vous préviendrons si une place se libère.",
     "alreadyTitle": "Déjà inscrit",
-    "alreadyBody": "Vous êtes déjà inscrit à cet événement.",
+    "alreadyBody": "Vous êtes déjà inscrit avec cette adresse email.",
     "errorRequired": "Ce champ est obligatoire",
     "errorInvalidEmail": "Entrez une adresse email valide",
     "errorInvalidPhone": "Entrez un numéro de téléphone valide",
@@ -5159,7 +5160,29 @@
     "errorGeneric": "Une erreur s'est produite. Veuillez réessayer.",
     "errorNetwork": "Erreur réseau. Vérifiez votre connexion.",
     "privacyNote": "Vos informations seront utilisées uniquement par l'organisateur.",
-    "shareLink": "Partager ce lien"
+    "shareLink": "Partager ce lien",
+    "stepCounter": "Étape {current} sur {total}",
+    "optionalLabel": "Facultatif",
+    "stepIdentityTitle": "Commençons par vous",
+    "stepIdentityHint": "Votre confirmation sera envoyée à cette adresse.",
+    "next": "Continuer",
+    "back": "Retour",
+    "selectPlaceholder": "Choisissez une option",
+    "multiHint": "Choisissez tout ce qui s’applique.",
+    "paymentTitle": "Comment souhaitez-vous payer ?",
+    "payByCard": "Payer par carte",
+    "payByCardDesc": "CIB / Edahabia — payez la totalité maintenant",
+    "payInCash": "Payer en espèces",
+    "payInCashDesc": "Versez un acompte par carte, le reste sur place",
+    "summaryTotal": "Total",
+    "summaryDueNow": "À payer maintenant",
+    "summaryDueOnSite": "À payer sur place",
+    "payCta": "Payer {amount}",
+    "cardFeeNote": "Des frais de traitement par carte sont ajoutés au paiement.",
+    "secureNote": "Paiement sécurisé. Votre place est confirmée dès validation.",
+    "errorPaymentFailed": "Le paiement n’a pas pu démarrer. Veuillez réessayer.",
+    "errorFull": "Complet — il ne reste plus de places.",
+    "errorLoginRequired": "Connectez-vous pour finaliser cette inscription."
   },
   "formBuilder": {
     "title": "Formulaire d'inscription",

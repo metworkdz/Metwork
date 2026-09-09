@@ -23,7 +23,7 @@ import { ImageCarousel } from '@/components/shared/image-carousel';
 import { ListingPriceBlock } from '@/components/shared/listing-price-block';
 import { readSession } from '@/server/auth/session';
 import type { ProgramType } from '@/types/domain';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 import { assertLandingVisible } from '@/lib/landing-visibility';
 
@@ -190,6 +190,14 @@ export default async function ProgramDetailPage({ params }: PageProps) {
                   entityTitle={program.title}
                   formFields={formFields}
                   prefill={prefill}
+                  pricing={{
+                    price: program.price,
+                    onlinePrice: program.onlinePrice,
+                    cashPrice: program.cashPrice,
+                    acceptedPaymentMethods: program.acceptedPaymentMethods,
+                    cashDepositType: program.cashDepositType,
+                    cashDepositValue: program.cashDepositValue,
+                  }}
                 />
               </div>
             ) : (
