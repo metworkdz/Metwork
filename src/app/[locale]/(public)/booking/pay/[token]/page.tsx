@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { verifyAndSettleCardBooking } from '@/server/bookings/card-payment';
 import { BookingPayButton } from './pay-button';
+import { formatBookingWhen, listingHasClockTime } from '@/lib/booking-when';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -42,18 +43,12 @@ export default async function BookingPayPage({ params }: PageProps) {
   // checkout). Never trusts the redirect — asks the provider.
   const view = await verifyAndSettleCardBooking(token);
 
-  const fmtDate = (iso: string | null | undefined) => {
-    if (!iso) return null;
-    try {
-      return new Date(iso).toLocaleString(intlLocale(locale), {
-        dateStyle: 'long',
-        timeStyle: 'short',
-        timeZone: 'UTC',
-      });
-    } catch {
-      return iso;
-    }
-  };
+  // Programs and events are authored as plain dates (stored at noon local, so
+  // the day survives conversion). Printing a clock invented one: in Algeria the
+  // anchor reads back as 11:00, and the client saw that on the screen where
+  // they pay. `formatBookingWhen` shows a time only when the listing has one.
+  const fmtDate = (iso: string | null | undefined) =>
+    formatBookingWhen(iso, { intlLocale: intlLocale(locale), kind: view.booking?.itemKind });
   const fmtAmount = (n: number) => `${n.toLocaleString(intlLocale(locale))} DZD`;
 
   const isDeposit = view.paymentMode === 'CASH_DEPOSIT';
@@ -85,8 +80,13 @@ export default async function BookingPayPage({ params }: PageProps) {
                   {view.booking.vendorName && (
                     <Row label={t('provider')} value={view.booking.vendorName} />
                   )}
+                  {/* "Date et heure" would be a lie for a listing that has no
+                      time — label the row for what is actually shown. */}
                   {fmtDate(view.booking.startsAt) && (
-                    <Row label={t('date')} value={fmtDate(view.booking.startsAt)!} />
+                    <Row
+                      label={listingHasClockTime(view.booking.itemKind) ? t('date') : t('dateOnly')}
+                      value={fmtDate(view.booking.startsAt)!}
+                    />
                   )}
                   <Row label={t('total')} value={fmtAmount(view.total ?? 0)} />
                   {isDeposit && cashRemaining > 0 && (

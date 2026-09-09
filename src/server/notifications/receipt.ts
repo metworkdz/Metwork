@@ -23,6 +23,7 @@ import PDFDocument from 'pdfkit';
 import type { BookingRecord, IncubatorRecord, MentorBookingRecord, MentorRecord, PaymentLinkRecord } from '@/server/db/store';
 import { registerPdfFonts, fontFor, hasArabic, FONT } from '@/server/pdf/fonts';
 import { amountInWords } from './amount-words';
+import { listingHasClockTime } from '@/lib/booking-when';
 
 /* ─────────────────── Types ─────────────────── */
 
@@ -123,6 +124,15 @@ interface Copy {
   method: string; teamNote: string;
 }
 
+/**
+ * Receipt copy. French is the fallback for anything else.
+ *
+ * `ReceiptLang` is en|fr, but every caller derives it from a user locale that
+ * can also be `ar`. A stray value used to index this map to `undefined` and
+ * throw on the first field read — and because the whole receipt is generated
+ * inside one try/catch, the failure swallowed the EMAIL as well as the PDF.
+ * The client simply never heard from us. `receiptCopy()` makes that impossible.
+ */
 const COPY: Record<ReceiptLang, Copy> = {
   fr: {
     receipt: 'REÇU DE PAIEMENT',
@@ -243,6 +253,11 @@ function fmtMoney(n: number): string {
   return n.toLocaleString('fr-DZ').replace(/ | /g, ' ') + ' DZD';
 }
 
+/** Copy for a locale, falling back to French rather than throwing. */
+function receiptCopy(lang: ReceiptLang): Copy {
+  return COPY[lang] ?? COPY.fr;
+}
+
 function fmtDate(iso: string, lang: ReceiptLang): string {
   try {
     return new Date(iso).toLocaleString(lang === 'fr' ? 'fr-DZ' : 'en-GB', {
@@ -261,13 +276,28 @@ function fmtDateOnly(iso: string, lang: ReceiptLang): string {
 }
 
 /** Compact "22/09/2025 09:30–17:00" (or a plain date range for multi-day). */
-function fmtPeriod(startsAt: string, endsAt: string, unit: BookingRecord['unit'], lang: ReceiptLang): string {
+/**
+ * The booked period. A clock range is printed only for an hourly/half-day SPACE
+ * booking, which is the only kind whose times somebody actually chose.
+ *
+ * `unit` alone is not enough: an EVENT card booking is recorded with
+ * `unit: 'HOUR'` while its date is day-only, so keying off the unit printed
+ * "01/02/2030 11:00–11:00" — a range invented from the noon storage anchor.
+ */
+function fmtPeriod(
+  startsAt: string,
+  endsAt: string,
+  unit: BookingRecord['unit'],
+  lang: ReceiptLang,
+  itemKind?: BookingRecord['itemKind'],
+): string {
   try {
     const s = new Date(startsAt), e = new Date(endsAt);
     const d = (x: Date) => x.toLocaleDateString(lang === 'fr' ? 'fr-DZ' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
     const t = (x: Date) => x.toLocaleTimeString(lang === 'fr' ? 'fr-DZ' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC', hour12: false });
     const sameDay = d(s) === d(e);
-    if (unit === 'HOUR' || unit === 'HALF_DAY') return `${d(s)} ${t(s)}–${t(e)}`;
+    const timed = listingHasClockTime(itemKind) && (unit === 'HOUR' || unit === 'HALF_DAY');
+    if (timed) return `${d(s)} ${t(s)}–${t(e)}`;
     return sameDay ? d(s) : `${d(s)} → ${d(e)}`;
   } catch { return ''; }
 }
@@ -466,7 +496,7 @@ function drawFooter(doc: Doc, c: Copy, incubatorName: string): void {
 
 export async function generateBookingReceiptPdf(input: BookingReceiptInput): Promise<Buffer> {
   const { booking, clientName, clientEmail, clientPhone, incubator, lang } = input;
-  const c = COPY[lang];
+  const c = receiptCopy(lang);
 
   const isCashDeposit = booking.paymentMode === 'CASH_DEPOSIT';
   const variant: ReceiptVariant = input.variant ?? (isCashDeposit
@@ -507,7 +537,7 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
   const kind = booking.itemKind === 'SPACE' ? c.space : booking.itemKind === 'PROGRAM' ? c.program : c.event;
   drawDetailsTable(doc, c, [{
     service: booking.itemName || kind,
-    period:  fmtPeriod(booking.startsAt, booking.endsAt, booking.unit, lang),
+    period:  fmtPeriod(booking.startsAt, booking.endsAt, booking.unit, lang, booking.itemKind),
     amount:  booking.totalAmount === 0 ? c.free : booking.totalAmount.toLocaleString('fr-DZ').replace(/ | /g, ' '),
   }]);
 
@@ -562,7 +592,7 @@ export interface PaymentLinkReceiptInput {
 
 export async function generatePaymentLinkReceiptPdf(input: PaymentLinkReceiptInput): Promise<Buffer> {
   const { link, incubator, lang } = input;
-  const c = COPY[lang];
+  const c = receiptCopy(lang);
 
   const amount = link.amount;
   const payerFee = link.payerFeeAmount ?? 0;
@@ -622,7 +652,7 @@ export async function generatePaymentLinkReceiptPdf(input: PaymentLinkReceiptInp
 
 export async function generateMentorConfirmationPdf(input: MentorConfirmationInput): Promise<Buffer> {
   const { booking, mentor, lang } = input;
-  const c = COPY[lang];
+  const c = receiptCopy(lang);
 
   const feePerHour   = mentor.consultationFee ?? 0;
   const dur          = booking.durationMinutes ?? null;

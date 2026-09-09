@@ -2038,7 +2038,8 @@
       "backHome": "Back to home",
       "subtotal": "Subtotal",
       "depositBase": "Deposit",
-      "platformFee": "Platform fee"
+      "platformFee": "Platform fee",
+      "dateOnly": "Date"
     },
     "bookingRequestPay": {
       "payableTitle": "Complete your booking",

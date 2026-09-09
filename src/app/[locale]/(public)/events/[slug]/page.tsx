@@ -156,7 +156,9 @@ export default async function EventDetailPage({ params }: PageProps) {
                 <Calendar className="inline size-3 mr-1" />{t('dateLabel')}
               </p>
               <p className={`text-sm font-medium ${isPast ? 'text-muted-foreground' : ''}`}>
-                {formatDate(event.eventDate, locale as Locale, { dateStyle: 'long', timeStyle: 'short' })}
+                {/* Events are authored with a date input only, so the stored
+                    noon anchor is not a start time — printing one showed 11:00. */}
+                {formatDate(event.eventDate, locale as Locale, { dateStyle: 'long' })}
               </p>
             </div>
             <div>

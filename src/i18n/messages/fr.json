@@ -2038,7 +2038,8 @@
       "backHome": "Retour à l'accueil",
       "subtotal": "Sous-total",
       "depositBase": "Acompte",
-      "platformFee": "Frais de plateforme"
+      "platformFee": "Frais de plateforme",
+      "dateOnly": "Date"
     },
     "bookingRequestPay": {
       "payableTitle": "Finalisez votre réservation",

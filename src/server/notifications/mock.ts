@@ -1143,6 +1143,7 @@ export async function sendBookingReceiptEmailAsync(input: BookingReceiptInput): 
         totalAmount:    booking.totalAmount,
         paymentMethod:  paymentLabel,
         lang,
+        itemKind:       booking.itemKind,
       }),
       attachments: [{ filename, content: pdfBuffer }],
     });

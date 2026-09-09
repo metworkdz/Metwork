@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { listingHasClockTime } from '@/lib/booking-when';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { BookingStatusBadge } from '@/components/features/booking/booking-status-badge';
@@ -142,10 +143,14 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
     .filter((r) => r.createdAt?.startsWith(thisMonth) && bookingCountsAsRevenue(r))
     .reduce((s, r) => s + r.totalAmount, 0);
 
-  const fmtRange = (startsAt: string, endsAt: string) => {
-    const start = formatDate(startsAt, lang, { dateStyle: 'short', timeStyle: 'short' });
-    const end   = formatDate(endsAt,   lang, { dateStyle: 'short', timeStyle: 'short' });
-    return { start, end };
+  // A clock only for listings that have one. Programs and events store a noon
+  // anchor rather than a chosen time, so printing hh:mm showed the incubator a
+  // start time nobody entered — the same invented "11:00" the client saw.
+  const fmtRange = (startsAt: string, endsAt: string, itemKind?: string | null) => {
+    const opts = listingHasClockTime(itemKind)
+      ? ({ dateStyle: 'short', timeStyle: 'short' } as const)
+      : ({ dateStyle: 'short' } as const);
+    return { start: formatDate(startsAt, lang, opts), end: formatDate(endsAt, lang, opts) };
   };
 
   return (
@@ -208,7 +213,7 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                 </TableHeader>
                 <TableBody>
                   {rows.map((b) => {
-                    const { start, end } = fmtRange(b.startsAt, b.endsAt);
+                    const { start, end } = fmtRange(b.startsAt, b.endsAt, b.itemKind);
                     return (
                       <TableRow key={b.id}>
                         <TableCell>

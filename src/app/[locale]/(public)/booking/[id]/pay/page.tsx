@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { db } from '@/server/db/store';
 import { getServerSession } from '@/lib/session';
+import { formatBookingWhen } from '@/lib/booking-when';
 import { hashPaymentLinkToken } from '@/server/bookings/request-mode';
 import { RequestPayButton } from './request-pay-button';
 
@@ -87,18 +88,11 @@ export default async function RequestBookingPayPage({ params, searchParams }: Pa
     ? data.wallets.find((w) => w.userId === session.id)?.balance ?? 0
     : null;
 
-  const fmtDate = (iso: string | null | undefined) => {
-    if (!iso) return null;
-    try {
-      return new Date(iso).toLocaleString(intlLocale(locale), {
-        dateStyle: 'long',
-        timeStyle: 'short',
-        timeZone: 'UTC',
-      });
-    } catch {
-      return iso;
-    }
-  };
+  // See booking/pay/[token] — a clock is only shown for listings that have one.
+  // This page is REQUEST-mode, which is space-only today, but routing it through
+  // the shared rule keeps it correct if that ever widens.
+  const fmtDate = (iso: string | null | undefined) =>
+    formatBookingWhen(iso, { intlLocale: intlLocale(locale), kind: booking?.itemKind });
   const fmtAmount = (n: number) => `${n.toLocaleString(intlLocale(locale))} DZD`;
 
   const payPath = `/booking/${id}/pay?token=${encodeURIComponent(token ?? '')}`;

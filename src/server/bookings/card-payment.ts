@@ -862,6 +862,35 @@ async function applyCardSettlement(bookingId: string, providerRef: string | null
  * webhook + return) and the mark-cash-paid action each send at most once.
  * Fully fire-and-forget: never throws into the money path, never blocks.
  */
+/**
+ * The letterhead for a booking receipt: the owning incubator, or the owning
+ * consultant mapped onto the same shape. Returns null only when the listing
+ * has no owner at all, which is already an error state elsewhere.
+ */
+function receiptVendor(
+  d: StoreDraft,
+  kind: BookingItemKind,
+  itemId: string,
+): ReceiptClaim['incubator'] | null {
+  const incubator = findOwningIncubator(d, kind, itemId);
+  if (incubator) return incubator;
+
+  const mentor = findOwningMentor(d, kind, itemId);
+  if (!mentor) return null;
+  return {
+    name: mentor.fullName,
+    email: mentor.email ?? null,
+    phone: mentor.phone ?? null,
+    city: mentor.city ?? null,
+    logoUrl: mentor.imageUrl ?? null,
+    stampUrl: null,
+    address: null,
+    registrationNumber: null,
+    commercialRegNumber: null,
+    nif: null,
+  } as ReceiptClaim['incubator'];
+}
+
 interface ReceiptClaim {
   variant: 'deposit' | 'final';
   booking: BookingRecord;
@@ -879,7 +908,13 @@ export async function dispatchCardReceiptIfDue(bookingId: string): Promise<void>
       const b = d.bookings.find((x) => x.id === bookingId);
       if (!b || b.paymentMethod !== 'card') return;
 
-      const incubator = findOwningIncubator(d, b.itemKind, b.itemId);
+      // The receipt letterhead is whoever OWNS the listing. Resolving only an
+      // incubator meant a consultant-owned program sent no receipt at all —
+      // the client paid and got nothing but the registration confirmation.
+      // A consultant satisfies the same structural shape; the fields they have
+      // no equivalent for (commercial register, NIF, stamp) are simply absent,
+      // exactly as they are for an incubator that has not filled them in.
+      const incubator = receiptVendor(d, b.itemKind, b.itemId);
       if (!incubator) return;
 
       const user = b.userId ? d.users.find((u) => u.id === b.userId) : null;

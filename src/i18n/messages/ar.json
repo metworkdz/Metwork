@@ -2038,7 +2038,8 @@
       "backHome": "العودة إلى الرئيسية",
       "subtotal": "المجموع الفرعي",
       "depositBase": "العربون",
-      "platformFee": "رسوم المنصة"
+      "platformFee": "رسوم المنصة",
+      "dateOnly": "التاريخ"
     },
     "bookingRequestPay": {
       "payableTitle": "أكمل حجزك",

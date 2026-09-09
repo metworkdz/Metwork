@@ -18,6 +18,7 @@ import { db } from '@/server/db/store';
 import { requireConsultant } from '@/server/mentors/access';
 import { json, jsonError } from '@/server/http/json';
 import { createNotification } from '@/server/notifications/create-notification';
+import { dispatchCardReceiptIfDue } from '@/server/bookings/card-payment';
 import { markCashPaid } from '@/server/bookings/mark-cash-paid';
 
 export const runtime = 'nodejs';
@@ -50,9 +51,13 @@ export async function PATCH(
     return jsonError(409, 'NOT_AWAITING_CASH', 'Booking is not awaiting cash');
   }
 
+  // The client paid the balance, so the FINAL receipt is now due — the same
+  // dispatch the incubator route uses. It used to be skipped here because the
+  // dispatcher could only address an incubator; it now resolves a consultant
+  // letterhead too, so a consultant's client gets the same paperwork.
+  void dispatchCardReceiptIfDue(result.booking.id);
+
   // Fire-and-forget: let a registered client know their balance was received.
-  // (No receipt-email dispatch here yet — dispatchCardReceiptIfDue only knows
-  // how to address an incubator; see SESSION_LOG for the follow-up.)
   void (async () => {
     if (result.booking.userId) {
       await createNotification({
