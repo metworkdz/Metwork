@@ -82,3 +82,6 @@ SESSION_*.md
 
 # One-off campaign HTML previews (scripts/campaigns --test)
 scripts/campaigns/.preview*.html
+
+# Generated campaign preview (regenerate with the campaign script)
+/campaign-preview.html
