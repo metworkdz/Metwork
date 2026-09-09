@@ -3385,7 +3385,8 @@
       "requestSentTitle": "Request sent",
       "requestSentMessage": "The host has been notified. You'll receive a payment link by email once your request is approved — nothing has been charged.",
       "amountAfterApproval": "Due after approval",
-      "awaitingApproval": "Awaiting approval"
+      "awaitingApproval": "Awaiting approval",
+      "cardFeeNote": "A card processing fee is added at checkout."
     },
     "scheduler": {
       "noAvailabilityThisMonth": "No availability this month",
@@ -4903,7 +4904,13 @@
       "guestSuccessMessage": "Your booking with {mentorName} is in. We'll email you a secure link to pay online and confirm your session — the consultant takes it from there.",
       "loadingPaymentMethods": "Loading payment methods…",
       "paymentMethodsUnavailable": "Could not load payment methods. Check your connection and try again.",
-      "finalAmountNote": "This is the final amount. You pay now and the session is confirmed instantly — no approval step."
+      "finalAmountNote": "This is the final amount. You pay now and the session is confirmed instantly — no approval step.",
+      "sessionOfDuration": "{duration} session",
+      "tierDiscountLabel": "{tier} discount ({percent}% off)",
+      "tierFounder": "Founder",
+      "tierBuilder": "Builder",
+      "totalLabel": "Total",
+      "cardFeeNote": "A card processing fee is added at checkout."
     },
     "landing": {
       "badge": "Our mentors",
@@ -5186,7 +5193,10 @@
     "secureNote": "Secure payment. Your seat is confirmed once it goes through.",
     "errorPaymentFailed": "We could not start the payment. Please try again.",
     "errorFull": "This is now full — no seats remaining.",
-    "errorLoginRequired": "Please sign in to complete this registration."
+    "errorLoginRequired": "Please sign in to complete this registration.",
+    "accountRequiredTitle": "Sign in to register",
+    "accountRequiredBody": "This is a paid event — you need a Metwork account to complete the payment.",
+    "signIn": "Sign in"
   },
   "formBuilder": {
     "title": "Registration Form",

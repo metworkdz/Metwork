@@ -3385,7 +3385,8 @@
       "requestSentTitle": "تم إرسال الطلب",
       "requestSentMessage": "تم إشعار المضيف. ستصلك رسالة برابط الدفع فور الموافقة على طلبك — لم يتم خصم أي مبلغ.",
       "amountAfterApproval": "المبلغ بعد الموافقة",
-      "awaitingApproval": "في انتظار الموافقة"
+      "awaitingApproval": "في انتظار الموافقة",
+      "cardFeeNote": "تُضاف رسوم معالجة البطاقة عند إتمام الدفع."
     },
     "scheduler": {
       "noAvailabilityThisMonth": "لا توجد مواعيد متاحة هذا الشهر",
@@ -4903,7 +4904,13 @@
       "guestSuccessMessage": "تم تسجيل حجزك مع {mentorName}. سنرسل إليك عبر البريد الإلكتروني رابطًا آمنًا للدفع وتأكيد جلستك — ثم يتولى المستشار الأمر.",
       "loadingPaymentMethods": "جارٍ تحميل طرق الدفع…",
       "paymentMethodsUnavailable": "تعذّر تحميل طرق الدفع. تحقّق من اتصالك ثم أعد المحاولة.",
-      "finalAmountNote": "هذا هو المبلغ النهائي. تدفع الآن وتُؤكَّد الجلسة فورًا — دون أي خطوة موافقة."
+      "finalAmountNote": "هذا هو المبلغ النهائي. تدفع الآن وتُؤكَّد الجلسة فورًا — دون أي خطوة موافقة.",
+      "sessionOfDuration": "جلسة {duration}",
+      "tierDiscountLabel": "خصم {tier} ({percent}%)",
+      "tierFounder": "Founder",
+      "tierBuilder": "Builder",
+      "totalLabel": "المجموع",
+      "cardFeeNote": "تُضاف رسوم معالجة البطاقة عند إتمام الدفع."
     },
     "landing": {
       "badge": "مرشدونا",
@@ -5186,7 +5193,10 @@
     "secureNote": "دفع آمن. يتم تأكيد مقعدك فور نجاح العملية.",
     "errorPaymentFailed": "تعذّر بدء عملية الدفع. يرجى المحاولة مرة أخرى.",
     "errorFull": "اكتمل العدد — لم تعد هناك مقاعد.",
-    "errorLoginRequired": "يرجى تسجيل الدخول لإتمام هذا التسجيل."
+    "errorLoginRequired": "يرجى تسجيل الدخول لإتمام هذا التسجيل.",
+    "accountRequiredTitle": "سجّل الدخول للتسجيل",
+    "accountRequiredBody": "هذه فعالية مدفوعة — تحتاج إلى حساب Metwork لإتمام الدفع.",
+    "signIn": "تسجيل الدخول"
   },
   "formBuilder": {
     "title": "نموذج التسجيل",

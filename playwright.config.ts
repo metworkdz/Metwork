@@ -241,6 +241,23 @@ export default defineConfig({
       },
     },
     {
+      // The program-flow bugs, checked on every OTHER surface that sells
+      // something: events, spaces, consultations and consultant-owned
+      // programs. Most are regression guards proving the shared fixes reached
+      // those surfaces; two cover genuinely new bugs (the paid-event guest
+      // wall, and cash space bookings priced at the online rate).
+      // SERIAL & state-sharing, money moves — `--workers=1`, retries off.
+      //   PAYMENT_PROVIDER=mock MOCK_PAYMENT_MODE=sync USE_LOCAL_DB=true
+      //   npx playwright test --project=cross-surface-parity --workers=1
+      name: 'cross-surface-parity',
+      testMatch: '**/api/cross-surface-parity.spec.ts',
+      retries: 0,
+      timeout: 90_000,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
       // The public registration link at phone width — no iOS zoom (16px floor
       // on every field), no horizontal scroll in fr/ar/en, 44px tap targets,
       // one question per screen, and the payment step repricing when the method

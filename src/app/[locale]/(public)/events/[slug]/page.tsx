@@ -18,6 +18,7 @@ import { RegistrationForm } from '@/components/features/registrations/registrati
 import { ImageCarousel } from '@/components/shared/image-carousel';
 import { ListingPriceBlock } from '@/components/shared/listing-price-block';
 import { readSession } from '@/server/auth/session';
+import { guestCheckoutAllowedFor } from '@/server/bookings/status';
 import { formatDate } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 import { assertLandingVisible } from '@/lib/landing-visibility';
@@ -193,6 +194,11 @@ export default async function EventDetailPage({ params }: PageProps) {
                   entityTitle={event.title}
                   formFields={formFields}
                   prefill={prefill}
+                  isAuthed={session !== null}
+                  // Guest checkout is programs-only (`guestCheckoutAllowedFor`),
+                  // so a paid event asks for a sign-in instead of ending in a 401.
+                  guestCheckoutAllowed={guestCheckoutAllowedFor('EVENT')}
+                  signInNext={`/events/${slug}`}
                   pricing={{
                     price: event.price,
                     onlinePrice: event.onlinePrice,

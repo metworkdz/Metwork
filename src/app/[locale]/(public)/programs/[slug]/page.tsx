@@ -22,6 +22,7 @@ import { RegistrationForm } from '@/components/features/registrations/registrati
 import { ImageCarousel } from '@/components/shared/image-carousel';
 import { ListingPriceBlock } from '@/components/shared/listing-price-block';
 import { readSession } from '@/server/auth/session';
+import { guestCheckoutAllowedFor } from '@/server/bookings/status';
 import type { ProgramType } from '@/types/domain';
 import { formatDate } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
@@ -190,6 +191,9 @@ export default async function ProgramDetailPage({ params }: PageProps) {
                   entityTitle={program.title}
                   formFields={formFields}
                   prefill={prefill}
+                  isAuthed={session !== null}
+                  guestCheckoutAllowed={guestCheckoutAllowedFor('PROGRAM')}
+                  signInNext={`/programs/${slug}`}
                   pricing={{
                     price: program.price,
                     onlinePrice: program.onlinePrice,

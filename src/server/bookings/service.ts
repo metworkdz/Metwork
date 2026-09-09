@@ -282,7 +282,13 @@ export async function createSpaceBooking(
     }
   }
 
-  const price = unitPrice(space, args.unit);
+  // Split pricing: a space may charge a different rate for a cash reservation
+  // (`cashPricePer*`). `unitPrice` has always taken a mode — this caller was
+  // the only one not passing it, so a cash booking was quoted and recorded at
+  // the ONLINE rate. Consultants can only ever book cash, so every consultant
+  // space reservation was mispriced.
+  const isCashReserve = args.paymentMethod === 'manual';
+  const price = unitPrice(space, args.unit, isCashReserve ? 'CASH_DEPOSIT' : 'ONLINE_FULL');
   if (price == null) {
     return { ok: false, reason: 'UNIT_NOT_AVAILABLE', available: availableUnits(space) };
   }

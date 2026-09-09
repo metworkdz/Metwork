@@ -26,9 +26,11 @@ import {
   Clock,
   CreditCard,
   Loader2,
+  LogIn,
   ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from '@/i18n/routing';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { bookingService } from '@/services/booking.service';
@@ -53,6 +55,17 @@ interface RegistrationFormProps {
     email?: string;
     phone?: string;
   };
+  /** Is someone signed in? Decides whether a paid listing is reachable here. */
+  isAuthed?: boolean;
+  /**
+   * Whether a guest may pay for THIS kind of listing without an account.
+   * Guest checkout is programs-only (`guestCheckoutAllowedFor`); a paid EVENT
+   * needs a Metwork account, so we say so BEFORE the questions rather than
+   * walking someone through the whole form and refusing at the payment step.
+   */
+  guestCheckoutAllowed?: boolean;
+  /** Path to return to after signing in. */
+  signInNext?: string;
   /** Pricing + payment config. Absent/zero ⇒ the free flow, unchanged. */
   pricing?: {
     price: number;
@@ -89,6 +102,9 @@ export function RegistrationForm({
   formFields,
   prefill,
   pricing,
+  isAuthed = false,
+  guestCheckoutAllowed = true,
+  signInNext,
 }: RegistrationFormProps) {
   const t = useTranslations('registration');
   // Seeded questions carry a `defaultQuestions` key, so they render in the
@@ -127,6 +143,10 @@ export function RegistrationForm({
   const cashOffered = isPaid && methods.includes('CASH') && hasDeposit;
   const onlineOffered = isPaid && methods.includes('ONLINE');
   const showMethodPicker = onlineOffered && cashOffered;
+  // A paid listing this visitor cannot pay for as a guest. Nothing they type
+  // could succeed, so the form is replaced by a sign-in prompt rather than
+  // ending in a 401 after eleven questions.
+  const needsAccount = isPaid && !isAuthed && !guestCheckoutAllowed;
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     methods.includes('ONLINE') ? 'ONLINE' : 'CASH',
@@ -327,6 +347,21 @@ export function RegistrationForm({
   }
 
   /* ── Terminal states ───────────────────────────────────────────────────── */
+
+  if (needsAccount) {
+    return (
+      <div className="rounded-xl border border-border bg-muted/30 p-6 text-center">
+        <LogIn className="mx-auto mb-3 size-8 text-muted-foreground/60" />
+        <h3 className="text-base font-semibold">{t('accountRequiredTitle')}</h3>
+        <p className="mt-1 text-sm text-muted-foreground">{t('accountRequiredBody')}</p>
+        <Button asChild className="mt-4 w-full" size="lg">
+          <Link href={signInNext ? `/login?next=${encodeURIComponent(signInNext)}` : '/login'}>
+            {t('signIn')}
+          </Link>
+        </Button>
+      </div>
+    );
+  }
 
   if (result?.type === 'confirmed') {
     return (

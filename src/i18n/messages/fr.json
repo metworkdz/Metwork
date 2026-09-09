@@ -3385,7 +3385,8 @@
       "requestSentTitle": "Demande envoyée",
       "requestSentMessage": "L'hôte a été notifié. Vous recevrez un lien de paiement par e-mail dès que votre demande sera approuvée — rien n'a été débité.",
       "amountAfterApproval": "À payer après approbation",
-      "awaitingApproval": "En attente d'approbation"
+      "awaitingApproval": "En attente d'approbation",
+      "cardFeeNote": "Des frais de traitement par carte sont ajoutés au paiement."
     },
     "scheduler": {
       "noAvailabilityThisMonth": "Aucune disponibilité ce mois-ci",
@@ -4903,7 +4904,13 @@
       "guestSuccessMessage": "Votre réservation avec {mentorName} est enregistrée. Nous vous enverrons par e-mail un lien sécurisé pour payer en ligne et confirmer votre session — le consultant prend le relais ensuite.",
       "loadingPaymentMethods": "Chargement des moyens de paiement…",
       "paymentMethodsUnavailable": "Impossible de charger les moyens de paiement. Vérifiez votre connexion et réessayez.",
-      "finalAmountNote": "C'est le montant final. Vous payez maintenant et la session est confirmée instantanément — sans étape de validation."
+      "finalAmountNote": "C'est le montant final. Vous payez maintenant et la session est confirmée instantanément — sans étape de validation.",
+      "sessionOfDuration": "Séance de {duration}",
+      "tierDiscountLabel": "Remise {tier} ({percent}%)",
+      "tierFounder": "Founder",
+      "tierBuilder": "Builder",
+      "totalLabel": "Total",
+      "cardFeeNote": "Des frais de traitement par carte sont ajoutés au paiement."
     },
     "landing": {
       "badge": "Nos mentors",
@@ -5186,7 +5193,10 @@
     "secureNote": "Paiement sécurisé. Votre place est confirmée dès validation.",
     "errorPaymentFailed": "Le paiement n’a pas pu démarrer. Veuillez réessayer.",
     "errorFull": "Complet — il ne reste plus de places.",
-    "errorLoginRequired": "Connectez-vous pour finaliser cette inscription."
+    "errorLoginRequired": "Connectez-vous pour finaliser cette inscription.",
+    "accountRequiredTitle": "Connectez-vous pour vous inscrire",
+    "accountRequiredBody": "Cet événement est payant — un compte Metwork est nécessaire pour finaliser le paiement.",
+    "signIn": "Se connecter"
   },
   "formBuilder": {
     "title": "Formulaire d'inscription",
