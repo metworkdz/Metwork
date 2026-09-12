@@ -85,3 +85,6 @@ scripts/campaigns/.preview*.html
 
 # Generated campaign preview (regenerate with the campaign script)
 /campaign-preview.html
+
+# Campaign send log — holds real recipient addresses. Never commit a mailing list.
+/campaign-send-log.csv
