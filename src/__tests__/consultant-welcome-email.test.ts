@@ -37,6 +37,17 @@ describe('consultantWelcomeEmailHtml', () => {
     expect(render({ fullName: '  ' })).toContain('Bienvenue.');
   });
 
+  it('greets with an explicit name when the caller supplies one', () => {
+    // Half the profiles on the platform are stored surname-first, so the first
+    // token is the wrong half of the name — a caller reading real records can
+    // pass the whole thing instead of guessing.
+    expect(render({ fullName: 'Khenchouche abderraouf' })).toContain('Bienvenue, Khenchouche.');
+    expect(render({ fullName: 'Khenchouche abderraouf', greetingName: 'Khenchouche Abderraouf' }))
+      .toContain('Bienvenue, Khenchouche Abderraouf.');
+    // An empty override falls back rather than greeting nobody.
+    expect(render({ fullName: 'Nesrine Beloucif', greetingName: '  ' })).toContain('Bienvenue, Nesrine.');
+  });
+
   it('walks the full arc, profile through first client to payout', () => {
     const html = render();
     for (const step of [

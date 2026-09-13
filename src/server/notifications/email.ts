@@ -236,8 +236,19 @@ export function consultantWelcomeEmailHtml(opts: {
   portalUrl: string;
   /** True when the guide PDF is attached, so the email only claims it when it is. */
   guideAttached?: boolean;
+  /**
+   * Greet with this exact string instead of the first name.
+   *
+   * The first token of `fullName` is the first name only when the profile was
+   * filled in first-name-first, and plenty are not — half of the consultants on
+   * the platform are stored surname-first, which turns the greeting into
+   * "Bienvenue, Khenchouche." A caller that knows better (a batch send reading
+   * real records) passes the whole name and gets it right for everyone.
+   */
+  greetingName?: string | null;
 }): string {
-  const firstName = (opts.fullName || '').trim().split(/\s+/)[0] || '';
+  const explicit = opts.greetingName?.trim();
+  const firstName = explicit || (opts.fullName || '').trim().split(/\s+/)[0] || '';
   const greeting = firstName ? `Bienvenue, ${firstName}.` : 'Bienvenue.';
 
   return layout(`

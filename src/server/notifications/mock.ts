@@ -960,7 +960,7 @@ export function sendContractDetailsRequestEmail(
  */
 export async function sendConsultantWelcomeEmail(
   email: string,
-  opts: { fullName: string; portalUrl: string },
+  opts: { fullName: string; portalUrl: string; greetingName?: string | null },
 ): Promise<boolean> {
   const guide = await loadConsultantGuidePdf();
   recordE2eEmail('consultant-welcome', { to: email, guideAttached: guide !== null });
