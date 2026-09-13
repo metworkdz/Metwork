@@ -20,9 +20,12 @@ import { getProgramAttendance } from '@/server/bookings/service';
 import { programTypeLabel } from '@/components/features/programs/program-meta';
 import { RegistrationForm } from '@/components/features/registrations/registration-form';
 import { ImageCarousel } from '@/components/shared/image-carousel';
+import { ListingPriceBlock } from '@/components/shared/listing-price-block';
 import { readSession } from '@/server/auth/session';
+import { guestCheckoutAllowedFor } from '@/server/bookings/status';
 import type { ProgramType } from '@/types/domain';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatDate } from '@/lib/format';
+import { formatSessionHours, isClockTime } from '@/lib/booking-when';
 import type { Locale } from '@/i18n/config';
 import { assertLandingVisible } from '@/lib/landing-visibility';
 
@@ -100,7 +103,11 @@ export default async function ProgramDetailPage({ params }: PageProps) {
 
       <div className="grid gap-8 lg:grid-cols-5">
         {/* ── Left: image + meta ── */}
-        <div className="lg:col-span-3 space-y-6">
+        {/* min-w-0: a grid item defaults to min-width:auto and will not
+            shrink below its content. One nowrap string inside (the share
+            link) was setting a ~347px floor for the whole page, which
+            pushed every column off-screen on a 320–360px phone. */}
+        <div className="min-w-0 lg:col-span-3 space-y-6">
           {/* Image gallery */}
           {galleryImages.length > 0 ? (
             <ImageCarousel images={galleryImages} alt={program.title} />
@@ -128,7 +135,7 @@ export default async function ProgramDetailPage({ params }: PageProps) {
                 </Badge>
               )}
             </div>
-            <h1 className="text-3xl font-semibold tracking-tight">{program.title}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-balance break-words sm:text-3xl">{program.title}</h1>
             <p className="mt-1 text-muted-foreground">{programHostName(program)}</p>
           </div>
 
@@ -153,7 +160,20 @@ export default async function ProgramDetailPage({ params }: PageProps) {
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
                 <Calendar className="inline size-3 mr-1" />{t('startsLabel')}
               </p>
-              <p className="text-sm font-medium">{formatDate(program.startDate, locale as Locale)}</p>
+              <p className="text-sm font-medium">
+                {formatDate(program.startDate, locale as Locale)}
+                {/* Only when the host published one — a program without a start
+                    time shows the date alone, never the storage anchor. */}
+                {/* A range reads plainly ("18:30 – 21:30"); a lone start needs
+                    "from", or it looks like the session lasts a minute. */}
+                {formatSessionHours(program.startTime, program.endTime) && (
+                  <span className="block text-xs text-muted-foreground">
+                    {isClockTime(program.endTime)
+                      ? formatSessionHours(program.startTime, program.endTime)
+                      : t('startsAtTime', { time: program.startTime! })}
+                  </span>
+                )}
+              </p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
@@ -165,16 +185,18 @@ export default async function ProgramDetailPage({ params }: PageProps) {
         </div>
 
         {/* ── Right: pricing + registration ── */}
-        <div className="lg:col-span-2">
+        <div className="min-w-0 lg:col-span-2">
           <div className="sticky top-20 rounded-2xl border border-border bg-card p-6 space-y-5">
-            {/* Price */}
-            <div className="text-center pb-4 border-b border-border">
-              <p className="text-3xl font-bold tabular-nums">
-                {program.price === 0 ? t('free') : formatCurrency(program.price, locale as Locale)}
-              </p>
-              {program.price > 0 && (
-                <p className="text-xs text-muted-foreground mt-0.5">{t('enrollmentFee')}</p>
-              )}
+            {/* Price — resolves the online/cash split, so a visitor sees the
+                two amounts they can actually choose between, not the base. */}
+            <div className="pb-4 border-b border-border">
+              <ListingPriceBlock
+                price={program.price}
+                onlinePrice={program.onlinePrice}
+                cashPrice={program.cashPrice}
+                acceptedPaymentMethods={program.acceptedPaymentMethods}
+                caption={t('enrollmentFee')}
+              />
             </div>
 
             {/* Registration form or status message */}
@@ -187,6 +209,17 @@ export default async function ProgramDetailPage({ params }: PageProps) {
                   entityTitle={program.title}
                   formFields={formFields}
                   prefill={prefill}
+                  isAuthed={session !== null}
+                  guestCheckoutAllowed={guestCheckoutAllowedFor('PROGRAM')}
+                  signInNext={`/programs/${slug}`}
+                  pricing={{
+                    price: program.price,
+                    onlinePrice: program.onlinePrice,
+                    cashPrice: program.cashPrice,
+                    acceptedPaymentMethods: program.acceptedPaymentMethods,
+                    cashDepositType: program.cashDepositType,
+                    cashDepositValue: program.cashDepositValue,
+                  }}
                 />
               </div>
             ) : (
@@ -209,7 +242,7 @@ export default async function ProgramDetailPage({ params }: PageProps) {
             {program.slug && (
               <div className="border-t border-border/60 pt-4">
                 <p className="text-xs text-muted-foreground mb-1">{tReg('shareLink')}</p>
-                <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-2">
+                <div className="flex min-w-0 items-center gap-2 rounded-md bg-muted px-3 py-2">
                   <ExternalLink className="size-3 shrink-0 text-muted-foreground" />
                   <code className="text-xs text-muted-foreground truncate">
                     /programs/{program.slug}

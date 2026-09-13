@@ -6,6 +6,7 @@
  */
 import { Resend } from 'resend';
 import { isNetworkPassEnabled } from '@/config/feature-flags';
+import { listingHasClockTime } from '@/lib/booking-when';
 
 let _resend: Resend | null = null;
 
@@ -1883,6 +1884,10 @@ interface ReceiptEmailParams {
   totalAmount:    number;
   paymentMethod:  string;
   lang:           'en' | 'fr';
+  /** Listing kind — decides whether a clock time is shown. See booking-when.ts. */
+  itemKind?:      string | null;
+  /** Explicit override from the booking; a program may carry a real start time. */
+  hasClockTime?:  boolean;
 }
 
 export function bookingReceiptEmailHtml(params: ReceiptEmailParams): string {
@@ -1893,11 +1898,18 @@ export function bookingReceiptEmailHtml(params: ReceiptEmailParams): string {
 
   const isFr = lang === 'fr';
 
+  // A clock only when the listing actually has one. Programs and events are
+  // authored as plain dates anchored at noon local, so printing hh:mm here
+  // invented a start time (11:00 in Algeria) on the client's receipt.
   function fmtDt(iso: string): string {
     try {
       return new Date(iso).toLocaleString(isFr ? 'fr-DZ' : 'en-GB', {
         day: '2-digit', month: 'long', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+        // h23: fr-DZ / ar-DZ otherwise render an 18:30 session as "6:30 PM".
+        ...(listingHasClockTime({ itemKind: params.itemKind, startsAtHasClockTime: params.hasClockTime })
+          ? { hour: '2-digit' as const, minute: '2-digit' as const, hourCycle: 'h23' as const }
+          : {}),
+        timeZone: 'UTC',
       });
     } catch { return iso; }
   }

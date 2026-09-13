@@ -14,8 +14,10 @@ import { ProgramImage } from './program-image';
 import { programTypeLabel } from './program-meta';
 import { ProgramApplyForm, ProgramApplySuccess } from './program-apply-form';
 import { FixedDateCalendar } from '@/components/shared/fixed-date-calendar';
+import { ListingPriceBlock } from '@/components/shared/listing-price-block';
+import { formatSessionHours, isClockTime } from '@/lib/booking-when';
 import { bookingService } from '@/services/booking.service';
-import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/format';
+import { formatDate, formatRelativeTime } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 import type { Program } from '@/types/domain';
 import type { BookingDto, ItemAttendanceStatus } from '@/types/booking';
@@ -94,6 +96,13 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                   icon={<CalendarRange className="size-4" />}
                   label={t('cohortDates')}
                   value={`${formatDate(program.startDate, locale)} → ${formatDate(program.endDate, locale)}`}
+                  hint={
+                    isClockTime(program.endTime)
+                      ? formatSessionHours(program.startTime, program.endTime) ?? undefined
+                      : isClockTime(program.startTime)
+                        ? t('startsAtTime', { time: program.startTime })
+                        : undefined
+                  }
                 />
                 <DetailTile
                   icon={<Clock className="size-4" />}
@@ -116,9 +125,13 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                   icon={<Badge variant="primary" className="text-[10px]">{t('fee')}</Badge>}
                   label={t('applicationFee')}
                   value={
-                    program.price === 0
-                      ? t('free')
-                      : formatCurrency(program.price, locale)
+                    <ListingPriceBlock
+                      variant="tile"
+                      price={program.price}
+                      onlinePrice={program.onlinePrice}
+                      cashPrice={program.cashPrice}
+                      acceptedPaymentMethods={program.acceptedPaymentMethods}
+                    />
                   }
                 />
               </div>
@@ -150,7 +163,7 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                   />
                   <SheetClose asChild>
                     <Button variant="outline" className="w-full">
-                      Close
+                      {t('close')}
                     </Button>
                   </SheetClose>
                 </div>
@@ -180,7 +193,7 @@ function DetailTile({
 }: {
   icon: React.ReactNode;
   label: string;
-  value: string;
+  value: React.ReactNode;
   hint?: string;
   hintTone?: 'default' | 'danger';
 }) {

@@ -23,6 +23,7 @@ import { ApiClientError } from '@/lib/api-client';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { safeUUID } from '@/lib/safe-uuid';
+import { resolveListingPricing } from '@/lib/listing-price';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { computeClientDeposit } from '@/lib/deposit';
 import {
@@ -56,7 +57,12 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
   const router = useRouter();
   const { user, refresh } = useAuth();
   const isAuthed = user !== null;
-  const isFree = program.price === 0;
+  // Split pricing — the SAME resolver the server charges with, so the number on
+  // the button is the number on the invoice. `pricing.online` / `pricing.cash`
+  // are the two totals; `differs` is true only when the host actually set them
+  // apart (e.g. 22 000 by card vs 24 000 in cash).
+  const pricing = resolveListingPricing(program.price, program);
+  const isFree = pricing.online === 0 && pricing.cash === 0;
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
@@ -101,6 +107,12 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
   useEffect(() => {
     bookingRef.current = '';
   }, [isCash, method, promoResult?.code]);
+  // A promo was priced against the OTHER method's base — drop it when the payer
+  // switches surface rather than quietly discounting the wrong number. The
+  // input itself is remounted (key={method}) so its own "applied" chip clears.
+  useEffect(() => {
+    setPromoResult(null);
+  }, [method]);
   // Listing is bookable by a guest only if there's a card-chargeable amount.
   const guestCanCard = !isFree && (onlineOffered || (acceptedMethods.includes('CASH') && hasDeposit));
 
@@ -120,7 +132,9 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
   const closed = status?.deadlinePassed === true;
   const full = status ? status.taken >= status.capacity : false;
   const alreadyApplied = !!status?.mine;
-  const finalTotal = promoResult?.finalAmount ?? program.price;
+  /** Base for the CHOSEN method — never `program.price` directly. */
+  const basePrice = isCash ? pricing.cash : pricing.online;
+  const finalTotal = promoResult?.finalAmount ?? basePrice;
   // Goes through the hosted card checkout: any guest, or a registered CASH
   // deposit. Registered ONLINE stays on the wallet; registered CASH on a
   // listing WITHOUT a configured deposit keeps the legacy reserve-on-site flow.
@@ -370,9 +384,18 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
         <div className="flex items-center justify-between text-muted-foreground">
           <span>{t('applicationFee')}</span>
           <span className="tabular-nums">
-            {isFree ? <span className="font-medium text-emerald-700">{t('free')}</span> : formatCurrency(program.price, locale)}
+            {isFree ? <span className="font-medium text-emerald-700">{t('free')}</span> : formatCurrency(basePrice, locale)}
           </span>
         </div>
+        {/* Only shown when the host priced the two surfaces apart — it turns an
+            invisible setting into a reason to pick one method over the other. */}
+        {!isFree && pricing.differs && showMethodPicker && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            {isCash
+              ? t('priceSwitchToOnline', { amount: formatCurrency(pricing.online, locale) })
+              : t('priceSwitchToCash', { amount: formatCurrency(pricing.cash, locale) })}
+          </p>
+        )}
         {!isFree && promoResult && (
           <div className="mt-1 flex items-center justify-between text-emerald-700">
             <span>
@@ -401,12 +424,20 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
             </div>
           </div>
         )}
+        {/* The card processor's fee is quoted server-side at intent time, so we
+            say it is coming rather than let the checkout total appear from
+            nowhere after the redirect. */}
+        {useCard && finalTotal > 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">{t('cardFeeNote')}</p>
+        )}
       </div>
 
-      {/* Promo code — for all paid programs (online and cash) */}
+      {/* Promo code — for all paid programs (online and cash). Remounted per
+          method so a code applied to the online price can't linger on cash. */}
       {!isFree && isAuthed && (
         <PromoCodeInput
-          originalAmount={program.price}
+          key={method}
+          originalAmount={basePrice}
           onApplied={setPromoResult}
           disabled={submitting}
         />

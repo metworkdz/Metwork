@@ -106,14 +106,21 @@ test.describe.serial('Payments & money lifecycle', () => {
     const before = await walletBalance(founder);
     const first = await bookSpace(founder, space.id, 'HOUR', startsAt, endsAt, 'ONLINE', ref);
     expect(first.status()).toBe(201);
+    // The charge is the booking's own total, NOT the listed 700: the seeded
+    // `founder` holds a FOUNDER membership, whose space discount is applied
+    // server-side. Hardcoding the list price made this fail on any account
+    // that carries a tier — which is what the seed gives it.
+    const total = (await first.json()).booking.totalAmount as number;
+    expect(total).toBeGreaterThan(0);
+    expect(total).toBeLessThanOrEqual(700);
     const charged = before - (await walletBalance(founder));
-    expect(charged).toBe(700);
+    expect(charged).toBe(total);
 
     // Replay → 200 + replayed flag, wallet untouched the second time.
     const replay = await bookSpace(founder, space.id, 'HOUR', startsAt, endsAt, 'ONLINE', ref);
     expect(replay.status(), 'replay returns 200').toBe(200);
     expect((await replay.json()).replayed).toBe(true);
-    expect(await walletBalance(founder), 'no second debit').toBe(before - 700);
+    expect(await walletBalance(founder), 'no second debit').toBe(before - total);
   });
 
   // 4. Card CASH_DEPOSIT → AWAITING_CASH, then mark-cash-paid → PAID (idempotent).
@@ -128,6 +135,9 @@ test.describe.serial('Payments & money lifecycle', () => {
         pricePerHour: 1000,
         pricePerDay: 6000,
         capacity: 20,
+        // COWORKING derives its capacity from the desks and requires at least
+        // one (validateDeskNames) — this inline fixture predates that rule.
+        deskNames: Array.from({ length: 20 }, (_, i) => `Desk ${i + 1}`),
         amenities: ['wifi'],
         acceptedPaymentMethods: ['ONLINE', 'CASH'],
         cashDepositType: 'PERCENT',

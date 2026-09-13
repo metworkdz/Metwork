@@ -23,14 +23,26 @@ export function validateCashDeposit(
   value: number | undefined | null,
 ): string | null {
   if (!methods?.includes('CASH')) return null;
+
+  // NO deposit is a legitimate choice: plenty of hosts want the client to
+  // simply turn up and pay the whole amount on site. This used to be
+  // impossible — a deposit was mandatory whenever CASH was accepted, and
+  // entering 0 was rejected as "must be greater than 0", so there was no way
+  // to express it at all. Absent type AND value now means exactly that, and a
+  // literal 0 is read the same way rather than refused.
+  const wantsNoDeposit = (!type && value == null) || value === 0;
+  if (wantsNoDeposit) return null;
+
+  // A partial config is still an error — it is a half-filled form, not a
+  // choice, and silently dropping one half would surprise the host.
   if (!type || value == null) {
-    return 'A deposit must be configured when accepting cash payments';
+    return 'Choose a deposit type and amount, or leave both empty to collect the full amount on site';
   }
   if (type === 'PERCENT' && (value < 1 || value > 100)) {
     return 'Percent deposit must be between 1 and 100';
   }
-  if (type === 'FIXED' && value <= 0) {
-    return 'Fixed deposit must be greater than 0';
+  if (type === 'FIXED' && value < 0) {
+    return 'Fixed deposit cannot be negative';
   }
   return null;
 }
@@ -44,47 +56,29 @@ export function normalizeDepositConfig(
   type: CashDepositType | undefined | null,
   value: number | undefined | null,
 ): { cashDepositType?: CashDepositType; cashDepositValue?: number } {
-  if (!methods?.includes('CASH') || !type || value == null) return {};
+  // A zero deposit is stored as NO deposit, so every reader can keep asking the
+  // one question it already asks — "is a deposit configured?" — instead of
+  // having to also test for zero. `computeDeposit` and the booking forms all
+  // treat an absent config as "collect everything on site".
+  if (!methods?.includes('CASH') || !type || value == null || value === 0) return {};
   return { cashDepositType: type, cashDepositValue: value };
 }
 
 /* ─────────────────────── Dual pricing (online / cash) ─────────────────────── */
 
-/** Booking surface that selects the base price for a single-price listing. */
-export type ListingPriceMode = 'ONLINE_FULL' | 'CASH_DEPOSIT';
-
-export interface SplitPricing {
-  onlinePrice?: number | null;
-  cashPrice?: number | null;
-}
-
 /**
- * Effective base price (integer DZD) for a PROGRAM/EVENT, picking the
- * online/cash split when configured and falling back to the single `price`
- * field otherwise. Fully backward compatible: a listing with neither override
- * always resolves to `price` on both surfaces.
+ * The split-pricing resolver moved to `@/lib/listing-price` so the browser can
+ * import the SAME function the settlement path uses — the apply form has to
+ * show the price it is about to charge, and a second copy would drift. These
+ * re-exports keep every existing server import working unchanged.
  */
-export function effectiveListingPrice(
-  price: number,
-  split: SplitPricing | undefined,
-  mode: ListingPriceMode,
-): number {
-  const candidate = mode === 'CASH_DEPOSIT' ? split?.cashPrice : split?.onlinePrice;
-  if (candidate != null && Number.isFinite(candidate) && candidate >= 0) return Math.round(candidate);
-  return price;
-}
-
-/**
- * Validate optional split-price overrides. Returns null when valid, or a
- * human-readable message. Each override is optional; when present it must be a
- * non-negative integer.
- */
-export function validateSplitPricing(split: SplitPricing | undefined): string | null {
-  for (const v of [split?.onlinePrice, split?.cashPrice]) {
-    if (v == null) continue;
-    if (!Number.isFinite(v) || v < 0 || !Number.isInteger(v)) {
-      return 'Online and cash prices must be non-negative whole numbers';
-    }
-  }
-  return null;
-}
+export {
+  effectiveListingPrice,
+  resolveListingPricing,
+  validateSplitPricing,
+} from '@/lib/listing-price';
+export type {
+  ListingPriceMode,
+  SplitPricing,
+  ListingPricing,
+} from '@/lib/listing-price';

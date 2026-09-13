@@ -34,6 +34,8 @@ function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
     seatsTaken,
     deadline:               r.deadline,
     startDate:              r.startDate,
+    startTime:              r.startTime ?? null,
+    endTime:                r.endTime ?? null,
     endDate:                r.endDate,
     acceptedPaymentMethods: r.acceptedPaymentMethods,
     cashDepositType:        r.cashDepositType,

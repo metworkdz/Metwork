@@ -795,7 +795,9 @@ export function BookConsultationDialog({
                   required
                   disabled={formState === 'submitting'}
                   className={cn(
-                    'flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors',
+                    // text-base on phones: iOS zooms the viewport on focus for
+                    // anything under 16px and never zooms back (see ui/input.tsx).
+                    'flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm shadow-sm transition-colors',
                     'placeholder:text-muted-foreground',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
                     'disabled:cursor-not-allowed disabled:opacity-50',
@@ -823,7 +825,9 @@ export function BookConsultationDialog({
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">
-                      {DURATION_OPTIONS.find((d) => d.value === duration)?.label} session
+                      {t('sessionOfDuration', {
+                        duration: DURATION_OPTIONS.find((d) => d.value === duration)?.label ?? '',
+                      })}
                     </span>
                     <span className="tabular-nums font-medium">{formatDZD(basePrice)}</span>
                   </div>
@@ -831,7 +835,10 @@ export function BookConsultationDialog({
                     <div className="flex justify-between text-sm text-emerald-700 dark:text-emerald-400">
                       <span className="flex items-center gap-1.5">
                         <MembershipTierBadge tier={userTier} size="xs" showIcon={false} />
-                        {userTier === 'FOUNDER' ? 'Founder' : 'Builder'} discount ({tierDiscountPercent}% off)
+                        {t('tierDiscountLabel', {
+                          tier: userTier === 'FOUNDER' ? t('tierFounder') : t('tierBuilder'),
+                          percent: tierDiscountPercent,
+                        })}
                       </span>
                       <span className="tabular-nums">− {formatDZD(tierDiscountAmt)}</span>
                     </div>
@@ -844,7 +851,7 @@ export function BookConsultationDialog({
                   )}
                   <div className="flex justify-between text-sm font-semibold border-t border-border/60 pt-1.5 mt-1.5">
                     <span>
-                      {finalPrice === 0 ? 'Free (promo applied)' : 'Total'}
+                      {finalPrice === 0 ? t('freePromoApplied') : t('totalLabel')}
                     </span>
                     <span className={cn('tabular-nums', finalPrice === 0 && 'text-emerald-700 dark:text-emerald-400')}>
                       {finalPrice === 0 ? t('free') : formatDZD(finalPrice)}
@@ -853,6 +860,12 @@ export function BookConsultationDialog({
                   <p className="text-xs text-muted-foreground/70 mt-1">
                     {t('finalAmountNote')}
                   </p>
+                  {/* Same reason as the space + program forms: the payer fee is
+                      quoted at intent time, so it must not surprise anyone on
+                      the checkout page. */}
+                  {finalPrice > 0 && (
+                    <p className="text-xs text-muted-foreground/70">{t('cardFeeNote')}</p>
+                  )}
                 </div>
               )}
 

@@ -26,9 +26,21 @@ export interface DefaultQuestion {
 
 /** A field shaped for the registration-form API / builder. */
 export interface BuiltDefaultField {
+  /**
+   * The question resolved in the AUTHOR's locale. Still sent so the dashboard,
+   * the CSV export and every non-localised surface have text to show.
+   */
   label: string;
+  /**
+   * The key that produced `label`. Persisted alongside it so the PUBLIC form
+   * can re-resolve the question in the VISITOR's locale — without it the
+   * seeded set is frozen in whatever language the host authored in.
+   */
+  labelKey: string;
   type: RegistrationFieldType;
   options: string[] | null;
+  /** Positional counterpart of `labelKey` for the choices. */
+  optionKeys: string[] | null;
   required: boolean;
   order: number;
 }
@@ -85,8 +97,10 @@ export function buildDefaultApplicationFields(
 ): BuiltDefaultField[] {
   return DEFAULT_APPLICATION_QUESTIONS.map((q, i) => ({
     label: translate(q.labelKey),
+    labelKey: q.labelKey,
     type: q.type,
     options: q.optionKeys ? q.optionKeys.map((k) => translate(k)) : null,
+    optionKeys: q.optionKeys ?? null,
     required: q.required,
     order: i,
   }));

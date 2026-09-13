@@ -13,7 +13,7 @@ import { z, ZodError } from 'zod';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { ensurePromoCodesSeeded } from '@/server/promo-codes/service';
 import { lookupAnyPromoCode } from '@/server/promo-codes/lookup';
-import { requireApiSession } from '@/server/auth/api-guards';
+import { readSession } from '@/server/auth/session';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
@@ -50,11 +50,17 @@ function errorMessageForReason(reason: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const guard = await requireApiSession();
-  if (!guard.ok) return guard.response;
-
+  // Open to guests. Programs take guest checkout, so a visitor on the public
+  // registration link has to be able to see what a code is worth BEFORE they
+  // pay — otherwise the field may as well not exist for them, which is exactly
+  // where it stood. Codes are short marketing strings, not secrets, and the
+  // server re-validates and re-applies at intent time regardless of what this
+  // endpoint said. The rate limit below is what keeps it from being an
+  // enumeration surface; it is tighter for anonymous callers.
+  const session = await readSession();
   const ip = getClientIp(req);
-  if (!(await checkRateLimitDistributed(`promo-validate:${ip}`, 20, 5 * 60_000))) {
+  const budget = session ? 20 : 8;
+  if (!(await checkRateLimitDistributed(`promo-validate:${ip}`, budget, 5 * 60_000))) {
     return jsonError(429, 'RATE_LIMITED', 'Too many promo code validation attempts. Please try again later.');
   }
 

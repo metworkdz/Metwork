@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { ApiClientError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { GalleryUploadField } from '@/components/shared/gallery-upload-field';
+import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 import {
   consultantService,
@@ -73,11 +74,12 @@ const emptyDraft: ConsultantProgramInput = {
   acceptedPaymentMethods: ['ONLINE', 'CASH'],
   cashDepositType: 'PERCENT',
   cashDepositValue: 10,
-  seatsTotal: 20, deadline: '', startDate: '', endDate: '',
+  seatsTotal: 20, deadline: '', startDate: '', startTime: '', endTime: '', endDate: '',
 };
 
 export function ProgramsSection() {
   const t = useTranslations('consultantPortal.programs');
+  const tQuestions = useTranslations('defaultQuestions');
   const locale = useLocale();
 
   const [items, setItems] = useState<ConsultantProgram[] | null>(null);
@@ -107,9 +109,11 @@ export function ProgramsSection() {
     if (!draft.deadline || !draft.startDate || !draft.endDate) return t('errorDates');
     if (!(draft.deadline <= draft.startDate && draft.startDate < draft.endDate)) return t('errorDateOrder');
     if (draft.acceptedPaymentMethods.includes('CASH')) {
-      const val = draft.cashDepositValue;
-      const invalidPercent = draft.cashDepositType === 'PERCENT' && (!val || val < 1 || val > 100);
-      const invalidFixed = draft.cashDepositType === 'FIXED' && (!val || val <= 0);
+      // 0 (or blank) is a valid choice: no deposit, the client pays the whole
+      // amount on site. Only a positive-but-nonsensical value is an error.
+      const val = draft.cashDepositValue ?? 0;
+      const invalidPercent = draft.cashDepositType === 'PERCENT' && val > 0 && (val < 1 || val > 100);
+      const invalidFixed = draft.cashDepositType === 'FIXED' && val < 0;
       if (invalidPercent || invalidFixed) return t('errorDeposit');
     }
     return null;
@@ -126,6 +130,26 @@ export function ProgramsSection() {
     });
   }
 
+  /**
+   * Pre-populate a NEW program's application form with the default question
+   * set, carrying the i18n keys so each question renders in the VISITOR's
+   * locale rather than the consultant's. Best-effort: seeding must never block
+   * program creation.
+   */
+  async function seedDefaultQuestions(programId: string) {
+    try {
+      const fields = buildDefaultApplicationFields((k) => tQuestions(k));
+      await fetch('/api/consultant/registration-form', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entityType: 'PROGRAM', entityId: programId, fields }),
+      });
+    } catch {
+      // swallow — seeding is non-critical
+    }
+  }
+
   async function onCreate() {
     const invalid = draftError();
     if (invalid) { setError(invalid); return; }
@@ -133,17 +157,25 @@ export function ProgramsSection() {
     setError(null);
     try {
       const acceptsCash = draft.acceptedPaymentMethods.includes('CASH');
-      await consultantService.createProgram({
+      const created = await consultantService.createProgram({
         ...draft,
         title: draft.title.trim(),
         description: draft.description.trim(),
         city: draft.city.trim(),
         deadline: toIso(draft.deadline),
         startDate: toIso(draft.startDate),
+        // Empty = no published start time, matching the incubator form.
+        startTime: draft.startTime?.trim() ? draft.startTime : null,
+        endTime: draft.endTime?.trim() ? draft.endTime : null,
         endDate: toIso(draft.endDate),
         cashDepositType: acceptsCash ? draft.cashDepositType : null,
         cashDepositValue: acceptsCash ? draft.cashDepositValue : null,
       });
+      // Seed the application form, exactly as the incubator dialog does.
+      // Without this a consultant's public page asked for a name and a card and
+      // nothing else, while an incubator's asked the full question set — the
+      // two populations share one registration system and must behave alike.
+      if (created?.id) await seedDefaultQuestions(created.id);
       setOpenForm(false);
       setDraft(emptyDraft);
       await load();
@@ -310,6 +342,20 @@ export function ProgramsSection() {
                 onChange={(e) => setDraft((d) => ({ ...d, startDate: e.target.value }))}
               />
             </Field>
+            <Field label={t('labelStartTime')} htmlFor="p-start-time">
+              <input
+                id="p-start-time" type="time" className={cpInputClassLight}
+                value={draft.startTime ?? ''}
+                onChange={(e) => setDraft((d) => ({ ...d, startTime: e.target.value }))}
+              />
+            </Field>
+            <Field label={t('labelEndTime')} htmlFor="p-end-time">
+              <input
+                id="p-end-time" type="time" className={cpInputClassLight}
+                value={draft.endTime ?? ''}
+                onChange={(e) => setDraft((d) => ({ ...d, endTime: e.target.value }))}
+              />
+            </Field>
             <Field label={t('labelEnd')} htmlFor="p-end">
               <input
                 id="p-end" type="date" min={todayISO()} className={cpInputClassLight}
@@ -368,8 +414,9 @@ export function ProgramsSection() {
                     </button>
                   ))}
                 </div>
+                {/* min 0: 0 means "no deposit, paid in full on site". */}
                 <input
-                  type="number" min={1} max={draft.cashDepositType === 'PERCENT' ? 100 : undefined}
+                  type="number" min={0} max={draft.cashDepositType === 'PERCENT' ? 100 : undefined}
                   className={cn(cpInputClassLight, 'h-10')}
                   value={draft.cashDepositValue ?? ''}
                   onChange={(e) => setDraft((d) => ({ ...d, cashDepositValue: Number(e.target.value) || 0 }))}

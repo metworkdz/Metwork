@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { Briefcase, ClipboardList, Loader2, Pencil, Trash2 } from 'lucide-react';
@@ -12,52 +12,61 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import type { Program, ProgramType } from '@/types/domain';
 import type { Locale } from '@/i18n/config';
 
-const typeLabel: Record<ProgramType, string> = {
-  INCUBATION:   'Incubation',
-  ACCELERATION: 'Acceleration',
-  TRAINING:     'Training',
-  BOOTCAMP:     'Bootcamp',
-  WORKSHOP:     'Workshop',
-  WEBINAR:      'Webinar',
+/**
+ * Program type → the `incubator.programForm.type*` key that names it. The
+ * labels used to be an English literal map, so an incubator working in Arabic
+ * or French read "Incubation"/"Bootcamp" in their own dashboard.
+ */
+const TYPE_LABEL_KEY: Record<ProgramType, string> = {
+  INCUBATION:   'typeIncubation',
+  ACCELERATION: 'typeAcceleration',
+  TRAINING:     'typeTraining',
+  BOOTCAMP:     'typeBootcamp',
+  WORKSHOP:     'typeWorkshop',
+  WEBINAR:      'typeWebinar',
 };
 
 export function ProgramsManager() {
   const locale = useLocale() as Locale;
   const t      = useTranslations('incubator.programs');
+  const tForm  = useTranslations('incubator.programForm');
   const router = useRouter();
+  const typeLabel = (type: ProgramType) => tForm(TYPE_LABEL_KEY[type]);
   const [rows, setRows] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   // FIX: BUG-2 — edit state
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
 
-  async function fetchPrograms() {
+  // Memoised because the error copy is now translated: without this the
+  // function is a new value each render and the effect below can't depend on it.
+  const fetchPrograms = useCallback(async () => {
     setLoading(true);
     setFetchError(null);
     try {
       const res = await fetch('/api/incubator/programs', { cache: 'no-store' });
-      if (!res.ok) throw new Error('Failed to load programs');
+      if (!res.ok) throw new Error(t('errorLoad'));
       const data = await res.json() as { items: Program[] };
       setRows(data.items);
     } catch (e: unknown) {
-      setFetchError(e instanceof Error ? e.message : 'Error loading programs');
+      setFetchError(e instanceof Error ? e.message : t('errorLoad'));
     } finally {
       setLoading(false);
     }
-  }
+  }, [t]);
 
   useEffect(() => {
     void fetchPrograms();
-  }, []);
+  }, [fetchPrograms]);
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this program? This cannot be undone.')) return;
+    if (!confirm(t('confirmDelete'))) return;
     const res = await fetch(`/api/incubator/programs/${id}`, { method: 'DELETE' });
     if (res.ok) {
       setRows((prev) => prev.filter((p) => p.id !== id));
     } else {
       const body = await res.json().catch(() => ({})) as { message?: string };
-      alert(body.message ?? 'Failed to delete program. Please try again.');
+      alert(body.message ?? t('errorDelete'));
     }
   }
 
@@ -75,7 +84,7 @@ export function ProgramsManager() {
     {
       key: 'type',
       label: t('colType'),
-      render: (p) => <Badge variant="info">{typeLabel[p.type]}</Badge>,
+      render: (p) => <Badge variant="info">{typeLabel(p.type)}</Badge>,
     },
     {
       key: 'dates',
@@ -115,7 +124,7 @@ export function ProgramsManager() {
       align: 'end',
       render: (p) =>
         p.price === 0 ? (
-          <Badge variant="success">Free</Badge>
+          <Badge variant="success">{t('free')}</Badge>
         ) : (
           <span className="tabular-nums">{formatCurrency(p.price, locale)}</span>
         ),

@@ -16,8 +16,10 @@ import { findEventBySlugOrId, listFormFields } from '@/server/registrations/serv
 import { getEventAttendance } from '@/server/bookings/service';
 import { RegistrationForm } from '@/components/features/registrations/registration-form';
 import { ImageCarousel } from '@/components/shared/image-carousel';
+import { ListingPriceBlock } from '@/components/shared/listing-price-block';
 import { readSession } from '@/server/auth/session';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { guestCheckoutAllowedFor } from '@/server/bookings/status';
+import { formatDate } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 import { assertLandingVisible } from '@/lib/landing-visibility';
 
@@ -95,7 +97,11 @@ export default async function EventDetailPage({ params }: PageProps) {
 
       <div className="grid gap-8 lg:grid-cols-5">
         {/* ── Left: image + meta ── */}
-        <div className="lg:col-span-3 space-y-6">
+        {/* min-w-0: a grid item defaults to min-width:auto and will not
+            shrink below its content. One nowrap string inside (the share
+            link) was setting a ~347px floor for the whole page, which
+            pushed every column off-screen on a 320–360px phone. */}
+        <div className="min-w-0 lg:col-span-3 space-y-6">
           {/* Image gallery */}
           {galleryImages.length > 0 ? (
             <ImageCarousel images={galleryImages} alt={event.title} />
@@ -132,7 +138,7 @@ export default async function EventDetailPage({ params }: PageProps) {
                 </Badge>
               )}
             </div>
-            <h1 className="text-3xl font-semibold tracking-tight">{event.title}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-balance break-words sm:text-3xl">{event.title}</h1>
             <p className="mt-1 text-muted-foreground">{event.incubatorName}</p>
           </div>
 
@@ -150,7 +156,9 @@ export default async function EventDetailPage({ params }: PageProps) {
                 <Calendar className="inline size-3 mr-1" />{t('dateLabel')}
               </p>
               <p className={`text-sm font-medium ${isPast ? 'text-muted-foreground' : ''}`}>
-                {formatDate(event.eventDate, locale as Locale, { dateStyle: 'long', timeStyle: 'short' })}
+                {/* Events are authored with a date input only, so the stored
+                    noon anchor is not a start time — printing one showed 11:00. */}
+                {formatDate(event.eventDate, locale as Locale, { dateStyle: 'long' })}
               </p>
             </div>
             <div>
@@ -169,16 +177,17 @@ export default async function EventDetailPage({ params }: PageProps) {
         </div>
 
         {/* ── Right: pricing + registration ── */}
-        <div className="lg:col-span-2">
+        <div className="min-w-0 lg:col-span-2">
           <div className="sticky top-20 rounded-2xl border border-border bg-card p-6 space-y-5">
-            {/* Price */}
-            <div className="text-center pb-4 border-b border-border">
-              <p className="text-3xl font-bold tabular-nums">
-                {event.price === 0 ? t('free') : formatCurrency(event.price, locale as Locale)}
-              </p>
-              {event.price > 0 && (
-                <p className="text-xs text-muted-foreground mt-0.5">{t('perAttendee')}</p>
-              )}
+            {/* Price — split-aware, same component as the program page. */}
+            <div className="pb-4 border-b border-border">
+              <ListingPriceBlock
+                price={event.price}
+                onlinePrice={event.onlinePrice}
+                cashPrice={event.cashPrice}
+                acceptedPaymentMethods={event.acceptedPaymentMethods}
+                caption={t('perAttendee')}
+              />
             </div>
 
             {/* Registration form or status */}
@@ -191,6 +200,19 @@ export default async function EventDetailPage({ params }: PageProps) {
                   entityTitle={event.title}
                   formFields={formFields}
                   prefill={prefill}
+                  isAuthed={session !== null}
+                  // Guest checkout is programs-only (`guestCheckoutAllowedFor`),
+                  // so a paid event asks for a sign-in instead of ending in a 401.
+                  guestCheckoutAllowed={guestCheckoutAllowedFor('EVENT')}
+                  signInNext={`/events/${slug}`}
+                  pricing={{
+                    price: event.price,
+                    onlinePrice: event.onlinePrice,
+                    cashPrice: event.cashPrice,
+                    acceptedPaymentMethods: event.acceptedPaymentMethods,
+                    cashDepositType: event.cashDepositType,
+                    cashDepositValue: event.cashDepositValue,
+                  }}
                 />
               </div>
             ) : (
@@ -213,7 +235,7 @@ export default async function EventDetailPage({ params }: PageProps) {
             {event.slug && (
               <div className="border-t border-border/60 pt-4">
                 <p className="text-xs text-muted-foreground mb-1">{tReg('shareLink')}</p>
-                <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-2">
+                <div className="flex min-w-0 items-center gap-2 rounded-md bg-muted px-3 py-2">
                   <ExternalLink className="size-3 shrink-0 text-muted-foreground" />
                   <code className="text-xs text-muted-foreground truncate">
                     /events/{event.slug}

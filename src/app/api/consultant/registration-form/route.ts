@@ -32,8 +32,11 @@ const FIELD_TYPES = [
 
 const fieldSchema = z.object({
   label:    z.string().min(1).max(200).transform((s) => s.trim()),
+  /** `defaultQuestions` i18n key — see the incubator route. */
+  labelKey:   z.string().min(1).max(80).nullable().optional().transform((v) => v ?? null),
   type:     z.enum(FIELD_TYPES),
   options:  z.array(z.string().min(1).max(200)).nullable().optional().transform((v) => v ?? null),
+  optionKeys: z.array(z.string().min(1).max(80)).nullable().optional().transform((v) => v ?? null),
   required: z.boolean().default(false),
   order:    z.number().int().min(0).default(0),
 });
@@ -95,8 +98,13 @@ export async function POST(req: NextRequest) {
     mentorScope(guard.mentorId),
     input.fields.map((f, i) => ({
       label:    f.label,
+      labelKey: f.labelKey,
       type:     f.type,
       options:  f.options ?? null,
+      optionKeys:
+        f.optionKeys && f.options && f.optionKeys.length === f.options.length
+          ? f.optionKeys
+          : null,
       required: f.required,
       order:    i,
     })),

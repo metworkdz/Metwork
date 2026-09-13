@@ -3,9 +3,11 @@
  * DELETE /api/incubator/programs/[id]  — delete a program
  */
 import type { NextRequest } from 'next/server';
+import { CLOCK_TIME_PATTERN } from '@/lib/booking-when';
 import { z, ZodError } from 'zod';
 import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
+import { pruneListingChildrenSync } from '@/server/registrations/service';
 import { canDeleteProgram, canEditProgram, type ProgramActor } from '@/server/programs/ownership';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
@@ -37,10 +39,15 @@ const patchSchema = z.object({
   seatsTotal: z.number().int().positive().optional(),
   deadline:  isoDate.optional(),
   startDate: isoDate.optional(),
+  startTime: z.string().regex(CLOCK_TIME_PATTERN, 'startTime must be HH:MM').nullable().optional(),
+  endTime: z.string().regex(CLOCK_TIME_PATTERN, 'endTime must be HH:MM').nullable().optional(),
   endDate:   isoDate.optional(),
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).optional(),
   cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
-  cashDepositValue: z.number().int().positive().optional().nullable(),
+  // nonnegative, not positive: 0 is how a host says "no deposit, they pay
+  // everything on site". `.positive()` rejected it before validateCashDeposit
+  // ever saw it, so there was no way to express that at all.
+  cashDepositValue: z.number().int().nonnegative().optional().nullable(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'CLOSED']).optional(),
   slug: z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
 }).refine(
@@ -120,6 +127,8 @@ export async function PATCH(
     if (input.seatsTotal !== undefined) p.seatsTotal = input.seatsTotal;
     if (input.deadline !== undefined) p.deadline = input.deadline;
     if (input.startDate !== undefined) p.startDate = input.startDate;
+    if (input.startTime !== undefined) p.startTime = input.startTime;
+    if (input.endTime !== undefined) p.endTime = input.endTime;
     if (input.endDate !== undefined) p.endDate = input.endDate;
     if (input.status !== undefined) p.isActive = input.status === 'PUBLISHED';
     if (input.slug !== undefined) p.slug = input.slug ?? undefined;
@@ -157,6 +166,9 @@ export async function DELETE(
     const decision = canDeleteProgram(programs[idx], actor, d.incubators);
     if (decision !== 'ALLOW') return decision;
     programs.splice(idx, 1);
+    // Same mutation: the form and the registrations are meaningless
+    // without the listing and were previously left orphaned.
+    pruneListingChildrenSync(d, 'PROGRAM', id);
     return 'OK';
   });
 

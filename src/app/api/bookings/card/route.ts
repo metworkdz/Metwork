@@ -30,6 +30,8 @@ import {
   getSpaceDiscountForUser,
   getEventDiscountForUser,
 } from '@/server/memberships/service';
+import { findMissingRequiredAnswer } from '@/server/registrations/service';
+import { db } from '@/server/db/store';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -82,6 +84,25 @@ export async function POST(req: NextRequest) {
     // PROGRAM: no membership discount tier today.
   }
 
+  // A paid PROGRAM/EVENT registration answers the SAME required questions a
+  // free one does — enforced here, before any money moves, with the shared
+  // validator the free registration route uses.
+  if (input.registrationAnswers && input.target.itemKind !== 'SPACE') {
+    const entityId =
+      input.target.itemKind === 'PROGRAM' ? input.target.programId : input.target.eventId;
+    const missing = findMissingRequiredAnswer(
+      await db.read(),
+      input.target.itemKind,
+      entityId,
+      input.registrationAnswers,
+    );
+    if (missing) {
+      return jsonError(422, 'MISSING_REQUIRED_FIELD', `Field "${missing.label}" is required`, {
+        fieldId: missing.fieldId,
+      });
+    }
+  }
+
   const result = await createCardBookingIntent({
     target: input.target,
     paymentMode: input.paymentMode,
@@ -92,6 +113,7 @@ export async function POST(req: NextRequest) {
     promoCode: input.promoCode ?? null,
     membershipDiscount,
     locale: input.locale ?? ctx?.user.locale ?? 'fr',
+    registrationAnswers: input.registrationAnswers ?? null,
   });
 
   if (!result.ok) {

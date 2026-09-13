@@ -51,6 +51,7 @@ import {
 import { countAttendance } from '@/server/attendance';
 import { computeDeposit } from './pricing';
 import { effectiveListingPrice } from './listing-payment';
+import { applyClockTime, isClockTime } from '@/lib/booking-when';
 import {
   computeCommission as quoteCommission,
   type ProviderPlan,
@@ -80,6 +81,10 @@ import { getSlickPayTransferStatus } from '@/server/payments/slickpay-provider';
 import { ProviderNotConfiguredError } from '@/server/payments/errors';
 import { sendBookingReceiptEmail } from '@/server/notifications/mock';
 import { createNotification } from '@/server/notifications/create-notification';
+import {
+  insertRegistrationSync,
+  dispatchRegistrationConfirmationIfDue,
+} from '@/server/registrations/service';
 
 /** Pay tokens live for 7 days — long enough to finish a hosted checkout. */
 const PAY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -112,6 +117,13 @@ export interface CreateCardBookingInput {
   membershipDiscount?: number;
   /** Locale for the hosted-checkout return + receipts. */
   locale?: string;
+  /**
+   * Application answers from the public registration page, carried on the
+   * intent and materialised into a RegistrationRecord at settlement. PROGRAM /
+   * EVENT only — see `BookingRecord.registrationDraft` for why they ride the
+   * booking rather than a provisional registration row.
+   */
+  registrationAnswers?: Array<{ fieldId: string; value: string | string[] }> | null;
 }
 
 export type CreateCardBookingReason =
@@ -214,6 +226,8 @@ interface ResolvedItem {
   unit: BookingUnit;
   quantity: number;
   startsAt: string;
+  /** True when `startsAt` carries a real chosen time (see booking-when.ts). */
+  startsAtHasClockTime?: boolean;
   endsAt: string;
   /** Pre-promo total T after any membership discount. */
   total: number;
@@ -334,7 +348,11 @@ function resolveTarget(
         city: rec.city,
         unit: 'DAY',
         quantity: 1,
-        startsAt: rec.startDate,
+        // A program may now carry a real start time; fold it into the instant
+        // so the checkout and the receipt show what the host actually set,
+        // instead of the noon anchor `startDate` is stored at.
+        startsAt: applyClockTime(rec.startDate, rec.startTime),
+        startsAtHasClockTime: isClockTime(rec.startTime),
         endsAt: rec.endDate,
         total: effectiveListingPrice(rec.price, rec, priceMode),
         acceptedPaymentMethods: rec.acceptedPaymentMethods,
@@ -547,6 +565,7 @@ export async function createCardBookingIntent(
       unit: item.unit,
       quantity: item.quantity,
       startsAt: item.startsAt,
+      ...(item.startsAtHasClockTime ? { startsAtHasClockTime: true } : {}),
       endsAt: item.endsAt,
       totalAmount: total,
       status: 'PENDING_PAYMENT',
@@ -566,6 +585,17 @@ export async function createCardBookingIntent(
       payTokenExpiresAt: new Date(Date.now() + PAY_TOKEN_TTL_MS).toISOString(),
       paymentProviderRef: null,
       bookingLocale: input.locale ?? 'fr',
+      // Held until settlement, then written out as a RegistrationRecord. An
+      // abandoned checkout leaves nothing behind but this dead intent.
+      ...(item.promoKind !== 'SPACE' && input.registrationAnswers
+        ? {
+            registrationDraft: {
+              entityType: item.promoKind,
+              answers: input.registrationAnswers,
+              locale: input.locale ?? null,
+            },
+          }
+        : {}),
       createdAt: now,
       updatedAt: now,
     };
@@ -802,6 +832,25 @@ async function applyCardSettlement(bookingId: string, providerRef: string | null
       booking.commissionAmount = split.platformCommission;
     }
 
+    // ── Materialise the public-registration answers ───────────────────────
+    // Same mutation as the CONFIRMED transition, so the paid seat and the
+    // application row commit together. `insertRegistrationSync` dedupes on
+    // bookingId, so a replayed settlement writes nothing twice. Attendance
+    // dedupes booking + registration by email, so this stays ONE seat.
+    if (booking.registrationDraft && booking.itemKind !== 'SPACE') {
+      insertRegistrationSync(d, {
+        entityType: booking.registrationDraft.entityType,
+        entityId: booking.itemId,
+        userId: booking.userId,
+        fullName: booking.clientName ?? 'Client',
+        email: booking.clientEmail ?? '',
+        phone: booking.clientPhone ?? '',
+        answers: booking.registrationDraft.answers,
+        locale: booking.registrationDraft.locale ?? booking.bookingLocale ?? null,
+        bookingId: booking.id,
+      });
+    }
+
     // ── Consume the promo exactly once, on the claiming transition ────────
     if (booking.promoCodeId) consumePromoCodeSync(d.promoCodes ?? [], booking.promoCodeId);
 
@@ -821,6 +870,35 @@ async function applyCardSettlement(bookingId: string, providerRef: string | null
  * webhook + return) and the mark-cash-paid action each send at most once.
  * Fully fire-and-forget: never throws into the money path, never blocks.
  */
+/**
+ * The letterhead for a booking receipt: the owning incubator, or the owning
+ * consultant mapped onto the same shape. Returns null only when the listing
+ * has no owner at all, which is already an error state elsewhere.
+ */
+function receiptVendor(
+  d: StoreDraft,
+  kind: BookingItemKind,
+  itemId: string,
+): ReceiptClaim['incubator'] | null {
+  const incubator = findOwningIncubator(d, kind, itemId);
+  if (incubator) return incubator;
+
+  const mentor = findOwningMentor(d, kind, itemId);
+  if (!mentor) return null;
+  return {
+    name: mentor.fullName,
+    email: mentor.email ?? null,
+    phone: mentor.phone ?? null,
+    city: mentor.city ?? null,
+    logoUrl: mentor.imageUrl ?? null,
+    stampUrl: null,
+    address: null,
+    registrationNumber: null,
+    commercialRegNumber: null,
+    nif: null,
+  } as ReceiptClaim['incubator'];
+}
+
 interface ReceiptClaim {
   variant: 'deposit' | 'final';
   booking: BookingRecord;
@@ -838,7 +916,13 @@ export async function dispatchCardReceiptIfDue(bookingId: string): Promise<void>
       const b = d.bookings.find((x) => x.id === bookingId);
       if (!b || b.paymentMethod !== 'card') return;
 
-      const incubator = findOwningIncubator(d, b.itemKind, b.itemId);
+      // The receipt letterhead is whoever OWNS the listing. Resolving only an
+      // incubator meant a consultant-owned program sent no receipt at all —
+      // the client paid and got nothing but the registration confirmation.
+      // A consultant satisfies the same structural shape; the fields they have
+      // no equivalent for (commercial register, NIF, stamp) are simply absent,
+      // exactly as they are for an incubator that has not filled them in.
+      const incubator = receiptVendor(d, b.itemKind, b.itemId);
       if (!incubator) return;
 
       const user = b.userId ? d.users.find((u) => u.id === b.userId) : null;
@@ -994,6 +1078,7 @@ export async function verifyAndSettleCardBooking(token: string): Promise<CardPay
     return viewFor(after, 'SLOT_TAKEN');
   }
   void dispatchCardReceiptIfDue(booking.id);
+  void dispatchRegistrationConfirmationIfDue(booking.id);
   return viewFor(after, 'CONFIRMED');
 }
 
@@ -1022,6 +1107,7 @@ export async function settleCardBookingFromWebhook(
     return 'VOIDED';
   }
   void dispatchCardReceiptIfDue(bookingId);
+  void dispatchRegistrationConfirmationIfDue(bookingId);
   return 'SETTLED';
 }
 
@@ -1094,7 +1180,10 @@ export async function initCardBookingPayment(
   if (result.status === 'COMPLETED') {
     const outcome = await applyCardSettlement(booking.id, result.providerRef);
     if (outcome.kind === 'SLOT_TAKEN') void notifyVoidedAfterPayment(booking.id);
-    else void dispatchCardReceiptIfDue(booking.id);
+    else {
+      void dispatchCardReceiptIfDue(booking.id);
+      void dispatchRegistrationConfirmationIfDue(booking.id);
+    }
     return { ok: true, redirectUrl: returnUrl };
   }
 

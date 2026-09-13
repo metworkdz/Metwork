@@ -121,6 +121,10 @@ export interface Program {
   seatsTaken: number;
   deadline: string;
   startDate: string;
+  /** Local wall-clock start time "HH:MM". Absent ⇒ no time is shown. */
+  startTime?: string | null;
+  /** Local wall-clock end time "HH:MM". Independent of `startTime`. */
+  endTime?: string | null;
   endDate: string;
   acceptedPaymentMethods: PaymentMethod[];
   /** Cash deposit config — present only when CASH is accepted. */
@@ -175,8 +179,16 @@ export interface RegistrationFormField {
   entityType: 'PROGRAM' | 'EVENT';
   entityId: string;
   label: string;
+  /**
+   * Key under the `defaultQuestions` namespace for a seeded question. The
+   * public form renders THIS in the visitor's locale and falls back to
+   * `label`. Absent on host-written questions — see the store record.
+   */
+  labelKey?: string | null;
   type: RegistrationFieldType;
   options: string[] | null;
+  /** Positional counterpart of `labelKey` for the choices. */
+  optionKeys?: string[] | null;
   required: boolean;
   order: number;
 }
