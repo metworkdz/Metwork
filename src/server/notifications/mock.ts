@@ -943,45 +943,47 @@ export function sendContractDetailsRequestEmail(
 }
 
 /**
- * Welcome a new consultant and explain how the platform works.
+ * Welcome a newly APPROVED consultant and explain how the platform works.
  *
- * Sent once, at signup, alongside the sign-in code — this is the "what happens
- * now" message, and it carries the 8-step guide as a PDF attachment.
+ * Sent once, when an admin approves the profile — the copy tells the reader
+ * their account is live and they can take bookings, which is only true then.
+ * It carries the 8-step guide as a PDF attachment.
  *
  * The attachment is BEST-EFFORT: if the guide cannot be fetched the email still
  * goes out, with the sentence that references it removed, because an onboarding
  * email that never arrives is worse than one that arrives without its annexe.
  *
- * RETURNS THE PROMISE, and the caller MUST await it. On Vercel the lambda
- * freezes the moment the response is returned, so a floating send is never
- * delivered. Self-catching, so awaiting it can never throw into the caller: a
- * mail failure must not fail a signup that has genuinely succeeded.
+ * RETURNS WHETHER IT WAS DELIVERED, and the caller MUST await it. On Vercel the
+ * lambda freezes the moment the response is returned, so a floating send is
+ * never delivered. Self-catching: a mail failure must not fail an approval that
+ * has genuinely happened — the caller decides what to do with `false`.
  */
 export async function sendConsultantWelcomeEmail(
   email: string,
   opts: { fullName: string; portalUrl: string },
-): Promise<void> {
+): Promise<boolean> {
   const guide = await loadConsultantGuidePdf();
   recordE2eEmail('consultant-welcome', { to: email, guideAttached: guide !== null });
-  await sendResendEmail({
-    to: email,
-    subject: 'Bienvenue sur l\u2019espace consultant Metwork',
-    html: consultantWelcomeEmailHtml({ ...opts, guideAttached: guide !== null }),
-    attachments: guide ? [{ filename: CONSULTANT_GUIDE_FILENAME, content: guide }] : undefined,
-    // The email invites a reply ("une question ? répondez à ce message"), and
-    // `from` is the unattended noreply@ sender.
-    replyTo: process.env.CONTACT_EMAIL,
-  })
-    .then((sent) => {
-      if (!sent) {
-        // eslint-disable-next-line no-console
-        console.log(`${banner} EMAIL (consultant-welcome) \u2192 ${email}`);
-      }
-    })
-    .catch((err: Error) => {
-      // eslint-disable-next-line no-console
-      console.error(`${banner} Resend consultant-welcome email failed \u2192`, err.message);
+  try {
+    const delivered = await sendResendEmail({
+      to: email,
+      subject: 'Bienvenue sur l\u2019espace consultant Metwork',
+      html: consultantWelcomeEmailHtml({ ...opts, guideAttached: guide !== null }),
+      attachments: guide ? [{ filename: CONSULTANT_GUIDE_FILENAME, content: guide }] : undefined,
+      // The email invites a reply ("une question ? répondez à ce message"), and
+      // `from` is the unattended noreply@ sender.
+      replyTo: process.env.CONTACT_EMAIL,
     });
+    if (!delivered) {
+      // eslint-disable-next-line no-console
+      console.log(`${banner} EMAIL (consultant-welcome) \u2192 ${email}`);
+    }
+    return delivered;
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(`${banner} Resend consultant-welcome email failed \u2192`, (err as Error).message);
+    return false;
+  }
 }
 
 /**

@@ -2201,6 +2201,14 @@ export interface MentorRecord {
   approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   /** Rejection reason shown to the consultant. Set only when REJECTED. */
   approvalRejectionReason?: string | null;
+  /**
+   * When the welcome + how-it-works email was sent, stamped at the FIRST
+   * approval. It is what makes that email once-per-consultant: an admin who
+   * re-approves a profile (say, after reversing a rejection) must not send a
+   * second "bienvenue" — and certainly not a second 4 MB guide. Absent ⇒ never
+   * sent, including for every consultant approved before this existed.
+   */
+  welcomeEmailSentAt?: string | null;
   /** Record origin: 'ADMIN' (dashboard-created) | 'SELF' (portal signup). Absent ⇒ 'ADMIN'. */
   source?: 'ADMIN' | 'SELF';
   /** Uploaded CV/resume URL (Cloudinary or /uploads fallback). PRIVATE — admin review only. */
