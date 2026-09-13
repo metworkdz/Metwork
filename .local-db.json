@@ -4536,9 +4536,391 @@
       "userId": "3d561017-5e74-41ff-b7f1-10f9609816eb",
       "expiresAt": "2026-08-29T00:49:58.527Z",
       "createdAt": "2026-08-22T00:49:58.527Z"
+    },
+    {
+      "idHash": "36b2ad8da91f810dedecb381139c4763e4322a65fc258e83271f52acde607938",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-09-20T00:14:57.963Z",
+      "createdAt": "2026-09-13T00:14:57.963Z"
+    },
+    {
+      "idHash": "d4f7c34eca1f7229916e9b12138e289174e5e6d2231e5a0e0290a0e6f2717b07",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-09-20T00:15:00.693Z",
+      "createdAt": "2026-09-13T00:15:00.693Z"
+    },
+    {
+      "idHash": "e158a39925af1e7647bda65ea1732c8a15a3b39aa97b0586c1817b143f8bb976",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-09-20T00:15:02.923Z",
+      "createdAt": "2026-09-13T00:15:02.923Z"
+    },
+    {
+      "idHash": "a2d3ea7127d81b469d89b8bdfed8849cb3251dc27700592cf25ca2b66695a974",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-09-20T00:15:05.091Z",
+      "createdAt": "2026-09-13T00:15:05.091Z"
+    },
+    {
+      "idHash": "779c76f2df571d133909436c3c54d098d968e8582e80b7222952405f9bb295ea",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-09-20T00:15:06.266Z",
+      "createdAt": "2026-09-13T00:15:06.266Z"
+    },
+    {
+      "idHash": "3047d29651b1f36c7d56cdcfde763f37098965ac85da7de514d3ea86e652b94b",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-09-20T00:15:07.385Z",
+      "createdAt": "2026-09-13T00:15:07.385Z"
+    },
+    {
+      "idHash": "a8b80f8d51ab08898506299899ba224f8869e5b425c4cf3b2df1f6da1bc9c356",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-09-20T00:15:55.905Z",
+      "createdAt": "2026-09-13T00:15:55.905Z"
+    },
+    {
+      "idHash": "ae89daa861d516f6e23a947f2308009c5058b29b6a9b953831e138f9551a24e8",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-09-20T00:15:57.044Z",
+      "createdAt": "2026-09-13T00:15:57.044Z"
+    },
+    {
+      "idHash": "38d67d2b97d0855d5b022500235bf21fcdb3c5a8c2a748af49d8347a4c1d81df",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-09-20T00:15:58.154Z",
+      "createdAt": "2026-09-13T00:15:58.154Z"
+    },
+    {
+      "idHash": "9baed06015506ca6925d139f91a49d3e0289e2cf4fca213199666af02a06638e",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-09-20T00:15:59.242Z",
+      "createdAt": "2026-09-13T00:15:59.242Z"
+    },
+    {
+      "idHash": "b6feef6a54096483cb8825b3e46e159377eaa0771a87a3f4cc0d8f9339bd7fc6",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-09-20T00:16:00.348Z",
+      "createdAt": "2026-09-13T00:16:00.348Z"
+    },
+    {
+      "idHash": "6c75c58ae53b65566e74e4beb00aa1649f6f44ba51f3bcbefaabec639b16644b",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-09-20T00:16:01.461Z",
+      "createdAt": "2026-09-13T00:16:01.461Z"
+    },
+    {
+      "idHash": "d952bbd3f70c6c5e3ea26ffaa3918263d2bee8530cc49816f1a2b0e2a0ec0064",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-09-20T00:16:25.555Z",
+      "createdAt": "2026-09-13T00:16:25.555Z"
+    },
+    {
+      "idHash": "f5ef39343dc015502673458f64e12dd8f3c41529aede09c48b65d89b70d02f5a",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-09-20T00:16:26.680Z",
+      "createdAt": "2026-09-13T00:16:26.680Z"
+    },
+    {
+      "idHash": "77260e6f3feca2c3bb9529d80e82851b0b71af00eed948c46840d0373603e6bd",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-09-20T00:16:27.796Z",
+      "createdAt": "2026-09-13T00:16:27.796Z"
+    },
+    {
+      "idHash": "6be2edfa62d0aa924fee89e3beb0ceef6e81b0e4af646da116df91357e9196db",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-09-20T00:16:28.902Z",
+      "createdAt": "2026-09-13T00:16:28.902Z"
+    },
+    {
+      "idHash": "e94b35bc9e788426684e3b4bde91e68182d56c5b49a6373919c8f344880deb4c",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-09-20T00:16:30.011Z",
+      "createdAt": "2026-09-13T00:16:30.011Z"
+    },
+    {
+      "idHash": "3711ebb8c07f5d046fe02e4aba8b8643a65a0c5177aadc397552ed0db915a6b8",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-09-20T00:16:31.116Z",
+      "createdAt": "2026-09-13T00:16:31.116Z"
+    },
+    {
+      "idHash": "79075b37de6be5fe90d1e1d4d06b88aaa44af6e271037945063b0a61f378f36f",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-09-20T00:16:55.081Z",
+      "createdAt": "2026-09-13T00:16:55.081Z"
+    },
+    {
+      "idHash": "9ec5d701820e5edc21377ebeb4335904f49af06bd402ff91851c72f6f5e8f4c2",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-09-20T00:16:56.232Z",
+      "createdAt": "2026-09-13T00:16:56.232Z"
+    },
+    {
+      "idHash": "f9b5a202c03b6b4e0ff9de124c154e6b26f35165536c81cf83171bb1ee1aa2e8",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-09-20T00:16:57.383Z",
+      "createdAt": "2026-09-13T00:16:57.383Z"
+    },
+    {
+      "idHash": "d36906370e372942c6b834db7528d7f3df5b8f8dd59be1dd164c49e1ab41417b",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-09-20T00:16:58.496Z",
+      "createdAt": "2026-09-13T00:16:58.496Z"
+    },
+    {
+      "idHash": "611a9312735fa826458c27d5a5729a6855c69a8bf28f2dfbc9100b0261f92b7c",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-09-20T00:16:59.570Z",
+      "createdAt": "2026-09-13T00:16:59.570Z"
+    },
+    {
+      "idHash": "6f0f5bcc725813eceed737af7e95960a24753fe96c24a3df90f54db5c4a68884",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-09-20T00:17:00.670Z",
+      "createdAt": "2026-09-13T00:17:00.670Z"
+    },
+    {
+      "idHash": "c8b1579ed224e9c01e88a2ee16fe294a2abad1cd657dc1835036fd5bc1578e94",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-09-20T00:17:24.270Z",
+      "createdAt": "2026-09-13T00:17:24.270Z"
+    },
+    {
+      "idHash": "4ce541ba5754ae4413426cce11fdb4ae578f8e4a87587884305d4afc4f7482eb",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-09-20T00:17:25.439Z",
+      "createdAt": "2026-09-13T00:17:25.439Z"
+    },
+    {
+      "idHash": "0d909811ec713112aa96ca2a203642d9a001de76e292427f8ca2c64985a64518",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-09-20T00:17:26.549Z",
+      "createdAt": "2026-09-13T00:17:26.549Z"
+    },
+    {
+      "idHash": "14ec07a94c39f0ae2392eaaaae41ac10cbb10db155bbcb920e858bea8a37046c",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-09-20T00:17:27.680Z",
+      "createdAt": "2026-09-13T00:17:27.680Z"
+    },
+    {
+      "idHash": "baa4ed87e83d89ca1ca682affc97ec649c34da0c1c4818db2d873124835d1a3d",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-09-20T00:17:28.770Z",
+      "createdAt": "2026-09-13T00:17:28.770Z"
+    },
+    {
+      "idHash": "e371b625f1042adb255be02d9063f87268c11890091383e2fc0952bd177f0f21",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-09-20T00:17:29.872Z",
+      "createdAt": "2026-09-13T00:17:29.872Z"
+    },
+    {
+      "idHash": "0fbc268f5c72514c854de642227d50b6725fbe432a5e80b5dd5a7beb5043837c",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-09-20T00:18:05.528Z",
+      "createdAt": "2026-09-13T00:18:05.528Z"
+    },
+    {
+      "idHash": "d672120432be47fa1d10b06949220254f04f46c03ad5e586881440066c29ae33",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-09-20T00:18:06.651Z",
+      "createdAt": "2026-09-13T00:18:06.651Z"
+    },
+    {
+      "idHash": "ca9bb3372610861355ea9aa40c3fa78734238ae6dad6b57c1bcf5ae625423a2b",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-09-20T00:18:07.777Z",
+      "createdAt": "2026-09-13T00:18:07.777Z"
+    },
+    {
+      "idHash": "0d83c4650fb6aa84fbf0ecd12a3fcd75640d0586f590267601b4da4c1fa60d0f",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-09-20T00:18:08.859Z",
+      "createdAt": "2026-09-13T00:18:08.859Z"
+    },
+    {
+      "idHash": "710b9d3182281aa805966eeeb31e8e2612e291ec27aa6333b4743370c559fecf",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-09-20T00:18:09.925Z",
+      "createdAt": "2026-09-13T00:18:09.925Z"
+    },
+    {
+      "idHash": "42d0ddb609ec63bcb0dad939f73260e8bbe543bf9a03b6c8052f78c09d849a86",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-09-20T00:18:11.015Z",
+      "createdAt": "2026-09-13T00:18:11.015Z"
+    },
+    {
+      "idHash": "64de5f39db802e1d212d768ca181f4b754e01454433f447d7870f7bb288c93db",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-09-20T00:20:30.343Z",
+      "createdAt": "2026-09-13T00:20:30.343Z"
+    },
+    {
+      "idHash": "7b3ca083a4c54000723e5d2526b02b6dc6ebde882c1c3410a0d9a572d24d21fd",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-09-20T00:20:31.465Z",
+      "createdAt": "2026-09-13T00:20:31.465Z"
+    },
+    {
+      "idHash": "c6141681e528d3153d4a0a2699a7375ced0050eeaaa44526398de4330f8685dc",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-09-20T00:21:25.904Z",
+      "createdAt": "2026-09-13T00:21:25.904Z"
+    },
+    {
+      "idHash": "e7d188ef4462f4f07ee5f03d94ab3fbdc815b6f0b90bc3c43108db3e08c7605c",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-09-20T00:21:28.719Z",
+      "createdAt": "2026-09-13T00:21:28.719Z"
+    },
+    {
+      "idHash": "d1490d165e042c863c20c5906588b308b86bbb2d7c637ba669bbf22d67e1cfc3",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-09-20T00:21:30.615Z",
+      "createdAt": "2026-09-13T00:21:30.615Z"
+    },
+    {
+      "idHash": "575c6789c5ecb823be7c8e12aed05efffc46e5ec05fcca389d70be415ad42762",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-09-20T00:21:32.631Z",
+      "createdAt": "2026-09-13T00:21:32.631Z"
+    },
+    {
+      "idHash": "bf703c241a8390dded3e85ece04c7573103a3b936275576f3dbf83ef949c1ab9",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-09-20T00:21:33.720Z",
+      "createdAt": "2026-09-13T00:21:33.720Z"
+    },
+    {
+      "idHash": "37651ac0a98e81c1c870c8eae31597003c62566d3e020a4c002b50f64220692d",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-09-20T00:21:34.813Z",
+      "createdAt": "2026-09-13T00:21:34.813Z"
+    },
+    {
+      "idHash": "9ec6bf7a292ae4afec6a3c8afd71d082bf2d1c7cb704cbfd90bfc38435b167a0",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-09-20T00:22:17.147Z",
+      "createdAt": "2026-09-13T00:22:17.147Z"
+    },
+    {
+      "idHash": "2e87b1f8a6c4a1b5c94b2aebb612f6adaae1e7552bf5156753291b956a71bf83",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-09-20T00:22:18.317Z",
+      "createdAt": "2026-09-13T00:22:18.317Z"
+    },
+    {
+      "idHash": "ba05cc624d3061d8fa3b232618409605055c6ff877ce9fc2a4fc5d16eb6a15c7",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-09-20T00:22:19.427Z",
+      "createdAt": "2026-09-13T00:22:19.427Z"
+    },
+    {
+      "idHash": "47f226a18b823a81c9043f27718bd4712949a5d2299eb8a1ab3f664aca3409ee",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-09-20T00:22:20.660Z",
+      "createdAt": "2026-09-13T00:22:20.660Z"
+    },
+    {
+      "idHash": "a3aeb65c1ed10b41d5af2922f8fd9a875b48004821fc0c409b077e9354938302",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-09-20T00:22:21.787Z",
+      "createdAt": "2026-09-13T00:22:21.787Z"
+    },
+    {
+      "idHash": "19fd596af70f82c2e75c7cae434bc7adf4d3e8ac18c23e357b0b12f1a2d5eb9a",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-09-20T00:22:22.929Z",
+      "createdAt": "2026-09-13T00:22:22.929Z"
+    },
+    {
+      "idHash": "a1cac85a4df47cffd267d55720e99545ee1b3177fd25859022b44f05b4a14e0f",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-09-20T00:22:48.005Z",
+      "createdAt": "2026-09-13T00:22:48.005Z"
+    },
+    {
+      "idHash": "8b0c50a1fb287dabb4eed0b85ae33fc091a75e7e6951215db4d57da6a694f23c",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-09-20T00:22:49.136Z",
+      "createdAt": "2026-09-13T00:22:49.136Z"
+    },
+    {
+      "idHash": "3dd1f578be1d4cb3a92a2aeb98345e39409d83f2033c5f1d478bd2cfca81050e",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-09-20T00:22:50.260Z",
+      "createdAt": "2026-09-13T00:22:50.260Z"
+    },
+    {
+      "idHash": "f87c87167b8c56c0164ce9392c6a748c4c9fe30f5db3e5a7cd46519c1494469e",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-09-20T00:22:51.394Z",
+      "createdAt": "2026-09-13T00:22:51.394Z"
+    },
+    {
+      "idHash": "31fa2a0265292e4aebb07eca911e699dc2fa60d1e031d8f23e8709af60b55c8d",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-09-20T00:22:52.494Z",
+      "createdAt": "2026-09-13T00:22:52.494Z"
+    },
+    {
+      "idHash": "65819d1fec63573712cf2fde812f2436e474c1e7337236c9b79ae1dfd25307e1",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-09-20T00:22:53.596Z",
+      "createdAt": "2026-09-13T00:22:53.596Z"
+    },
+    {
+      "idHash": "474391ae947220238e421aa5f77145f66d03f9f641b4badf90a4711647858a33",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-09-20T00:23:39.189Z",
+      "createdAt": "2026-09-13T00:23:39.189Z"
+    },
+    {
+      "idHash": "9311becded18e622dd26fc07af687e8900360206eb83d5870d20c8ff99753286",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-09-20T00:23:40.320Z",
+      "createdAt": "2026-09-13T00:23:40.320Z"
+    },
+    {
+      "idHash": "b25e800a036535bd8fa11060cb28679c12e4eeeff74cac958bc0ab245e2da484",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-09-20T00:23:41.444Z",
+      "createdAt": "2026-09-13T00:23:41.444Z"
+    },
+    {
+      "idHash": "0cea5eaf2e3092fc494649623db3def1116fe7f70901947b903be227d37b0fc2",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-09-20T00:23:42.553Z",
+      "createdAt": "2026-09-13T00:23:42.553Z"
+    },
+    {
+      "idHash": "d5d61d392ab0125c7e683a38a60325bab924c3e6d97dfbe6120751170c9da8fc",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-09-20T00:23:43.643Z",
+      "createdAt": "2026-09-13T00:23:43.643Z"
+    },
+    {
+      "idHash": "d14806cba303af42fd0cc5e517a1124b73d570d1140204d9405cabe8e0e74ad5",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-09-20T00:23:44.762Z",
+      "createdAt": "2026-09-13T00:23:44.762Z"
     }
   ],
-  "otps": [],
+  "otps": [
+    {
+      "id": "bd78af2d4db88960e85d7f63",
+      "userId": "mentor:acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "codeHash": "dd81933886d6e3f76ac2d87207a3e582afdf980be7b627b538e0150a26fddb1c",
+      "expiresAt": "2026-09-13T00:21:24.168Z",
+      "attempts": 1,
+      "consumed": true,
+      "channel": "email"
+    }
+  ],
   "emailTokens": [
     {
       "tokenHash": "63e358aae11768d710f7807e3cc524e1bc579d2edd7a450df8a44165d65da490",
@@ -17122,6 +17504,95 @@
       "linkedinUrl": "https://www.linkedin.com/in/cherif-haddad-3589b358/",
       "consultationFee": 3000,
       "slug": "cherif-haddad"
+    },
+    {
+      "id": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "fullName": "Mohamed Amine",
+      "position": "Consultant en stratégie et financement de startups",
+      "imageUrl": "/assets/profilelogogreen.png",
+      "avatarUrl": "/assets/profilelogogreen.png",
+      "slug": "mohamed-amine",
+      "bio": "Accompagne les porteurs de projets algériens sur la structuration financière, le business plan et la levée de fonds. Neuf ans d'expérience en cabinet de conseil et en incubateur.",
+      "linkedinUrl": null,
+      "email": "mohamed.amine.demo+test@metwork.test",
+      "phone": "+213555000000",
+      "phoneVerified": true,
+      "city": "oran",
+      "field": "Financement",
+      "consultationFee": 4000,
+      "createdAt": "2026-09-13T00:11:24.157Z",
+      "updatedAt": "2026-09-13T00:22:07.223Z",
+      "approvalStatus": "APPROVED",
+      "source": "SELF",
+      "publiclyListed": true,
+      "privacyConsent": true,
+      "privacyAcceptedAt": "2026-09-13T00:11:24.157Z",
+      "emailVerified": true,
+      "pinHash": "scrypt$31e59c9ba09a7e1f00c3f9ff5efdbbb4$de7b2e0adc8dd53c3cc2bf64e9289ac4473417ac7da90a2a210948c7ab79b0f2abe5f45ba957ad945ad8f7ba0e1b414614b5102f4aae4c025a39b400b297a784",
+      "pinSetAt": "2026-09-13T00:11:37.536Z",
+      "topics": [
+        "Levée de fonds",
+        "Business plan",
+        "Structuration financière",
+        "Subventions ANADE"
+      ],
+      "freeIntroEnabled": true,
+      "defaultMeetingMode": "ONLINE",
+      "defaultMeetingLink": "https://meet.google.com/mohamed-amine-metwork",
+      "weeklyAvailability": [
+        {
+          "weekday": 0,
+          "slots": [
+            {
+              "start": "09:00",
+              "end": "12:00"
+            }
+          ]
+        },
+        {
+          "weekday": 1,
+          "slots": [
+            {
+              "start": "14:00",
+              "end": "18:00"
+            }
+          ]
+        },
+        {
+          "weekday": 2,
+          "slots": [
+            {
+              "start": "09:00",
+              "end": "12:00"
+            },
+            {
+              "start": "14:00",
+              "end": "17:00"
+            }
+          ]
+        },
+        {
+          "weekday": 3,
+          "slots": [
+            {
+              "start": "10:00",
+              "end": "13:00"
+            }
+          ]
+        }
+      ],
+      "blockedDates": [],
+      "availabilityTimezone": "Africa/Algiers",
+      "minNoticeHours": 24,
+      "bufferMinutes": 15,
+      "payoutAccount": {
+        "accountType": "bank",
+        "accountNumber": "00400123456789012345",
+        "holderName": "Mohamed Amine"
+      },
+      "approvedAt": "2026-09-13T00:14:02.281Z",
+      "address": "14 Boulevard Emir Abdelkader, Oran Centre, Oran",
+      "idNumber": "109412345678"
     }
   ],
   "mentorCategories": [
@@ -20989,6 +21460,254 @@
       "guestAmountDue": 5600,
       "bookingNotifiedAt": "2026-06-19T23:46:08.457Z",
       "linkSentAt": "2026-06-19T23:46:08.464Z"
+    },
+    {
+      "id": "demo-ma-c1",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "userId": null,
+      "userName": "Sofiane Meziane",
+      "userEmail": "sofiane.meziane@example.dz",
+      "userPhone": "+213555111222",
+      "message": "Préparation du dossier ANADE et plan de financement.",
+      "status": "COMPLETED",
+      "adminNote": null,
+      "consultationDate": "2026-08-18",
+      "consultationTime": "10:00",
+      "durationMinutes": 60,
+      "scheduledAt": "2026-08-18T10:00:00.000Z",
+      "chargeType": "PAID",
+      "amountCharged": 4000,
+      "consultantShareBase": 4000,
+      "tierDiscountAmount": 0,
+      "promoDiscountAmount": 0,
+      "appliedPromoCode": null,
+      "promoDiscountPercent": 0,
+      "source": "guest",
+      "guestLocale": "fr",
+      "instantBook": true,
+      "paymentStatus": "PAID",
+      "meetingMode": "ONLINE",
+      "meetingLink": "https://meet.google.com/mohamed-amine-metwork",
+      "meetingAddress": null,
+      "meetingMapsLink": null,
+      "createdAt": "2026-08-15T09:00:00.000Z",
+      "updatedAt": "2026-08-18T10:00:00.000Z",
+      "completedAt": "2026-08-18T10:00:00.000Z"
+    },
+    {
+      "id": "demo-ma-c2",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "userId": null,
+      "userName": "Lydia Bensalem",
+      "userEmail": "lydia.bensalem@example.dz",
+      "userPhone": "+213555111222",
+      "message": "Revue du business plan avant le comité d’investissement.",
+      "status": "COMPLETED",
+      "adminNote": null,
+      "consultationDate": "2026-08-25",
+      "consultationTime": "10:00",
+      "durationMinutes": 60,
+      "scheduledAt": "2026-08-25T10:00:00.000Z",
+      "chargeType": "PAID",
+      "amountCharged": 4000,
+      "consultantShareBase": 4000,
+      "tierDiscountAmount": 0,
+      "promoDiscountAmount": 0,
+      "appliedPromoCode": null,
+      "promoDiscountPercent": 0,
+      "source": "guest",
+      "guestLocale": "fr",
+      "instantBook": true,
+      "paymentStatus": "PAID",
+      "meetingMode": "ONLINE",
+      "meetingLink": "https://meet.google.com/mohamed-amine-metwork",
+      "meetingAddress": null,
+      "meetingMapsLink": null,
+      "createdAt": "2026-08-22T09:00:00.000Z",
+      "updatedAt": "2026-08-25T10:00:00.000Z",
+      "completedAt": "2026-08-25T10:00:00.000Z"
+    },
+    {
+      "id": "demo-ma-c3",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "userId": null,
+      "userName": "Karim Ould Ali",
+      "userEmail": "karim.ould.ali@example.dz",
+      "userPhone": "+213555111222",
+      "message": "Question rapide sur la structuration du capital.",
+      "status": "COMPLETED",
+      "adminNote": null,
+      "consultationDate": "2026-09-01",
+      "consultationTime": "10:00",
+      "durationMinutes": 30,
+      "scheduledAt": "2026-09-01T10:00:00.000Z",
+      "chargeType": "PAID",
+      "amountCharged": 2000,
+      "consultantShareBase": 2000,
+      "tierDiscountAmount": 0,
+      "promoDiscountAmount": 0,
+      "appliedPromoCode": null,
+      "promoDiscountPercent": 0,
+      "source": "guest",
+      "guestLocale": "fr",
+      "instantBook": true,
+      "paymentStatus": "PAID",
+      "meetingMode": "ONLINE",
+      "meetingLink": "https://meet.google.com/mohamed-amine-metwork",
+      "meetingAddress": null,
+      "meetingMapsLink": null,
+      "createdAt": "2026-08-29T09:00:00.000Z",
+      "updatedAt": "2026-09-01T10:00:00.000Z",
+      "completedAt": "2026-09-01T10:00:00.000Z"
+    },
+    {
+      "id": "demo-ma-c4",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "userId": null,
+      "userName": "Nassima Gharbi",
+      "userEmail": "nassima.gharbi@example.dz",
+      "userPhone": "+213555111222",
+      "message": "Modèle financier à trois ans pour une marketplace.",
+      "status": "COMPLETED",
+      "adminNote": null,
+      "consultationDate": "2026-09-05",
+      "consultationTime": "10:00",
+      "durationMinutes": 60,
+      "scheduledAt": "2026-09-05T10:00:00.000Z",
+      "chargeType": "PAID",
+      "amountCharged": 4000,
+      "consultantShareBase": 4000,
+      "tierDiscountAmount": 0,
+      "promoDiscountAmount": 0,
+      "appliedPromoCode": null,
+      "promoDiscountPercent": 0,
+      "source": "guest",
+      "guestLocale": "fr",
+      "instantBook": true,
+      "paymentStatus": "PAID",
+      "meetingMode": "ONLINE",
+      "meetingLink": "https://meet.google.com/mohamed-amine-metwork",
+      "meetingAddress": null,
+      "meetingMapsLink": null,
+      "createdAt": "2026-09-02T09:00:00.000Z",
+      "updatedAt": "2026-09-05T10:00:00.000Z",
+      "completedAt": "2026-09-05T10:00:00.000Z"
+    },
+    {
+      "id": "demo-ma-c5",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "userId": null,
+      "userName": "Yanis Aït Larbi",
+      "userEmail": "yanis.a.t.larbi@example.dz",
+      "userPhone": "+213555111222",
+      "message": "Choix du statut juridique de la startup.",
+      "status": "COMPLETED",
+      "adminNote": null,
+      "consultationDate": "2026-09-08",
+      "consultationTime": "10:00",
+      "durationMinutes": 30,
+      "scheduledAt": "2026-09-08T10:00:00.000Z",
+      "chargeType": "PAID",
+      "amountCharged": 2000,
+      "consultantShareBase": 2000,
+      "tierDiscountAmount": 0,
+      "promoDiscountAmount": 0,
+      "appliedPromoCode": null,
+      "promoDiscountPercent": 0,
+      "source": "guest",
+      "guestLocale": "fr",
+      "instantBook": true,
+      "paymentStatus": "PAID",
+      "meetingMode": "ONLINE",
+      "meetingLink": "https://meet.google.com/mohamed-amine-metwork",
+      "meetingAddress": null,
+      "meetingMapsLink": null,
+      "createdAt": "2026-09-05T09:00:00.000Z",
+      "updatedAt": "2026-09-08T10:00:00.000Z",
+      "completedAt": "2026-09-08T10:00:00.000Z"
+    },
+    {
+      "id": "demo-ma-c6",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "userId": null,
+      "userName": "Amel Zerrouki",
+      "userEmail": "amel.zerrouki@example.dz",
+      "userPhone": "+213555111222",
+      "message": "Stratégie de levée de fonds seed en Algérie.",
+      "status": "COMPLETED",
+      "adminNote": null,
+      "consultationDate": "2026-09-11",
+      "consultationTime": "10:00",
+      "durationMinutes": 60,
+      "scheduledAt": "2026-09-11T10:00:00.000Z",
+      "chargeType": "PAID",
+      "amountCharged": 4000,
+      "consultantShareBase": 4000,
+      "tierDiscountAmount": 0,
+      "promoDiscountAmount": 0,
+      "appliedPromoCode": null,
+      "promoDiscountPercent": 0,
+      "source": "guest",
+      "guestLocale": "fr",
+      "instantBook": true,
+      "paymentStatus": "PAID",
+      "meetingMode": "ONLINE",
+      "meetingLink": "https://meet.google.com/mohamed-amine-metwork",
+      "meetingAddress": null,
+      "meetingMapsLink": null,
+      "createdAt": "2026-09-08T09:00:00.000Z",
+      "updatedAt": "2026-09-11T10:00:00.000Z",
+      "completedAt": "2026-09-11T10:00:00.000Z"
+    },
+    {
+      "id": "demo-ma-u1",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "userId": null,
+      "userName": "Ryad Belkacemi",
+      "userEmail": "ryad.belkacemi@example.dz",
+      "userPhone": "+213555111333",
+      "message": "Premier échange — projet de plateforme logistique.",
+      "status": "READY",
+      "adminNote": null,
+      "consultationDate": "2026-09-15",
+      "consultationTime": "09:00",
+      "durationMinutes": 30,
+      "scheduledAt": "2026-09-15T09:00:00.000Z",
+      "chargeType": "FREE_QUOTA",
+      "amountCharged": 0,
+      "source": "guest",
+      "guestLocale": "fr",
+      "instantBook": true,
+      "paymentStatus": "PAID",
+      "meetingMode": "ONLINE",
+      "meetingLink": "https://meet.google.com/mohamed-amine-metwork",
+      "createdAt": "2026-09-12T15:00:00.000Z",
+      "updatedAt": "2026-09-12T15:00:00.000Z"
+    },
+    {
+      "id": "demo-ma-u2",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "userId": null,
+      "userName": "Imene Tounsi",
+      "userEmail": "imene.tounsi@example.dz",
+      "userPhone": "+213555111333",
+      "message": "Premier échange — application de santé.",
+      "status": "READY",
+      "adminNote": null,
+      "consultationDate": "2026-09-17",
+      "consultationTime": "09:00",
+      "durationMinutes": 30,
+      "scheduledAt": "2026-09-17T09:00:00.000Z",
+      "chargeType": "FREE_QUOTA",
+      "amountCharged": 0,
+      "source": "guest",
+      "guestLocale": "fr",
+      "instantBook": true,
+      "paymentStatus": "PAID",
+      "meetingMode": "ONLINE",
+      "meetingLink": "https://meet.google.com/mohamed-amine-metwork",
+      "createdAt": "2026-09-12T15:00:00.000Z",
+      "updatedAt": "2026-09-12T15:00:00.000Z"
     }
   ],
   "incubators": [
@@ -27662,8 +28381,8 @@
       "id": "rule_mentor_consultation",
       "name": "Mentor consultation commission",
       "transactionType": "MENTOR_CONSULTATION",
-      "rate": 0.3,
-      "description": "Platform commission on paid mentor consultations (30%). Mentors receive the remaining 70%.",
+      "rate": 0.2,
+      "description": "Platform commission on paid mentor consultations (20%). Consultants receive the remaining 80%.",
       "isActive": true,
       "updatedAt": "1970-01-01T00:00:00.000Z"
     },
@@ -30057,6 +30776,16 @@
       "status": "ACTIVE",
       "createdAt": "2026-06-19T02:22:44.318Z",
       "updatedAt": "2026-06-19T23:46:08.442Z"
+    },
+    {
+      "id": "584fde7a-fe61-4e2e-9dc8-2a2ea8d6ece6",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "pendingBalance": 0,
+      "availableBalance": 10000,
+      "currency": "DZD",
+      "status": "ACTIVE",
+      "createdAt": "2026-09-13T00:14:02.288Z",
+      "updatedAt": "2026-09-13T00:14:02.350Z"
     }
   ],
   "mentorLedgerTxns": [
@@ -34518,6 +35247,400 @@
       },
       "createdAt": "2026-06-19T23:46:08.442Z",
       "completedAt": "2026-06-19T23:46:08.442Z"
+    },
+    {
+      "id": "6110adce-f29a-40d7-abc1-0b09a538ef77",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c1",
+      "type": "EARNING",
+      "amount": 3200,
+      "bucket": "PENDING",
+      "status": "COMPLETED",
+      "reference": "mentor-earning-demo-ma-c1",
+      "description": "Consultation earning (held until completed)",
+      "metadata": {
+        "gross": 4000,
+        "basePrice": 4000,
+        "consultantShare": 3200,
+        "platformShare": 800,
+        "platformCommission": 800,
+        "platformRate": 0.2,
+        "mentorRate": 0.8
+      },
+      "createdAt": "2026-08-18T10:00:00.000Z",
+      "completedAt": "2026-08-18T10:00:00.000Z"
+    },
+    {
+      "id": "8bc0c201-46a8-4abd-9a19-8efe79df4c32",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c1",
+      "type": "COMMISSION",
+      "amount": -800,
+      "bucket": "PENDING",
+      "status": "COMPLETED",
+      "reference": "mentor-commission-demo-ma-c1",
+      "description": "Platform share on consultation",
+      "metadata": {
+        "gross": 4000,
+        "basePrice": 4000,
+        "consultantShare": 3200,
+        "platformShare": 800,
+        "tierDiscountAmount": 0,
+        "promoDiscountAmount": 0,
+        "totalDiscountAbsorbed": 0,
+        "platformRate": 0.2,
+        "mentorRate": 0.8,
+        "appliedPromoCode": null
+      },
+      "createdAt": "2026-08-18T10:00:00.000Z",
+      "completedAt": "2026-08-18T10:00:00.000Z"
+    },
+    {
+      "id": "59f40da4-6bbd-4c1e-98e5-05fd4dd6e810",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c1",
+      "type": "RELEASE",
+      "amount": 3200,
+      "bucket": "AVAILABLE",
+      "status": "COMPLETED",
+      "reference": "mentor-release-demo-ma-c1",
+      "description": "Consultation earning released after completion",
+      "metadata": {
+        "earningTxnId": "6110adce-f29a-40d7-abc1-0b09a538ef77"
+      },
+      "createdAt": "2026-08-18T10:00:00.000Z",
+      "completedAt": "2026-08-18T10:00:00.000Z"
+    },
+    {
+      "id": "b0a75d6e-6565-4864-8a13-e0ea74d2bf4e",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c2",
+      "type": "EARNING",
+      "amount": 3200,
+      "bucket": "PENDING",
+      "status": "COMPLETED",
+      "reference": "mentor-earning-demo-ma-c2",
+      "description": "Consultation earning (held until completed)",
+      "metadata": {
+        "gross": 4000,
+        "basePrice": 4000,
+        "consultantShare": 3200,
+        "platformShare": 800,
+        "platformCommission": 800,
+        "platformRate": 0.2,
+        "mentorRate": 0.8
+      },
+      "createdAt": "2026-08-25T10:00:00.000Z",
+      "completedAt": "2026-08-25T10:00:00.000Z"
+    },
+    {
+      "id": "80c32a3f-d9b7-4c90-b2d6-5ebf12a1d7c5",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c2",
+      "type": "COMMISSION",
+      "amount": -800,
+      "bucket": "PENDING",
+      "status": "COMPLETED",
+      "reference": "mentor-commission-demo-ma-c2",
+      "description": "Platform share on consultation",
+      "metadata": {
+        "gross": 4000,
+        "basePrice": 4000,
+        "consultantShare": 3200,
+        "platformShare": 800,
+        "tierDiscountAmount": 0,
+        "promoDiscountAmount": 0,
+        "totalDiscountAbsorbed": 0,
+        "platformRate": 0.2,
+        "mentorRate": 0.8,
+        "appliedPromoCode": null
+      },
+      "createdAt": "2026-08-25T10:00:00.000Z",
+      "completedAt": "2026-08-25T10:00:00.000Z"
+    },
+    {
+      "id": "7c48db19-69ce-40e1-97ed-04301fcd343f",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c2",
+      "type": "RELEASE",
+      "amount": 3200,
+      "bucket": "AVAILABLE",
+      "status": "COMPLETED",
+      "reference": "mentor-release-demo-ma-c2",
+      "description": "Consultation earning released after completion",
+      "metadata": {
+        "earningTxnId": "b0a75d6e-6565-4864-8a13-e0ea74d2bf4e"
+      },
+      "createdAt": "2026-08-25T10:00:00.000Z",
+      "completedAt": "2026-08-25T10:00:00.000Z"
+    },
+    {
+      "id": "39758b58-b4a0-4a07-a70f-3ddb094032ff",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c3",
+      "type": "EARNING",
+      "amount": 1600,
+      "bucket": "PENDING",
+      "status": "COMPLETED",
+      "reference": "mentor-earning-demo-ma-c3",
+      "description": "Consultation earning (held until completed)",
+      "metadata": {
+        "gross": 2000,
+        "basePrice": 2000,
+        "consultantShare": 1600,
+        "platformShare": 400,
+        "platformCommission": 400,
+        "platformRate": 0.2,
+        "mentorRate": 0.8
+      },
+      "createdAt": "2026-09-01T10:00:00.000Z",
+      "completedAt": "2026-09-01T10:00:00.000Z"
+    },
+    {
+      "id": "f57544e9-ccf7-4fe9-92a2-e5c3ff04d388",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c3",
+      "type": "COMMISSION",
+      "amount": -400,
+      "bucket": "PENDING",
+      "status": "COMPLETED",
+      "reference": "mentor-commission-demo-ma-c3",
+      "description": "Platform share on consultation",
+      "metadata": {
+        "gross": 2000,
+        "basePrice": 2000,
+        "consultantShare": 1600,
+        "platformShare": 400,
+        "tierDiscountAmount": 0,
+        "promoDiscountAmount": 0,
+        "totalDiscountAbsorbed": 0,
+        "platformRate": 0.2,
+        "mentorRate": 0.8,
+        "appliedPromoCode": null
+      },
+      "createdAt": "2026-09-01T10:00:00.000Z",
+      "completedAt": "2026-09-01T10:00:00.000Z"
+    },
+    {
+      "id": "21270835-02f5-4cdd-b8a4-3b00630b61c7",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c3",
+      "type": "RELEASE",
+      "amount": 1600,
+      "bucket": "AVAILABLE",
+      "status": "COMPLETED",
+      "reference": "mentor-release-demo-ma-c3",
+      "description": "Consultation earning released after completion",
+      "metadata": {
+        "earningTxnId": "39758b58-b4a0-4a07-a70f-3ddb094032ff"
+      },
+      "createdAt": "2026-09-01T10:00:00.000Z",
+      "completedAt": "2026-09-01T10:00:00.000Z"
+    },
+    {
+      "id": "82082b9d-3589-4062-9282-20b1dc838dc1",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c4",
+      "type": "EARNING",
+      "amount": 3200,
+      "bucket": "PENDING",
+      "status": "COMPLETED",
+      "reference": "mentor-earning-demo-ma-c4",
+      "description": "Consultation earning (held until completed)",
+      "metadata": {
+        "gross": 4000,
+        "basePrice": 4000,
+        "consultantShare": 3200,
+        "platformShare": 800,
+        "platformCommission": 800,
+        "platformRate": 0.2,
+        "mentorRate": 0.8
+      },
+      "createdAt": "2026-09-05T10:00:00.000Z",
+      "completedAt": "2026-09-05T10:00:00.000Z"
+    },
+    {
+      "id": "732db133-8ef6-413f-935d-28df0bff32c2",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c4",
+      "type": "COMMISSION",
+      "amount": -800,
+      "bucket": "PENDING",
+      "status": "COMPLETED",
+      "reference": "mentor-commission-demo-ma-c4",
+      "description": "Platform share on consultation",
+      "metadata": {
+        "gross": 4000,
+        "basePrice": 4000,
+        "consultantShare": 3200,
+        "platformShare": 800,
+        "tierDiscountAmount": 0,
+        "promoDiscountAmount": 0,
+        "totalDiscountAbsorbed": 0,
+        "platformRate": 0.2,
+        "mentorRate": 0.8,
+        "appliedPromoCode": null
+      },
+      "createdAt": "2026-09-05T10:00:00.000Z",
+      "completedAt": "2026-09-05T10:00:00.000Z"
+    },
+    {
+      "id": "add50df0-a9bd-4f10-b1ef-72f9663c819c",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c4",
+      "type": "RELEASE",
+      "amount": 3200,
+      "bucket": "AVAILABLE",
+      "status": "COMPLETED",
+      "reference": "mentor-release-demo-ma-c4",
+      "description": "Consultation earning released after completion",
+      "metadata": {
+        "earningTxnId": "82082b9d-3589-4062-9282-20b1dc838dc1"
+      },
+      "createdAt": "2026-09-05T10:00:00.000Z",
+      "completedAt": "2026-09-05T10:00:00.000Z"
+    },
+    {
+      "id": "1a0f259a-7ae2-4ecd-aff6-a590712a6d21",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c5",
+      "type": "EARNING",
+      "amount": 1600,
+      "bucket": "PENDING",
+      "status": "COMPLETED",
+      "reference": "mentor-earning-demo-ma-c5",
+      "description": "Consultation earning (held until completed)",
+      "metadata": {
+        "gross": 2000,
+        "basePrice": 2000,
+        "consultantShare": 1600,
+        "platformShare": 400,
+        "platformCommission": 400,
+        "platformRate": 0.2,
+        "mentorRate": 0.8
+      },
+      "createdAt": "2026-09-08T10:00:00.000Z",
+      "completedAt": "2026-09-08T10:00:00.000Z"
+    },
+    {
+      "id": "ad826a21-6c7a-43cc-9191-5ebd7384ba6b",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c5",
+      "type": "COMMISSION",
+      "amount": -400,
+      "bucket": "PENDING",
+      "status": "COMPLETED",
+      "reference": "mentor-commission-demo-ma-c5",
+      "description": "Platform share on consultation",
+      "metadata": {
+        "gross": 2000,
+        "basePrice": 2000,
+        "consultantShare": 1600,
+        "platformShare": 400,
+        "tierDiscountAmount": 0,
+        "promoDiscountAmount": 0,
+        "totalDiscountAbsorbed": 0,
+        "platformRate": 0.2,
+        "mentorRate": 0.8,
+        "appliedPromoCode": null
+      },
+      "createdAt": "2026-09-08T10:00:00.000Z",
+      "completedAt": "2026-09-08T10:00:00.000Z"
+    },
+    {
+      "id": "55ea5540-7573-46d3-a6fd-6f01635e1c1d",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c5",
+      "type": "RELEASE",
+      "amount": 1600,
+      "bucket": "AVAILABLE",
+      "status": "COMPLETED",
+      "reference": "mentor-release-demo-ma-c5",
+      "description": "Consultation earning released after completion",
+      "metadata": {
+        "earningTxnId": "1a0f259a-7ae2-4ecd-aff6-a590712a6d21"
+      },
+      "createdAt": "2026-09-08T10:00:00.000Z",
+      "completedAt": "2026-09-08T10:00:00.000Z"
+    },
+    {
+      "id": "976cd394-945c-4731-ab76-2d2ee4af2f9d",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c6",
+      "type": "EARNING",
+      "amount": 3200,
+      "bucket": "PENDING",
+      "status": "COMPLETED",
+      "reference": "mentor-earning-demo-ma-c6",
+      "description": "Consultation earning (held until completed)",
+      "metadata": {
+        "gross": 4000,
+        "basePrice": 4000,
+        "consultantShare": 3200,
+        "platformShare": 800,
+        "platformCommission": 800,
+        "platformRate": 0.2,
+        "mentorRate": 0.8
+      },
+      "createdAt": "2026-09-11T10:00:00.000Z",
+      "completedAt": "2026-09-11T10:00:00.000Z"
+    },
+    {
+      "id": "abb4ab61-6ea8-443c-8c7c-5bb01ea16427",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c6",
+      "type": "COMMISSION",
+      "amount": -800,
+      "bucket": "PENDING",
+      "status": "COMPLETED",
+      "reference": "mentor-commission-demo-ma-c6",
+      "description": "Platform share on consultation",
+      "metadata": {
+        "gross": 4000,
+        "basePrice": 4000,
+        "consultantShare": 3200,
+        "platformShare": 800,
+        "tierDiscountAmount": 0,
+        "promoDiscountAmount": 0,
+        "totalDiscountAbsorbed": 0,
+        "platformRate": 0.2,
+        "mentorRate": 0.8,
+        "appliedPromoCode": null
+      },
+      "createdAt": "2026-09-11T10:00:00.000Z",
+      "completedAt": "2026-09-11T10:00:00.000Z"
+    },
+    {
+      "id": "cd45c0f7-158f-4094-96c1-281017e9b21b",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": "demo-ma-c6",
+      "type": "RELEASE",
+      "amount": 3200,
+      "bucket": "AVAILABLE",
+      "status": "COMPLETED",
+      "reference": "mentor-release-demo-ma-c6",
+      "description": "Consultation earning released after completion",
+      "metadata": {
+        "earningTxnId": "976cd394-945c-4731-ab76-2d2ee4af2f9d"
+      },
+      "createdAt": "2026-09-11T10:00:00.000Z",
+      "completedAt": "2026-09-11T10:00:00.000Z"
+    },
+    {
+      "id": "2a5dfb57-6b70-41f3-8d04-2a2b7fa8ace1",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "bookingId": null,
+      "type": "PAYOUT",
+      "amount": -6000,
+      "bucket": "AVAILABLE",
+      "status": "PENDING",
+      "reference": "mentor-withdrawal-hold-d0eaaac2",
+      "description": "Withdrawal request — 6,000 DZD",
+      "metadata": {
+        "accountDetails": "Virement bancaire — RIB 00400123456789012345 — Mohamed Amine"
+      },
+      "createdAt": "2026-09-13T00:14:02.350Z",
+      "completedAt": null
     }
   ],
   "mentorWithdrawals": [
@@ -34608,6 +35731,22 @@
       "createdAt": "2026-06-19T23:44:32.461Z",
       "updatedAt": "2026-06-19T23:44:36.535Z",
       "adminNote": "QA payout"
+    },
+    {
+      "id": "8bbe0775-fb1e-4c5d-ae15-5bb6ea6e92eb",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "amount": 6000,
+      "accountDetails": "Virement bancaire — RIB 00400123456789012345 — Mohamed Amine",
+      "status": "PENDING",
+      "holdTxnId": "2a5dfb57-6b70-41f3-8d04-2a2b7fa8ace1",
+      "method": "bank_transfer",
+      "destinationAccountSnapshot": {
+        "accountType": "bank",
+        "accountNumber": "00400123456789012345",
+        "holderName": "Mohamed Amine"
+      },
+      "createdAt": "2026-09-13T00:14:02.350Z",
+      "updatedAt": "2026-09-13T00:14:02.350Z"
     }
   ],
   "mentorSessions": [
@@ -34826,11 +35965,18 @@
       "mentorId": "qa-mentor-id",
       "expiresAt": "2026-07-19T23:46:03.905Z",
       "createdAt": "2026-06-19T23:46:03.905Z"
+    },
+    {
+      "idHash": "2d7be8d6cc6917caf887bcdf8c5261a843d2e134f9ae38d439000ecbbfe48859",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "expiresAt": "2026-10-13T00:11:32.133Z",
+      "createdAt": "2026-09-13T00:11:32.133Z"
     }
   ],
   "mentorDeviceTokens": [],
   "mentorEmailTokens": [],
   "mentorSlotLocks": [],
+  "consultantContracts": [],
   "networkVisits": [],
   "partnerMemberships": [],
   "partnerPromoCodes": [],
