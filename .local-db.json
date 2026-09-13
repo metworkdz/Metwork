@@ -30472,6 +30472,26 @@
         }
       },
       "createdAt": "2026-08-22T00:47:28.321Z"
+    },
+    {
+      "id": "c7528992-9ed8-48a3-b2a7-271d8a3da8e2",
+      "adminId": "qa-admin",
+      "adminEmail": "qa.admin@metwork.test",
+      "action": "MENTOR_APPROVED",
+      "targetType": "mentor",
+      "targetId": "qa-approval-welcome",
+      "details": {},
+      "createdAt": "2026-09-13T20:06:29.670Z"
+    },
+    {
+      "id": "a7c9ed5c-10c5-4b70-b90c-eea035318192",
+      "adminId": "qa-admin",
+      "adminEmail": "qa.admin@metwork.test",
+      "action": "MENTOR_APPROVED",
+      "targetType": "mentor",
+      "targetId": "qa-approval-welcome",
+      "details": {},
+      "createdAt": "2026-09-13T20:06:31.700Z"
     }
   ],
   "notifications": [
