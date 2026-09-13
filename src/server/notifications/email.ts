@@ -213,7 +213,11 @@ function note(title: string, body: string): string {
 }
 
 /**
- * Welcome + how-it-works email for a new consultant, in French.
+ * Welcome + how-it-works email for a NEWLY APPROVED consultant, in French.
+ *
+ * Sent when an admin approves the profile, not at signup: it tells the reader
+ * their account is live and they can take bookings, which is only true after
+ * approval.
  *
  * French only, like the consultant contract: the portal UI is localised, but
  * this email is the company introducing itself to a consultant in Algeria, and
@@ -238,14 +242,14 @@ export function consultantWelcomeEmailHtml(opts: {
   return layout(`
     ${h1(greeting)}
     ${p(
-      'Votre compte consultant Metwork est créé. Voici comment tout fonctionne, ' +
+      'Votre compte consultant Metwork est validé. Voici comment tout fonctionne, ' +
         'de la mise en place de votre profil à votre premier client payé.',
     )}
 
     ${note(
-      'Votre profil est en cours de validation',
-      'Notre équipe le vérifie sous peu. En attendant, vous pouvez déjà tout configurer — ' +
-        'votre page publique et les réservations s’activent dès votre approbation.',
+      'Compte approuvé',
+      'Votre profil est validé&nbsp;: votre page publique est en ligne et vous pouvez recevoir ' +
+        'des réservations dès maintenant.',
     )}
 
     ${step(
@@ -270,9 +274,8 @@ export function consultantWelcomeEmailHtml(opts: {
     ${step(
       4,
       'Signez votre contrat consultant',
-      'Une fois votre profil validé, nous vous envoyons votre contrat. Vous le lisez dans votre espace, ' +
-        'vous le signez à l’écran, et un code à usage unique confirme la signature. Vous recevez ensuite ' +
-        'le PDF signé.',
+      'Nous vous envoyons votre contrat dans votre espace. Vous le lisez, vous le signez à l’écran, ' +
+        'et un code à usage unique confirme la signature. Vous recevez ensuite le PDF signé.',
     )}
     ${step(
       5,
