@@ -196,6 +196,24 @@ export default defineConfig({
       },
     },
     {
+      // Mobile screenshots of the consultant portal for the explainer video.
+      // Not assertions — it drives the real portal at iPhone 13 size and writes
+      // one JPEG per section. Needs CONSULTANT_SESSION (and optionally
+      // SHOTS_DIR); see the spec header.
+      //   npx playwright test --project=consultant-demo-shots
+      name: 'consultant-demo-shots',
+      testMatch: '**/consultant-demo-shots.spec.ts',
+      retries: 0,
+      timeout: 120_000,
+      use: {
+        // iPhone 13 metrics on Chromium — the repo only provisions Chromium,
+        // and the descriptor's default (WebKit) is not installed. Same reason
+        // as the entrepreneur-mobile project above.
+        ...devices['iPhone 13'],
+        browserName: 'chromium',
+      },
+    },
+    {
       // Admin startups management — admin sees all statuses (DRAFT included),
       // a non-admin gets 403 from the API, and hard-delete requires a
       // confirm/cancel round trip before cascading per decision D2 (bookmarks
