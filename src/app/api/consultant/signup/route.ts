@@ -25,10 +25,19 @@ import { createSelfSignupMentor } from '@/server/mentors/service';
 import { issueConsultantOtp, consultantOtpKey } from '@/server/mentors/access';
 import { stampOtpChannel } from '@/server/auth/otp';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
-import { sendConsultantOtp } from '@/server/notifications/mock';
+import { sendConsultantOtp, sendConsultantWelcomeEmail } from '@/server/notifications/mock';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+/**
+ * Where the welcome email sends the consultant.
+ *
+ * The real public origin, not NEXT_PUBLIC_APP_URL: an email is opened by an
+ * external mail client that can never resolve a localhost or preview URL. Same
+ * reasoning as EMAIL_PUBLIC_ORIGIN in the email templates.
+ */
+const CONSULTANT_PORTAL_URL = 'https://metwork.dz/mentordashboard';
 
 function getClientIp(req: NextRequest): string {
   return (
@@ -66,7 +75,7 @@ export async function POST(req: NextRequest) {
   // Create-if-absent (atomic dedupe inside the store update). When the email
   // already belongs to a consultant we fall through to issuing a SIGN-IN OTP
   // for that account — same generic response either way.
-  await createSelfSignupMentor({ ...input, email });
+  const created = await createSelfSignupMentor({ ...input, email });
 
   // Issue + send the OTP across all channels (fire-and-forget — never blocks
   // the signup result; enumeration-equalized inside issueConsultantOtp). The
@@ -86,6 +95,18 @@ export async function POST(req: NextRequest) {
     // Stamp the delivering channel on the live OTP so verification knows which
     // contact detail this code actually proves (phone vs email).
     if (channel) await stampOtpChannel(consultantOtpKey(issued.mentor.id), channel);
+  }
+
+  // Welcome + how-it-works, with the starter guide attached. Only for an
+  // account that was actually CREATED here: someone re-submitting the form with
+  // an email that already belongs to a consultant is signing in, not joining,
+  // and welcoming them again would be noise. Awaited for the same reason the
+  // OTP is, and self-catching — a mail failure must not fail the signup.
+  if (created.ok) {
+    await sendConsultantWelcomeEmail(email, {
+      fullName: input.fullName,
+      portalUrl: CONSULTANT_PORTAL_URL,
+    });
   }
 
   // Safe to disclose here: signup always resolves to a real account (created or

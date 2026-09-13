@@ -84,9 +84,22 @@ export async function sendResendEmail(opts: SendOptions): Promise<boolean> {
  */
 const EMAIL_PUBLIC_ORIGIN = 'https://metwork.dz';
 
-export function layout(content: string): string {
+/**
+ * Footer wording per language. English is the default so every existing caller
+ * renders exactly as before; a template written in French passes `lang: 'fr'`
+ * rather than signing off in a different language from its own body.
+ */
+const LAYOUT_FOOTER: Record<'en' | 'fr', (year: number) => string> = {
+  en: (year) =>
+    `You received this email from Metwork &mdash; Algeria&apos;s startup ecosystem platform.<br />&copy; ${year} Metwork. All rights reserved.`,
+  fr: (year) =>
+    `Vous recevez cet email de Metwork &mdash; la plateforme de l&rsquo;écosystème startup algérien.<br />&copy; ${year} Metwork. Tous droits réservés.`,
+};
+
+export function layout(content: string, opts: { lang?: 'en' | 'fr' } = {}): string {
+  const lang = opts.lang ?? 'en';
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -114,8 +127,7 @@ export function layout(content: string): string {
         <tr>
           <td style="padding:24px 40px;background:#f9fafb;border-top:1px solid #e4e4e7;">
             <p style="margin:0;font-size:12px;color:#71717a;line-height:1.6;">
-              You received this email from Metwork &mdash; Algeria&apos;s startup ecosystem platform.<br />
-              &copy; ${new Date().getFullYear()} Metwork. All rights reserved.
+              ${LAYOUT_FOOTER[lang](new Date().getFullYear())}
             </p>
           </td>
         </tr>
@@ -157,6 +169,147 @@ export function welcomeEmailHtml(opts: { fullName: string; role: string; dashboa
     ${button(opts.dashboardUrl, 'Go to your dashboard')}
     ${p('<span style="color:#71717a;font-size:13px;">If you have any questions, reply to this email or visit our help centre.</span>')}
   `);
+}
+
+/* ─────────────── Consultant welcome (onboarding) ─────────────── */
+
+/** Metwork's consultation commission, quoted to consultants up front. */
+const CONSULTANT_COMMISSION_TEXT = '20&nbsp;% sur les consultations et 5&nbsp;% sur les programmes';
+
+/**
+ * One numbered step of the onboarding sequence.
+ *
+ * Built as a two-cell table rather than a list: Outlook ignores `list-style`
+ * customisation, and the numbered badge is the thing that makes the sequence
+ * readable at a glance.
+ */
+function step(n: number, title: string, body: string): string {
+  return `
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 18px;">
+    <tr>
+      <td width="34" valign="top" style="padding:2px 14px 0 0;">
+        <table cellpadding="0" cellspacing="0" role="presentation">
+          <tr><td width="28" height="28" align="center" valign="middle"
+                  style="width:28px;height:28px;background:#30a735;border-radius:14px;color:#ffffff;font-size:13px;font-weight:700;font-family:Inter,Helvetica,Arial,sans-serif;line-height:28px;">${n}</td></tr>
+        </table>
+      </td>
+      <td valign="top">
+        <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#09090b;line-height:1.4;">${title}</p>
+        <p style="margin:0;font-size:14px;color:#52525b;line-height:1.65;">${body}</p>
+      </td>
+    </tr>
+  </table>`;
+}
+
+/** Soft-green callout used for the "profile under review" and commission notes. */
+function note(title: string, body: string): string {
+  return `
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 24px;background:#f0f9f2;border:1px solid #cfe9d6;border-radius:10px;">
+    <tr><td style="padding:16px 18px;">
+      <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#1b7a33;">${title}</p>
+      <p style="margin:0;font-size:14px;color:#3f6b48;line-height:1.6;">${body}</p>
+    </td></tr>
+  </table>`;
+}
+
+/**
+ * Welcome + how-it-works email for a new consultant, in French.
+ *
+ * French only, like the consultant contract: the portal UI is localised, but
+ * this email is the company introducing itself to a consultant in Algeria, and
+ * French is the language the guide, the contract and the support replies are
+ * already written in.
+ *
+ * Deliberately describes the product AS BUILT, which is not in every respect
+ * what the LinkedIn carousel says: sign-in is by EMAIL code (delivered by email
+ * and WhatsApp), and a paid booking is confirmed automatically — the consultant
+ * approves nothing. Promising an approval step that does not exist is how a
+ * consultant ends up waiting for a button that never appears.
+ */
+export function consultantWelcomeEmailHtml(opts: {
+  fullName: string;
+  portalUrl: string;
+  /** True when the guide PDF is attached, so the email only claims it when it is. */
+  guideAttached?: boolean;
+}): string {
+  const firstName = (opts.fullName || '').trim().split(/\s+/)[0] || '';
+  const greeting = firstName ? `Bienvenue, ${firstName}.` : 'Bienvenue.';
+
+  return layout(`
+    ${h1(greeting)}
+    ${p(
+      'Votre compte consultant Metwork est créé. Voici comment tout fonctionne, ' +
+        'de la mise en place de votre profil à votre premier client payé.',
+    )}
+
+    ${note(
+      'Votre profil est en cours de validation',
+      'Notre équipe le vérifie sous peu. En attendant, vous pouvez déjà tout configurer — ' +
+        'votre page publique et les réservations s’activent dès votre approbation.',
+    )}
+
+    ${step(
+      1,
+      'Complétez votre profil',
+      'Photo, biographie, domaines d’expertise et ville. Ajoutez aussi votre <strong>adresse complète</strong> ' +
+        'et votre <strong>numéro de pièce d’identité</strong>&nbsp;: ils sont nécessaires pour établir votre contrat.',
+    )}
+    ${step(
+      2,
+      'Ouvrez vos disponibilités',
+      'Choisissez vos créneaux jour par jour. Vos clients ne peuvent réserver que sur les horaires ' +
+        'que vous avez ouverts — vous gardez le contrôle de votre emploi du temps.',
+    )}
+    ${step(
+      3,
+      'Fixez votre tarif horaire',
+      'Indiquez votre prix par heure. Les séances sont facturées au prorata de leur durée ' +
+        '(30&nbsp;min, 1&nbsp;h, 2&nbsp;h) — aucun calcul de votre côté. Vous pouvez aussi proposer ' +
+        'un premier appel découverte gratuit.',
+    )}
+    ${step(
+      4,
+      'Signez votre contrat consultant',
+      'Une fois votre profil validé, nous vous envoyons votre contrat. Vous le lisez dans votre espace, ' +
+        'vous le signez à l’écran, et un code à usage unique confirme la signature. Vous recevez ensuite ' +
+        'le PDF signé.',
+    )}
+    ${step(
+      5,
+      'Partagez votre lien de réservation',
+      'Chaque consultant a un lien personnel. Partagez-le sur LinkedIn, WhatsApp ou par email — ' +
+        'vos clients réservent directement, sans créer de compte.',
+    )}
+    ${step(
+      6,
+      'Recevez votre premier client',
+      'Le client choisit un créneau et règle en ligne par carte CIB ou Edahabia. La réservation est ' +
+        'confirmée automatiquement, vous n’avez rien à approuver&nbsp;: vous recevez la notification, ' +
+        'et la session est prête dès que votre lien de réunion est en place ' +
+        '(définissez-en un par défaut, une fois pour toutes).',
+    )}
+    ${step(
+      7,
+      'Suivez vos revenus et retirez vos gains',
+      'Chaque consultation payée alimente votre solde Metwork. Demandez un retrait quand vous le ' +
+        'souhaitez, à partir de 500&nbsp;DA&nbsp;: virement bancaire, CCP ou chèque.',
+    )}
+
+    ${note(
+      'La commission Metwork',
+      `Metwork retient ${CONSULTANT_COMMISSION_TEXT}. Le reste vous revient, et le détail de chaque ` +
+        'séance est visible dans votre tableau de bord.',
+    )}
+
+    ${button(opts.portalUrl, 'Ouvrir mon espace consultant')}
+
+    ${p(
+      opts.guideAttached
+        ? '<span style="color:#71717a;font-size:13px;">Le guide complet en 8&nbsp;étapes est joint à cet email (PDF). ' +
+          'Une question&nbsp;? Répondez simplement à ce message.</span>'
+        : '<span style="color:#71717a;font-size:13px;">Une question&nbsp;? Répondez simplement à ce message.</span>',
+    )}
+  `, { lang: 'fr' });
 }
 
 /* ─────────────── Incubator approval (admin gate) ─────────────── */

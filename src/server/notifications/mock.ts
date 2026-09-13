@@ -11,6 +11,7 @@
  */
 
 import { recordE2eEmail } from './e2e-email-sink';
+import { loadConsultantGuidePdf, CONSULTANT_GUIDE_FILENAME } from './consultant-guide';
 import { sendWhatsAppOTP, sendSMSOTP, sendSMSMessage, sendWhatsAppMessage, sendWhatsAppNewBookingTemplate, sendWhatsAppIncubatorBookingTemplate } from './sms';
 import {
   sendResendEmail,
@@ -29,6 +30,7 @@ import {
   bookingUpdatedEmailHtml,
   bookingProviderCancelledEmailHtml,
   contractReadyEmailHtml,
+  consultantWelcomeEmailHtml,
   contractDetailsRequestEmailHtml,
   withdrawalRequestedEmailHtml,
   withdrawalProcessedEmailHtml,
@@ -937,6 +939,48 @@ export function sendContractDetailsRequestEmail(
     .catch((err: Error) => {
       // eslint-disable-next-line no-console
       console.error(`${banner} Resend details-request email failed →`, err.message);
+    });
+}
+
+/**
+ * Welcome a new consultant and explain how the platform works.
+ *
+ * Sent once, at signup, alongside the sign-in code — this is the "what happens
+ * now" message, and it carries the 8-step guide as a PDF attachment.
+ *
+ * The attachment is BEST-EFFORT: if the guide cannot be fetched the email still
+ * goes out, with the sentence that references it removed, because an onboarding
+ * email that never arrives is worse than one that arrives without its annexe.
+ *
+ * RETURNS THE PROMISE, and the caller MUST await it. On Vercel the lambda
+ * freezes the moment the response is returned, so a floating send is never
+ * delivered. Self-catching, so awaiting it can never throw into the caller: a
+ * mail failure must not fail a signup that has genuinely succeeded.
+ */
+export async function sendConsultantWelcomeEmail(
+  email: string,
+  opts: { fullName: string; portalUrl: string },
+): Promise<void> {
+  const guide = await loadConsultantGuidePdf();
+  recordE2eEmail('consultant-welcome', { to: email, guideAttached: guide !== null });
+  await sendResendEmail({
+    to: email,
+    subject: 'Bienvenue sur l\u2019espace consultant Metwork',
+    html: consultantWelcomeEmailHtml({ ...opts, guideAttached: guide !== null }),
+    attachments: guide ? [{ filename: CONSULTANT_GUIDE_FILENAME, content: guide }] : undefined,
+    // The email invites a reply ("une question ? répondez à ce message"), and
+    // `from` is the unattended noreply@ sender.
+    replyTo: process.env.CONTACT_EMAIL,
+  })
+    .then((sent) => {
+      if (!sent) {
+        // eslint-disable-next-line no-console
+        console.log(`${banner} EMAIL (consultant-welcome) \u2192 ${email}`);
+      }
+    })
+    .catch((err: Error) => {
+      // eslint-disable-next-line no-console
+      console.error(`${banner} Resend consultant-welcome email failed \u2192`, err.message);
     });
 }
 
