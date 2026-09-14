@@ -610,6 +610,14 @@ export interface BookingRecord {
   /** Cash still due on site (T − D for CASH_DEPOSIT, 0 for ONLINE_FULL). */
   cashRemainingAmount?: number;
   /**
+   * Cash already handed over IN PERSON, before any balance is due — a walk-in
+   * who paid a deposit at the desk. Distinct from `onlinePaidAmount`, which is
+   * money that moved through the platform: this never touched a card rail, so
+   * it carries no commission and no transaction, and the receipt must not call
+   * it "paid online". Absent on every card and legacy booking.
+   */
+  cashDepositPaidAmount?: number;
+  /**
    * Receiver-side platform commission taken from the provider at settlement
    * (0 for FLAT/Pro subs). Central commission engine output. Historically this
    * was computed on the TOTAL; under the engine it is computed on the ONLINE

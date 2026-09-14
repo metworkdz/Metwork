@@ -8,6 +8,7 @@
  *  - Status filter tabs (All / Confirmed / Waitlisted / Cancelled)
  *  - Paginated results
  *  - Cancel action per row
+ *  - Add a participant recorded at the desk
  *  - CSV export button
  *  - Custom field answer expansion
  */
@@ -19,12 +20,17 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AddParticipantDialog } from './add-participant-dialog';
 import type { Registration, RegistrationFormField, RegistrationStatus } from '@/types/domain';
 
 interface RegistrationsTableProps {
   entityType: 'PROGRAM' | 'EVENT';
   entityId: string;
   entityTitle: string;
+  /** Cash price, prefilled as the total when adding someone at the desk. */
+  defaultAmount?: number;
+  /** Which surface owns this listing — incubator dashboard or consultant portal. */
+  endpoint?: '/api/incubator/registrations' | '/api/consultant/registrations';
 }
 
 const PAGE_SIZE = 20;
@@ -35,6 +41,8 @@ export function RegistrationsTable({
   entityType,
   entityId,
   entityTitle,
+  defaultAmount = 0,
+  endpoint = '/api/incubator/registrations',
 }: RegistrationsTableProps) {
   const t = useTranslations('registrationsTable');
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -144,9 +152,27 @@ export function RegistrationsTable({
             {t('subtitle', { count: total, title: entityTitle })}
           </p>
         </div>
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExport}>
-          <Download className="size-4" /> {t('exportCsv')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExport}>
+            <Download className="size-4" /> {t('exportCsv')}
+          </Button>
+          <AddParticipantDialog
+            entityType={entityType}
+            entityId={entityId}
+            formFields={formFields}
+            defaultAmount={defaultAmount}
+            endpoint={endpoint}
+            // Re-read from page 1 with the filters cleared: a newly added
+            // person is the newest row, and leaving a "Cancelled" filter on
+            // would hide the very thing the host just created.
+            onAdded={() => {
+              setStatusFilter('ALL');
+              setSearch('');
+              setPage(1);
+              void fetchData({ page: 1, q: '', status: 'ALL' });
+            }}
+          />
+        </div>
       </div>
 
       {/* Controls */}

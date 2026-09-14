@@ -11,6 +11,7 @@ import { db } from '@/server/db/store';
 import { listFormFields } from '@/server/registrations/service';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { ProgramRegistrationDashboard } from '@/components/features/registrations/program-registration-dashboard';
+import { resolveListingPricing } from '@/lib/listing-price';
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
@@ -42,6 +43,7 @@ export default async function IncubatorEventDetailPage({ params }: PageProps) {
         entityTitle={event.title}
         entitySlug={event.slug ?? null}
         initialFormFields={formFields}
+        defaultAmount={resolveListingPricing(event.price, event).cash}
       />
     </div>
   );

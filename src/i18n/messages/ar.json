@@ -1167,7 +1167,8 @@
       "filterAwaitingPayment": "بانتظار الدفع",
       "cancelUnpaid": "إلغاء",
       "filterAwaitingApproval": "في انتظار الموافقة",
-      "filterApprovedUnpaid": "موافَق عليه — غير مدفوع"
+      "filterApprovedUnpaid": "موافَق عليه — غير مدفوع",
+      "paidAtOffice": "المدفوع في المكتب: {amount}"
     },
     "clients": {
       "editTitle": "تعديل العميل",
@@ -5286,7 +5287,28 @@
     "viewAnswers": "عرض الإجابات",
     "cancel": "إلغاء",
     "cancelConfirm": "إلغاء هذا التسجيل؟ لن يتم إخطار المسجل تلقائياً.",
-    "paginationInfo": "{from}–{to} من {total}"
+    "paginationInfo": "{from}–{to} من {total}",
+    "addParticipant": {
+      "cta": "إضافة مشارك",
+      "title": "إضافة مشارك",
+      "hint": "لشخص سجّل في المكتب. سيصله نفس بريد التأكيد الذي يصل المسجّلين عبر الإنترنت، مع بيان ما دفعه وما تبقّى عليه.",
+      "labelName": "الاسم الكامل",
+      "labelEmail": "البريد الإلكتروني",
+      "emailHint": "إلزامي — يُحتسب المقعد حسب البريد الإلكتروني ويُرسل التأكيد إليه.",
+      "labelPhone": "رقم الهاتف",
+      "labelTotal": "السعر الإجمالي",
+      "totalHint": "مملوء مسبقاً بالسعر النقدي. غيّره إذا اتفقت على مبلغ آخر.",
+      "labelDeposit": "المدفوع الآن نقداً",
+      "depositHint": "اتركه 0 إذا لم يدفع شيئاً بعد.",
+      "summaryPaid": "المدفوع في المكتب",
+      "summaryDue": "المطلوب تحصيله يوم الحدث",
+      "selectPlaceholder": "اختر…",
+      "submit": "إضافة المشارك",
+      "cancel": "إلغاء",
+      "errorDuplicate": "هذا البريد الإلكتروني موجود بالفعل في قائمة المشاركين.",
+      "errorFull": "لا توجد مقاعد متبقية — اكتمل العدد.",
+      "errorGeneric": "تعذّرت إضافة المشارك. يُرجى المحاولة مرة أخرى."
+    }
   },
   "registrationDashboard": {
     "tabRegistrations": "التسجيلات",

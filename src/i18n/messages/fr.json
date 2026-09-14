@@ -1167,7 +1167,8 @@
       "filterAwaitingPayment": "En attente de paiement",
       "cancelUnpaid": "Annuler",
       "filterAwaitingApproval": "En attente d'approbation",
-      "filterApprovedUnpaid": "Approuvée — impayée"
+      "filterApprovedUnpaid": "Approuvée — impayée",
+      "paidAtOffice": "Payé sur place : {amount}"
     },
     "clients": {
       "editTitle": "Modifier le client",
@@ -5286,7 +5287,28 @@
     "viewAnswers": "Voir les réponses",
     "cancel": "Annuler",
     "cancelConfirm": "Annuler cette inscription ? Le candidat ne sera pas notifié automatiquement.",
-    "paginationInfo": "{from}–{to} sur {total}"
+    "paginationInfo": "{from}–{to} sur {total}",
+    "addParticipant": {
+      "cta": "Ajouter un participant",
+      "title": "Ajouter un participant",
+      "hint": "Pour une personne inscrite sur place. Elle reçoit le même email de confirmation qu'une inscription en ligne, indiquant ce qu'elle a payé et ce qui reste à régler.",
+      "labelName": "Nom complet",
+      "labelEmail": "Email",
+      "emailHint": "Obligatoire — la place est comptée par email et la confirmation est envoyée ici.",
+      "labelPhone": "Téléphone",
+      "labelTotal": "Prix total",
+      "totalHint": "Prérempli avec le tarif en espèces. Modifiez-le si vous avez convenu un autre montant.",
+      "labelDeposit": "Payé maintenant, en espèces",
+      "depositHint": "Laissez 0 si la personne n'a encore rien payé.",
+      "summaryPaid": "Payé sur place",
+      "summaryDue": "À encaisser le jour J",
+      "selectPlaceholder": "Sélectionner…",
+      "submit": "Ajouter le participant",
+      "cancel": "Annuler",
+      "errorDuplicate": "Cet email est déjà dans la liste des participants.",
+      "errorFull": "Plus de places disponibles — tout est complet.",
+      "errorGeneric": "Impossible d'ajouter le participant. Veuillez réessayer."
+    }
   },
   "registrationDashboard": {
     "tabRegistrations": "Inscriptions",

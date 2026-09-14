@@ -41,8 +41,17 @@ export async function markCashPaid(input: {
     if (!booking) return { ok: false, reason: 'NOT_FOUND' };
     if (!input.isOwned(booking)) return { ok: false, reason: 'FORBIDDEN' };
 
-    // Only card CASH_DEPOSIT bookings have a cash leg to collect.
-    if (booking.paymentMethod !== 'card' || booking.paymentMode !== 'CASH_DEPOSIT') {
+    // A cash leg exists on two shapes, and only these two:
+    //   • card  + CASH_DEPOSIT — deposit charged online, balance due on site
+    //   • manual + CASH_DEPOSIT — a walk-in recorded at the desk, who may have
+    //     paid a deposit in cash (`cashDepositPaidAmount`) or nothing yet
+    // The CASH_DEPOSIT test is what does the work: a plain manual booking
+    // leaves `paymentMode` unset and is still refused, so this cannot become a
+    // way to mark an arbitrary booking paid.
+    if (
+      (booking.paymentMethod !== 'card' && booking.paymentMethod !== 'manual') ||
+      booking.paymentMode !== 'CASH_DEPOSIT'
+    ) {
       return { ok: false, reason: 'NOT_CASH_DEPOSIT' };
     }
     // A reversed/cancelled booking has no balance to collect.

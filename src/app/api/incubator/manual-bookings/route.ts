@@ -11,6 +11,7 @@ import { z, ZodError } from 'zod';
 import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db, type ClientRecord, type SpaceRecord } from '@/server/db/store';
 import { checkSpaceAvailability } from '@/server/bookings/availability';
+import { countAttendance } from '@/server/attendance';
 import { holdDeskForBooking } from '@/server/spaces/availability';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -122,11 +123,13 @@ export async function POST(req: NextRequest) {
     } else {
       const program = (d.programs ?? []).find((p) => p.id === input.itemId && p.incubatorId === incubator.id);
       if (!program) return 'ITEM_NOT_FOUND' as const;
-      // Overbooking guard
-      const taken = d.bookings.filter(
-        (b) => b.itemKind === 'PROGRAM' && b.itemId === input.itemId &&
-               b.status !== 'CANCELLED' && b.status !== 'REFUNDED',
-      ).length;
+      // Overbooking guard — the UNIFIED count. This used to tally bookings
+      // only, so every seat held by a public registration was invisible to it
+      // and the desk could keep adding people past a room that was already
+      // full. It also counted PENDING_PAYMENT intents, which hold no seat, so
+      // it could refuse a seat that was genuinely free. `countAttendance` is
+      // what the public badge and the booking gate read; this now agrees.
+      const taken = countAttendance(d, 'PROGRAM', input.itemId);
       if (taken >= program.seatsTotal) return 'PROGRAM_FULL' as const;
       itemName = program.title;
       city = program.city;

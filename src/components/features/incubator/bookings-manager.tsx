@@ -206,7 +206,13 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                 <TableBody>
                   {filtered.map((b) => {
                     const isOffline = b.source === 'offline';
-                    const isCashDeposit = b.paymentMethod === 'card' && b.paymentMode === 'CASH_DEPOSIT';
+                    // Two shapes carry a cash balance: a card deposit paid
+                    // online, and a desk sale recorded by the host. Keying on
+                    // `card` alone hid the collect button on every walk-in —
+                    // the server accepts both, so the UI must offer both.
+                    const isCashDeposit =
+                      (b.paymentMethod === 'card' || b.paymentMethod === 'manual') &&
+                      b.paymentMode === 'CASH_DEPOSIT';
                     const awaitingCash = isCashDeposit && b.status === 'CONFIRMED' && b.paymentStatus === 'AWAITING_CASH';
                     const cashCollected = isCashDeposit && b.paymentStatus === 'PAID';
                     const balanceDue = b.cashRemainingAmount ?? 0;
@@ -267,8 +273,16 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                           )}
                           {isCashDeposit && balanceDue > 0 && (
                             <>
+                              {/* Cash taken at the desk never went online —
+                                  label it for what it was. */}
                               <div className="mt-0.5 text-xs font-normal text-muted-foreground">
-                                {t('paidOnline', { amount: `${(b.onlinePaidAmount ?? 0).toLocaleString()} DZD` })}
+                                {(b.cashDepositPaidAmount ?? 0) > 0
+                                  ? t('paidAtOffice', {
+                                      amount: `${(b.cashDepositPaidAmount ?? 0).toLocaleString()} DZD`,
+                                    })
+                                  : t('paidOnline', {
+                                      amount: `${(b.onlinePaidAmount ?? 0).toLocaleString()} DZD`,
+                                    })}
                               </div>
                               <div className={`text-xs font-normal ${awaitingCash ? 'text-amber-600' : 'text-muted-foreground'}`}>
                                 {awaitingCash

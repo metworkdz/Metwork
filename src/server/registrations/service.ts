@@ -110,6 +110,21 @@ export interface InsertRegistrationInput extends CreateRegistrationInput {
     /** Full amount owed on site (integer DZD). */
     amountDue: number;
     clientReference: string;
+    /**
+     * Cash already collected in person when the row was created — a walk-in
+     * paying a deposit at the desk. 0 (the default) is the public path, where
+     * nothing has been handed over yet.
+     */
+    depositPaidAmount?: number;
+    /**
+     * True when an operator recorded this at the desk rather than a visitor
+     * filling the public form. An offline row is CONFIRMED on arrival: the
+     * host has the person in front of them, so there is no payment to wait
+     * for. The public path stays PENDING_PAYMENT.
+     */
+    offline?: boolean;
+    /** Actor who took the money — stamped only when nothing remains owed. */
+    collectedByActorId?: string | null;
   } | null;
 }
 
@@ -337,7 +352,12 @@ export function pruneListingChildrenSync(
 export function insertRegistrationSync(
   d: StoreDraft,
   input: InsertRegistrationInput,
-): { registration: RegistrationRecord; alreadyRegistered: boolean } {
+): {
+  registration: RegistrationRecord;
+  alreadyRegistered: boolean;
+  /** The cash booking written alongside, when one was. */
+  cashBooking?: { id: string; paid: number; due: number; paidAtOffice: boolean };
+} {
   if (!Array.isArray(d.registrations)) d.registrations = [];
 
   const email = input.email.trim().toLowerCase();
@@ -443,15 +463,24 @@ export function insertRegistrationSync(
   // (`bookingHoldsSeat`) — the CONFIRMED registration above is what reserves
   // the place, and this row is the money side of the same act.
   const cash = input.cashReservation;
+  let cashBooking: { id: string; paid: number; due: number; paidAtOffice: boolean } | undefined;
   if (cash) {
     const already = d.bookings.find(
       (b) => b.clientReference === cash.clientReference && b.itemId === cash.listing.id,
     );
     if (!already) {
+      // A deposit can never exceed what is owed, however the caller asked.
+      const deposit = Math.min(Math.max(0, Math.round(cash.depositPaidAmount ?? 0)), cash.amountDue);
+      const remaining = cash.amountDue - deposit;
+      // An offline row is CONFIRMED because the person is standing there; the
+      // public one waits. Both are deduped against the CONFIRMED registration
+      // by email in `countAttendance`, so neither can double-count a seat.
+      const settled = cash.offline && remaining === 0;
+      const cashBookingId = randomUUID();
       d.bookings.push({
-        id: randomUUID(),
+        id: cashBookingId,
         userId: input.userId,
-        source: 'online',
+        source: cash.offline ? 'offline' : 'online',
         paymentMethod: 'manual',
         clientName: rec.fullName,
         clientEmail: rec.email,
@@ -467,20 +496,43 @@ export function insertRegistrationSync(
         ...(cash.listing.startsAtHasClockTime ? { startsAtHasClockTime: true } : {}),
         endsAt: cash.listing.endsAt,
         totalAmount: cash.amountDue,
-        status: 'PENDING_PAYMENT',
+        status: cash.offline ? 'CONFIRMED' : 'PENDING_PAYMENT',
         clientReference: cash.clientReference,
         transactionId: null,
         paymentMode: 'CASH_DEPOSIT',
+        // Nothing moved through a card rail on either path, so the ONLINE
+        // amount stays 0 and no commission is taken. A desk deposit is its own
+        // field — see `cashDepositPaidAmount` on BookingRecord.
         onlinePaidAmount: 0,
-        cashRemainingAmount: cash.amountDue,
+        ...(deposit > 0 ? { cashDepositPaidAmount: deposit } : {}),
+        cashRemainingAmount: remaining,
+        ...(cash.offline
+          ? {
+              paymentStatus: settled ? 'PAID' : 'AWAITING_CASH',
+              ...(settled
+                ? { cashCollectedAt: now, cashCollectedBy: cash.collectedByActorId ?? null }
+                : {}),
+            }
+          : {}),
         bookingLocale: input.locale ?? null,
         createdAt: now,
         updatedAt: now,
       } as never);
+      // Link the two halves of the same act. Without this the registration
+      // carried no bookingId, so the confirmation email had no way to reach
+      // the amounts and went out saying nothing at all about money owed — on
+      // a reservation whose entire point is money owed.
+      rec.bookingId = cashBookingId;
+      cashBooking = {
+        id: cashBookingId,
+        paid: deposit,
+        due: remaining,
+        paidAtOffice: Boolean(cash.offline) && deposit > 0,
+      };
     }
   }
 
-  return { registration: rec, alreadyRegistered: false };
+  return { registration: rec, alreadyRegistered: false, cashBooking };
 }
 
 /**
@@ -498,9 +550,14 @@ export async function createRegistration(input: InsertRegistrationInput): Promis
   if (result.alreadyRegistered) return result;
 
   // Confirmation email (fire-and-forget). Re-read so the sender sees the row
-  // it is describing.
+  // it is describing. A cash reservation carries its amounts through, so the
+  // receipt states what was handed over and what is still owed on the day.
   const data = await db.read();
-  void sendConfirmationEmail(result.registration, data, input.entityType, input.entityId);
+  const cb = result.cashBooking;
+  const payment: RegistrationPaymentSummary | null = cb
+    ? { paidOnline: cb.paid, dueOnSite: cb.due, paidAtOffice: cb.paidAtOffice }
+    : null;
+  void sendConfirmationEmail(result.registration, data, input.entityType, input.entityId, payment);
 
   return result;
 }
@@ -618,10 +675,16 @@ function getEntityTitle(
 
 /** What a PAID registrant settled, so the email can say so. Integer DZD. */
 export interface RegistrationPaymentSummary {
-  /** Charged online by card now (deposit, or the full amount). */
+  /** Already paid — by card online, or in cash at the desk. 0 shows no row. */
   paidOnline: number;
   /** Still to be handed over on site. 0 when paid in full. */
   dueOnSite: number;
+  /**
+   * The paid amount was handed over IN PERSON, not charged online. Telling a
+   * walk-in that her cash was "paid online" is the kind of wrong detail that
+   * makes someone doubt the whole receipt.
+   */
+  paidAtOffice?: boolean;
 }
 
 /**
@@ -645,6 +708,7 @@ const CONFIRMATION_COPY: Record<EmailLang, {
   entityEvent: string;
   hostedBy: (host: string) => string;
   paidOnline: string;
+  paidAtOffice: string;
   dueOnSite: string;
   paidInFull: string;
   rowName: string;
@@ -665,6 +729,7 @@ const CONFIRMATION_COPY: Record<EmailLang, {
     entityEvent: 'Event',
     hostedBy: (h) => `Hosted by ${h}`,
     paidOnline: 'Paid online',
+    paidAtOffice: 'Paid at the office',
     dueOnSite: 'To pay on site',
     paidInFull: 'Paid in full — nothing to settle on the day.',
     rowName: 'Name',
@@ -685,6 +750,7 @@ const CONFIRMATION_COPY: Record<EmailLang, {
     entityEvent: 'Événement',
     hostedBy: (h) => `Organisé par ${h}`,
     paidOnline: 'Payé en ligne',
+    paidAtOffice: 'Payé sur place',
     dueOnSite: 'À payer sur place',
     paidInFull: 'Payé intégralement — rien à régler le jour J.',
     rowName: 'Nom',
@@ -705,6 +771,7 @@ const CONFIRMATION_COPY: Record<EmailLang, {
     entityEvent: 'الفعالية',
     hostedBy: (h) => `من تنظيم ${h}`,
     paidOnline: 'المدفوع عبر الإنترنت',
+    paidAtOffice: 'المدفوع في المكتب',
     dueOnSite: 'المطلوب في المكان',
     paidInFull: 'تم الدفع بالكامل — لا شيء مستحق يوم الحدث.',
     rowName: 'الاسم',
@@ -763,10 +830,14 @@ async function sendConfirmationEmail(
     const paymentHtml = payment
       ? `<table width="100%" cellpadding="0" cellspacing="0"
                 style="border:1px solid #e4e4e7;border-radius:8px;overflow:hidden;margin-bottom:20px;">
-           <tr>
-             <td style="${cell}color:#71717a;font-weight:600;width:160px;border-bottom:1px solid #f4f4f5;">${c.paidOnline}</td>
-             <td style="${cell}color:#09090b;font-weight:600;border-bottom:1px solid #f4f4f5;">${fmtDzd(payment.paidOnline)}</td>
-           </tr>
+           ${payment.paidOnline > 0
+             ? `<tr>
+                  <td style="${cell}color:#71717a;font-weight:600;width:160px;border-bottom:1px solid #f4f4f5;">${
+                    payment.paidAtOffice ? c.paidAtOffice : c.paidOnline
+                  }</td>
+                  <td style="${cell}color:#09090b;font-weight:600;border-bottom:1px solid #f4f4f5;">${fmtDzd(payment.paidOnline)}</td>
+                </tr>`
+             : ''}
            ${payment.dueOnSite > 0
              ? `<tr>
                   <td style="${cell}color:#71717a;font-weight:600;">${c.dueOnSite}</td>
@@ -862,11 +933,16 @@ export async function dispatchRegistrationConfirmationIfDue(bookingId: string): 
 
     const data = await db.read();
     const booking = data.bookings.find((b) => b.id === bookingId);
+    // A desk deposit never touched a card rail, so it is reported as cash in
+    // hand rather than as an online charge — different field, different label.
+    const deskDeposit = booking?.cashDepositPaidAmount ?? 0;
     const payment: RegistrationPaymentSummary | null = booking
-      ? {
-          paidOnline: booking.onlineChargeAmount ?? booking.onlinePaidAmount ?? 0,
-          dueOnSite: booking.cashRemainingAmount ?? 0,
-        }
+      ? deskDeposit > 0
+        ? { paidOnline: deskDeposit, dueOnSite: booking.cashRemainingAmount ?? 0, paidAtOffice: true }
+        : {
+            paidOnline: booking.onlineChargeAmount ?? booking.onlinePaidAmount ?? 0,
+            dueOnSite: booking.cashRemainingAmount ?? 0,
+          }
       : null;
 
     await sendConfirmationEmail(reg, data, reg.entityType, reg.entityId, payment);

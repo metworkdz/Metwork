@@ -22,6 +22,8 @@ interface ProgramRegistrationDashboardProps {
   entityTitle: string;
   entitySlug: string | null;
   initialFormFields: RegistrationFormField[];
+  /** Cash price, prefilled when the host adds someone at the desk. */
+  defaultAmount?: number;
 }
 
 type Tab = 'form' | 'registrations';
@@ -32,6 +34,7 @@ export function ProgramRegistrationDashboard({
   entityTitle,
   entitySlug,
   initialFormFields,
+  defaultAmount = 0,
 }: ProgramRegistrationDashboardProps) {
   const t = useTranslations('registrationDashboard');
   const [tab, setTab] = useState<Tab>('registrations');
@@ -110,6 +113,7 @@ export function ProgramRegistrationDashboard({
             entityType={entityType}
             entityId={entityId}
             entityTitle={entityTitle}
+            defaultAmount={defaultAmount}
           />
         )}
       </div>

@@ -1167,7 +1167,8 @@
       "filterAwaitingPayment": "Awaiting payment",
       "cancelUnpaid": "Cancel",
       "filterAwaitingApproval": "Awaiting approval",
-      "filterApprovedUnpaid": "Approved — unpaid"
+      "filterApprovedUnpaid": "Approved — unpaid",
+      "paidAtOffice": "Paid at the office: {amount}"
     },
     "clients": {
       "editTitle": "Edit client",
@@ -5286,7 +5287,28 @@
     "viewAnswers": "View answers",
     "cancel": "Cancel",
     "cancelConfirm": "Cancel this registration? The registrant will not be notified automatically.",
-    "paginationInfo": "{from}–{to} of {total}"
+    "paginationInfo": "{from}–{to} of {total}",
+    "addParticipant": {
+      "cta": "Add participant",
+      "title": "Add a participant",
+      "hint": "For someone who signed up at the office. They get the same confirmation email as an online registration, stating what they paid and what is left.",
+      "labelName": "Full name",
+      "labelEmail": "Email",
+      "emailHint": "Required — the seat is counted by email and the confirmation is sent here.",
+      "labelPhone": "Phone",
+      "labelTotal": "Total price",
+      "totalHint": "Prefilled with the cash price. Change it if you agreed another.",
+      "labelDeposit": "Paid now, in cash",
+      "depositHint": "Leave at 0 if they have not paid anything yet.",
+      "summaryPaid": "Paid at the office",
+      "summaryDue": "To collect on the day",
+      "selectPlaceholder": "Select…",
+      "submit": "Add participant",
+      "cancel": "Cancel",
+      "errorDuplicate": "This email is already on the participants list.",
+      "errorFull": "No seats left — every place is taken.",
+      "errorGeneric": "Could not add the participant. Please try again."
+    }
   },
   "registrationDashboard": {
     "tabRegistrations": "Registrations",

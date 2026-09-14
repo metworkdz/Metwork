@@ -20,6 +20,7 @@ import { CancelUnpaidButton } from '@/components/features/incubator/cancel-unpai
 import { RequestApprovalButtons } from '@/components/features/incubator/request-approval-buttons';
 import { BookingRowActions } from '@/components/features/incubator/booking-row-actions';
 import { DownloadContractButton } from '@/components/features/incubator/download-contract-button';
+import { MarkCashPaidButton } from '@/components/features/incubator/mark-cash-paid-button';
 import { applicableTemplates } from '@/server/contracts/service';
 import { requireRole } from '@/lib/auth-guards';
 import { formatCurrency, formatDate } from '@/lib/format';
@@ -57,6 +58,11 @@ interface IncubatorBookingRow {
   customerEmail: string;
   // Manual/offline bookings can be edited or deleted by the incubator.
   isManual: boolean;
+  /** Cash still owed, and how much has already been handed over. */
+  balanceDue: number;
+  paidAlready: number;
+  paidAtOffice: boolean;
+  awaitingCash: boolean;
   unit: 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH';
   notes: string;
   // Applicable contract templates for this booking (SPACE bookings only).
@@ -67,6 +73,8 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t    = await getTranslations('pages.dashboard.incubator.bookings');
+  // The cash-balance strings live with the other booking-money copy.
+  const tb   = await getTranslations('incubator.bookings');
   const lang = (await getLocale()) as Locale;
   const user = await requireRole(['INCUBATOR']);
 
@@ -122,6 +130,17 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
           customerName:  customer?.fullName ?? b.clientName ?? 'Unknown',
           customerEmail: customer?.email    ?? b.clientEmail ?? '',
           isManual:      b.source === 'offline' || b.paymentMethod === 'manual',
+          // A cash leg exists on a card deposit AND on a desk sale. The money
+          // already in hand comes from a different field on each, because one
+          // went through a card rail and the other did not.
+          balanceDue:    b.paymentMode === 'CASH_DEPOSIT' ? (b.cashRemainingAmount ?? 0) : 0,
+          paidAlready:   (b.cashDepositPaidAmount ?? 0) > 0
+                           ? (b.cashDepositPaidAmount ?? 0)
+                           : (b.onlineChargeAmount ?? b.onlinePaidAmount ?? 0),
+          paidAtOffice:  (b.cashDepositPaidAmount ?? 0) > 0,
+          awaitingCash:  b.paymentMode === 'CASH_DEPOSIT' &&
+                         b.status === 'CONFIRMED' &&
+                         b.paymentStatus === 'AWAITING_CASH',
           unit:          (b.unit ?? 'DAY') as 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH',
           notes:         b.notes ?? '',
           contractTemplates: b.itemKind === 'SPACE'
@@ -253,12 +272,29 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                           ) : (
                             formatCurrency(b.totalAmount, lang)
                           )}
+                          {/* The operational lines: what is in hand, and what
+                              still has to be collected on the day. */}
+                          {b.balanceDue > 0 && (
+                            <>
+                              <div className="mt-0.5 text-xs font-normal text-muted-foreground">
+                                {b.paidAtOffice
+                                  ? tb('paidAtOffice', { amount: formatCurrency(b.paidAlready, lang) })
+                                  : tb('paidOnline', { amount: formatCurrency(b.paidAlready, lang) })}
+                              </div>
+                              <div className={`text-xs font-normal ${b.awaitingCash ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                                {b.awaitingCash
+                                  ? tb('balanceDue', { amount: formatCurrency(b.balanceDue, lang) })
+                                  : tb('balanceCollected', { amount: formatCurrency(b.balanceDue, lang) })}
+                              </div>
+                            </>
+                          )}
                         </TableCell>
                         <TableCell className="text-end">
                           <div className="flex items-center justify-end gap-1">
                             {b.itemKind === 'SPACE' && (
                               <DownloadContractButton bookingId={b.id} templates={b.contractTemplates} />
                             )}
+                            {b.awaitingCash && <MarkCashPaidButton bookingId={b.id} />}
                             {b.status === 'PENDING_PAYMENT' && (
                               <CancelUnpaidButton bookingId={b.id} />
                             )}

@@ -1,6 +1,8 @@
 /**
  * GET  /api/incubator/registrations?entityType=&entityId=&page=&pageSize=&q=&status=
  *   — list registrations for a program or event
+ * POST /api/incubator/registrations
+ *   — record a participant who signed up at the desk (cash, deposit optional)
  * DELETE /api/incubator/registrations/:id (via body { id })
  *   — cancel a registration
  */
@@ -10,6 +12,7 @@ import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { listRegistrations, cancelRegistration, incubatorScope } from '@/server/registrations/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { handleAddParticipant } from '@/server/registrations/add-participant-route';
 import { db } from '@/server/db/store';
 
 export const runtime = 'nodejs';
@@ -99,4 +102,21 @@ export async function DELETE(req: NextRequest) {
   if (!updated) return jsonError(404, 'NOT_FOUND', 'Registration not found');
 
   return json({ registration: updated });
+}
+
+/**
+ * POST — record a participant who signed up at the desk.
+ *
+ * The shared body schema and handler live in
+ * `@/server/registrations/add-participant-route`, so the incubator and
+ * consultant surfaces answer identically. Only the owner scope differs.
+ */
+export async function POST(req: NextRequest) {
+  const guard = await requireApprovedApiRole(['INCUBATOR', 'ADMIN']);
+  if (!guard.ok) return guard.response;
+
+  const inc = await findIncubatorByUserEmail(guard.user.email);
+  if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile linked to this account');
+
+  return handleAddParticipant(req, incubatorScope(inc.id), guard.user.id);
 }

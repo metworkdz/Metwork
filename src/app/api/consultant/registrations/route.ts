@@ -2,6 +2,7 @@
  * Registrants for a CONSULTANT-owned program.
  *
  *   GET   /api/consultant/registrations?entityId=  — list registrants
+ *   POST  /api/consultant/registrations            — add a desk participant
  *   PATCH /api/consultant/registrations            — cancel one ({ id })
  *
  * Same `@/server/registrations/service` the incubator route uses, scoped to the
@@ -13,6 +14,7 @@ import { db } from '@/server/db/store';
 import { requireConsultant } from '@/server/mentors/access';
 import { listRegistrations, cancelRegistration, mentorScope } from '@/server/registrations/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { handleAddParticipant } from '@/server/registrations/add-participant-route';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -53,4 +55,14 @@ export async function PATCH(req: NextRequest) {
   const updated = await cancelRegistration(input.id, mentorScope(guard.mentorId));
   if (!updated) return jsonError(404, 'NOT_FOUND', 'Registration not found');
   return json({ registration: updated });
+}
+
+/**
+ * POST — record a participant who signed up at the desk. Identical contract to
+ * the incubator surface; only the owner scope differs.
+ */
+export async function POST(req: NextRequest) {
+  const guard = await requireConsultant();
+  if (!guard.ok) return guard.response;
+  return handleAddParticipant(req, mentorScope(guard.mentorId), guard.mentorId);
 }
