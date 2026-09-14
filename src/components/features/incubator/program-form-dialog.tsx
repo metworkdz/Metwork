@@ -4,6 +4,11 @@
  * Dialog for creating or editing a program listing.
  * POST /api/incubator/programs  (create)
  * PATCH /api/incubator/programs/[id]  (edit)
+ *
+ * The markup is this surface's own; everything that decides what a program IS
+ * — defaults, how a record loads back, what counts as valid, the request body —
+ * comes from `@/lib/program-form`, shared with the consultant portal so the two
+ * cannot drift again. See that file for what they had already drifted on.
  */
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -32,9 +37,16 @@ import { GalleryUploadField } from '@/components/shared/gallery-upload-field';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
 import { useAccountApproved } from '@/hooks/use-account-approved';
+import {
+  PROGRAM_TYPES,
+  emptyProgramForm,
+  programFormFromRecord,
+  programFormToPayload,
+  togglePaymentMethod,
+  validateProgramForm,
+  type ProgramFormValues,
+} from '@/lib/program-form';
 import type { ProgramType } from '@/types/domain';
-
-const PROGRAM_TYPE_KEYS: ProgramType[] = ['INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP', 'WEBINAR'];
 
 // FIX: BUG-2 — added edit mode props
 interface ProgramFormDialogProps {
@@ -55,6 +67,8 @@ interface ProgramFormDialogProps {
 export function ProgramFormDialog({ onCreated, editId, initialData, open: openProp, onOpenChange }: ProgramFormDialogProps) {
   const t = useTranslations('incubator.programForm');
   const tQuestions = useTranslations('defaultQuestions');
+  // Shared with the consultant portal: one rule set, one set of messages.
+  const tError = useTranslations('programFormErrors');
   const tApproval = useTranslations('accountApproval');
   const { isApproved } = useAccountApproved();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -63,76 +77,22 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [type, setType] = useState<ProgramType>('INCUBATION');
-  const [city, setCity] = useState('');
-  const [price, setPrice] = useState('0');
-  const [onlinePrice, setOnlinePrice] = useState('');
-  const [cashPrice, setCashPrice] = useState('');
-  const [seatsTotal, setSeatsTotal] = useState('20');
-  const [deadline, setDeadline] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
-  const [depositType, setDepositType] = useState<'FIXED' | 'PERCENT'>('PERCENT');
-  const [depositValue, setDepositValue] = useState('10');
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [form, setForm] = useState<ProgramFormValues>(emptyProgramForm);
+  const set = <K extends keyof ProgramFormValues>(k: K, v: ProgramFormValues[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
 
-  // FIX: BUG-2 — pre-fill form when in edit mode
+  // Pre-fill when editing. `programFormFromRecord` owns the ISO→date-input
+  // conversion, so the two surfaces read a stored program back identically.
   useEffect(() => {
     if (editId && initialData) {
-      setTitle(initialData.title ?? '');
-      setDescription(initialData.description ?? '');
-      setType(initialData.type ?? 'INCUBATION');
-      setCity(initialData.city ?? '');
-      setPrice(initialData.price != null ? String(initialData.price) : '0');
-      setOnlinePrice(initialData.onlinePrice != null ? String(initialData.onlinePrice) : '');
-      setCashPrice(initialData.cashPrice != null ? String(initialData.cashPrice) : '');
-      setSeatsTotal(initialData.seatsTotal != null ? String(initialData.seatsTotal) : '20');
-      // FIX: BUG-2 — convert ISO date strings back to YYYY-MM-DD for date inputs
-      setDeadline(initialData.deadline ? initialData.deadline.substring(0, 10) : '');
-      setStartDate(initialData.startDate ? initialData.startDate.substring(0, 10) : '');
-      setStartTime(initialData.startTime ?? '');
-      setEndTime(initialData.endTime ?? '');
-      setEndDate(initialData.endDate ? initialData.endDate.substring(0, 10) : '');
-      setAcceptedMethods(initialData.acceptedPaymentMethods ?? ['ONLINE', 'CASH']);
-      setDepositType(initialData.cashDepositType ?? 'PERCENT');
-      setDepositValue(initialData.cashDepositValue != null ? String(initialData.cashDepositValue) : '10');
-      setImageUrls(
-        initialData.imageUrls?.length
-          ? initialData.imageUrls
-          : (initialData.imageUrl ? [initialData.imageUrl] : []),
-      );
+      setForm(programFormFromRecord(initialData));
       setError(null);
     }
   }, [editId, initialData]);
 
-  function toggleMethod(m: 'ONLINE' | 'CASH') {
-    setAcceptedMethods((prev) => {
-      if (prev.includes(m)) {
-        const next = prev.filter((x) => x !== m);
-        return next.length === 0 ? prev : next;
-      }
-      return [...prev, m];
-    });
-  }
-
   function reset() {
-    setTitle(''); setDescription(''); setType('INCUBATION'); setCity('');
-    setPrice('0'); setOnlinePrice(''); setCashPrice('');
-    setSeatsTotal('20'); setDeadline(''); setStartDate(''); setStartTime(''); setEndTime(''); setEndDate('');
-    setAcceptedMethods(['ONLINE', 'CASH']);
-    setDepositType('PERCENT'); setDepositValue('10');
-    setImageUrls([]);
+    setForm(emptyProgramForm());
     setError(null);
-  }
-
-  function toIso(dateLocal: string) {
-    // Convert local date input (YYYY-MM-DD) to ISO string at noon local
-    return new Date(`${dateLocal}T12:00:00`).toISOString();
   }
 
   // Seed a brand-new program's application form with the default question set,
@@ -155,6 +115,10 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    // Shared validation. This surface used to rely on HTML `required` alone,
+    // which never checked that the deadline falls before the start date.
+    const invalid = validateProgramForm(form);
+    if (invalid) { setError(tError(invalid)); return; }
     setSubmitting(true);
     try {
       // FIX: BUG-2 — use PATCH for edit mode, POST for create
@@ -163,32 +127,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          description,
-          type,
-          city,
-          price: Number(price),
-          onlinePrice: onlinePrice.trim() === '' ? null : Number(onlinePrice),
-          cashPrice: cashPrice.trim() === '' ? null : Number(cashPrice),
-          seatsTotal: Number(seatsTotal),
-          deadline: toIso(deadline),
-          startDate: toIso(startDate),
-          // Empty = the program has no published start time, which is how every
-          // program behaved before this field existed.
-          startTime: startTime.trim() === '' ? null : startTime,
-          endTime: endTime.trim() === '' ? null : endTime,
-          endDate: toIso(endDate),
-          acceptedPaymentMethods: acceptedMethods,
-          ...(acceptedMethods.includes('CASH')
-            // Blank or 0 ⇒ no deposit; the server stores it as "none".
-            ? {
-                cashDepositType: depositType,
-                cashDepositValue: depositValue.trim() === '' ? 0 : Number(depositValue),
-              }
-            : { cashDepositType: null, cashDepositValue: null }),
-          imageUrls,
-        }),
+        body: JSON.stringify(programFormToPayload(form)),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { message?: string };
@@ -241,16 +180,16 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Label htmlFor="p-title">{t('labelTitle')}</Label>
-              <Input id="p-title" className="mt-1" value={title} onChange={(e) => setTitle(e.target.value)} required minLength={2} />
+              <Input id="p-title" className="mt-1" value={form.title} onChange={(e) => set('title', e.target.value)} required minLength={2} />
             </div>
             <div>
               <Label htmlFor="p-type">{t('labelType')}</Label>
-              <Select value={type} onValueChange={(v) => setType(v as ProgramType)}>
+              <Select value={form.type} onValueChange={(v) => set('type', v as ProgramType)}>
                 <SelectTrigger id="p-type" className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {PROGRAM_TYPE_KEYS.map((key) => {
+                  {PROGRAM_TYPES.map((key) => {
                     const labelKey = `type${key.charAt(0)}${key.slice(1).toLowerCase()}` as 'typeIncubation' | 'typeAcceleration' | 'typeTraining' | 'typeBootcamp' | 'typeWorkshop' | 'typeWebinar';
                     return <SelectItem key={key} value={key}>{t(labelKey)}</SelectItem>;
                   })}
@@ -261,7 +200,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
               <Label htmlFor="p-city">{t('labelCity')}</Label>
               {/* FIX: BUG-4 — searchable wilaya dropdown */}
               <div className="mt-1">
-                <AlgerianCitySelect id="p-city" value={city} onChange={setCity} required />
+                <AlgerianCitySelect id="p-city" value={form.city} onChange={(v) => set('city', v)} required />
               </div>
             </div>
             <div className="sm:col-span-2">
@@ -269,8 +208,8 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
               <textarea
                 id="p-desc"
                 className="mt-1 min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                value={form.description}
+                onChange={(e) => set('description', e.target.value)}
                 required
                 minLength={10}
               />
@@ -278,8 +217,8 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
             <div className="sm:col-span-2">
               <GalleryUploadField
                 label={t('labelCoverImage')}
-                value={imageUrls}
-                onChange={setImageUrls}
+                value={form.imageUrls}
+                onChange={(v) => set('imageUrls', v)}
               />
             </div>
           </div>
@@ -287,32 +226,32 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label htmlFor="p-price">{t('labelPrice')}</Label>
-              <Input id="p-price" type="number" min="0" className="mt-1" value={price} onChange={(e) => setPrice(e.target.value)} />
+              <Input id="p-price" type="number" min="0" className="mt-1" value={form.price} onChange={(e) => set('price', e.target.value)} />
             </div>
             <div>
               <Label htmlFor="p-seats">{t('labelTotalSeats')}</Label>
-              <Input id="p-seats" type="number" min="1" className="mt-1" value={seatsTotal} onChange={(e) => setSeatsTotal(e.target.value)} required />
+              <Input id="p-seats" type="number" min="1" className="mt-1" value={form.seatsTotal} onChange={(e) => set('seatsTotal', e.target.value)} required />
             </div>
             <div>
               <Label htmlFor="p-deadline">{t('labelDeadline')}</Label>
-              <Input id="p-deadline" type="date" className="mt-1" value={deadline} onChange={(e) => setDeadline(e.target.value)} required />
+              <Input id="p-deadline" type="date" className="mt-1" value={form.deadline} onChange={(e) => set('deadline', e.target.value)} required />
             </div>
             <div>
               <Label htmlFor="p-start">{t('labelStartDate')}</Label>
-              <Input id="p-start" type="date" className="mt-1" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+              <Input id="p-start" type="date" className="mt-1" value={form.startDate} onChange={(e) => set('startDate', e.target.value)} required />
             </div>
             <div>
               <Label htmlFor="p-start-time">{t('labelStartTime')}</Label>
-              <Input id="p-start-time" type="time" className="mt-1" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+              <Input id="p-start-time" type="time" className="mt-1" value={form.startTime} onChange={(e) => set('startTime', e.target.value)} />
               <p className="mt-1 text-xs text-muted-foreground">{t('startTimeHint')}</p>
             </div>
             <div>
               <Label htmlFor="p-end-time">{t('labelEndTime')}</Label>
-              <Input id="p-end-time" type="time" className="mt-1" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+              <Input id="p-end-time" type="time" className="mt-1" value={form.endTime} onChange={(e) => set('endTime', e.target.value)} />
             </div>
             <div>
               <Label htmlFor="p-end">{t('labelEndDate')}</Label>
-              <Input id="p-end" type="date" className="mt-1" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
+              <Input id="p-end" type="date" className="mt-1" value={form.endDate} onChange={(e) => set('endDate', e.target.value)} required />
             </div>
           </div>
 
@@ -327,9 +266,9 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
                   type="number"
                   min="0"
                   className="mt-1"
-                  placeholder={price}
-                  value={onlinePrice}
-                  onChange={(e) => setOnlinePrice(e.target.value)}
+                  placeholder={form.price}
+                  value={form.onlinePrice}
+                  onChange={(e) => set('onlinePrice', e.target.value)}
                 />
               </div>
               <div>
@@ -339,9 +278,9 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
                   type="number"
                   min="0"
                   className="mt-1"
-                  placeholder={price}
-                  value={cashPrice}
-                  onChange={(e) => setCashPrice(e.target.value)}
+                  placeholder={form.price}
+                  value={form.cashPrice}
+                  onChange={(e) => set('cashPrice', e.target.value)}
                 />
               </div>
             </div>
@@ -355,10 +294,10 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
                   <button
                     key={m}
                     type="button"
-                    onClick={() => toggleMethod(m)}
+                    onClick={() => set('acceptedPaymentMethods', togglePaymentMethod(form.acceptedPaymentMethods, m))}
                     className={cn(
                       'flex-1 rounded-lg border px-3 py-2.5 text-sm transition-colors',
-                      acceptedMethods.includes(m)
+                      form.acceptedPaymentMethods.includes(m)
                         ? 'border-primary bg-primary/5 font-medium text-primary'
                         : 'border-border text-muted-foreground hover:border-primary/40',
                     )}
@@ -370,7 +309,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
             </div>
           </div>
 
-          {acceptedMethods.includes('CASH') && (
+          {form.acceptedPaymentMethods.includes('CASH') && (
             <div className="rounded-lg border border-border bg-muted/30 p-3">
               <p className="text-sm font-medium">{t('labelDeposit')}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">{t('depositHint')}</p>
@@ -381,10 +320,10 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
                     <button
                       key={dt}
                       type="button"
-                      onClick={() => setDepositType(dt)}
+                      onClick={() => set('cashDepositType', dt)}
                       className={cn(
                         'rounded-lg border px-3 py-2 text-sm transition-colors',
-                        depositType === dt
+                        form.cashDepositType === dt
                           ? 'border-primary bg-primary/5 font-medium text-primary'
                           : 'border-border text-muted-foreground hover:border-primary/40',
                       )}
@@ -401,10 +340,10 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
                   <Input
                     type="number"
                     min="0"
-                    max={depositType === 'PERCENT' ? '100' : undefined}
+                    max={form.cashDepositType === 'PERCENT' ? '100' : undefined}
                     className="w-full"
-                    value={depositValue}
-                    onChange={(e) => setDepositValue(e.target.value)}
+                    value={form.cashDepositValue}
+                    onChange={(e) => set('cashDepositValue', e.target.value)}
                     aria-label={t('labelDeposit')}
                   />
                 </div>

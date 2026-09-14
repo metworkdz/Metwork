@@ -415,15 +415,6 @@ export const consultantService = {
   deleteProgram: (id: string) =>
     apiClient.delete<{ ok: true }>(`/consultant/programs/${encodeURIComponent(id)}`),
 
-  /** Registrants for one of the consultant's programs. */
-  programRegistrations: (entityId: string) =>
-    apiClient.get<{ registrations: ConsultantRegistration[]; total: number }>(
-      `/consultant/registrations?entityId=${encodeURIComponent(entityId)}`,
-    ),
-  cancelProgramRegistration: (id: string) =>
-    apiClient.patch<{ registration: ConsultantRegistration }>('/consultant/registrations', { id }),
-
-  /** Custom registration-form fields for one of the consultant's programs. */
   programFormFields: (entityId: string) =>
     apiClient.get<{ fields: ConsultantFormField[] }>(
       `/consultant/registration-form?entityId=${encodeURIComponent(entityId)}`,

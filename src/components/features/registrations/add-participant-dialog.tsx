@@ -115,10 +115,22 @@ export function AddParticipantDialog({
         // top level here would silently show "undefined" to the host.
         const body = await res.json().catch(() => null);
         const code = body?.error?.code as string | undefined;
+        if (code === 'MISSING_REQUIRED_FIELD') {
+          // The server's message is English by design — it is an API, not a UI.
+          // Name the question in the host's own language instead, resolving the
+          // label the same way the form above renders it.
+          const missingId = body?.error?.details?.fieldId as string | undefined;
+          const missing = fields.find((f) => f.id === missingId);
+          setError(
+            missing
+              ? t('errorRequiredField', { field: questionLabel(missing, tq) })
+              : t('errorGeneric'),
+          );
+          return;
+        }
         setError(
           code === 'ALREADY_REGISTERED' ? t('errorDuplicate')
           : code === 'FULL' ? t('errorFull')
-          : code === 'MISSING_REQUIRED_FIELD' ? (body?.error?.message ?? t('errorGeneric'))
           : t('errorGeneric'),
         );
         return;

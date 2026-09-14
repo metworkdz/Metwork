@@ -1,0 +1,67 @@
+/**
+ * Shared HTTP handler for "list the registrants of one listing".
+ *
+ * The incubator dashboard and the consultant portal show the same table, so
+ * they have to be answered by the same contract: the same query parameters,
+ * the same envelope, the same search, filter and paging behaviour. They were
+ * not — the consultant route returned an unpaged `{ registrations, total }`
+ * with no field definitions and no filters, so the shared table could not read
+ * it at all.
+ *
+ * Only the owner differs, and the route files resolve that before calling in.
+ */
+import type { NextRequest } from 'next/server';
+import { db } from '@/server/db/store';
+import { json, jsonError } from '@/server/http/json';
+import { listRegistrations, type OwnerScope } from '@/server/registrations/service';
+
+export async function handleListRegistrations(req: NextRequest, owner: OwnerScope) {
+  const { searchParams } = new URL(req.url);
+  // A consultant only ever owns programs, but accepting the parameter keeps one
+  // request shape across both surfaces.
+  const entityType = (searchParams.get('entityType') ?? 'PROGRAM') as 'PROGRAM' | 'EVENT';
+  const entityId = searchParams.get('entityId');
+  const page = Math.max(1, Number(searchParams.get('page') ?? '1'));
+  const pageSize = Math.min(100, Math.max(1, Number(searchParams.get('pageSize') ?? '20')));
+  const q = (searchParams.get('q') ?? '').trim().toLowerCase();
+  const statusFilter = searchParams.get('status');
+
+  if (!['PROGRAM', 'EVENT'].includes(entityType)) {
+    return jsonError(400, 'MISSING_PARAM', 'entityType must be PROGRAM or EVENT');
+  }
+  if (!entityId) return jsonError(400, 'MISSING_PARAM', 'entityId is required');
+
+  // `listRegistrations` is already owner-scoped, so a listing belonging to
+  // someone else simply comes back empty rather than leaking its registrants.
+  let registrations = await listRegistrations(entityType, entityId, owner);
+
+  // The field definitions travel with the rows so the client can label answers.
+  const data = await db.read();
+  const formFields = (data.registrationFormFields ?? [])
+    .filter((f) => f.entityType === entityType && f.entityId === entityId)
+    .sort((a, b) => a.order - b.order);
+
+  if (q) {
+    registrations = registrations.filter(
+      (r) =>
+        r.fullName.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q) ||
+        r.phone.includes(q),
+    );
+  }
+  if (statusFilter && ['CONFIRMED', 'WAITLISTED', 'CANCELLED'].includes(statusFilter)) {
+    registrations = registrations.filter((r) => r.status === statusFilter);
+  }
+
+  const total = registrations.length;
+  const items = registrations.slice((page - 1) * pageSize, page * pageSize);
+
+  return json({
+    items,
+    formFields,
+    total,
+    page,
+    pageSize,
+    hasMore: page * pageSize < total,
+  });
+}

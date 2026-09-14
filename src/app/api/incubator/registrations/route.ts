@@ -10,10 +10,10 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
-import { listRegistrations, cancelRegistration, incubatorScope } from '@/server/registrations/service';
+import { cancelRegistration, incubatorScope } from '@/server/registrations/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { handleAddParticipant } from '@/server/registrations/add-participant-route';
-import { db } from '@/server/db/store';
+import { handleListRegistrations } from '@/server/registrations/list-route';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,55 +25,8 @@ export async function GET(req: NextRequest) {
   const inc = await findIncubatorByUserEmail(guard.user.email);
   if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile linked to this account');
 
-  const { searchParams } = new URL(req.url);
-  const entityType = searchParams.get('entityType') as 'PROGRAM' | 'EVENT' | null;
-  const entityId   = searchParams.get('entityId');
-  const page       = Math.max(1, Number(searchParams.get('page') ?? '1'));
-  const pageSize   = Math.min(100, Math.max(1, Number(searchParams.get('pageSize') ?? '20')));
-  const q          = (searchParams.get('q') ?? '').trim().toLowerCase();
-  const statusFilter = searchParams.get('status');
-
-  if (!entityType || !['PROGRAM', 'EVENT'].includes(entityType)) {
-    return jsonError(400, 'MISSING_PARAM', 'entityType must be PROGRAM or EVENT');
-  }
-  if (!entityId) {
-    return jsonError(400, 'MISSING_PARAM', 'entityId is required');
-  }
-
-  let registrations = await listRegistrations(entityType, entityId, incubatorScope(inc.id));
-
-  // Attach field definitions so the client can render the answers
-  const data = await db.read();
-  const formFields = (data.registrationFormFields ?? [])
-    .filter((f) => f.entityType === entityType && f.entityId === entityId)
-    .sort((a, b) => a.order - b.order);
-
-  // Search filter
-  if (q) {
-    registrations = registrations.filter(
-      (r) =>
-        r.fullName.toLowerCase().includes(q) ||
-        r.email.toLowerCase().includes(q) ||
-        r.phone.includes(q),
-    );
-  }
-
-  // Status filter
-  if (statusFilter && ['CONFIRMED', 'WAITLISTED', 'CANCELLED'].includes(statusFilter)) {
-    registrations = registrations.filter((r) => r.status === statusFilter);
-  }
-
-  const total = registrations.length;
-  const items = registrations.slice((page - 1) * pageSize, page * pageSize);
-
-  return json({
-    items,
-    formFields,
-    total,
-    page,
-    pageSize,
-    hasMore: page * pageSize < total,
-  });
+  // Same handler the consultant portal uses — one contract for one table.
+  return handleListRegistrations(req, incubatorScope(inc.id));
 }
 
 const cancelSchema = z.object({

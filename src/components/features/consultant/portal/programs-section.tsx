@@ -20,42 +20,43 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  ArrowLeft, Copy, Download, GraduationCap, Loader2, Plus, Trash2, Users,
+  ArrowLeft, Copy, GraduationCap, Loader2, Pencil, Plus, Settings2, Trash2, Users,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ApiClientError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { GalleryUploadField } from '@/components/shared/gallery-upload-field';
+import { RegistrationsTable } from '@/components/features/registrations/registrations-table';
+import { RegistrationFormBuilder } from '@/components/features/registrations/form-builder';
+import type { RegistrationFormField } from '@/types/domain';
 import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 import {
   consultantService,
   type ConsultantProgram,
-  type ConsultantProgramInput,
-  type ConsultantRegistration,
 } from '@/services/consultant.service';
 import {
   BrandButton, CP_GREEN, CP_GREEN_TEXT, CP_GREEN_TINT, CP_LIGHT_BORDER, CP_LIGHT_FAINT,
-  CP_LIGHT_MUTED, CP_LIGHT_TEXT,
+  CP_LIGHT_MUTED, CP_LIGHT_SURFACE_MUTED, CP_LIGHT_TEXT,
   EmptyBlock, ErrorBanner, Field, FlowSheet, GhostButton, SectionCard, SectionHeading, Spinner,
   cpInputClassLight,
 } from './shared';
 
-type PaymentMethod = 'ONLINE' | 'CASH';
-
-const TYPES: ConsultantProgram['type'][] = [
-  'TRAINING', 'WORKSHOP', 'WEBINAR', 'BOOTCAMP', 'INCUBATION', 'ACCELERATION',
-];
+import {
+  PROGRAM_TYPES,
+  emptyProgramForm,
+  programFormFromRecord,
+  programFormToPayload,
+  togglePaymentMethod,
+  validateProgramForm,
+  type PaymentMethod,
+  type ProgramFormValues,
+} from '@/lib/program-form';
 
 /** "YYYY-MM-DD" for today, local time. */
 function todayISO(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-/** A date input's value → an ISO datetime the API accepts. */
-function toIso(dateStr: string): string {
-  return new Date(`${dateStr}T00:00:00`).toISOString();
 }
 
 function fmtDate(iso: string, locale: string): string {
@@ -67,27 +68,38 @@ function fmtDate(iso: string, locale: string): string {
       });
 }
 
-const emptyDraft: ConsultantProgramInput = {
-  title: '', description: '', type: 'TRAINING', city: '',
-  imageUrls: [],
-  price: 0,
-  acceptedPaymentMethods: ['ONLINE', 'CASH'],
-  cashDepositType: 'PERCENT',
-  cashDepositValue: 10,
-  seatsTotal: 20, deadline: '', startDate: '', startTime: '', endTime: '', endDate: '',
-};
-
 export function ProgramsSection() {
   const t = useTranslations('consultantPortal.programs');
   const tQuestions = useTranslations('defaultQuestions');
+  // Shared with the incubator dashboard — one rule set, one set of messages.
+  const tError = useTranslations('programFormErrors');
   const locale = useLocale();
 
   const [items, setItems] = useState<ConsultantProgram[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openForm, setOpenForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [draft, setDraft] = useState<ConsultantProgramInput>(emptyDraft);
+  const [draft, setDraft] = useState<ProgramFormValues>(emptyProgramForm);
+  /** Set while editing an existing program; null while creating a new one. */
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<ConsultantProgram | null>(null);
+
+  const set = <K extends keyof ProgramFormValues>(k: K, v: ProgramFormValues[K]) =>
+    setDraft((d) => ({ ...d, [k]: v }));
+
+  function openCreate() {
+    setDraft(emptyProgramForm());
+    setEditingId(null);
+    setError(null);
+    setOpenForm(true);
+  }
+
+  function openEdit(p: ConsultantProgram) {
+    setDraft(programFormFromRecord(p));
+    setEditingId(p.id);
+    setError(null);
+    setOpenForm(true);
+  }
 
   const load = useCallback(async () => {
     setError(null);
@@ -101,34 +113,6 @@ export function ProgramsSection() {
   }, [t]);
 
   useEffect(() => { void load(); }, [load]);
-
-  function draftError(): string | null {
-    if (draft.title.trim().length < 2) return t('errorTitle');
-    if (draft.description.trim().length < 10) return t('errorDescription');
-    if (!draft.city.trim()) return t('errorCity');
-    if (!draft.deadline || !draft.startDate || !draft.endDate) return t('errorDates');
-    if (!(draft.deadline <= draft.startDate && draft.startDate < draft.endDate)) return t('errorDateOrder');
-    if (draft.acceptedPaymentMethods.includes('CASH')) {
-      // 0 (or blank) is a valid choice: no deposit, the client pays the whole
-      // amount on site. Only a positive-but-nonsensical value is an error.
-      const val = draft.cashDepositValue ?? 0;
-      const invalidPercent = draft.cashDepositType === 'PERCENT' && val > 0 && (val < 1 || val > 100);
-      const invalidFixed = draft.cashDepositType === 'FIXED' && val < 0;
-      if (invalidPercent || invalidFixed) return t('errorDeposit');
-    }
-    return null;
-  }
-
-  function toggleMethod(m: PaymentMethod) {
-    setDraft((d) => {
-      const has = d.acceptedPaymentMethods.includes(m);
-      if (has) {
-        const next = d.acceptedPaymentMethods.filter((x) => x !== m);
-        return next.length === 0 ? d : { ...d, acceptedPaymentMethods: next };
-      }
-      return { ...d, acceptedPaymentMethods: [...d.acceptedPaymentMethods, m] };
-    });
-  }
 
   /**
    * Pre-populate a NEW program's application form with the default question
@@ -150,34 +134,26 @@ export function ProgramsSection() {
     }
   }
 
-  async function onCreate() {
-    const invalid = draftError();
-    if (invalid) { setError(invalid); return; }
+  async function onSave() {
+    const invalid = validateProgramForm(draft);
+    if (invalid) { setError(tError(invalid)); return; }
     setSaving(true);
     setError(null);
     try {
-      const acceptsCash = draft.acceptedPaymentMethods.includes('CASH');
-      const created = await consultantService.createProgram({
-        ...draft,
-        title: draft.title.trim(),
-        description: draft.description.trim(),
-        city: draft.city.trim(),
-        deadline: toIso(draft.deadline),
-        startDate: toIso(draft.startDate),
-        // Empty = no published start time, matching the incubator form.
-        startTime: draft.startTime?.trim() ? draft.startTime : null,
-        endTime: draft.endTime?.trim() ? draft.endTime : null,
-        endDate: toIso(draft.endDate),
-        cashDepositType: acceptsCash ? draft.cashDepositType : null,
-        cashDepositValue: acceptsCash ? draft.cashDepositValue : null,
-      });
-      // Seed the application form, exactly as the incubator dialog does.
-      // Without this a consultant's public page asked for a name and a card and
-      // nothing else, while an incubator's asked the full question set — the
-      // two populations share one registration system and must behave alike.
-      if (created?.id) await seedDefaultQuestions(created.id);
+      const payload = programFormToPayload(draft);
+      if (editingId) {
+        await consultantService.updateProgram(editingId, payload);
+      } else {
+        const created = await consultantService.createProgram(payload);
+        // Seed the application form, exactly as the incubator dialog does.
+        // Without this a consultant's public page asked for a name and a card
+        // and nothing else, while an incubator's asked the full question set —
+        // the two populations share one registration system.
+        if (created?.id) await seedDefaultQuestions(created.id);
+      }
       setOpenForm(false);
-      setDraft(emptyDraft);
+      setEditingId(null);
+      setDraft(emptyProgramForm());
       await load();
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : t('errorGeneric'));
@@ -206,7 +182,7 @@ export function ProgramsSection() {
   }
 
   if (selected) {
-    return <RegistrantsView program={selected} onBack={() => setSelected(null)} />;
+    return <ProgramDetailView program={selected} onBack={() => setSelected(null)} />;
   }
 
   return (
@@ -215,7 +191,7 @@ export function ProgramsSection() {
         title={t('title')}
         subtitle={t('subtitle')}
         action={
-          <BrandButton onClick={() => { setDraft(emptyDraft); setError(null); setOpenForm(true); }}>
+          <BrandButton onClick={openCreate}>
             <Plus className="size-4" /> {t('create')}
           </BrandButton>
         }
@@ -261,6 +237,9 @@ export function ProgramsSection() {
                   <GhostButton onClick={() => setSelected(p)}>
                     <Users className="size-3.5" /> {t('registrants')}
                   </GhostButton>
+                  <GhostButton onClick={() => openEdit(p)}>
+                    <Pencil className="size-3.5" /> {t('edit')}
+                  </GhostButton>
                   <GhostButton onClick={() => void onTogglePublish(p, !p.isActive)}>
                     {p.isActive ? t('unpublish') : t('publish')}
                   </GhostButton>
@@ -281,21 +260,25 @@ export function ProgramsSection() {
         </ul>
       )}
 
-      <FlowSheet open={openForm} onOpenChange={setOpenForm} title={t('createTitle')}>
+      <FlowSheet
+        open={openForm}
+        onOpenChange={(v) => { setOpenForm(v); if (!v) setEditingId(null); }}
+        title={editingId ? t('editTitle') : t('createTitle')}
+      >
         <div className="space-y-3">
           <Field label={t('labelTitle')} htmlFor="p-title">
             <input
               id="p-title" className={cpInputClassLight} value={draft.title}
-              onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+              onChange={(e) => set('title', e.target.value)}
               placeholder={t('placeholderTitle')}
             />
           </Field>
           <Field label={t('labelType')} htmlFor="p-type">
             <select
               id="p-type" className={cpInputClassLight} value={draft.type}
-              onChange={(e) => setDraft((d) => ({ ...d, type: e.target.value as ConsultantProgram['type'] }))}
+              onChange={(e) => set('type', e.target.value as ConsultantProgram['type'])}
             >
-              {TYPES.map((ty) => (
+              {PROGRAM_TYPES.map((ty) => (
                 <option key={ty} value={ty}>{t(`type.${ty}` as 'type.TRAINING')}</option>
               ))}
             </select>
@@ -303,20 +286,20 @@ export function ProgramsSection() {
           <Field label={t('labelDescription')} htmlFor="p-desc">
             <textarea
               id="p-desc" rows={4} className={cpInputClassLight} value={draft.description}
-              onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+              onChange={(e) => set('description', e.target.value)}
               placeholder={t('placeholderDescription')}
             />
           </Field>
           <Field label={t('labelCity')} htmlFor="p-city">
             <AlgerianCitySelect
               id="p-city" value={draft.city}
-              onChange={(city) => setDraft((d) => ({ ...d, city }))}
+              onChange={(city) => set('city', city)}
             />
           </Field>
           <Field label={t('labelCoverImage')}>
             <GalleryUploadField
-              value={draft.imageUrls ?? []}
-              onChange={(imageUrls) => setDraft((d) => ({ ...d, imageUrls }))}
+              value={draft.imageUrls}
+              onChange={(imageUrls) => set('imageUrls', imageUrls)}
               endpoint="/api/consultant/upload"
               uploadFields={{ kind: 'program' }}
             />
@@ -324,7 +307,7 @@ export function ProgramsSection() {
           <Field label={t('labelSeats')} htmlFor="p-seats">
             <input
               id="p-seats" type="number" min={1} className={cpInputClassLight} value={draft.seatsTotal}
-              onChange={(e) => setDraft((d) => ({ ...d, seatsTotal: Number(e.target.value) || 1 }))}
+              onChange={(e) => set('seatsTotal', e.target.value)}
             />
           </Field>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -332,35 +315,35 @@ export function ProgramsSection() {
               <input
                 id="p-deadline" type="date" min={todayISO()} className={cpInputClassLight}
                 value={draft.deadline}
-                onChange={(e) => setDraft((d) => ({ ...d, deadline: e.target.value }))}
+                onChange={(e) => set('deadline', e.target.value)}
               />
             </Field>
             <Field label={t('labelStart')} htmlFor="p-start">
               <input
                 id="p-start" type="date" min={todayISO()} className={cpInputClassLight}
                 value={draft.startDate}
-                onChange={(e) => setDraft((d) => ({ ...d, startDate: e.target.value }))}
+                onChange={(e) => set('startDate', e.target.value)}
               />
             </Field>
             <Field label={t('labelStartTime')} htmlFor="p-start-time">
               <input
                 id="p-start-time" type="time" className={cpInputClassLight}
-                value={draft.startTime ?? ''}
-                onChange={(e) => setDraft((d) => ({ ...d, startTime: e.target.value }))}
+                value={draft.startTime}
+                onChange={(e) => set('startTime', e.target.value)}
               />
             </Field>
             <Field label={t('labelEndTime')} htmlFor="p-end-time">
               <input
                 id="p-end-time" type="time" className={cpInputClassLight}
-                value={draft.endTime ?? ''}
-                onChange={(e) => setDraft((d) => ({ ...d, endTime: e.target.value }))}
+                value={draft.endTime}
+                onChange={(e) => set('endTime', e.target.value)}
               />
             </Field>
             <Field label={t('labelEnd')} htmlFor="p-end">
               <input
                 id="p-end" type="date" min={todayISO()} className={cpInputClassLight}
                 value={draft.endDate}
-                onChange={(e) => setDraft((d) => ({ ...d, endDate: e.target.value }))}
+                onChange={(e) => set('endDate', e.target.value)}
               />
             </Field>
           </div>
@@ -368,9 +351,35 @@ export function ProgramsSection() {
           <Field label={t('labelPrice')} htmlFor="p-price">
             <input
               id="p-price" type="number" min={0} className={cpInputClassLight} value={draft.price}
-              onChange={(e) => setDraft((d) => ({ ...d, price: Math.max(0, Number(e.target.value) || 0) }))}
+              onChange={(e) => set('price', e.target.value)}
             />
           </Field>
+
+          {/* Split pricing. The API has always accepted these two; the portal
+              simply never had the fields, so a consultant could not charge a
+              premium for cash the way an incubator can. */}
+          <div className="rounded-2xl border p-3" style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}>
+            <p className="text-xs font-medium" style={{ color: CP_LIGHT_TEXT }}>{t('labelSplitPricing')}</p>
+            <p className="mt-0.5 text-[11px]" style={{ color: CP_LIGHT_MUTED }}>{t('splitPricingHint')}</p>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <Field label={t('labelOnlinePrice')} htmlFor="p-online-price">
+                <input
+                  id="p-online-price" type="number" min={0} className={cpInputClassLight}
+                  placeholder={draft.price}
+                  value={draft.onlinePrice}
+                  onChange={(e) => set('onlinePrice', e.target.value)}
+                />
+              </Field>
+              <Field label={t('labelCashPrice')} htmlFor="p-cash-price">
+                <input
+                  id="p-cash-price" type="number" min={0} className={cpInputClassLight}
+                  placeholder={draft.price}
+                  value={draft.cashPrice}
+                  onChange={(e) => set('cashPrice', e.target.value)}
+                />
+              </Field>
+            </div>
+          </div>
 
           <div>
             <p className="text-xs font-medium" style={{ color: CP_LIGHT_MUTED }}>{t('labelPaymentMethods')}</p>
@@ -381,7 +390,7 @@ export function ProgramsSection() {
                   <button
                     key={m}
                     type="button"
-                    onClick={() => toggleMethod(m)}
+                    onClick={() => set('acceptedPaymentMethods', togglePaymentMethod(draft.acceptedPaymentMethods, m))}
                     className="flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors"
                     style={active
                       ? { borderColor: CP_GREEN, background: CP_GREEN_TINT, color: CP_GREEN_TEXT }
@@ -404,7 +413,7 @@ export function ProgramsSection() {
                     <button
                       key={dt}
                       type="button"
-                      onClick={() => setDraft((d) => ({ ...d, cashDepositType: dt }))}
+                      onClick={() => set('cashDepositType', dt)}
                       className="rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors"
                       style={draft.cashDepositType === dt
                         ? { borderColor: CP_GREEN, background: CP_GREEN_TINT, color: CP_GREEN_TEXT }
@@ -418,8 +427,8 @@ export function ProgramsSection() {
                 <input
                   type="number" min={0} max={draft.cashDepositType === 'PERCENT' ? 100 : undefined}
                   className={cn(cpInputClassLight, 'h-10')}
-                  value={draft.cashDepositValue ?? ''}
-                  onChange={(e) => setDraft((d) => ({ ...d, cashDepositValue: Number(e.target.value) || 0 }))}
+                  value={draft.cashDepositValue}
+                  onChange={(e) => set('cashDepositValue', e.target.value)}
                   aria-label={t('labelDeposit')}
                 />
               </div>
@@ -428,9 +437,9 @@ export function ProgramsSection() {
 
           {error && <ErrorBanner message={error} tone="light" />}
 
-          <BrandButton onClick={() => void onCreate()} disabled={saving} className="w-full">
+          <BrandButton onClick={() => void onSave()} disabled={saving} className="w-full">
             {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-            {t('create')}
+            {editingId ? t('saveChanges') : t('create')}
           </BrandButton>
         </div>
       </FlowSheet>
@@ -469,39 +478,50 @@ function ShareLink({ slug, label, copied }: { slug: string; label: string; copie
   );
 }
 
-/** Registrants for one program, with CSV export. */
-function RegistrantsView({ program, onBack }: { program: ConsultantProgram; onBack: () => void }) {
+/**
+ * One program, managed — the portal's counterpart to
+ * `/dashboard/incubator/programs/[id]`.
+ *
+ * The two tabs render the SAME components the incubator dashboard uses:
+ * `RegistrationsTable` (participants, answers, CSV, add-at-the-desk) and
+ * `RegistrationFormBuilder` (the application questions). Only the endpoint
+ * differs, so a consultant and an incubator manage a program identically and
+ * neither can quietly gain a feature the other lacks.
+ */
+function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; onBack: () => void }) {
   const t = useTranslations('consultantPortal.programs');
-  const locale = useLocale();
-  const [rows, setRows] = useState<ConsultantRegistration[] | null>(null);
+  const tDash = useTranslations('registrationDashboard');
+  const [tab, setTab] = useState<'registrants' | 'form'>('registrants');
+  const [fields, setFields] = useState<RegistrationFormField[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setError(null);
-    try {
-      const res = await consultantService.programRegistrations(program.id);
-      setRows(res.registrations);
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : t('errorGeneric'));
-      setRows([]);
-    }
+  // The builder needs the current questions before it can render. Loaded here
+  // rather than server-side because the portal is a single client page.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(
+          `/api/consultant/registration-form?entityType=PROGRAM&entityId=${encodeURIComponent(program.id)}`,
+          { credentials: 'include' },
+        );
+        const body = await res.json().catch(() => null);
+        if (!cancelled) setFields(res.ok ? (body?.fields ?? []) : []);
+      } catch {
+        if (!cancelled) { setFields([]); setError(t('errorGeneric')); }
+      }
+    })();
+    return () => { cancelled = true; };
   }, [program.id, t]);
 
-  useEffect(() => { void load(); }, [load]);
-
-  async function onCancel(r: ConsultantRegistration) {
-    if (!window.confirm(t('confirmCancelReg', { name: r.fullName }))) return;
-    try {
-      await consultantService.cancelProgramRegistration(r.id);
-      await load();
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : t('errorGeneric'));
-    }
-  }
+  const tabs = [
+    { key: 'registrants' as const, label: tDash('tabRegistrations'), Icon: Users },
+    { key: 'form' as const, label: tDash('tabFormBuilder'), Icon: Settings2 },
+  ];
 
   return (
     <SectionCard>
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-4 flex items-center gap-2">
         <button
           type="button" onClick={onBack} aria-label={t('back')}
           className="rounded-lg border p-1.5" style={{ borderColor: CP_LIGHT_BORDER }}
@@ -514,50 +534,45 @@ function RegistrantsView({ program, onBack }: { program: ConsultantProgram; onBa
             {t('seats', { taken: program.seatsTaken, total: program.seatsTotal })}
           </p>
         </div>
-        <a
-          href={`/api/consultant/registrations/export?entityId=${encodeURIComponent(program.id)}`}
-          className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium"
-          style={{ borderColor: CP_LIGHT_BORDER, color: CP_LIGHT_TEXT }}
-        >
-          <Download className="size-3.5" /> {t('exportCsv')}
-        </a>
+      </div>
+
+      {/* Portal-styled tab bar; the panels below are the shared components. */}
+      <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {tabs.map(({ key, label, Icon }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setTab(key)}
+            className="flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors"
+            style={tab === key
+              ? { background: CP_GREEN, color: '#ffffff' }
+              : { background: CP_LIGHT_SURFACE_MUTED, color: CP_LIGHT_MUTED }}
+          >
+            <Icon className="size-4" />
+            {label}
+          </button>
+        ))}
       </div>
 
       {error && <div className="mb-3"><ErrorBanner message={error} tone="light" /></div>}
 
-      {rows === null ? (
+      {tab === 'registrants' ? (
+        <RegistrationsTable
+          entityType="PROGRAM"
+          entityId={program.id}
+          entityTitle={program.title}
+          defaultAmount={program.cashPrice ?? program.price}
+          endpoint="/api/consultant/registrations"
+        />
+      ) : fields === null ? (
         <div className="flex justify-center py-10"><Spinner tone="light" /></div>
-      ) : rows.length === 0 ? (
-        <EmptyBlock>
-          <Users className="mx-auto mb-2 size-7" style={{ color: CP_LIGHT_FAINT }} />
-          <p className="text-sm font-medium" style={{ color: CP_LIGHT_TEXT }}>{t('noRegistrants')}</p>
-        </EmptyBlock>
       ) : (
-        <ul className="space-y-2">
-          {rows.map((r) => (
-            <li
-              key={r.id}
-              className={cn('rounded-xl border p-3', r.status === 'CANCELLED' && 'opacity-60')}
-              style={{ borderColor: CP_LIGHT_BORDER }}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium" style={{ color: CP_LIGHT_TEXT }}>{r.fullName}</p>
-                  <p className="truncate text-xs" style={{ color: CP_LIGHT_MUTED }}>{r.email} · {r.phone}</p>
-                  <p className="mt-0.5 text-xs" style={{ color: CP_LIGHT_FAINT }}>{fmtDate(r.createdAt, locale)}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Badge variant={r.status === 'CONFIRMED' ? 'success' : r.status === 'WAITLISTED' ? 'warning' : 'danger'}>
-                    {t(`regStatus.${r.status}` as 'regStatus.CONFIRMED')}
-                  </Badge>
-                  {r.status !== 'CANCELLED' && (
-                    <GhostButton onClick={() => void onCancel(r)}>{t('cancelReg')}</GhostButton>
-                  )}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <RegistrationFormBuilder
+          entityType="PROGRAM"
+          entityId={program.id}
+          initialFields={fields}
+          endpoint="/api/consultant/registration-form"
+        />
       )}
     </SectionCard>
   );

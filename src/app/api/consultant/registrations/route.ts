@@ -12,9 +12,10 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { db } from '@/server/db/store';
 import { requireConsultant } from '@/server/mentors/access';
-import { listRegistrations, cancelRegistration, mentorScope } from '@/server/registrations/service';
+import { cancelRegistration, mentorScope } from '@/server/registrations/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { handleAddParticipant } from '@/server/registrations/add-participant-route';
+import { handleListRegistrations } from '@/server/registrations/list-route';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,8 +33,8 @@ export async function GET(req: NextRequest) {
   const owned = (data.programs ?? []).some((p) => p.id === entityId && p.mentorId === guard.mentorId);
   if (!owned) return jsonError(403, 'FORBIDDEN', 'This program does not belong to you');
 
-  const registrations = await listRegistrations('PROGRAM', entityId, mentorScope(guard.mentorId));
-  return json({ registrations, total: registrations.length });
+  // Same handler, same envelope, same filters as the incubator surface.
+  return handleListRegistrations(req, mentorScope(guard.mentorId));
 }
 
 export async function PATCH(req: NextRequest) {
@@ -65,4 +66,13 @@ export async function POST(req: NextRequest) {
   const guard = await requireConsultant();
   if (!guard.ok) return guard.response;
   return handleAddParticipant(req, mentorScope(guard.mentorId), guard.mentorId);
+}
+
+/**
+ * DELETE — cancel a registration. Identical to PATCH above, which predates it;
+ * the shared registrants table cancels with DELETE on both surfaces, so the
+ * consultant route answers both verbs rather than making the client branch.
+ */
+export async function DELETE(req: NextRequest) {
+  return PATCH(req);
 }

@@ -325,7 +325,14 @@
         "CANCELLED": "Annulé"
       },
       "labelStartTime": "Heure de début (facultatif)",
-      "labelEndTime": "Heure de fin (facultatif)"
+      "labelEndTime": "Heure de fin (facultatif)",
+      "edit": "Modifier",
+      "editTitle": "Modifier le programme",
+      "saveChanges": "Enregistrer",
+      "labelSplitPricing": "Un tarif différent en espèces ?",
+      "splitPricingHint": "Laissez vide pour appliquer le même tarif aux deux. Utile quand le paiement par carte a des frais.",
+      "labelOnlinePrice": "Tarif par carte (DZD)",
+      "labelCashPrice": "Tarif en espèces (DZD)"
     },
     "earnings": {
       "pending": "En attente",
@@ -2663,10 +2670,6 @@
           "title": "Commissions",
           "subtitle": "Configurez les taux de commission de la plateforme par type de transaction."
         },
-        "listings": {
-          "title": "Annonces en attente",
-          "subtitle": "Espaces et programmes non encore publiés — espaces inactifs et programmes en brouillon."
-        },
         "mentorBookings": {
           "title": "Demandes de consultation",
           "subtitle": "Examinez et répondez aux demandes de réservation mentor des fondateurs."
@@ -4299,24 +4302,6 @@
       "save": "Enregistrer",
       "updateFailed": "Échec de la mise à jour"
     },
-    "listingsApproval": {
-      "kindSpace": "Espace",
-      "kindProgram": "Programme",
-      "kindEvent": "Événement",
-      "listingOutcome": "Annonce {outcome}.",
-      "dismiss": "Fermer",
-      "emptyTitle": "Boîte de réception vide",
-      "emptyDescription": "Aucune annonce en attente de validation.",
-      "colListing": "Annonce",
-      "colSubmittedBy": "Soumis par",
-      "colCity": "Ville",
-      "colSubmitted": "Soumis",
-      "colPrice": "Prix",
-      "colAction": "Action",
-      "free": "Gratuit",
-      "reject": "Refuser",
-      "approve": "Approuver"
-    },
     "mentorFormDialog": {
       "editTitle": "Modifier le mentor",
       "addTitle": "Ajouter un nouveau mentor",
@@ -5307,7 +5292,8 @@
       "cancel": "Annuler",
       "errorDuplicate": "Cet email est déjà dans la liste des participants.",
       "errorFull": "Plus de places disponibles — tout est complet.",
-      "errorGeneric": "Impossible d'ajouter le participant. Veuillez réessayer."
+      "errorGeneric": "Impossible d'ajouter le participant. Veuillez réessayer.",
+      "errorRequiredField": "« {field} » est obligatoire — remplissez ce champ avant d’ajouter ce participant."
     }
   },
   "registrationDashboard": {
@@ -5396,5 +5382,17 @@
     "inCash": "{amount} en espèces",
     "payingByCard": "par carte",
     "payingInCash": "en espèces"
+  },
+  "programFormErrors": {
+    "title": "Donnez au programme un titre d’au moins 2 caractères.",
+    "description": "Rédigez une description d’au moins 10 caractères.",
+    "city": "Choisissez la ville où se déroule le programme.",
+    "seats": "Le programme doit compter au moins 1 place.",
+    "price": "Les tarifs doivent être supérieurs ou égaux à 0.",
+    "dates": "Renseignez la date limite, la date de début et la date de fin.",
+    "dateOrder": "Les inscriptions doivent fermer au plus tard le jour du début, et le programme doit se terminer après avoir commencé.",
+    "clockTime": "Les horaires doivent être au format HH:MM.",
+    "depositPercent": "Un acompte en pourcentage ne peut pas dépasser 100 %.",
+    "depositNegative": "L’acompte ne peut pas être négatif. Laissez 0 pour encaisser la totalité sur place."
   }
 }

@@ -29,7 +29,11 @@ interface RegistrationsTableProps {
   entityTitle: string;
   /** Cash price, prefilled as the total when adding someone at the desk. */
   defaultAmount?: number;
-  /** Which surface owns this listing — incubator dashboard or consultant portal. */
+  /**
+   * Which surface owns this listing. Every call the table makes — list, cancel,
+   * CSV export, add participant — hangs off this one value, so the portal and
+   * the dashboard run the same component against their own routes.
+   */
   endpoint?: '/api/incubator/registrations' | '/api/consultant/registrations';
 }
 
@@ -70,7 +74,7 @@ export function RegistrationsTable({
         q: options.q,
         ...(options.status !== 'ALL' ? { status: options.status } : {}),
       });
-      const res = await fetch(`/api/incubator/registrations?${params}`, {
+      const res = await fetch(`${endpoint}?${params}`, {
         credentials: 'include',
       });
       if (!res.ok) return;
@@ -114,7 +118,7 @@ export function RegistrationsTable({
   async function handleCancel(id: string) {
     if (!confirm(t('cancelConfirm'))) return;
     startTransition(async () => {
-      const res = await fetch('/api/incubator/registrations', {
+      const res = await fetch(endpoint, {
         method: 'DELETE',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -130,7 +134,7 @@ export function RegistrationsTable({
 
   function handleExport() {
     const params = new URLSearchParams({ entityType, entityId });
-    window.open(`/api/incubator/registrations/export?${params}`, '_blank');
+    window.open(`${endpoint}/export?${params}`, '_blank');
   }
 
   const totalPages = Math.ceil(total / PAGE_SIZE);

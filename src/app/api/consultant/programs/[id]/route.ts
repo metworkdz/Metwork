@@ -14,6 +14,7 @@ import { db } from '@/server/db/store';
 import { pruneListingChildrenSync } from '@/server/registrations/service';
 import { requireConsultant } from '@/server/mentors/access';
 import { canDeleteProgram, canEditProgram, type ProgramActor } from '@/server/programs/ownership';
+import { normalizeDepositConfig, validateCashDeposit } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -33,6 +34,16 @@ const patchSchema = z.object({
   city: z.string().min(1).optional(),
   imageUrl: z.string().url().nullable().optional(),
   imageUrls: z.array(z.string().url()).max(8).optional(),
+  // Pricing and payment config were absent from this schema entirely. Zod
+  // strips unknown keys, so a consultant editing a price got a cheerful 200
+  // and no change — the worst kind of failure, because nothing looked wrong.
+  // Same shape as the incubator route, which always accepted them.
+  price: z.number().int().nonnegative().optional(),
+  onlinePrice: z.number().int().nonnegative().nullable().optional(),
+  cashPrice: z.number().int().nonnegative().nullable().optional(),
+  acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).optional(),
+  cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
+  cashDepositValue: z.number().int().nonnegative().optional().nullable(),
   seatsTotal: z.number().int().positive().optional(),
   deadline:  isoDate.optional(),
   startDate: isoDate.optional(),
@@ -76,6 +87,24 @@ export async function PATCH(
     if (!p) return null;
     if (canEditProgram(p, actor, d.incubators) !== 'ALLOW') return 'FORBIDDEN';
 
+    // Payment config: validate against the MERGED state (existing + patched),
+    // so turning CASH on always carries a valid deposit and turning it off
+    // clears one. Identical to the incubator route.
+    if (
+      input.acceptedPaymentMethods !== undefined ||
+      input.cashDepositType !== undefined ||
+      input.cashDepositValue !== undefined
+    ) {
+      const nextMethods = input.acceptedPaymentMethods ?? p.acceptedPaymentMethods ?? ['ONLINE'];
+      const nextType  = input.cashDepositType  !== undefined ? input.cashDepositType  : (p.cashDepositType  ?? null);
+      const nextValue = input.cashDepositValue !== undefined ? input.cashDepositValue : (p.cashDepositValue ?? null);
+      if (validateCashDeposit(nextMethods, nextType, nextValue)) return 'INVALID_DEPOSIT';
+      p.acceptedPaymentMethods = nextMethods;
+      const cfg = normalizeDepositConfig(nextMethods, nextType, nextValue);
+      p.cashDepositType  = cfg.cashDepositType;
+      p.cashDepositValue = cfg.cashDepositValue;
+    }
+
     if (input.title !== undefined) p.title = input.title;
     if (input.description !== undefined) p.description = input.description;
     if (input.type !== undefined) p.type = input.type;
@@ -85,6 +114,9 @@ export async function PATCH(
       p.imageUrls = input.imageUrls;
       p.imageUrl = input.imageUrls[0] ?? null;
     }
+    if (input.price !== undefined) p.price = input.price;
+    if (input.onlinePrice !== undefined) p.onlinePrice = input.onlinePrice;
+    if (input.cashPrice !== undefined) p.cashPrice = input.cashPrice;
     if (input.seatsTotal !== undefined) p.seatsTotal = input.seatsTotal;
     if (input.deadline !== undefined) p.deadline = input.deadline;
     if (input.startDate !== undefined) p.startDate = input.startDate;
@@ -99,6 +131,9 @@ export async function PATCH(
 
   if (program === null) return jsonError(404, 'NOT_FOUND', 'Program not found');
   if (program === 'FORBIDDEN') return jsonError(403, 'FORBIDDEN', 'Not your program');
+  if (program === 'INVALID_DEPOSIT') {
+    return jsonError(422, 'INVALID_DEPOSIT', 'The cash deposit is not valid for these payment methods');
+  }
   return json({ program });
 }
 

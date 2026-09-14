@@ -325,7 +325,14 @@
         "CANCELLED": "Cancelled"
       },
       "labelStartTime": "Start time (optional)",
-      "labelEndTime": "End time (optional)"
+      "labelEndTime": "End time (optional)",
+      "edit": "Edit",
+      "editTitle": "Edit program",
+      "saveChanges": "Save changes",
+      "labelSplitPricing": "Different price for cash?",
+      "splitPricingHint": "Leave blank to charge the same price on both. Useful when card payments carry a fee.",
+      "labelOnlinePrice": "Price by card (DZD)",
+      "labelCashPrice": "Price in cash (DZD)"
     },
     "earnings": {
       "pending": "Pending",
@@ -2663,10 +2670,6 @@
           "title": "Commissions",
           "subtitle": "Configure the platform's commission rates per transaction type."
         },
-        "listings": {
-          "title": "Pending listings",
-          "subtitle": "Spaces and programs not yet published — inactive spaces and draft programs."
-        },
         "mentorBookings": {
           "title": "Consultation requests",
           "subtitle": "Review and respond to mentor booking requests from founders."
@@ -4299,24 +4302,6 @@
       "save": "Save",
       "updateFailed": "Update failed"
     },
-    "listingsApproval": {
-      "kindSpace": "Space",
-      "kindProgram": "Program",
-      "kindEvent": "Event",
-      "listingOutcome": "Listing {outcome}.",
-      "dismiss": "Dismiss",
-      "emptyTitle": "Inbox zero",
-      "emptyDescription": "No listings are waiting for review right now.",
-      "colListing": "Listing",
-      "colSubmittedBy": "Submitted by",
-      "colCity": "City",
-      "colSubmitted": "Submitted",
-      "colPrice": "Price",
-      "colAction": "Action",
-      "free": "Free",
-      "reject": "Reject",
-      "approve": "Approve"
-    },
     "mentorFormDialog": {
       "editTitle": "Edit mentor",
       "addTitle": "Add a new mentor",
@@ -5307,7 +5292,8 @@
       "cancel": "Cancel",
       "errorDuplicate": "This email is already on the participants list.",
       "errorFull": "No seats left — every place is taken.",
-      "errorGeneric": "Could not add the participant. Please try again."
+      "errorGeneric": "Could not add the participant. Please try again.",
+      "errorRequiredField": "“{field}” is required — fill it in before adding this participant."
     }
   },
   "registrationDashboard": {
@@ -5396,5 +5382,17 @@
     "inCash": "{amount} in cash",
     "payingByCard": "paying by card",
     "payingInCash": "paying in cash"
+  },
+  "programFormErrors": {
+    "title": "Give the program a title of at least 2 characters.",
+    "description": "Write a description of at least 10 characters.",
+    "city": "Choose the city where the program takes place.",
+    "seats": "The program needs at least 1 seat.",
+    "price": "Prices must be 0 or more.",
+    "dates": "Fill in the deadline, start date and end date.",
+    "dateOrder": "Applications must close on or before the start date, and the program must end after it starts.",
+    "clockTime": "Times must be in HH:MM format.",
+    "depositPercent": "A percentage deposit cannot be more than 100%.",
+    "depositNegative": "The deposit cannot be negative. Leave it at 0 to collect the whole amount on site."
   }
 }

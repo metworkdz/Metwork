@@ -4,7 +4,9 @@
  * RegistrationFormBuilder — incubator dashboard component.
  *
  * Lets incubators design a custom registration form for a program or event.
- * Fields are saved as a batch (POST /api/incubator/registration-form).
+ * Fields are saved as a batch. Which endpoint receives them depends on who is
+ * editing — the incubator dashboard or the consultant portal — so the caller
+ * passes it in; the builder itself is identical on both surfaces.
  *
  * Features:
  *  - Add / remove / reorder fields
@@ -80,6 +82,8 @@ interface RegistrationFormBuilderProps {
   entityId: string;
   /** Initial fields loaded from the API. */
   initialFields: RegistrationFormField[];
+  /** Which surface owns this listing. Defaults to the incubator dashboard. */
+  endpoint?: '/api/incubator/registration-form' | '/api/consultant/registration-form';
 }
 
 let _key = 0;
@@ -110,6 +114,7 @@ export function RegistrationFormBuilder({
   entityType,
   entityId,
   initialFields,
+  endpoint = '/api/incubator/registration-form',
 }: RegistrationFormBuilderProps) {
   const t = useTranslations('formBuilder');
   const tQuestions = useTranslations('defaultQuestions');
@@ -218,7 +223,7 @@ export function RegistrationFormBuilder({
 
     startTransition(async () => {
       try {
-        const res = await fetch('/api/incubator/registration-form', {
+        const res = await fetch(endpoint, {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
