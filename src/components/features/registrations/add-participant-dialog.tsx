@@ -183,6 +183,29 @@ export function AddParticipantDialog({
                     <Textarea id={`ap-${field.id}`} rows={3}
                       value={(value as string) ?? ''}
                       onChange={(e) => setAnswer(field.id, e.target.value)} />
+                  ) : field.type === 'CHECKBOX' && options && options.length > 0 ? (
+                    /* CHECKBOX is multi-answer on the public form and is stored
+                       as an ARRAY. A single-value control here would record a
+                       different shape for the same question depending on who
+                       filled it in, and the CSV export would disagree with
+                       itself halfway down the column. */
+                    <div className="flex flex-col gap-2">
+                      {options.map((o) => {
+                        const picked = Array.isArray(value) ? value : [];
+                        return (
+                          <label key={o}
+                            className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md border border-border px-3 text-sm">
+                            <input type="checkbox" className="size-4 accent-primary"
+                              checked={picked.includes(o)}
+                              onChange={() => setAnswer(
+                                field.id,
+                                picked.includes(o) ? picked.filter((x) => x !== o) : [...picked, o],
+                              )} />
+                            {o}
+                          </label>
+                        );
+                      })}
+                    </div>
                   ) : options && options.length > 0 ? (
                     <Select value={(value as string) ?? ''}
                       onValueChange={(v) => setAnswer(field.id, v)}>

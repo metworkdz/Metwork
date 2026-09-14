@@ -216,7 +216,13 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
               description={t('emptyDesc')}
             />
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* Desktop: the full table. Below lg it becomes a card list —
+                this table is eight columns wide, and the actions (collect the
+                cash, cancel an unpaid hold) sit in the LAST one. On a phone
+                that put the one thing a host does at the front desk behind a
+                horizontal scroll nobody discovers. */}
+            <div className="hidden overflow-x-auto lg:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -276,11 +282,15 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                               still has to be collected on the day. */}
                           {b.balanceDue > 0 && (
                             <>
-                              <div className="mt-0.5 text-xs font-normal text-muted-foreground">
-                                {b.paidAtOffice
-                                  ? tb('paidAtOffice', { amount: formatCurrency(b.paidAlready, lang) })
-                                  : tb('paidOnline', { amount: formatCurrency(b.paidAlready, lang) })}
-                              </div>
+                              {/* Nothing paid yet (a desk sale with no deposit)
+                                  reads better as silence than as "paid: 0". */}
+                              {b.paidAlready > 0 && (
+                                <div className="mt-0.5 text-xs font-normal text-muted-foreground">
+                                  {b.paidAtOffice
+                                    ? tb('paidAtOffice', { amount: formatCurrency(b.paidAlready, lang) })
+                                    : tb('paidOnline', { amount: formatCurrency(b.paidAlready, lang) })}
+                                </div>
+                              )}
                               <div className={`text-xs font-normal ${b.awaitingCash ? 'text-amber-600' : 'text-muted-foreground'}`}>
                                 {b.awaitingCash
                                   ? tb('balanceDue', { amount: formatCurrency(b.balanceDue, lang) })
@@ -324,6 +334,89 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Mobile card list */}
+            <div className="space-y-3 lg:hidden">
+              {rows.map((b) => {
+                const { start, end } = fmtRange(b.startsAt, b.endsAt, b);
+                return (
+                  <div key={b.id} className="rounded-lg border border-border bg-card p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{b.customerName}</p>
+                        {b.customerEmail && (
+                          <p className="truncate text-xs text-muted-foreground">{b.customerEmail}</p>
+                        )}
+                      </div>
+                      <div className="shrink-0"><BookingStatusBadge status={b.status} /></div>
+                    </div>
+
+                    <div className="mt-2.5 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm">{b.itemName}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {start}{end && end !== start ? ` → ${end}` : ''}
+                        </p>
+                        <span className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          {b.paymentMethod === 'manual' ? (
+                            <><Banknote className="size-3.5" /> {t('paymentCash')}</>
+                          ) : (
+                            <><CreditCard className="size-3.5" /> {t('paymentOnline')}</>
+                          )}
+                        </span>
+                      </div>
+                      <div className="shrink-0 text-end tabular-nums">
+                        <p className="font-medium">
+                          {b.totalAmount === 0
+                            ? <span className="text-muted-foreground">{t('free')}</span>
+                            : formatCurrency(b.totalAmount, lang)}
+                        </p>
+                        {b.balanceDue > 0 && (
+                          <>
+                            {b.paidAlready > 0 && (
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                {b.paidAtOffice
+                                  ? tb('paidAtOffice', { amount: formatCurrency(b.paidAlready, lang) })
+                                  : tb('paidOnline', { amount: formatCurrency(b.paidAlready, lang) })}
+                              </p>
+                            )}
+                            <p className={`text-xs ${b.awaitingCash ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                              {b.awaitingCash
+                                ? tb('balanceDue', { amount: formatCurrency(b.balanceDue, lang) })
+                                : tb('balanceCollected', { amount: formatCurrency(b.balanceDue, lang) })}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {(b.awaitingCash || b.status === 'PENDING_PAYMENT' ||
+                      b.status === 'AWAITING_APPROVAL' || b.isManual ||
+                      b.itemKind === 'SPACE') && (
+                      <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-border/60 pt-3">
+                        {b.itemKind === 'SPACE' && (
+                          <DownloadContractButton bookingId={b.id} templates={b.contractTemplates} />
+                        )}
+                        {b.awaitingCash && <MarkCashPaidButton bookingId={b.id} />}
+                        {b.status === 'PENDING_PAYMENT' && <CancelUnpaidButton bookingId={b.id} />}
+                        {b.status === 'AWAITING_APPROVAL' && <RequestApprovalButtons bookingId={b.id} />}
+                        {b.isManual && (
+                          <BookingRowActions
+                            booking={{
+                              id: b.id, itemName: b.itemName, startsAt: b.startsAt,
+                              endsAt: b.endsAt, unit: b.unit, totalAmount: b.totalAmount,
+                              clientName: b.customerName, clientEmail: b.customerEmail,
+                              notes: b.notes,
+                            }}
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

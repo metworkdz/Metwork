@@ -274,16 +274,19 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                           {isCashDeposit && balanceDue > 0 && (
                             <>
                               {/* Cash taken at the desk never went online —
-                                  label it for what it was. */}
-                              <div className="mt-0.5 text-xs font-normal text-muted-foreground">
-                                {(b.cashDepositPaidAmount ?? 0) > 0
-                                  ? t('paidAtOffice', {
-                                      amount: `${(b.cashDepositPaidAmount ?? 0).toLocaleString()} DZD`,
-                                    })
-                                  : t('paidOnline', {
-                                      amount: `${(b.onlinePaidAmount ?? 0).toLocaleString()} DZD`,
-                                    })}
-                              </div>
+                                  label it for what it was, and say nothing at
+                                  all when nothing has been paid yet. */}
+                              {((b.cashDepositPaidAmount ?? 0) > 0 || (b.onlinePaidAmount ?? 0) > 0) && (
+                                <div className="mt-0.5 text-xs font-normal text-muted-foreground">
+                                  {(b.cashDepositPaidAmount ?? 0) > 0
+                                    ? t('paidAtOffice', {
+                                        amount: `${(b.cashDepositPaidAmount ?? 0).toLocaleString()} DZD`,
+                                      })
+                                    : t('paidOnline', {
+                                        amount: `${(b.onlinePaidAmount ?? 0).toLocaleString()} DZD`,
+                                      })}
+                                </div>
+                              )}
                               <div className={`text-xs font-normal ${awaitingCash ? 'text-amber-600' : 'text-muted-foreground'}`}>
                                 {awaitingCash
                                   ? t('balanceDue', { amount: `${balanceDue.toLocaleString()} DZD` })

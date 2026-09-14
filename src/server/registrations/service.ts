@@ -378,10 +378,26 @@ export function insertRegistrationSync(
       r.status !== 'CANCELLED',
   );
   if (existing) {
-    // A paid registration reaching an email that already registered for free
-    // adopts the existing row rather than creating a second seat — the payer
-    // must still end up attached to their booking.
-    if (input.bookingId && !existing.bookingId) {
+    // A paid registration reaching an email that already registered adopts the
+    // existing row rather than creating a second seat — the payer must still
+    // end up attached to their booking, or the confirmation email (which finds
+    // the row BY bookingId) never goes out for a payment that really happened.
+    //
+    // "Already linked" is not enough to refuse: a cash reservation links an
+    // UNPAID booking, and someone who reserves for cash and then pays by card
+    // must still be attached to the card booking. Only a booking that is
+    // actually paid for blocks the takeover.
+    const linked = existing.bookingId
+      ? d.bookings.find((b) => b.id === existing.bookingId)
+      : undefined;
+    const linkedIsUnpaid = linked?.status === 'PENDING_PAYMENT';
+    if (input.bookingId && (!existing.bookingId || linkedIsUnpaid)) {
+      // The cash hold is settled by this payment — leaving it open would show
+      // the host a debt the customer has already paid.
+      if (linked && linkedIsUnpaid) {
+        linked.status = 'CANCELLED';
+        linked.updatedAt = new Date().toISOString();
+      }
       existing.bookingId = input.bookingId;
       existing.status = 'CONFIRMED';
       existing.updatedAt = new Date().toISOString();
@@ -462,7 +478,11 @@ export function insertRegistrationSync(
   // bookings dashboard. PENDING_PAYMENT holds no seat by itself
   // (`bookingHoldsSeat`) — the CONFIRMED registration above is what reserves
   // the place, and this row is the money side of the same act.
-  const cash = input.cashReservation;
+  // A WAITLISTED registration holds no seat, so it must not get a booking:
+  // the row would tell someone they owe money for a place they do not have,
+  // and an offline booking (written CONFIRMED) would hold the very seat the
+  // waitlist just decided was unavailable — overbooking the room by one.
+  const cash = rec.status === 'CONFIRMED' ? input.cashReservation : null;
   let cashBooking: { id: string; paid: number; due: number; paidAtOffice: boolean } | undefined;
   if (cash) {
     const already = d.bookings.find(
