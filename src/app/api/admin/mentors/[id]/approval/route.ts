@@ -17,6 +17,14 @@ import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+/**
+ * Approving a consultant now AWAITS the welcome email, which fetches a 4 MB
+ * guide and uploads it to Resend base64-encoded — comfortably more than the
+ * platform's default budget for a request that used to be a single write.
+ * The send cannot be unawaited (the lambda freezes on response and drops it),
+ * so the budget is what has to move.
+ */
+export const maxDuration = 60;
 
 const patchSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED']),

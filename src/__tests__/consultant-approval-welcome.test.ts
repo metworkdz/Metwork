@@ -130,13 +130,33 @@ describe('rejection', () => {
 });
 
 describe('no email on file', () => {
-  it('approves silently instead of throwing', async () => {
+  beforeEach(async () => {
     await db.update((d) => {
       const m = (d.mentors ?? []).find((x) => x.id === MENTOR_ID);
       if (m) m.email = null;
     });
+  });
+
+  it('approves silently instead of throwing', async () => {
     const res = await setMentorApproval({ mentorId: MENTOR_ID, decision: 'APPROVED', admin: ADMIN });
     expect(res.ok).toBe(true);
     expect(sendWelcome).not.toHaveBeenCalled();
+  });
+
+  it('does not mark them welcomed — nothing was sent', async () => {
+    // Stamping here would mark a consultant "welcomed" without a word having
+    // been sent, and once they added an address a re-approval would give them
+    // the short note instead of the welcome they never received.
+    await setMentorApproval({ mentorId: MENTOR_ID, decision: 'APPROVED', admin: ADMIN });
+    expect((await mentor()).welcomeEmailSentAt).toBeFalsy();
+
+    // Address added later, approved again → they get the welcome.
+    await db.update((d) => {
+      const m = (d.mentors ?? []).find((x) => x.id === MENTOR_ID);
+      if (m) m.email = 'yanis@example.dz';
+    });
+    await setMentorApproval({ mentorId: MENTOR_ID, decision: 'APPROVED', admin: ADMIN });
+    expect(sendWelcome).toHaveBeenCalledTimes(1);
+    expect(sendApproval).not.toHaveBeenCalled();
   });
 });

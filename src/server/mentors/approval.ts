@@ -62,7 +62,13 @@ export async function setMentorApproval(
     // Claim the welcome email inside the SAME write that flips the status, so
     // two admins hitting Approve at once cannot both send it (and cannot both
     // attach 4 MB). Released again below if the send then fails.
-    const firstApproval = approved && !mentor.welcomeEmailSentAt;
+    //
+    // Only claim it when there is somewhere to send it. Stamping a consultant
+    // with no email on file would mark them "welcomed" without a word having
+    // been sent — and then, once they added an address, a re-approval would
+    // give them the short note instead of the welcome they never got.
+    const hasEmail = Boolean(mentor.email?.trim());
+    const firstApproval = approved && hasEmail && !mentor.welcomeEmailSentAt;
     if (firstApproval) mentor.welcomeEmailSentAt = new Date().toISOString();
     return { ok: true, mentor, firstApproval };
   });

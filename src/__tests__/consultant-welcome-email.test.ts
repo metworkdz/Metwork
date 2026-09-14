@@ -133,6 +133,21 @@ describe('loadConsultantGuidePdf', () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
+  it('retries after a failure instead of memoising it', async () => {
+    // Caching a failure would drop the attachment from every welcome that warm
+    // lambda sent afterwards, on the strength of one blink from the CDN.
+    let call = 0;
+    vi.stubGlobal('fetch', vi.fn(() => {
+      call += 1;
+      return call === 1
+        ? Promise.reject(new Error('CDN blinked'))
+        : Promise.resolve(new Response(PDF, { status: 200 }));
+    }));
+    expect(await loadConsultantGuidePdf()).toBeNull();
+    expect((await loadConsultantGuidePdf())?.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+    expect(call).toBe(2);
+  });
+
   it('names the attachment something a consultant will recognise', () => {
     expect(CONSULTANT_GUIDE_FILENAME).toMatch(/\.pdf$/);
     expect(CONSULTANT_GUIDE_FILENAME).toContain('Guide-consultant');

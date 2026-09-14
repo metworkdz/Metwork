@@ -23,7 +23,15 @@ export const CONSULTANT_GUIDE_PUBLIC_ID = 'metwork/guides/guide-consultant-metwo
 /** Filename the recipient sees in their mail client. */
 export const CONSULTANT_GUIDE_FILENAME = 'Guide-consultant-Metwork.pdf';
 
-let cached: Buffer | null | undefined;
+/**
+ * ONLY successes are memoised.
+ *
+ * Caching a failure would be worse than not caching at all: one blink from the
+ * CDN on the first email of a warm lambda would silently drop the attachment
+ * from every consultant welcomed by that instance afterwards. A failure leaves
+ * the cache empty so the next send tries again.
+ */
+let cached: Buffer | undefined;
 
 /**
  * The guide's bytes, or null when it cannot be fetched.
@@ -33,32 +41,30 @@ let cached: Buffer | null | undefined;
  * The caller sends either way.
  */
 export async function loadConsultantGuidePdf(): Promise<Buffer | null> {
-  if (cached !== undefined) return cached;
-  if (!isConfigured()) {
-    cached = null;
-    return cached;
-  }
+  if (cached) return cached;
+  if (!isConfigured()) return null;
   try {
     const res = await fetch(signedRawDownloadUrl(CONSULTANT_GUIDE_PUBLIC_ID), {
       redirect: 'follow',
-      signal: AbortSignal.timeout(15_000),
+      // Comfortably inside the route's own budget: the caller awaits this
+      // before it can answer, so a hung CDN must not be what times the request
+      // out. The email is sent without the attachment instead.
+      signal: AbortSignal.timeout(8_000),
     });
-    if (!res.ok) {
-      cached = null;
-      return cached;
-    }
+    if (!res.ok) return null;
     const buf = Buffer.from(await res.arrayBuffer());
     // A signed-link failure can still answer 200 with an HTML error body —
     // attaching that as "Guide-consultant-Metwork.pdf" would be worse than
     // attaching nothing.
-    cached = buf.subarray(0, 5).toString('latin1') === '%PDF-' ? buf : null;
+    if (buf.subarray(0, 5).toString('latin1') !== '%PDF-') return null;
+    cached = buf;
+    return cached;
   } catch {
-    cached = null;
+    return null;
   }
-  return cached;
 }
 
-/** Drop the cached copy — used after re-uploading the guide. */
+/** Drop the cached copy — used after re-uploading the guide, and in tests. */
 export function clearConsultantGuideCache(): void {
   cached = undefined;
 }
