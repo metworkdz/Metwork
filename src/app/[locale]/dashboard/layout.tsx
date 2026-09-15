@@ -6,6 +6,7 @@ import { DashboardTopbar } from '@/components/layout/dashboard-topbar';
 import { MobileDashboardHeader } from '@/components/layout/mobile-dashboard-header';
 import { MobileTabBar } from '@/components/layout/mobile-tab-bar';
 import { PendingApprovalBanner } from '@/components/shared/pending-approval-banner';
+import { InstallAppPrompt } from '@/components/pwa/install-app-prompt';
 import { NotificationCountsProvider } from '@/hooks/use-notification-counts';
 import { getNotificationCounts } from '@/server/notifications/counts';
 import { sourcesForRole } from '@/server/notifications/activity-sources';
@@ -38,6 +39,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <div aria-hidden className="h-[calc(4.5rem+env(safe-area-inset-bottom))] lg:hidden" />
         </main>
         <MobileTabBar role={user.role} />
+        {/* Only reached past the auth redirect above, so `signedIn` is a fact
+            rather than a guess — a guest never renders this at all. */}
+        <InstallAppPrompt signedIn />
       </div>
     </div>
     </NotificationCountsProvider>

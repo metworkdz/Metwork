@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { consultantService, type ConsultantContract, type ConsultantMe, type ConsultantMentor } from '@/services/consultant.service';
 import { cn } from '@/lib/utils';
+import { InstallAppPrompt } from '@/components/pwa/install-app-prompt';
 import { PinUnlock } from './portal/pin-unlock';
 import { AvailabilityEditor } from './portal/availability-editor';
 import { BookingsSection } from './portal/bookings-section';
@@ -86,6 +87,9 @@ export function ConsultantPortal() {
   if (phase === 'signedIn' && me) {
     return (
       <div dir="auto" className="portal-light min-h-[100dvh] bg-muted/20 text-foreground antialiased">
+        {/* Consultants are signed in through their own session, so they get
+            the same invitation as a platform user. */}
+        <InstallAppPrompt signedIn />
         <Dashboard
           me={me}
           onMentor={(m) => setMe((prev) => (prev ? { ...prev, mentor: m } : prev))}
@@ -440,6 +444,7 @@ function Dashboard({
             into one row, 9px labels) can't recur since new tabs default into
             the overflow sheet instead of adding a 6th bar cell. */}
         <nav
+          data-app-bottom-nav
           className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-xl border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden border-border"
         >
           <div className="grid grid-cols-5">

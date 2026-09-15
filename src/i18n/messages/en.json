@@ -5394,5 +5394,20 @@
     "clockTime": "Times must be in HH:MM format.",
     "depositPercent": "A percentage deposit cannot be more than 100%.",
     "depositNegative": "The deposit cannot be negative. Leave it at 0 to collect the whole amount on site."
+  },
+  "installPrompt": {
+    "title": "Install Metwork",
+    "body": "Open Metwork from your home screen — full screen, faster, no browser in the way.",
+    "install": "Install",
+    "later": "Not now",
+    "dismiss": "Close",
+    "ios": {
+      "title": "Add Metwork to your home screen",
+      "step1": "Tap Share, at the bottom of the screen.",
+      "step2": "Scroll down and choose “Add to Home Screen”.",
+      "step3": "Tap “Add”. That’s it.",
+      "hint": "The Share button is in the toolbar at the bottom of Safari, just below this panel.",
+      "close": "Got it"
+    }
   }
 }

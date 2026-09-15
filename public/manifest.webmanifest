@@ -3,14 +3,18 @@
   "name": "Metwork",
   "short_name": "Metwork",
   "description": "Algeria's unified startup ecosystem — entrepreneurs, investors, incubators, and coworking spaces in one platform.",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#FFFFFF",
   "theme_color": "#0D0D0D",
   "dir": "auto",
-  "categories": ["business", "productivity", "finance"],
+  "categories": [
+    "business",
+    "productivity",
+    "finance"
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",

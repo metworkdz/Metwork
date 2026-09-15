@@ -5394,5 +5394,20 @@
     "clockTime": "Les horaires doivent être au format HH:MM.",
     "depositPercent": "Un acompte en pourcentage ne peut pas dépasser 100 %.",
     "depositNegative": "L’acompte ne peut pas être négatif. Laissez 0 pour encaisser la totalité sur place."
+  },
+  "installPrompt": {
+    "title": "Installer Metwork",
+    "body": "Ouvrez Metwork depuis votre écran d'accueil : plein écran, plus rapide, sans passer par le navigateur.",
+    "install": "Installer",
+    "later": "Plus tard",
+    "dismiss": "Fermer",
+    "ios": {
+      "title": "Ajouter Metwork à l'écran d'accueil",
+      "step1": "Appuyez sur Partager, en bas de l’écran.",
+      "step2": "Faites défiler et choisissez « Sur l’écran d’accueil ».",
+      "step3": "Appuyez sur « Ajouter ». C’est fait.",
+      "hint": "Le bouton Partager se trouve dans la barre en bas de Safari, juste en dessous de ce panneau.",
+      "close": "J’ai compris"
+    }
   }
 }

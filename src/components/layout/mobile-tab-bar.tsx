@@ -45,6 +45,7 @@ export function MobileTabBar({ role }: MobileTabBarProps) {
     <>
       <nav
         aria-label={t('nav.dashboard')}
+        data-app-bottom-nav
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 shadow-[0_-1px_12px_rgba(13,13,13,0.06)] backdrop-blur-xl lg:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { Providers } from '@/components/providers';
 import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register';
+import { InstallPromptCapture } from '@/components/pwa/install-prompt-capture';
 import { ChunkErrorRecovery } from '@/components/pwa/chunk-error-recovery';
 import { getServerSession } from '@/lib/session';
 import { siteConfig } from '@/config/site';
@@ -145,6 +146,10 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
+      <head>
+        {/* Must run before hydration — the install hook fires once and early. */}
+        <InstallPromptCapture />
+      </head>
       <body className={cn(inter.variable, cairo.variable, plusJakartaSans.variable, spaceGrotesk.variable, 'min-h-screen bg-background font-sans')}>
         <Providers locale={locale} messages={messages} initialUser={sessionUser}>
           {children}
