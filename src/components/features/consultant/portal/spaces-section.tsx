@@ -34,8 +34,7 @@ import {
 } from '@/services/consultant.service';
 import type { SpaceCategory } from '@/types/domain';
 import {
-  BrandButton, CP_GREEN_TEXT, CP_LIGHT_BORDER, CP_LIGHT_FAINT, CP_LIGHT_MUTED, CP_LIGHT_TEXT,
-  EmptyBlock, ErrorBanner, Field, FlowSheet, GhostButton, SectionCard, SectionHeading, Spinner,
+  BrandButton, EmptyBlock, ErrorBanner, Field, FlowSheet, GhostButton, SectionCard, SectionHeading, Spinner,
   cpInputClassLight, fmtDZD,
 } from './shared';
 
@@ -197,11 +196,12 @@ export function SpacesSection() {
             onClick={() => setTab(key)}
             className={cn(
               'shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
-              tab === key ? 'text-white' : 'bg-white',
+              tab === key
+
+                ? 'border-primary bg-primary text-primary-foreground'
+
+                : 'border-border bg-card text-muted-foreground hover:bg-accent',
             )}
-            style={tab === key
-              ? { backgroundColor: CP_GREEN_TEXT, borderColor: CP_GREEN_TEXT }
-              : { borderColor: CP_LIGHT_BORDER, color: CP_LIGHT_MUTED }}
           >
             {label}
           </button>
@@ -231,11 +231,12 @@ export function SpacesSection() {
                   onClick={() => setCategory(c as SpaceCategory | 'all')}
                   className={cn(
                     'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-                    category === c ? 'text-white' : 'bg-white',
+                    category === c
+
+                      ? 'border-primary bg-primary text-primary-foreground'
+
+                      : 'border-border bg-card text-muted-foreground hover:bg-accent',
                   )}
-                  style={category === c
-                    ? { backgroundColor: CP_GREEN_TEXT, borderColor: CP_GREEN_TEXT }
-                    : { borderColor: CP_LIGHT_BORDER, color: CP_LIGHT_MUTED }}
                 >
                   {c === 'all' ? t('allCategories') : t(`category${c}` as 'categoryCOWORKING')}
                 </button>
@@ -264,24 +265,23 @@ export function SpacesSection() {
       ) : (
         <SectionCard className="space-y-1">
           {mine.map((b) => (
-            <div key={b.id} className="rounded-2xl px-1 py-2.5">
+            <div key={b.id} className="rounded-md px-1 py-2.5">
               <div className="flex items-start gap-3">
                 <span
-                  className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl"
-                  style={{ background: '#F7F8F9', color: CP_GREEN_TEXT }}
+                  className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-primary"
                 >
                   <Building2 className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium" style={{ color: CP_LIGHT_TEXT }}>{b.itemName}</p>
-                  <p className="mt-0.5 truncate text-xs" style={{ color: CP_LIGHT_MUTED }}>
+                  <p className="truncate text-sm font-medium text-foreground">{b.itemName}</p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
                     {b.vendorName} · {b.city}
                   </p>
-                  <p className="mt-0.5 text-xs" style={{ color: CP_LIGHT_FAINT }}>{fmtRange(b.startsAt, b.endsAt)}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{fmtRange(b.startsAt, b.endsAt)}</p>
                 </div>
                 <div className="shrink-0 text-end">
                   <Badge variant={STATUS_VARIANT[b.status] ?? 'info'}>{t(`status${b.status}` as 'statusPENDING_PAYMENT')}</Badge>
-                  <p className="mt-1 text-xs font-semibold tabular-nums" style={{ color: CP_LIGHT_TEXT }}>
+                  <p className="mt-1 text-xs font-semibold tabular-nums text-foreground">
                     {fmtDZD(b.totalAmount)}
                   </p>
                 </div>
@@ -291,8 +291,7 @@ export function SpacesSection() {
                   type="button"
                   onClick={() => { setCancelError(null); setToCancel(b); }}
                   // Full-width tap target on phones; hugs its content from sm up.
-                  className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-2xl border text-sm font-medium transition-colors hover:bg-[#F7F8F9] active:bg-[#F0F1F2] sm:ms-12 sm:w-auto sm:px-4"
-                  style={{ borderColor: CP_LIGHT_BORDER, color: '#B42318' }}
+                  className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-md border text-sm font-medium transition-colors hover:bg-accent active:bg-accent sm:ms-12 sm:w-auto sm:px-4 border-border text-destructive"
                 >
                   <X className="size-4" />{t('cancelCta')}
                 </button>
@@ -323,8 +322,7 @@ export function SpacesSection() {
               type="button"
               disabled={cancelling}
               onClick={() => void confirmCancel()}
-              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-base font-semibold text-white transition-all active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B42318]/50 focus-visible:ring-offset-2 sm:flex-1"
-              style={{ backgroundColor: '#B42318' }}
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-destructive px-4 text-base font-semibold text-destructive-foreground shadow-sm transition-all hover:bg-destructive/90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/50 focus-visible:ring-offset-2 sm:flex-1"
             >
               {cancelling && <Loader2 className="size-4 animate-spin" />}
               {t('cancelConfirm')}
@@ -341,13 +339,13 @@ export function SpacesSection() {
         }
       >
         <div className="space-y-3">
-          <p className="text-sm" style={{ color: CP_LIGHT_TEXT }}>
+          <p className="text-sm text-foreground">
             {toCancel?.itemName}
           </p>
-          <p className="text-xs" style={{ color: CP_LIGHT_MUTED }}>
+          <p className="text-xs text-muted-foreground">
             {toCancel ? fmtRange(toCancel.startsAt, toCancel.endsAt) : ''}
           </p>
-          <p className="text-xs leading-relaxed" style={{ color: CP_LIGHT_MUTED }}>
+          <p className="text-xs leading-relaxed text-muted-foreground">
             {t('cancelBody')}
           </p>
           {cancelError && <ErrorBanner message={cancelError} tone="light" />}
@@ -371,20 +369,18 @@ function SpaceRow({
     <button
       type="button"
       onClick={onSelect}
-      className="flex w-full flex-col gap-2 rounded-3xl border bg-white p-3 text-start transition-colors hover:bg-[#F7F8F9] active:bg-[#F0F1F2]"
-      style={{ borderColor: CP_LIGHT_BORDER }}
+      className="flex w-full flex-col gap-2 rounded-lg border bg-card p-3 text-start transition-colors hover:bg-accent active:bg-accent border-border"
     >
       <div className="flex items-start gap-3">
         <span
-          className="flex size-11 shrink-0 items-center justify-center rounded-2xl"
-          style={{ background: '#F7F8F9', color: CP_GREEN_TEXT }}
+          className="flex size-11 shrink-0 items-center justify-center rounded-md bg-muted text-primary"
         >
           <Building2 className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold" style={{ color: CP_LIGHT_TEXT }}>{space.name}</p>
-          <p className="mt-0.5 truncate text-xs" style={{ color: CP_LIGHT_MUTED }}>{space.incubatorName}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]" style={{ color: CP_LIGHT_FAINT }}>
+          <p className="truncate text-sm font-semibold text-foreground">{space.name}</p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">{space.incubatorName}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1"><MapPin className="size-3" />{space.city}</span>
             <span className="inline-flex items-center gap-1"><Users className="size-3" />{space.capacity}</span>
           </div>
@@ -393,7 +389,7 @@ function SpaceRow({
       <div className="flex items-center justify-between gap-2">
         <Badge variant="info">{label(`category${space.category}` as 'categoryCOWORKING')}</Badge>
         {from != null && Number.isFinite(from) && (
-          <span className="text-xs font-semibold tabular-nums" style={{ color: CP_LIGHT_TEXT }}>
+          <span className="text-xs font-semibold tabular-nums text-foreground">
             {label('fromPrice', { price: fmtDZD(from) })}
           </span>
         )}
@@ -551,25 +547,23 @@ function ReserveSheet({
       {!space ? null : done ? (
         <div className="space-y-3 py-2 text-center">
           <span
-            className="mx-auto flex size-14 items-center justify-center rounded-full"
-            style={{ background: '#E6F5EA', color: CP_GREEN_TEXT }}
+            className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary-50 text-primary-700"
           >
             <Check className="size-7" />
           </span>
-          <p className="text-sm font-medium" style={{ color: CP_LIGHT_TEXT }}>{t('reservedBody')}</p>
-          <p className="text-xs leading-relaxed" style={{ color: CP_LIGHT_MUTED }}>{t('reservedPayOnSite')}</p>
+          <p className="text-sm font-medium text-foreground">{t('reservedBody')}</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">{t('reservedPayOnSite')}</p>
         </div>
       ) : (
         <div className="space-y-4">
           {/* Pay-on-site notice — the whole point of this flow. */}
           <div
-            className="rounded-2xl border px-3 py-2.5 text-xs leading-relaxed"
-            style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9', color: CP_LIGHT_MUTED }}
+            className="rounded-md border px-3 py-2.5 text-xs leading-relaxed border-border bg-muted text-muted-foreground"
           >
             {t('payOnSiteNotice')}
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: CP_LIGHT_FAINT }}>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1"><MapPin className="size-3" />{space.city}</span>
             <span className="inline-flex items-center gap-1"><Users className="size-3" />{space.capacity}</span>
             <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" />{space.openingTime}–{space.closingTime}</span>
@@ -585,11 +579,12 @@ function ReserveSheet({
                     onClick={() => { setUnit(u); setQty(1); }}
                     className={cn(
                       'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-                      unit === u ? 'text-white' : 'bg-white',
+                      unit === u
+
+                        ? 'border-primary bg-primary text-primary-foreground'
+
+                        : 'border-border bg-card text-muted-foreground hover:bg-accent',
                     )}
-                    style={unit === u
-                      ? { backgroundColor: CP_GREEN_TEXT, borderColor: CP_GREEN_TEXT }
-                      : { borderColor: CP_LIGHT_BORDER, color: CP_LIGHT_MUTED }}
                   >
                     {t(`unit${u}` as 'unitHOUR')}
                   </button>
@@ -660,11 +655,10 @@ function ReserveSheet({
 
           {total != null && !blocked && (
             <div
-              className="flex items-center justify-between rounded-2xl px-3 py-3"
-              style={{ background: '#F7F8F9' }}
+              className="flex items-center justify-between rounded-md px-3 py-3 bg-muted"
             >
-              <span className="text-xs" style={{ color: CP_LIGHT_MUTED }}>{t('totalOnSite')}</span>
-              <span className="text-base font-bold tabular-nums" style={{ color: CP_LIGHT_TEXT }}>{fmtDZD(total)}</span>
+              <span className="text-xs text-muted-foreground">{t('totalOnSite')}</span>
+              <span className="text-base font-bold tabular-nums text-foreground">{fmtDZD(total)}</span>
             </div>
           )}
 
@@ -672,8 +666,7 @@ function ReserveSheet({
           {space.contactPhone && (
             <a
               href={`tel:${space.contactPhone}`}
-              className="flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium"
-              style={{ borderColor: CP_LIGHT_BORDER, color: CP_LIGHT_TEXT }}
+              className="flex items-center justify-center gap-2 rounded-md border px-4 py-3 text-sm font-medium border-border text-foreground"
             >
               <Phone className="size-4" />{t('callSpace')}
             </a>

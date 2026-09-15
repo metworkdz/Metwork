@@ -15,7 +15,7 @@ import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
 import { findCityCode } from '@/config/cities';
 import { cn } from '@/lib/utils';
 import {
-  BrandButton, CP_GREEN, CP_GREEN_TEXT, CP_LIGHT_BORDER, CP_LIGHT_FAINT, CP_LIGHT_MUTED, ErrorBanner, Field,
+  BrandButton, ErrorBanner, Field,
   GhostButton, SectionCard, SectionHeading, cpInputClassLight, uploadConsultantFile,
 } from './shared';
 
@@ -126,8 +126,7 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
           <img
             src={avatarUrl || '/assets/profilelogogreen.png'}
             alt={mentor.fullName}
-            className="size-16 shrink-0 rounded-2xl border object-cover"
-            style={{ borderColor: CP_LIGHT_BORDER }}
+            className="size-16 shrink-0 rounded-md border object-cover border-border"
           />
           <div className="min-w-0 flex-1 space-y-2">
             <input
@@ -158,7 +157,7 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
                   : <FileText className="size-3.5" />} {cvUrl ? t('replaceCv') : t('uploadCv')}
               </GhostButton>
             </div>
-            <p className="text-[11px]" style={{ color: CP_LIGHT_FAINT }}>
+            <p className="text-[11px] text-muted-foreground">
               {cvUrl ? t('cvOnFile') : t('uploadHint')}
             </p>
           </div>
@@ -213,13 +212,12 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
         {/* Topics */}
         <Field label={t('topicsLabel')} hint={t('topicsHint')}>
           <div className="flex flex-wrap gap-1.5">
-            {topics.length === 0 && <span className="text-xs" style={{ color: CP_LIGHT_FAINT }}>{t('topicsEmpty')}</span>}
+            {topics.length === 0 && <span className="text-xs text-muted-foreground">{t('topicsEmpty')}</span>}
             {topics.map((tp) => (
-              <span key={tp} className="inline-flex items-center gap-1 rounded-full border bg-[#F7F8F9] px-2.5 py-1 text-xs text-[#2A2F2C]"
-                style={{ borderColor: CP_LIGHT_BORDER }}>
+              <span key={tp} className="inline-flex items-center gap-1 rounded-full border bg-muted px-2.5 py-1 text-xs text-foreground border-border">
                 {tp}
                 <button type="button" onClick={() => setTopics((prev) => prev.filter((x) => x !== tp))}
-                  className="text-[#8A918E] hover:text-[#0D0D0D]" aria-label="remove">
+                  className="text-muted-foreground hover:text-foreground" aria-label="remove">
                   <X className="size-3" />
                 </button>
               </span>
@@ -232,8 +230,7 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
               placeholder={t('topicsPlaceholder')} disabled={saving} className={`${cpInputClassLight} h-9`}
             />
             <button type="button" onClick={addTopic} disabled={saving}
-              className="grid size-9 shrink-0 place-items-center rounded-xl border text-[#5A615E] hover:text-[#0D0D0D]"
-              style={{ borderColor: CP_LIGHT_BORDER }}>
+              className="grid size-9 shrink-0 place-items-center rounded-md border text-muted-foreground hover:text-foreground border-border">
               <Plus className="size-4" />
             </button>
           </div>
@@ -241,8 +238,8 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
 
         {/* Hourly rate — the live fee clients are charged (pro-rated by duration) */}
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: CP_LIGHT_MUTED }}>{t('ratesHeading')}</p>
-          <p className="text-[11px]" style={{ color: CP_LIGHT_FAINT }}>{t('ratesHint')}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('ratesHeading')}</p>
+          <p className="text-[11px] text-muted-foreground">{t('ratesHint')}</p>
           <Field label={t('hourlyRateLabel')} htmlFor="cp-fee">
             <input id="cp-fee" type="number" inputMode="numeric" min={0} value={fee} dir="ltr"
               onChange={(e) => setFee(e.target.value)} disabled={saving} className={cpInputClassLight} placeholder="0" />
@@ -252,35 +249,33 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
         {/* Free intro */}
         <button
           type="button" onClick={() => setFreeIntro((v) => !v)} disabled={saving}
-          className="flex w-full items-center justify-between gap-3 rounded-xl border bg-[#F7F8F9] p-3 text-start"
-          style={{ borderColor: CP_LIGHT_BORDER }}
+          className="flex w-full items-center justify-between gap-3 rounded-md border bg-muted p-3 text-start border-border"
         >
           <span className="flex items-center gap-2">
-            <Sparkles className="size-4" style={{ color: CP_GREEN }} />
+            <Sparkles className="size-4 text-primary" />
             <span>
-              <span className="block text-sm font-medium text-[#0D0D0D]">{t('freeIntroLabel')}</span>
-              <span className="block text-[11px]" style={{ color: CP_LIGHT_FAINT }}>{t('freeIntroHint')}</span>
+              <span className="block text-sm font-medium text-foreground">{t('freeIntroLabel')}</span>
+              <span className="block text-[11px] text-muted-foreground">{t('freeIntroHint')}</span>
             </span>
           </span>
           <span className={cn('relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors',
-            freeIntro ? '' : 'bg-[#D1D6D3]')}
-            style={freeIntro ? { backgroundColor: CP_GREEN } : undefined}>
-            <span className={cn('inline-block size-5 transform rounded-full bg-white shadow transition-transform',
+            freeIntro ? 'bg-primary' : 'bg-input')}
+            >
+            <span className={cn('inline-block size-5 transform rounded-full bg-card shadow transition-transform',
               freeIntro ? 'translate-x-[22px] rtl:-translate-x-[22px]' : 'translate-x-0.5 rtl:-translate-x-0.5')} />
           </span>
         </button>
 
         {/* Meeting defaults */}
         <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: CP_LIGHT_MUTED }}>{t('meetingHeading')}</p>
-          <p className="text-[11px]" style={{ color: CP_LIGHT_FAINT }}>{t('hint')}</p>
-          <div className="inline-flex rounded-xl border p-1" style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('meetingHeading')}</p>
+          <p className="text-[11px] text-muted-foreground">{t('hint')}</p>
+          <div className="inline-flex rounded-md border p-1 border-border bg-muted">
             {(['ONLINE', 'OFFLINE'] as const).map((m) => (
               <button
                 key={m} type="button" onClick={() => setMode(m)} disabled={saving}
                 className={cn('min-h-9 rounded-lg px-4 text-xs font-medium transition-colors',
-                  mode === m ? 'text-white' : 'text-[#5A615E] hover:text-[#0D0D0D]')}
-                style={mode === m ? { backgroundColor: CP_GREEN } : undefined}
+                  mode === m ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
               >
                 {m === 'ONLINE' ? t('modeOnline') : t('modeOffline')}
               </button>
@@ -312,7 +307,7 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
         <div className="flex items-center gap-3">
           <BrandButton tone="light" onClick={save} loading={saving} className="px-5">{t('saveProfile')}</BrandButton>
           {saved && (
-            <span className="flex items-center gap-1 text-xs" style={{ color: CP_GREEN_TEXT }}>
+            <span className="flex items-center gap-1 text-xs text-primary">
               <CheckCircle2 className="size-3.5" /> {t('savedProfile')}
             </span>
           )}

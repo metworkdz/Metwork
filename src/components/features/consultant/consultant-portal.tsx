@@ -31,7 +31,7 @@ import { SpacesSection } from './portal/spaces-section';
 import { ProgramsSection } from './portal/programs-section';
 import { ContractSection } from './portal/contract-section';
 import { LanguageSwitcher } from './portal/language-switcher';
-import { AppLogo, Avatar, CP_GREEN, CP_GREEN_TEXT, CP_LIGHT_BORDER, CP_LIGHT_MUTED, CP_LIGHT_SURFACE_MUTED, FlowSheet, fmtDZD } from './portal/shared';
+import { AppLogo, Avatar, FlowSheet, fmtDZD } from './portal/shared';
 
 type Tab = 'consultations' | 'programs' | 'spaces' | 'availability' | 'profile' | 'earnings' | 'wallet' | 'contract';
 
@@ -70,7 +70,7 @@ export function ConsultantPortal() {
 
   if (phase === 'signedIn' && me) {
     return (
-      <div dir="auto" className="min-h-[100dvh] bg-[#FAFAFA] text-[#0D0D0D] antialiased">
+      <div dir="auto" className="portal-light min-h-[100dvh] bg-muted/20 text-foreground antialiased">
         <Dashboard
           me={me}
           onMentor={(m) => setMe((prev) => (prev ? { ...prev, mentor: m } : prev))}
@@ -82,11 +82,11 @@ export function ConsultantPortal() {
   }
 
   return (
-    <div dir="auto" className="relative min-h-[100dvh] overflow-hidden bg-[#FAFAFA] text-[#0D0D0D] antialiased">
+    <div dir="auto" className="portal-light relative min-h-[100dvh] overflow-hidden bg-muted/20 text-foreground antialiased">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-dot-grid opacity-70" />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[480px] hero-glow" />
       {phase === 'loading' ? (
-        <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4" style={{ color: '#8A918E' }}>
+        <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 text-muted-foreground">
           <AppLogo tone="light" height={30} />
           <Loader2 className="size-5 animate-spin" />
         </div>
@@ -194,50 +194,48 @@ function Dashboard({
   const contractNeedsAttention = pendingContract !== null && !MOBILE_PRIMARY_TABS.includes('contract');
 
   return (
-    <div className="mx-auto flex min-h-[100dvh] max-w-[1360px] lg:items-start">
+    /* `portal-light` pins the light palette so the portal never follows a dark
+       app theme — see globals.css. The rest matches the incubator dashboard
+       shell: full-bleed, white rail, grey canvas. */
+    <div className="portal-light flex min-h-[100dvh] bg-muted/20 lg:items-start">
       {/* Desktop sidebar (lg+) */}
-      <aside
-        className="sticky top-0 hidden h-[100dvh] w-60 shrink-0 flex-col gap-9 border-e px-4 py-6 lg:flex"
-        style={{ borderColor: CP_LIGHT_BORDER }}
-      >
-        <div className="flex items-center gap-2 px-2">
+      <aside className="sticky top-0 hidden h-[100dvh] w-64 shrink-0 flex-col border-e border-border bg-background lg:flex">
+        <div className="flex h-16 shrink-0 items-center border-b border-border px-6">
           <AppLogo tone="light" height={24} />
         </div>
 
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-6">
           {tabs.map(({ key, label, icon: Icon }) => {
             const active = tab === key;
             return (
               <button
                 key={key} type="button" onClick={() => setTab(key)} aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-start text-sm font-medium transition-colors',
-                  active ? 'font-semibold' : 'text-[#5A615E] hover:bg-[#F7F8F9]',
+                  'flex items-center gap-3 rounded-md px-3 py-2 text-start text-sm font-medium transition-colors',
+                  active
+                    ? 'bg-primary-50 text-primary-700'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground',
                 )}
-                style={active ? { background: '#E6F5EA', color: CP_GREEN_TEXT } : undefined}
               >
-                <Icon className="size-[18px]" />
+                <Icon className="size-4" />
                 {label}
               </button>
             );
           })}
         </nav>
 
-        <div className="mt-auto flex items-center gap-2.5 border-t pt-4" style={{ borderColor: CP_LIGHT_BORDER }}>
+        <div className="flex shrink-0 items-center gap-2.5 border-t border-border px-4 py-4">
           <Avatar name={me.mentor.fullName} size={34} variant="solid" />
           <div className="min-w-0">
-            <p className="truncate text-[13px] font-semibold text-[#0D0D0D]">{me.mentor.fullName}</p>
-            <p className="truncate text-xs" style={{ color: CP_LIGHT_MUTED }}>{me.mentor.position || t('nav.profile')}</p>
+            <p className="truncate text-sm font-medium">{me.mentor.fullName}</p>
+            <p className="truncate text-xs text-muted-foreground">{me.mentor.position || t('nav.profile')}</p>
           </div>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* App bar */}
-        <header
-          className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b bg-[#FAFAFA]/90 px-4 py-3 backdrop-blur-md lg:px-10"
-          style={{ borderColor: CP_LIGHT_BORDER }}
-        >
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-border bg-background px-4 sm:px-6 lg:px-8">
           <div className="lg:hidden">
             <AppLogo tone="light" height={24} />
           </div>
@@ -246,22 +244,20 @@ function Dashboard({
             <div className="relative">
               <button type="button" onClick={() => setMenuOpen((o) => !o)} aria-label={t('nav.signOut')}
                 aria-expanded={menuOpen}
-                className="grid size-9 place-items-center rounded-full border text-[#5A615E] transition-colors hover:bg-[#F7F8F9] hover:text-[#0D0D0D]"
-                style={{ borderColor: CP_LIGHT_BORDER }}>
+                className="grid size-9 place-items-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
                 <LogOut className="size-4" />
               </button>
               {menuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} aria-hidden />
-                  <div className="absolute end-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border bg-white p-1 shadow-xl shadow-black/10"
-                    style={{ borderColor: CP_LIGHT_BORDER }}>
+                  <div className="absolute end-0 z-50 mt-2 w-56 overflow-hidden rounded-md border border-border bg-popover p-1 shadow-md">
                     <button type="button" onClick={() => void signOut(false)}
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start text-sm text-[#0D0D0D] transition-colors hover:bg-[#F7F8F9]">
-                      <LogOut className="size-4 text-[#8A918E]" /> {t('nav.signOut')}
+                      className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-start text-sm transition-colors hover:bg-accent">
+                      <LogOut className="size-4 text-muted-foreground" /> {t('nav.signOut')}
                     </button>
                     <button type="button" onClick={() => void signOut(true)}
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start text-sm text-[#0D0D0D] transition-colors hover:bg-[#F7F8F9]">
-                      <ShieldOff className="size-4 text-[#8A918E]" /> {t('nav.forgetDevice')}
+                      className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-start text-sm transition-colors hover:bg-accent">
+                      <ShieldOff className="size-4 text-muted-foreground" /> {t('nav.forgetDevice')}
                     </button>
                   </div>
                 </>
@@ -274,13 +270,13 @@ function Dashboard({
           {/* Approval-status notice — self-signups awaiting / refused review.
               Legacy mentors have no approvalStatus and never see this. */}
           {me.mentor.approvalStatus === 'PENDING' && (
-            <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
               <p className="text-sm font-semibold text-amber-800">{t('approval.pendingTitle')}</p>
               <p className="mt-1 text-xs leading-relaxed text-amber-700/80">{t('approval.pendingBody')}</p>
             </div>
           )}
           {me.mentor.approvalStatus === 'REJECTED' && (
-            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+            <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3">
               <p className="text-sm font-semibold text-red-700">{t('approval.rejectedTitle')}</p>
               <p className="mt-1 text-xs leading-relaxed text-red-700/70">
                 {me.mentor.approvalRejectionReason?.trim() || t('approval.rejectedBody')}
@@ -291,11 +287,11 @@ function Dashboard({
           {/* Approved confirmation — self-signups only (a permanent green banner
               would be noise for legacy admin-added mentors). */}
           {me.mentor.source === 'SELF' && me.mentor.approvalStatus === 'APPROVED' && (
-            <div className="mb-4 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <BadgeCheck className="size-5 shrink-0" style={{ color: CP_GREEN_TEXT }} />
+            <div className="mb-4 flex items-center gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3">
+              <BadgeCheck className="size-5 shrink-0 text-primary" />
               <div className="min-w-0">
-                <p className="text-sm font-semibold" style={{ color: CP_GREEN_TEXT }}>{t('approval.approvedTitle')}</p>
-                <p className="mt-0.5 text-xs leading-relaxed text-[#5A615E]">{t('approval.approvedBody')}</p>
+                <p className="text-sm font-semibold text-primary">{t('approval.approvedTitle')}</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{t('approval.approvedBody')}</p>
               </div>
             </div>
           )}
@@ -305,7 +301,7 @@ function Dashboard({
           {Boolean(me.mentor.phone) && me.mentor.phoneVerified !== true && (
             <a
               href="/mentordashboard/verify-phone"
-              className="mb-4 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 transition-colors hover:bg-amber-100/60"
+              className="mb-4 flex items-center gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 transition-colors hover:bg-amber-100/60"
             >
               <MessageSquareText className="size-4 shrink-0 text-amber-700" />
               <span className="min-w-0 flex-1">
@@ -324,7 +320,7 @@ function Dashboard({
             <button
               type="button"
               onClick={() => setTab('contract')}
-              className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-start transition-colors hover:bg-amber-100/60"
+              className="mb-4 flex w-full items-center gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-start transition-colors hover:bg-amber-100/60"
             >
               <FileSignature className="size-4 shrink-0 text-amber-700" />
               <span className="min-w-0 flex-1">
@@ -336,13 +332,13 @@ function Dashboard({
           )}
 
           {/* Account hero */}
-          <div className="mb-6 overflow-hidden rounded-3xl border bg-white p-5 lg:p-6" style={{ borderColor: CP_LIGHT_BORDER }}>
+          <div className="mb-6 overflow-hidden rounded-lg border bg-card p-5 lg:p-6 border-border">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-3">
                 <Avatar name={me.mentor.fullName} size={44} variant="solid" />
                 <div className="min-w-0">
-                  <p className="truncate text-base font-bold tracking-tight text-[#0D0D0D]">{me.mentor.fullName}</p>
-                  <p className="truncate text-sm" style={{ color: CP_LIGHT_MUTED }}>{me.mentor.position}</p>
+                  <p className="truncate text-base font-bold tracking-tight text-foreground">{me.mentor.fullName}</p>
+                  <p className="truncate text-sm text-muted-foreground">{me.mentor.position}</p>
                 </div>
               </div>
 
@@ -351,24 +347,23 @@ function Dashboard({
                 <button
                   type="button"
                   onClick={() => void copyProfileLink()}
-                  className="flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-start transition-colors hover:bg-[#F7F8F9]"
-                  style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}
+                  className="flex w-full items-center gap-2 rounded-md border border-border bg-muted px-3 py-2.5 text-start transition-colors hover:bg-accent"
                 >
-                  <Link2 className="size-3.5 shrink-0" style={{ color: CP_GREEN }} />
+                  <Link2 className="size-3.5 shrink-0 text-primary" />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[10px] uppercase tracking-wider" style={{ color: CP_LIGHT_MUTED }}>
+                    <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">
                       {t('publicLink.label')}
                     </span>
-                    <span className="block truncate text-xs text-[#0D0D0D]" dir="ltr">
+                    <span className="block truncate text-xs text-foreground" dir="ltr">
                       {profilePath}
                     </span>
                   </span>
                   {linkCopied ? (
-                    <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium" style={{ color: CP_GREEN_TEXT }}>
+                    <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-primary">
                       <Check className="size-3.5" /> {t('publicLink.copied')}
                     </span>
                   ) : (
-                    <span className="flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white" style={{ background: CP_GREEN }}>
+                    <span className="flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-white bg-primary">
                       <Copy className="size-3.5" /> {t('publicLink.copy')}
                     </span>
                   )}
@@ -378,8 +373,7 @@ function Dashboard({
                   href={`https://wa.me/?text=${encodeURIComponent(`${t('publicLink.shareMessage')} ${typeof window !== 'undefined' ? window.location.origin : ''}${profilePath}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-3 text-sm font-medium transition-colors hover:bg-[#F7F8F9]"
-                  style={{ borderColor: CP_LIGHT_BORDER, color: CP_GREEN_TEXT }}
+                  className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border px-3 text-sm font-medium text-primary transition-colors hover:bg-accent"
                 >
                   <Share2 className="size-4" /> {t('publicLink.shareWhatsApp')}
                 </a>
@@ -389,16 +383,16 @@ function Dashboard({
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3 border-t pt-5 lg:max-w-sm" style={{ borderColor: CP_LIGHT_BORDER }}>
+            <div className="mt-6 grid grid-cols-2 gap-3 border-t pt-5 lg:max-w-sm border-border">
               <div>
-                <p className="text-[11px] uppercase tracking-wider" style={{ color: CP_LIGHT_MUTED }}>{t('withdrawals.availableLabel')}</p>
-                <p className="mt-1 text-[26px] font-bold leading-none tracking-tight tabular-nums" style={{ color: CP_GREEN_TEXT }}>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{t('withdrawals.availableLabel')}</p>
+                <p className="mt-1 text-[26px] font-bold leading-none tracking-tight tabular-nums text-primary">
                   {fmtDZD(me.wallet.availableBalance)}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] uppercase tracking-wider" style={{ color: CP_LIGHT_MUTED }}>{t('withdrawals.pendingLabel')}</p>
-                <p className="mt-1 text-[26px] font-bold leading-none tracking-tight tabular-nums text-[#0D0D0D]">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{t('withdrawals.pendingLabel')}</p>
+                <p className="mt-1 text-[26px] font-bold leading-none tracking-tight tabular-nums text-foreground">
                   {fmtDZD(me.wallet.pendingBalance)}
                 </p>
               </div>
@@ -431,8 +425,7 @@ function Dashboard({
             into one row, 9px labels) can't recur since new tabs default into
             the overflow sheet instead of adding a 6th bar cell. */}
         <nav
-          className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-xl border-t bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
-          style={{ borderColor: CP_LIGHT_BORDER }}
+          className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-xl border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden border-border"
         >
           <div className="grid grid-cols-5">
             {mobilePrimaryTabs.map(({ key, label, icon: Icon }) => {
@@ -442,13 +435,13 @@ function Dashboard({
                   key={key} type="button" onClick={() => setTab(key)} aria-current={active ? 'page' : undefined}
                   className="flex min-w-0 flex-col items-center gap-1 px-0.5 py-2.5"
                 >
-                  <span className={cn('grid h-8 w-11 place-items-center rounded-full transition-colors',
-                    active ? '' : '')} style={active ? { background: '#E6F5EA' } : undefined}>
-                    <Icon className="size-5 transition-colors" style={{ color: active ? CP_GREEN_TEXT : '#8A918E' }} />
+                  <span className={cn('grid h-8 w-11 place-items-center rounded-md transition-colors',
+                    active && 'bg-primary-50')}>
+                    <Icon className={cn('size-5 transition-colors', active ? 'text-primary-700' : 'text-muted-foreground')} />
                   </span>
                   <span
-                    className="w-full truncate text-center text-[9px] font-medium leading-tight transition-colors"
-                    style={{ color: active ? '#0D0D0D' : '#8A918E' }}
+                    className={cn('w-full truncate text-center text-[9px] font-medium leading-tight transition-colors',
+                      active ? 'text-foreground' : 'text-muted-foreground')}
                   >
                     {label}
                   </span>
@@ -463,16 +456,15 @@ function Dashboard({
               className="flex min-w-0 flex-col items-center gap-1 px-0.5 py-2.5"
             >
               <span className="relative grid h-8 w-11 place-items-center rounded-full">
-                <Plus className="size-5" style={{ color: '#8A918E' }} />
+                <Plus className="size-5 text-muted-foreground" />
                 {contractNeedsAttention && (
                   <span
                     aria-hidden
-                    className="absolute end-1.5 top-0.5 size-2 rounded-full ring-2 ring-white"
-                    style={{ background: CP_GREEN }}
+                    className="absolute end-1.5 top-0.5 size-2 rounded-full ring-2 ring-white bg-primary"
                   />
                 )}
               </span>
-              <span className="w-full truncate text-center text-[9px] font-medium leading-tight" style={{ color: '#8A918E' }}>
+              <span className="w-full truncate text-center text-[9px] font-medium leading-tight text-muted-foreground">
                 {t('nav.more')}
               </span>
             </button>
@@ -490,20 +482,21 @@ function Dashboard({
                   key={key}
                   type="button"
                   onClick={() => { setTab(key); setMoreOpen(false); }}
-                  className="flex h-[4.75rem] flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-center transition-colors hover:bg-[#F7F8F9]"
-                  style={{ borderColor: active ? CP_GREEN : CP_LIGHT_BORDER, background: active ? '#E6F5EA' : CP_LIGHT_SURFACE_MUTED }}
+                  className={cn(
+                    'flex h-[4.75rem] flex-col items-center justify-center gap-1.5 rounded-md border p-2 text-center transition-colors',
+                    active ? 'border-primary bg-primary-50' : 'border-border bg-muted hover:bg-accent',
+                  )}
                 >
                   <span className="relative">
-                    <Icon className="size-5" style={{ color: active ? CP_GREEN_TEXT : '#5A615E' }} />
+                    <Icon className={cn('size-5', active ? 'text-primary-700' : 'text-muted-foreground')} />
                     {flagged && (
                       <span
                         aria-hidden
-                        className="absolute -end-1.5 -top-1.5 size-2 rounded-full ring-2 ring-white"
-                        style={{ background: CP_GREEN }}
+                        className="absolute -end-1.5 -top-1.5 size-2 rounded-full ring-2 ring-white bg-primary"
                       />
                     )}
                   </span>
-                  <span className="line-clamp-1 text-xs font-medium" style={{ color: active ? CP_GREEN_TEXT : '#0D0D0D' }}>
+                  <span className={cn('line-clamp-1 text-xs font-medium', active ? 'text-primary-700' : 'text-foreground')}>
                     {label}
                   </span>
                 </button>
@@ -520,10 +513,9 @@ function QuickAction({ icon, label, onClick }: { icon: React.ReactNode; label: s
   return (
     <button
       type="button" onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-medium text-[#0D0D0D] transition-colors hover:bg-[#F7F8F9] active:scale-[0.98]"
-      style={{ borderColor: CP_LIGHT_BORDER }}
+      className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent active:scale-[0.98] border-border"
     >
-      <span style={{ color: CP_GREEN }}>{icon}</span>
+      <span className="text-primary">{icon}</span>
       {label}
     </button>
   );

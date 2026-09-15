@@ -28,11 +28,6 @@ import { SignaturePad, type SignaturePadHandle } from './signature-pad';
 import { OtpCodeInput } from './otp-code-input';
 import {
   BrandButton,
-  CP_GREEN_TEXT,
-  CP_GREEN_TINT,
-  CP_LIGHT_BORDER,
-  CP_LIGHT_MUTED,
-  CP_LIGHT_SURFACE_MUTED,
   EmptyBlock,
   ErrorBanner,
   GhostButton,
@@ -112,16 +107,16 @@ function LockedTerms({ contract }: { contract: ConsultantContract }) {
   rows.push([t('terms.signerPhone'), contract.signerPhoneSnapshot]);
 
   return (
-    <div className="rounded-2xl p-3" style={{ background: CP_LIGHT_SURFACE_MUTED }}>
-      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium" style={{ color: CP_LIGHT_MUTED }}>
+    <div className="rounded-md p-3 bg-muted">
+      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
         <Lock className="size-3" />
         {t('terms.lockedNote')}
       </p>
       <dl className="space-y-1.5">
         {rows.map(([label, value]) => (
           <div key={label} className="flex items-baseline justify-between gap-3">
-            <dt className="text-xs" style={{ color: CP_LIGHT_MUTED }}>{label}</dt>
-            <dd className="text-end text-[13px] font-semibold text-[#0D0D0D]">{value}</dd>
+            <dt className="text-xs text-muted-foreground">{label}</dt>
+            <dd className="text-end text-[13px] font-semibold text-foreground">{value}</dd>
           </div>
         ))}
       </dl>
@@ -140,8 +135,7 @@ function ContractBody({ body }: { body: string }) {
       // Always LTR: the document is French even when the portal is Arabic.
       dir="ltr"
       lang="fr"
-      className="max-h-[45vh] overflow-y-auto whitespace-pre-wrap rounded-2xl border p-3.5 text-[13px] leading-relaxed text-[#26262b]"
-      style={{ borderColor: CP_LIGHT_BORDER }}
+      className="max-h-[45vh] overflow-y-auto whitespace-pre-wrap rounded-md border p-3.5 text-[13px] leading-relaxed text-foreground border-border"
     >
       {text}
     </div>
@@ -245,12 +239,12 @@ function PendingContract({
   return (
     <SectionCard className="space-y-4">
       <div className="flex items-start gap-3">
-        <div className="grid size-9 shrink-0 place-items-center rounded-full" style={{ background: CP_GREEN_TINT }}>
-          <FileText className="size-[18px]" style={{ color: CP_GREEN_TEXT }} />
+        <div className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-50">
+          <FileText className="size-[18px] text-primary" />
         </div>
         <div className="min-w-0">
-          <h3 className="text-[15px] font-semibold text-[#0D0D0D]">{t('pendingTitle')}</h3>
-          <p className="mt-0.5 text-xs leading-relaxed" style={{ color: CP_LIGHT_MUTED }}>{t('pendingBody')}</p>
+          <h3 className="text-[15px] font-semibold text-foreground">{t('pendingTitle')}</h3>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{t('pendingBody')}</p>
         </div>
       </div>
 
@@ -278,7 +272,7 @@ function PendingContract({
             {t('startSigning')}
           </BrandButton>
           {!readPdf && (
-            <p className="text-center text-[11px]" style={{ color: CP_LIGHT_MUTED }}>
+            <p className="text-center text-[11px] text-muted-foreground">
               {t('readPdfHint')}
             </p>
           )}
@@ -310,9 +304,9 @@ function PendingContract({
 
       {step === 'code' && (
         <div className="space-y-4">
-          <div className="flex items-start gap-2.5 rounded-2xl p-3" style={{ background: CP_LIGHT_SURFACE_MUTED }}>
-            <ShieldCheck className="mt-0.5 size-4 shrink-0" style={{ color: CP_GREEN_TEXT }} />
-            <p className="text-xs leading-relaxed" style={{ color: CP_LIGHT_MUTED }}>
+          <div className="flex items-start gap-2.5 rounded-md p-3 bg-muted">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+            <p className="text-xs leading-relaxed text-muted-foreground">
               {notice ?? t('codeSentWhatsApp', { phone: contract.signerPhoneSnapshot })}
             </p>
           </div>
@@ -343,8 +337,7 @@ function PendingContract({
               type="button"
               onClick={() => void requestCode('whatsapp')}
               disabled={busy}
-              className="font-medium underline-offset-2 hover:underline disabled:opacity-50"
-              style={{ color: CP_GREEN_TEXT }}
+              className="font-medium underline-offset-2 hover:underline disabled:opacity-50 text-primary"
             >
               {t('resendWhatsApp')}
             </button>
@@ -352,8 +345,7 @@ function PendingContract({
               type="button"
               onClick={() => void requestCode('sms')}
               disabled={busy}
-              className="font-medium underline-offset-2 hover:underline disabled:opacity-50"
-              style={{ color: CP_LIGHT_MUTED }}
+              className="font-medium underline-offset-2 hover:underline disabled:opacity-50 text-muted-foreground"
             >
               {t('resendSms')}
             </button>
@@ -361,8 +353,7 @@ function PendingContract({
               type="button"
               onClick={() => { setStep('sign'); setError(null); }}
               disabled={busy}
-              className="font-medium underline-offset-2 hover:underline disabled:opacity-50"
-              style={{ color: CP_LIGHT_MUTED }}
+              className="font-medium underline-offset-2 hover:underline disabled:opacity-50 text-muted-foreground"
             >
               {t('redraw')}
             </button>
@@ -406,12 +397,12 @@ function SignedContract({ contract }: { contract: ConsultantContract }) {
   return (
     <SectionCard className="space-y-3">
       <div className="flex items-start gap-3">
-        <div className="grid size-9 shrink-0 place-items-center rounded-full" style={{ background: CP_GREEN_TINT }}>
-          <CheckCircle2 className="size-[18px]" style={{ color: CP_GREEN_TEXT }} />
+        <div className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-50">
+          <CheckCircle2 className="size-[18px] text-primary" />
         </div>
         <div className="min-w-0">
-          <h3 className="text-[15px] font-semibold text-[#0D0D0D]">{t('signedTitle')}</h3>
-          <p className="mt-0.5 text-xs leading-relaxed" style={{ color: CP_LIGHT_MUTED }}>
+          <h3 className="text-[15px] font-semibold text-foreground">{t('signedTitle')}</h3>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
             {t('signedBody', { date: signedOn })}
           </p>
         </div>

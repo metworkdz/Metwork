@@ -36,9 +36,7 @@ import {
   type ConsultantProgram,
 } from '@/services/consultant.service';
 import {
-  BrandButton, CP_GREEN, CP_GREEN_TEXT, CP_GREEN_TINT, CP_LIGHT_BORDER, CP_LIGHT_FAINT,
-  CP_LIGHT_MUTED, CP_LIGHT_SURFACE_MUTED, CP_LIGHT_TEXT,
-  EmptyBlock, ErrorBanner, Field, FlowSheet, GhostButton, SectionCard, SectionHeading, Spinner,
+  BrandButton, EmptyBlock, ErrorBanner, Field, FlowSheet, GhostButton, SectionCard, SectionHeading, Spinner,
   cpInputClassLight,
 } from './shared';
 
@@ -191,7 +189,7 @@ export function ProgramsSection() {
         title={t('title')}
         subtitle={t('subtitle')}
         action={
-          <BrandButton onClick={openCreate}>
+          <BrandButton tone="light" onClick={openCreate}>
             <Plus className="size-4" /> {t('create')}
           </BrandButton>
         }
@@ -203,22 +201,21 @@ export function ProgramsSection() {
         <div className="flex justify-center py-10"><Spinner tone="light" /></div>
       ) : items.length === 0 ? (
         <EmptyBlock>
-          <GraduationCap className="mx-auto mb-2 size-7" style={{ color: CP_LIGHT_FAINT }} />
-          <p className="text-sm font-medium" style={{ color: CP_LIGHT_TEXT }}>{t('emptyTitle')}</p>
-          <p className="mt-1 text-xs" style={{ color: CP_LIGHT_MUTED }}>{t('emptyBody')}</p>
+          <GraduationCap className="mx-auto mb-2 size-7 text-muted-foreground" />
+          <p className="text-sm font-medium text-foreground">{t('emptyTitle')}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t('emptyBody')}</p>
         </EmptyBlock>
       ) : (
         <ul className="space-y-2">
           {items.map((p) => (
             <li
               key={p.id}
-              className="rounded-xl border p-3 sm:p-4"
-              style={{ borderColor: CP_LIGHT_BORDER }}
+              className="rounded-md border p-3 sm:p-4 border-border"
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="truncate text-sm font-semibold" style={{ color: CP_LIGHT_TEXT }}>
+                    <h3 className="truncate text-sm font-semibold text-foreground">
                       {p.title}
                     </h3>
                     <Badge variant="primary">{t(`type.${p.type}` as 'type.TRAINING')}</Badge>
@@ -226,29 +223,28 @@ export function ProgramsSection() {
                       {p.isActive ? t('statusPublished') : t('statusDraft')}
                     </Badge>
                   </div>
-                  <p className="mt-0.5 text-xs" style={{ color: CP_LIGHT_MUTED }}>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {p.city} · {fmtDate(p.startDate, locale)} → {fmtDate(p.endDate, locale)}
                   </p>
-                  <p className="mt-1 text-xs" style={{ color: CP_GREEN_TEXT }}>
+                  <p className="mt-1 text-xs text-primary">
                     {t('seats', { taken: p.seatsTaken, total: p.seatsTotal })}
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-                  <GhostButton onClick={() => setSelected(p)}>
+                  <GhostButton tone="light" onClick={() => setSelected(p)}>
                     <Users className="size-3.5" /> {t('registrants')}
                   </GhostButton>
-                  <GhostButton onClick={() => openEdit(p)}>
+                  <GhostButton tone="light" onClick={() => openEdit(p)}>
                     <Pencil className="size-3.5" /> {t('edit')}
                   </GhostButton>
-                  <GhostButton onClick={() => void onTogglePublish(p, !p.isActive)}>
+                  <GhostButton tone="light" onClick={() => void onTogglePublish(p, !p.isActive)}>
                     {p.isActive ? t('unpublish') : t('publish')}
                   </GhostButton>
                   <button
                     type="button"
                     onClick={() => void onDelete(p)}
                     aria-label={t('delete')}
-                    className="rounded-lg border p-1.5 transition-colors hover:bg-red-50"
-                    style={{ borderColor: CP_LIGHT_BORDER }}
+                    className="rounded-lg border p-1.5 transition-colors hover:bg-red-50 border-border"
                   >
                     <Trash2 className="size-3.5 text-red-600" />
                   </button>
@@ -358,9 +354,9 @@ export function ProgramsSection() {
           {/* Split pricing. The API has always accepted these two; the portal
               simply never had the fields, so a consultant could not charge a
               premium for cash the way an incubator can. */}
-          <div className="rounded-2xl border p-3" style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}>
-            <p className="text-xs font-medium" style={{ color: CP_LIGHT_TEXT }}>{t('labelSplitPricing')}</p>
-            <p className="mt-0.5 text-[11px]" style={{ color: CP_LIGHT_MUTED }}>{t('splitPricingHint')}</p>
+          <div className="rounded-md border p-3 border-border bg-muted">
+            <p className="text-xs font-medium text-foreground">{t('labelSplitPricing')}</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">{t('splitPricingHint')}</p>
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
               <Field label={t('labelOnlinePrice')} htmlFor="p-online-price">
                 <input
@@ -382,7 +378,7 @@ export function ProgramsSection() {
           </div>
 
           <div>
-            <p className="text-xs font-medium" style={{ color: CP_LIGHT_MUTED }}>{t('labelPaymentMethods')}</p>
+            <p className="text-xs font-medium text-muted-foreground">{t('labelPaymentMethods')}</p>
             <div className="mt-1.5 flex gap-2">
               {(['ONLINE', 'CASH'] as PaymentMethod[]).map((m) => {
                 const active = draft.acceptedPaymentMethods.includes(m);
@@ -391,10 +387,10 @@ export function ProgramsSection() {
                     key={m}
                     type="button"
                     onClick={() => set('acceptedPaymentMethods', togglePaymentMethod(draft.acceptedPaymentMethods, m))}
-                    className="flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors"
-                    style={active
-                      ? { borderColor: CP_GREEN, background: CP_GREEN_TINT, color: CP_GREEN_TEXT }
-                      : { borderColor: CP_LIGHT_BORDER, color: CP_LIGHT_MUTED }}
+                    className={cn(
+                      'flex-1 rounded-md border px-3 py-2.5 text-sm font-medium transition-colors',
+                      active ? 'border-primary bg-primary/5 font-medium text-primary' : 'border-border text-muted-foreground hover:border-primary/40',
+                    )}
                   >
                     {m === 'ONLINE' ? t('methodOnline') : t('methodCash')}
                   </button>
@@ -404,9 +400,9 @@ export function ProgramsSection() {
           </div>
 
           {draft.acceptedPaymentMethods.includes('CASH') && (
-            <div className="rounded-2xl border p-3" style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}>
-              <p className="text-xs font-medium" style={{ color: CP_LIGHT_TEXT }}>{t('labelDeposit')}</p>
-              <p className="mt-0.5 text-[11px]" style={{ color: CP_LIGHT_MUTED }}>{t('depositHint')}</p>
+            <div className="rounded-md border p-3 border-border bg-muted">
+              <p className="text-xs font-medium text-foreground">{t('labelDeposit')}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">{t('depositHint')}</p>
               <div className="mt-2 flex items-center gap-2">
                 <div className="flex gap-1.5">
                   {(['PERCENT', 'FIXED'] as const).map((dt) => (
@@ -414,10 +410,10 @@ export function ProgramsSection() {
                       key={dt}
                       type="button"
                       onClick={() => set('cashDepositType', dt)}
-                      className="rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors"
-                      style={draft.cashDepositType === dt
-                        ? { borderColor: CP_GREEN, background: CP_GREEN_TINT, color: CP_GREEN_TEXT }
-                        : { borderColor: CP_LIGHT_BORDER, color: CP_LIGHT_MUTED }}
+                      className={cn(
+                        'rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors',
+                        draft.cashDepositType === dt ? 'border-primary bg-primary/5 font-medium text-primary' : 'border-border text-muted-foreground hover:border-primary/40',
+                      )}
                     >
                       {dt === 'PERCENT' ? t('depositPercent') : t('depositFixed')}
                     </button>
@@ -437,7 +433,7 @@ export function ProgramsSection() {
 
           {error && <ErrorBanner message={error} tone="light" />}
 
-          <BrandButton onClick={() => void onSave()} disabled={saving} className="w-full">
+          <BrandButton tone="light" onClick={() => void onSave()} disabled={saving} className="w-full">
             {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
             {editingId ? t('saveChanges') : t('create')}
           </BrandButton>
@@ -470,8 +466,7 @@ function ShareLink({ slug, label, copied }: { slug: string; label: string; copie
     <button
       type="button"
       onClick={() => void copy()}
-      className="mt-2 inline-flex items-center gap-1.5 text-xs underline-offset-2 hover:underline"
-      style={{ color: CP_LIGHT_MUTED }}
+      className="mt-2 inline-flex items-center gap-1.5 text-xs underline-offset-2 hover:underline text-muted-foreground"
     >
       <Copy className="size-3" /> {done ? copied : label}
     </button>
@@ -524,13 +519,13 @@ function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; on
       <div className="mb-4 flex items-center gap-2">
         <button
           type="button" onClick={onBack} aria-label={t('back')}
-          className="rounded-lg border p-1.5" style={{ borderColor: CP_LIGHT_BORDER }}
+          className="rounded-lg border p-1.5 border-border"
         >
-          <ArrowLeft className="size-4 rtl:rotate-180" style={{ color: CP_LIGHT_MUTED }} />
+          <ArrowLeft className="size-4 rtl:rotate-180 text-muted-foreground" />
         </button>
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-sm font-semibold" style={{ color: CP_LIGHT_TEXT }}>{program.title}</h2>
-          <p className="text-xs" style={{ color: CP_LIGHT_MUTED }}>
+          <h2 className="truncate text-sm font-semibold text-foreground">{program.title}</h2>
+          <p className="text-xs text-muted-foreground">
             {t('seats', { taken: program.seatsTaken, total: program.seatsTotal })}
           </p>
         </div>
@@ -543,10 +538,12 @@ function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; on
             key={key}
             type="button"
             onClick={() => setTab(key)}
-            className="flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors"
-            style={tab === key
-              ? { background: CP_GREEN, color: '#ffffff' }
-              : { background: CP_LIGHT_SURFACE_MUTED, color: CP_LIGHT_MUTED }}
+            className={cn(
+              'flex min-h-11 shrink-0 items-center gap-2 rounded-md px-4 text-sm font-medium transition-colors',
+              tab === key
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground',
+            )}
           >
             <Icon className="size-4" />
             {label}

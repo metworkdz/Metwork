@@ -38,6 +38,41 @@
     --radius: 0.625rem;
   }
 
+  /**
+   * The consultant portal is LIGHT ONLY, on purpose.
+   *
+   * It uses the dashboard's semantic tokens like every other authenticated
+   * surface, which means a `.dark` ancestor would otherwise repaint it. This
+   * re-declares the light palette on the portal's own root so the portal keeps
+   * its light canvas whatever the rest of the app is doing — today the app has
+   * no theme toggle at all, and this is what keeps that true if one is added.
+   *
+   * Only the tokens the portal actually renders are listed; anything else
+   * inherits, which is fine because nothing else is themed inside it.
+   */
+  .portal-light,
+  .dark .portal-light {
+    --background: 0 0% 100%;
+    --foreground: 142 30% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 142 30% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 142 30% 8%;
+    --primary: 142 65% 30%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 142 20% 96%;
+    --secondary-foreground: 142 30% 12%;
+    --muted: 0 0% 96.5%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 142 20% 94%;
+    --accent-foreground: 142 30% 12%;
+    --destructive: 0 75% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 142 65% 30%;
+  }
+
   .dark {
     --background: 142 30% 5%;
     --foreground: 0 0% 98%;

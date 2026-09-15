@@ -8,10 +8,21 @@
  *    canvas (#0D0D0D), translucent white overlays. This is every primitive's
  *    *default* styling (no `tone` prop / `tone="dark"`), kept byte-for-byte as
  *    it was so those screens never change.
- *  - The redesigned dashboard — a light, Calendly-style canvas (#FAFAFA) with
- *    white bordered cards and #30a735 used as an accent only. Reached via an
- *    explicit `tone="light"` prop (or, for dashboard-only primitives that the
- *    auth flow never imports, styled light unconditionally).
+ *  - The consultant dashboard — now rendered in the SAME design system as the
+ *    incubator dashboard: the shared semantic tokens (`bg-card`,
+ *    `text-muted-foreground`, `border-border`, `bg-primary`), the shared
+ *    `Button`, and the platform's 10px radius. Reached via an explicit
+ *    `tone="light"` prop (or, for dashboard-only primitives the auth flow never
+ *    imports, styled that way unconditionally).
+ *
+ * The light surface stays LIGHT whatever the app theme is: the portal root
+ * carries `.portal-light`, which re-declares the light token values (see
+ * `globals.css`). So the tokens buy consistency with the dashboard without
+ * dragging the portal into dark mode.
+ *
+ * The CP_* constants below are now used ONLY by the dark auth screens. Nothing
+ * on the light surface should reference them — that is what kept the two
+ * dashboards looking like different products.
  *
  * Mobile-first, full-width bottom sheets for flows, fully RTL via logical
  * properties.
@@ -19,6 +30,7 @@
 import type { ReactNode } from 'react';
 import Image from 'next/image';
 import { ChevronRight, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
@@ -84,13 +96,16 @@ export function Avatar({ name, size = 40, className, variant = 'tint' }: {
   name: string; size?: number; className?: string; variant?: 'tint' | 'solid';
 }) {
   const initials = name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('') || '·';
-  const style = variant === 'solid'
-    ? { background: CP_BLACK, color: '#FFFFFF' }
-    : { background: '#EFEFEF', color: '#2A2F2C' };
   return (
     <div
-      className={cn('grid shrink-0 place-items-center rounded-full font-semibold', className)}
-      style={{ width: size, height: size, fontSize: size * 0.36, ...style }}
+      className={cn(
+        'grid shrink-0 place-items-center rounded-full font-semibold',
+        // Same two chips as before, now from the shared tokens rather than
+        // literals, so the portal's avatars sit in the dashboard's palette.
+        variant === 'solid' ? 'bg-foreground text-background' : 'bg-muted text-foreground',
+        className,
+      )}
+      style={{ width: size, height: size, fontSize: size * 0.36 }}
     >
       {initials}
     </div>
@@ -98,15 +113,25 @@ export function Avatar({ name, size = 40, className, variant = 'tint' }: {
 }
 
 /**
- * A branded primary CTA. `tone="dark"` (default) is the original green-gradient
- * button used on the near-black auth screens — unchanged. `tone="light"` is the
- * solid `#30a735` fill with white text used on the redesigned white-canvas
- * dashboard.
+ * A branded primary CTA.
+ *
+ * `tone="light"` delegates to the platform's own `Button` — literally the
+ * component every incubator dashboard screen uses, so the two can never drift
+ * on hover, focus, disabled or radius.
+ *
+ * `tone="dark"` (the default) is the original green-gradient button on the
+ * near-black auth screens, unchanged.
  */
 export function BrandButton({
   children, className, loading, disabled, tone = 'dark', ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean; tone?: 'dark' | 'light' }) {
-  const light = tone === 'light';
+  if (tone === 'light') {
+    return (
+      <Button {...props} loading={loading} disabled={disabled} className={cn('gap-2', className)}>
+        {children}
+      </Button>
+    );
+  }
   return (
     <button
       {...props}
@@ -115,12 +140,10 @@ export function BrandButton({
         'inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-base font-semibold',
         'transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#30a735]/60 focus-visible:ring-offset-2',
-        light ? 'text-white focus-visible:ring-offset-white' : 'text-[#04130b] focus-visible:ring-offset-[#0D0D0D]',
+        'text-[#04130b] focus-visible:ring-offset-[#0D0D0D]',
         className,
       )}
-      style={light
-        ? { backgroundColor: CP_GREEN, boxShadow: '0 10px 24px -14px rgba(48,167,53,0.7)' }
-        : { backgroundImage: 'linear-gradient(180deg,#3ac24a,#268a2b)', boxShadow: '0 10px 26px -10px rgba(48,167,53,0.6)' }}
+      style={{ backgroundImage: 'linear-gradient(180deg,#3ac24a,#268a2b)', boxShadow: '0 10px 26px -10px rgba(48,167,53,0.6)' }}
     >
       {loading ? <Loader2 className="size-4 animate-spin" /> : null}
       {children}
@@ -129,21 +152,25 @@ export function BrandButton({
 }
 
 /**
- * Soft neutral / secondary button. `tone="dark"` (default) unchanged for the
- * auth screens; `tone="light"` is a bordered white button for the dashboard.
+ * Soft neutral / secondary button. `tone="light"` is the dashboard's outline
+ * Button; `tone="dark"` (default) is unchanged for the auth screens.
  */
 export function GhostButton({
   children, className, tone = 'dark', ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { tone?: 'dark' | 'light' }) {
-  const light = tone === 'light';
+  if (tone === 'light') {
+    return (
+      <Button {...props} variant="outline" size="sm" className={cn('gap-1.5', className)}>
+        {children}
+      </Button>
+    );
+  }
   return (
     <button
       {...props}
       className={cn(
         'inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border px-4 text-base font-medium transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none',
-        light
-          ? 'border-[#E3E6E4] bg-white text-[#0D0D0D] hover:bg-[#F7F8F9]'
-          : 'border-white/12 bg-white/[0.04] text-white/85 hover:bg-white/[0.08]',
+        'border-white/12 bg-white/[0.04] text-white/85 hover:bg-white/[0.08]',
         className,
       )}
     >
@@ -152,22 +179,22 @@ export function GhostButton({
   );
 }
 
-/** Standard portal surface card — light Calendly-style card. Dashboard-only. */
+/** Standard portal surface card — the dashboard's card, same radius and rule. */
 export function SectionCard({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('rounded-3xl border p-4', className)}
-      style={{ borderColor: CP_LIGHT_BORDER, background: '#FFFFFF', boxShadow: '0 1px 2px rgba(13,13,13,0.04)' }}>
+    <div className={cn('rounded-lg border border-border bg-card p-4 lg:p-5', className)}>
       {children}
     </div>
   );
 }
 
+/** Section heading, typed like `DashboardPageHeader` on the incubator side. */
 export function SectionHeading({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
-    <div className="mb-3 flex items-start justify-between gap-3 px-1">
-      <div>
-        <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: CP_LIGHT_TEXT }}>{title}</h2>
-        {subtitle && <p className="mt-0.5 text-xs leading-relaxed" style={{ color: CP_LIGHT_MUTED }}>{subtitle}</p>}
+    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="min-w-0">
+        <h2 className="truncate text-base font-semibold tracking-tight">{title}</h2>
+        {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -178,9 +205,9 @@ export function SectionHeading({ title, subtitle, action }: { title: string; sub
 export function Field({ label, hint, htmlFor, children }: { label: string; hint?: string; htmlFor?: string; children: ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="text-xs font-medium" style={{ color: CP_LIGHT_MUTED }}>{label}</label>
+      <label htmlFor={htmlFor} className="text-sm font-medium leading-none">{label}</label>
       {children}
-      {hint && <p className="text-[11px] leading-relaxed" style={{ color: CP_LIGHT_FAINT }}>{hint}</p>}
+      {hint && <p className="text-xs leading-relaxed text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -188,9 +215,9 @@ export function Field({ label, hint, htmlFor, children }: { label: string; hint?
 /** A stat tile (earnings / wallet). */
 export function StatTile({ label, value, accent, className }: { label: string; value: string; accent?: boolean; className?: string }) {
   return (
-    <div className={cn('rounded-2xl p-4', className)} style={{ background: CP_LIGHT_SURFACE_MUTED }}>
-      <p className="text-[11px] uppercase tracking-wide" style={{ color: CP_LIGHT_MUTED }}>{label}</p>
-      <p className="mt-1 text-[22px] font-bold leading-tight tabular-nums" style={{ color: accent ? CP_GREEN_TEXT : CP_LIGHT_TEXT }}>
+    <div className={cn('rounded-lg border border-border bg-muted/30 p-4', className)}>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={cn('mt-1 text-2xl font-semibold leading-tight tabular-nums', accent && 'text-primary')}>
         {value}
       </p>
     </div>
@@ -204,15 +231,15 @@ export function RowButton({ onClick, leading, title, subtitle, trailing, classNa
   return (
     <button
       type="button" onClick={onClick}
-      className={cn('group flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-start transition-colors hover:bg-[#F7F8F9] active:bg-[#F0F1F2]', className)}
+      className={cn('group flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-start transition-colors hover:bg-accent', className)}
     >
       {leading}
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium" style={{ color: CP_LIGHT_TEXT }}>{title}</div>
-        {subtitle && <div className="mt-0.5 truncate text-xs" style={{ color: CP_LIGHT_MUTED }}>{subtitle}</div>}
+        <div className="truncate text-sm font-medium">{title}</div>
+        {subtitle && <div className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</div>}
       </div>
       {trailing}
-      <ChevronRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" style={{ color: CP_LIGHT_FAINT }} />
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
     </button>
   );
 }
@@ -223,7 +250,7 @@ export function RowButton({ onClick, leading, title, subtitle, trailing, classNa
  */
 export function Spinner({ className, tone = 'dark' }: { className?: string; tone?: 'dark' | 'light' }) {
   return (
-    <div className={cn('flex items-center justify-center py-10', tone === 'light' ? 'text-[#8A918E]' : 'text-white/40', className)}>
+    <div className={cn('flex items-center justify-center py-10', tone === 'light' ? 'text-muted-foreground' : 'text-white/40', className)}>
       <Loader2 className="size-5 animate-spin" />
     </div>
   );
@@ -257,8 +284,10 @@ export async function uploadConsultantFile(file: File, kind: 'avatar' | 'cv'): P
  */
 export function ErrorBanner({ message, tone = 'dark' }: { message: string; tone?: 'dark' | 'light' }) {
   return (
-    <p role="alert" className={cn('rounded-2xl border px-3.5 py-2.5 text-xs',
-      tone === 'light' ? 'border-red-200 bg-red-50 text-red-700' : 'border-red-500/25 bg-red-500/10 text-red-300')}>
+    <p role="alert" className={cn('rounded-md border px-3 py-2 text-xs',
+      tone === 'light'
+        ? 'border-destructive/30 bg-destructive/10 text-destructive'
+        : 'border-red-500/25 bg-red-500/10 text-red-300')}>
       {message}
     </p>
   );
@@ -267,8 +296,7 @@ export function ErrorBanner({ message, tone = 'dark' }: { message: string; tone?
 /** Empty-state block. Dashboard-only. */
 export function EmptyBlock({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-dashed px-4 py-10 text-center text-sm"
-      style={{ borderColor: '#D1D6D3', color: CP_LIGHT_MUTED }}>
+    <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
       {children}
     </div>
   );
@@ -289,15 +317,14 @@ export function FlowSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="mx-auto flex max-h-[94dvh] w-full max-w-xl flex-col gap-0 rounded-t-[28px] border-x-0 border-t bg-white p-0"
-        style={{ borderColor: CP_LIGHT_BORDER, color: CP_LIGHT_TEXT }}
+        className="portal-light mx-auto flex max-h-[94dvh] w-full max-w-xl flex-col gap-0 rounded-t-2xl border-x-0 border-t border-border bg-background p-0 text-foreground"
       >
         <div className="flex flex-col items-center px-5 pt-3">
-          <span aria-hidden className="mb-3.5 h-1.5 w-11 rounded-full" style={{ background: CP_LIGHT_BORDER }} />
-          <h2 className="w-full pe-8 text-start text-[17px] font-semibold tracking-tight">{title}</h2>
+          <span aria-hidden className="mb-3.5 h-1.5 w-11 rounded-full bg-border" />
+          <h2 className="w-full pe-8 text-start text-lg font-semibold tracking-tight">{title}</h2>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="border-t px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3" style={{ borderColor: CP_LIGHT_BORDER }}>{footer}</div>}
+        {footer && <div className="border-t border-border px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">{footer}</div>}
       </SheetContent>
     </Sheet>
   );
@@ -308,7 +335,12 @@ export const cpInputClass =
   'flex h-12 w-full rounded-2xl border border-white/12 bg-white/[0.045] px-3.5 text-base text-white placeholder:text-white/35 ' +
   'transition-colors focus-visible:outline-none focus-visible:border-[#30a735]/50 focus-visible:ring-2 focus-visible:ring-[#30a735]/25 disabled:opacity-50';
 
-/** Light counterpart of {@link cpInputClass} for the redesigned dashboard. */
+/**
+ * Light counterpart of {@link cpInputClass}. Matches the platform `Input`:
+ * same border, radius and ring — but keeps the 48px height and 16px type,
+ * because iOS zooms a focused field whose text is under 16px and the portal is
+ * used on a phone far more than the dashboard is.
+ */
 export const cpInputClassLight =
-  'flex h-12 w-full rounded-2xl border border-[#E3E6E4] bg-white px-3.5 text-base text-[#0D0D0D] placeholder:text-[#8A918E] ' +
-  'transition-colors focus-visible:outline-none focus-visible:border-[#30a735]/60 focus-visible:ring-2 focus-visible:ring-[#30a735]/20 disabled:opacity-50';
+  'flex h-12 w-full rounded-md border border-input bg-background px-3 text-base text-foreground placeholder:text-muted-foreground ' +
+  'transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50';

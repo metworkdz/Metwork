@@ -15,8 +15,7 @@ import { consultantService, type ConsultantMentor } from '@/services/consultant.
 import type { AvailabilityTimeRange } from '@/types/mentor';
 import { cn } from '@/lib/utils';
 import {
-  BrandButton, CP_GREEN, CP_GREEN_TEXT, CP_GREEN_TINT, CP_LIGHT_BORDER, CP_LIGHT_FAINT, CP_LIGHT_MUTED,
-  EmptyBlock, ErrorBanner, Field, FlowSheet, SectionCard, SectionHeading, calLocale, cpInputClassLight,
+  BrandButton, EmptyBlock, ErrorBanner, Field, FlowSheet, SectionCard, SectionHeading, calLocale, cpInputClassLight,
 } from './shared';
 
 type WeeklyState = AvailabilityTimeRange[][]; // index 0..6 = Sun..Sat
@@ -53,7 +52,7 @@ function Segmented<T extends number>({ value, options, render, onChange }: {
   value: T; options: readonly T[]; render: (v: T) => string; onChange: (v: T) => void;
 }) {
   return (
-    <div className="inline-flex rounded-xl border p-1" style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}>
+    <div className="inline-flex rounded-md border p-1 border-border bg-muted">
       {options.map((opt) => {
         const active = opt === value;
         return (
@@ -61,9 +60,8 @@ function Segmented<T extends number>({ value, options, render, onChange }: {
             key={opt} type="button" onClick={() => onChange(opt)}
             className={cn(
               'min-h-9 rounded-lg px-3 text-xs font-medium transition-colors',
-              active ? 'text-white' : 'text-[#5A615E] hover:text-[#0D0D0D]',
+              active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
             )}
-            style={active ? { backgroundColor: CP_GREEN } : undefined}
           >
             {render(opt)}
           </button>
@@ -181,23 +179,21 @@ export function AvailabilityEditor({ mentor, onSaved }: { mentor: ConsultantMent
             const daySlots = (mentor.weeklyAvailability ?? []).find((d) => d.weekday === wd)?.slots ?? [];
             const enabled = daySlots.length > 0;
             return (
-              <div key={wd} className="flex min-h-[128px] flex-col gap-2.5 rounded-2xl border bg-white p-3.5"
-                style={{ borderColor: CP_LIGHT_BORDER }}>
+              <div key={wd} className="flex min-h-[128px] flex-col gap-2.5 rounded-md border bg-card p-3.5 border-border">
                 <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-semibold capitalize text-[#0D0D0D]">{name}</span>
-                  <span className="size-2 shrink-0 rounded-full" style={{ background: enabled ? CP_GREEN : '#D1D6D3' }} />
+                  <span className="text-[13px] font-semibold capitalize text-foreground">{name}</span>
+                  <span className={cn('size-2 shrink-0 rounded-full', enabled ? 'bg-primary' : 'bg-input')} />
                 </div>
                 {enabled ? (
                   <div className="flex flex-col gap-1.5">
                     {daySlots.map((s, i) => (
-                      <span key={i} className="rounded-full px-2 py-1 text-center text-[11px] font-semibold"
-                        style={{ color: CP_GREEN_TEXT, background: CP_GREEN_TINT }}>
+                      <span key={i} className="rounded-full bg-primary-50 px-2 py-1 text-center text-[11px] font-semibold text-primary-700">
                         {s.start}–{s.end}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <span className="text-xs" style={{ color: CP_LIGHT_FAINT }}>{t('noRanges')}</span>
+                  <span className="text-xs text-muted-foreground">{t('noRanges')}</span>
                 )}
               </div>
             );
@@ -205,7 +201,7 @@ export function AvailabilityEditor({ mentor, onSaved }: { mentor: ConsultantMent
         </div>
       )}
       {(mentor.blockedDates?.length ?? 0) > 0 && (
-        <p className="mt-3 flex items-center gap-1.5 px-1 text-xs" style={{ color: CP_LIGHT_MUTED }}>
+        <p className="mt-3 flex items-center gap-1.5 px-1 text-xs text-muted-foreground">
           <CalendarOff className="size-3.5" /> {t('blockedCount', { count: mentor.blockedDates!.length })}
         </p>
       )}
@@ -223,22 +219,21 @@ export function AvailabilityEditor({ mentor, onSaved }: { mentor: ConsultantMent
         <div className="space-y-6">
           {/* Weekly template */}
           <div className="space-y-2">
-            <p className="text-sm font-semibold text-[#0D0D0D]">{t('weeklyTitle')}</p>
-            <p className="text-xs" style={{ color: CP_LIGHT_MUTED }}>{t('weeklyHint')}</p>
+            <p className="text-sm font-semibold text-foreground">{t('weeklyTitle')}</p>
+            <p className="text-xs text-muted-foreground">{t('weeklyHint')}</p>
             {weekdayNames.map((name, wd) => (
-              <div key={wd} className="rounded-xl border p-3" style={{ borderColor: CP_LIGHT_BORDER, background: '#F7F8F9' }}>
+              <div key={wd} className="rounded-md border p-3 border-border bg-muted">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium capitalize text-[#0D0D0D]">{name}</span>
+                  <span className="text-sm font-medium capitalize text-foreground">{name}</span>
                   <button
                     type="button" onClick={() => addRange(wd)}
-                    className="inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs hover:text-[#0D0D0D]"
-                    style={{ color: CP_LIGHT_MUTED }}
+                    className="inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs hover:text-foreground text-muted-foreground"
                   >
                     <Plus className="size-3.5" /> {t('addRange')}
                   </button>
                 </div>
                 {week[wd]!.length === 0 ? (
-                  <p className="mt-2 text-xs" style={{ color: CP_LIGHT_FAINT }}>{t('noRanges')}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{t('noRanges')}</p>
                 ) : (
                   <div className="mt-2 space-y-2">
                     {week[wd]!.map((range, idx) => (
@@ -248,7 +243,7 @@ export function AvailabilityEditor({ mentor, onSaved }: { mentor: ConsultantMent
                           onChange={(e) => updateRange(wd, idx, 'start', e.target.value)}
                           aria-label={`${name} — ${t('start')}`} className={`${cpInputClassLight} h-9 flex-1`}
                         />
-                        <span style={{ color: CP_LIGHT_FAINT }}>–</span>
+                        <span className="text-muted-foreground">–</span>
                         <input
                           type="time" value={range.end} dir="ltr"
                           onChange={(e) => updateRange(wd, idx, 'end', e.target.value)}
@@ -256,7 +251,7 @@ export function AvailabilityEditor({ mentor, onSaved }: { mentor: ConsultantMent
                         />
                         <button
                           type="button" onClick={() => removeRange(wd, idx)} aria-label={t('removeRange')}
-                          className="grid size-9 shrink-0 place-items-center rounded-lg text-[#8A918E] hover:text-red-600"
+                          className="grid size-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:text-red-600"
                         >
                           <Trash2 className="size-4" />
                         </button>
@@ -270,7 +265,7 @@ export function AvailabilityEditor({ mentor, onSaved }: { mentor: ConsultantMent
 
           {/* Booking rules */}
           <div className="space-y-3">
-            <p className="text-sm font-semibold text-[#0D0D0D]">{t('policyTitle')}</p>
+            <p className="text-sm font-semibold text-foreground">{t('policyTitle')}</p>
             <Field label={t('minNoticeLabel')}>
               <div>
                 <Segmented
@@ -303,8 +298,8 @@ export function AvailabilityEditor({ mentor, onSaved }: { mentor: ConsultantMent
 
           {/* Blocked dates */}
           <div className="space-y-2">
-            <p className="text-sm font-semibold text-[#0D0D0D]">{t('blockedTitle')}</p>
-            <p className="text-xs" style={{ color: CP_LIGHT_MUTED }}>{t('blockedHint')}</p>
+            <p className="text-sm font-semibold text-foreground">{t('blockedTitle')}</p>
+            <p className="text-xs text-muted-foreground">{t('blockedHint')}</p>
             <AvailabilityCalendar
               month={calMonth}
               onMonthChange={setCalMonth}
@@ -314,7 +309,7 @@ export function AvailabilityEditor({ mentor, onSaved }: { mentor: ConsultantMent
               locale={locale}
               mode="block"
             />
-            <p className="flex items-center gap-1.5 text-xs" style={{ color: CP_LIGHT_MUTED }}>
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <CalendarOff className="size-3.5" /> {t('blockedCount', { count: blocked.length })}
             </p>
           </div>
