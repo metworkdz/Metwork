@@ -7,6 +7,7 @@ import { Briefcase, ClipboardList, Loader2, Pencil, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { ProgramFormDialog } from './program-form-dialog';
+import { toProgramFormSource } from '@/lib/program-form';
 import { ProgramsMobileList } from './programs-mobile-list';
 import { formatCurrency, formatDate } from '@/lib/format';
 import type { Program, ProgramType } from '@/types/domain';
@@ -208,24 +209,7 @@ export function ProgramsManager() {
         <ProgramFormDialog
           onCreated={() => { void fetchPrograms(); setEditingProgram(null); }}
           editId={editingProgram.id}
-          initialData={{
-            title: editingProgram.title,
-            description: editingProgram.description,
-            type: editingProgram.type,
-            city: editingProgram.city,
-            price: editingProgram.price,
-            onlinePrice: editingProgram.onlinePrice,
-            cashPrice: editingProgram.cashPrice,
-            seatsTotal: editingProgram.seatsTotal,
-            deadline: editingProgram.deadline,
-            startDate: editingProgram.startDate,
-            endDate: editingProgram.endDate,
-            acceptedPaymentMethods: editingProgram.acceptedPaymentMethods ?? ['ONLINE'],
-            cashDepositType: editingProgram.cashDepositType,
-            cashDepositValue: editingProgram.cashDepositValue,
-            imageUrl: editingProgram.imageUrl,
-            imageUrls: editingProgram.imageUrls,
-          }}
+          initialData={toProgramFormSource(editingProgram)}
           open={true}
           onOpenChange={(v) => { if (!v) setEditingProgram(null); }}
         />

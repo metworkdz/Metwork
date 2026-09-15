@@ -216,8 +216,11 @@ export function ProfileSection({ mentor, onSaved }: { mentor: ConsultantMentor; 
             {topics.map((tp) => (
               <span key={tp} className="inline-flex items-center gap-1 rounded-full border bg-muted px-2.5 py-1 text-xs text-foreground border-border">
                 {tp}
+                {/* The ✕ glyph stays small; the tappable area does not. A 12px
+                    target is unusable on the phone this portal is mostly read on. */}
                 <button type="button" onClick={() => setTopics((prev) => prev.filter((x) => x !== tp))}
-                  className="text-muted-foreground hover:text-foreground" aria-label="remove">
+                  className="-me-1 grid size-6 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  aria-label="remove">
                   <X className="size-3" />
                 </button>
               </span>

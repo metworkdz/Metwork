@@ -68,6 +68,21 @@ export function ConsultantPortal() {
 
   useEffect(() => { void load(); }, [load]);
 
+  /**
+   * Pin the light palette for everything the portal renders — including the
+   * parts it does NOT render inside itself.
+   *
+   * Radix portals its dialogs, sheets, selects and popovers straight into
+   * <body>, outside this component's tree, so a class on our own root cannot
+   * reach them: the page would stay light while an open dialog went dark.
+   * Marking BODY covers the portalled layer and the page in one go, and is
+   * accurate because this route is entirely the consultant portal.
+   */
+  useEffect(() => {
+    document.body.classList.add('portal-light');
+    return () => document.body.classList.remove('portal-light');
+  }, []);
+
   if (phase === 'signedIn' && me) {
     return (
       <div dir="auto" className="portal-light min-h-[100dvh] bg-muted/20 text-foreground antialiased">

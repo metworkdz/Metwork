@@ -123,6 +123,39 @@ function isoToDateInput(iso: string | null | undefined): string {
   return iso.slice(0, 10);
 }
 
+/**
+ * Narrow a stored program down to what the form reads.
+ *
+ * Exists because hand-writing that object at the call site is how the edit
+ * dialog came to open with EMPTY start and end times: the fields were added to
+ * the program later and the literal was never updated, so editing a price
+ * quietly cleared "18:30 – 21:30" and nobody was told. Picking the fields in
+ * one place means a new field reaches every edit form the moment it is added
+ * here.
+ */
+export function toProgramFormSource(program: ProgramFormSource): ProgramFormSource {
+  return {
+    title: program.title,
+    description: program.description,
+    type: program.type,
+    city: program.city,
+    imageUrl: program.imageUrl,
+    imageUrls: program.imageUrls,
+    price: program.price,
+    onlinePrice: program.onlinePrice,
+    cashPrice: program.cashPrice,
+    seatsTotal: program.seatsTotal,
+    deadline: program.deadline,
+    startDate: program.startDate,
+    startTime: program.startTime,
+    endTime: program.endTime,
+    endDate: program.endDate,
+    acceptedPaymentMethods: program.acceptedPaymentMethods,
+    cashDepositType: program.cashDepositType,
+    cashDepositValue: program.cashDepositValue,
+  };
+}
+
 export function programFormFromRecord(source: ProgramFormSource): ProgramFormValues {
   const base = emptyProgramForm();
   return {

@@ -29,7 +29,9 @@ import {
   programFormFromRecord,
   programFormToPayload,
   togglePaymentMethod,
+  toProgramFormSource,
   validateProgramForm,
+  type PaymentMethod,
   type ProgramFormValues,
 } from '@/lib/program-form';
 
@@ -253,5 +255,58 @@ describe('PROGRAM_TYPES', () => {
     expect([...PROGRAM_TYPES].sort()).toEqual(
       ['ACCELERATION', 'BOOTCAMP', 'INCUBATION', 'TRAINING', 'WEBINAR', 'WORKSHOP'],
     );
+  });
+});
+
+/* ════════════ The edit form loses nothing it was given ════════════ */
+
+describe('toProgramFormSource', () => {
+  /**
+   * The edit dialog used to be handed a hand-written object literal, and when
+   * `startTime` / `endTime` were added to programs that literal was never
+   * updated. The form opened with the time fields BLANK, and saving — even
+   * saving an unrelated price change — wrote them back as null. A host who
+   * corrected a typo silently lost "18:30 – 21:30" off their programme.
+   *
+   * One picker now stands between a stored program and the form, so a field
+   * added to `ProgramFormSource` reaches every edit surface at once.
+   */
+  const STORED = {
+    title: 'Formation', description: 'Trois jours.', type: 'TRAINING' as const, city: 'Oran',
+    imageUrl: null, imageUrls: ['https://example.dz/a.png'],
+    price: 23_000, onlinePrice: 23_000, cashPrice: 25_000,
+    seatsTotal: 13,
+    deadline: '2026-09-28T12:00:00.000Z',
+    startDate: '2026-09-29T12:00:00.000Z',
+    startTime: '18:30',
+    endTime: '21:30',
+    endDate: '2026-10-01T12:00:00.000Z',
+    acceptedPaymentMethods: ['ONLINE', 'CASH'] as PaymentMethod[],
+    cashDepositType: 'FIXED' as const,
+    cashDepositValue: 5_000,
+  };
+
+  it('carries every field the form reads', () => {
+    // Whatever `programFormFromRecord` looks at must survive the narrowing.
+    const picked = toProgramFormSource(STORED);
+    expect(programFormFromRecord(picked)).toEqual(programFormFromRecord(STORED));
+  });
+
+  it('keeps the session hours — the field that used to be dropped', () => {
+    const form = programFormFromRecord(toProgramFormSource(STORED));
+    expect(form.startTime).toBe('18:30');
+    expect(form.endTime).toBe('21:30');
+    // And they survive the trip back out, so saving does not clear them.
+    expect(programFormToPayload(form).startTime).toBe('18:30');
+    expect(programFormToPayload(form).endTime).toBe('21:30');
+  });
+
+  it('edits one field without disturbing any other', () => {
+    // The real scenario: open the form, change the price, save.
+    const form = programFormFromRecord(toProgramFormSource(STORED));
+    const edited = programFormToPayload({ ...form, price: '19000' });
+    const original = programFormToPayload(form);
+    expect(edited.price).toBe(19_000);
+    expect({ ...edited, price: original.price }).toEqual(original);
   });
 });

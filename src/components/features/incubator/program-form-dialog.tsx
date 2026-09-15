@@ -44,6 +44,7 @@ import {
   programFormToPayload,
   togglePaymentMethod,
   validateProgramForm,
+  type ProgramFormSource,
   type ProgramFormValues,
 } from '@/lib/program-form';
 import type { ProgramType } from '@/types/domain';
@@ -52,14 +53,12 @@ import type { ProgramType } from '@/types/domain';
 interface ProgramFormDialogProps {
   onCreated: () => void;
   editId?: string;
-  initialData?: {
-    title?: string; description?: string; type?: ProgramType; city?: string;
-    price?: number; onlinePrice?: number | null; cashPrice?: number | null;
-    seatsTotal?: number; deadline?: string; startDate?: string; startTime?: string | null; endTime?: string | null;
-    endDate?: string; acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
-    imageUrls?: string[] | null;
-    cashDepositType?: 'FIXED' | 'PERCENT'; cashDepositValue?: number;
-  };
+  /**
+   * The program being edited, narrowed by `toProgramFormSource`. Typed as the
+   * shared shape rather than re-declared here — a local copy is what let the
+   * start/end times fall out of the edit form unnoticed.
+   */
+  initialData?: ProgramFormSource;
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
 }

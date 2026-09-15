@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { ApiClientError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { GalleryUploadField } from '@/components/shared/gallery-upload-field';
+import { resolveListingPricing } from '@/lib/listing-price';
 import { RegistrationsTable } from '@/components/features/registrations/registrations-table';
 import { RegistrationFormBuilder } from '@/components/features/registrations/form-builder';
 import type { RegistrationFormField } from '@/types/domain';
@@ -558,7 +559,7 @@ function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; on
           entityType="PROGRAM"
           entityId={program.id}
           entityTitle={program.title}
-          defaultAmount={program.cashPrice ?? program.price}
+          defaultAmount={resolveListingPricing(program.price, program).cash}
           endpoint="/api/consultant/registrations"
         />
       ) : fields === null ? (
