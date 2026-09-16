@@ -5299,7 +5299,8 @@
   "registrationDashboard": {
     "tabRegistrations": "التسجيلات",
     "tabFormBuilder": "منشئ النموذج",
-    "publicPage": "الصفحة العامة"
+    "publicPage": "الصفحة العامة",
+    "tabAbandoned": "دفع غير مكتمل"
   },
   "booking": {
     "guest": {
@@ -5409,5 +5410,15 @@
       "hint": "زر المشاركة موجود في الشريط أسفل Safari، تماماً تحت هذه النافذة.",
       "close": "فهمت"
     }
+  },
+  "abandonedCheckouts": {
+    "title": "بدأوا ولم يُكملوا الدفع",
+    "subtitle": "{count} أشخاص ملؤوا الاستمارة وتوقفوا عند الدفع. أرقامهم وإجاباتهم أدناه.",
+    "refresh": "تحديث",
+    "attempts": "{count} محاولات — على الأرجح فشل الدفع",
+    "viewAnswers": "عرض إجاباته ({count})",
+    "hideAnswers": "إخفاء الإجابات",
+    "emptyTitle": "لا أحد متوقف عند الدفع",
+    "emptyBody": "كل من يبدأ الدفع ولا يُكمله سيظهر هنا مع رقم هاتفه."
   }
 }

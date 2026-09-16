@@ -5299,7 +5299,8 @@
   "registrationDashboard": {
     "tabRegistrations": "Registrations",
     "tabFormBuilder": "Form Builder",
-    "publicPage": "Public page"
+    "publicPage": "Public page",
+    "tabAbandoned": "Unpaid"
   },
   "booking": {
     "guest": {
@@ -5409,5 +5410,15 @@
       "hint": "The Share button is in the toolbar at the bottom of Safari, just below this panel.",
       "close": "Got it"
     }
+  },
+  "abandonedCheckouts": {
+    "title": "Started but never paid",
+    "subtitle": "{count} people filled in the form and stopped at payment. Their phone number and answers are below.",
+    "refresh": "Refresh",
+    "attempts": "Tried {count} times — the payment probably failed",
+    "viewAnswers": "See their {count} answers",
+    "hideAnswers": "Hide answers",
+    "emptyTitle": "Nobody is stuck at payment",
+    "emptyBody": "Anyone who starts checkout and does not finish will appear here, with their phone number."
   }
 }

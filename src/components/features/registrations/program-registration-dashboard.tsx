@@ -11,9 +11,10 @@
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ClipboardList, Settings2, ExternalLink } from 'lucide-react';
+import { ClipboardList, Settings2, ExternalLink, PhoneMissed } from 'lucide-react';
 import { RegistrationFormBuilder } from './form-builder';
 import { RegistrationsTable } from './registrations-table';
+import { AbandonedCheckoutsTable } from './abandoned-checkouts-table';
 import type { RegistrationFormField } from '@/types/domain';
 
 interface ProgramRegistrationDashboardProps {
@@ -26,7 +27,7 @@ interface ProgramRegistrationDashboardProps {
   defaultAmount?: number;
 }
 
-type Tab = 'form' | 'registrations';
+type Tab = 'form' | 'registrations' | 'abandoned';
 
 export function ProgramRegistrationDashboard({
   entityType,
@@ -45,6 +46,7 @@ export function ProgramRegistrationDashboard({
 
   const tabs: { id: Tab; labelKey: string; Icon: React.ElementType }[] = [
     { id: 'registrations', labelKey: 'tabRegistrations', Icon: ClipboardList },
+    { id: 'abandoned',     labelKey: 'tabAbandoned',     Icon: PhoneMissed },
     { id: 'form',          labelKey: 'tabFormBuilder',   Icon: Settings2 },
   ];
 
@@ -102,7 +104,9 @@ export function ProgramRegistrationDashboard({
 
       {/* Tab content */}
       <div className="rounded-lg border border-border bg-card p-3 lg:p-5">
-        {tab === 'form' ? (
+        {tab === 'abandoned' ? (
+          <AbandonedCheckoutsTable entityType={entityType} entityId={entityId} />
+        ) : tab === 'form' ? (
           <RegistrationFormBuilder
             entityType={entityType}
             entityId={entityId}

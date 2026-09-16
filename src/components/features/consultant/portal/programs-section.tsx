@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  ArrowLeft, Copy, GraduationCap, Loader2, Pencil, Plus, Settings2, Trash2, Users,
+  ArrowLeft, Copy, GraduationCap, Loader2, Pencil, PhoneMissed, Plus, Settings2, Trash2, Users,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ApiClientError } from '@/lib/api-client';
@@ -29,6 +29,7 @@ import { GalleryUploadField } from '@/components/shared/gallery-upload-field';
 import { resolveListingPricing } from '@/lib/listing-price';
 import { RegistrationsTable } from '@/components/features/registrations/registrations-table';
 import { RegistrationFormBuilder } from '@/components/features/registrations/form-builder';
+import { AbandonedCheckoutsTable } from '@/components/features/registrations/abandoned-checkouts-table';
 import type { RegistrationFormField } from '@/types/domain';
 import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
@@ -487,7 +488,7 @@ function ShareLink({ slug, label, copied }: { slug: string; label: string; copie
 function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; onBack: () => void }) {
   const t = useTranslations('consultantPortal.programs');
   const tDash = useTranslations('registrationDashboard');
-  const [tab, setTab] = useState<'registrants' | 'form'>('registrants');
+  const [tab, setTab] = useState<'registrants' | 'abandoned' | 'form'>('registrants');
   const [fields, setFields] = useState<RegistrationFormField[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -512,6 +513,7 @@ function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; on
 
   const tabs = [
     { key: 'registrants' as const, label: tDash('tabRegistrations'), Icon: Users },
+    { key: 'abandoned' as const, label: tDash('tabAbandoned'), Icon: PhoneMissed },
     { key: 'form' as const, label: tDash('tabFormBuilder'), Icon: Settings2 },
   ];
 
@@ -560,6 +562,12 @@ function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; on
           entityId={program.id}
           entityTitle={program.title}
           defaultAmount={resolveListingPricing(program.price, program).cash}
+          endpoint="/api/consultant/registrations"
+        />
+      ) : tab === 'abandoned' ? (
+        <AbandonedCheckoutsTable
+          entityType="PROGRAM"
+          entityId={program.id}
           endpoint="/api/consultant/registrations"
         />
       ) : fields === null ? (

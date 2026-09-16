@@ -9,11 +9,16 @@
  * it at all.
  *
  * Only the owner differs, and the route files resolve that before calling in.
+ *
+ * `?view=abandoned` answers a different question on the same endpoint: who
+ * filled in the form and never finished paying. Same owner scoping, same
+ * shape of request, so the client needs no second contract.
  */
 import type { NextRequest } from 'next/server';
 import { db } from '@/server/db/store';
 import { json, jsonError } from '@/server/http/json';
 import { listRegistrations, type OwnerScope } from '@/server/registrations/service';
+import { listAbandonedCheckouts } from '@/server/registrations/abandoned-checkouts';
 
 export async function handleListRegistrations(req: NextRequest, owner: OwnerScope) {
   const { searchParams } = new URL(req.url);
@@ -30,6 +35,17 @@ export async function handleListRegistrations(req: NextRequest, owner: OwnerScop
     return jsonError(400, 'MISSING_PARAM', 'entityType must be PROGRAM or EVENT');
   }
   if (!entityId) return jsonError(400, 'MISSING_PARAM', 'entityId is required');
+
+  // The people who started paying and stopped. Everything about them was
+  // already stored on the dead checkout intent; this only reads it back.
+  if (searchParams.get('view') === 'abandoned') {
+    const items = await listAbandonedCheckouts(entityType, entityId, owner);
+    const data = await db.read();
+    const formFields = (data.registrationFormFields ?? [])
+      .filter((f) => f.entityType === entityType && f.entityId === entityId)
+      .sort((a, b) => a.order - b.order);
+    return json({ items, formFields, total: items.length });
+  }
 
   // `listRegistrations` is already owner-scoped, so a listing belonging to
   // someone else simply comes back empty rather than leaking its registrants.

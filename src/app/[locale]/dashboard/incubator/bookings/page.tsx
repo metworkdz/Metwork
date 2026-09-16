@@ -56,6 +56,8 @@ interface IncubatorBookingRow {
   createdAt: string;
   customerName: string;
   customerEmail: string;
+  /** Carried through so a host can actually call somebody about a booking. */
+  customerPhone: string;
   // Manual/offline bookings can be edited or deleted by the incubator.
   isManual: boolean;
   /** Cash still owed, and how much has already been handed over. */
@@ -111,7 +113,7 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
       return false;
     });
 
-    const userMap = new Map(data.users.map((u) => [u.id, { fullName: u.fullName, email: u.email }]));
+    const userMap = new Map(data.users.map((u) => [u.id, { fullName: u.fullName, email: u.email, phone: u.phone }]));
 
     rows = relevant
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
@@ -129,6 +131,7 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
           createdAt:     b.createdAt,
           customerName:  customer?.fullName ?? b.clientName ?? 'Unknown',
           customerEmail: customer?.email    ?? b.clientEmail ?? '',
+          customerPhone: customer?.phone    ?? b.clientPhone ?? '',
           isManual:      b.source === 'offline' || b.paymentMethod === 'manual',
           // A cash leg exists on a card deposit AND on a desk sale. The money
           // already in hand comes from a different field on each, because one
@@ -244,6 +247,12 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                         <TableCell>
                           <div className="font-medium">{b.customerName}</div>
                           <div className="text-xs text-muted-foreground">{b.customerEmail}</div>
+                          {b.customerPhone && (
+                            <a href={`tel:${b.customerPhone.replace(/\s/g, '')}`} dir="ltr"
+                              className="text-xs text-primary hover:underline">
+                              {b.customerPhone}
+                            </a>
+                          )}
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">{b.itemName}</div>
@@ -344,6 +353,12 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate font-medium">{b.customerName}</p>
+                        {b.customerPhone && (
+                          <a href={`tel:${b.customerPhone.replace(/\s/g, '')}`} dir="ltr"
+                            className="block truncate text-xs text-primary hover:underline">
+                            {b.customerPhone}
+                          </a>
+                        )}
                         {b.customerEmail && (
                           <p className="truncate text-xs text-muted-foreground">{b.customerEmail}</p>
                         )}

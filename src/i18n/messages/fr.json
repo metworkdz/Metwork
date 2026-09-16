@@ -5299,7 +5299,8 @@
   "registrationDashboard": {
     "tabRegistrations": "Inscriptions",
     "tabFormBuilder": "Constructeur de formulaire",
-    "publicPage": "Page publique"
+    "publicPage": "Page publique",
+    "tabAbandoned": "Paiement non finalisé"
   },
   "booking": {
     "guest": {
@@ -5409,5 +5410,15 @@
       "hint": "Le bouton Partager se trouve dans la barre en bas de Safari, juste en dessous de ce panneau.",
       "close": "J’ai compris"
     }
+  },
+  "abandonedCheckouts": {
+    "title": "Ont commencé sans payer",
+    "subtitle": "{count} personnes ont rempli le formulaire et se sont arrêtées au paiement. Leur numéro et leurs réponses sont ci-dessous.",
+    "refresh": "Actualiser",
+    "attempts": "{count} tentatives — le paiement a probablement échoué",
+    "viewAnswers": "Voir ses {count} réponses",
+    "hideAnswers": "Masquer les réponses",
+    "emptyTitle": "Personne n’est bloqué au paiement",
+    "emptyBody": "Toute personne qui commence le paiement sans le terminer apparaîtra ici, avec son numéro de téléphone."
   }
 }
