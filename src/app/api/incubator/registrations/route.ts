@@ -10,7 +10,7 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
-import { cancelRegistration, incubatorScope } from '@/server/registrations/service';
+import { cancelRegistration, deleteRegistration, incubatorScope } from '@/server/registrations/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { handleAddParticipant } from '@/server/registrations/add-participant-route';
 import { handleListRegistrations } from '@/server/registrations/list-route';
@@ -31,6 +31,12 @@ export async function GET(req: NextRequest) {
 
 const cancelSchema = z.object({
   id: z.string().uuid(),
+  /**
+   * `false` (the default) CANCELS — the long-standing meaning of DELETE on
+   * this route, and what the Cancel button sends. `true` removes the row for
+   * good, and the server refuses unless it is already cancelled.
+   */
+  permanent: z.boolean().optional(),
 });
 
 export async function DELETE(req: NextRequest) {
@@ -51,7 +57,20 @@ export async function DELETE(req: NextRequest) {
     throw err;
   }
 
-  const updated = await cancelRegistration(input.id, incubatorScope(inc.id));
+  const owner = incubatorScope(inc.id);
+
+  if (input.permanent) {
+    const result = await deleteRegistration(input.id, owner);
+    if (!result.ok) {
+      if (result.reason === 'NOT_CANCELLED') {
+        return jsonError(409, 'NOT_CANCELLED', 'Cancel this registration before deleting it');
+      }
+      return jsonError(404, 'NOT_FOUND', 'Registration not found');
+    }
+    return json({ deleted: result.deleted });
+  }
+
+  const updated = await cancelRegistration(input.id, owner);
   if (!updated) return jsonError(404, 'NOT_FOUND', 'Registration not found');
 
   return json({ registration: updated });

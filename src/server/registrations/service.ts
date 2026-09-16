@@ -614,6 +614,40 @@ export async function cancelRegistration(
   });
 }
 
+/**
+ * Permanently remove a cancelled registration.
+ *
+ * Only a CANCELLED row can go. A confirmed one is somebody's place — deleting
+ * it would erase the person while their seat, their booking and possibly their
+ * payment carried on existing, so the guard is here on the server rather than
+ * left to whichever button happens to call in.
+ *
+ * Nothing is keyed to a registration, and a cancelled one holds no seat, so
+ * this orphans nothing and changes no capacity. The linked booking is left
+ * ALONE on purpose: if money moved, that record is the proof it did, and it
+ * outlives the registration row.
+ */
+export type DeleteRegistrationResult =
+  | { ok: true; deleted: RegistrationRecord }
+  | { ok: false; reason: 'NOT_FOUND' | 'NOT_CANCELLED' };
+
+export async function deleteRegistration(
+  id: string,
+  owner: OwnerScope,
+): Promise<DeleteRegistrationResult> {
+  return db.update<DeleteRegistrationResult>((d) => {
+    const idx = (d.registrations ?? []).findIndex((r) => r.id === id && ownedBy(r, owner));
+    // Scoped: another owner's row is simply not found, never "forbidden".
+    if (idx === -1) return { ok: false, reason: 'NOT_FOUND' };
+
+    const row = d.registrations[idx]!;
+    if (row.status !== 'CANCELLED') return { ok: false, reason: 'NOT_CANCELLED' };
+
+    d.registrations.splice(idx, 1);
+    return { ok: true, deleted: row };
+  });
+}
+
 /* ─────────────────────────── Program/Event lookup helpers ─────────────────────────── */
 
 type DbData = Awaited<ReturnType<typeof db.read>>;

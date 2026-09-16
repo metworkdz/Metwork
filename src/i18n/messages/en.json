@@ -5294,7 +5294,9 @@
       "errorFull": "No seats left — every place is taken.",
       "errorGeneric": "Could not add the participant. Please try again.",
       "errorRequiredField": "“{field}” is required — fill it in before adding this participant."
-    }
+    },
+    "delete": "Delete",
+    "deleteConfirm": "Delete this cancelled registration for good? Their answers go with it and this cannot be undone."
   },
   "registrationDashboard": {
     "tabRegistrations": "Registrations",

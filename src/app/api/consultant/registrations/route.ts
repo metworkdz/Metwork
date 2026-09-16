@@ -12,7 +12,7 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { db } from '@/server/db/store';
 import { requireConsultant } from '@/server/mentors/access';
-import { cancelRegistration, mentorScope } from '@/server/registrations/service';
+import { cancelRegistration, deleteRegistration, mentorScope } from '@/server/registrations/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { handleAddParticipant } from '@/server/registrations/add-participant-route';
 import { handleListRegistrations } from '@/server/registrations/list-route';
@@ -20,7 +20,11 @@ import { handleListRegistrations } from '@/server/registrations/list-route';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const cancelSchema = z.object({ id: z.string().uuid() });
+const cancelSchema = z.object({
+  id: z.string().uuid(),
+  /** `true` removes a already-cancelled row for good. See the incubator route. */
+  permanent: z.boolean().optional(),
+});
 
 export async function GET(req: NextRequest) {
   const guard = await requireConsultant();
@@ -52,8 +56,21 @@ export async function PATCH(req: NextRequest) {
     throw err;
   }
 
+  const owner = mentorScope(guard.mentorId);
+
+  if (input.permanent) {
+    const result = await deleteRegistration(input.id, owner);
+    if (!result.ok) {
+      if (result.reason === 'NOT_CANCELLED') {
+        return jsonError(409, 'NOT_CANCELLED', 'Cancel this registration before deleting it');
+      }
+      return jsonError(404, 'NOT_FOUND', 'Registration not found');
+    }
+    return json({ deleted: result.deleted });
+  }
+
   // Scoped cancel — another owner's registration simply isn't found.
-  const updated = await cancelRegistration(input.id, mentorScope(guard.mentorId));
+  const updated = await cancelRegistration(input.id, owner);
   if (!updated) return jsonError(404, 'NOT_FOUND', 'Registration not found');
   return json({ registration: updated });
 }

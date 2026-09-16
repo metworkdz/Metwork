@@ -5294,7 +5294,9 @@
       "errorFull": "Plus de places disponibles — tout est complet.",
       "errorGeneric": "Impossible d'ajouter le participant. Veuillez réessayer.",
       "errorRequiredField": "« {field} » est obligatoire — remplissez ce champ avant d’ajouter ce participant."
-    }
+    },
+    "delete": "Supprimer",
+    "deleteConfirm": "Supprimer définitivement cette inscription annulée ? Ses réponses seront perdues et cette action est irréversible."
   },
   "registrationDashboard": {
     "tabRegistrations": "Inscriptions",

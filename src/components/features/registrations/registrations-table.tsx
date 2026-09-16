@@ -115,6 +115,26 @@ export function RegistrationsTable({
     setPage(newPage);
   }
 
+  /**
+   * Remove a cancelled registration for good. The row goes from the list
+   * rather than changing colour, because there is nothing left to show.
+   */
+  async function handleDelete(id: string) {
+    if (!confirm(t('deleteConfirm'))) return;
+    startTransition(async () => {
+      const res = await fetch(endpoint, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, permanent: true }),
+      });
+      if (res.ok) {
+        setRegistrations((prev) => prev.filter((r) => r.id !== id));
+        setTotal((n) => Math.max(0, n - 1));
+      }
+    });
+  }
+
   async function handleCancel(id: string) {
     if (!confirm(t('cancelConfirm'))) return;
     startTransition(async () => {
@@ -244,6 +264,7 @@ export function RegistrationsTable({
                   registration={reg}
                   formFields={formFields}
                   onCancel={() => handleCancel(reg.id)}
+                  onDelete={() => handleDelete(reg.id)}
                 />
               ))}
             </tbody>
@@ -258,6 +279,7 @@ export function RegistrationsTable({
               registration={reg}
               formFields={formFields}
               onCancel={() => handleCancel(reg.id)}
+              onDelete={() => handleDelete(reg.id)}
             />
           ))}
         </div>
@@ -302,10 +324,12 @@ function RegistrationRow({
   registration: reg,
   formFields,
   onCancel,
+  onDelete,
 }: {
   registration: Registration;
   formFields: RegistrationFormField[];
   onCancel: () => void;
+  onDelete: () => void;
 }) {
   const t = useTranslations('registrationsTable');
   const [expanded, setExpanded] = useState(false);
@@ -338,7 +362,14 @@ function RegistrationRow({
           </td>
         )}
         <td className="px-4 py-3 text-right">
-          {reg.status !== 'CANCELLED' && (
+          {reg.status === 'CANCELLED' ? (
+            <button
+              onClick={onDelete}
+              className="text-xs text-muted-foreground transition-colors hover:text-destructive"
+            >
+              {t('delete')}
+            </button>
+          ) : (
             <button
               onClick={onCancel}
               className="text-xs text-muted-foreground hover:text-destructive transition-colors"
@@ -381,10 +412,12 @@ function RegistrationCard({
   registration: reg,
   formFields,
   onCancel,
+  onDelete,
 }: {
   registration: Registration;
   formFields: RegistrationFormField[];
   onCancel: () => void;
+  onDelete: () => void;
 }) {
   const t = useTranslations('registrationsTable');
   const [expanded, setExpanded] = useState(false);
@@ -418,7 +451,14 @@ function RegistrationCard({
               {expanded ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
             </button>
           )}
-          {reg.status !== 'CANCELLED' && (
+          {reg.status === 'CANCELLED' ? (
+            <button
+              onClick={onDelete}
+              className="text-xs text-muted-foreground transition-colors hover:text-destructive"
+            >
+              {t('delete')}
+            </button>
+          ) : (
             <button
               onClick={onCancel}
               className="text-xs text-muted-foreground transition-colors hover:text-destructive"
