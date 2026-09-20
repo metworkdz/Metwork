@@ -178,26 +178,89 @@ export function drawTotalsBlock(doc: Doc, vm: InvoiceViewModel, labelColor: stri
   }
 }
 
+/* ─────────────────── Document notices ─────────────────── */
+
+/**
+ * The lines that say what this document IS — the proforma's "ne vaut pas pièce
+ * comptable" and the offer's validity date. Empty on a facture, so every
+ * template can call this unconditionally.
+ */
+export function drawNotices(doc: Doc, vm: InvoiceViewModel): void {
+  if (vm.notices.length === 0) return;
+  sg(doc).fontSize(9);
+  const textH = vm.notices.reduce(
+    (h, line) => h + doc.heightOfString(line, { width: CONTENT_W - 22, lineGap: 1.5 }) + 2,
+    0,
+  );
+  ensureSpace(doc, textH + 14);
+
+  const top = doc.y;
+  const boxH = textH + 10;
+  // A left accent bar rather than a full box: loud enough not to be skimmed
+  // past, quiet enough not to look like a stamp.
+  doc.rect(MARGIN, top, 3, boxH).fill(GRAY);
+  doc.y = top + 5;
+  for (const line of vm.notices) {
+    sg(doc, { medium: true, text: line }).fillColor(BLACK).fontSize(9)
+      .text(line, MARGIN + 12, doc.y, { width: CONTENT_W - 22, lineGap: 1.5 });
+    doc.y += 2;
+  }
+  doc.y = top + boxH + 8;
+}
+
 /* ─────────────────── Amount in words ─────────────────── */
+
+/**
+ * Height of the client acceptance block. Deliberately tight: it shares the
+ * bottom band with the amount in words, and every point it takes is a point
+ * closer to pushing a three-line devis onto a second page.
+ */
+const ACCEPTANCE_H = 52;
+
+/**
+ * "Bon pour accord" — the devis is the one document that comes back signed,
+ * so it has to leave somewhere to sign. Drawn to the RIGHT of the amount in
+ * words, sharing the same bottom band.
+ */
+function drawAcceptance(doc: Doc, x: number, y: number, width: number): void {
+  sg(doc, { bold: true }).fillColor(BLACK).fontSize(9.5)
+    .text('Bon pour accord', x, y, { width });
+  sg(doc).fillColor(GRAY).fontSize(8.5)
+    .text('Date et signature du client', x, y + 14, { width });
+  doc.moveTo(x, y + ACCEPTANCE_H - 8).lineTo(x + width, y + ACCEPTANCE_H - 8)
+    .lineWidth(0.6).strokeColor(HAIRLINE).stroke();
+}
 
 /**
  * "Arrêtée la présente facture à la somme de :" + the frozen words, at the
  * BOTTOM-LEFT of the page (matching the official template): when the content
  * above ends higher, the block is pushed down to sit just above the footer;
  * when the page is already full it flows (possibly onto a new page).
+ *
+ * On a devis the signature block shares this band on the right, so the words
+ * take the left 58% and the two are pinned together.
  */
 export function drawAmountInWords(doc: Doc, vm: InvoiceViewModel): void {
+  const wordsW = vm.showAcceptance ? CONTENT_W * 0.56 : CONTENT_W;
   sg(doc).fontSize(10);
-  const wordsH = doc.heightOfString(vm.amountInWords, { width: CONTENT_W, lineGap: 2 });
-  const blockH = 18 + wordsH;
+  const wordsH = doc.heightOfString(vm.amountInWords, { width: wordsW, lineGap: 2 });
+  const blockH = Math.max(18 + wordsH, vm.showAcceptance ? ACCEPTANCE_H : 0);
   ensureSpace(doc, blockH);
   const pinnedY = PAGE_H - MARGIN - FOOTER_RESERVE - blockH;
   if (doc.y < pinnedY) doc.y = pinnedY;
+
+  const top = doc.y;
   sg(doc, { medium: true }).fillColor(BLACK).fontSize(10)
-    .text('Arrêtée la présente facture à la somme de :', MARGIN, doc.y, { width: CONTENT_W });
+    .text(vm.amountInWordsLabel, MARGIN, top, { width: wordsW });
   doc.moveDown(0.35);
   sg(doc).fillColor(BLACK).fontSize(10)
-    .text(vm.amountInWords, MARGIN, doc.y, { width: CONTENT_W, lineGap: 2 });
+    .text(vm.amountInWords, MARGIN, doc.y, { width: wordsW, lineGap: 2 });
+
+  if (vm.showAcceptance) {
+    const x = MARGIN + CONTENT_W * 0.62;
+    drawAcceptance(doc, x, top, CONTENT_W - (x - MARGIN));
+    doc.y = Math.max(doc.y, top + ACCEPTANCE_H);
+  }
 }
 
 /* ─────────────────── Contact footer ─────────────────── */
@@ -249,7 +312,7 @@ export function drawContactFooter(doc: Doc, vm: InvoiceViewModel, color: string 
 /* ─────────────────── Cancelled watermark ─────────────────── */
 
 /**
- * Diagonal "ANNULÉE" watermark so a cancelled invoice PDF can never pass for
+ * Diagonal "ANNULÉE" watermark so a cancelled document PDF can never pass for
  * a valid one.
  */
 export function drawCancelledWatermark(doc: Doc, vm: InvoiceViewModel): void {
@@ -257,7 +320,7 @@ export function drawCancelledWatermark(doc: Doc, vm: InvoiceViewModel): void {
   doc.save();
   doc.rotate(-30, { origin: [PAGE_W / 2, PAGE_H / 2] });
   sg(doc, { bold: true }).fontSize(88).fillColor(BLACK).fillOpacity(0.08)
-    .text('ANNULÉE', 0, PAGE_H / 2 - 44, { width: PAGE_W, align: 'center' });
+    .text(vm.cancelledLabel, 0, PAGE_H / 2 - 44, { width: PAGE_W, align: 'center' });
   doc.restore();
   doc.fillOpacity(1);
 }

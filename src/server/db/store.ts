@@ -839,9 +839,13 @@ export interface IncubatorRecord {
   bankName?: string | null;
   bankRib?: string | null;
   /**
-   * Per-year invoice sequence counters, e.g. { "2026": 12 } — the last seq
-   * issued for that year. Mutated ONLY inside db.update() via
-   * allocateInvoiceNumber() so concurrent creates can't collide.
+   * Last used sequence per counter, e.g. { "2026": 12 }. Keyed by the bare year
+   * for factures (the original shape, kept so every counter already stored
+   * keeps working) and "PROFORMA:2026" / "DEVIS:2026" for the other kinds —
+   * see `counterKey` in the invoice engine.
+   *
+   * Mutated ONLY inside db.update() via allocateInvoiceNumber(), so two
+   * concurrent creates can neither collide nor skip a number.
    */
   invoiceCounters?: Record<string, number> | null;
   createdAt: string;
@@ -2470,13 +2474,36 @@ export interface InvoiceLine {
  * Additive collection — legacy DB documents lack `invoices` and resolve to []
  * via the empty-merge.
  */
+/**
+ * What kind of document this is.
+ *
+ * Only a FACTURE is an accounting document: it demands payment, carries the
+ * droit de timbre, and its numbering must be gapless. A PROFORMA is a quote
+ * shaped like an invoice (for an advance, a bank, customs) and a DEVIS is a
+ * commercial offer awaiting acceptance — neither is a pièce comptable, and
+ * each counts in its own sequence so the facture sequence stays intact.
+ */
+export type InvoiceKind = 'FACTURE' | 'PROFORMA' | 'DEVIS';
+
 export interface InvoiceRecord {
   id: string;
   incubatorId: string;
-  /** Display number, "NN/YYYY" (e.g. "01/2026"). Unique per incubator. */
+  /**
+   * Which document this is. Additive and optional: every record issued before
+   * proforma/devis existed is a facture, so an absent value reads as FACTURE
+   * and nothing needs migrating.
+   */
+  kind?: InvoiceKind;
+  /** Display number — "01/2026", or "FP 01/2026" / "DV 01/2026". */
   number: string;
   year: number;
   seq: number;
+  /**
+   * Offer expiry, "YYYY-MM-DD". Required on a DEVIS — a quote with no end date
+   * is an open-ended commitment to that price. Optional on a PROFORMA, absent
+   * on a FACTURE.
+   */
+  validUntil?: string | null;
   /** ISO timestamp the invoice was issued. */
   issuedAt: string;
   /** Link to ClientRecord — null for ad-hoc (draft) recipients. */

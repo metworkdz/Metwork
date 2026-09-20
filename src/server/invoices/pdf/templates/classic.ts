@@ -1,7 +1,7 @@
 /**
  * 'CLASSIC' invoice template — replicates the official Metwork reference
  * invoice: logo top-left; issuer legal block top-right (left-aligned text);
- * centered "FACTURE" with a thin rule through it; "Déstinataire" client block;
+ * the centered document title with a thin rule through it; "Déstinataire" client block;
  * "Mode de Paiement" left with Numero/DATE beside it; the lines table indented
  * to the center-right; right-aligned totals (timbre only for Espèce, Net à
  * Payer in red); bank details for Virement; amount in words pinned
@@ -11,7 +11,7 @@ import type { InvoiceViewModel } from '../viewModel';
 import {
   BLACK, CONTENT_W, DARK_GREEN, GRAY, MARGIN, PAGE_W,
   drawAmountInWords, drawBankLines, drawCancelledWatermark, drawContactFooter,
-  drawLinesTable, drawTotalsBlock, sg,
+  drawLinesTable, drawNotices, drawTotalsBlock, sg,
   type Doc,
 } from './shared';
 
@@ -37,8 +37,8 @@ export function renderClassic(doc: Doc, vm: InvoiceViewModel, logo: Buffer | nul
   });
   doc.y = Math.max(doc.y, logo ? topY + LOGO_H : doc.y) + 26;
 
-  // ── Centered "FACTURE" with a thin rule through it ──
-  const title = 'FACTURE';
+  // ── Centered title with a thin rule through it ──
+  const title = vm.title;
   sg(doc, { bold: true }).fontSize(24);
   const tw = doc.widthOfString(title);
   const ty = doc.y;
@@ -47,7 +47,10 @@ export function renderClassic(doc: Doc, vm: InvoiceViewModel, logo: Buffer | nul
   doc.moveTo(PAGE_W / 2 + tw / 2 + 10, midY).lineTo(PAGE_W - MARGIN, midY).lineWidth(0.7).strokeColor(GRAY).stroke();
   sg(doc, { bold: true }).fillColor(BLACK).fontSize(24)
     .text(title, MARGIN, ty, { width: CONTENT_W, align: 'center' });
-  doc.y = ty + 42;
+  doc.y = ty + 36;
+
+  // ── What this document is (proforma / devis) — read before anything else ──
+  drawNotices(doc, vm);
 
   // ── Déstinataire (left) ──
   sg(doc, { medium: true }).fillColor(DARK_GREEN).fontSize(12).text('Déstinataire', MARGIN, doc.y);
@@ -61,10 +64,14 @@ export function renderClassic(doc: Doc, vm: InvoiceViewModel, logo: Buffer | nul
 
   // ── Mode de Paiement (left) · Numero + DATE (indented column) ──
   const metaY = doc.y;
+  // Bounded to its own column: "Mode de paiement prévu" is wider than the
+  // indent, and unbounded it ran straight through "Numero:".
+  const metaLeftW = TABLE_X - MARGIN - 12;
   sg(doc, { medium: true }).fillColor(DARK_GREEN).fontSize(11.5)
-    .text('Mode de Paiement', MARGIN, metaY);
+    .text(vm.paymentTitle, MARGIN, metaY, { width: metaLeftW });
   sg(doc).fillColor(BLACK).fontSize(10.5)
-    .text(vm.paymentLabel, MARGIN, metaY + 19);
+    .text(vm.paymentLabel, MARGIN, doc.y + 3, { width: metaLeftW });
+  const metaLeftBottom = doc.y;
 
   sg(doc, { bold: true }).fillColor(BLACK).fontSize(10.5)
     .text('Numero: ', TABLE_X, metaY, { continued: true });
@@ -73,21 +80,21 @@ export function renderClassic(doc: Doc, vm: InvoiceViewModel, logo: Buffer | nul
     .text('DATE: ', TABLE_X, metaY + 19, { continued: true });
   sg(doc).fillColor(BLACK).text(vm.date);
 
-  doc.y = metaY + 40;
+  doc.y = Math.max(metaLeftBottom + 6, metaY + 40);
 
   // ── Bank details (Virement only) ──
   drawBankLines(doc, vm, MARGIN, DARK_GREEN);
 
-  doc.y += 18;
+  doc.y += 14;
 
   // ── Lines table (indented like the reference) ──
   drawLinesTable(doc, vm, { headerColor: DARK_GREEN, headerRule: DARK_GREEN, x0: TABLE_X });
   doc.moveTo(TABLE_X, doc.y + 4).lineTo(PAGE_W - MARGIN, doc.y + 4).lineWidth(0.7).strokeColor(DARK_GREEN).stroke();
-  doc.y += 22;
+  doc.y += 16;
 
   // ── Totals (right) ──
   drawTotalsBlock(doc, vm, DARK_GREEN);
-  doc.y += 12;
+  doc.y += 8;
 
   // ── Amount in words — pinned bottom-left ──
   drawAmountInWords(doc, vm);

@@ -1563,7 +1563,24 @@
       "noMatches": "Aucun résultat",
       "tryDifferentSearch": "Essayez une autre recherche.",
       "legalIncomplete": "Complétez vos informations légales (nom, RC, NIF) avant d'émettre des factures.",
-      "legalIncompleteLink": "Aller aux Paramètres"
+      "legalIncompleteLink": "Aller aux Paramètres",
+      "tabProformas": "Proformas",
+      "tabQuotes": "Devis",
+      "createProforma": "Créer une proforma",
+      "createQuote": "Créer un devis",
+      "colValidUntil": "Valable jusqu’au",
+      "actionCancelProforma": "Annuler la proforma",
+      "actionCancelQuote": "Annuler le devis",
+      "confirmCancelProforma": "Annuler la proforma {number} ? Elle reste au dossier, marquée annulée.",
+      "confirmCancelQuote": "Annuler le devis {number} ? Il reste au dossier, marqué annulé.",
+      "emptyProformaTitle": "Aucune proforma pour le moment",
+      "emptyProformaDescription": "Une proforma ressemble à une facture mais ne réclame rien — pour un acompte, une banque, la douane.",
+      "emptyProformaCta": "Créer une proforma",
+      "emptyQuoteTitle": "Aucun devis pour le moment",
+      "emptyQuoteDescription": "Envoyez une offre chiffrée que le client peut accepter et signer — sans jamais toucher à votre numérotation de factures.",
+      "emptyQuoteCta": "Créer un devis",
+      "statusIssuedQuote": "Émis",
+      "statusCancelledQuote": "Annulé"
     },
     "invoiceForm": {
       "sectionClient": "Client",
@@ -1602,12 +1619,30 @@
       "netToPay": "Net à payer",
       "submit": "Émettre la facture",
       "selectClientFirst": "Sélectionnez un client pour émettre la facture.",
-      "errorSubmit": "Échec de la création de la facture.",
+      "errorSubmit": "Échec de la création du document.",
       "errorNetwork": "Erreur réseau — réessayez.",
       "successTitle": "Facture {number} émise",
       "successSubtitle": "Net à payer : {net}",
       "downloadPdf": "Télécharger le PDF",
-      "backToList": "Retour aux factures"
+      "backToList": "Retour aux factures",
+      "sectionKind": "Document",
+      "kindFacture": "Facture",
+      "kindFactureHint": "Réclame le paiement. Pièce comptable.",
+      "kindProforma": "Facture proforma",
+      "kindProformaHint": "Ressemble à une facture, ne réclame rien. Pour un acompte, une banque, la douane.",
+      "kindDevis": "Devis",
+      "kindDevisHint": "Une offre chiffrée, que le client signe pour accord.",
+      "labelNumber": "Numéro",
+      "numberHint": "Le prochain de votre série. Modifiez-le si votre numérotation commence ailleurs — la suite continuera après.",
+      "numberInvalid": "Saisissez un nombre entier supérieur à 0.",
+      "labelValidUntil": "Valable jusqu’au",
+      "validUntilOptional": "Facultatif.",
+      "validUntilRequired": "Obligatoire — un devis sans date vous engage indéfiniment sur ce prix.",
+      "submitProforma": "Émettre la proforma",
+      "submitQuote": "Émettre le devis",
+      "successTitleProforma": "Proforma {number} émise",
+      "successTitleQuote": "Devis {number} émis",
+      "selectClientFirstDocument": "Sélectionnez un client pour émettre le document."
     },
     "listingTable": {
       "newListing": "Nouvelle annonce",
@@ -2534,12 +2569,12 @@
           "subtitleNoProfile": "Aucun profil incubateur trouvé."
         },
         "invoices": {
-          "title": "Factures & Reçus",
-          "subtitle": "Émettez des factures légales et imprimez les reçus des réservations payées."
+          "title": "Factures, devis & reçus",
+          "subtitle": "Émettez vos factures, proformas et devis, et imprimez les reçus des réservations payées."
         },
         "newInvoice": {
-          "title": "Nouvelle facture",
-          "subtitle": "Choisissez un client, ajoutez vos services — totaux et droit de timbre calculés automatiquement."
+          "title": "Nouveau document",
+          "subtitle": "Facture, facture proforma ou devis — choisissez le document, le client et vos services."
         },
         "wallet": {
           "title": "Portefeuille",

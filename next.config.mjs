@@ -80,6 +80,13 @@ const nextConfig = {
       '/api/consultant/contracts/[id]/preview': ['./src/server/pdf/fonts/**'],
       '/api/consultant/contracts/[id]/pdf': ['./src/server/pdf/fonts/**'],
       '/api/admin/contracts/[id]/pdf': ['./src/server/pdf/fonts/**'],
+      // The invoice / proforma / devis PDF is set in Montserrat, read from the
+      // same directory through the same unanalyzable path. Untraced it does
+      // NOT throw — registerPdfFonts swallows the missing file — so the whole
+      // document silently renders in Helvetica, which cannot even encode the
+      // no-break spaces in "28 560,00 DA". Failing invisibly is why this line
+      // matters more than the ones above it.
+      '/api/incubator/invoices/[id]/pdf': ['./src/server/pdf/fonts/**'],
     },
   },
 

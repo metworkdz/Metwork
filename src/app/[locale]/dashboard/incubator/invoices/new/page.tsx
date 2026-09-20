@@ -2,16 +2,21 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { InvoiceCreateForm } from '@/components/features/incubator/invoice-create-form';
-import { db } from '@/server/db/store';
+import { db, type InvoiceKind } from '@/server/db/store';
+import { peekNextSeq } from '@/server/invoices/engine';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ kind?: string }>;
 }
 
-export const metadata = { title: 'Nouvelle facture' };
+export const metadata = { title: 'Nouveau document' };
 
-export default async function NewInvoicePage({ params }: PageProps) {
+const KINDS: InvoiceKind[] = ['FACTURE', 'PROFORMA', 'DEVIS'];
+
+export default async function NewInvoicePage({ params, searchParams }: PageProps) {
   const { locale } = await params;
+  const { kind: kindParam } = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations('pages.dashboard');
   const user = await requireRole(['INCUBATOR']);
@@ -25,6 +30,15 @@ export default async function NewInvoicePage({ params }: PageProps) {
     incubator?.nif,
   );
   const hasBankRib = Boolean(incubator?.bankRib?.trim());
+
+  // The number the form offers by default, per kind. peekNextSeq is read-only
+  // — opening the page must not consume a number.
+  const year = new Date().getUTCFullYear();
+  const counters = { invoiceCounters: incubator?.invoiceCounters ?? null };
+  const nextSeq = Object.fromEntries(
+    KINDS.map((k) => [k, peekNextSeq(counters, year, k)]),
+  ) as Record<InvoiceKind, number>;
+  const initialKind = KINDS.find((k) => k === kindParam) ?? 'FACTURE';
 
   const services = incubator
     ? (data.services ?? [])
@@ -44,6 +58,9 @@ export default async function NewInvoicePage({ params }: PageProps) {
         serviceNames={services}
         legalComplete={legalComplete}
         hasBankRib={hasBankRib}
+        initialKind={initialKind}
+        nextSeq={nextSeq}
+        year={year}
       />
     </div>
   );

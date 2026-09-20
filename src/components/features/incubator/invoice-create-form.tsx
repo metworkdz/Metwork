@@ -1,19 +1,23 @@
 'use client';
 
 /**
- * Invoice creation form.
+ * Document creation form — facture, facture proforma or devis.
  *
  * The live summary panel imports computeInvoiceTotals / formatDZD /
  * amountToFrenchWords from the canonical engine (client-safe: pure functions,
  * type-only store imports) so the on-screen totals are BY CONSTRUCTION the
- * exact numbers the API stores and the PDF prints.
+ * exact numbers the API stores and the PDF prints. The document kind is passed
+ * into those same functions, so the timbre disappears from the preview for the
+ * same reason it disappears from the PDF, not through a second rule here.
  */
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  AlertTriangle, ArrowLeft, CheckCircle2, Download, Plus, Trash2, UserPlus,
+  AlertTriangle, ArrowLeft, CheckCircle2, Download, FileSignature, FileText,
+  Plus, ScrollText, Trash2, UserPlus,
 } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,9 +30,18 @@ import { ClientSelector, type ClientHit } from './client-selector';
 import { ClientFormDialog, type CreatedClient } from './client-form-dialog';
 import { safeUUID } from '@/lib/safe-uuid';
 import {
-  computeInvoiceTotals, formatDZD, amountToFrenchWords,
+  computeInvoiceTotals, formatDZD, formatInvoiceNumber, amountToFrenchWords,
 } from '@/server/invoices/engine';
-import type { InvoicePaymentMethod, InvoiceRecord, InvoiceTemplate } from '@/server/db/store';
+import type {
+  InvoiceKind, InvoicePaymentMethod, InvoiceRecord, InvoiceTemplate,
+} from '@/server/db/store';
+
+/** The three documents, in the order they are offered. */
+const KINDS = [
+  { id: 'FACTURE', labelKey: 'kindFacture', hintKey: 'kindFactureHint', icon: FileText },
+  { id: 'PROFORMA', labelKey: 'kindProforma', hintKey: 'kindProformaHint', icon: ScrollText },
+  { id: 'DEVIS', labelKey: 'kindDevis', hintKey: 'kindDevisHint', icon: FileSignature },
+] as const satisfies ReadonlyArray<{ id: InvoiceKind; labelKey: string; hintKey: string; icon: unknown }>;
 
 interface LineDraft {
   key: string;
@@ -43,11 +56,31 @@ interface Props {
   serviceNames: string[];
   legalComplete: boolean;
   hasBankRib: boolean;
+  /** Which document the page was opened for (from ?kind=). */
+  initialKind: InvoiceKind;
+  /** The number each kind would take next — the form's default, per kind. */
+  nextSeq: Record<InvoiceKind, number>;
+  /** The year the numbers belong to, resolved on the server. */
+  year: number;
 }
 
 function emptyLine(): LineDraft {
   return { key: safeUUID(), designation: '', quantity: '1', unitPriceHt: '' };
 }
+
+/** Today + `days`, as "YYYY-MM-DD" in the viewer's own timezone. */
+function dayFromNow(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** The per-kind message keys. Spelled out so a missing one is a type error. */
+const COPY = {
+  FACTURE: { submit: 'submit', success: 'successTitle', selectClient: 'selectClientFirst' },
+  PROFORMA: { submit: 'submitProforma', success: 'successTitleProforma', selectClient: 'selectClientFirstDocument' },
+  DEVIS: { submit: 'submitQuote', success: 'successTitleQuote', selectClient: 'selectClientFirstDocument' },
+} as const;
 
 export function InvoiceCreateForm({
   defaultVatRate,
@@ -55,10 +88,16 @@ export function InvoiceCreateForm({
   serviceNames,
   legalComplete,
   hasBankRib,
+  initialKind,
+  nextSeq,
+  year,
 }: Props) {
   const t = useTranslations('incubator.invoiceForm');
   const router = useRouter();
 
+  const [kind, setKind] = useState<InvoiceKind>(initialKind);
+  const [seq, setSeq] = useState(String(nextSeq[initialKind]));
+  const [validUntil, setValidUntil] = useState(initialKind === 'DEVIS' ? dayFromNow(30) : '');
   const [client, setClient] = useState<ClientHit | null>(null);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [lines, setLines] = useState<LineDraft[]>([emptyLine()]);
@@ -84,21 +123,41 @@ export function InvoiceCreateForm({
   const parsedVat = Number(vatRate);
   const vatValid = Number.isFinite(parsedVat) && parsedVat >= 0 && parsedVat <= 100;
 
-  // SAME math as the API + PDF — imported from the canonical engine.
+  // SAME math as the API + PDF — imported from the canonical engine, kind
+  // included, so the timbre row appears here exactly when it appears there.
   const totals = useMemo(
-    () => computeInvoiceTotals(parsedLines, vatValid ? parsedVat : 0, paymentMethod),
-    [parsedLines, parsedVat, vatValid, paymentMethod],
+    () => computeInvoiceTotals(parsedLines, vatValid ? parsedVat : 0, paymentMethod, kind),
+    [parsedLines, parsedVat, vatValid, paymentMethod, kind],
   );
-  const showTimbre = paymentMethod === 'ESPECE';
+  const showTimbre = kind === 'FACTURE' && paymentMethod === 'ESPECE';
   const wordsPreview = parsedLines.length > 0 ? amountToFrenchWords(totals.net) : null;
+
+  const parsedSeq = Number(seq);
+  const seqValid = Number.isInteger(parsedSeq) && parsedSeq > 0 && parsedSeq <= 999_999;
+  // A devis with no end date is an open-ended commitment to that price; the
+  // API refuses it too, this just says so before the round trip.
+  const needsValidity = kind === 'DEVIS' && !validUntil;
+  const copy = COPY[kind];
 
   const needsBankRib = paymentMethod === 'VIREMENT' && !hasBankRib;
   const canSubmit =
-    legalComplete && !needsBankRib && client !== null &&
+    legalComplete && !needsBankRib && client !== null && seqValid && !needsValidity &&
     parsedLines.length > 0 && parsedLines.length === lines.length && vatValid;
 
   function setLine(key: string, patch: Partial<LineDraft>) {
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
+  }
+
+  /**
+   * Switching document resets the number to that kind's own next one — the
+   * three sequences are independent, so carrying a number across would offer
+   * a devis the facture counter's next value.
+   */
+  function chooseKind(next: InvoiceKind) {
+    setKind(next);
+    setSeq(String(nextSeq[next]));
+    setValidUntil(next === 'DEVIS' ? (validUntil || dayFromNow(30)) : next === 'PROFORMA' ? validUntil : '');
+    setError(null);
   }
 
   function handleClientCreated(record: CreatedClient) {
@@ -133,6 +192,12 @@ export function InvoiceCreateForm({
           vatRate: parsedVat,
           paymentMethod,
           template,
+          kind,
+          validUntil: validUntil || undefined,
+          // Only sent when it was actually changed: left alone, the server
+          // allocates inside its own transaction, which is what makes two
+          // simultaneous creates impossible to collide.
+          seq: parsedSeq === nextSeq[kind] ? undefined : parsedSeq,
         }),
       });
       if (!res.ok) {
@@ -156,7 +221,7 @@ export function InvoiceCreateForm({
         <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
           <CheckCircle2 className="size-10 text-primary" />
           <div>
-            <p className="text-lg font-semibold">{t('successTitle', { number: created.number })}</p>
+            <p className="text-lg font-semibold">{t(copy.success, { number: created.number })}</p>
             <p className="mt-1 text-sm text-muted-foreground">
               {t('successSubtitle', { net: formatDZD(created.totals.net) })}
             </p>
@@ -219,6 +284,86 @@ export function InvoiceCreateForm({
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         {/* ═══════════ Left column — form ═══════════ */}
         <div className="space-y-6">
+          {/* ── Which document ── comes first: it changes what the rest asks. */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">{t('sectionKind')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-2 sm:grid-cols-3">
+                {KINDS.map(({ id, labelKey, hintKey, icon: Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => chooseKind(id)}
+                    aria-pressed={kind === id}
+                    className={cn(
+                      'rounded-lg border p-3 text-start transition-colors',
+                      kind === id
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                        : 'border-border hover:border-primary/40 hover:bg-accent/40',
+                    )}
+                  >
+                    <span className="flex items-center gap-2 text-sm font-semibold">
+                      <Icon className={cn('size-4 shrink-0', kind === id ? 'text-primary' : 'text-muted-foreground')} />
+                      {t(labelKey)}
+                    </span>
+                    <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                      {t(hintKey)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="inv-seq">{t('labelNumber')}</Label>
+                  <Input
+                    id="inv-seq"
+                    type="number"
+                    min="1"
+                    max="999999"
+                    step="1"
+                    className="mt-1 max-w-[9rem]"
+                    value={seq}
+                    onChange={(e) => setSeq(e.target.value)}
+                    required
+                  />
+                  {/* Under the field, not beside it: the resulting number is
+                      what the incubator is actually choosing, and in a half
+                      column it was being truncated to "DV 01/…". */}
+                  <p className={cn(
+                    'mt-1.5 text-sm font-medium tabular-nums',
+                    seqValid ? 'text-foreground' : 'text-destructive',
+                  )}>
+                    {seqValid ? formatInvoiceNumber(parsedSeq, year, kind) : t('numberInvalid')}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t('numberHint')}</p>
+                </div>
+
+                {kind !== 'FACTURE' && (
+                  <div>
+                    <Label htmlFor="inv-valid">{t('labelValidUntil')}</Label>
+                    <Input
+                      id="inv-valid"
+                      type="date"
+                      className="mt-1"
+                      value={validUntil}
+                      onChange={(e) => setValidUntil(e.target.value)}
+                      required={kind === 'DEVIS'}
+                    />
+                    <p className={cn(
+                      'mt-1.5 text-xs leading-relaxed',
+                      needsValidity ? 'text-destructive' : 'text-muted-foreground',
+                    )}>
+                      {kind === 'DEVIS' ? t('validUntilRequired') : t('validUntilOptional')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* ── Client ── */}
           <Card>
             <CardHeader className="pb-3">
@@ -442,10 +587,10 @@ export function InvoiceCreateForm({
               )}
 
               <Button type="submit" className="w-full" loading={submitting} disabled={!canSubmit}>
-                {t('submit')}
+                {t(copy.submit)}
               </Button>
               {!client && (
-                <p className="text-center text-xs text-muted-foreground">{t('selectClientFirst')}</p>
+                <p className="text-center text-xs text-muted-foreground">{t(copy.selectClient)}</p>
               )}
             </CardContent>
           </Card>

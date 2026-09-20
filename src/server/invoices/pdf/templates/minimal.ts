@@ -8,7 +8,7 @@ import type { InvoiceViewModel } from '../viewModel';
 import {
   BLACK, CONTENT_W, GRAY, MARGIN, PAGE_W,
   drawAmountInWords, drawBankLines, drawCancelledWatermark, drawContactFooter,
-  drawLinesTable, drawTotalsBlock, sg,
+  drawLinesTable, drawNotices, drawTotalsBlock, sg,
   type Doc,
 } from './shared';
 
@@ -26,18 +26,21 @@ export function renderMinimal(doc: Doc, vm: InvoiceViewModel, logo: Buffer | nul
   const topY = MARGIN + 4;
   const LOGO_W = 110, LOGO_H = 46;
 
-  // ── Header: logo left, "FACTURE" + meta right — lots of air ──
+  // ── Header: logo left, title + meta right — lots of air ──
   if (logo) {
     try { doc.image(logo, MARGIN, topY, { fit: [LOGO_W, LOGO_H] }); } catch { /* skip */ }
   }
-  sg(doc, { bold: true }).fillColor(BLACK).fontSize(22)
-    .text('FACTURE', MARGIN, topY, { width: CONTENT_W, align: 'right', characterSpacing: 3 });
+  sg(doc, { bold: true }).fillColor(BLACK).fontSize(vm.title.length > 9 ? 16 : 22)
+    .text(vm.title, MARGIN, topY, { width: CONTENT_W, align: 'right', characterSpacing: 3 });
   sg(doc).fillColor(GRAY).fontSize(9.5)
     .text(`N° ${vm.number}   ·   ${vm.date}`, MARGIN, topY + 30, { width: CONTENT_W, align: 'right' });
 
   doc.y = Math.max(topY + LOGO_H, topY + 46) + 26;
   hairline(doc, doc.y);
-  doc.y += 22;
+  doc.y += 18;
+
+  // ── What this document is (proforma / devis) ──
+  drawNotices(doc, vm);
 
   // ── Issuer / client, two airy columns ──
   const colW = CONTENT_W / 2 - 16;
@@ -66,7 +69,7 @@ export function renderMinimal(doc: Doc, vm: InvoiceViewModel, logo: Buffer | nul
   doc.y = Math.max(leftBottom, doc.y) + 16;
 
   // ── Payment mode ──
-  capsLabel(doc, 'Mode de paiement', MARGIN, doc.y);
+  capsLabel(doc, vm.paymentTitle, MARGIN, doc.y);
   doc.y += 14;
   sg(doc).fillColor(BLACK).fontSize(10).text(vm.paymentLabel, MARGIN, doc.y);
   doc.y += 6;
@@ -80,7 +83,7 @@ export function renderMinimal(doc: Doc, vm: InvoiceViewModel, logo: Buffer | nul
   doc.y += 16;
 
   drawTotalsBlock(doc, vm);
-  doc.y += 18;
+  doc.y += 14;
 
   drawAmountInWords(doc, vm);
 

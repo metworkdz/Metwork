@@ -1,7 +1,7 @@
 /**
  * GET /api/incubator/invoices/[id]/pdf
  *
- * Streams the invoice as an A4 PDF (template chosen at issue time). Renders
+ * Streams the document as an A4 PDF (template chosen at issue time). Renders
  * exclusively from the stored record — totals and amount-in-words were frozen
  * by the engine when the invoice was issued.
  */
@@ -33,7 +33,10 @@ export async function GET(
   if (!invoice) return jsonError(404, 'NOT_FOUND', 'Invoice not found');
 
   const pdf = await renderInvoicePdf(invoice);
-  const filename = `Facture_${invoice.number.replace(/\//g, '_')}.pdf`;
+  // The filename says which document it is — three lookalike PDFs in one
+  // Downloads folder are otherwise told apart only by opening them.
+  const stem = { FACTURE: 'Facture', PROFORMA: 'Proforma', DEVIS: 'Devis' }[invoice.kind ?? 'FACTURE'];
+  const filename = `${stem}_${invoice.number.replace(/[\s/]+/g, '_')}.pdf`;
 
   return new Response(new Uint8Array(pdf), {
     status: 200,

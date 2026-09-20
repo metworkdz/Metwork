@@ -1,13 +1,13 @@
 /**
  * 'GREEN_BAND' invoice template — same content/structure as CLASSIC but with a
- * full-width #30a735 header band (logo + "FACTURE" reversed in white), a
+ * full-width #30a735 header band (logo + the title reversed in white), a
  * monochrome body and green rule accents. Premium, minimal.
  */
 import type { InvoiceViewModel } from '../viewModel';
 import {
   BLACK, CONTENT_W, GRAY, GREEN, MARGIN, PAGE_W,
   drawAmountInWords, drawBankLines, drawCancelledWatermark, drawContactFooter,
-  drawLinesTable, drawTotalsBlock, sg,
+  drawLinesTable, drawNotices, drawTotalsBlock, sg,
   type Doc,
 } from './shared';
 
@@ -20,12 +20,16 @@ export function renderGreenBand(doc: Doc, vm: InvoiceViewModel, logo: Buffer | n
   if (logo) {
     try { doc.image(logo, MARGIN, (BAND_H - LOGO_H) / 2, { fit: [LOGO_W, LOGO_H] }); } catch { /* skip */ }
   }
-  sg(doc, { bold: true }).fillColor('#ffffff').fontSize(26)
-    .text('FACTURE', MARGIN, BAND_H / 2 - 16, { width: CONTENT_W, align: 'right' });
+  // "FACTURE PROFORMA" is long enough to want a smaller face in the band.
+  sg(doc, { bold: true }).fillColor('#ffffff').fontSize(vm.title.length > 9 ? 19 : 26)
+    .text(vm.title, MARGIN, BAND_H / 2 - (vm.title.length > 9 ? 12 : 16), { width: CONTENT_W, align: 'right' });
   sg(doc).fillColor('#ffffff').fontSize(9.5)
     .text(`N° ${vm.number}  ·  ${vm.date}`, MARGIN, BAND_H / 2 + 14, { width: CONTENT_W, align: 'right' });
 
-  doc.y = BAND_H + 26;
+  doc.y = BAND_H + 22;
+
+  // ── What this document is (proforma / devis) ──
+  drawNotices(doc, vm);
 
   // ── Issuer (left) · Déstinataire (right) ──
   const colW = CONTENT_W / 2 - 12;
@@ -55,7 +59,7 @@ export function renderGreenBand(doc: Doc, vm: InvoiceViewModel, logo: Buffer | n
 
   // ── Payment mode + green accent rule ──
   sg(doc, { medium: true }).fillColor(BLACK).fontSize(10)
-    .text('Mode de Paiement', MARGIN, doc.y, { continued: true })
+    .text(vm.paymentTitle, MARGIN, doc.y, { continued: true })
     .text('   ', { continued: true });
   sg(doc).fillColor(BLACK).text(vm.paymentLabel);
   doc.y += 4;
@@ -69,7 +73,7 @@ export function renderGreenBand(doc: Doc, vm: InvoiceViewModel, logo: Buffer | n
   doc.y += 10;
 
   drawTotalsBlock(doc, vm);
-  doc.y += 14;
+  doc.y += 12;
 
   drawAmountInWords(doc, vm);
 

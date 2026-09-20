@@ -1,9 +1,13 @@
 'use client';
 
 /**
- * Legal invoices table — Numéro | Client | Date | Net à Payer | Mode | Statut
+ * Document table — Numéro | Client | Date | Net à Payer | Mode | Statut
  * + actions (download PDF, cancel). Amounts are the STORED engine totals,
  * formatted with the same engine formatter as the PDF — never recomputed.
+ *
+ * One component for all three kinds: `kind` picks the copy and adds the
+ * validity column, because a proforma and a devis expire and a facture does
+ * not. Everything else is identical, and keeping it identical is the point.
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -19,13 +23,16 @@ import {
 } from '@/components/ui/table';
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { formatDZD } from '@/server/invoices/engine';
-import type { InvoiceRecord } from '@/server/db/store';
+import type { InvoiceKind, InvoiceRecord } from '@/server/db/store';
 
 export type InvoiceListItem = InvoiceRecord;
 
 interface Props {
-  initial: InvoiceListItem[];
+  kind: InvoiceKind;
+  rows: InvoiceListItem[];
   legalComplete: boolean;
+  /** The owner of the rows records the cancellation — see InvoicesTabs. */
+  onCancelled: (id: string) => void;
 }
 
 const METHOD_LABEL_KEY = {
@@ -34,9 +41,44 @@ const METHOD_LABEL_KEY = {
   VIREMENT: 'methodVirement',
 } as const;
 
-export function InvoiceList({ initial, legalComplete }: Props) {
+/**
+ * The message keys that differ per kind. Spelled out rather than built from a
+ * suffix so a missing translation is a type error here, not a runtime gap in
+ * front of a client.
+ */
+const COPY = {
+  FACTURE: {
+    create: 'createInvoice', emptyTitle: 'emptyTitle', emptyDescription: 'emptyDescription',
+    emptyCta: 'emptyCta', actionCancel: 'actionCancel', confirmCancel: 'confirmCancel',
+    statusIssued: 'statusIssued', statusCancelled: 'statusCancelled',
+  },
+  PROFORMA: {
+    create: 'createProforma', emptyTitle: 'emptyProformaTitle', emptyDescription: 'emptyProformaDescription',
+    emptyCta: 'emptyProformaCta', actionCancel: 'actionCancelProforma', confirmCancel: 'confirmCancelProforma',
+    // "Facture proforma" is feminine too, so it shares the facture's labels.
+    statusIssued: 'statusIssued', statusCancelled: 'statusCancelled',
+  },
+  DEVIS: {
+    create: 'createQuote', emptyTitle: 'emptyQuoteTitle', emptyDescription: 'emptyQuoteDescription',
+    emptyCta: 'emptyQuoteCta', actionCancel: 'actionCancelQuote', confirmCancel: 'confirmCancelQuote',
+    // "Un devis" is masculine: "Émis", not "Émise".
+    statusIssued: 'statusIssuedQuote', statusCancelled: 'statusCancelledQuote',
+  },
+} as const;
+
+/** "YYYY-MM-DD" → "dd/mm/yyyy", without constructing a Date (no TZ shift). */
+function formatDay(day: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : day;
+}
+
+export function InvoiceList({ kind, rows, legalComplete, onCancelled }: Props) {
   const t = useTranslations('incubator.invoicesPage');
-  const [rows, setRows] = useState(initial);
+  const copy = COPY[kind];
+  const newHref = `/dashboard/incubator/invoices/new?kind=${kind}` as const;
+  // A facture never expires; the other two do, and that date is the first
+  // thing you look for when the client calls back three weeks later.
+  const showValidity = kind !== 'FACTURE';
   const [q, setQ] = useState('');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
@@ -49,7 +91,7 @@ export function InvoiceList({ initial, legalComplete }: Props) {
     : rows;
 
   async function cancelInvoice(invoice: InvoiceListItem) {
-    if (!confirm(t('confirmCancel', { number: invoice.number }))) return;
+    if (!confirm(t(copy.confirmCancel, { number: invoice.number }))) return;
     setCancellingId(invoice.id);
     try {
       const res = await fetch(`/api/incubator/invoices/${invoice.id}`, {
@@ -57,9 +99,7 @@ export function InvoiceList({ initial, legalComplete }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'CANCELLED' }),
       });
-      if (res.ok) {
-        setRows((rs) => rs.map((r) => r.id === invoice.id ? { ...r, status: 'CANCELLED' as const } : r));
-      }
+      if (res.ok) onCancelled(invoice.id);
     } finally {
       setCancellingId(null);
     }
@@ -91,15 +131,15 @@ export function InvoiceList({ initial, legalComplete }: Props) {
         </div>
         {legalComplete ? (
           <Button asChild>
-            <Link href="/dashboard/incubator/invoices/new">
+            <Link href={newHref}>
               <Plus className="size-4" />
-              {t('createInvoice')}
+              {t(copy.create)}
             </Link>
           </Button>
         ) : (
           <Button disabled title={t('legalIncomplete')}>
             <Plus className="size-4" />
-            {t('createInvoice')}
+            {t(copy.create)}
           </Button>
         )}
       </div>
@@ -108,14 +148,14 @@ export function InvoiceList({ initial, legalComplete }: Props) {
         <CardContent className="p-0">
           {filtered.length === 0 ? (
             <InlineEmptyState
-              title={q ? t('noMatches') : t('emptyTitle')}
-              description={q ? t('tryDifferentSearch') : t('emptyDescription')}
+              title={q ? t('noMatches') : t(copy.emptyTitle)}
+              description={q ? t('tryDifferentSearch') : t(copy.emptyDescription)}
               icon={<FileText className="size-5 text-muted-foreground" />}
               action={!q ? (
                 <Button asChild size="sm" className="mt-1">
-                  <Link href="/dashboard/incubator/invoices/new">
+                  <Link href={newHref}>
                     <FilePlus2 className="size-4" />
-                    {t('emptyCta')}
+                    {t(copy.emptyCta)}
                   </Link>
                 </Button>
               ) : undefined}
@@ -128,6 +168,7 @@ export function InvoiceList({ initial, legalComplete }: Props) {
                     <TableHead>{t('colNumber')}</TableHead>
                     <TableHead>{t('colClient')}</TableHead>
                     <TableHead>{t('colDate')}</TableHead>
+                    {showValidity && <TableHead>{t('colValidUntil')}</TableHead>}
                     <TableHead className="text-end">{t('colNet')}</TableHead>
                     <TableHead>{t('colMethod')}</TableHead>
                     <TableHead>{t('colStatus')}</TableHead>
@@ -151,6 +192,11 @@ export function InvoiceList({ initial, legalComplete }: Props) {
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                           {new Date(invoice.issuedAt).toLocaleDateString('fr-DZ')}
                         </TableCell>
+                        {showValidity && (
+                          <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                            {invoice.validUntil ? formatDay(invoice.validUntil) : '—'}
+                          </TableCell>
+                        )}
                         <TableCell className="text-end tabular-nums font-medium">
                           {formatDZD(invoice.totals.net)}
                         </TableCell>
@@ -159,8 +205,8 @@ export function InvoiceList({ initial, legalComplete }: Props) {
                         </TableCell>
                         <TableCell>
                           {cancelled
-                            ? <Badge variant="outline" className="border-destructive/40 text-destructive">{t('statusCancelled')}</Badge>
-                            : <Badge variant="outline" className="border-primary/40 text-primary">{t('statusIssued')}</Badge>}
+                            ? <Badge variant="outline" className="border-destructive/40 text-destructive">{t(copy.statusCancelled)}</Badge>
+                            : <Badge variant="outline" className="border-primary/40 text-primary">{t(copy.statusIssued)}</Badge>}
                         </TableCell>
                         <TableCell className="text-end">
                           <div className="flex items-center justify-end gap-1">
@@ -178,7 +224,7 @@ export function InvoiceList({ initial, legalComplete }: Props) {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                title={t('actionCancel')}
+                                title={t(copy.actionCancel)}
                                 loading={cancellingId === invoice.id}
                                 onClick={() => void cancelInvoice(invoice)}
                               >

@@ -1563,7 +1563,24 @@
       "noMatches": "No matches",
       "tryDifferentSearch": "Try a different search.",
       "legalIncomplete": "Complete your legal information (name, RC, NIF) before issuing invoices.",
-      "legalIncompleteLink": "Go to Settings"
+      "legalIncompleteLink": "Go to Settings",
+      "tabProformas": "Proformas",
+      "tabQuotes": "Quotes",
+      "createProforma": "Create a proforma",
+      "createQuote": "Create a quote",
+      "colValidUntil": "Valid until",
+      "actionCancelProforma": "Cancel proforma",
+      "actionCancelQuote": "Cancel quote",
+      "confirmCancelProforma": "Cancel proforma {number}? It stays on file, marked cancelled.",
+      "confirmCancelQuote": "Cancel quote {number}? It stays on file, marked cancelled.",
+      "emptyProformaTitle": "No proformas yet",
+      "emptyProformaDescription": "A proforma looks like an invoice but asks for nothing — use it for an advance, a bank or customs.",
+      "emptyProformaCta": "Create a proforma",
+      "emptyQuoteTitle": "No quotes yet",
+      "emptyQuoteDescription": "Send a priced offer your client can accept and sign — it never touches your invoice numbering.",
+      "emptyQuoteCta": "Create a quote",
+      "statusIssuedQuote": "Issued",
+      "statusCancelledQuote": "Cancelled"
     },
     "invoiceForm": {
       "sectionClient": "Client",
@@ -1602,12 +1619,30 @@
       "netToPay": "Net to pay",
       "submit": "Issue the invoice",
       "selectClientFirst": "Select a client to issue the invoice.",
-      "errorSubmit": "Failed to create the invoice.",
+      "errorSubmit": "Failed to create the document.",
       "errorNetwork": "Network error — try again.",
       "successTitle": "Invoice {number} issued",
       "successSubtitle": "Net to pay: {net}",
       "downloadPdf": "Download the PDF",
-      "backToList": "Back to invoices"
+      "backToList": "Back to invoices",
+      "sectionKind": "Document",
+      "kindFacture": "Invoice",
+      "kindFactureHint": "Demands payment. Counts in your accounts.",
+      "kindProforma": "Proforma invoice",
+      "kindProformaHint": "Looks like an invoice, asks for nothing. For an advance, a bank, customs.",
+      "kindDevis": "Quote",
+      "kindDevisHint": "A priced offer, signed back by the client.",
+      "labelNumber": "Number",
+      "numberHint": "Next in your series. Change it if your numbering starts elsewhere — the next one continues from there.",
+      "numberInvalid": "Enter a whole number greater than 0.",
+      "labelValidUntil": "Valid until",
+      "validUntilOptional": "Optional.",
+      "validUntilRequired": "Required — a quote with no end date commits you to that price indefinitely.",
+      "submitProforma": "Issue the proforma",
+      "submitQuote": "Issue the quote",
+      "successTitleProforma": "Proforma {number} issued",
+      "successTitleQuote": "Quote {number} issued",
+      "selectClientFirstDocument": "Select a client to issue the document."
     },
     "listingTable": {
       "newListing": "New listing",
@@ -2534,12 +2569,12 @@
           "subtitleNoProfile": "No incubator profile found."
         },
         "invoices": {
-          "title": "Invoices & Receipts",
-          "subtitle": "Issue legal invoices and print receipts for paid bookings."
+          "title": "Invoices, quotes & receipts",
+          "subtitle": "Issue invoices, proformas and quotes, and print receipts for paid bookings."
         },
         "newInvoice": {
-          "title": "New invoice",
-          "subtitle": "Pick a client, add your services — totals and stamp duty are computed automatically."
+          "title": "New document",
+          "subtitle": "Invoice, proforma or quote — pick the document, the client and your services."
         },
         "wallet": {
           "title": "Wallet",

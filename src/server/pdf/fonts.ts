@@ -17,6 +17,12 @@
  *     range that broke Helvetica.
  *   • Arabic → Amiri (naskh). DejaVu doesn't shape Arabic; Amiri does, and it
  *     also covers Latin so an Arabic client name inside a French document works.
+ *   • Invoice / proforma / devis → Montserrat (SIL OFL), via invoiceFontFor.
+ *
+ * EVERY face here is vendored as a STATIC TrueType file. Variable fonts (what
+ * Google Fonts serves today for Montserrat) cannot be instanced by fontkit, so
+ * a variable file silently falls back and the document renders in the wrong
+ * face — always download the static weights.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -43,10 +49,22 @@ export const FONT = {
   serifTimes: 'Times',
   serifTimesBold: 'Times-Bold',
   serifTimesItalic: 'Times-Italic',
-  /** Space Grotesk — brand face used by invoice PDFs (receipts keep DejaVu). */
+  /** Space Grotesk — kept registered; receipts and older documents use it. */
   grotesk: 'Grotesk',
   groteskMedium: 'Grotesk-Medium',
   groteskBold: 'Grotesk-Bold',
+  /**
+   * Montserrat — the face of the invoice / proforma / devis PDFs.
+   *
+   * SIL Open Font License 1.1 (LICENSE-Montserrat.txt beside the files): free
+   * to embed in a commercial document, no fee, no attribution on the page.
+   * Vendored as STATIC weights on purpose — Google Fonts now serves Montserrat
+   * as a variable font, which fontkit cannot instance, so the whole document
+   * would render in the fallback face.
+   */
+  sans: 'Sans',
+  sansMedium: 'Sans-Medium',
+  sansBold: 'Sans-Bold',
 } as const;
 
 const FILES: Record<string, string> = {
@@ -60,6 +78,9 @@ const FILES: Record<string, string> = {
   [FONT.grotesk]: 'SpaceGrotesk-Regular.ttf',
   [FONT.groteskMedium]: 'SpaceGrotesk-Medium.ttf',
   [FONT.groteskBold]: 'SpaceGrotesk-Bold.ttf',
+  [FONT.sans]: 'Montserrat-Regular.ttf',
+  [FONT.sansMedium]: 'Montserrat-Medium.ttf',
+  [FONT.sansBold]: 'Montserrat-Bold.ttf',
 };
 
 /** Read + cache a font file once. Null-safe: a missing file just skips that face. */
@@ -113,12 +134,13 @@ export function fontFor(opts: { bold?: boolean; italic?: boolean; arabic?: boole
 }
 
 /**
- * Invoice face (Space Grotesk). Arabic text (e.g. a client name) falls back to
- * Amiri — Grotesk has no Arabic coverage.
+ * Invoice face (Montserrat). Arabic text — a client name, a designation — falls
+ * back to Amiri: Montserrat has no Arabic coverage, and an unmapped codepoint
+ * would print as a blank box in the middle of a legal document.
  */
 export function invoiceFontFor(opts: { bold?: boolean; medium?: boolean; arabic?: boolean } = {}): string {
   if (opts.arabic) return FONT.arabic;
-  if (opts.bold) return FONT.groteskBold;
-  if (opts.medium) return FONT.groteskMedium;
-  return FONT.grotesk;
+  if (opts.bold) return FONT.sansBold;
+  if (opts.medium) return FONT.sansMedium;
+  return FONT.sans;
 }

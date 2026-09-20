@@ -16,6 +16,7 @@ import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import {
   allocateInvoiceNumber,
+  formatInvoiceNumber,
   amountToFrenchWords,
   computeInvoiceTotals,
 } from '@/server/invoices/engine';
@@ -51,12 +52,28 @@ const createSchema = z
     vatRate: z.number().min(0).max(100).optional(),
     paymentMethod: z.enum(['ESPECE', 'CHEQUE', 'VIREMENT']),
     template: z.enum(['CLASSIC', 'GREEN_BAND', 'MINIMAL']).optional(),
-    /** Optional number override / custom starting range, e.g. 7 → "07/2026". */
+    /** Which document to issue. Absent = FACTURE, as it always was. */
+    kind: z.enum(['FACTURE', 'PROFORMA', 'DEVIS']).optional(),
+    /**
+     * Offer expiry, "YYYY-MM-DD". Required on a DEVIS (see the refine below).
+     */
+    validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+    /**
+     * Number override / custom starting range, e.g. 9 → "09/2026". An
+     * incubator arriving with invoices already issued elsewhere starts their
+     * sequence where their own books left off; the counter then continues
+     * from there.
+     */
     seq: z.number().int().positive().max(999_999).optional(),
   })
   .refine((v) => v.clientId || v.clientDraft, {
     message: 'Provide clientId or clientDraft',
     path: ['clientId'],
+  })
+  .refine((v) => v.kind !== 'DEVIS' || !!v.validUntil, {
+    // A quote with no end date is an open-ended commitment to that price.
+    message: 'Un devis doit avoir une date de validité',
+    path: ['validUntil'],
   });
 
 function clientSnapshotFrom(c: ClientRecord): InvoiceRecord['clientSnapshot'] {
@@ -171,28 +188,38 @@ export async function POST(req: NextRequest) {
 
     if (!Array.isArray(d.invoices)) d.invoices = [];
 
-    // A requested number must not collide with an existing invoice.
+    const kind = input.kind ?? 'FACTURE';
+
+    // A requested number must not collide — within this KIND. "01/2026" and
+    // "FP 01/2026" are different documents and may both exist.
     if (
       input.seq !== undefined &&
-      d.invoices.some((i) => i.incubatorId === inc.id && i.year === year && i.seq === input.seq)
+      d.invoices.some(
+        (i) => i.incubatorId === inc.id
+          && i.year === year
+          && i.seq === input.seq
+          && (i.kind ?? 'FACTURE') === kind,
+      )
     ) {
       return {
         ok: false, status: 409, code: 'NUMBER_TAKEN',
-        message: `Le numéro ${String(input.seq).padStart(2, '0')}/${year} est déjà utilisé`,
+        message: `Le numéro ${formatInvoiceNumber(input.seq, year, kind)} est déjà utilisé`,
       };
     }
 
-    const { number, seq } = allocateInvoiceNumber(incubator, year, input.seq);
+    const { number, seq } = allocateInvoiceNumber(incubator, year, input.seq, kind);
     incubator.updatedAt = now;
 
-    const totals = computeInvoiceTotals(input.lines, vatRate, input.paymentMethod);
+    const totals = computeInvoiceTotals(input.lines, vatRate, input.paymentMethod, kind);
 
     const invoice: InvoiceRecord = {
       id: randomUUID(),
       incubatorId: inc.id,
+      kind,
       number,
       year,
       seq,
+      validUntil: input.validUntil ?? null,
       issuedAt: now,
       clientId,
       clientSnapshot,

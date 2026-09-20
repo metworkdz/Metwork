@@ -8,8 +8,39 @@
  * except allocateInvoiceNumber which mutates the passed incubator record and is
  * documented to run only inside db.update().
  */
-import type { IncubatorRecord, InvoiceLine, InvoicePaymentMethod } from '@/server/db/store';
+import type {
+  IncubatorRecord, InvoiceKind, InvoiceLine, InvoicePaymentMethod,
+} from '@/server/db/store';
 import { amountInWords } from '@/server/notifications/amount-words';
+
+/**
+ * A document's number prefix.
+ *
+ * A facture keeps the bare "NN/YYYY" it has always had — its numbers are
+ * already issued and printed, and changing them is not an option. The two new
+ * kinds are prefixed so that three documents sitting in one folder can never
+ * be mistaken for each other.
+ */
+export const KIND_PREFIX: Record<InvoiceKind, string> = {
+  FACTURE: '',
+  PROFORMA: 'FP ',
+  DEVIS: 'DV ',
+};
+
+/**
+ * Which counter a kind draws from.
+ *
+ * A facture number must be sequential and GAPLESS — that is the thing a fiscal
+ * inspection checks. If a proforma drew from the same counter, every proforma
+ * would punch a hole in the invoice sequence, and each hole is a question
+ * about an invoice that does not exist. So each kind counts separately.
+ *
+ * FACTURE deliberately keeps the bare year key it has always used, so every
+ * counter already stored keeps working with no migration.
+ */
+export function counterKey(kind: InvoiceKind, year: number): string {
+  return kind === 'FACTURE' ? String(year) : `${kind}:${year}`;
+}
 
 /**
  * Round to 2 decimals (money in DZD). Uses the decimal exponent shift instead
@@ -41,8 +72,17 @@ export interface InvoiceTotals {
  * rounded to the whole dinar. NOTE: the statutory 5 DZD minimum per receipt is
  * intentionally NOT applied (product decision 2026-07); add it here if the
  * accountant requires it.
+ *
+ * NEVER on a proforma or a devis. The timbre is a duty on a payment, and on
+ * those documents nothing has been paid — charging it would both assert a tax
+ * that was not collected and inflate the figure the client is being quoted.
  */
-export function computeStampDuty(ttc: number, paymentMethod: InvoicePaymentMethod): number {
+export function computeStampDuty(
+  ttc: number,
+  paymentMethod: InvoicePaymentMethod,
+  kind: InvoiceKind = 'FACTURE',
+): number {
+  if (kind !== 'FACTURE') return 0;
   if (paymentMethod !== 'ESPECE') return 0;
   const rate = ttc <= 30_000 ? 0.01 : ttc <= 100_000 ? 0.015 : 0.02;
   return Math.round(ttc * rate);
@@ -65,11 +105,12 @@ export function computeInvoiceTotals(
   lines: InvoiceLine[],
   vatRate: number,
   paymentMethod: InvoicePaymentMethod,
+  kind: InvoiceKind = 'FACTURE',
 ): InvoiceTotals {
   const ht = round2(lines.reduce((s, l) => s + l.quantity * l.unitPriceHt, 0));
   const tva = round2((ht * vatRate) / 100);
   const ttc = round2(ht + tva);
-  const timbre = computeStampDuty(ttc, paymentMethod);
+  const timbre = computeStampDuty(ttc, paymentMethod, kind);
   const net = round2(ttc + timbre);
   return { ht, tva, ttc, timbre, net };
 }
@@ -115,9 +156,13 @@ export function amountToFrenchWords(net: number): string {
   return out;
 }
 
-/** "NN/YYYY" — seq zero-padded to at least 2 digits. */
-export function formatInvoiceNumber(seq: number, year: number): string {
-  return `${String(seq).padStart(2, '0')}/${year}`;
+/** "NN/YYYY" for a facture, "FP NN/YYYY" / "DV NN/YYYY" for the other kinds. */
+export function formatInvoiceNumber(
+  seq: number,
+  year: number,
+  kind: InvoiceKind = 'FACTURE',
+): string {
+  return `${KIND_PREFIX[kind]}${String(seq).padStart(2, '0')}/${year}`;
 }
 
 /**
@@ -138,11 +183,28 @@ export function allocateInvoiceNumber(
   incubator: IncubatorRecord,
   year: number,
   requestedSeq?: number,
+  kind: InvoiceKind = 'FACTURE',
 ): { number: string; seq: number } {
   const counters = incubator.invoiceCounters ?? {};
-  const current = counters[String(year)] ?? 0;
+  const key = counterKey(kind, year);
+  const current = counters[key] ?? 0;
   const seq = requestedSeq ?? current + 1;
-  counters[String(year)] = Math.max(current, seq);
+  counters[key] = Math.max(current, seq);
   incubator.invoiceCounters = counters;
-  return { number: formatInvoiceNumber(seq, year), seq };
+  return { number: formatInvoiceNumber(seq, year, kind), seq };
+}
+
+/**
+ * The number the create form should offer by default — what the NEXT document
+ * of this kind will be called if nothing is overridden.
+ *
+ * Read-only: unlike `allocateInvoiceNumber` this touches no counter, so the
+ * form can show it without consuming it.
+ */
+export function peekNextSeq(
+  incubator: Pick<IncubatorRecord, 'invoiceCounters'>,
+  year: number,
+  kind: InvoiceKind = 'FACTURE',
+): number {
+  return (incubator.invoiceCounters?.[counterKey(kind, year)] ?? 0) + 1;
 }

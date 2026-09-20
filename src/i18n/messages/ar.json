@@ -1563,7 +1563,24 @@
       "noMatches": "لا نتائج",
       "tryDifferentSearch": "جرّب بحثاً آخر.",
       "legalIncomplete": "أكمل معلوماتك القانونية (الاسم، RC، NIF) قبل إصدار الفواتير.",
-      "legalIncompleteLink": "الذهاب إلى الإعدادات"
+      "legalIncompleteLink": "الذهاب إلى الإعدادات",
+      "tabProformas": "فواتير أولية",
+      "tabQuotes": "عروض الأسعار",
+      "createProforma": "إنشاء فاتورة أولية",
+      "createQuote": "إنشاء عرض سعر",
+      "colValidUntil": "صالح حتى",
+      "actionCancelProforma": "إلغاء الفاتورة الأولية",
+      "actionCancelQuote": "إلغاء عرض السعر",
+      "confirmCancelProforma": "إلغاء الفاتورة الأولية {number}؟ تبقى في الملف بوسم «ملغاة».",
+      "confirmCancelQuote": "إلغاء عرض السعر {number}؟ يبقى في الملف بوسم «ملغى».",
+      "emptyProformaTitle": "لا فواتير أولية بعد",
+      "emptyProformaDescription": "الفاتورة الأولية تشبه الفاتورة لكنها لا تطالب بشيء — تُستعمل للتسبيق أو البنك أو الجمارك.",
+      "emptyProformaCta": "إنشاء فاتورة أولية",
+      "emptyQuoteTitle": "لا عروض أسعار بعد",
+      "emptyQuoteDescription": "أرسل عرضاً مسعّراً يوقّعه العميل للموافقة — دون أي أثر على ترقيم فواتيرك.",
+      "emptyQuoteCta": "إنشاء عرض سعر",
+      "statusIssuedQuote": "صادر",
+      "statusCancelledQuote": "ملغى"
     },
     "invoiceForm": {
       "sectionClient": "العميل",
@@ -1602,12 +1619,30 @@
       "netToPay": "الصافي للدفع",
       "submit": "إصدار الفاتورة",
       "selectClientFirst": "اختر عميلاً لإصدار الفاتورة.",
-      "errorSubmit": "فشل إنشاء الفاتورة.",
+      "errorSubmit": "فشل إنشاء المستند.",
       "errorNetwork": "خطأ في الشبكة — حاول مجدداً.",
       "successTitle": "صدرت الفاتورة {number}",
       "successSubtitle": "الصافي للدفع: {net}",
       "downloadPdf": "تحميل PDF",
-      "backToList": "العودة إلى الفواتير"
+      "backToList": "العودة إلى الفواتير",
+      "sectionKind": "المستند",
+      "kindFacture": "فاتورة",
+      "kindFactureHint": "تطالب بالدفع. وثيقة محاسبية.",
+      "kindProforma": "فاتورة أولية",
+      "kindProformaHint": "تشبه الفاتورة ولا تطالب بشيء. للتسبيق أو البنك أو الجمارك.",
+      "kindDevis": "عرض سعر",
+      "kindDevisHint": "عرض مسعّر يوقّعه العميل للموافقة.",
+      "labelNumber": "الرقم",
+      "numberHint": "الرقم التالي في سلسلتك. غيّره إذا كان ترقيمك يبدأ من رقم آخر — وستُكمل الأرقام بعده.",
+      "numberInvalid": "أدخل عدداً صحيحاً أكبر من 0.",
+      "labelValidUntil": "صالح حتى",
+      "validUntilOptional": "اختياري.",
+      "validUntilRequired": "إجباري — عرض سعر بلا تاريخ انتهاء يلزمك بهذا السعر إلى ما لا نهاية.",
+      "submitProforma": "إصدار الفاتورة الأولية",
+      "submitQuote": "إصدار عرض السعر",
+      "successTitleProforma": "صدرت الفاتورة الأولية {number}",
+      "successTitleQuote": "صدر عرض السعر {number}",
+      "selectClientFirstDocument": "اختر عميلاً لإصدار المستند."
     },
     "listingTable": {
       "newListing": "إدراج جديد",
@@ -2534,12 +2569,12 @@
           "subtitleNoProfile": "لم يُعثر على ملف حاضنة."
         },
         "invoices": {
-          "title": "الفواتير والإيصالات",
-          "subtitle": "أصدر فواتير قانونية واطبع إيصالات الحجوزات المدفوعة."
+          "title": "المستندات والإيصالات",
+          "subtitle": "أصدر فواتيرك وفواتيرك الأولية وعروض أسعارك، واطبع إيصالات الحجوزات المدفوعة."
         },
         "newInvoice": {
-          "title": "فاتورة جديدة",
-          "subtitle": "اختر عميلاً وأضف خدماتك — تُحسب المجاميع وحق الطابع تلقائياً."
+          "title": "مستند جديد",
+          "subtitle": "فاتورة أو فاتورة أولية أو عرض سعر — اختر المستند والعميل وخدماتك."
         },
         "wallet": {
           "title": "المحفظة",
