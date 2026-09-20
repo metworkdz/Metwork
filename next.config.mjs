@@ -60,34 +60,21 @@ const nextConfig = {
     // and be loaded from node_modules. Production uses @libsql/client (pure
     // HTTP) where this does not apply. See METWORK_OS_DEVELOPMENT_RULES.md R-30.
     serverComponentsExternalPackages: ['pdfkit', 'better-sqlite3'],
-    // The contract PDF generator reads a bundled Arabic TTF at runtime via fs.
-    // process.cwd() isn't statically analyzable, so explicitly include the font
-    // file in the serverless trace for the generation route (otherwise Arabic
-    // contracts would silently fall back to Helvetica on Vercel).
-    outputFileTracingIncludes: {
-      '/api/incubator/bookings/[id]/contract': ['./src/server/contracts/fonts/**'],
-      // Same reason, for the CONSULTANT contract: its PDF is set in Tinos
-      // (src/server/pdf/fonts) and read through process.cwd(). Untraced, the
-      // font is missing from the lambda and `doc.font()` throws — taking the
-      // whole signature request down rather than degrading. Every route that
-      // renders one needs the fonts:
-      //   sign    → generates the signed PDF
-      //   preview → generates the pre-signature draft
-      //   pdf     → re-serves a stored PDF (no render, listed for safety)
-      // The LOGO is deliberately not here: it is a base64 source constant
-      // precisely so it cannot depend on tracing at all.
-      '/api/consultant/contracts/[id]/sign': ['./src/server/pdf/fonts/**'],
-      '/api/consultant/contracts/[id]/preview': ['./src/server/pdf/fonts/**'],
-      '/api/consultant/contracts/[id]/pdf': ['./src/server/pdf/fonts/**'],
-      '/api/admin/contracts/[id]/pdf': ['./src/server/pdf/fonts/**'],
-      // The invoice / proforma / devis PDF is set in Montserrat, read from the
-      // same directory through the same unanalyzable path. Untraced it does
-      // NOT throw — registerPdfFonts swallows the missing file — so the whole
-      // document silently renders in Helvetica, which cannot even encode the
-      // no-break spaces in "28 560,00 DA". Failing invisibly is why this line
-      // matters more than the ones above it.
-      '/api/incubator/invoices/[id]/pdf': ['./src/server/pdf/fonts/**'],
-    },
+    // NO outputFileTracingIncludes for the PDF fonts, deliberately.
+    //
+    // This block used to list routes so the embedded TTFs would reach their
+    // lambdas, on the belief that `path.join(process.cwd(), 'src/server/pdf/
+    // fonts')` is opaque to nft. It isn't: nft evaluates process.cwd() and,
+    // when the rest of the path is a dynamic lookup, falls back to tracing the
+    // whole resolved DIRECTORY. Verified 2026-09-20 by building with this set
+    // to {} — every route that imports the font loader still carried all 13
+    // faces, including ones that were never listed.
+    //
+    // So the entries were doing nothing, and one of them — for a
+    // './src/server/contracts/fonts/**' that had been moved away years of
+    // commits ago — was matching no files at all while looking authoritative.
+    // Re-check with: npm run build && cat '.next/server/app/api/incubator/
+    // invoices/[id]/pdf/route.js.nft.json' | grep -c '\.ttf'  → expect 13.
   },
 
   async headers() {
