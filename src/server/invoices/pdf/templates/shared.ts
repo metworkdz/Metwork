@@ -247,7 +247,8 @@ function drawAcceptance(doc: Doc, x: number, y: number, width: number): void {
  */
 export function drawAmountInWords(doc: Doc, vm: InvoiceViewModel, hasStamp = false): void {
   // The acceptance block and the stamp both live on the right of this band.
-  const wordsW = vm.showAcceptance || hasStamp ? CONTENT_W * 0.56 : CONTENT_W;
+  // The stamp's box is the wider of the two, so it leaves less room here.
+  const wordsW = vm.showAcceptance ? CONTENT_W * 0.56 : hasStamp ? CONTENT_W * 0.5 : CONTENT_W;
   sg(doc).fontSize(10);
   const wordsH = doc.heightOfString(vm.amountInWords, { width: wordsW, lineGap: 2 });
   const blockH = Math.max(18 + wordsH, vm.showAcceptance ? ACCEPTANCE_H : 0);
@@ -282,7 +283,7 @@ export function drawNote(doc: Doc, vm: InvoiceViewModel, hasStamp = false): void
   if (!vm.note) return;
   // The stamp occupies the bottom-right from here down, so the note keeps to
   // the left column — full width would run straight under it.
-  const width = hasStamp ? CONTENT_W * 0.56 : CONTENT_W;
+  const width = hasStamp ? CONTENT_W * 0.5 : CONTENT_W;
   sg(doc).fontSize(9.5);
   const textH = doc.heightOfString(vm.note, { width, lineGap: 1.5 });
   ensureSpace(doc, textH + 22);
@@ -324,15 +325,22 @@ export function drawStamp(doc: Doc, stamp: Buffer | null, topLimit: number): voi
 
   // Clear of the contact footer, which prints at PAGE_H - MARGIN - 14.
   const bottom = PAGE_H - MARGIN - 26;
-  const available = bottom - (topLimit + 6);
-  const size = Math.min(STAMP_TARGET, available);
-  if (size < STAMP_MIN) return;
+  const height = Math.min(STAMP_TARGET, bottom - (topLimit + 6));
+  if (height < STAMP_MIN) return;
 
-  const x = PAGE_W - MARGIN - size;
-  const y = bottom - size;
+  // The box is WIDER than it is tall on purpose. Height is the scarce
+  // resource here; width is not. A stamp photographed with the signature
+  // across it is landscape, and squeezing that into a square box would shrink
+  // it to the height of its own signature for no reason. `fit` keeps the
+  // aspect ratio either way, so a round stamp still comes out round.
+  const width = Math.min(STAMP_TARGET * 1.25, CONTENT_W * 0.46);
+  const x = PAGE_W - MARGIN - width;
+  const y = bottom - height;
   try {
     doc.save();
-    doc.image(stamp, x, y, { fit: [size, size] });
+    // Anchored to the bottom-right of the box, so whatever the shape it sits
+    // in the corner rather than floating in the middle of its own box.
+    doc.image(stamp, x, y, { fit: [width, height], align: 'right', valign: 'bottom' });
     doc.restore();
   } catch { /* skip on decode error */ }
 }
