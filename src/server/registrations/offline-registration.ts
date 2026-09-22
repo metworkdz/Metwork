@@ -19,6 +19,7 @@
  *     "Mark cash paid" closes when she settles up
  *   • the seat counted exactly once (booking and registration dedupe by email)
  *   • the localized confirmation email, stating what she paid and what is left
+ *   • the stamped PDF receipt for the cash she handed over
  *
  * No money moves on the platform and no commission is taken: the cash went
  * hand to hand in the office, and the platform was never in the middle of it.
@@ -27,6 +28,7 @@ import { db, type RegistrationRecord } from '@/server/db/store';
 import { countAttendance } from '@/server/attendance';
 import { resolveListingPricing } from '@/lib/listing-price';
 import { applyClockTime, isClockTime } from '@/lib/booking-when';
+import { dispatchReceiptIfDue } from '@/server/bookings/card-payment';
 import {
   createRegistration,
   findMissingRequiredAnswer,
@@ -169,6 +171,13 @@ export async function addOfflineRegistration(
   // She was already on the list. Say so plainly rather than pretending a
   // second seat was created — the desk needs to know it is a duplicate.
   if (alreadyRegistered) return { ok: false, reason: 'ALREADY_REGISTERED' };
+
+  // She handed over money at the desk, so she is owed a receipt for it — the
+  // same stamped PDF a card payer gets. Which one goes out is decided by what
+  // was actually received: paid in full → final, a deposit → deposit receipt,
+  // nothing yet → none. Awaited so the PDF is really sent before the request
+  // ends; it never throws, so a mail failure cannot undo the seat.
+  if (registration.bookingId) await dispatchReceiptIfDue(registration.bookingId);
 
   return {
     ok: true,

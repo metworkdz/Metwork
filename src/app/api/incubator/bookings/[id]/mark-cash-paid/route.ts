@@ -16,7 +16,7 @@ import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { json, jsonError } from '@/server/http/json';
 import { createNotification } from '@/server/notifications/create-notification';
-import { dispatchCardReceiptIfDue } from '@/server/bookings/card-payment';
+import { dispatchReceiptIfDue } from '@/server/bookings/card-payment';
 import { markCashPaid } from '@/server/bookings/mark-cash-paid';
 
 export const runtime = 'nodejs';
@@ -61,9 +61,12 @@ export async function PATCH(
     return jsonError(409, 'NOT_AWAITING_CASH', 'Booking is not awaiting cash');
   }
 
-  // Fire-and-forget: issue the final (paid-in-full) receipt now that the cash
-  // balance is in. Idempotent via finalReceiptSentAt — safe on repeat calls.
-  void dispatchCardReceiptIfDue(result.booking.id);
+  // AWAITED, not fire-and-forget. This generates a PDF and sends an email;
+  // left floating, the serverless function can freeze the moment the response
+  // is returned and the receipt is never sent — which is precisely how cash
+  // clients ended up with nothing. It never throws (it catches internally),
+  // so awaiting cannot fail the request. Idempotent via finalReceiptSentAt.
+  await dispatchReceiptIfDue(result.booking.id);
 
   // Fire-and-forget: let a registered client know their balance was received.
   void (async () => {

@@ -15,7 +15,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type * as EmailModule from '@/server/notifications/email';
 
-const sent: Array<{ to: string; subject: string; html: string }> = [];
+const sent: Array<{ to: string; subject: string; html: string; attachments?: unknown[] }> = [];
 vi.mock('@/server/notifications/email', async (importOriginal) => {
   const actual = await importOriginal<typeof EmailModule>();
   return {
@@ -147,8 +147,12 @@ describe('a walk-in who paid a deposit in cash', () => {
     await addOfflineRegistration(WALKIN);
     await flush();
 
-    expect(sent).toHaveLength(1);
-    const mail = sent[0]!;
+    // TWO emails now: the confirmation, and the stamped PDF receipt for the
+    // cash she actually handed over. Cash walk-ins used to get only the first
+    // — the receipt dispatcher returned early on anything not paid by card.
+    expect(sent).toHaveLength(2);
+    const mail = sent.find((m) => !m.attachments?.length)!;
+    expect(mail).toBeDefined();
     expect(mail.to).toBe('amina@example.dz');
     expect(mail.subject).toContain('Inscription confirmée');
     // Cash handed over at a desk is not "payé en ligne" — saying so is how a
@@ -168,7 +172,21 @@ describe('a walk-in who paid a deposit in cash', () => {
     const b = (await db.read()).bookings[0]!;
     expect(b.paymentStatus).toBe('PAID');
     expect(b.cashCollectedBy).toBe(MGR);
-    expect(sent[0]!.html).toContain('Payé intégralement');
+    expect(sent.find((m) => !m.attachments?.length)!.html).toContain('Payé intégralement');
+  });
+
+  it('sends her a PDF receipt for the cash, not just a confirmation', async () => {
+    await addOfflineRegistration(WALKIN);
+    await flush();
+
+    const receipt = sent.find((m) => m.attachments?.length);
+    expect(receipt, 'no receipt email was sent').toBeDefined();
+    expect(receipt!.to).toBe('amina@example.dz');
+    expect(receipt!.attachments).toHaveLength(1);
+    // A deposit was paid, not the full amount, so it is the deposit receipt.
+    const b = (await db.read()).bookings[0]!;
+    expect(b.depositReceiptSentAt).toBeTruthy();
+    expect(b.finalReceiptSentAt).toBeFalsy();
   });
 
   it('caps a deposit that exceeds the total rather than banking the excess', async () => {

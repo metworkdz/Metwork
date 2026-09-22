@@ -18,7 +18,7 @@ import { db } from '@/server/db/store';
 import { requireConsultant } from '@/server/mentors/access';
 import { json, jsonError } from '@/server/http/json';
 import { createNotification } from '@/server/notifications/create-notification';
-import { dispatchCardReceiptIfDue } from '@/server/bookings/card-payment';
+import { dispatchReceiptIfDue } from '@/server/bookings/card-payment';
 import { markCashPaid } from '@/server/bookings/mark-cash-paid';
 
 export const runtime = 'nodejs';
@@ -52,10 +52,10 @@ export async function PATCH(
   }
 
   // The client paid the balance, so the FINAL receipt is now due — the same
-  // dispatch the incubator route uses. It used to be skipped here because the
-  // dispatcher could only address an incubator; it now resolves a consultant
-  // letterhead too, so a consultant's client gets the same paperwork.
-  void dispatchCardReceiptIfDue(result.booking.id);
+  // dispatch the incubator route uses. Awaited for the same reason: it builds
+  // a PDF and sends an email, and a floating promise can be frozen with the
+  // lambda the instant the response goes out.
+  await dispatchReceiptIfDue(result.booking.id);
 
   // Fire-and-forget: let a registered client know their balance was received.
   void (async () => {

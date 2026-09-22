@@ -261,6 +261,17 @@ export async function POST(req: NextRequest) {
       incubator:   inc,
       lang:        'fr',   // manual bookings default to French (Algeria)
     });
+    // Claim the same stamp `dispatchReceiptIfDue` uses. This path sends the
+    // receipt directly rather than through the dispatcher, and until the
+    // dispatcher stopped being card-only that could not collide with anything.
+    // Now it can: without the stamp, a later "mark cash paid" on a booking
+    // already settled would send the client a second, identical receipt.
+    await db.update((d) => {
+      const b = d.bookings.find((x) => x.id === result.booking.id);
+      if (!b) return;
+      if (b.paymentStatus === 'PAID') b.finalReceiptSentAt ??= new Date().toISOString();
+      else if (b.paymentMode === 'CASH_DEPOSIT') b.depositReceiptSentAt ??= new Date().toISOString();
+    });
   }
 
   return json(result.booking, { status: 201 });

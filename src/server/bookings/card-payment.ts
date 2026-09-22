@@ -908,13 +908,32 @@ interface ReceiptClaim {
   lang: 'en' | 'fr';
 }
 
-export async function dispatchCardReceiptIfDue(bookingId: string): Promise<void> {
+/**
+ * Send the receipt for a booking whose money has actually arrived — whatever
+ * rail it arrived on.
+ *
+ * This used to return immediately unless `paymentMethod === 'card'`, which
+ * meant a receipt was only ever sent for an online card payment. Every cash
+ * booking got nothing: the desk walk-ins, the offline bookings, and every
+ * space paid on site. The two "mark cash paid" routes even called this at the
+ * exact moment a receipt was due, and it returned without doing anything.
+ *
+ * The gate is now what a receipt actually attests to — money received — which
+ * is `paymentStatus`, not the rail. The exactly-once stamps
+ * (`finalReceiptSentAt` / `depositReceiptSentAt`) are unchanged and are what
+ * keep a settlement replay from sending a second copy.
+ */
+export async function dispatchReceiptIfDue(bookingId: string): Promise<void> {
   try {
     let claim: ReceiptClaim | null = null;
 
     await db.update((d) => {
       const b = d.bookings.find((x) => x.id === bookingId);
-      if (!b || b.paymentMethod !== 'card') return;
+      if (!b) return;
+      // A receipt for a booking that no longer exists as an agreement reads as
+      // a billing error. Money that did move is evidenced by the receipt
+      // already sent at settlement, before any cancellation.
+      if (b.status === 'CANCELLED' || b.status === 'REFUNDED') return;
 
       // The receipt letterhead is whoever OWNS the listing. Resolving only an
       // incubator meant a consultant-owned program sent no receipt at all —
@@ -939,6 +958,10 @@ export async function dispatchCardReceiptIfDue(bookingId: string): Promise<void>
       } else if (
         b.paymentMode === 'CASH_DEPOSIT' &&
         b.paymentStatus === 'AWAITING_CASH' &&
+        // Something has to have been RECEIVED for there to be a receipt. A
+        // desk reservation taken with no deposit is a promise to pay, and a
+        // receipt for 0 DZD would say money changed hands when none did.
+        ((b.onlinePaidAmount ?? 0) > 0 || (b.cashDepositPaidAmount ?? 0) > 0) &&
         !b.depositReceiptSentAt
       ) {
         b.depositReceiptSentAt = now;
@@ -950,7 +973,12 @@ export async function dispatchCardReceiptIfDue(bookingId: string): Promise<void>
     // `null` here — cast back to its real type before the guard.
     const c = claim as ReceiptClaim | null;
     if (!c) return;
-    sendBookingReceiptEmail({
+    // AWAITED. Without this the stamp is written, the function returns, and
+    // the PDF+email promise is left floating — which a serverless runtime is
+    // free to freeze the moment the response goes out. The stamp having been
+    // written means nothing will ever retry it, so the receipt is lost for
+    // good and the booking claims it was sent.
+    await sendBookingReceiptEmail({
       booking: c.booking,
       clientName: c.clientName,
       clientEmail: c.clientEmail,
@@ -1014,7 +1042,7 @@ async function notifyVoidedAfterPayment(bookingId: string): Promise<void> {
     });
 
     // `alert` is assigned inside the db.update closure; TS narrows it to null
-    // here, so cast back before the guard (same shape as dispatchCardReceiptIfDue).
+    // here, so cast back before the guard (same shape as dispatchReceiptIfDue).
     const a = alert as VoidRefundAlert | null;
     if (!a) return;
 
@@ -1077,7 +1105,7 @@ export async function verifyAndSettleCardBooking(token: string): Promise<CardPay
     void notifyVoidedAfterPayment(booking.id);
     return viewFor(after, 'SLOT_TAKEN');
   }
-  void dispatchCardReceiptIfDue(booking.id);
+  void dispatchReceiptIfDue(booking.id);
   void dispatchRegistrationConfirmationIfDue(booking.id);
   return viewFor(after, 'CONFIRMED');
 }
@@ -1106,7 +1134,7 @@ export async function settleCardBookingFromWebhook(
     void notifyVoidedAfterPayment(bookingId);
     return 'VOIDED';
   }
-  void dispatchCardReceiptIfDue(bookingId);
+  void dispatchReceiptIfDue(bookingId);
   void dispatchRegistrationConfirmationIfDue(bookingId);
   return 'SETTLED';
 }
@@ -1181,7 +1209,7 @@ export async function initCardBookingPayment(
     const outcome = await applyCardSettlement(booking.id, result.providerRef);
     if (outcome.kind === 'SLOT_TAKEN') void notifyVoidedAfterPayment(booking.id);
     else {
-      void dispatchCardReceiptIfDue(booking.id);
+      void dispatchReceiptIfDue(booking.id);
       void dispatchRegistrationConfirmationIfDue(booking.id);
     }
     return { ok: true, redirectUrl: returnUrl };
