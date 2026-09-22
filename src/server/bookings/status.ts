@@ -59,6 +59,32 @@ export function bookingHoldsSeat(b: HasStatus): boolean {
   );
 }
 
+/* ─────────────────── Deletion ─────────────────── */
+
+/** Minimal shape for the deletion predicates. */
+type MaybeDeleted = { deletedAt?: string | null };
+
+/** Hidden from the host's lists but still in the store. */
+export function bookingIsDeleted(b: MaybeDeleted): boolean {
+  return Boolean(b.deletedAt);
+}
+
+/**
+ * May the host delete this booking?
+ *
+ * Exactly when it holds no seat. A CONFIRMED booking is somebody's place:
+ * deleting it would erase the person while their seat, their registration and
+ * possibly their payment carried on existing — so it has to be cancelled
+ * first, which releases the seat, and only then deleted.
+ *
+ * The rule falls out of `bookingHoldsSeat`, which is also why deleting can
+ * never move a financial figure: every status it admits (CANCELLED, REFUNDED,
+ * PENDING_PAYMENT) is already excluded from `bookingCountsAsRevenue`.
+ */
+export function bookingCanBeDeleted(b: HasStatus): boolean {
+  return !bookingHoldsSeat(b);
+}
+
 /**
  * Public guest checkout (no Metwork account) is allowed ONLY for programs.
  * Spaces, events and consultations require a Metwork account and must pass

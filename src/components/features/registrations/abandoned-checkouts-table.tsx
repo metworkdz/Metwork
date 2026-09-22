@@ -13,7 +13,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ChevronDown, ChevronUp, Phone, Mail, Loader2, RotateCcw } from 'lucide-react';
+import { ChevronDown, ChevronUp, Phone, Mail, Loader2, RotateCcw, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { questionLabel } from '@/lib/registration-question';
@@ -28,6 +28,8 @@ interface AbandonedCheckout {
   answers: Array<{ fieldId: string; value: string | string[] }>;
   lastAttemptAt: string;
   attempts: number;
+  /** Every attempt by this person — all of them go when the row is deleted. */
+  bookingIds: string[];
 }
 
 interface Props {
@@ -44,6 +46,7 @@ export function AbandonedCheckoutsTable({
   const t = useTranslations('abandonedCheckouts');
   const [items, setItems] = useState<AbandonedCheckout[] | null>(null);
   const [fields, setFields] = useState<RegistrationFormField[]>([]);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -58,6 +61,34 @@ export function AbandonedCheckoutsTable({
   }, [entityType, entityId, endpoint]);
 
   useEffect(() => { void load(); }, [load]);
+
+  /**
+   * Remove someone who never paid. Silent by design — these people abandoned a
+   * checkout, often paying properly on a second try, and an email about a
+   * booking they never completed is confusing at best. Every attempt goes, or
+   * the row reappears showing the previous one.
+   */
+  const remove = useCallback(async (item: AbandonedCheckout) => {
+    if (!confirm(t('confirmDelete', { name: item.fullName }))) return;
+    setDeleting(item.id);
+    try {
+      const results = await Promise.all(
+        item.bookingIds.map((id) =>
+          fetch(`/api/incubator/bookings/${id}`, { method: 'DELETE', credentials: 'include' })
+            .then((r) => r.ok)
+            .catch(() => false),
+        ),
+      );
+      if (results.every(Boolean)) {
+        setItems((prev) => (prev ?? []).filter((p) => p.id !== item.id));
+      } else {
+        // Partly removed: refetch rather than guess what survived.
+        await load();
+      }
+    } finally {
+      setDeleting(null);
+    }
+  }, [t, load]);
 
   if (items === null) {
     return (
@@ -87,7 +118,13 @@ export function AbandonedCheckoutsTable({
       ) : (
         <ul className="space-y-3">
           {items.map((item) => (
-            <AbandonedRow key={item.id} item={item} fields={fields} />
+            <AbandonedRow
+              key={item.id}
+              item={item}
+              fields={fields}
+              onDelete={remove}
+              deleting={deleting === item.id}
+            />
           ))}
         </ul>
       )}
@@ -98,9 +135,13 @@ export function AbandonedCheckoutsTable({
 function AbandonedRow({
   item,
   fields,
+  onDelete,
+  deleting,
 }: {
   item: AbandonedCheckout;
   fields: RegistrationFormField[];
+  onDelete: (item: AbandonedCheckout) => void | Promise<void>;
+  deleting: boolean;
 }) {
   const t = useTranslations('abandonedCheckouts');
   const tq = useTranslations();
@@ -122,11 +163,23 @@ function AbandonedRow({
         </div>
         {/* A second attempt usually means the payment FAILED rather than that
             they changed their mind — say so, it changes how you open the call. */}
-        {item.attempts > 1 && (
-          <span className="rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">
-            {t('attempts', { count: item.attempts })}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {item.attempts > 1 && (
+            <span className="rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">
+              {t('attempts', { count: item.attempts })}
+            </span>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-muted-foreground hover:text-destructive"
+            title={t('delete')}
+            loading={deleting}
+            onClick={() => void onDelete(item)}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        </div>
       </div>
 
       {/* The reason this page exists. Tap-to-call on a phone, one tap to mail. */}

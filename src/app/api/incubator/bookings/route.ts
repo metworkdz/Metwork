@@ -8,6 +8,7 @@ import { z, ZodError } from 'zod';
 import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db, type BookingRecord } from '@/server/db/store';
 import { checkSpaceAvailability } from '@/server/bookings/availability';
+import { bookingIsDeleted } from '@/server/bookings/status';
 import { holdDeskForBooking } from '@/server/spaces/availability';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
@@ -45,7 +46,7 @@ const manualBookingSchema = z.object({
 });
 
 /* ── GET ── */
-export async function GET() {
+export async function GET(req: NextRequest) {
   const guard = await requireApiRole(['INCUBATOR']);
   if (!guard.ok) return guard.response;
 
@@ -58,7 +59,12 @@ export async function GET() {
   const programIds = new Set((data.programs ?? []).filter((p) => p.incubatorId === inc.id).map((p) => p.id));
   const eventIds   = new Set((data.events   ?? []).filter((e) => e.incubatorId === inc.id).map((e) => e.id));
 
+  // `?view=deleted` answers the Deleted tab on the same endpoint. Everywhere
+  // else a deleted booking is simply absent — that is what deleting means.
+  const wantDeleted = new URL(req.url).searchParams.get('view') === 'deleted';
+
   const relevant = data.bookings.filter((b) => {
+    if (bookingIsDeleted(b) !== wantDeleted) return false;
     if (b.itemKind === 'SPACE'   && spaceIds.has(b.itemId))   return true;
     if (b.itemKind === 'PROGRAM' && programIds.has(b.itemId)) return true;
     if (b.itemKind === 'EVENT'   && eventIds.has(b.itemId))   return true;
@@ -83,6 +89,7 @@ export async function GET() {
         endsAt:          b.endsAt,
         createdAt:       b.createdAt,
         clientReference: b.clientReference,
+        deletedAt:       b.deletedAt ?? null,
         // Offline bookings carry the client on the record itself (no platform
         // user); online bookings resolve via the user map.
         customerName:    b.clientName  ?? user?.fullName ?? 'Unknown',

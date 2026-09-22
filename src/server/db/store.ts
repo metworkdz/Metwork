@@ -664,6 +664,23 @@ export interface BookingRecord {
   /** Receipt dedup guards — interim deposit receipt and final paid receipt. */
   depositReceiptSentAt?: string | null;
   finalReceiptSentAt?: string | null;
+
+  /**
+   * Hidden from the host's lists, kept in the store.
+   *
+   * A booking is a money record, so removing the row outright would erase the
+   * only evidence of a payment or a duplicate attempt. Deleting hides it and
+   * moves it to the Deleted tab, where it can be restored. Only a booking that
+   * holds NO seat can be deleted (see `bookingCanBeDeleted`) — which also
+   * means a deleted booking never counted toward revenue, so hiding it cannot
+   * move a financial figure.
+   *
+   * Additive and nullable: every booking written before this behaves as "not
+   * deleted".
+   */
+  deletedAt?: string | null;
+  /** Who deleted it — the acting user's id, for the audit trail. */
+  deletedBy?: string | null;
   /**
    * Dedup guard — operator refund alert sent for a card booking that was paid
    * online but VOIDED because the slot was taken at settlement

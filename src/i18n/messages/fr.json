@@ -1175,7 +1175,13 @@
       "cancelUnpaid": "Annuler",
       "filterAwaitingApproval": "En attente d'approbation",
       "filterApprovedUnpaid": "Approuvée — impayée",
-      "paidAtOffice": "Payé sur place : {amount}"
+      "paidAtOffice": "Payé sur place : {amount}",
+      "tabActive": "Actives",
+      "tabDeleted": "Supprimées",
+      "delete": "Supprimer",
+      "restore": "Restaurer",
+      "confirmDelete": "Supprimer cette réservation ? Elle passe dans l’onglet Supprimées et peut être restaurée.",
+      "deleteFailed": "Impossible de supprimer cette réservation."
     },
     "clients": {
       "editTitle": "Modifier le client",
@@ -1399,7 +1405,10 @@
       "deleteDescription": "Cette action supprime définitivement la réservation pour « {item} ». Le client sera informé de l'annulation par e-mail. Cette action est irréversible.",
       "deleteConfirm": "Supprimer la réservation",
       "errorEndAfterStart": "La fin doit être postérieure au début.",
-      "errorGeneric": "Une erreur s'est produite. Veuillez réessayer."
+      "errorGeneric": "Une erreur s'est produite. Veuillez réessayer.",
+      "restore": "Restaurer",
+      "deleteBody": "Elle passe dans la vue Supprimées et peut être restaurée. L’enregistrement est conservé.",
+      "deleteNotify": "Prévenir le client par e-mail que sa réservation a été retirée."
     },
     "eventForm": {
       "addEvent": "Ajouter un événement",
@@ -2553,7 +2562,9 @@
           "confirmDecline": "Confirmer le refus",
           "reasonSpaceUnavailable": "Espace indisponible",
           "reasonSpaceClosed": "Espace fermé",
-          "reasonOther": "Autre"
+          "reasonOther": "Autre",
+          "tabActive": "Actives",
+          "tabDeleted": "Supprimées"
         },
         "members": {
           "title": "Membres",
@@ -5456,6 +5467,8 @@
     "viewAnswers": "Voir ses {count} réponses",
     "hideAnswers": "Masquer les réponses",
     "emptyTitle": "Personne n’est bloqué au paiement",
-    "emptyBody": "Toute personne qui commence le paiement sans le terminer apparaîtra ici, avec son numéro de téléphone."
+    "emptyBody": "Toute personne qui commence le paiement sans le terminer apparaîtra ici, avec son numéro de téléphone.",
+    "delete": "Retirer de la liste",
+    "confirmDelete": "Retirer {name} ? Toutes ses tentatives non payées sont supprimées et aucun e-mail ne lui est envoyé."
   }
 }

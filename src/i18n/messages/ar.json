@@ -1175,7 +1175,13 @@
       "cancelUnpaid": "إلغاء",
       "filterAwaitingApproval": "في انتظار الموافقة",
       "filterApprovedUnpaid": "موافَق عليه — غير مدفوع",
-      "paidAtOffice": "المدفوع في المكتب: {amount}"
+      "paidAtOffice": "المدفوع في المكتب: {amount}",
+      "tabActive": "النشطة",
+      "tabDeleted": "المحذوفة",
+      "delete": "حذف",
+      "restore": "استعادة",
+      "confirmDelete": "حذف هذا الحجز؟ ينتقل إلى تبويب «المحذوفة» ويمكن استعادته.",
+      "deleteFailed": "تعذّر حذف هذا الحجز."
     },
     "clients": {
       "editTitle": "تعديل العميل",
@@ -1399,7 +1405,10 @@
       "deleteDescription": "سيؤدي هذا إلى حذف الحجز الخاص بـ «{item}» نهائياً. سيتم إعلام العميل بالإلغاء عبر البريد الإلكتروني. لا يمكن التراجع عن هذا الإجراء.",
       "deleteConfirm": "حذف الحجز",
       "errorEndAfterStart": "يجب أن يكون وقت الانتهاء بعد وقت البدء.",
-      "errorGeneric": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+      "errorGeneric": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+      "restore": "استعادة",
+      "deleteBody": "ينتقل إلى عرض «المحذوفة» ويمكن استعادته. يبقى السجل محفوظاً.",
+      "deleteNotify": "إبلاغ العميل بالبريد بأن حجزه أُزيل."
     },
     "eventForm": {
       "addEvent": "إضافة فعالية",
@@ -2553,7 +2562,9 @@
           "confirmDecline": "تأكيد الرفض",
           "reasonSpaceUnavailable": "المساحة غير متاحة",
           "reasonSpaceClosed": "المساحة مغلقة",
-          "reasonOther": "أخرى"
+          "reasonOther": "أخرى",
+          "tabActive": "النشطة",
+          "tabDeleted": "المحذوفة"
         },
         "members": {
           "title": "الأعضاء",
@@ -5456,6 +5467,8 @@
     "viewAnswers": "عرض إجاباته ({count})",
     "hideAnswers": "إخفاء الإجابات",
     "emptyTitle": "لا أحد متوقف عند الدفع",
-    "emptyBody": "كل من يبدأ الدفع ولا يُكمله سيظهر هنا مع رقم هاتفه."
+    "emptyBody": "كل من يبدأ الدفع ولا يُكمله سيظهر هنا مع رقم هاتفه.",
+    "delete": "إزالة من القائمة",
+    "confirmDelete": "إزالة {name}؟ تُحذف كل محاولاته غير المدفوعة ولا تُرسَل إليه أي رسالة."
   }
 }

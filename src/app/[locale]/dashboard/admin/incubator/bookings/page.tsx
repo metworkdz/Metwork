@@ -3,6 +3,7 @@ import { requireRole } from '@/lib/auth-guards';
 import { getOrCreateAdminIncubator } from '@/lib/admin-incubator';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { BookingsManager } from '@/components/features/incubator/bookings-manager';
+import { bookingIsDeleted } from '@/server/bookings/status';
 import { applicableTemplates } from '@/server/contracts/service';
 import { db, type BookingRecord } from '@/server/db/store';
 
@@ -43,8 +44,10 @@ export default async function AdminIncubatorBookingsPage({ params }: PageProps) 
   const bookings: BookingWithCustomer[] = data.bookings
     .filter(
       (b) =>
-        (b.itemKind === 'SPACE' && ownedSpaceIds.has(b.itemId)) ||
-        (b.itemKind === 'PROGRAM' && ownedProgramIds.has(b.itemId)),
+        // Deleted bookings are hidden here too — the incubator hid them.
+        !bookingIsDeleted(b) &&
+        ((b.itemKind === 'SPACE' && ownedSpaceIds.has(b.itemId)) ||
+         (b.itemKind === 'PROGRAM' && ownedProgramIds.has(b.itemId))),
     )
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map((b) => {

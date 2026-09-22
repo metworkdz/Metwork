@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Building2, Briefcase, Calendar, CheckCircle2, XCircle, ReceiptText, Wifi, WifiOff, Banknote } from 'lucide-react';
+import { Building2, Briefcase, Calendar, CheckCircle2, XCircle, ReceiptText, Wifi, WifiOff, Banknote, Trash2, Undo2, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,7 +19,7 @@ import { StatCard } from '@/components/shared/stat-card';
 import { ReceiptModal } from './receipt-modal';
 import { ManualBookingForm } from './manual-booking-form';
 import { DownloadContractButton } from './download-contract-button';
-import { bookingCountsAsRevenue } from '@/server/bookings/status';
+import { bookingCountsAsRevenue, bookingCanBeDeleted } from '@/server/bookings/status';
 import type { BookingRecord, IncubatorRecord, IncubatorSpaceRecord, IncubatorProgramRecord } from '@/server/db/store';
 
 type BookingWithCustomer = BookingRecord & {
@@ -64,6 +64,62 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
   const [receiptBookingId, setReceiptBookingId] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('ALL');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  /**
+   * The Deleted tab is a separate fetch rather than a filter over `bookings`:
+   * deleted rows never arrive in the page's payload, which is the point.
+   */
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [deleted, setDeleted] = useState<BookingWithCustomer[] | null>(null);
+
+  async function openDeleted() {
+    setShowDeleted(true);
+    if (deleted !== null) return;
+    try {
+      const res = await fetch('/api/incubator/bookings?view=deleted', { credentials: 'include' });
+      const body = await res.json().catch(() => null);
+      setDeleted(res.ok ? (body?.items ?? []) : []);
+    } catch {
+      setDeleted([]);
+    }
+  }
+
+  async function removeBooking(id: string) {
+    if (!confirm(t('confirmDelete'))) return;
+    setBusy(id);
+    try {
+      const res = await fetch(`/api/incubator/bookings/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null) as { error?: { message?: string } } | null;
+        alert(body?.error?.message ?? t('deleteFailed'));
+        return;
+      }
+      const moved = bookings.find((b) => b.id === id);
+      setBookings((prev) => prev.filter((b) => b.id !== id));
+      // Keep the Deleted tab honest without refetching it.
+      if (moved && deleted !== null) setDeleted((prev) => [moved, ...(prev ?? [])]);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function restore(id: string) {
+    setBusy(id);
+    try {
+      const res = await fetch(`/api/incubator/bookings/${id}`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) return;
+      const moved = deleted?.find((b) => b.id === id);
+      setDeleted((prev) => (prev ?? []).filter((b) => b.id !== id));
+      if (moved) setBookings((prev) => [moved, ...prev]);
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function updateStatus(id: string, status: 'CONFIRMED' | 'CANCELLED') {
     setBusy(id);
@@ -117,6 +173,9 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
   }
 
   const filtered = useMemo(() => {
+    // The Deleted tab shows exactly what was deleted — the status and source
+    // filters belong to the live list and would only hide rows confusingly.
+    if (showDeleted) return deleted ?? [];
     return bookings.filter((b) => {
       if (sourceFilter !== 'ALL') {
         const src = b.source ?? 'online';
@@ -125,7 +184,7 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
       if (statusFilter !== 'ALL' && b.status !== statusFilter) return false;
       return true;
     });
-  }, [bookings, sourceFilter, statusFilter]);
+  }, [bookings, sourceFilter, statusFilter, showDeleted, deleted]);
 
   const pending = bookings.filter((b) => b.status === 'PENDING').length;
   const confirmed = bookings.filter((b) => b.status === 'CONFIRMED').length;
@@ -142,8 +201,36 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
         <StatCard label={t('statTotalRevenue')} value={`${gross.toLocaleString()} DZD`} icon={ReceiptText} hint={t('statTotalRevenueHint')} />
       </div>
 
+      {/* Live list ↔ Deleted */}
+      <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1">
+        <button
+          type="button"
+          onClick={() => setShowDeleted(false)}
+          aria-pressed={!showDeleted}
+          className={`flex min-h-8 items-center gap-2 rounded-md px-3 text-sm font-medium transition-colors ${
+            showDeleted ? 'text-muted-foreground hover:text-foreground' : 'bg-background text-foreground shadow-sm'
+          }`}
+        >
+          {t('tabActive')}
+        </button>
+        <button
+          type="button"
+          onClick={() => void openDeleted()}
+          aria-pressed={showDeleted}
+          className={`flex min-h-8 items-center gap-2 rounded-md px-3 text-sm font-medium transition-colors ${
+            showDeleted ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Trash2 className="size-3.5" />
+          {t('tabDeleted')}
+          {deleted !== null && (
+            <span className="rounded-full bg-muted px-1.5 text-xs tabular-nums">{deleted.length}</span>
+          )}
+        </button>
+      </div>
+
       {/* Filters + actions */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className={`flex flex-wrap items-center gap-2 ${showDeleted ? 'hidden' : ''}`}>
         <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as SourceFilter)}>
           <SelectTrigger className="h-8 w-36 text-xs">
             <SelectValue />
@@ -184,7 +271,11 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
 
       <Card>
         <CardContent className="p-0">
-          {filtered.length === 0 ? (
+          {showDeleted && deleted === null ? (
+            <div className="flex justify-center py-10 text-muted-foreground">
+              <Loader2 className="size-5 animate-spin" />
+            </div>
+          ) : filtered.length === 0 ? (
             <InlineEmptyState
               title={bookings.length === 0 ? t('emptyTitle') : t('emptyTitleFiltered')}
               description={bookings.length === 0 ? t('emptyDescription') : t('emptyDescriptionFiltered')}
@@ -338,6 +429,24 @@ export function BookingsManager({ initial, incubator, spaces, programs }: Props)
                                 onClick={() => setReceiptBookingId(b.id)}>
                                 <ReceiptText className="size-4" />
                               </Button>
+                            )}
+                            {showDeleted ? (
+                              <Button size="icon" variant="ghost" title={t('restore')}
+                                disabled={busy === b.id}
+                                onClick={() => restore(b.id)}>
+                                <Undo2 className="size-4" />
+                              </Button>
+                            ) : (
+                              // Only a booking holding no seat: a confirmed one
+                              // is somebody's place and must be cancelled first.
+                              bookingCanBeDeleted(b) && (
+                                <Button size="icon" variant="ghost" title={t('delete')}
+                                  className="text-destructive hover:text-destructive"
+                                  disabled={busy === b.id}
+                                  onClick={() => removeBooking(b.id)}>
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              )
                             )}
                           </div>
                         </TableCell>

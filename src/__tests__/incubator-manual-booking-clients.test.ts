@@ -105,7 +105,8 @@ describe('A) manual booking — POST /api/incubator/bookings', () => {
     const { POST, GET } = await import('@/app/api/incubator/bookings/route');
     await POST(bookingsReq(payload));
 
-    const res = await GET();
+    // GET now reads ?view= so the Deleted tab can share this endpoint.
+    const res = await GET(new NextRequest('http://localhost/api/incubator/bookings'));
     const { items } = await res.json();
     expect(items).toHaveLength(1);
     expect(items[0].customerName).toBe('Walk-in Client');

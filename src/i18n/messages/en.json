@@ -1175,7 +1175,13 @@
       "cancelUnpaid": "Cancel",
       "filterAwaitingApproval": "Awaiting approval",
       "filterApprovedUnpaid": "Approved — unpaid",
-      "paidAtOffice": "Paid at the office: {amount}"
+      "paidAtOffice": "Paid at the office: {amount}",
+      "tabActive": "Active",
+      "tabDeleted": "Deleted",
+      "delete": "Delete",
+      "restore": "Restore",
+      "confirmDelete": "Delete this booking? It moves to the Deleted tab and can be restored.",
+      "deleteFailed": "Could not delete this booking."
     },
     "clients": {
       "editTitle": "Edit client",
@@ -1399,7 +1405,10 @@
       "deleteDescription": "This permanently removes the booking for \"{item}\". The client will be emailed that it was cancelled. This can't be undone.",
       "deleteConfirm": "Delete booking",
       "errorEndAfterStart": "End must be after start.",
-      "errorGeneric": "Something went wrong. Please try again."
+      "errorGeneric": "Something went wrong. Please try again.",
+      "restore": "Restore",
+      "deleteBody": "It moves to the Deleted view and can be restored. The record itself is kept.",
+      "deleteNotify": "Tell the client by email that their booking was removed."
     },
     "eventForm": {
       "addEvent": "Add event",
@@ -2553,7 +2562,9 @@
           "confirmDecline": "Confirm decline",
           "reasonSpaceUnavailable": "Space unavailable",
           "reasonSpaceClosed": "Space closed",
-          "reasonOther": "Other"
+          "reasonOther": "Other",
+          "tabActive": "Active",
+          "tabDeleted": "Deleted"
         },
         "members": {
           "title": "Members",
@@ -5456,6 +5467,8 @@
     "viewAnswers": "See their {count} answers",
     "hideAnswers": "Hide answers",
     "emptyTitle": "Nobody is stuck at payment",
-    "emptyBody": "Anyone who starts checkout and does not finish will appear here, with their phone number."
+    "emptyBody": "Anyone who starts checkout and does not finish will appear here, with their phone number.",
+    "delete": "Remove from the list",
+    "confirmDelete": "Remove {name}? Every unpaid attempt of theirs is deleted and they are NOT emailed."
   }
 }

@@ -30,6 +30,9 @@ import {
   newPaymentLinkToken,
   hashPaymentLinkToken,
 } from '@/server/bookings/request-mode';
+import {
+  softDeleteBooking, restoreBooking, deleteNotifiesClient,
+} from '@/server/bookings/soft-delete';
 
 type StoreData = Parameters<Parameters<typeof db.update>[0]>[0];
 
@@ -612,8 +615,68 @@ export async function PUT(
   return json({ booking: result.booking });
 }
 
-/* ── DELETE — remove a manual/offline booking ── */
+/* ── DELETE — hide a booking from the lists ── */
+
+/**
+ * Soft delete. This used to splice the row out of the store and was refused
+ * for anything that was not a manual booking — so the rows a host actually
+ * wants gone (a cancelled reservation, a duplicate attempt from someone who
+ * paid on their second try) could not be removed at all, while the one row it
+ * did remove took its payment evidence with it.
+ *
+ * `?notify=true` emails the client. The default is silence, and an unpaid
+ * attempt is ALWAYS silent — see `deleteNotifiesClient`.
+ */
 export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const guard = await requireApprovedApiRole(['INCUBATOR']);
+  if (!guard.ok) return guard.response;
+  const { id } = await params;
+
+  const inc = (await db.read()).incubators.find((i) => i.managerId === guard.user.id);
+  if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile');
+
+  // Read it before it is hidden — the cancellation email needs the details.
+  const before = (await db.read()).bookings.find((b) => b.id === id);
+  const notifyAsked = new URL(req.url).searchParams.get('notify') === 'true';
+
+  const result = await softDeleteBooking(
+    id,
+    { kind: 'INCUBATOR', incubatorId: inc.id },
+    guard.user.id,
+  );
+
+  if (!result.ok) {
+    switch (result.reason) {
+      case 'NOT_FOUND':       return jsonError(404, 'NOT_FOUND', 'Booking not found');
+      case 'ALREADY_DELETED': return jsonError(409, 'ALREADY_DELETED', 'Booking is already deleted');
+      case 'HOLDS_SEAT':      return jsonError(
+        409, 'HOLDS_SEAT',
+        'Cette réservation occupe encore une place. Annulez-la d\u2019abord, puis supprimez-la.',
+      );
+    }
+  }
+
+  if (before && deleteNotifiesClient(before, notifyAsked) && before.clientEmail) {
+    await sendBookingProviderCancelledEmail(
+      before.clientEmail,
+      {
+        customerName: before.clientName ?? 'Client',
+        bookingId:    before.id,
+        itemName:     before.itemName,
+        vendorName:   before.vendorName ?? inc.name,
+      },
+      'fr',
+    );
+  }
+
+  return json({ ok: true, booking: result.booking });
+}
+
+/* ── POST — restore a deleted booking ── */
+export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -621,60 +684,14 @@ export async function DELETE(
   if (!guard.ok) return guard.response;
   const { id } = await params;
 
-  const result = await db.update((d) => {
-    const incubator = d.incubators.find((i) => i.managerId === guard.user.id);
-    if (!incubator) return 'NO_INCUBATOR' as const;
+  const inc = (await db.read()).incubators.find((i) => i.managerId === guard.user.id);
+  if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile');
 
-    const idx = d.bookings.findIndex((b) => b.id === id);
-    if (idx === -1) return 'NOT_FOUND' as const;
-    const booking = d.bookings[idx]!;
-    if (!bookingOwnedByIncubator(d, incubator.id, booking)) return 'FORBIDDEN' as const;
-    if (!isManualBooking(booking)) return 'NOT_DELETABLE' as const;
-
-    // Capture for the cancellation email before removing the record. A manual
-    // booking has no transactions/wallet movements, so there is nothing to
-    // reverse — the booking IS the only record.
-    const captured = {
-      bookingId:     booking.id,
-      itemName:      booking.itemName,
-      customerEmail: booking.clientEmail ?? '',
-      customerName:  booking.clientName ?? 'Unknown',
-      vendorName:    booking.vendorName ?? incubator.name,
-    };
-    // Release any desk/office holds this manual booking placed — otherwise the
-    // unit stays blocked forever after the parent booking is deleted.
-    for (const desk of d.deskBookings ?? []) {
-      if (desk.bookingId === booking.id && desk.status !== 'CANCELLED') {
-        desk.status = 'CANCELLED';
-      }
-    }
-    d.bookings.splice(idx, 1);
-    return captured;
-  });
-
-  if (typeof result === 'string') {
-    switch (result) {
-      case 'NO_INCUBATOR':  return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile');
-      case 'NOT_FOUND':     return jsonError(404, 'NOT_FOUND', 'Booking not found');
-      case 'FORBIDDEN':     return jsonError(403, 'FORBIDDEN', 'Not your booking');
-      case 'NOT_DELETABLE': return jsonError(409, 'NOT_DELETABLE', 'Only manual (offline) bookings can be deleted');
-      default:              return jsonError(400, 'BAD_REQUEST', result);
-    }
+  const result = await restoreBooking(id, { kind: 'INCUBATOR', incubatorId: inc.id });
+  if (!result.ok) {
+    return result.reason === 'NOT_FOUND'
+      ? jsonError(404, 'NOT_FOUND', 'Booking not found')
+      : jsonError(409, 'NOT_DELETED', 'Booking is not deleted');
   }
-
-  // Notify the client their booking was cancelled (manual → French).
-  if (result.customerEmail) {
-    await sendBookingProviderCancelledEmail(
-      result.customerEmail,
-      {
-        customerName: result.customerName,
-        bookingId:    result.bookingId,
-        itemName:     result.itemName,
-        vendorName:   result.vendorName,
-      },
-      'fr',
-    );
-  }
-
-  return json({ ok: true });
+  return json({ ok: true, booking: result.booking });
 }

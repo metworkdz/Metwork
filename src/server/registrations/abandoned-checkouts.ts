@@ -17,7 +17,7 @@
  * here on.
  */
 import { db, type BookingRecord } from '@/server/db/store';
-import { bookingHoldsSeat } from '@/server/bookings/status';
+import { bookingHoldsSeat, bookingIsDeleted } from '@/server/bookings/status';
 import { listRegistrations, type OwnerScope } from '@/server/registrations/service';
 
 export interface AbandonedCheckout {
@@ -33,6 +33,12 @@ export interface AbandonedCheckout {
   answers: Array<{ fieldId: string; value: string | string[] }>;
   /** When they last tried. */
   lastAttemptAt: string;
+  /**
+   * EVERY attempt by this person, newest first. Deleting one row has to
+   * remove all of them — remove only the latest and the row comes straight
+   * back showing the previous attempt.
+   */
+  bookingIds: string[];
   /**
    * How many times this person started checkout. More than one usually means
    * the payment FAILED rather than that they changed their mind — worth
@@ -76,6 +82,9 @@ export async function listAbandonedCheckouts(
 
   for (const booking of data.bookings ?? []) {
     if (booking.itemKind !== entityType || booking.itemId !== entityId) continue;
+    // Deleted means gone from the host's lists, and this is one of them —
+    // it is also the list the duplicates are deleted FROM.
+    if (bookingIsDeleted(booking)) continue;
     // `bookingHoldsSeat` is the single source of truth for "this is live".
     // An unpaid intent is the one booking state it excludes — which is exactly
     // the set we want.
@@ -95,6 +104,7 @@ export async function listAbandonedCheckouts(
     if (!existing) {
       byPerson.set(key, {
         id: booking.id,
+        bookingIds: [booking.id],
         fullName: booking.clientName ?? '—',
         email: booking.clientEmail ?? '',
         phone: booking.clientPhone ?? '',
@@ -107,6 +117,7 @@ export async function listAbandonedCheckouts(
     }
 
     existing.attempts += 1;
+    existing.bookingIds.push(booking.id);
     // Keep the LATEST attempt's details: a second try may carry a corrected
     // phone number or a different price after a promo code.
     if (booking.createdAt > existing.lastAttemptAt) {

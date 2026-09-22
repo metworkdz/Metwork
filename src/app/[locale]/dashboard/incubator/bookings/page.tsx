@@ -1,5 +1,6 @@
 import { setRequestLocale, getLocale, getTranslations } from 'next-intl/server';
-import { Banknote, Calendar, Briefcase, Building2, CreditCard } from 'lucide-react';
+import { Banknote, Calendar, Briefcase, Building2, CreditCard, Trash2 } from 'lucide-react';
+import { Link } from '@/i18n/routing';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -19,13 +20,14 @@ import { ManualBookingDialog } from '@/components/features/incubator/manual-book
 import { CancelUnpaidButton } from '@/components/features/incubator/cancel-unpaid-button';
 import { RequestApprovalButtons } from '@/components/features/incubator/request-approval-buttons';
 import { BookingRowActions } from '@/components/features/incubator/booking-row-actions';
+import { BookingDeleteButton } from '@/components/features/incubator/booking-delete-button';
 import { DownloadContractButton } from '@/components/features/incubator/download-contract-button';
 import { MarkCashPaidButton } from '@/components/features/incubator/mark-cash-paid-button';
 import { applicableTemplates } from '@/server/contracts/service';
 import { requireRole } from '@/lib/auth-guards';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
-import { bookingCountsAsRevenue } from '@/server/bookings/status';
+import { bookingCountsAsRevenue, bookingIsDeleted, bookingCanBeDeleted } from '@/server/bookings/status';
 import { db } from '@/server/db/store';
 import type { BookingStatus } from '@/types/domain';
 import type { Locale } from '@/i18n/config';
@@ -34,6 +36,8 @@ export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
+  /** `?view=deleted` shows what was deleted instead of the live list. */
+  searchParams: Promise<{ view?: string }>;
 }
 
 const kindIcon: Record<'SPACE' | 'PROGRAM' | 'EVENT', React.ReactNode> = {
@@ -60,6 +64,10 @@ interface IncubatorBookingRow {
   customerPhone: string;
   // Manual/offline bookings can be edited or deleted by the incubator.
   isManual: boolean;
+  /** Holds no seat → the host may delete it (see bookingCanBeDeleted). */
+  canDelete: boolean;
+  /** Telling the client is only meaningful when they knew about it. */
+  canNotifyOnDelete: boolean;
   /** Cash still owed, and how much has already been handed over. */
   balanceDue: number;
   paidAlready: number;
@@ -71,8 +79,10 @@ interface IncubatorBookingRow {
   contractTemplates: { id: string; name: string }[];
 }
 
-export default async function IncubatorBookingsPage({ params }: PageProps) {
+export default async function IncubatorBookingsPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
+  const { view } = await searchParams;
+  const showDeleted = view === 'deleted';
   setRequestLocale(locale);
   const t    = await getTranslations('pages.dashboard.incubator.bookings');
   // The cash-balance strings live with the other booking-money copy.
@@ -107,6 +117,8 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
     const myTemplates = (data.contractTemplates ?? []).filter((c) => c.incubatorId === inc.id);
 
     const relevant = data.bookings.filter((b) => {
+      // The Deleted view is the same table over the other set of rows.
+      if (bookingIsDeleted(b) !== showDeleted) return false;
       if (b.itemKind === 'SPACE'   && spaceIds.has(b.itemId))   return true;
       if (b.itemKind === 'PROGRAM' && programIds.has(b.itemId)) return true;
       if (b.itemKind === 'EVENT'   && eventIds.has(b.itemId))   return true;
@@ -133,6 +145,10 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
           customerEmail: customer?.email    ?? b.clientEmail ?? '',
           customerPhone: customer?.phone    ?? b.clientPhone ?? '',
           isManual:      b.source === 'offline' || b.paymentMethod === 'manual',
+          canDelete:         bookingCanBeDeleted(b),
+          // An unpaid attempt is always deleted silently — the server enforces
+          // this too; here it just keeps the option off the screen.
+          canNotifyOnDelete: b.status !== 'PENDING_PAYMENT',
           // A cash leg exists on a card deposit AND on a desk sale. The money
           // already in hand comes from a different field on each, because one
           // went through a card rail and the other did not.
@@ -196,7 +212,29 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* Live list ↔ Deleted. Plain links: the page is server-rendered, so
+          the view belongs in the URL rather than in client state. */}
+      <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1">
+        <Link
+          href="/dashboard/incubator/bookings"
+          className={`flex min-h-8 items-center rounded-md px-3 text-sm font-medium transition-colors ${
+            showDeleted ? 'text-muted-foreground hover:text-foreground' : 'bg-background text-foreground shadow-sm'
+          }`}
+        >
+          {t('tabActive')}
+        </Link>
+        <Link
+          href="/dashboard/incubator/bookings?view=deleted"
+          className={`flex min-h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors ${
+            showDeleted ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Trash2 className="size-3.5" />
+          {t('tabDeleted')}
+        </Link>
+      </div>
+
+      <div className={`grid gap-4 sm:grid-cols-3 ${showDeleted ? 'hidden' : ''}`}>
         <StatCard label={t('statUpcoming')} value={upcoming} icon={Calendar} />
         <StatCard
           label={t('statAwaiting')}
@@ -320,7 +358,14 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                             {b.status === 'AWAITING_APPROVAL' && (
                               <RequestApprovalButtons bookingId={b.id} />
                             )}
-                            {b.isManual && (
+                            {(b.canDelete || showDeleted) && (
+                              <BookingDeleteButton
+                                bookingId={b.id}
+                                deleted={showDeleted}
+                                canNotify={b.canNotifyOnDelete}
+                              />
+                            )}
+                            {b.isManual && !showDeleted && (
                               <BookingRowActions
                                 booking={{
                                   id:          b.id,
@@ -407,6 +452,7 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
 
                     {(b.awaitingCash || b.status === 'PENDING_PAYMENT' ||
                       b.status === 'AWAITING_APPROVAL' || b.isManual ||
+                      b.canDelete || showDeleted ||
                       b.itemKind === 'SPACE') && (
                       <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-border/60 pt-3">
                         {b.itemKind === 'SPACE' && (
@@ -415,7 +461,14 @@ export default async function IncubatorBookingsPage({ params }: PageProps) {
                         {b.awaitingCash && <MarkCashPaidButton bookingId={b.id} />}
                         {b.status === 'PENDING_PAYMENT' && <CancelUnpaidButton bookingId={b.id} />}
                         {b.status === 'AWAITING_APPROVAL' && <RequestApprovalButtons bookingId={b.id} />}
-                        {b.isManual && (
+                        {(b.canDelete || showDeleted) && (
+                          <BookingDeleteButton
+                            bookingId={b.id}
+                            deleted={showDeleted}
+                            canNotify={b.canNotifyOnDelete}
+                          />
+                        )}
+                        {b.isManual && !showDeleted && (
                           <BookingRowActions
                             booking={{
                               id: b.id, itemName: b.itemName, startsAt: b.startsAt,

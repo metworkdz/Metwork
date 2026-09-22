@@ -36,7 +36,7 @@ const SPACE_ID = '11111111-1111-4111-8111-111111111111';
 const MANUAL_ID = 'bk-manual-1';
 const ONLINE_ID = 'bk-online-1';
 
-function req(id: string, method: 'PUT' | 'DELETE', body?: Record<string, unknown>) {
+function req(id: string, method: 'PUT' | 'DELETE' | 'POST', body?: Record<string, unknown>) {
   return new NextRequest(`http://localhost/api/incubator/bookings/${id}`, {
     method,
     headers: { 'content-type': 'application/json' },
@@ -121,27 +121,94 @@ describe('PUT — edit manual booking', () => {
   });
 });
 
-describe('DELETE — remove manual booking', () => {
-  it('removes the booking and emails the client', async () => {
+describe('DELETE — hide a booking from the lists', () => {
+  /**
+   * DELETE used to splice the row out and was allowed only for a manual
+   * booking. It is now a soft delete, and what it admits is decided by the
+   * SEAT, not by how the booking was made: a confirmed booking is somebody's
+   * place and has to be cancelled first, whoever created it.
+   */
+  it('refuses a confirmed booking, manual or not — cancel it first', async () => {
+    const { DELETE } = await import('@/app/api/incubator/bookings/[id]/route');
+    for (const id of [MANUAL_ID, ONLINE_ID]) {
+      const res = await DELETE(req(id, 'DELETE'), ctx(id));
+      expect(res.status).toBe(409);
+      expect((await res.json()).error.code).toBe('HOLDS_SEAT');
+      expect((await db.read()).bookings.find((b) => b.id === id)!.deletedAt).toBeFalsy();
+    }
+  });
+
+  it('hides a cancelled booking without destroying it', async () => {
+    await db.update((d) => {
+      const b = d.bookings.find((x) => x.id === MANUAL_ID)!;
+      b.status = 'CANCELLED';
+    });
     const { DELETE } = await import('@/app/api/incubator/bookings/[id]/route');
     const res = await DELETE(req(MANUAL_ID, 'DELETE'), ctx(MANUAL_ID));
+
     expect(res.status).toBe(200);
-    expect((await db.read()).bookings.find((b) => b.id === MANUAL_ID)).toBeUndefined();
+    const stored = (await db.read()).bookings.find((b) => b.id === MANUAL_ID);
+    // Still there — a booking is a money record.
+    expect(stored).toBeDefined();
+    expect(stored!.deletedAt).toBeTruthy();
+  });
+
+  it('says nothing to the client unless asked', async () => {
+    await db.update((d) => {
+      d.bookings.find((x) => x.id === MANUAL_ID)!.status = 'CANCELLED';
+    });
+    const { DELETE } = await import('@/app/api/incubator/bookings/[id]/route');
+    await DELETE(req(MANUAL_ID, 'DELETE'), ctx(MANUAL_ID));
+    expect(sendBookingProviderCancelledEmail).not.toHaveBeenCalled();
+  });
+
+  it('emails the client when the host asks for it', async () => {
+    await db.update((d) => {
+      d.bookings.find((x) => x.id === MANUAL_ID)!.status = 'CANCELLED';
+    });
+    const { DELETE } = await import('@/app/api/incubator/bookings/[id]/route');
+    const res = await DELETE(
+      new NextRequest(`http://localhost/api/incubator/bookings/${MANUAL_ID}?notify=true`, { method: 'DELETE' }),
+      ctx(MANUAL_ID),
+    );
+    expect(res.status).toBe(200);
     expect(sendBookingProviderCancelledEmail).toHaveBeenCalledTimes(1);
   });
 
-  it('rejects deleting a non-manual (online) booking with 409', async () => {
+  it('never emails about an unpaid attempt, even when asked', async () => {
+    // The case the host asked for: duplicates from someone who paid once.
+    await db.update((d) => {
+      d.bookings.find((x) => x.id === MANUAL_ID)!.status = 'PENDING_PAYMENT';
+    });
     const { DELETE } = await import('@/app/api/incubator/bookings/[id]/route');
-    const res = await DELETE(req(ONLINE_ID, 'DELETE'), ctx(ONLINE_ID));
-    expect(res.status).toBe(409);
-    expect((await res.json()).error.code).toBe('NOT_DELETABLE');
-    expect((await db.read()).bookings.find((b) => b.id === ONLINE_ID)).toBeDefined();
+    const res = await DELETE(
+      new NextRequest(`http://localhost/api/incubator/bookings/${MANUAL_ID}?notify=true`, { method: 'DELETE' }),
+      ctx(MANUAL_ID),
+    );
+    expect(res.status).toBe(200);
+    expect(sendBookingProviderCancelledEmail).not.toHaveBeenCalled();
   });
 
-  it('returns 404 on a second delete (idempotent from the client view)', async () => {
+  it('refuses a second delete', async () => {
+    await db.update((d) => {
+      d.bookings.find((x) => x.id === MANUAL_ID)!.status = 'CANCELLED';
+    });
     const { DELETE } = await import('@/app/api/incubator/bookings/[id]/route');
     await DELETE(req(MANUAL_ID, 'DELETE'), ctx(MANUAL_ID));
     const res = await DELETE(req(MANUAL_ID, 'DELETE'), ctx(MANUAL_ID));
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(409);
+    expect((await res.json()).error.code).toBe('ALREADY_DELETED');
+  });
+
+  it('restores it', async () => {
+    await db.update((d) => {
+      d.bookings.find((x) => x.id === MANUAL_ID)!.status = 'CANCELLED';
+    });
+    const mod = await import('@/app/api/incubator/bookings/[id]/route');
+    await mod.DELETE(req(MANUAL_ID, 'DELETE'), ctx(MANUAL_ID));
+    const res = await mod.POST(req(MANUAL_ID, 'POST'), ctx(MANUAL_ID));
+
+    expect(res.status).toBe(200);
+    expect((await db.read()).bookings.find((b) => b.id === MANUAL_ID)!.deletedAt).toBeFalsy();
   });
 });
