@@ -207,6 +207,11 @@ export interface Registration {
   answers: Array<{ fieldId: string; value: string | string[] }>;
   status: RegistrationStatus;
   clientId: string | null;
+  /**
+   * The booking this registration was paid through, when there was one. A free
+   * registration has none — and nothing to resend a receipt for.
+   */
+  bookingId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

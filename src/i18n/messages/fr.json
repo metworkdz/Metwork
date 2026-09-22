@@ -5342,7 +5342,16 @@
       "errorRequiredField": "« {field} » est obligatoire — remplissez ce champ avant d’ajouter ce participant."
     },
     "delete": "Supprimer",
-    "deleteConfirm": "Supprimer définitivement cette inscription annulée ? Ses réponses seront perdues et cette action est irréversible."
+    "deleteConfirm": "Supprimer définitivement cette inscription annulée ? Ses réponses seront perdues et cette action est irréversible.",
+    "editTitle": "Modifier le participant",
+    "editDescription": "Corrigez le nom, l’e-mail ou le téléphone. Le reste demeure tel qu’il a été soumis.",
+    "editSave": "Enregistrer",
+    "editCancel": "Annuler",
+    "editFailed": "Impossible d’enregistrer les modifications.",
+    "resendTitle": "Renvoyer la confirmation",
+    "resendConfirm": "Renvoyer la confirmation et le reçu à ce participant ?",
+    "resendDone": "Envoyé.",
+    "resendFailed": "Échec de l’envoi."
   },
   "registrationDashboard": {
     "tabRegistrations": "Inscriptions",

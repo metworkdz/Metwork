@@ -648,6 +648,143 @@ export async function deleteRegistration(
   });
 }
 
+/* ─────────────────────────── Editing a registration ─────────────────────────── */
+
+export interface RegistrationPatch {
+  fullName?: string;
+  email?: string;
+  phone?: string;
+}
+
+export type UpdateRegistrationResult =
+  | { ok: true; registration: RegistrationRecord }
+  | { ok: false; reason: 'NOT_FOUND' | 'EMAIL_TAKEN' };
+
+/**
+ * Correct the person's name, email or phone — and nothing else.
+ *
+ * Not the answers, not the amount, not the status: this exists to fix a typo
+ * in a phone number, not to rewrite what somebody submitted.
+ *
+ * It writes BOTH records. A registration and its booking each carry the name
+ * and the email, and changing one would leave the other stale — the receipt
+ * would then go to the old address while the participants list showed the new
+ * one. One transaction, both rows.
+ *
+ * The guard that matters is EMAIL_TAKEN. Attendance de-duplicates by
+ * lowercased email, so editing one registration's address to match another's
+ * on the same listing would silently merge two participants into one seat.
+ */
+export async function updateRegistration(
+  id: string,
+  owner: OwnerScope,
+  patch: RegistrationPatch,
+): Promise<UpdateRegistrationResult> {
+  return db.update<UpdateRegistrationResult>((d) => {
+    const idx = (d.registrations ?? []).findIndex((r) => r.id === id && ownedBy(r, owner));
+    // Scoped: another owner's row is simply not found, never "forbidden".
+    if (idx === -1) return { ok: false, reason: 'NOT_FOUND' };
+
+    const row = d.registrations[idx]!;
+    const nextEmail = patch.email?.trim().toLowerCase();
+
+    if (nextEmail && nextEmail !== row.email.trim().toLowerCase()) {
+      const clash = (d.registrations ?? []).some(
+        (r) =>
+          r.id !== row.id &&
+          r.entityType === row.entityType &&
+          r.entityId === row.entityId &&
+          r.status !== 'CANCELLED' &&
+          r.email.trim().toLowerCase() === nextEmail,
+      );
+      if (clash) return { ok: false, reason: 'EMAIL_TAKEN' };
+    }
+
+    const now = new Date().toISOString();
+    if (patch.fullName !== undefined) row.fullName = patch.fullName.trim();
+    if (nextEmail !== undefined) row.email = nextEmail;
+    if (patch.phone !== undefined) row.phone = patch.phone.trim();
+    row.updatedAt = now;
+
+    // The booking carries its own copy of the person. On a paid booking the
+    // name is part of a financial record, which is the other reason both
+    // halves have to move together.
+    if (row.bookingId) {
+      const booking = (d.bookings ?? []).find((b) => b.id === row.bookingId);
+      if (booking) {
+        if (patch.fullName !== undefined) booking.clientName = row.fullName;
+        if (nextEmail !== undefined) booking.clientEmail = row.email;
+        if (patch.phone !== undefined) booking.clientPhone = row.phone;
+        booking.updatedAt = now;
+      }
+    }
+
+    return { ok: true, registration: { ...row } };
+  });
+}
+
+/* ─────────────────────────── Resending the paperwork ─────────────────────────── */
+
+export type ResendResult =
+  | { ok: true; sentConfirmation: boolean; sentReceipt: boolean }
+  | { ok: false; reason: 'NOT_FOUND' };
+
+/**
+ * Send the confirmation and the receipt again, to whatever address is on file
+ * now. For when the first one bounced, went to a typo, or the client deleted
+ * it and wants another copy.
+ *
+ * Both sends are guarded by exactly-once stamps, so this clears those stamps
+ * for one deliberate re-send, and the dispatchers re-claim them on the way
+ * out. A settlement replay afterwards finds the stamps back in place. (If a
+ * send fails midway the stamp stays clear, which at worst lets a later replay
+ * deliver the message that failed — the harmless direction.)
+ *
+ * The receipt only goes out when money actually arrived; `dispatchReceiptIfDue`
+ * decides that, not this function.
+ */
+export async function resendRegistrationConfirmation(
+  id: string,
+  owner: OwnerScope,
+): Promise<ResendResult> {
+  const claimed = await db.update<{ bookingId: string | null } | null>((d) => {
+    const row = (d.registrations ?? []).find((r) => r.id === id && ownedBy(r, owner));
+    if (!row) return null;
+
+    row.confirmationSentAt = null;
+    const bookingId = row.bookingId ?? null;
+    if (bookingId) {
+      const booking = (d.bookings ?? []).find((b) => b.id === bookingId);
+      if (booking) {
+        booking.depositReceiptSentAt = null;
+        booking.finalReceiptSentAt = null;
+      }
+    }
+    return { bookingId };
+  });
+
+  if (!claimed) return { ok: false, reason: 'NOT_FOUND' };
+  if (!claimed.bookingId) {
+    // A free registration has no booking, so there is nothing to receipt —
+    // the confirmation is the whole of its paperwork.
+    return { ok: true, sentConfirmation: false, sentReceipt: false };
+  }
+
+  await dispatchRegistrationConfirmationIfDue(claimed.bookingId);
+  // Imported here rather than at the top: card-payment already imports this
+  // module (settlement dispatches the confirmation), so a static import back
+  // would close the cycle.
+  const { dispatchReceiptIfDue } = await import('@/server/bookings/card-payment');
+  await dispatchReceiptIfDue(claimed.bookingId);
+
+  const after = (await db.read()).bookings.find((b) => b.id === claimed.bookingId);
+  return {
+    ok: true,
+    sentConfirmation: true,
+    sentReceipt: Boolean(after?.finalReceiptSentAt || after?.depositReceiptSentAt),
+  };
+}
+
 /* ─────────────────────────── Program/Event lookup helpers ─────────────────────────── */
 
 type DbData = Awaited<ReturnType<typeof db.read>>;

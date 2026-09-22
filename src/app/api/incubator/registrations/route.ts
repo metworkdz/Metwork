@@ -3,6 +3,8 @@
  *   — list registrations for a program or event
  * POST /api/incubator/registrations
  *   — record a participant who signed up at the desk (cash, deposit optional)
+ * POST /api/incubator/registrations/edit
+ *   — correct a participant's name / email / phone
  * DELETE /api/incubator/registrations/:id (via body { id })
  *   — cancel a registration
  */

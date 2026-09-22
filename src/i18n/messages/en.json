@@ -5342,7 +5342,16 @@
       "errorRequiredField": "“{field}” is required — fill it in before adding this participant."
     },
     "delete": "Delete",
-    "deleteConfirm": "Delete this cancelled registration for good? Their answers go with it and this cannot be undone."
+    "deleteConfirm": "Delete this cancelled registration for good? Their answers go with it and this cannot be undone.",
+    "editTitle": "Edit participant",
+    "editDescription": "Correct the name, email or phone. Everything else stays as submitted.",
+    "editSave": "Save",
+    "editCancel": "Cancel",
+    "editFailed": "Could not save the changes.",
+    "resendTitle": "Resend the confirmation",
+    "resendConfirm": "Resend the confirmation and the receipt to this participant?",
+    "resendDone": "Sent.",
+    "resendFailed": "Could not resend."
   },
   "registrationDashboard": {
     "tabRegistrations": "Registrations",

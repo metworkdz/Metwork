@@ -7,7 +7,7 @@
  *  - Search by name / email / phone
  *  - Status filter tabs (All / Confirmed / Waitlisted / Cancelled)
  *  - Paginated results
- *  - Cancel action per row
+ *  - Cancel, edit and "resend the confirmation" per row
  *  - Add a participant recorded at the desk
  *  - CSV export button
  *  - Custom field answer expansion
@@ -16,11 +16,12 @@ import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Search, Download, Loader2, ChevronLeft, ChevronRight,
-  CheckCircle2, Clock, XCircle, ChevronDown, ChevronUp,
+  CheckCircle2, Clock, XCircle, ChevronDown, ChevronUp, Pencil, Send,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AddParticipantDialog } from './add-participant-dialog';
+import { EditParticipantDialog } from './edit-participant-dialog';
 import type { Registration, RegistrationFormField, RegistrationStatus } from '@/types/domain';
 
 interface RegistrationsTableProps {
@@ -55,6 +56,8 @@ export function RegistrationsTable({
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [editing, setEditing] = useState<Registration | null>(null);
+  const [resending, setResending] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [, startTransition] = useTransition();
   const searchRef = useRef<ReturnType<typeof setTimeout>>();
@@ -133,6 +136,38 @@ export function RegistrationsTable({
         setTotal((n) => Math.max(0, n - 1));
       }
     });
+  }
+
+  /**
+   * Save a corrected name / email / phone. The server writes both the
+   * registration and its booking, so the row can simply take what it returns.
+   */
+  function handleSaved(updated: Registration) {
+    setRegistrations((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)));
+  }
+
+  /**
+   * Send the confirmation and the stamped receipt again, to whatever address
+   * is on file now. Rate-limited server-side, so a frustrated double-click
+   * cannot bury the client in identical PDFs.
+   */
+  async function handleResend(id: string) {
+    if (!confirm(t('resendConfirm'))) return;
+    setResending(id);
+    try {
+      const res = await fetch(`${endpoint}/resend`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const body = await res.json().catch(() => null) as { error?: { message?: string } } | null;
+      alert(res.ok ? t('resendDone') : (body?.error?.message ?? t('resendFailed')));
+    } catch {
+      alert(t('resendFailed'));
+    } finally {
+      setResending(null);
+    }
   }
 
   async function handleCancel(id: string) {
@@ -264,6 +299,9 @@ export function RegistrationsTable({
                   registration={reg}
                   formFields={formFields}
                   onCancel={() => handleCancel(reg.id)}
+                  onEdit={() => setEditing(reg)}
+                  onResend={() => void handleResend(reg.id)}
+                  resending={resending === reg.id}
                   onDelete={() => handleDelete(reg.id)}
                 />
               ))}
@@ -279,12 +317,22 @@ export function RegistrationsTable({
               registration={reg}
               formFields={formFields}
               onCancel={() => handleCancel(reg.id)}
+              onEdit={() => setEditing(reg)}
+              onResend={() => void handleResend(reg.id)}
+              resending={resending === reg.id}
               onDelete={() => handleDelete(reg.id)}
             />
           ))}
         </div>
         </>
       )}
+
+      <EditParticipantDialog
+        registration={editing}
+        onOpenChange={(open) => { if (!open) setEditing(null); }}
+        endpoint={endpoint}
+        onSaved={handleSaved}
+      />
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -325,11 +373,17 @@ function RegistrationRow({
   formFields,
   onCancel,
   onDelete,
+  onEdit,
+  onResend,
+  resending,
 }: {
   registration: Registration;
   formFields: RegistrationFormField[];
   onCancel: () => void;
   onDelete: () => void;
+  onEdit: () => void;
+  onResend: () => void;
+  resending: boolean;
 }) {
   const t = useTranslations('registrationsTable');
   const [expanded, setExpanded] = useState(false);
@@ -362,6 +416,33 @@ function RegistrationRow({
           </td>
         )}
         <td className="px-4 py-3 text-right">
+          <div className="flex items-center justify-end gap-1">
+            {reg.status !== 'CANCELLED' && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-muted-foreground"
+                  title={t('editTitle')}
+                  onClick={onEdit}
+                >
+                  <Pencil className="size-3.5" />
+                </Button>
+                {/* Nothing to resend without a booking behind the row. */}
+                {reg.bookingId && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 text-muted-foreground"
+                    title={t('resendTitle')}
+                    loading={resending}
+                    onClick={onResend}
+                  >
+                    <Send className="size-3.5" />
+                  </Button>
+                )}
+              </>
+            )}
           {reg.status === 'CANCELLED' ? (
             <button
               onClick={onDelete}
@@ -377,6 +458,7 @@ function RegistrationRow({
               {t('cancel')}
             </button>
           )}
+          </div>
         </td>
       </tr>
       {/* Expanded answers row */}
@@ -413,11 +495,17 @@ function RegistrationCard({
   formFields,
   onCancel,
   onDelete,
+  onEdit,
+  onResend,
+  resending,
 }: {
   registration: Registration;
   formFields: RegistrationFormField[];
   onCancel: () => void;
   onDelete: () => void;
+  onEdit: () => void;
+  onResend: () => void;
+  resending: boolean;
 }) {
   const t = useTranslations('registrationsTable');
   const [expanded, setExpanded] = useState(false);
@@ -451,6 +539,32 @@ function RegistrationCard({
               {expanded ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
             </button>
           )}
+            {reg.status !== 'CANCELLED' && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-muted-foreground"
+                  title={t('editTitle')}
+                  onClick={onEdit}
+                >
+                  <Pencil className="size-3.5" />
+                </Button>
+                {/* Nothing to resend without a booking behind the row. */}
+                {reg.bookingId && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 text-muted-foreground"
+                    title={t('resendTitle')}
+                    loading={resending}
+                    onClick={onResend}
+                  >
+                    <Send className="size-3.5" />
+                  </Button>
+                )}
+              </>
+            )}
           {reg.status === 'CANCELLED' ? (
             <button
               onClick={onDelete}
