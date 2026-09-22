@@ -46,6 +46,13 @@ export interface InvoiceViewModel {
   /** A devis is signed back; a facture and a proforma are not. */
   showAcceptance: boolean;
   /**
+   * The issuer's stamp to print, or null when this document was issued
+   * without one. Read off the FROZEN snapshot, never from settings.
+   */
+  stampUrl: string | null;
+  /** The host's own note for this document, trimmed; null when empty. */
+  note: string | null;
+  /**
    * Issuer bank details ("Banque : …", "RIB : …") — non-empty only when the
    * payment method is VIREMENT, so a transfer invoice always tells the client
    * where to pay.
@@ -175,9 +182,16 @@ export function buildInvoiceViewModel(invoice: InvoiceRecord): InvoiceViewModel 
   if (issuer.contactEmail?.trim()) footerItems.push({ kind: 'email', value: issuer.contactEmail.trim() });
   if (issuer.contactPhone?.trim()) footerItems.push({ kind: 'phone', value: issuer.contactPhone.trim() });
 
+  const note = invoice.note?.trim();
+
   return {
     kind,
     title: TITLES[kind],
+    // An absent `withStamp` is a document issued before the choice existed —
+    // those were printed without a stamp, and re-downloading one must not
+    // silently start adding it.
+    stampUrl: invoice.withStamp ? (issuer.stampUrl ?? null) : null,
+    note: note ? note : null,
     number: invoice.number,
     date: fmtDate(invoice.issuedAt),
     issuerName: issuer.name,

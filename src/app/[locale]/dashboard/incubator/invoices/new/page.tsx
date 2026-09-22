@@ -58,6 +58,7 @@ export default async function NewInvoicePage({ params, searchParams }: PageProps
         serviceNames={services}
         legalComplete={legalComplete}
         hasBankRib={hasBankRib}
+        hasStamp={Boolean(incubator?.stampUrl?.trim())}
         initialKind={initialKind}
         nextSeq={nextSeq}
         year={year}

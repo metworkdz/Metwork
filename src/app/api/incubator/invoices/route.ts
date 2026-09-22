@@ -59,6 +59,13 @@ const createSchema = z
      */
     validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
     /**
+     * Print the issuer's stamp on this document. Per document on purpose —
+     * an incubator stamps some and not others.
+     */
+    withStamp: z.boolean().optional(),
+    /** Free text printed at the bottom of this one document. */
+    note: z.string().trim().max(600).optional().nullable(),
+    /**
      * Number override / custom starting range, e.g. 9 → "09/2026". An
      * incubator arriving with invoices already issued elsewhere starts their
      * sequence where their own books left off; the counter then continues
@@ -236,8 +243,13 @@ export async function POST(req: NextRequest) {
         contactPhone: incubator.contactPhone ?? incubator.phone ?? null,
         bankName: incubator.bankName ?? null,
         bankRib: incubator.bankRib ?? null,
+        // Frozen with the rest of the letterhead: changing the stamp in
+        // settings must not change a document already issued.
+        stampUrl: incubator.stampUrl ?? null,
       },
       lines: input.lines,
+      withStamp: input.withStamp ?? false,
+      note: input.note?.trim() || null,
       vatRate,
       paymentMethod: input.paymentMethod,
       template,

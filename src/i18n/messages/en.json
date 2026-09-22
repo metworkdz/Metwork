@@ -1651,7 +1651,14 @@
       "submitQuote": "Issue the quote",
       "successTitleProforma": "Proforma {number} issued",
       "successTitleQuote": "Quote {number} issued",
-      "selectClientFirstDocument": "Select a client to issue the document."
+      "selectClientFirstDocument": "Select a client to issue the document.",
+      "sectionFinish": "Stamp & note",
+      "labelStamp": "Apply the stamp",
+      "stampHint": "Prints your stamp at the bottom right. Stored with this document, so a later change to your stamp will not alter it.",
+      "stampMissing": "No stamp on file — upload one in Settings first.",
+      "labelNote": "Note (optional)",
+      "notePlaceholder": "e.g. Payment within 30 days by cheque payable to…",
+      "noteHint": "Printed at the bottom of this document only. Nothing is saved for next time."
     },
     "listingTable": {
       "newListing": "New listing",

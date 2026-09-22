@@ -1651,7 +1651,14 @@
       "submitQuote": "إصدار عرض السعر",
       "successTitleProforma": "صدرت الفاتورة الأولية {number}",
       "successTitleQuote": "صدر عرض السعر {number}",
-      "selectClientFirstDocument": "اختر عميلاً لإصدار المستند."
+      "selectClientFirstDocument": "اختر عميلاً لإصدار المستند.",
+      "sectionFinish": "الختم والملاحظة",
+      "labelStamp": "وضع الختم",
+      "stampHint": "يُطبع ختمك أسفل اليسار. يُحفَظ مع هذا المستند، فتغيير الختم لاحقاً لا يغيّره.",
+      "stampMissing": "لا يوجد ختم محفوظ — أضف واحداً في الإعدادات.",
+      "labelNote": "ملاحظة (اختياري)",
+      "notePlaceholder": "مثال: الدفع خلال 30 يوماً بشيك لأمر…",
+      "noteHint": "تُطبع أسفل هذا المستند فقط. لا يُحفظ شيء للمرة القادمة."
     },
     "listingTable": {
       "newListing": "إدراج جديد",

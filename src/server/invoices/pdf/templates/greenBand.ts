@@ -7,11 +7,16 @@ import type { InvoiceViewModel } from '../viewModel';
 import {
   BLACK, CONTENT_W, GRAY, GREEN, MARGIN, PAGE_W,
   drawAmountInWords, drawBankLines, drawCancelledWatermark, drawContactFooter,
-  drawLinesTable, drawNotices, drawTotalsBlock, sg,
+  drawLinesTable, drawNote, drawNotices, drawStamp, drawTotalsBlock, sg,
   type Doc,
 } from './shared';
 
-export function renderGreenBand(doc: Doc, vm: InvoiceViewModel, logo: Buffer | null): void {
+export function renderGreenBand(
+  doc: Doc,
+  vm: InvoiceViewModel,
+  logo: Buffer | null,
+  stamp: Buffer | null = null,
+): void {
   // ── Full-width brand band ──
   const BAND_H = 92;
   doc.rect(0, 0, PAGE_W, BAND_H).fill(GREEN);
@@ -73,9 +78,12 @@ export function renderGreenBand(doc: Doc, vm: InvoiceViewModel, logo: Buffer | n
   doc.y += 10;
 
   drawTotalsBlock(doc, vm);
+  const totalsBottom = doc.y;
   doc.y += 12;
 
-  drawAmountInWords(doc, vm);
+  drawNote(doc, vm, Boolean(stamp));
+  drawAmountInWords(doc, vm, Boolean(stamp));
+  drawStamp(doc, stamp, totalsBottom);
 
   drawContactFooter(doc, vm, GRAY);
   drawCancelledWatermark(doc, vm);

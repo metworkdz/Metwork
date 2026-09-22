@@ -2553,8 +2553,26 @@ export interface InvoiceRecord {
     /** Frozen bank details — rendered on the PDF when paymentMethod is VIREMENT. */
     bankName?: string | null;
     bankRib?: string | null;
+    /**
+     * The stamp as it was the day this document was issued. Frozen with
+     * everything else: a PDF re-downloaded next year must look exactly as it
+     * did, even if the incubator has changed their stamp since.
+     */
+    stampUrl?: string | null;
   };
   lines: InvoiceLine[];
+  /**
+   * Whether to print the issuer's stamp. Chosen per document — an incubator
+   * stamps some and not others — and stored rather than read from settings at
+   * print time, for the same reason the snapshots are.
+   */
+  withStamp?: boolean;
+  /**
+   * Free text printed at the bottom: payment terms, a delivery note, whatever
+   * this one document needs. Per document, deliberately not a default in
+   * settings.
+   */
+  note?: string | null;
   /** VAT %, e.g. 19. */
   vatRate: number;
   paymentMethod: InvoicePaymentMethod;

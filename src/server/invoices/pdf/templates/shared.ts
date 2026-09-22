@@ -23,7 +23,12 @@ export const DARK_GREEN = '#1e5b3c';
 export const NET_RED = '#d91c1c';
 
 export type Doc = InstanceType<typeof PDFDocument>;
-export type TemplateRenderer = (doc: Doc, vm: InvoiceViewModel, logo: Buffer | null) => void;
+export type TemplateRenderer = (
+  doc: Doc,
+  vm: InvoiceViewModel,
+  logo: Buffer | null,
+  stamp?: Buffer | null,
+) => void;
 
 /** Vertical space always reserved at the page bottom for the contact footer. */
 export const FOOTER_RESERVE = 46;
@@ -240,8 +245,9 @@ function drawAcceptance(doc: Doc, x: number, y: number, width: number): void {
  * On a devis the signature block shares this band on the right, so the words
  * take the left 58% and the two are pinned together.
  */
-export function drawAmountInWords(doc: Doc, vm: InvoiceViewModel): void {
-  const wordsW = vm.showAcceptance ? CONTENT_W * 0.56 : CONTENT_W;
+export function drawAmountInWords(doc: Doc, vm: InvoiceViewModel, hasStamp = false): void {
+  // The acceptance block and the stamp both live on the right of this band.
+  const wordsW = vm.showAcceptance || hasStamp ? CONTENT_W * 0.56 : CONTENT_W;
   sg(doc).fontSize(10);
   const wordsH = doc.heightOfString(vm.amountInWords, { width: wordsW, lineGap: 2 });
   const blockH = Math.max(18 + wordsH, vm.showAcceptance ? ACCEPTANCE_H : 0);
@@ -261,6 +267,74 @@ export function drawAmountInWords(doc: Doc, vm: InvoiceViewModel): void {
     drawAcceptance(doc, x, top, CONTENT_W - (x - MARGIN));
     doc.y = Math.max(doc.y, top + ACCEPTANCE_H);
   }
+}
+
+/* ─────────────────── The host's note ─────────────────── */
+
+/**
+ * Free text the host wrote for THIS document — payment terms, a delivery
+ * detail. Drawn under the totals, above the amount in words.
+ *
+ * Absent when empty rather than printed as an empty "Note :" heading, which
+ * looks like something failed to load.
+ */
+export function drawNote(doc: Doc, vm: InvoiceViewModel, hasStamp = false): void {
+  if (!vm.note) return;
+  // The stamp occupies the bottom-right from here down, so the note keeps to
+  // the left column — full width would run straight under it.
+  const width = hasStamp ? CONTENT_W * 0.56 : CONTENT_W;
+  sg(doc).fontSize(9.5);
+  const textH = doc.heightOfString(vm.note, { width, lineGap: 1.5 });
+  ensureSpace(doc, textH + 22);
+
+  sg(doc, { medium: true }).fillColor(GRAY).fontSize(8.5)
+    .text('NOTE', MARGIN, doc.y, { characterSpacing: 1.2 });
+  doc.moveDown(0.25);
+  sg(doc, { text: vm.note }).fillColor(BLACK).fontSize(9.5)
+    .text(vm.note, MARGIN, doc.y, { width, lineGap: 1.5 });
+  doc.y += 8;
+}
+
+/* ─────────────────── Stamp ─────────────────── */
+
+/** What the incubator asked for: 1.5× the 120pt used on receipts. */
+const STAMP_TARGET = 180;
+/** Below this it stops reading as a stamp, so it is not worth printing. */
+const STAMP_MIN = 96;
+
+/**
+ * The issuer's stamp, bottom-right.
+ *
+ * SIZE IS NEGOTIATED WITH THE PAGE, and that is the whole difficulty. At the
+ * requested 180pt a stamp does not fit under the totals of an ordinary
+ * invoice — there are only about 90 to 130 points of clear space between the
+ * last total and the footer — so a fixed 180 lands on top of "Net à Payer",
+ * which is the one figure that must never be obscured.
+ *
+ * So it takes 180 when the document is short enough to give it, and shrinks
+ * to the space actually available otherwise, down to a floor below which it
+ * is skipped rather than printed illegibly. It is bottom-aligned above the
+ * footer and right-aligned, clear of the amount in words on the left.
+ *
+ * `topLimit` is the lowest point already occupied on the right-hand side —
+ * the bottom of the totals block.
+ */
+export function drawStamp(doc: Doc, stamp: Buffer | null, topLimit: number): void {
+  if (!stamp) return;
+
+  // Clear of the contact footer, which prints at PAGE_H - MARGIN - 14.
+  const bottom = PAGE_H - MARGIN - 26;
+  const available = bottom - (topLimit + 6);
+  const size = Math.min(STAMP_TARGET, available);
+  if (size < STAMP_MIN) return;
+
+  const x = PAGE_W - MARGIN - size;
+  const y = bottom - size;
+  try {
+    doc.save();
+    doc.image(stamp, x, y, { fit: [size, size] });
+    doc.restore();
+  } catch { /* skip on decode error */ }
 }
 
 /* ─────────────────── Contact footer ─────────────────── */

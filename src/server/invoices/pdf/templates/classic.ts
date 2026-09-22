@@ -11,14 +11,19 @@ import type { InvoiceViewModel } from '../viewModel';
 import {
   BLACK, CONTENT_W, DARK_GREEN, GRAY, MARGIN, PAGE_W,
   drawAmountInWords, drawBankLines, drawCancelledWatermark, drawContactFooter,
-  drawLinesTable, drawNotices, drawTotalsBlock, sg,
+  drawLinesTable, drawNote, drawNotices, drawStamp, drawTotalsBlock, sg,
   type Doc,
 } from './shared';
 
 /** Left edge of the meta column + table, matching the reference's indent. */
 const TABLE_X = MARGIN + 135;
 
-export function renderClassic(doc: Doc, vm: InvoiceViewModel, logo: Buffer | null): void {
+export function renderClassic(
+  doc: Doc,
+  vm: InvoiceViewModel,
+  logo: Buffer | null,
+  stamp: Buffer | null = null,
+): void {
   const topY = MARGIN;
   const LOGO_W = 165, LOGO_H = 64;
 
@@ -94,10 +99,17 @@ export function renderClassic(doc: Doc, vm: InvoiceViewModel, logo: Buffer | nul
 
   // ── Totals (right) ──
   drawTotalsBlock(doc, vm, DARK_GREEN);
+  // The lowest point the RIGHT-hand column reaches — what the stamp has to
+  // stay clear of.
+  const totalsBottom = doc.y;
   doc.y += 8;
 
-  // ── Amount in words — pinned bottom-left ──
-  drawAmountInWords(doc, vm);
+  // ── The host's note, then the amount in words (pinned bottom-left) ──
+  drawNote(doc, vm, Boolean(stamp));
+  drawAmountInWords(doc, vm, Boolean(stamp));
+
+  // ── Stamp, bottom-right and clear of the totals ──
+  drawStamp(doc, stamp, totalsBottom);
 
   // ── Footer ──
   drawContactFooter(doc, vm, GRAY);

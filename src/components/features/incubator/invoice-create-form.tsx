@@ -62,6 +62,8 @@ interface Props {
   nextSeq: Record<InvoiceKind, number>;
   /** The year the numbers belong to, resolved on the server. */
   year: number;
+  /** Whether a stamp image is on file — without one there is nothing to print. */
+  hasStamp: boolean;
 }
 
 function emptyLine(): LineDraft {
@@ -91,6 +93,7 @@ export function InvoiceCreateForm({
   initialKind,
   nextSeq,
   year,
+  hasStamp,
 }: Props) {
   const t = useTranslations('incubator.invoiceForm');
   const router = useRouter();
@@ -98,6 +101,10 @@ export function InvoiceCreateForm({
   const [kind, setKind] = useState<InvoiceKind>(initialKind);
   const [seq, setSeq] = useState(String(nextSeq[initialKind]));
   const [validUntil, setValidUntil] = useState(initialKind === 'DEVIS' ? dayFromNow(30) : '');
+  // On by default when there is a stamp to print — an incubator who uploaded
+  // one generally wants it.
+  const [withStamp, setWithStamp] = useState(hasStamp);
+  const [note, setNote] = useState('');
   const [client, setClient] = useState<ClientHit | null>(null);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [lines, setLines] = useState<LineDraft[]>([emptyLine()]);
@@ -194,6 +201,8 @@ export function InvoiceCreateForm({
           template,
           kind,
           validUntil: validUntil || undefined,
+          withStamp: hasStamp && withStamp,
+          note: note.trim() || undefined,
           // Only sent when it was actually changed: left alone, the server
           // allocates inside its own transaction, which is what makes two
           // simultaneous creates impossible to collide.
@@ -536,6 +545,47 @@ export function InvoiceCreateForm({
                   </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* ── Finishing touches: the stamp and a note ── */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">{t('sectionFinish')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <label className={cn(
+                'flex items-start gap-2.5 text-sm',
+                hasStamp ? 'cursor-pointer' : 'cursor-not-allowed opacity-60',
+              )}>
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4"
+                  checked={hasStamp && withStamp}
+                  disabled={!hasStamp}
+                  onChange={(e) => setWithStamp(e.target.checked)}
+                />
+                <span>
+                  <span className="font-medium">{t('labelStamp')}</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
+                    {hasStamp ? t('stampHint') : t('stampMissing')}
+                  </span>
+                </span>
+              </label>
+
+              <div>
+                <Label htmlFor="inv-note">{t('labelNote')}</Label>
+                <textarea
+                  id="inv-note"
+                  rows={3}
+                  maxLength={600}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:text-sm"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder={t('notePlaceholder')}
+                />
+                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{t('noteHint')}</p>
+              </div>
             </CardContent>
           </Card>
         </div>

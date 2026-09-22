@@ -1651,7 +1651,14 @@
       "submitQuote": "Émettre le devis",
       "successTitleProforma": "Proforma {number} émise",
       "successTitleQuote": "Devis {number} émis",
-      "selectClientFirstDocument": "Sélectionnez un client pour émettre le document."
+      "selectClientFirstDocument": "Sélectionnez un client pour émettre le document.",
+      "sectionFinish": "Cachet & note",
+      "labelStamp": "Apposer le cachet",
+      "stampHint": "Imprime votre cachet en bas à droite. Il est enregistré avec ce document : un changement ultérieur de cachet ne le modifiera pas.",
+      "stampMissing": "Aucun cachet enregistré — ajoutez-en un dans les Paramètres.",
+      "labelNote": "Note (facultatif)",
+      "notePlaceholder": "ex. Règlement à 30 jours par chèque à l’ordre de…",
+      "noteHint": "Imprimée au bas de ce document uniquement. Rien n’est conservé pour la prochaine fois."
     },
     "listingTable": {
       "newListing": "Nouvelle annonce",

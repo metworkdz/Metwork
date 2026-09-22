@@ -8,7 +8,7 @@ import type { InvoiceViewModel } from '../viewModel';
 import {
   BLACK, CONTENT_W, GRAY, MARGIN, PAGE_W,
   drawAmountInWords, drawBankLines, drawCancelledWatermark, drawContactFooter,
-  drawLinesTable, drawNotices, drawTotalsBlock, sg,
+  drawLinesTable, drawNote, drawNotices, drawStamp, drawTotalsBlock, sg,
   type Doc,
 } from './shared';
 
@@ -22,7 +22,12 @@ function hairline(doc: Doc, y: number): void {
   doc.moveTo(MARGIN, y).lineTo(PAGE_W - MARGIN, y).lineWidth(0.5).strokeColor(BLACK).stroke();
 }
 
-export function renderMinimal(doc: Doc, vm: InvoiceViewModel, logo: Buffer | null): void {
+export function renderMinimal(
+  doc: Doc,
+  vm: InvoiceViewModel,
+  logo: Buffer | null,
+  stamp: Buffer | null = null,
+): void {
   const topY = MARGIN + 4;
   const LOGO_W = 110, LOGO_H = 46;
 
@@ -83,9 +88,12 @@ export function renderMinimal(doc: Doc, vm: InvoiceViewModel, logo: Buffer | nul
   doc.y += 16;
 
   drawTotalsBlock(doc, vm);
+  const totalsBottom = doc.y;
   doc.y += 14;
 
-  drawAmountInWords(doc, vm);
+  drawNote(doc, vm, Boolean(stamp));
+  drawAmountInWords(doc, vm, Boolean(stamp));
+  drawStamp(doc, stamp, totalsBottom);
 
   drawContactFooter(doc, vm, GRAY);
   drawCancelledWatermark(doc, vm);
