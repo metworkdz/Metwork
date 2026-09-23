@@ -129,6 +129,10 @@ const nextConfig = {
               // to Cloudinary (Vercel Functions cap request bodies at 4.5 MB),
               // so the founder's PDF never passes through our API route.
               "connect-src 'self' https://*.sentry.io https://*.supabase.co https://api.resend.com https://api.cloudinary.com",
+              // blob: frames show the certificate editor's live PDF preview.
+              // Only this origin's own scripts can mint a blob: URL, so this
+              // opens no door to third-party content.
+              "frame-src 'self' blob:",
               "frame-ancestors 'none'",
               "object-src 'none'",
               "base-uri 'self'",

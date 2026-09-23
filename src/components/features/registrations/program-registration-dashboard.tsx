@@ -3,18 +3,21 @@
 /**
  * ProgramRegistrationDashboard — tabbed management view.
  *
- * Tab 1: Registration Form Builder
- * Tab 2: Registrations list
+ * Tab 1: Registrations list
+ * Tab 2: Abandoned checkouts
+ * Tab 3: Registration Form Builder
+ * Tab 4: Participation certificates (programs only)
  *
  * Used on both /dashboard/incubator/programs/[id] and
  * /dashboard/incubator/events/[id].
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ClipboardList, Settings2, ExternalLink, PhoneMissed } from 'lucide-react';
+import { Award, ClipboardList, Settings2, ExternalLink, PhoneMissed } from 'lucide-react';
 import { RegistrationFormBuilder } from './form-builder';
 import { RegistrationsTable } from './registrations-table';
 import { AbandonedCheckoutsTable } from './abandoned-checkouts-table';
+import { CertificateEditor } from '@/components/features/certificates/certificate-editor';
 import type { RegistrationFormField } from '@/types/domain';
 
 interface ProgramRegistrationDashboardProps {
@@ -27,7 +30,7 @@ interface ProgramRegistrationDashboardProps {
   defaultAmount?: number;
 }
 
-type Tab = 'form' | 'registrations' | 'abandoned';
+type Tab = 'form' | 'registrations' | 'abandoned' | 'certificates';
 
 export function ProgramRegistrationDashboard({
   entityType,
@@ -48,6 +51,10 @@ export function ProgramRegistrationDashboard({
     { id: 'registrations', labelKey: 'tabRegistrations', Icon: ClipboardList },
     { id: 'abandoned',     labelKey: 'tabAbandoned',     Icon: PhoneMissed },
     { id: 'form',          labelKey: 'tabFormBuilder',   Icon: Settings2 },
+    // Certificates are for trainings; an event has no attestation.
+    ...(entityType === 'PROGRAM'
+      ? [{ id: 'certificates' as const, labelKey: 'tabCertificates', Icon: Award }]
+      : []),
   ];
 
   return (
@@ -106,6 +113,12 @@ export function ProgramRegistrationDashboard({
       <div className="rounded-lg border border-border bg-card p-3 lg:p-5">
         {tab === 'abandoned' ? (
           <AbandonedCheckoutsTable entityType={entityType} entityId={entityId} />
+        ) : tab === 'certificates' ? (
+          <CertificateEditor
+            programId={entityId}
+            apiBase="/api/incubator/programs"
+            uploadEndpoint="/api/incubator/upload"
+          />
         ) : tab === 'form' ? (
           <RegistrationFormBuilder
             entityType={entityType}

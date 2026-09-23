@@ -11,6 +11,7 @@
  * Supabase; subsequent calls within the same invocation are cache-hits.
  */
 
+import type { CertificateSettings } from '@/server/certificates/types';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type {
   UserRole,
@@ -1384,6 +1385,13 @@ export interface ProgramRecord {
    * Unique per incubator (enforced in API layer).
    */
   slug?: string | null;
+  /**
+   * How this program's participation certificates look — template, colors,
+   * wording, signatories. Absent until the host first saves them; until then
+   * the editor offers the host's most recent program's settings, or the
+   * Metwork model. Additive and nullable.
+   */
+  certificateSettings?: CertificateSettings | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  ArrowLeft, Copy, GraduationCap, Loader2, Pencil, PhoneMissed, Plus, Settings2, Trash2, Users,
+  ArrowLeft, Award, Copy, GraduationCap, Loader2, Pencil, PhoneMissed, Plus, Settings2, Trash2, Users,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ApiClientError } from '@/lib/api-client';
@@ -30,6 +30,7 @@ import { resolveListingPricing } from '@/lib/listing-price';
 import { RegistrationsTable } from '@/components/features/registrations/registrations-table';
 import { RegistrationFormBuilder } from '@/components/features/registrations/form-builder';
 import { AbandonedCheckoutsTable } from '@/components/features/registrations/abandoned-checkouts-table';
+import { CertificateEditor } from '@/components/features/certificates/certificate-editor';
 import type { RegistrationFormField } from '@/types/domain';
 import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
@@ -488,7 +489,7 @@ function ShareLink({ slug, label, copied }: { slug: string; label: string; copie
 function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; onBack: () => void }) {
   const t = useTranslations('consultantPortal.programs');
   const tDash = useTranslations('registrationDashboard');
-  const [tab, setTab] = useState<'registrants' | 'abandoned' | 'form'>('registrants');
+  const [tab, setTab] = useState<'registrants' | 'abandoned' | 'form' | 'certificates'>('registrants');
   const [fields, setFields] = useState<RegistrationFormField[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -515,6 +516,7 @@ function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; on
     { key: 'registrants' as const, label: tDash('tabRegistrations'), Icon: Users },
     { key: 'abandoned' as const, label: tDash('tabAbandoned'), Icon: PhoneMissed },
     { key: 'form' as const, label: tDash('tabFormBuilder'), Icon: Settings2 },
+    { key: 'certificates' as const, label: tDash('tabCertificates'), Icon: Award },
   ];
 
   return (
@@ -569,6 +571,15 @@ function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; on
           entityType="PROGRAM"
           entityId={program.id}
           endpoint="/api/consultant/registrations"
+        />
+      ) : tab === 'certificates' ? (
+        <CertificateEditor
+          programId={program.id}
+          apiBase="/api/consultant/programs"
+          uploadEndpoint="/api/consultant/upload"
+          // 'program' uploads touch nothing on the consultant's profile; the
+          // default kind would replace their photo with the signature.
+          uploadKind="program"
         />
       ) : fields === null ? (
         <div className="flex justify-center py-10"><Spinner tone="light" /></div>

@@ -24,7 +24,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { CheckCircle2, Download, FileText, Loader2, Lock, ShieldCheck } from 'lucide-react';
 import { ApiClientError } from '@/lib/api-client';
 import { consultantService, type ConsultantContract } from '@/services/consultant.service';
-import { SignaturePad, type SignaturePadHandle } from './signature-pad';
+import { SignaturePad, type SignaturePadHandle } from '@/components/shared/signature-pad';
 import { OtpCodeInput } from './otp-code-input';
 import {
   BrandButton,

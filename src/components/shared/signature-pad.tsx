@@ -25,7 +25,14 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Eraser } from 'lucide-react';
-import { CP_LIGHT_BORDER, CP_LIGHT_FAINT, CP_LIGHT_MUTED } from './shared';
+/*
+ * The pad is always drawn on white — a signature is ink on paper, and a PNG
+ * captured on a dark ground would carry that ground into the PDF — so its
+ * chrome uses fixed light tones rather than theme tokens.
+ */
+const PAD_MUTED = '#5A615E';
+const PAD_FAINT = '#8A918E';
+const PAD_BORDER = '#E3E6E4';
 
 /** Ink colour — near-black, matching the contract body text. */
 const INK = '#0D0D0D';
@@ -42,6 +49,13 @@ export interface SignaturePadProps {
   onChange?: (hasSignature: boolean) => void;
   disabled?: boolean;
   height?: number;
+  /**
+   * The line under the pad. Left undefined it states the legal weight of a
+   * handwritten contract signature — which is what the pad was built for.
+   * Anywhere that sentence is not true (a certificate), pass your own, or
+   * null for none.
+   */
+  note?: React.ReactNode;
 }
 
 /**
@@ -50,7 +64,7 @@ export interface SignaturePadProps {
  * data URL on every stroke would re-encode the whole image on each pointer move.
  */
 export const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(function SignaturePad(
-  { onChange, disabled, height = 180 },
+  { onChange, disabled, height = 180, note },
   ref,
 ) {
   const t = useTranslations('consultantPortal.contract');
@@ -167,7 +181,7 @@ export const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(fu
     <div className="space-y-2">
       <div
         className="relative overflow-hidden rounded-2xl border bg-white"
-        style={{ borderColor: CP_LIGHT_BORDER }}
+        style={{ borderColor: PAD_BORDER }}
       >
         <canvas
           ref={canvasRef}
@@ -185,7 +199,7 @@ export const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(fu
             aria-hidden
             className="pointer-events-none absolute inset-0 flex items-center justify-center"
           >
-            <span className="text-sm" style={{ color: CP_LIGHT_FAINT }}>{t('signatureHint')}</span>
+            <span className="text-sm" style={{ color: PAD_FAINT }}>{t('signatureHint')}</span>
           </div>
         )}
         {/* Baseline the signature sits on — a familiar cue that this is a
@@ -193,18 +207,20 @@ export const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(fu
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-6 bottom-8 border-b border-dashed"
-          style={{ borderColor: CP_LIGHT_BORDER }}
+          style={{ borderColor: PAD_BORDER }}
         />
       </div>
 
       <div className="flex items-center justify-between gap-3 px-1">
-        <p className="text-[11px]" style={{ color: CP_LIGHT_MUTED }}>{t('signatureLegal')}</p>
+        <p className="text-[11px]" style={{ color: PAD_MUTED }}>
+          {note === undefined ? t('signatureLegal') : note}
+        </p>
         <button
           type="button"
           onClick={clear}
           disabled={disabled || empty}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-[#F7F8F9] disabled:opacity-40"
-          style={{ color: CP_LIGHT_MUTED }}
+          style={{ color: PAD_MUTED }}
         >
           <Eraser className="size-3.5" />
           {t('clear')}
