@@ -30,7 +30,7 @@ import { resolveListingPricing } from '@/lib/listing-price';
 import { RegistrationsTable } from '@/components/features/registrations/registrations-table';
 import { RegistrationFormBuilder } from '@/components/features/registrations/form-builder';
 import { AbandonedCheckoutsTable } from '@/components/features/registrations/abandoned-checkouts-table';
-import { CertificateEditor } from '@/components/features/certificates/certificate-editor';
+import { CertificatesPanel } from '@/components/features/certificates/certificates-panel';
 import type { RegistrationFormField } from '@/types/domain';
 import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
@@ -573,7 +573,7 @@ function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; on
           endpoint="/api/consultant/registrations"
         />
       ) : tab === 'certificates' ? (
-        <CertificateEditor
+        <CertificatesPanel
           programId={program.id}
           apiBase="/api/consultant/programs"
           uploadEndpoint="/api/consultant/upload"

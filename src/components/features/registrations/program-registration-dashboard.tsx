@@ -17,7 +17,7 @@ import { Award, ClipboardList, Settings2, ExternalLink, PhoneMissed } from 'luci
 import { RegistrationFormBuilder } from './form-builder';
 import { RegistrationsTable } from './registrations-table';
 import { AbandonedCheckoutsTable } from './abandoned-checkouts-table';
-import { CertificateEditor } from '@/components/features/certificates/certificate-editor';
+import { CertificatesPanel } from '@/components/features/certificates/certificates-panel';
 import type { RegistrationFormField } from '@/types/domain';
 
 interface ProgramRegistrationDashboardProps {
@@ -114,7 +114,7 @@ export function ProgramRegistrationDashboard({
         {tab === 'abandoned' ? (
           <AbandonedCheckoutsTable entityType={entityType} entityId={entityId} />
         ) : tab === 'certificates' ? (
-          <CertificateEditor
+          <CertificatesPanel
             programId={entityId}
             apiBase="/api/incubator/programs"
             uploadEndpoint="/api/incubator/upload"

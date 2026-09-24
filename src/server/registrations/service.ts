@@ -326,6 +326,12 @@ export function pruneListingChildrenSync(
     (r) => !(r.entityType === entityType && r.entityId === entityId),
   );
 
+  // A certificate names a participant of this listing; with the listing and
+  // its registrations gone it verifies nothing, and keeps a name for no one.
+  if (entityType === 'PROGRAM' && d.certificates) {
+    d.certificates = d.certificates.filter((c) => c.programId !== entityId);
+  }
+
   return {
     formFields: fieldsBefore - d.registrationFormFields.length,
     registrations: regsBefore - (d.registrations ?? []).length,
@@ -644,6 +650,9 @@ export async function deleteRegistration(
     if (row.status !== 'CANCELLED') return { ok: false, reason: 'NOT_CANCELLED' };
 
     d.registrations.splice(idx, 1);
+    // Its certificate (already invalid — the registration was cancelled) goes
+    // with it, rather than keeping the person's name on a dead record.
+    if (d.certificates) d.certificates = d.certificates.filter((c) => c.registrationId !== row.id);
     return { ok: true, deleted: row };
   });
 }

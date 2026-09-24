@@ -603,6 +603,34 @@ export interface RenderCertificatesInput {
   logoUrl?: string | null;
   /** The organizer's stamp — drawn only in DIGITAL mode with showStamp. */
   stampUrl?: string | null;
+  /**
+   * Images already fetched by `loadCertificateImages` — for a caller drawing
+   * many one-page PDFs (one email each) from the same settings.
+   */
+  images?: CertificateImages;
+}
+
+/** The logo, stamp and signature images a batch of certificates is drawn with. */
+export interface CertificateImages {
+  logo: Buffer | null;
+  stamp: Buffer | null;
+  signatures: Array<Buffer | null>;
+}
+
+export async function loadCertificateImages(
+  input: Pick<RenderCertificatesInput, 'settings' | 'mode' | 'logoUrl' | 'stampUrl'>,
+): Promise<CertificateImages> {
+  const { settings, mode } = input;
+  const wantSignatures = mode === 'DIGITAL';
+  // Through the certificate fetcher, not the shared one: our own Cloudinary
+  // account only, size-capped — see ./images.ts.
+  const [logo, stamp, ...signatures] = await Promise.all([
+    fetchCertificateImage(input.logoUrl ?? null),
+    mode === 'DIGITAL' && settings.showStamp ? fetchCertificateImage(input.stampUrl ?? null) : Promise.resolve(null),
+    ...settings.signatories.slice(0, 2).map((sig) =>
+      wantSignatures ? fetchCertificateImage(sig.imageUrl ?? null) : Promise.resolve(null)),
+  ]);
+  return { logo: logo ?? null, stamp: stamp ?? null, signatures };
 }
 
 export async function renderCertificatesPdf(input: RenderCertificatesInput): Promise<Buffer> {
@@ -611,15 +639,7 @@ export async function renderCertificatesPdf(input: RenderCertificatesInput): Pro
 
   // Images are fetched ONCE for the whole batch, not per page: a class of
   // thirty is one download of the logo, not thirty.
-  const wantSignatures = mode === 'DIGITAL';
-  // Through the certificate fetcher, not the shared one: our own Cloudinary
-  // account only, size-capped — see ./images.ts.
-  const [logo, stamp, ...signatureImages] = await Promise.all([
-    fetchCertificateImage(input.logoUrl ?? null),
-    mode === 'DIGITAL' && settings.showStamp ? fetchCertificateImage(input.stampUrl ?? null) : Promise.resolve(null),
-    ...settings.signatories.slice(0, 2).map((sig) =>
-      wantSignatures ? fetchCertificateImage(sig.imageUrl ?? null) : Promise.resolve(null)),
-  ]);
+  const { logo, stamp, signatures: signatureImages } = input.images ?? await loadCertificateImages(input);
 
   const doc = new PDFDocument({
     size: [W, H],

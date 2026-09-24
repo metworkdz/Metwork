@@ -11,7 +11,7 @@
  * Supabase; subsequent calls within the same invocation are cache-hits.
  */
 
-import type { CertificateSettings } from '@/server/certificates/types';
+import type { CertificateSettings, Civility } from '@/server/certificates/types';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type {
   UserRole,
@@ -1525,8 +1525,56 @@ export interface RegistrationRecord {
   locale?: string | null;
   /** Dedup stamp — the confirmation email has been dispatched for this row. */
   confirmationSentAt?: string | null;
+  /**
+   * The host unticked this participant on the certificates page: they did not
+   * attend, and get no certificate. Absent/false = attended (everyone
+   * confirmed is ticked by default).
+   */
+  absent?: boolean;
+  /** "M." or "Mme" printed before the name on the certificate; null = none. */
+  civility?: Civility;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * One participation certificate, issued once per registration.
+ *
+ * The number is frozen at first issue and never reused — reprinting, or
+ * correcting the participant's name, keeps it. What is printed is refreshed
+ * into the snapshot on every issue, so the public verification page always
+ * describes the paper the participant holds.
+ */
+export interface CertificateRecord {
+  id: string;
+  /** "ATT-2026-0007" — sequential per organizer and per year of issue. */
+  number: string;
+  /** Random, unguessable — the public verification link, and the QR code. */
+  verifyToken: string;
+  programId: string;
+  registrationId: string;
+  /** Exactly one of the two, like the program that issued it. */
+  incubatorId: string | null;
+  mentorId: string | null;
+  /** What the certificate says — refreshed on every (re)issue. */
+  fullName: string;
+  civility?: Civility;
+  programTitle: string;
+  organizer: string;
+  startDate: string;
+  endDate: string;
+  issuedAt: string;
+  updatedAt: string;
+  /** Last time it was sent to the participant by email. */
+  emailedAt?: string | null;
+  /**
+   * A send run has taken this certificate and is emailing it. Two runs at once
+   * (two tabs) would otherwise both see it unsent and both email it; a claim
+   * older than a few minutes is a run that died, and is ignored.
+   */
+  emailClaimedAt?: string | null;
+  /** Set when the host marks the participant absent after issuing. */
+  revokedAt?: string | null;
 }
 
 /* ─────────────── Network Passes & Partner Program ─────────────── */
@@ -3430,6 +3478,11 @@ interface DbShape {
   registrationFormFields: RegistrationFormFieldRecord[];
   /** Guest + authenticated registrations for programs and events. */
   registrations: RegistrationRecord[];
+  /**
+   * Participation certificates issued for programs. Optional — legacy blobs
+   * predate it; readers must default to [].
+   */
+  certificates?: CertificateRecord[];
 
   // ─── One-off email campaigns ──────────────────────────────────────────
   /**

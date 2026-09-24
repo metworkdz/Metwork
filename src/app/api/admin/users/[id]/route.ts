@@ -132,6 +132,11 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     store.withdrawalRequests   = (store.withdrawalRequests ?? []).filter((w) => w.userId !== id);
     store.networkVisits        = (store.networkVisits ?? []).filter((v) => v.userId !== id);
     store.perkVouchers         = (store.perkVouchers ?? []).filter((v) => v.userId !== id);
+    // Certificates follow their registration out: they carry the member's name.
+    const goneRegistrationIds = new Set(
+      (store.registrations ?? []).filter((r) => r.userId === id).map((r) => r.id),
+    );
+    store.certificates         = (store.certificates ?? []).filter((c) => !goneRegistrationIds.has(c.registrationId));
     store.registrations        = (store.registrations ?? []).filter((r) => r.userId !== id);
 
     // Partner affiliations: release the seat this member held against each
