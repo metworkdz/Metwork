@@ -31,6 +31,7 @@ import { RegistrationsTable } from '@/components/features/registrations/registra
 import { RegistrationFormBuilder } from '@/components/features/registrations/form-builder';
 import { AbandonedCheckoutsTable } from '@/components/features/registrations/abandoned-checkouts-table';
 import { CertificatesPanel } from '@/components/features/certificates/certificates-panel';
+import { ProgramVisibilityField } from '@/components/features/programs/program-visibility-field';
 import { ProgramFinancesPanel } from '@/components/features/program-finance/program-finances-panel';
 import type { RegistrationFormField } from '@/types/domain';
 import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
@@ -72,6 +73,7 @@ function fmtDate(iso: string, locale: string): string {
 
 export function ProgramsSection() {
   const t = useTranslations('consultantPortal.programs');
+  const tVis = useTranslations('programVisibility');
   const tQuestions = useTranslations('defaultQuestions');
   // Shared with the incubator dashboard — one rule set, one set of messages.
   const tError = useTranslations('programFormErrors');
@@ -226,6 +228,9 @@ export function ProgramsSection() {
                     <Badge variant={p.isActive ? 'success' : 'warning'}>
                       {p.isActive ? t('statusPublished') : t('statusDraft')}
                     </Badge>
+                    {p.isActive && p.visibility === 'UNLISTED' && (
+                      <Badge variant="info">{tVis('unlistedBadge')}</Badge>
+                    )}
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {p.city} · {fmtDate(p.startDate, locale)} → {fmtDate(p.endDate, locale)}
@@ -434,6 +439,8 @@ export function ProgramsSection() {
               </div>
             </div>
           )}
+
+          <ProgramVisibilityField value={draft.visibility} onChange={(v) => set('visibility', v)} />
 
           {error && <ErrorBanner message={error} tone="light" />}
 

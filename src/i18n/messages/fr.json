@@ -5698,5 +5698,17 @@
     "catTravel": "Transport et hébergement",
     "catPrinting": "Impression et attestations",
     "catOther": "Autre"
+  },
+  "programVisibility": {
+    "label": "Visibilité",
+    "publicTitle": "Public",
+    "publicBody": "Affiché sur la page Programmes de Metwork. Tout le monde peut le trouver.",
+    "unlistedTitle": "Non répertorié",
+    "unlistedBody": "Accessible uniquement via son lien, que vous partagez vous-même. Idéal pour une pré-inscription.",
+    "hint": "Vous pouvez changer d’avis à tout moment, le lien reste le même.",
+    "copyLink": "Copier le lien",
+    "linkCopied": "Lien copié",
+    "unlistedBadge": "Non répertorié",
+    "draft": "Brouillon"
   }
 }

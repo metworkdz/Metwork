@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { Briefcase, ClipboardList, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { CopyProgramLinkButton } from '@/components/features/programs/copy-program-link';
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { ProgramFormDialog } from './program-form-dialog';
@@ -31,6 +32,7 @@ export function ProgramsManager() {
   const locale = useLocale() as Locale;
   const t      = useTranslations('incubator.programs');
   const tForm  = useTranslations('incubator.programForm');
+  const tVis   = useTranslations('programVisibility');
   const router = useRouter();
   const typeLabel = (type: ProgramType) => tForm(TYPE_LABEL_KEY[type]);
   const [rows, setRows] = useState<Program[]>([]);
@@ -79,6 +81,16 @@ export function ProgramsManager() {
         <div>
           <div className="font-medium">{p.title}</div>
           <div className="text-xs text-muted-foreground">{p.city}</div>
+          {!p.isActive ? (
+            <Badge variant="warning" className="mt-1">{tVis('draft')}</Badge>
+          ) : (
+            // The link is the only way in to an unlisted program, and the one
+            // a host shares for any program — so it is one click away.
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              {p.visibility === 'UNLISTED' && <Badge variant="info">{tVis('unlistedBadge')}</Badge>}
+              <CopyProgramLinkButton program={p} className="h-7 gap-1.5 px-2 text-xs" />
+            </div>
+          )}
         </div>
       ),
     },

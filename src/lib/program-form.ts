@@ -36,6 +36,8 @@ import type { ProgramType } from '@/types/domain';
 
 export type PaymentMethod = 'ONLINE' | 'CASH';
 export type CashDepositType = 'FIXED' | 'PERCENT';
+/** PUBLIC = on the /programs catalogue; UNLISTED = reachable by its link only. */
+export type ProgramVisibility = 'PUBLIC' | 'UNLISTED';
 
 export const PROGRAM_TYPES: ProgramType[] = [
   'INCUBATION', 'ACCELERATION', 'TRAINING', 'BOOTCAMP', 'WORKSHOP', 'WEBINAR',
@@ -69,6 +71,7 @@ export interface ProgramFormValues {
   cashDepositType: CashDepositType;
   /** Blank or "0" ⇒ no deposit; the whole amount is collected on site. */
   cashDepositValue: string;
+  visibility: ProgramVisibility;
 }
 
 export function emptyProgramForm(): ProgramFormValues {
@@ -90,6 +93,9 @@ export function emptyProgramForm(): ProgramFormValues {
     acceptedPaymentMethods: ['ONLINE', 'CASH'],
     cashDepositType: 'PERCENT',
     cashDepositValue: '10',
+    // Public unless the host chooses otherwise — how every program behaved
+    // before the choice existed.
+    visibility: 'PUBLIC',
   };
 }
 
@@ -113,6 +119,7 @@ export interface ProgramFormSource {
   acceptedPaymentMethods?: PaymentMethod[] | null;
   cashDepositType?: CashDepositType | null;
   cashDepositValue?: number | null;
+  visibility?: ProgramVisibility | null;
 }
 
 /** An ISO datetime back to the "YYYY-MM-DD" a date input wants. */
@@ -153,6 +160,7 @@ export function toProgramFormSource(program: ProgramFormSource): ProgramFormSour
     acceptedPaymentMethods: program.acceptedPaymentMethods,
     cashDepositType: program.cashDepositType,
     cashDepositValue: program.cashDepositValue,
+    visibility: program.visibility,
   };
 }
 
@@ -185,6 +193,7 @@ export function programFormFromRecord(source: ProgramFormSource): ProgramFormVal
     cashDepositValue: source.cashDepositValue != null
       ? String(source.cashDepositValue)
       : (source.cashDepositType ? base.cashDepositValue : '0'),
+    visibility: source.visibility === 'UNLISTED' ? 'UNLISTED' : 'PUBLIC',
   };
 }
 
@@ -278,6 +287,7 @@ export interface ProgramPayload {
   acceptedPaymentMethods: PaymentMethod[];
   cashDepositType: CashDepositType | null;
   cashDepositValue: number | null;
+  visibility: ProgramVisibility;
 }
 
 /**
@@ -321,5 +331,6 @@ export function programFormToPayload(v: ProgramFormValues): ProgramPayload {
     cashDepositValue: acceptsCash
       ? (v.cashDepositValue.trim() === '' ? 0 : Number(v.cashDepositValue))
       : null,
+    visibility: v.visibility,
   };
 }

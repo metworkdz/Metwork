@@ -5698,5 +5698,17 @@
     "catTravel": "Travel and accommodation",
     "catPrinting": "Printing and certificates",
     "catOther": "Other"
+  },
+  "programVisibility": {
+    "label": "Visibility",
+    "publicTitle": "Public",
+    "publicBody": "Shown on Metwork’s Programs page. Anyone can find it.",
+    "unlistedTitle": "Unlisted",
+    "unlistedBody": "Reachable only through its link, which you share yourself. Ideal for a pre-registration.",
+    "hint": "You can change this at any time; the link stays the same.",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
+    "unlistedBadge": "Unlisted",
+    "draft": "Draft"
   }
 }

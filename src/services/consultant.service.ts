@@ -206,6 +206,8 @@ export interface ConsultantProgram {
   slug?: string | null;
   hostName: string;
   isActive: boolean;
+  /** UNLISTED = reachable by link only. Absent ⇒ PUBLIC. */
+  visibility?: 'PUBLIC' | 'UNLISTED';
 }
 
 export interface ConsultantRegistration {
@@ -248,6 +250,7 @@ export interface ConsultantProgramInput {
   /** Local wall-clock end time "HH:MM". Independent of `startTime`. */
   endTime?: string | null;
   endDate: string;
+  visibility?: 'PUBLIC' | 'UNLISTED';
 }
 
 /**

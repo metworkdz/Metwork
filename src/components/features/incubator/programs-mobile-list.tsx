@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate } from '@/lib/format';
 import type { Program, ProgramType } from '@/types/domain';
 import type { Locale } from '@/i18n/config';
+import { CopyProgramLinkButton } from '@/components/features/programs/copy-program-link';
 
 interface ProgramsMobileListProps {
   programs: Program[];
@@ -34,6 +35,7 @@ export function ProgramsMobileList({
   onDelete,
 }: ProgramsMobileListProps) {
   const t = useTranslations('incubator.programs');
+  const tVis = useTranslations('programVisibility');
   const locale = useLocale() as Locale;
 
   return (
@@ -81,6 +83,15 @@ export function ProgramsMobileList({
                 <p className="mt-1.5 text-xs text-muted-foreground">
                   {formatDate(p.startDate, locale)} → {formatDate(p.endDate, locale)}
                 </p>
+
+                {!p.isActive ? (
+                  <Badge variant="warning" className="mt-2">{tVis('draft')}</Badge>
+                ) : (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {p.visibility === 'UNLISTED' && <Badge variant="info">{tVis('unlistedBadge')}</Badge>}
+                    <CopyProgramLinkButton program={p} className="h-8 gap-1.5 px-2.5 text-xs" />
+                  </div>
+                )}
 
                 <div className="mt-2.5">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">

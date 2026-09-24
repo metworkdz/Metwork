@@ -48,6 +48,7 @@ import {
   type ProgramFormValues,
 } from '@/lib/program-form';
 import type { ProgramType } from '@/types/domain';
+import { ProgramVisibilityField } from '@/components/features/programs/program-visibility-field';
 
 // FIX: BUG-2 — added edit mode props
 interface ProgramFormDialogProps {
@@ -349,6 +350,8 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
               </div>
             </div>
           )}
+
+          <ProgramVisibilityField value={form.visibility} onChange={(v) => set('visibility', v)} />
 
           {error && (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
