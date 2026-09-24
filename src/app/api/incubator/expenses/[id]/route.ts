@@ -47,8 +47,10 @@ export async function PATCH(
     if (!Array.isArray(d.expenses)) d.expenses = [];
     const e = d.expenses.find((x) => x.id === id && x.incubatorId === inc.id);
     if (!e) return null;
-    // Same rule as creating: only one of this incubator's own programs.
-    if (input.programId && !(d.programs ?? []).some(
+    // Same rule as creating: only one of this incubator's own programs. Only
+    // checked when the tag CHANGES — an expense of a program deleted since
+    // must still be editable without losing its tag.
+    if (input.programId && input.programId !== e.programId && !(d.programs ?? []).some(
       (p) => p.id === input.programId && !p.mentorId && p.incubatorId === inc.id,
     )) return null;
 

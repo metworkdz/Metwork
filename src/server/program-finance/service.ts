@@ -40,6 +40,8 @@ function programExpenses(d: StoreData, programId: string, owner: OwnerScope): Ex
 
 export interface ProgramFinances {
   program: Pick<ProgramRecord, 'id' | 'title' | 'startDate' | 'endDate' | 'seatsTotal'>;
+  /** The incubator's or the consultant's name — heads the exported report. */
+  organizer: string;
   report: ProgramFinanceReport;
   expenses: ExpenseRecord[];
 }
@@ -49,6 +51,9 @@ export async function loadProgramFinances(programId: string, owner: OwnerScope):
   const program = findOwnedProgram(d, programId, owner);
   if (!program) return null;
   const expenses = programExpenses(d, programId, owner);
+  const organizer = owner.kind === 'MENTOR'
+    ? (d.mentors ?? []).find((m) => m.id === owner.mentorId)?.fullName
+    : (d.incubators ?? []).find((i) => i.id === owner.incubatorId)?.name;
   return {
     program: {
       id: program.id,
@@ -57,6 +62,7 @@ export async function loadProgramFinances(programId: string, owner: OwnerScope):
       endDate: program.endDate,
       seatsTotal: program.seatsTotal,
     },
+    organizer: organizer ?? program.incubatorName ?? '',
     // Only the owner's own expense rows reach the report — never a row some
     // other owner tagged with this id.
     report: computeProgramFinance({ ...d, expenses }, program),

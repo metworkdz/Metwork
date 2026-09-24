@@ -13,11 +13,12 @@
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Award, ClipboardList, Settings2, ExternalLink, PhoneMissed } from 'lucide-react';
+import { Award, ClipboardList, Settings2, ExternalLink, PhoneMissed, Wallet } from 'lucide-react';
 import { RegistrationFormBuilder } from './form-builder';
 import { RegistrationsTable } from './registrations-table';
 import { AbandonedCheckoutsTable } from './abandoned-checkouts-table';
 import { CertificatesPanel } from '@/components/features/certificates/certificates-panel';
+import { ProgramFinancesPanel } from '@/components/features/program-finance/program-finances-panel';
 import type { RegistrationFormField } from '@/types/domain';
 
 interface ProgramRegistrationDashboardProps {
@@ -30,7 +31,7 @@ interface ProgramRegistrationDashboardProps {
   defaultAmount?: number;
 }
 
-type Tab = 'form' | 'registrations' | 'abandoned' | 'certificates';
+type Tab = 'form' | 'registrations' | 'abandoned' | 'certificates' | 'finances';
 
 export function ProgramRegistrationDashboard({
   entityType,
@@ -53,7 +54,10 @@ export function ProgramRegistrationDashboard({
     { id: 'form',          labelKey: 'tabFormBuilder',   Icon: Settings2 },
     // Certificates are for trainings; an event has no attestation.
     ...(entityType === 'PROGRAM'
-      ? [{ id: 'certificates' as const, labelKey: 'tabCertificates', Icon: Award }]
+      ? [
+          { id: 'certificates' as const, labelKey: 'tabCertificates', Icon: Award },
+          { id: 'finances' as const, labelKey: 'tabFinances', Icon: Wallet },
+        ]
       : []),
   ];
 
@@ -113,6 +117,12 @@ export function ProgramRegistrationDashboard({
       <div className="rounded-lg border border-border bg-card p-3 lg:p-5">
         {tab === 'abandoned' ? (
           <AbandonedCheckoutsTable entityType={entityType} entityId={entityId} />
+        ) : tab === 'finances' ? (
+          <ProgramFinancesPanel
+            programId={entityId}
+            apiBase="/api/incubator/programs"
+            uploadEndpoint="/api/incubator/upload"
+          />
         ) : tab === 'certificates' ? (
           <CertificatesPanel
             programId={entityId}

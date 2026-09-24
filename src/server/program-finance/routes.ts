@@ -5,10 +5,17 @@
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { isAllowedCertificateImageUrl } from '@/server/certificates/images';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import type { OwnerScope } from '@/server/registrations/service';
 
+import {
+  buildProgramFinanceCsv,
+  financeFilename,
+  normalizeExportLang,
+  renderProgramFinancePdf,
+} from './export';
 import {
   createProgramExpense,
   deleteProgramExpense,
@@ -88,4 +95,34 @@ export async function handleDeleteProgramExpense(programId: string, expenseId: s
   const deleted = await deleteProgramExpense(programId, owner, expenseId);
   if (!deleted) return jsonError(404, 'NOT_FOUND', 'Expense not found');
   return json({ ok: true });
+}
+
+/**
+ * The report as a file: `?format=csv` (in the viewer's language, `?lang=`)
+ * or `?format=pdf` (French, like every document the platform issues).
+ */
+export async function handleExportProgramFinances(req: NextRequest, programId: string, owner: OwnerScope) {
+  const key = owner.kind === 'MENTOR' ? `m:${owner.mentorId}` : `i:${owner.incubatorId}`;
+  if (!(await checkRateLimitDistributed(`program-finance-export:${key}`, 20, 60_000))) {
+    return jsonError(429, 'RATE_LIMITED', 'Trop d’exports. Patientez un instant.');
+  }
+  const { searchParams } = new URL(req.url);
+  const format = searchParams.get('format');
+  if (format !== 'csv' && format !== 'pdf') return jsonError(400, 'INVALID_FORMAT', 'format must be csv or pdf');
+
+  const finances = await loadProgramFinances(programId, owner);
+  if (!finances) return jsonError(404, 'NOT_FOUND', 'Program not found');
+
+  const filename = financeFilename(finances.program.title, format);
+  const body = format === 'csv'
+    ? new TextEncoder().encode(buildProgramFinanceCsv(finances, normalizeExportLang(searchParams.get('lang'))))
+    : new Uint8Array(await renderProgramFinancePdf(finances));
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': format === 'csv' ? 'text/csv; charset=utf-8' : 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Cache-Control': 'no-store',
+    },
+  });
 }

@@ -35,7 +35,42 @@ interface ExpenseRow {
   description: string | null;
   amount: number;
   category: string | null;
+  /** Set when the expense was spent on one of the incubator's programs. */
+  programId?: string | null;
   createdAt: string;
+}
+
+interface ProgramOption { id: string; title: string }
+
+const NO_PROGRAM = '__none__';
+
+/* ── Program selector — tags the expense so it counts in that program's report ── */
+function ProgramField({
+  id, value, onChange, programs,
+}: {
+  id: string;
+  value: string;
+  onChange: (v: string) => void;
+  programs: ProgramOption[];
+}) {
+  const t = useTranslations('incubator.expenses');
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger id={id} className="mt-1">
+        <SelectValue placeholder={t('noProgram')} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={NO_PROGRAM}>{t('noProgram')}</SelectItem>
+        {programs.map((p) => (
+          <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+        ))}
+        {/* A tag on a program deleted since stays selectable, so saving keeps it. */}
+        {value !== NO_PROGRAM && !programs.some((p) => p.id === value) && (
+          <SelectItem value={value}>{t('deletedProgram')}</SelectItem>
+        )}
+      </SelectContent>
+    </Select>
+  );
 }
 
 const CSV_FIELDS = [
@@ -108,7 +143,7 @@ function CategoryField({
 }
 
 /* ── Create dialog ── */
-function CreateExpenseDialog({ onCreated }: { onCreated: () => void }) {
+function CreateExpenseDialog({ onCreated, programs }: { onCreated: () => void; programs: ProgramOption[] }) {
   const t = useTranslations('incubator.expenses');
   const [open, setOpen]     = useState(false);
   const [sub, setSub]       = useState(false);
@@ -119,9 +154,10 @@ function CreateExpenseDialog({ onCreated }: { onCreated: () => void }) {
   const [amount, setAmt]    = useState('');
   const [catSel, setCatSel] = useState(NO_CATEGORY);
   const [catOther, setCatOther] = useState('');
+  const [programSel, setProgramSel] = useState(NO_PROGRAM);
 
   function reset() {
-    setTitle(''); setDesc(''); setAmt(''); setCatSel(NO_CATEGORY); setCatOther('');
+    setTitle(''); setDesc(''); setAmt(''); setCatSel(NO_CATEGORY); setCatOther(''); setProgramSel(NO_PROGRAM);
     setDate(new Date().toISOString().slice(0, 10)); setError(null);
   }
 
@@ -140,11 +176,12 @@ function CreateExpenseDialog({ onCreated }: { onCreated: () => void }) {
           description: desc.trim() || null,
           amount:      Number(amount),
           category,
+          programId:   programSel === NO_PROGRAM ? null : programSel,
         }),
       });
       if (!res.ok) {
-        const d = await res.json().catch(() => ({})) as { message?: string };
-        setError(d.message ?? 'Failed to create expense.'); return;
+        const d = await res.json().catch(() => ({})) as { message?: string; error?: { message?: string } };
+        setError(d.error?.message ?? d.message ?? 'Failed to create expense.'); return;
       }
       onCreated(); setOpen(false); reset();
     } catch { setError('Network error.'); }
@@ -192,6 +229,12 @@ function CreateExpenseDialog({ onCreated }: { onCreated: () => void }) {
               onOtherChange={setCatOther}
             />
           </div>
+          {programs.length > 0 && (
+            <div>
+              <Label htmlFor="exp-program">{t('labelProgram')}</Label>
+              <ProgramField id="exp-program" value={programSel} onChange={setProgramSel} programs={programs} />
+            </div>
+          )}
           <div>
             <Label htmlFor="exp-desc">{t('labelDescription')}</Label>
             <textarea
@@ -230,6 +273,8 @@ export function ExpensesManager() {
   const [editAmt, setEditAmt]         = useState('');
   const [editCatSel, setEditCatSel]   = useState(NO_CATEGORY);
   const [editCatOther, setEditCatOther] = useState('');
+  const [editProgram, setEditProgram] = useState(NO_PROGRAM);
+  const [programs, setPrograms]       = useState<ProgramOption[]>([]);
   const [editError, setEditError]     = useState<string | null>(null);
   const [saving, setSaving]           = useState(false);
 
@@ -246,6 +291,18 @@ export function ExpensesManager() {
   }
 
   useEffect(() => { void fetchExpenses(); }, []);
+
+  // The incubator's programs, to tag an expense with one and to name the tag.
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch('/api/incubator/programs', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json() as { items: ProgramOption[] };
+        setPrograms(data.items.map((p) => ({ id: p.id, title: p.title })));
+      } catch { /* the tag stays optional */ }
+    })();
+  }, []);
 
   function openEdit(row: ExpenseRow) {
     setEditing(row);
@@ -264,6 +321,7 @@ export function ExpensesManager() {
       setEditCatSel(OTHER_CATEGORY);
       setEditCatOther(row.category);
     }
+    setEditProgram(row.programId ?? NO_PROGRAM);
     setEditError(null);
     setEditOpen(true);
   }
@@ -285,11 +343,12 @@ export function ExpensesManager() {
           description: editDesc.trim() || null,
           amount:      Number(editAmt),
           category,
+          programId:   editProgram === NO_PROGRAM ? null : editProgram,
         }),
       });
       if (!res.ok) {
-        const d = await res.json().catch(() => ({})) as { message?: string };
-        setEditError(d.message ?? 'Failed to save.'); return;
+        const d = await res.json().catch(() => ({})) as { message?: string; error?: { message?: string } };
+        setEditError(d.error?.message ?? d.message ?? 'Failed to save.'); return;
       }
       setEditOpen(false); void fetchExpenses();
     } catch { setEditError('Network error.'); }
@@ -332,6 +391,15 @@ export function ExpensesManager() {
         : <span className="text-muted-foreground">—</span>,
     },
     {
+      key: 'program',
+      label: t('colProgram'),
+      render: (r) => {
+        if (!r.programId) return <span className="text-muted-foreground">—</span>;
+        const title = programs.find((p) => p.id === r.programId)?.title;
+        return <Badge variant="info" className="max-w-[12rem] truncate">{title ?? t('deletedProgram')}</Badge>;
+      },
+    },
+    {
       key: 'amount',
       label: t('colAmount'),
       align: 'end',
@@ -351,7 +419,7 @@ export function ExpensesManager() {
         description="Columns: Date (YYYY-MM-DD), Title, Description, Amount, Category"
         onImported={() => void fetchExpenses()}
       />
-      <CreateExpenseDialog onCreated={() => void fetchExpenses()} />
+      <CreateExpenseDialog onCreated={() => void fetchExpenses()} programs={programs} />
     </div>
   );
 
@@ -408,6 +476,12 @@ export function ExpensesManager() {
                 onOtherChange={setEditCatOther}
               />
             </div>
+            {programs.length > 0 && (
+              <div>
+                <Label htmlFor="eexp-program">{t('labelProgram')}</Label>
+                <ProgramField id="eexp-program" value={editProgram} onChange={setEditProgram} programs={programs} />
+              </div>
+            )}
             <div>
               <Label htmlFor="eexp-desc">{t('labelDescription')}</Label>
               <textarea
