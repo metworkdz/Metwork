@@ -22,6 +22,8 @@
 import PDFDocument from 'pdfkit';
 import type { BookingRecord, IncubatorRecord, MentorBookingRecord, MentorRecord, PaymentLinkRecord } from '@/server/db/store';
 import { registerPdfFonts, fontFor, hasArabic, FONT } from '@/server/pdf/fonts';
+import { fetchPdfImage } from '@/server/pdf/images';
+import { loadBrandLogo } from '@/server/pdf/contract-layout';
 import { amountInWords } from './amount-words';
 import { listingHasClockTime } from '@/lib/booking-when';
 
@@ -217,19 +219,14 @@ const COPY: Record<ReceiptLang, Copy> = {
 /* ─────────────────── Image fetcher ─────────────────── */
 
 /**
- * Fetch a remote image URL and return its raw bytes as a Buffer.
- * Returns null on any network / decode error so callers can gracefully skip.
+ * Fetch a logo / stamp URL and return its raw bytes as a Buffer.
+ *
+ * These URLs are host-editable, so this goes through the shared allowlisted,
+ * size-capped fetcher (see src/server/pdf/images.ts). Returns null on a
+ * refused URL or any network / decode error so callers can gracefully skip.
  */
 export async function fetchImageBuffer(url: string | null | undefined): Promise<Buffer | null> {
-  if (!url) return null;
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return null;
-    const ab = await res.arrayBuffer();
-    return Buffer.from(ab);
-  } catch {
-    return null;
-  }
+  return fetchPdfImage(url);
 }
 
 /* ─────────────────── Layout constants (points, A4) ─────────────────── */
@@ -658,7 +655,9 @@ export async function generateMentorConfirmationPdf(input: MentorConfirmationInp
   const dur          = booking.durationMinutes ?? null;
   const estimatedFee = feePerHour > 0 && dur ? Math.round((dur / 60) * feePerHour) : null;
 
-  const metworkLogo = await fetchImageBuffer(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/assets/Metworklogo.png`);
+  // The embedded wordmark, not a fetch of our own site: that URL is not an
+  // allowed image host, and its casing (`Metworklogo.png`) 404'd in production.
+  const metworkLogo = loadBrandLogo();
 
   const doc = makeDoc();
 

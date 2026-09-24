@@ -9,9 +9,22 @@ import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards
 import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { INCUBATOR_BUSINESS_TYPES } from '@/types/auth';
+import { isAllowedPdfImageUrl } from '@/server/pdf/images';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+/**
+ * The logo and stamp are fetched server-side to draw invoices, receipts and
+ * contracts, so they must pass the same allowlist the PDF fetcher applies
+ * (our Cloudinary account, https). Refusing here, rather than silently
+ * dropping the image from every PDF later, tells the host at save time.
+ */
+const pdfImageUrl = z
+  .string()
+  .refine((v) => isAllowedPdfImageUrl(v), {
+    message: "Image refusée : téléversez-la avec le bouton d'import (seules les images hébergées par Metwork sont acceptées).",
+  });
 
 const patchSchema = z.object({
   incubatorName: z.string().min(2).max(100).optional(),
@@ -24,9 +37,9 @@ const patchSchema = z.object({
    */
   businessType: z.enum(INCUBATOR_BUSINESS_TYPES).nullable().optional(),
   website: z.string().url().nullable().optional(),
-  logoUrl: z.string().url().nullable().optional(),
+  logoUrl: pdfImageUrl.nullable().optional(),
   /** Official stamp/seal image — printed at the bottom of receipts. */
-  stampUrl: z.string().url().nullable().optional(),
+  stampUrl: pdfImageUrl.nullable().optional(),
   // Legal & billing fields
   address: z.string().max(500).nullable().optional(),
   commercialRegNumber: z.string().max(100).nullable().optional(),

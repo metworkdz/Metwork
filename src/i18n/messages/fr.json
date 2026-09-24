@@ -1532,6 +1532,7 @@
       "tierSwitchHint": "Contactez le support pour passer de Commission à Forfait si vous avez un abonnement actif.",
       "successSaved": "Profil enregistré avec succès.",
       "saveChanges": "Enregistrer les modifications",
+      "errorImageUrl": "Image refusée : téléversez-la avec le bouton d'import (seules les images hébergées par Metwork sont acceptées).",
       "errorUpload": "Échec du téléchargement",
       "errorSave": "Échec de l'enregistrement"
     },

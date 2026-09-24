@@ -122,7 +122,13 @@ export function IncubatorProfileForm({ incubator, user, showSubscriptionTier = t
           avatarUrl: form.avatarUrl.trim() || null,
         }),
       });
-      if (!res.ok) throw new Error(t('errorSave'));
+      if (!res.ok) {
+        // A logo/stamp outside the PDF image allowlist is refused per field.
+        const body = await res.json().catch(() => null) as
+          { error?: { details?: { fieldErrors?: Record<string, unknown> } } } | null;
+        const fieldErrors = body?.error?.details?.fieldErrors;
+        throw new Error(fieldErrors?.logoUrl || fieldErrors?.stampUrl ? t('errorImageUrl') : t('errorSave'));
+      }
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {

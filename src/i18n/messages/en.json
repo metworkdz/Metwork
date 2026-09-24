@@ -1532,6 +1532,7 @@
       "tierSwitchHint": "Contact support to switch from Commission to Flat if you have an active subscription.",
       "successSaved": "Profile saved successfully.",
       "saveChanges": "Save changes",
+      "errorImageUrl": "Image refused: upload it with the upload button (only images hosted by Metwork are accepted).",
       "errorUpload": "Upload failed",
       "errorSave": "Save failed"
     },
