@@ -18,6 +18,7 @@ const patchSchema = z.object({
   description: z.string().max(1000).nullable().optional(),
   amount:      z.number().int().min(1).optional(),
   category:    z.string().max(80).nullable().optional(),
+  programId:   z.string().min(1).max(64).nullable().optional(),
 });
 
 export async function PATCH(
@@ -46,12 +47,17 @@ export async function PATCH(
     if (!Array.isArray(d.expenses)) d.expenses = [];
     const e = d.expenses.find((x) => x.id === id && x.incubatorId === inc.id);
     if (!e) return null;
+    // Same rule as creating: only one of this incubator's own programs.
+    if (input.programId && !(d.programs ?? []).some(
+      (p) => p.id === input.programId && !p.mentorId && p.incubatorId === inc.id,
+    )) return null;
 
     if (input.date        !== undefined) e.date        = input.date;
     if (input.title       !== undefined) e.title       = input.title.trim();
     if (input.description !== undefined) e.description = input.description;
     if (input.amount      !== undefined) e.amount      = input.amount;
     if (input.category    !== undefined) e.category    = input.category;
+    if (input.programId   !== undefined) e.programId   = input.programId;
     e.updatedAt = new Date().toISOString();
     return e;
   });

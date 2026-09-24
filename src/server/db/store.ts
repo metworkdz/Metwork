@@ -2652,7 +2652,21 @@ export interface InvoiceRecord {
 
 export interface ExpenseRecord {
   id: string;
-  incubatorId: string;
+  /**
+   * Owning incubator. Null only on a consultant's expense (`mentorId` set) —
+   * consultants have no Dépenses ledger of their own, only program expenses.
+   */
+  incubatorId: string | null;
+  /** Owning consultant (MentorRecord.id), for an expense on a consultant program. */
+  mentorId?: string | null;
+  /**
+   * The program this expense was spent on — room, trainer fee, coffee
+   * breaks. Tagged expenses stay in the incubator's ordinary ledger and also
+   * count against that program's financial report. Absent = general expense.
+   */
+  programId?: string | null;
+  /** A scan or photo of the receipt, uploaded to our Cloudinary. */
+  receiptUrl?: string | null;
   /** ISO date string (YYYY-MM-DD) */
   date: string;
   title: string;

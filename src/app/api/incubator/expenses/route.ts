@@ -19,6 +19,8 @@ const createSchema = z.object({
   description: z.string().max(1000).optional().nullable(),
   amount:      z.number().int().min(1),
   category:    z.string().max(80).optional().nullable(),
+  /** Tag the expense with one of this incubator's programs. */
+  programId:   z.string().min(1).max(64).optional().nullable(),
 });
 
 export async function GET(req: NextRequest) {
@@ -61,7 +63,12 @@ export async function POST(req: NextRequest) {
   }
 
   const now = new Date().toISOString();
-  const record = await db.update<ExpenseRecord>((d) => {
+  const record = await db.update<ExpenseRecord | null>((d) => {
+    // A program tag must name one of THIS incubator's own programs, or the
+    // expense would land in someone else's program report.
+    if (input.programId && !(d.programs ?? []).some(
+      (p) => p.id === input.programId && !p.mentorId && p.incubatorId === inc.id,
+    )) return null;
     if (!Array.isArray(d.expenses)) d.expenses = [];
     const expense: ExpenseRecord = {
       id:          randomUUID(),
@@ -71,6 +78,7 @@ export async function POST(req: NextRequest) {
       description: input.description ?? null,
       amount:      input.amount,
       category:    input.category ?? null,
+      programId:   input.programId ?? null,
       createdAt:   now,
       updatedAt:   now,
     };
@@ -78,5 +86,6 @@ export async function POST(req: NextRequest) {
     return expense;
   });
 
+  if (!record) return jsonError(404, 'PROGRAM_NOT_FOUND', 'Program not found');
   return json(record, { status: 201 });
 }

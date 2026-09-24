@@ -34,7 +34,7 @@ interface AttendanceData {
 }
 
 /** Stable identity key for deduping a single attendee across both systems. */
-function attendeeKey(
+export function attendeeKey(
   userId: string | null | undefined,
   email: string | null | undefined,
   fallbackId: string,
