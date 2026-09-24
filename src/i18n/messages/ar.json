@@ -5710,5 +5710,12 @@
     "linkCopied": "تم نسخ الرابط",
     "unlistedBadge": "غير مُدرج",
     "draft": "مسودة"
+  },
+  "answerSummary": {
+    "title": "ملخص الإجابات",
+    "base": "{count} تسجيل مؤكد",
+    "answered": "{count} إجابة",
+    "multi": "يمكن اختيار عدة إجابات",
+    "other": "{count} إجابة لا تطابق أي خيار حالي"
   }
 }

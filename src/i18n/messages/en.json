@@ -5710,5 +5710,12 @@
     "linkCopied": "Link copied",
     "unlistedBadge": "Unlisted",
     "draft": "Draft"
+  },
+  "answerSummary": {
+    "title": "Answer summary",
+    "base": "{count, plural, one {# confirmed registration} other {# confirmed registrations}}",
+    "answered": "{count, plural, one {# answer} other {# answers}}",
+    "multi": "several choices allowed",
+    "other": "{count, plural, one {# answer matches} other {# answers match}} no current choice"
   }
 }

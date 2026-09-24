@@ -5710,5 +5710,12 @@
     "linkCopied": "Lien copié",
     "unlistedBadge": "Non répertorié",
     "draft": "Brouillon"
+  },
+  "answerSummary": {
+    "title": "Résumé des réponses",
+    "base": "{count, plural, one {# inscription confirmée} other {# inscriptions confirmées}}",
+    "answered": "{count, plural, one {# réponse} other {# réponses}}",
+    "multi": "plusieurs choix possibles",
+    "other": "{count, plural, one {# réponse} other {# réponses}} ne correspond plus à aucun choix actuel"
   }
 }

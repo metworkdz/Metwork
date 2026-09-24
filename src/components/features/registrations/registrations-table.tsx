@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AddParticipantDialog } from './add-participant-dialog';
 import { EditParticipantDialog } from './edit-participant-dialog';
+import { AnswerSummaryPanel } from './answer-summary';
 import type { Registration, RegistrationFormField, RegistrationStatus } from '@/types/domain';
 
 interface RegistrationsTableProps {
@@ -59,6 +60,8 @@ export function RegistrationsTable({
   const [editing, setEditing] = useState<Registration | null>(null);
   const [resending, setResending] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  /** Bumped on every successful load, so the answer summary follows changes. */
+  const [dataVersion, setDataVersion] = useState(0);
   const [, startTransition] = useTransition();
   const searchRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -89,6 +92,7 @@ export function RegistrationsTable({
       setRegistrations(data.items);
       setFormFields(data.formFields);
       setTotal(data.total);
+      setDataVersion((v) => v + 1);
     } finally {
       setLoading(false);
     }
@@ -233,6 +237,8 @@ export function RegistrationsTable({
           />
         </div>
       </div>
+
+      <AnswerSummaryPanel entityType={entityType} entityId={entityId} endpoint={endpoint} version={dataVersion} />
 
       {/* Controls */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

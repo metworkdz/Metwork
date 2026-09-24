@@ -19,6 +19,30 @@ import { db } from '@/server/db/store';
 import { json, jsonError } from '@/server/http/json';
 import { listRegistrations, type OwnerScope } from '@/server/registrations/service';
 import { listAbandonedCheckouts } from '@/server/registrations/abandoned-checkouts';
+import { buildAnswerSummary } from '@/server/registrations/answer-summary';
+import { programOwnedBy } from '@/server/certificates/service';
+
+type StoreData = Awaited<ReturnType<typeof db.read>>;
+
+/**
+ * Does this owner own the listing? The registrations are owner-scoped row by
+ * row, but the form's questions are not — so without this, any host could
+ * read another host's application questions by trying listing ids.
+ */
+function ownsListing(
+  data: StoreData,
+  entityType: 'PROGRAM' | 'EVENT',
+  entityId: string,
+  owner: OwnerScope,
+): boolean {
+  if (entityType === 'PROGRAM') {
+    const program = (data.programs ?? []).find((p) => p.id === entityId);
+    return Boolean(program && programOwnedBy(program, owner));
+  }
+  // Events are incubator-only.
+  const event = (data.events ?? []).find((e) => e.id === entityId);
+  return Boolean(event && owner.kind === 'INCUBATOR' && event.incubatorId === owner.incubatorId);
+}
 
 export async function handleListRegistrations(req: NextRequest, owner: OwnerScope) {
   const { searchParams } = new URL(req.url);
@@ -41,9 +65,11 @@ export async function handleListRegistrations(req: NextRequest, owner: OwnerScop
   if (searchParams.get('view') === 'abandoned') {
     const items = await listAbandonedCheckouts(entityType, entityId, owner);
     const data = await db.read();
-    const formFields = (data.registrationFormFields ?? [])
-      .filter((f) => f.entityType === entityType && f.entityId === entityId)
-      .sort((a, b) => a.order - b.order);
+    const formFields = ownsListing(data, entityType, entityId, owner)
+      ? (data.registrationFormFields ?? [])
+          .filter((f) => f.entityType === entityType && f.entityId === entityId)
+          .sort((a, b) => a.order - b.order)
+      : [];
     return json({ items, formFields, total: items.length });
   }
 
@@ -51,11 +77,24 @@ export async function handleListRegistrations(req: NextRequest, owner: OwnerScop
   // someone else simply comes back empty rather than leaking its registrants.
   let registrations = await listRegistrations(entityType, entityId, owner);
 
+  // `?view=summary`: how the confirmed participants answered each
+  // multiple-choice question. Same owner scoping — someone else's listing
+  // summarises nobody.
+  if (searchParams.get('view') === 'summary') {
+    const data = await db.read();
+    if (!ownsListing(data, entityType, entityId, owner)) return json(buildAnswerSummary([], []));
+    const fields = (data.registrationFormFields ?? [])
+      .filter((f) => f.entityType === entityType && f.entityId === entityId);
+    return json(buildAnswerSummary(fields, registrations));
+  }
+
   // The field definitions travel with the rows so the client can label answers.
   const data = await db.read();
-  const formFields = (data.registrationFormFields ?? [])
-    .filter((f) => f.entityType === entityType && f.entityId === entityId)
-    .sort((a, b) => a.order - b.order);
+  const formFields = ownsListing(data, entityType, entityId, owner)
+    ? (data.registrationFormFields ?? [])
+        .filter((f) => f.entityType === entityType && f.entityId === entityId)
+        .sort((a, b) => a.order - b.order)
+    : [];
 
   if (q) {
     registrations = registrations.filter(
