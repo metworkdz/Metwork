@@ -151,18 +151,25 @@ export function isProgramPubliclyReachable(
   return isPubliclyVisibleIncubator(inc);
 }
 
+/** A program's visibility; programs created before the choice existed are public. */
+export function programVisibility(program: Pick<ProgramRecord, 'visibility'>): 'PUBLIC' | 'UNLISTED' {
+  return program.visibility === 'UNLISTED' ? 'UNLISTED' : 'PUBLIC';
+}
+
 /**
  * Shown on public LIST surfaces (the /programs explorer). Stricter than
- * `isProgramPubliclyReachable` for consultant-owned programs: a self-signed-up
- * consultant is not on public list surfaces unless an admin published them, so
- * neither are their programs. Incubator-owned programs are unaffected —
- * for them the two predicates are identical.
+ * `isProgramPubliclyReachable` in two ways:
+ *  - an UNLISTED program is reachable by its link but never listed — the host
+ *    shares that link themselves;
+ *  - a self-signed-up consultant is not on public list surfaces unless an
+ *    admin published them, so neither are their programs.
  */
 export function isProgramPubliclyListed(
-  program: ProgramOwnershipShape & Pick<ProgramRecord, 'isActive'>,
+  program: ProgramOwnershipShape & Pick<ProgramRecord, 'isActive' | 'visibility'>,
   lookups: OwnerLookups,
 ): boolean {
   if (!isProgramPubliclyReachable(program, lookups)) return false;
+  if (programVisibility(program) === 'UNLISTED') return false;
   const owner = getProgramOwner(program);
   if (owner?.kind !== 'MENTOR') return true;
   const mentor = lookups.mentors.find((m) => m.id === owner.mentorId);

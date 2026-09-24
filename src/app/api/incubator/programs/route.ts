@@ -12,7 +12,7 @@ import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { listProgramsByIncubator } from '@/server/bookings/program-catalog';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
-import { slugify, uniqueSlug } from '@/lib/slugify';
+import { allocateProgramSlug } from '@/server/programs/slug';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,6 +45,8 @@ const createProgramSchema = z.object({
   cashDepositValue: z.number().int().nonnegative().optional().nullable(),
   /** Optional custom slug. Auto-generated from title if omitted. */
   slug:        z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
+  /** PUBLIC (on the /programs catalogue) or UNLISTED (link only). Default PUBLIC. */
+  visibility:  z.enum(['PUBLIC', 'UNLISTED']).default('PUBLIC'),
 });
 
 export async function GET() {
@@ -93,12 +95,9 @@ export async function POST(req: NextRequest) {
   const record = await db.update<ProgramRecord>((d) => {
     if (!Array.isArray(d.programs)) d.programs = [];
 
-    // Slug: use provided value or auto-generate from title; ensure uniqueness per incubator
-    const existingSlugs = d.programs
-      .filter((p) => p.incubatorId === inc.id && p.slug)
-      .map((p) => p.slug as string);
-    const baseSlug = input.slug ? input.slug : slugify(input.title.trim());
-    const slug = uniqueSlug(baseSlug, existingSlugs);
+    // Unique across the platform, not per incubator: the public page looks
+    // the link up across every program (see server/programs/slug.ts).
+    const slug = allocateProgramSlug(d.programs, input.slug, input.title.trim());
 
     const prog: ProgramRecord = {
       id:                     randomUUID(),
@@ -122,6 +121,7 @@ export async function POST(req: NextRequest) {
       acceptedPaymentMethods: paymentMethods,
       ...depositConfig,
       isActive:               true,
+      visibility:             input.visibility,
       slug,
       createdAt:              now,
       updatedAt:              now,

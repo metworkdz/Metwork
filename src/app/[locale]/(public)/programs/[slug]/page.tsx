@@ -14,7 +14,7 @@ import { Container } from '@/components/ui/container';
 import { Badge } from '@/components/ui/badge';
 import { Link } from '@/i18n/routing';
 import { findProgramBySlugOrId } from '@/server/registrations/service';
-import { programHostName } from '@/server/programs/ownership';
+import { programHostName, programVisibility } from '@/server/programs/ownership';
 import { listFormFields } from '@/server/registrations/service';
 import { getProgramAttendance } from '@/server/bookings/service';
 import { programTypeLabel } from '@/components/features/programs/program-meta';
@@ -51,6 +51,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: program.description,
       images: program.imageUrl ? [program.imageUrl] : [],
     },
+    // An unlisted program lives by its shared link alone; search engines must
+    // not surface it. The link preview (Open Graph) still works in WhatsApp.
+    ...(programVisibility(program) === 'UNLISTED' ? { robots: { index: false, follow: false } } : {}),
   };
 }
 

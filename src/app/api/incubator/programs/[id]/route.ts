@@ -11,6 +11,7 @@ import { pruneListingChildrenSync } from '@/server/registrations/service';
 import { canDeleteProgram, canEditProgram, type ProgramActor } from '@/server/programs/ownership';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { isProgramSlugFree } from '@/server/programs/slug';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,6 +51,7 @@ const patchSchema = z.object({
   cashDepositValue: z.number().int().nonnegative().optional().nullable(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'CLOSED']).optional(),
   slug: z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
+  visibility: z.enum(['PUBLIC', 'UNLISTED']).optional(),
 }).refine(
   (d) => {
     if (d.startDate && d.endDate && d.startDate >= d.endDate) return false;
@@ -91,6 +93,12 @@ export async function PATCH(
     // Canonical ownership gate — branches on incubator- vs consultant-owned.
     // No admin bypass on edit: an admin must not rewrite someone's listing.
     if (canEditProgram(p, actor, d.incubators) !== 'ALLOW') return 'FORBIDDEN';
+    // Checked before anything is written: the draft is saved whatever this
+    // returns, so a refusal must come before the first change. The link has
+    // to lead to exactly one program (server/programs/slug.ts).
+    if (input.slug && input.slug !== p.slug && !isProgramSlugFree(d.programs, input.slug, p.id)) {
+      return 'SLUG_TAKEN';
+    }
 
     // Payment config: validate against the merged (existing + patched) state so
     // turning CASH on always carries a valid deposit, and turning it off clears
@@ -132,6 +140,7 @@ export async function PATCH(
     if (input.endDate !== undefined) p.endDate = input.endDate;
     if (input.status !== undefined) p.isActive = input.status === 'PUBLISHED';
     if (input.slug !== undefined) p.slug = input.slug ?? undefined;
+    if (input.visibility !== undefined) p.visibility = input.visibility;
     p.updatedAt = new Date().toISOString();
     return p;
   });
@@ -139,6 +148,9 @@ export async function PATCH(
   if (program === null) return jsonError(404, 'NOT_FOUND', 'Program not found');
   if (program === 'FORBIDDEN') return jsonError(403, 'FORBIDDEN', 'Not your program');
   if (program === 'INVALID_DEPOSIT') return jsonError(400, 'INVALID_DEPOSIT', depositError ?? 'Invalid cash deposit configuration');
+  if (program === 'SLUG_TAKEN') {
+    return jsonError(409, 'SLUG_TAKEN', 'Ce lien est déjà utilisé par un autre programme.');
+  }
   return json({ program });
 }
 

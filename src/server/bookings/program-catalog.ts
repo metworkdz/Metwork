@@ -10,6 +10,7 @@ import {
   isProgramPubliclyListed,
   isProgramPubliclyReachable,
   programHostName,
+  programVisibility,
 } from '@/server/programs/ownership';
 import type { Program } from '@/types/domain';
 
@@ -42,6 +43,7 @@ function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
     cashDepositValue:       r.cashDepositValue,
     slug:                   r.slug ?? null,
     isActive:               r.isActive,
+    visibility:             programVisibility(r),
   };
 }
 

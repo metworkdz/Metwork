@@ -134,6 +134,8 @@ export interface Program {
   slug?: string | null;
   /** Published state. Always true on public lists; meaningful on owner lists. */
   isActive: boolean;
+  /** UNLISTED = reachable by link only, kept off the /programs catalogue. Absent ⇒ PUBLIC. */
+  visibility?: 'PUBLIC' | 'UNLISTED';
 }
 
 export interface Event {

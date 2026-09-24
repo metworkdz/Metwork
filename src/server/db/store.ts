@@ -1304,6 +1304,16 @@ export interface SpaceRecord {
   domiciliationSlots?: number | null;
 }
 
+/**
+ * Where a published program shows up.
+ *  - PUBLIC   — on the /programs catalogue, and by its link.
+ *  - UNLISTED — by its link only: kept off the catalogue and out of search
+ *    engines, for a host who shares it with their own audience (a
+ *    pre-registration to gauge demand, a private cohort). It is not private:
+ *    anyone holding the link can open it and register.
+ */
+export type ProgramVisibility = 'PUBLIC' | 'UNLISTED';
+
 export interface ProgramRecord {
   id: string;
   /**
@@ -1379,6 +1389,8 @@ export interface ProgramRecord {
   /** Deposit value: integer DZD when FIXED, or 1–100 when PERCENT. */
   cashDepositValue?: number;
   isActive: boolean;
+  /** Absent on every program created before this existed ⇒ PUBLIC. */
+  visibility?: ProgramVisibility;
   /**
    * SEO-friendly URL slug, e.g. "startup-bootcamp-oran-2025".
    * Optional for backward compat — old records lack this field.
