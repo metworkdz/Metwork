@@ -310,3 +310,29 @@ describe('toProgramFormSource', () => {
     expect({ ...edited, price: original.price }).toEqual(original);
   });
 });
+
+/* ═════════════ Visibility ═════════════ */
+
+describe('visibility', () => {
+  it('a new program is public unless the host chooses otherwise', () => {
+    expect(emptyProgramForm().visibility).toBe('PUBLIC');
+    expect(programFormToPayload(filled()).visibility).toBe('PUBLIC');
+    expect(programFormToPayload(filled({ visibility: 'UNLISTED' })).visibility).toBe('UNLISTED');
+  });
+
+  it('an unlisted program reopens unlisted, and saving keeps it so', () => {
+    const form = programFormFromRecord(toProgramFormSource({
+      title: 'X',
+      deadline: '2026-09-28T12:00:00.000Z',
+      startDate: '2026-09-29T12:00:00.000Z',
+      endDate: '2026-10-01T12:00:00.000Z',
+      visibility: 'UNLISTED',
+    }));
+    expect(form.visibility).toBe('UNLISTED');
+    expect(programFormToPayload({ ...form, price: '100' }).visibility).toBe('UNLISTED');
+  });
+
+  it('a program saved before the choice existed reopens public', () => {
+    expect(programFormFromRecord(toProgramFormSource({ title: 'X' })).visibility).toBe('PUBLIC');
+  });
+});
