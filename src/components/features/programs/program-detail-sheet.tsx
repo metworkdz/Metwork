@@ -20,6 +20,8 @@ import { bookingService } from '@/services/booking.service';
 import { formatDate, formatRelativeTime } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 import type { Program } from '@/types/domain';
+import { programDates } from '@/lib/program-dates';
+import { Link } from '@/i18n/routing';
 import type { BookingDto, ItemAttendanceStatus } from '@/types/booking';
 
 interface ProgramDetailSheetProps {
@@ -30,6 +32,8 @@ interface ProgramDetailSheetProps {
 
 export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetailSheetProps) {
   const t = useTranslations('programs.detail');
+  // Null while the program's dates are to confirm — a pre-registration.
+  const dates = program ? programDates(program) : null;
   const locale = useLocale() as Locale;
   const [status, setStatus] = useState<ItemAttendanceStatus | null>(null);
   const [success, setSuccess] = useState<{ booking: BookingDto; newBalance: number; paid: boolean } | null>(null);
@@ -95,7 +99,7 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                 <DetailTile
                   icon={<CalendarRange className="size-4" />}
                   label={t('cohortDates')}
-                  value={`${formatDate(program.startDate, locale)} → ${formatDate(program.endDate, locale)}`}
+                  value={dates ? `${formatDate(dates.startDate, locale)} → ${formatDate(dates.endDate, locale)}` : t('datesTbcTitle')}
                   hint={
                     isClockTime(program.endTime)
                       ? formatSessionHours(program.startTime, program.endTime) ?? undefined
@@ -107,7 +111,7 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                 <DetailTile
                   icon={<Clock className="size-4" />}
                   label={t('deadline')}
-                  value={formatDate(program.deadline, locale, { dateStyle: 'medium' })}
+                  value={dates ? formatDate(dates.deadline, locale, { dateStyle: 'medium' }) : t('noDeadlineYet')}
                   hint={status?.deadline ? formatRelativeTime(status.deadline, locale) : undefined}
                   hintTone={status?.deadlinePassed ? 'danger' : 'default'}
                 />
@@ -137,10 +141,11 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
               </div>
 
               {/* Cohort calendar — surfaces the fixed dates and whether it's still bookable */}
+              {dates && (
               <div className="mt-6">
                 <FixedDateCalendar
-                  date={program.startDate}
-                  endDate={program.endDate}
+                  date={dates.startDate}
+                  endDate={dates.endDate}
                   state={
                     status?.deadlinePassed
                       ? 'closed'
@@ -151,6 +156,7 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                   locale={locale}
                 />
               </div>
+              )}
 
               <div className="my-6 border-t border-border" />
 
@@ -166,6 +172,15 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                       {t('close')}
                     </Button>
                   </SheetClose>
+                </div>
+              ) : !dates ? (
+                // A pre-registration signs up on the program's own page, free —
+                // this sheet's form is the paid wallet path, closed until dates.
+                <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-4 text-sm">
+                  <p className="text-muted-foreground">{t('datesTbcBody')}</p>
+                  <Button asChild className="w-full">
+                    <Link href={`/programs/${program.slug || program.id}` as never}>{t('preRegister')}</Link>
+                  </Button>
                 </div>
               ) : (
                 <ProgramApplyForm

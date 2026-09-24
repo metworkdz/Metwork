@@ -24,6 +24,7 @@ import { programTypeLabel, programTypeOrder } from './program-meta';
 import { cn } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 import type { Program, ProgramType } from '@/types/domain';
+import { programDateSortKey, programDeadlinePassed } from '@/lib/program-dates';
 
 type SortKey = 'recommended' | 'deadlineAsc' | 'priceAsc' | 'startAsc';
 type StatusFilter = 'all' | 'open' | 'closed';
@@ -37,7 +38,8 @@ interface ProgramsExplorerProps {
 }
 
 function isOpen(p: Program, taken: number): boolean {
-  return Date.parse(p.deadline) > Date.now() && taken < p.seatsTotal;
+  // A pre-registration (dates to confirm) has no deadline to pass.
+  return !programDeadlinePassed(p) && taken < p.seatsTotal;
 }
 
 export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplorerProps) {
@@ -82,10 +84,10 @@ export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplo
     });
 
     if (sort === 'deadlineAsc')
-      arr = [...arr].sort((a, b) => Date.parse(a.deadline) - Date.parse(b.deadline));
+      arr = [...arr].sort((a, b) => programDateSortKey(a, 'deadline') - programDateSortKey(b, 'deadline'));
     if (sort === 'priceAsc') arr = [...arr].sort((a, b) => a.price - b.price);
     if (sort === 'startAsc')
-      arr = [...arr].sort((a, b) => Date.parse(a.startDate) - Date.parse(b.startDate));
+      arr = [...arr].sort((a, b) => programDateSortKey(a, 'startDate') - programDateSortKey(b, 'startDate'));
 
     return arr;
   }, [programs, attendance, type, city, statusFilter, query, sort]);

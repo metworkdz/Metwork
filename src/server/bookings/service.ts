@@ -39,6 +39,7 @@ import type {
   CreateSpaceBookingResult,
   RegisterForEventResult,
 } from './types';
+import { programDates } from '@/lib/program-dates';
 
 /** Returns the YYYY-MM-DD portion of an ISO datetime string or Date. */
 function toDateStr(iso: string): string {
@@ -943,9 +944,14 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
   // (`POST /api/registrations`), which is owner-agnostic by design.
   if (program.mentorId) return { ok: false, reason: 'PROGRAM_NOT_FOUND' };
 
+  // No money moves while the dates are to confirm: a paid seat is a booking,
+  // and a booking is a date. Sign-ups are free pre-registrations until then.
+  const dates = programDates(program);
+  if (!dates) return { ok: false, reason: 'DATES_TBC' };
+
   // Deadline check (outside the lock — read-only).
-  if (Date.parse(program.deadline) <= Date.now()) {
-    return { ok: false, reason: 'DEADLINE_PASSED', deadline: program.deadline };
+  if (Date.parse(dates.deadline) <= Date.now()) {
+    return { ok: false, reason: 'DEADLINE_PASSED', deadline: dates.deadline };
   }
 
   if (args.promoCode) await ensurePromoCodesSeeded();
@@ -1011,9 +1017,9 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
         unit: 'DAY',
         quantity: 1,
         // A program may carry a real start time — see card-payment.ts.
-        startsAt: applyClockTime(program.startDate, program.startTime),
+        startsAt: applyClockTime(dates.startDate, program.startTime),
         ...(isClockTime(program.startTime) ? { startsAtHasClockTime: true } : {}),
-        endsAt: program.endDate,
+        endsAt: dates.endDate,
         totalAmount: baseTotal,
         status: 'PENDING_PAYMENT',
         clientReference: args.clientReference,
@@ -1093,9 +1099,9 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
       city: program.city,
       unit: 'DAY', // program duration is fixed; unit is purely informational here
       quantity: 1,
-      startsAt: applyClockTime(program.startDate, program.startTime),
+      startsAt: applyClockTime(dates.startDate, program.startTime),
       ...(isClockTime(program.startTime) ? { startsAtHasClockTime: true } : {}),
-      endsAt: program.endDate,
+      endsAt: dates.endDate,
       totalAmount: total,
       status: 'PENDING',
       clientReference: args.clientReference,

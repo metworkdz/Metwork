@@ -9,6 +9,7 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import type { Program, ProgramType } from '@/types/domain';
 import type { Locale } from '@/i18n/config';
 import { CopyProgramLinkButton } from '@/components/features/programs/copy-program-link';
+import { programDates } from '@/lib/program-dates';
 
 interface ProgramsMobileListProps {
   programs: Program[];
@@ -81,7 +82,12 @@ export function ProgramsMobileList({
                 </div>
 
                 <p className="mt-1.5 text-xs text-muted-foreground">
-                  {formatDate(p.startDate, locale)} → {formatDate(p.endDate, locale)}
+                  {(() => {
+                    const dates = programDates(p);
+                    return dates
+                      ? `${formatDate(dates.startDate, locale)} → ${formatDate(dates.endDate, locale)}`
+                      : tVis('datesTbc');
+                  })()}
                 </p>
 
                 {!p.isActive ? (

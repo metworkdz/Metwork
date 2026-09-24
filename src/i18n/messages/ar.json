@@ -3671,7 +3671,9 @@
       "full": "ممتلئ",
       "seatsLeft": "{count} مقاعد متبقية",
       "viewDetails": "عرض التفاصيل",
-      "applyNow": "تقدم الآن"
+      "applyNow": "تقدم الآن",
+      "preRegistration": "تسجيل مسبق",
+      "datesTbc": "التواريخ قيد التأكيد"
     },
     "apply": {
       "paymentMethod": "طريقة الدفع",
@@ -3770,7 +3772,12 @@
       "seatsRemainingMany": "{count} مقاعد متبقية",
       "continueAsGuest": "المتابعة كضيف",
       "close": "إغلاق",
-      "startsAtTime": "ابتداءً من {time}"
+      "startsAtTime": "ابتداءً من {time}",
+      "datesTbcTitle": "التواريخ قيد التأكيد",
+      "datesTbcBody": "سجّل الآن مجاناً: سيُعلمك المنظّم بالتواريخ وبطريقة الدفع.",
+      "indicativeFee": "سعر تقديري",
+      "noDeadlineYet": "لا يوجد آخر أجل بعد",
+      "preRegister": "أسجّل مسبقاً"
     }
   },
   "admin": {
@@ -5709,7 +5716,10 @@
     "copyLink": "نسخ الرابط",
     "linkCopied": "تم نسخ الرابط",
     "unlistedBadge": "غير مُدرج",
-    "draft": "مسودة"
+    "draft": "مسودة",
+    "datesTbc": "التواريخ قيد التأكيد",
+    "datesTbcLabel": "التواريخ قيد التأكيد",
+    "datesTbcHint": "انشره كتسجيل مسبق قبل تحديد التواريخ. التسجيل مفتوح ومجاني إلى أن تحددها، والسعر المعروض تقديري."
   },
   "answerSummary": {
     "title": "ملخص الإجابات",

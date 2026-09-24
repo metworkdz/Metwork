@@ -49,6 +49,7 @@ import {
 } from '@/lib/program-form';
 import type { ProgramType } from '@/types/domain';
 import { ProgramVisibilityField } from '@/components/features/programs/program-visibility-field';
+import { DatesTbcToggle } from '@/components/features/programs/dates-tbc-toggle';
 
 // FIX: BUG-2 — added edit mode props
 interface ProgramFormDialogProps {
@@ -232,6 +233,12 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
               <Label htmlFor="p-seats">{t('labelTotalSeats')}</Label>
               <Input id="p-seats" type="number" min="1" className="mt-1" value={form.seatsTotal} onChange={(e) => set('seatsTotal', e.target.value)} required />
             </div>
+          </div>
+
+          <DatesTbcToggle checked={form.datesTbc} onChange={(v) => set('datesTbc', v)} />
+
+          {!form.datesTbc && (
+          <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label htmlFor="p-deadline">{t('labelDeadline')}</Label>
               <Input id="p-deadline" type="date" className="mt-1" value={form.deadline} onChange={(e) => set('deadline', e.target.value)} required />
@@ -254,6 +261,7 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
               <Input id="p-end" type="date" className="mt-1" value={form.endDate} onChange={(e) => set('endDate', e.target.value)} required />
             </div>
           </div>
+          )}
 
           <div className="rounded-lg border border-border bg-muted/30 p-3">
             <p className="text-sm font-medium">{t('labelSplitPricing')}</p>

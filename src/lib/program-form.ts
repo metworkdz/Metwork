@@ -72,6 +72,11 @@ export interface ProgramFormValues {
   /** Blank or "0" ⇒ no deposit; the whole amount is collected on site. */
   cashDepositValue: string;
   visibility: ProgramVisibility;
+  /**
+   * "Dates à confirmer": a pre-registration published before the dates are
+   * fixed. The date fields are then ignored and none are sent.
+   */
+  datesTbc: boolean;
 }
 
 export function emptyProgramForm(): ProgramFormValues {
@@ -96,6 +101,7 @@ export function emptyProgramForm(): ProgramFormValues {
     // Public unless the host chooses otherwise — how every program behaved
     // before the choice existed.
     visibility: 'PUBLIC',
+    datesTbc: false,
   };
 }
 
@@ -120,6 +126,7 @@ export interface ProgramFormSource {
   cashDepositType?: CashDepositType | null;
   cashDepositValue?: number | null;
   visibility?: ProgramVisibility | null;
+  datesTbc?: boolean | null;
 }
 
 /** An ISO datetime back to the "YYYY-MM-DD" a date input wants. */
@@ -161,6 +168,7 @@ export function toProgramFormSource(program: ProgramFormSource): ProgramFormSour
     cashDepositType: program.cashDepositType,
     cashDepositValue: program.cashDepositValue,
     visibility: program.visibility,
+    datesTbc: program.datesTbc,
   };
 }
 
@@ -194,6 +202,7 @@ export function programFormFromRecord(source: ProgramFormSource): ProgramFormVal
       ? String(source.cashDepositValue)
       : (source.cashDepositType ? base.cashDepositValue : '0'),
     visibility: source.visibility === 'UNLISTED' ? 'UNLISTED' : 'PUBLIC',
+    datesTbc: Boolean(source.datesTbc),
   };
 }
 
@@ -246,12 +255,14 @@ export function validateProgramForm(v: ProgramFormValues): ProgramFormError | nu
     if (!Number.isFinite(n) || n < 0) return 'price';
   }
 
-  if (!v.deadline || !v.startDate || !v.endDate) return 'dates';
-  // Applications must close no later than the day the program starts, and a
-  // program must end after it begins. The incubator surface never checked this
-  // and neither does its route, so this is the only thing standing between a
-  // host and a program that is closed on the day it is published.
-  if (!(v.deadline <= v.startDate && v.startDate < v.endDate)) return 'dateOrder';
+  // A pre-registration with dates to confirm has none to check.
+  if (!v.datesTbc) {
+    if (!v.deadline || !v.startDate || !v.endDate) return 'dates';
+    // Applications must close no later than the day the program starts, and
+    // a program must end after it begins — checked on the server too
+    // (server/programs/dates.ts).
+    if (!(v.deadline <= v.startDate && v.startDate < v.endDate)) return 'dateOrder';
+  }
 
   for (const time of [v.startTime, v.endTime]) {
     if (time.trim() === '') continue;
@@ -279,15 +290,17 @@ export interface ProgramPayload {
   onlinePrice: number | null;
   cashPrice: number | null;
   seatsTotal: number;
-  deadline: string;
-  startDate: string;
+  /** All three null when `datesTbc`. */
+  deadline: string | null;
+  startDate: string | null;
   startTime: string | null;
   endTime: string | null;
-  endDate: string;
+  endDate: string | null;
   acceptedPaymentMethods: PaymentMethod[];
   cashDepositType: CashDepositType | null;
   cashDepositValue: number | null;
   visibility: ProgramVisibility;
+  datesTbc: boolean;
 }
 
 /**
@@ -316,13 +329,13 @@ export function programFormToPayload(v: ProgramFormValues): ProgramPayload {
     onlinePrice: v.onlinePrice.trim() === '' ? null : Number(v.onlinePrice),
     cashPrice: v.cashPrice.trim() === '' ? null : Number(v.cashPrice),
     seatsTotal: Number(v.seatsTotal),
-    deadline: dateInputToIso(v.deadline),
-    startDate: dateInputToIso(v.startDate),
+    deadline: v.datesTbc ? null : dateInputToIso(v.deadline),
+    startDate: v.datesTbc ? null : dateInputToIso(v.startDate),
     // Blank ⇒ the program publishes no start time, which is how every program
     // behaved before the field existed.
     startTime: v.startTime.trim() === '' ? null : v.startTime,
     endTime: v.endTime.trim() === '' ? null : v.endTime,
-    endDate: dateInputToIso(v.endDate),
+    endDate: v.datesTbc ? null : dateInputToIso(v.endDate),
     acceptedPaymentMethods: v.acceptedPaymentMethods,
     // The deposit only means anything when cash is accepted. Blank or 0 is a
     // real answer — "pay the whole thing on the day" — and the server stores
@@ -332,5 +345,6 @@ export function programFormToPayload(v: ProgramFormValues): ProgramPayload {
       ? (v.cashDepositValue.trim() === '' ? 0 : Number(v.cashDepositValue))
       : null,
     visibility: v.visibility,
+    datesTbc: v.datesTbc,
   };
 }

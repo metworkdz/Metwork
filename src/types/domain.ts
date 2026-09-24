@@ -119,13 +119,13 @@ export interface Program {
   cashPrice?: number | null;
   seatsTotal: number;
   seatsTaken: number;
-  deadline: string;
-  startDate: string;
+  deadline: string | null;
+  startDate: string | null;
   /** Local wall-clock start time "HH:MM". Absent ⇒ no time is shown. */
   startTime?: string | null;
   /** Local wall-clock end time "HH:MM". Independent of `startTime`. */
   endTime?: string | null;
-  endDate: string;
+  endDate: string | null;
   acceptedPaymentMethods: PaymentMethod[];
   /** Cash deposit config — present only when CASH is accepted. */
   cashDepositType?: CashDepositType;
@@ -136,6 +136,8 @@ export interface Program {
   isActive: boolean;
   /** UNLISTED = reachable by link only, kept off the /programs catalogue. Absent ⇒ PUBLIC. */
   visibility?: 'PUBLIC' | 'UNLISTED';
+  /** Dates still to confirm — deadline/startDate/endDate are then null. */
+  datesTbc?: boolean;
 }
 
 export interface Event {

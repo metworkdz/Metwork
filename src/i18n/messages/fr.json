@@ -3671,7 +3671,9 @@
       "full": "Complet",
       "seatsLeft": "{count} places restantes",
       "viewDetails": "Voir les détails",
-      "applyNow": "Postuler"
+      "applyNow": "Postuler",
+      "preRegistration": "Pré-inscription",
+      "datesTbc": "Dates à confirmer"
     },
     "apply": {
       "paymentMethod": "Mode de paiement",
@@ -3770,7 +3772,12 @@
       "seatsRemainingMany": "{count} places restantes",
       "continueAsGuest": "Continuer en tant qu'invité",
       "close": "Fermer",
-      "startsAtTime": "à partir de {time}"
+      "startsAtTime": "à partir de {time}",
+      "datesTbcTitle": "Dates à confirmer",
+      "datesTbcBody": "Inscrivez-vous dès maintenant, gratuitement : l’organisateur vous communiquera les dates et les modalités de paiement.",
+      "indicativeFee": "tarif indicatif",
+      "noDeadlineYet": "Pas encore de date limite",
+      "preRegister": "Je me pré-inscris"
     }
   },
   "admin": {
@@ -5709,7 +5716,10 @@
     "copyLink": "Copier le lien",
     "linkCopied": "Lien copié",
     "unlistedBadge": "Non répertorié",
-    "draft": "Brouillon"
+    "draft": "Brouillon",
+    "datesTbc": "Dates à confirmer",
+    "datesTbcLabel": "Dates à confirmer",
+    "datesTbcHint": "Publiez-le en pré-inscription avant de fixer les dates. Les inscriptions sont ouvertes et gratuites jusqu’à ce que vous les fixiez ; le prix affiché est indicatif."
   },
   "answerSummary": {
     "title": "Résumé des réponses",

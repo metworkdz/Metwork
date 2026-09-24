@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from '@/i18n/routing';
 import { findProgramBySlugOrId } from '@/server/registrations/service';
 import { programHostName, programVisibility } from '@/server/programs/ownership';
+import { programDates, programDeadlinePassed } from '@/lib/program-dates';
 import { listFormFields } from '@/server/registrations/service';
 import { getProgramAttendance } from '@/server/bookings/service';
 import { programTypeLabel } from '@/components/features/programs/program-meta';
@@ -80,7 +81,9 @@ export default async function ProgramDetailPage({ params }: PageProps) {
 
   const seatsLeft = program.seatsTotal - seatsTaken;
   const isFull = seatsLeft <= 0;
-  const deadlinePassed = new Date(program.deadline) < new Date();
+  // Dates still to confirm: a pre-registration — open, and free for now.
+  const dates = programDates(program);
+  const deadlinePassed = programDeadlinePassed(program);
   const canRegister = !isFull && !deadlinePassed;
 
   // Pre-fill from session if logged in
@@ -150,13 +153,22 @@ export default async function ProgramDetailPage({ params }: PageProps) {
           )}
 
           {/* Dates */}
+          {!dates ? (
+            <div className="flex gap-3 rounded-xl border border-border bg-muted/30 p-4">
+              <Calendar className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-semibold">{t('datesTbcTitle')}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">{t('datesTbcBody')}</p>
+              </div>
+            </div>
+          ) : (
           <div className="grid gap-3 sm:grid-cols-3 rounded-xl border border-border bg-muted/30 p-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
                 <Clock className="inline size-3 mr-1" />{t('deadlineLabel')}
               </p>
               <p className={`text-sm font-medium ${deadlinePassed ? 'text-destructive' : ''}`}>
-                {formatDate(program.deadline, locale as Locale)}
+                {formatDate(dates.deadline, locale as Locale)}
               </p>
             </div>
             <div>
@@ -164,7 +176,7 @@ export default async function ProgramDetailPage({ params }: PageProps) {
                 <Calendar className="inline size-3 mr-1" />{t('startsLabel')}
               </p>
               <p className="text-sm font-medium">
-                {formatDate(program.startDate, locale as Locale)}
+                {formatDate(dates.startDate, locale as Locale)}
                 {/* Only when the host published one — a program without a start
                     time shows the date alone, never the storage anchor. */}
                 {/* A range reads plainly ("18:30 – 21:30"); a lone start needs
@@ -182,9 +194,10 @@ export default async function ProgramDetailPage({ params }: PageProps) {
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
                 <Calendar className="inline size-3 mr-1" />{t('endsLabel')}
               </p>
-              <p className="text-sm font-medium">{formatDate(program.endDate, locale as Locale)}</p>
+              <p className="text-sm font-medium">{formatDate(dates.endDate, locale as Locale)}</p>
             </div>
           </div>
+          )}
         </div>
 
         {/* ── Right: pricing + registration ── */}
@@ -198,7 +211,7 @@ export default async function ProgramDetailPage({ params }: PageProps) {
                 onlinePrice={program.onlinePrice}
                 cashPrice={program.cashPrice}
                 acceptedPaymentMethods={program.acceptedPaymentMethods}
-                caption={t('enrollmentFee')}
+                caption={dates ? t('enrollmentFee') : t('indicativeFee')}
               />
             </div>
 
@@ -215,14 +228,16 @@ export default async function ProgramDetailPage({ params }: PageProps) {
                   isAuthed={session !== null}
                   guestCheckoutAllowed={guestCheckoutAllowedFor('PROGRAM')}
                   signInNext={`/programs/${slug}`}
-                  pricing={{
+                  // While the dates are to confirm, signing up is free — the
+                  // server refuses any payment until they are set.
+                  pricing={dates ? {
                     price: program.price,
                     onlinePrice: program.onlinePrice,
                     cashPrice: program.cashPrice,
                     acceptedPaymentMethods: program.acceptedPaymentMethods,
                     cashDepositType: program.cashDepositType,
                     cashDepositValue: program.cashDepositValue,
-                  }}
+                  } : { price: 0, onlinePrice: 0, cashPrice: 0, acceptedPaymentMethods: program.acceptedPaymentMethods }}
                 />
               </div>
             ) : (

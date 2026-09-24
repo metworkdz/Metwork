@@ -3671,7 +3671,9 @@
       "full": "Full",
       "seatsLeft": "{count} seats left",
       "viewDetails": "View details",
-      "applyNow": "Apply now"
+      "applyNow": "Apply now",
+      "preRegistration": "Pre-registration",
+      "datesTbc": "Dates to be confirmed"
     },
     "apply": {
       "paymentMethod": "Payment method",
@@ -3770,7 +3772,12 @@
       "seatsRemainingMany": "{count} seats remaining",
       "continueAsGuest": "Continue as guest",
       "close": "Close",
-      "startsAtTime": "from {time}"
+      "startsAtTime": "from {time}",
+      "datesTbcTitle": "Dates to be confirmed",
+      "datesTbcBody": "Sign up now, free of charge: the organiser will share the dates and how to pay.",
+      "indicativeFee": "indicative price",
+      "noDeadlineYet": "No deadline yet",
+      "preRegister": "Pre-register"
     }
   },
   "admin": {
@@ -5709,7 +5716,10 @@
     "copyLink": "Copy link",
     "linkCopied": "Link copied",
     "unlistedBadge": "Unlisted",
-    "draft": "Draft"
+    "draft": "Draft",
+    "datesTbc": "Dates to be confirmed",
+    "datesTbcLabel": "Dates to be confirmed",
+    "datesTbcHint": "Publish it as a pre-registration before fixing the dates. Sign-ups are open and free until you set them; the price shown is indicative."
   },
   "answerSummary": {
     "title": "Answer summary",

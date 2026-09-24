@@ -14,6 +14,7 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 import type { Program } from '@/types/domain';
+import { programDates } from '@/lib/program-dates';
 
 interface ProgramCardProps {
   program: Program;
@@ -37,8 +38,11 @@ export function ProgramCard({ program, taken, locale, onSelect, featured }: Prog
   const occupied = taken ?? program.seatsTaken;
   const remaining = Math.max(0, program.seatsTotal - occupied);
   const fillPct = Math.min(100, Math.round((occupied / program.seatsTotal) * 100));
-  const days = daysUntil(program.deadline);
+  // Null while the dates are to confirm: a pre-registration, open, no countdown.
+  const dates = programDates(program);
+  const days = dates ? daysUntil(dates.deadline) : Number.POSITIVE_INFINITY;
   const dl = ((): { label: string; variant: 'default' | 'danger' | 'warning' | 'outline' } => {
+    if (!dates) return { label: t('preRegistration'), variant: 'outline' };
     if (days < 0) return { label: t('closed'), variant: 'default' };
     if (days === 0) return { label: t('closesToday'), variant: 'danger' };
     if (days <= 3) return { label: t('closesIn', { count: days }), variant: 'danger' };
@@ -107,13 +111,19 @@ export function ProgramCard({ program, taken, locale, onSelect, featured }: Prog
         {/* Cohort timeline strip */}
         <div className="mt-5 flex items-center gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs">
           <CalendarRange className="size-3.5 text-muted-foreground" />
-          <span className="font-medium text-foreground">
-            {formatDate(program.startDate, locale, { dateStyle: 'medium' })}
-          </span>
-          <span className="text-muted-foreground">→</span>
-          <span className="font-medium text-foreground">
-            {formatDate(program.endDate, locale, { dateStyle: 'medium' })}
-          </span>
+          {dates ? (
+            <>
+              <span className="font-medium text-foreground">
+                {formatDate(dates.startDate, locale, { dateStyle: 'medium' })}
+              </span>
+              <span className="text-muted-foreground">→</span>
+              <span className="font-medium text-foreground">
+                {formatDate(dates.endDate, locale, { dateStyle: 'medium' })}
+              </span>
+            </>
+          ) : (
+            <span className="font-medium text-foreground">{t('datesTbc')}</span>
+          )}
         </div>
 
         {/* Capacity bar */}

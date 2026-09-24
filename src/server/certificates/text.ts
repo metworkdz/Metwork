@@ -80,8 +80,10 @@ export function certificateVariables(
     '{programme}': context.programTitle.trim(),
     '{organisme}': context.organizer.trim(),
     '{formateur}': (settings.trainerName ?? '').trim(),
-    '{dates}': formatCertificateDates(context.startDate, context.endDate),
-    '{date}': formatCertificateDay(context.startDate),
+    // Empty while the program's dates are to confirm — the editor then flags
+    // {dates} as an empty variable, and issuing waits for real dates.
+    '{dates}': context.startDate && context.endDate ? formatCertificateDates(context.startDate, context.endDate) : '',
+    '{date}': context.startDate ? formatCertificateDay(context.startDate) : '',
     '{ville}': context.city.trim(),
     '{heures}': (settings.hours ?? '').trim(),
     '{nom}': (recipient?.fullName ?? '').trim(),

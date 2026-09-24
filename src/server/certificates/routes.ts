@@ -120,11 +120,12 @@ export async function handleCertificatePreview(req: NextRequest, programId: stri
 
 /* ─────────────────────────── Issuing ─────────────────────────── */
 
-const ISSUE_REFUSAL: Record<'NOT_FOUND' | 'NOT_SAVED' | 'NONE' | 'TOO_MANY', [number, string]> = {
+const ISSUE_REFUSAL: Record<'NOT_FOUND' | 'NOT_SAVED' | 'NONE' | 'TOO_MANY' | 'DATES_TBC', [number, string]> = {
   NOT_FOUND: [404, 'Program not found'],
   NOT_SAVED: [409, 'Enregistrez le modèle d’attestation avant de les émettre.'],
   NONE: [409, 'Aucun participant présent à qui émettre une attestation.'],
   TOO_MANY: [413, 'Trop d’attestations en une fois.'],
+  DATES_TBC: [409, 'Les dates du programme sont à confirmer : fixez-les avant d’émettre les attestations.'],
 };
 
 function refusal(reason: keyof typeof ISSUE_REFUSAL) {

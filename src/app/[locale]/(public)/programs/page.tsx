@@ -8,6 +8,7 @@ import { listPrograms } from '@/server/bookings/program-catalog';
 import { getProgramAttendance } from '@/server/bookings/service';
 import { algerianCities } from '@/config/cities';
 import { assertLandingVisible } from '@/lib/landing-visibility';
+import { programDateSortKey, programDates, programDeadlinePassed } from '@/lib/program-dates';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,20 +49,22 @@ export default async function ProgramsPage({ params }: PageProps) {
 
   // Quick stat: how many cohorts are accepting applications right now.
   const now = Date.now();
+  // A pre-registration (dates to confirm) is open too — it has no deadline yet.
   const openNow = programs.filter((p) => {
     const taken = attendance[p.id] ?? p.seatsTaken;
-    return Date.parse(p.deadline) > now && taken < p.seatsTotal;
+    return !programDeadlinePassed(p, now) && taken < p.seatsTotal;
   }).length;
 
-  // Closing-soonest open program for the urgency callout.
+  // Closing-soonest open program for the urgency callout — dated ones only.
   const closingNext = programs
     .filter((p) => {
       const taken = attendance[p.id] ?? p.seatsTaken;
-      return Date.parse(p.deadline) > now && taken < p.seatsTotal;
+      return programDates(p) !== null && !programDeadlinePassed(p, now) && taken < p.seatsTotal;
     })
-    .sort((a, b) => Date.parse(a.deadline) - Date.parse(b.deadline))[0];
-  const closingDays = closingNext
-    ? Math.ceil((Date.parse(closingNext.deadline) - now) / 86_400_000)
+    .sort((a, b) => programDateSortKey(a, 'deadline') - programDateSortKey(b, 'deadline'))[0];
+  const closingDeadline = closingNext ? programDates(closingNext)?.deadline : null;
+  const closingDays = closingDeadline
+    ? Math.ceil((Date.parse(closingDeadline) - now) / 86_400_000)
     : null;
 
   const cohortsBadge = openNow === 1 ? t('cohortsAcceptingOne') : t('cohortsAcceptingMany', { count: openNow });

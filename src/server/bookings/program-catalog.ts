@@ -13,6 +13,7 @@ import {
   programVisibility,
 } from '@/server/programs/ownership';
 import type { Program } from '@/types/domain';
+import { programDatesTbc } from '@/lib/program-dates';
 
 function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
   return {
@@ -44,6 +45,7 @@ function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
     slug:                   r.slug ?? null,
     isActive:               r.isActive,
     visibility:             programVisibility(r),
+    datesTbc:               programDatesTbc(r),
   };
 }
 

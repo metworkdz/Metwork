@@ -171,7 +171,7 @@ export interface IssuedCertificate {
 
 export type IssueResult =
   | { ok: true; setup: CertificateSetup; issued: IssuedCertificate[] }
-  | { ok: false; reason: 'NOT_FOUND' | 'NOT_SAVED' | 'NONE' | 'TOO_MANY' };
+  | { ok: false; reason: 'NOT_FOUND' | 'NOT_SAVED' | 'NONE' | 'TOO_MANY' | 'DATES_TBC' };
 
 /**
  * Issue (or re-issue) the certificates of the given participants — all
@@ -188,6 +188,10 @@ export async function issueCertificates(
   if (!setup) return { ok: false, reason: 'NOT_FOUND' };
   // Issuing freezes a number against a design; the host has to have chosen it.
   if (!setup.saved) return { ok: false, reason: 'NOT_SAVED' };
+  // A certificate states when the training took place; it waits for real dates.
+  const startDate = setup.context.startDate;
+  const endDate = setup.context.endDate;
+  if (!startDate || !endDate) return { ok: false, reason: 'DATES_TBC' };
 
   const wanted = registrationIds ? new Set(registrationIds) : null;
   if (wanted && wanted.size > MAX_CERTIFICATES_PER_BATCH) return { ok: false, reason: 'TOO_MANY' };
@@ -216,8 +220,8 @@ export async function issueCertificates(
         civility: reg.civility ?? null,
         programTitle: setup.context.programTitle,
         organizer: setup.context.organizer,
-        startDate: setup.context.startDate,
-        endDate: setup.context.endDate,
+        startDate,
+        endDate,
       };
       if (!cert) {
         cert = {

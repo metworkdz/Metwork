@@ -34,6 +34,7 @@ import {
   findMissingRequiredAnswer,
   type OwnerScope,
 } from './service';
+import { programDates } from '@/lib/program-dates';
 
 export interface AddParticipantInput {
   entityType: 'PROGRAM' | 'EVENT';
@@ -73,8 +74,9 @@ interface ListingSnapshot {
   title: string;
   vendorName: string;
   city: string;
-  startsAt: string;
-  endsAt: string;
+  /** Null while a program's dates are to confirm: no booking, no money. */
+  startsAt: string | null;
+  endsAt: string | null;
   startsAtHasClockTime: boolean;
   cashPrice: number;
   seatsTotal: number;
@@ -90,6 +92,7 @@ export async function addOfflineRegistration(
     const p = (data.programs ?? []).find((x) => x.id === input.entityId);
     if (!p) return { ok: false, reason: 'NOT_FOUND' };
     if (!ownsListing(p, input.owner)) return { ok: false, reason: 'NOT_FOUND' };
+    const dates = programDates(p);
     listing = {
       id: p.id,
       title: p.title,
@@ -97,9 +100,9 @@ export async function addOfflineRegistration(
       city: p.city,
       // Same clock-time handling as the public link, so the booking a walk-in
       // gets carries the real start hour rather than the storage anchor.
-      startsAt: applyClockTime(p.startDate, p.startTime),
+      startsAt: dates ? applyClockTime(dates.startDate, p.startTime) : null,
       startsAtHasClockTime: isClockTime(p.startTime),
-      endsAt: p.endDate,
+      endsAt: dates ? dates.endDate : null,
       cashPrice: resolveListingPricing(p.price, p).cash,
       seatsTotal: p.seatsTotal,
     };
@@ -132,7 +135,11 @@ export async function addOfflineRegistration(
   const missing = findMissingRequiredAnswer(data, input.entityType, input.entityId, input.answers);
   if (missing) return { ok: false, reason: 'MISSING_REQUIRED_FIELD', ...missing };
 
-  const totalAmount = Math.max(
+  // A program whose dates are to confirm takes a pre-registration at the
+  // desk too: the person is recorded, no booking and no money (a booking is a
+  // date). See @/lib/program-dates.
+  const preRegistration = !listing.startsAt || !listing.endsAt;
+  const totalAmount = preRegistration ? 0 : Math.max(
     0,
     Math.round(input.totalAmount ?? listing.cashPrice),
   );
@@ -148,7 +155,7 @@ export async function addOfflineRegistration(
     phone: input.phone,
     answers: input.answers,
     locale: input.locale ?? null,
-    cashReservation: {
+    cashReservation: !listing.startsAt || !listing.endsAt ? null : {
       listing: {
         id: listing.id,
         title: listing.title,

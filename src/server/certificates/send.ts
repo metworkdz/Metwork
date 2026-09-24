@@ -133,7 +133,7 @@ export type SendResult =
       /** Still to send — call again. */
       remaining: number;
     }
-  | { ok: false; reason: 'NOT_FOUND' | 'NOT_SAVED' | 'NONE' | 'TOO_MANY' };
+  | { ok: false; reason: 'NOT_FOUND' | 'NOT_SAVED' | 'NONE' | 'TOO_MANY' | 'DATES_TBC' };
 
 /**
  * Send certificates by email.

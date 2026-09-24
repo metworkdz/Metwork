@@ -57,6 +57,8 @@ export async function POST(
     switch (result.reason) {
       case 'PROGRAM_NOT_FOUND':
         return jsonError(404, 'PROGRAM_NOT_FOUND', 'Program not found');
+      case 'DATES_TBC':
+        return jsonError(409, 'DATES_TBC', 'Les dates de ce programme sont à confirmer : l’inscription est gratuite pour l’instant, le paiement viendra une fois les dates fixées.');
       case 'DEADLINE_PASSED':
         return jsonError(409, 'DEADLINE_PASSED', 'Application deadline has passed', {
           deadline: result.deadline,

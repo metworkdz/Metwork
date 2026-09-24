@@ -85,6 +85,7 @@ import {
   insertRegistrationSync,
   dispatchRegistrationConfirmationIfDue,
 } from '@/server/registrations/service';
+import { programDates } from '@/lib/program-dates';
 
 /** Pay tokens live for 7 days — long enough to finish a hosted checkout. */
 const PAY_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -139,6 +140,8 @@ export type CreateCardBookingReason =
   | 'OVERLAP_CONFLICT'
   | 'CAPACITY_EXCEEDED'
   | 'DEADLINE_PASSED'
+  /** Program dates still to confirm: free pre-registrations only, no payment. */
+  | 'DATES_TBC'
   | 'EVENT_PASSED'
   | 'ALREADY_BOOKED'
   /** Request-to-Book space: card checkout would bypass the host's approval. */
@@ -338,7 +341,10 @@ function resolveTarget(
       return { ok: false, reason: 'ITEM_NOT_FOUND' };
     }
 
-    if (Date.parse(rec.deadline) <= Date.now()) return { ok: false, reason: 'DEADLINE_PASSED', detail: { deadline: rec.deadline } };
+    // No card payment while the dates are to confirm — see @/lib/program-dates.
+    const dates = programDates(rec);
+    if (!dates) return { ok: false, reason: 'DATES_TBC' };
+    if (Date.parse(dates.deadline) <= Date.now()) return { ok: false, reason: 'DEADLINE_PASSED', detail: { deadline: dates.deadline } };
     return {
       ok: true,
       item: {
@@ -351,9 +357,9 @@ function resolveTarget(
         // A program may now carry a real start time; fold it into the instant
         // so the checkout and the receipt show what the host actually set,
         // instead of the noon anchor `startDate` is stored at.
-        startsAt: applyClockTime(rec.startDate, rec.startTime),
+        startsAt: applyClockTime(dates.startDate, rec.startTime),
         startsAtHasClockTime: isClockTime(rec.startTime),
-        endsAt: rec.endDate,
+        endsAt: dates.endDate,
         total: effectiveListingPrice(rec.price, rec, priceMode),
         acceptedPaymentMethods: rec.acceptedPaymentMethods,
         cashDepositType: rec.cashDepositType,

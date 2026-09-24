@@ -228,7 +228,9 @@ export async function renderProgramFinancePdf(f: ProgramFinances, now: Date = ne
   y += 16;
   cell(doc, f.program.title, M, y, width, { size: 17, bold: true });
   y += 26;
-  const dates = `${fmtDate(f.program.startDate)} – ${fmtDate(f.program.endDate)}`;
+  const dates = f.program.startDate && f.program.endDate
+    ? `${fmtDate(f.program.startDate)} – ${fmtDate(f.program.endDate)}`
+    : 'Dates à confirmer';
   cell(doc, [f.organizer, dates].filter(Boolean).join('  ·  '), M, y, width, { size: 9.5, color: MUTED });
   y += 24;
 

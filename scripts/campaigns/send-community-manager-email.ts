@@ -138,6 +138,10 @@ async function facts(posterUrl: string | null): Promise<{
   const d = await db.read();
   const p = (d.programs ?? []).find((x) => x.slug === SLUG);
   if (!p) throw new Error(`Program "${SLUG}" not found on ${TARGET.label}`);
+  // A campaign announces real dates; a program still to confirm has none.
+  if (!p.startDate || !p.endDate || !p.deadline) {
+    throw new Error(`Program "${SLUG}" has its dates to confirm — set them before announcing it`);
+  }
 
   const taken = (d.registrations ?? []).filter(
     (r) => r.entityId === p.id && r.status === 'CONFIRMED',

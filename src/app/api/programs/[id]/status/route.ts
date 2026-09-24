@@ -9,6 +9,7 @@ import { findProgramById } from '@/server/bookings/program-catalog';
 import { getProgramAttendance } from '@/server/bookings/service';
 import { readSession } from '@/server/auth/session';
 import { json, jsonError } from '@/server/http/json';
+import { programDatesTbc, programDeadlinePassed } from '@/lib/program-dates';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,9 @@ export async function GET(
     capacity: program.seatsTotal,
     taken: att.taken,
     deadline: program.deadline,
-    deadlinePassed: Date.parse(program.deadline) <= Date.now(),
+    // Never passed while the dates are to confirm: there is no deadline yet.
+    deadlinePassed: programDeadlinePassed(program),
+    datesTbc: programDatesTbc(program),
     mine: att.mine
       ? { bookingId: att.mine.id, status: att.mine.status, createdAt: att.mine.createdAt }
       : null,

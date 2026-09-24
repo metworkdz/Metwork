@@ -13,6 +13,7 @@ import { ProgramsMobileList } from './programs-mobile-list';
 import { formatCurrency, formatDate } from '@/lib/format';
 import type { Program, ProgramType } from '@/types/domain';
 import type { Locale } from '@/i18n/config';
+import { programDates } from '@/lib/program-dates';
 
 /**
  * Program type → the `incubator.programForm.type*` key that names it. The
@@ -102,14 +103,18 @@ export function ProgramsManager() {
     {
       key: 'dates',
       label: t('colSchedule'),
-      render: (p) => (
-        <div className="text-sm">
-          <div>{formatDate(p.startDate, locale)}</div>
-          <div className="text-xs text-muted-foreground">
-            → {formatDate(p.endDate, locale)}
+      render: (p) => {
+        const dates = programDates(p);
+        if (!dates) return <span className="text-sm text-muted-foreground">{tVis('datesTbc')}</span>;
+        return (
+          <div className="text-sm">
+            <div>{formatDate(dates.startDate, locale)}</div>
+            <div className="text-xs text-muted-foreground">
+              → {formatDate(dates.endDate, locale)}
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'seats',

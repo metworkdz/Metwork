@@ -64,6 +64,8 @@ export type ApplyToProgramResult =
     }
   | { ok: false; reason: 'PROGRAM_NOT_FOUND' }
   | { ok: false; reason: 'DEADLINE_PASSED'; deadline: string }
+  /** The program's dates are still to confirm — it takes no payment yet. */
+  | { ok: false; reason: 'DATES_TBC' }
   | { ok: false; reason: 'CAPACITY_EXCEEDED'; capacity: number; taken: number }
   | { ok: false; reason: 'ALREADY_APPLIED'; existingBookingId: string }
   | { ok: false; reason: 'WALLET_FROZEN' }

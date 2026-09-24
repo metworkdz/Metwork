@@ -22,6 +22,7 @@ import { applyClockTime, isClockTime } from '@/lib/booking-when';
 import { readSession } from '@/server/auth/session';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { db } from '@/server/db/store';
+import { programDates } from '@/lib/program-dates';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -113,8 +114,11 @@ export async function POST(req: NextRequest) {
   if (input.entityType === 'PROGRAM') {
     const prog = (data.programs ?? []).find((p) => p.id === input.entityId && p.isActive);
     if (!prog) return jsonError(404, 'NOT_FOUND', 'Program not found or inactive');
+    // Dates still to confirm: this is a pre-registration — open (no deadline
+    // yet) and free, whatever the indicative price. See @/lib/program-dates.
+    const dates = programDates(prog);
     // Deadline check
-    if (new Date(prog.deadline) < new Date()) {
+    if (dates && new Date(dates.deadline) < new Date()) {
       return jsonError(409, 'DEADLINE_PASSED', 'The application deadline has passed');
     }
     // This endpoint enrols WITHOUT taking payment. A paid listing must go
@@ -122,7 +126,7 @@ export async function POST(req: NextRequest) {
     // registrationAnswers) or a seat on a 22 000 DZD training could be claimed
     // by POSTing here directly. Checked on BOTH surfaces — either price being
     // positive makes the listing paid.
-    if (isPaidListing(prog)) {
+    if (dates && isPaidListing(prog)) {
       // ...unless the host takes cash with no deposit, in which case there is
       // nothing to charge online and this IS the intended flow.
       if (!(input.paymentMethod === 'CASH' && allowsCashOnSite(prog))) {
@@ -134,9 +138,9 @@ export async function POST(req: NextRequest) {
           title: prog.title,
           vendorName: prog.incubatorName ?? prog.mentorName ?? 'Metwork',
           city: prog.city,
-          startsAt: applyClockTime(prog.startDate, prog.startTime),
+          startsAt: applyClockTime(dates.startDate, prog.startTime),
           startsAtHasClockTime: isClockTime(prog.startTime),
-          endsAt: prog.endDate,
+          endsAt: dates.endDate,
         },
         // The cash surface's price — never the online one.
         amountDue: resolveListingPricing(prog.price, prog).cash,

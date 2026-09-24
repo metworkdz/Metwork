@@ -32,6 +32,7 @@ import { RegistrationFormBuilder } from '@/components/features/registrations/for
 import { AbandonedCheckoutsTable } from '@/components/features/registrations/abandoned-checkouts-table';
 import { CertificatesPanel } from '@/components/features/certificates/certificates-panel';
 import { ProgramVisibilityField } from '@/components/features/programs/program-visibility-field';
+import { DatesTbcToggle } from '@/components/features/programs/dates-tbc-toggle';
 import { ProgramFinancesPanel } from '@/components/features/program-finance/program-finances-panel';
 import type { RegistrationFormField } from '@/types/domain';
 import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
@@ -233,7 +234,9 @@ export function ProgramsSection() {
                     )}
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {p.city} · {fmtDate(p.startDate, locale)} → {fmtDate(p.endDate, locale)}
+                    {p.city} · {p.startDate && p.endDate
+                      ? `${fmtDate(p.startDate, locale)} → ${fmtDate(p.endDate, locale)}`
+                      : tVis('datesTbc')}
                   </p>
                   <p className="mt-1 text-xs text-primary">
                     {t('seats', { taken: p.seatsTaken, total: p.seatsTotal })}
@@ -315,6 +318,9 @@ export function ProgramsSection() {
               onChange={(e) => set('seatsTotal', e.target.value)}
             />
           </Field>
+          <DatesTbcToggle checked={draft.datesTbc} onChange={(v) => set('datesTbc', v)} />
+
+          {!draft.datesTbc && (
           <div className="grid gap-3 sm:grid-cols-3">
             <Field label={t('labelDeadline')} htmlFor="p-deadline">
               <input
@@ -352,6 +358,7 @@ export function ProgramsSection() {
               />
             </Field>
           </div>
+          )}
 
           <Field label={t('labelPrice')} htmlFor="p-price">
             <input

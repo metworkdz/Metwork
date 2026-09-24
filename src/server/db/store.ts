@@ -1360,8 +1360,14 @@ export interface ProgramRecord {
   onlinePrice?: number | null;
   cashPrice?: number | null;
   seatsTotal: number;
-  deadline: string;
-  startDate: string;
+  /**
+   * Application deadline, start and end dates. Null — all three together —
+   * while the program's dates are still to confirm (`datesTbc`): a
+   * pre-registration published before the host has fixed them. Read them
+   * through `@/lib/program-dates`, never directly.
+   */
+  deadline: string | null;
+  startDate: string | null;
   /**
    * Local wall-clock start time, "HH:MM" (24h). Optional: a program without one
    * simply shows no time, which is how every program behaved before this field
@@ -1382,7 +1388,7 @@ export interface ProgramRecord {
    * cost more than it saves.
    */
   endTime?: string | null;
-  endDate: string;
+  endDate: string | null;
   acceptedPaymentMethods: PaymentMethod[];
   /** Deposit model for CASH bookings. Unset = legacy listing (no deposit configured). */
   cashDepositType?: 'FIXED' | 'PERCENT';
@@ -1391,6 +1397,11 @@ export interface ProgramRecord {
   isActive: boolean;
   /** Absent on every program created before this existed ⇒ PUBLIC. */
   visibility?: ProgramVisibility;
+  /**
+   * The dates are still to confirm: the program takes free pre-registrations
+   * and no payment until the host sets them. See `@/lib/program-dates`.
+   */
+  datesTbc?: boolean;
   /**
    * SEO-friendly URL slug, e.g. "startup-bootcamp-oran-2025".
    * Optional for backward compat — old records lack this field.

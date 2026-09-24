@@ -81,8 +81,12 @@ export interface CertificateContext {
   organizer: string;
   city: string;
   /** ISO timestamps, stored noon-anchored so the day survives the timezone. */
-  startDate: string;
-  endDate: string;
+  /**
+   * Null while the program's dates are to confirm: {dates} and {date} then
+   * read as empty in the preview, and nothing can be issued until they are set.
+   */
+  startDate: string | null;
+  endDate: string | null;
 }
 
 export type Civility = 'M.' | 'Mme' | null;

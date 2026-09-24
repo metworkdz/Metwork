@@ -142,6 +142,8 @@ export async function POST(req: NextRequest) {
         return jsonError(409, 'CAPACITY_EXCEEDED', 'No seats remaining', result.detail);
       case 'DEADLINE_PASSED':
         return jsonError(409, 'DEADLINE_PASSED', 'The application deadline has passed', result.detail);
+      case 'DATES_TBC':
+        return jsonError(409, 'DATES_TBC', 'Les dates de ce programme sont à confirmer : l’inscription est gratuite pour l’instant, le paiement viendra une fois les dates fixées.');
       case 'EVENT_PASSED':
         return jsonError(409, 'EVENT_PASSED', 'This event has already taken place', result.detail);
       case 'ALREADY_BOOKED':

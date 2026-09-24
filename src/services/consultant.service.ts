@@ -200,9 +200,11 @@ export interface ConsultantProgram {
   cashDepositValue?: number;
   seatsTotal: number;
   seatsTaken: number;
-  deadline: string;
-  startDate: string;
-  endDate: string;
+  /** All three null while the dates are to confirm (`datesTbc`). */
+  deadline: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  datesTbc?: boolean;
   slug?: string | null;
   hostName: string;
   isActive: boolean;
@@ -243,14 +245,16 @@ export interface ConsultantProgramInput {
   cashDepositType?: 'FIXED' | 'PERCENT' | null;
   cashDepositValue?: number | null;
   seatsTotal: number;
-  deadline: string;
-  startDate: string;
+  /** All three null when `datesTbc`. */
+  deadline: string | null;
+  startDate: string | null;
   /** Local wall-clock start time "HH:MM". Null ⇒ no published start time. */
   startTime?: string | null;
   /** Local wall-clock end time "HH:MM". Independent of `startTime`. */
   endTime?: string | null;
-  endDate: string;
+  endDate: string | null;
   visibility?: 'PUBLIC' | 'UNLISTED';
+  datesTbc?: boolean;
 }
 
 /**

@@ -13,6 +13,7 @@ import { listProgramsByIncubator } from '@/server/bookings/program-catalog';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { allocateProgramSlug } from '@/server/programs/slug';
+import { PROGRAM_DATES_ERRORS, resolveProgramDates } from '@/server/programs/dates';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,13 +30,13 @@ const createProgramSchema = z.object({
   onlinePrice: z.number().int().min(0).optional().nullable(),
   cashPrice:   z.number().int().min(0).optional().nullable(),
   seatsTotal:  z.number().int().min(1).max(10_000),
-  deadline:    z.string().datetime(),
-  startDate:   z.string().datetime(),
+  deadline:    z.string().datetime().nullable().optional(),
+  startDate:   z.string().datetime().nullable().optional(),
   /** Local wall-clock start time "HH:MM" (24h). Optional. */
   startTime:   z.string().regex(CLOCK_TIME_PATTERN, 'startTime must be HH:MM').nullable().optional(),
   /** Local wall-clock end time "HH:MM" (24h). Optional. */
   endTime:     z.string().regex(CLOCK_TIME_PATTERN, 'endTime must be HH:MM').nullable().optional(),
-  endDate:     z.string().datetime(),
+  endDate:     z.string().datetime().nullable().optional(),
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).default(['ONLINE', 'CASH']),
   /** Cash deposit (paid online by card). Required when CASH is accepted. */
   cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
@@ -47,6 +48,8 @@ const createProgramSchema = z.object({
   slug:        z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
   /** PUBLIC (on the /programs catalogue) or UNLISTED (link only). Default PUBLIC. */
   visibility:  z.enum(['PUBLIC', 'UNLISTED']).default('PUBLIC'),
+  /** Dates still to confirm: a free pre-registration, no dates, no payment. */
+  datesTbc:    z.boolean().default(false),
 });
 
 export async function GET() {
@@ -91,6 +94,13 @@ export async function POST(req: NextRequest) {
   const imageUrls = input.imageUrls?.length ? input.imageUrls : (input.imageUrl ? [input.imageUrl] : []);
   const coverUrl = imageUrls[0] ?? null;
 
+  // Dates: all three and in order, or none at all while "to confirm".
+  const dates = resolveProgramDates(null, input);
+  if (!dates.ok) {
+    const [status, message] = PROGRAM_DATES_ERRORS[dates.reason];
+    return jsonError(status, dates.reason, message);
+  }
+
   const now = new Date().toISOString();
   const record = await db.update<ProgramRecord>((d) => {
     if (!Array.isArray(d.programs)) d.programs = [];
@@ -113,15 +123,16 @@ export async function POST(req: NextRequest) {
       onlinePrice:            input.onlinePrice ?? null,
       cashPrice:              input.cashPrice ?? null,
       seatsTotal:             input.seatsTotal,
-      deadline:               input.deadline,
-      startDate:              input.startDate,
+      deadline:               dates.value.deadline,
+      startDate:              dates.value.startDate,
       startTime:              input.startTime ?? null,
       endTime:              input.endTime ?? null,
-      endDate:                input.endDate,
+      endDate:                dates.value.endDate,
       acceptedPaymentMethods: paymentMethods,
       ...depositConfig,
       isActive:               true,
       visibility:             input.visibility,
+      datesTbc:               dates.value.datesTbc,
       slug,
       createdAt:              now,
       updatedAt:              now,

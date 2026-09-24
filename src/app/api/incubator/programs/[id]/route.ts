@@ -12,6 +12,7 @@ import { canDeleteProgram, canEditProgram, type ProgramActor } from '@/server/pr
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { isProgramSlugFree } from '@/server/programs/slug';
+import { PROGRAM_DATES_ERRORS, resolveProgramDates } from '@/server/programs/dates';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,11 +39,11 @@ const patchSchema = z.object({
   onlinePrice: z.number().int().nonnegative().nullable().optional(),
   cashPrice: z.number().int().nonnegative().nullable().optional(),
   seatsTotal: z.number().int().positive().optional(),
-  deadline:  isoDate.optional(),
-  startDate: isoDate.optional(),
+  deadline:  isoDate.nullable().optional(),
+  startDate: isoDate.nullable().optional(),
   startTime: z.string().regex(CLOCK_TIME_PATTERN, 'startTime must be HH:MM').nullable().optional(),
   endTime: z.string().regex(CLOCK_TIME_PATTERN, 'endTime must be HH:MM').nullable().optional(),
-  endDate:   isoDate.optional(),
+  endDate:   isoDate.nullable().optional(),
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).optional(),
   cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
   // nonnegative, not positive: 0 is how a host says "no deposit, they pay
@@ -52,6 +53,8 @@ const patchSchema = z.object({
   status: z.enum(['DRAFT', 'PUBLISHED', 'CLOSED']).optional(),
   slug: z.string().regex(/^[a-z0-9-]+$/).min(2).max(120).optional().nullable(),
   visibility: z.enum(['PUBLIC', 'UNLISTED']).optional(),
+  /** Dates still to confirm (true), or fixing them (false, with the dates). */
+  datesTbc: z.boolean().optional(),
 }).refine(
   (d) => {
     if (d.startDate && d.endDate && d.startDate >= d.endDate) return false;
@@ -99,6 +102,11 @@ export async function PATCH(
     if (input.slug && input.slug !== p.slug && !isProgramSlugFree(d.programs, input.slug, p.id)) {
       return 'SLUG_TAKEN';
     }
+    // Dates, decided on the merged state before anything is written too.
+    const touchesDates = input.datesTbc !== undefined || input.deadline !== undefined
+      || input.startDate !== undefined || input.endDate !== undefined;
+    const dates = touchesDates ? resolveProgramDates(p, input, d.bookings) : null;
+    if (dates && !dates.ok) return dates.reason;
 
     // Payment config: validate against the merged (existing + patched) state so
     // turning CASH on always carries a valid deposit, and turning it off clears
@@ -133,11 +141,14 @@ export async function PATCH(
     if (input.onlinePrice !== undefined) p.onlinePrice = input.onlinePrice;
     if (input.cashPrice !== undefined) p.cashPrice = input.cashPrice;
     if (input.seatsTotal !== undefined) p.seatsTotal = input.seatsTotal;
-    if (input.deadline !== undefined) p.deadline = input.deadline;
-    if (input.startDate !== undefined) p.startDate = input.startDate;
+    if (dates?.ok) {
+      p.datesTbc = dates.value.datesTbc;
+      p.deadline = dates.value.deadline;
+      p.startDate = dates.value.startDate;
+      p.endDate = dates.value.endDate;
+    }
     if (input.startTime !== undefined) p.startTime = input.startTime;
     if (input.endTime !== undefined) p.endTime = input.endTime;
-    if (input.endDate !== undefined) p.endDate = input.endDate;
     if (input.status !== undefined) p.isActive = input.status === 'PUBLISHED';
     if (input.slug !== undefined) p.slug = input.slug ?? undefined;
     if (input.visibility !== undefined) p.visibility = input.visibility;
@@ -150,6 +161,10 @@ export async function PATCH(
   if (program === 'INVALID_DEPOSIT') return jsonError(400, 'INVALID_DEPOSIT', depositError ?? 'Invalid cash deposit configuration');
   if (program === 'SLUG_TAKEN') {
     return jsonError(409, 'SLUG_TAKEN', 'Ce lien est déjà utilisé par un autre programme.');
+  }
+  if (program === 'DATES_REQUIRED' || program === 'DATES_ORDER' || program === 'HAS_BOOKINGS') {
+    const [status, message] = PROGRAM_DATES_ERRORS[program];
+    return jsonError(status, program, message);
   }
   return json({ program });
 }
