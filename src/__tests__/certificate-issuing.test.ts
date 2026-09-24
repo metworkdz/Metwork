@@ -38,8 +38,8 @@ import {
   issueCertificates,
   listCertificateParticipants,
   updateCertificateParticipant,
-  verifyCertificate,
 } from '@/server/certificates/issue';
+import { verifyCertificate } from '@/server/certificates/verify';
 import { certificateEmail, sendCertificates, SEND_BATCH } from '@/server/certificates/send';
 import {
   cancelRegistration,
@@ -335,6 +335,13 @@ describe('sending by email', () => {
   it('refuses a resend list longer than one batch', async () => {
     const ids = Array.from({ length: SEND_BATCH + 1 }, (_, i) => `r-${i}`);
     expect(await sendCertificates('p-a', A, { registrationIds: ids })).toEqual({ ok: false, reason: 'TOO_MANY' });
+  });
+
+  it('keeps line breaks in a title out of the email subject', async () => {
+    await db.update((d) => { d.programs.find((p) => p.id === 'p-a')!.title = 'Formation\r\nBcc: x@evil.dz'; });
+    const res = await issueCertificates('p-a', A, ['r-zoe']);
+    if (!res.ok) throw new Error('expected ok');
+    expect(certificateEmail(res.issued[0]!).subject).not.toMatch(/[\r\n]/);
   });
 
   it('writes in the participant\'s language and escapes what the host typed', async () => {

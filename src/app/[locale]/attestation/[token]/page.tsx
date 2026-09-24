@@ -14,7 +14,7 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { BadgeCheck, SearchX, XCircle } from 'lucide-react';
 
-import { verifyCertificate } from '@/server/certificates/issue';
+import { verifyCertificate } from '@/server/certificates/verify';
 import { certificateNameLine } from '@/server/certificates/text';
 
 export const dynamic = 'force-dynamic';
@@ -54,7 +54,10 @@ export default async function CertificateVerificationPage({ params }: PageProps)
   setRequestLocale(locale);
   const t = await getTranslations('certificateVerify');
 
-  const result = await verifyCertificate(decodeURIComponent(token));
+  // A mangled link ("%E0%A4") must read as "not found", not crash the page.
+  let decoded = '';
+  try { decoded = decodeURIComponent(token); } catch { /* stays empty → not found */ }
+  const result = await verifyCertificate(decoded);
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-primary-900 via-primary-800 to-primary-900 px-4 py-8">

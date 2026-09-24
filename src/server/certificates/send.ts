@@ -119,7 +119,9 @@ export function certificateEmail(item: IssuedCertificate): { subject: string; ht
     </div>
   `, { lang: lang === 'en' ? 'en' : 'fr' });
 
-  return { subject: c.subject(cert.programTitle), html };
+  // A header line: no line breaks from a host-typed title may reach it.
+  const subject = c.subject(cert.programTitle).replace(/[\r\n\t]+/g, ' ').trim();
+  return { subject, html };
 }
 
 export type SendResult =
