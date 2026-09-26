@@ -31,6 +31,11 @@ export const mentorsService = {
   },
 
   /** Admin-only: publish/unpublish a consultant on the public mentors page. */
+  /** Admin-only: the order of the mentors on the public site (exactly those on it). */
+  async saveOrder(ids: string[]): Promise<{ order: string[] }> {
+    return apiClient.put<{ order: string[] }>('/admin/mentors/order', { ids });
+  },
+
   async setPublished(id: string, publiclyListed: boolean): Promise<Mentor> {
     return apiClient.patch<Mentor>(
       `/admin/mentors/${encodeURIComponent(id)}/visibility`,

@@ -4464,7 +4464,19 @@
       "reviewNoCv": "No CV uploaded.",
       "publish": "Publish on the site",
       "unpublish": "Remove from public site",
-      "publishedBadge": "Published"
+      "publishedBadge": "Published",
+      "reorder": "Reorder",
+      "onSiteCount": "{count, plural, =0 {none on the site} other {# on the site}}",
+      "onSiteBadge": "On the site · #{position}",
+      "hiddenBadge": "Hidden",
+      "orderTitle": "Order on the site",
+      "orderHint": "This is the order of the Mentors page and the home-page carousel: the first one is the first your visitors see. Drag a row, or use the arrows.",
+      "orderEmpty": "No mentor is on the site yet.",
+      "orderCancel": "Cancel",
+      "orderSave": "Save order",
+      "orderSaveFailed": "The order could not be saved.",
+      "moveUp": "Move {name} up",
+      "moveDown": "Move {name} down"
     },
     "mentorAvailability": {
       "title": "Availability",

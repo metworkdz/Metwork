@@ -67,6 +67,8 @@ export function toMentorPrivateDto(m: MentorRecord): Mentor {
     cvUrl: m.cvUrl ?? null,
     source: m.source ?? 'ADMIN',
     publiclyListed: m.publiclyListed ?? m.source !== 'SELF',
+    // Admin-set place on the public lists (see @/lib/mentor-order). PRIVATE.
+    publicOrder: m.publicOrder ?? null,
     phoneVerified: m.phoneVerified ?? false,
   };
 }

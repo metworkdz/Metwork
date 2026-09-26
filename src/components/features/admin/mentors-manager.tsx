@@ -11,7 +11,7 @@
  */
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { CalendarClock, CheckCircle2, Download, EyeOff, FileSearch, FileText, Globe, Mail, MoreVertical, Pencil, Plus, Trash2, UserPlus, XCircle } from 'lucide-react';
+import { ArrowUpDown, CalendarClock, CheckCircle2, Download, EyeOff, FileSearch, FileText, Globe, Mail, MoreVertical, Pencil, Plus, Trash2, UserPlus, XCircle } from 'lucide-react';
 import { getConsultationFieldLabel } from '@/config/consultation-fields';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +36,9 @@ import { buildMentorsCsv, buildMentorEmails } from '@/lib/mentor-export';
 import { ApiClientError } from '@/lib/api-client';
 import { MentorFormDialog } from './mentor-form-dialog';
 import { MentorAvailabilityDialog } from './mentor-availability-dialog';
+import { MentorOrderDialog } from './mentor-order-dialog';
+import { compareMentorsForAdmin } from '@/lib/mentor-order';
+import { isMentorPubliclyListed } from '@/lib/mentor-approval';
 import { LandingMentorCard } from '@/components/features/mentors/landing-mentor-card';
 import type { Mentor } from '@/types/mentor';
 import type { MentorCategoryRecord } from '@/server/db/store';
@@ -66,6 +69,10 @@ export function MentorsManager({
 }) {
   const t = useTranslations('admin.mentorsManager');
   const [mentors, setMentors] = useState<Mentor[]>(initial);
+  const [orderOpen, setOrderOpen] = useState(false);
+  // On the site, in public order — the cards show their place, the reorder
+  // panel lists exactly these.
+  const onSite = mentors.filter(isMentorPubliclyListed);
   const [editing, setEditing] = useState<Mentor | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleting, setDeleting] = useState<Mentor | null>(null);
@@ -105,11 +112,24 @@ export function MentorsManager({
   function onSaved(saved: Mentor) {
     setMentors((current) => {
       const idx = current.findIndex((m) => m.id === saved.id);
-      if (idx === -1) return [...current, saved];
-      const next = current.slice();
-      next[idx] = saved;
-      return next;
+      const next = idx === -1 ? [...current, saved] : current.slice();
+      if (idx !== -1) next[idx] = saved;
+      // Re-sort as the server does, so a mentor published or hidden moves to
+      // where the public site will show them.
+      return next.sort(compareMentorsForAdmin);
     });
+  }
+
+  async function saveOrder(ids: string[]) {
+    try {
+      await mentorsService.saveOrder(ids);
+    } catch (err) {
+      throw new Error(err instanceof ApiClientError || err instanceof Error ? err.message : t('orderSaveFailed'));
+    }
+    const position = new Map(ids.map((id, i) => [id, i]));
+    setMentors((current) => current
+      .map((m) => (position.has(m.id) ? { ...m, publicOrder: position.get(m.id)! } : m))
+      .sort(compareMentorsForAdmin));
   }
 
   async function approve(m: Mentor) {
@@ -178,7 +198,7 @@ export function MentorsManager({
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-border/60 bg-muted/30 px-4 py-3">
         <p className="text-sm text-muted-foreground">
-          {t('rosterCount', { count: mentors.length })}
+          {t('rosterCount', { count: mentors.length })} · {t('onSiteCount', { count: onSite.length })}
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={exportCsv}>
@@ -188,6 +208,10 @@ export function MentorsManager({
           <Button variant="outline" size="sm" onClick={exportEmails}>
             <Mail />
             {t('exportEmails')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setOrderOpen(true)} disabled={onSite.length < 2}>
+            <ArrowUpDown />
+            {t('reorder')}
           </Button>
           <Button size="sm" onClick={openCreate}>
             <Plus />
@@ -233,12 +257,17 @@ export function MentorsManager({
                   {t('approvalRejected')}
                 </Badge>
               )}
-              {/* Self-signup published to the public mentors page by an admin. */}
-              {m.source === 'SELF' && m.approvalStatus === 'APPROVED' && m.publiclyListed === true && (
+              {/* Where an approved mentor stands on the public site: their
+                  place, or hidden. Admin-added and self-registered alike. */}
+              {m.approvalStatus === 'APPROVED' && (isMentorPubliclyListed(m) ? (
                 <Badge variant="success" className="absolute start-2 top-2">
-                  {t('publishedBadge')}
+                  {t('onSiteBadge', { position: onSite.findIndex((x) => x.id === m.id) + 1 })}
                 </Badge>
-              )}
+              ) : (
+                <Badge variant="default" className="absolute start-2 top-2">
+                  {t('hiddenBadge')}
+                </Badge>
+              ))}
               <div className="absolute end-2 top-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -258,12 +287,13 @@ export function MentorsManager({
                         {t('reviewApplication')}
                       </DropdownMenuItem>
                     )}
-                    {/* Publish/unpublish a SELF consultant on the public page —
-                        only offered once the profile is approved. */}
-                    {m.source === 'SELF' && m.approvalStatus === 'APPROVED' && (
+                    {/* Publish / remove from the public site — every approved
+                        mentor, admin-added or self-registered. Hidden mentors
+                        keep their profile link and their bookings. */}
+                    {m.approvalStatus === 'APPROVED' && (
                       <DropdownMenuItem onSelect={() => void togglePublished(m)} disabled={approvalBusy}>
-                        {m.publiclyListed === true ? <EyeOff /> : <Globe />}
-                        {m.publiclyListed === true ? t('unpublish') : t('publish')}
+                        {isMentorPubliclyListed(m) ? <EyeOff /> : <Globe />}
+                        {isMentorPubliclyListed(m) ? t('unpublish') : t('publish')}
                       </DropdownMenuItem>
                     )}
                     {m.approvalStatus !== 'APPROVED' && m.approvalStatus !== undefined && (
@@ -313,6 +343,13 @@ export function MentorsManager({
         initial={editing}
         onSaved={onSaved}
         categories={categories}
+      />
+
+      <MentorOrderDialog
+        open={orderOpen}
+        onOpenChange={setOrderOpen}
+        mentors={onSite}
+        onSave={saveOrder}
       />
 
       <MentorAvailabilityDialog

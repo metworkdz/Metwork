@@ -4464,7 +4464,19 @@
       "reviewNoCv": "لم يتم رفع سيرة ذاتية.",
       "publish": "النشر على الموقع",
       "unpublish": "الإزالة من الموقع العام",
-      "publishedBadge": "منشور"
+      "publishedBadge": "منشور",
+      "reorder": "إعادة الترتيب",
+      "onSiteCount": "{count} على الموقع",
+      "onSiteBadge": "على الموقع · رقم {position}",
+      "hiddenBadge": "مخفي",
+      "orderTitle": "الترتيب على الموقع",
+      "orderHint": "هذا هو ترتيب صفحة المرشدين وشريط الصفحة الرئيسية: الأول هو أول ما يراه زوارك. اسحب سطراً أو استعمل الأسهم.",
+      "orderEmpty": "لا يوجد أي مرشد على الموقع حالياً.",
+      "orderCancel": "إلغاء",
+      "orderSave": "حفظ الترتيب",
+      "orderSaveFailed": "تعذّر حفظ الترتيب.",
+      "moveUp": "رفع {name}",
+      "moveDown": "إنزال {name}"
     },
     "mentorAvailability": {
       "title": "التوفر",

@@ -4464,7 +4464,19 @@
       "reviewNoCv": "Aucun CV envoyé.",
       "publish": "Publier sur le site",
       "unpublish": "Retirer du site public",
-      "publishedBadge": "Publié"
+      "publishedBadge": "Publié",
+      "reorder": "Réorganiser l’ordre",
+      "onSiteCount": "{count, plural, =0 {aucun sur le site} one {# sur le site} other {# sur le site}}",
+      "onSiteBadge": "Sur le site · n° {position}",
+      "hiddenBadge": "Masqué",
+      "orderTitle": "Ordre sur le site",
+      "orderHint": "C’est l’ordre de la page Mentors et du carrousel de l’accueil : le premier est le premier que voient vos visiteurs. Faites glisser une ligne, ou utilisez les flèches.",
+      "orderEmpty": "Aucun mentor n’est sur le site pour l’instant.",
+      "orderCancel": "Annuler",
+      "orderSave": "Enregistrer l’ordre",
+      "orderSaveFailed": "L’ordre n’a pas pu être enregistré.",
+      "moveUp": "Monter {name}",
+      "moveDown": "Descendre {name}"
     },
     "mentorAvailability": {
       "title": "Disponibilités",

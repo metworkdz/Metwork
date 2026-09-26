@@ -133,6 +133,8 @@ export interface Mentor {
   source?: 'ADMIN' | 'SELF';
   /** Public-list visibility (PRIVATE DTO only; the public list is already filtered). */
   publiclyListed?: boolean;
+  /** Admin-set place on the public lists; null ⇒ none yet (after positioned ones). Admin DTO only. */
+  publicOrder?: number | null;
   /** Phone verification state (PRIVATE — consultant-self / admin DTO only). */
   phoneVerified?: boolean;
 }

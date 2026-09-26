@@ -7,31 +7,11 @@
  * published later has no position and lands at the end; a hidden mentor keeps
  * theirs, so publishing them again returns them to their place.
  */
-import { db, type MentorRecord } from '@/server/db/store';
+import { db } from '@/server/db/store';
 import { appendAuditLog } from '@/server/audit/service';
 import { isMentorPubliclyListed } from '@/lib/mentor-approval';
 
-type Orderable = Pick<MentorRecord, 'publicOrder' | 'createdAt' | 'id'>;
-
-export function compareMentorsByPublicOrder(a: Orderable, b: Orderable): number {
-  const pa = typeof a.publicOrder === 'number' ? a.publicOrder : null;
-  const pb = typeof b.publicOrder === 'number' ? b.publicOrder : null;
-  if (pa !== null && pb !== null && pa !== pb) return pa - pb;
-  if (pa !== null && pb === null) return -1;
-  if (pa === null && pb !== null) return 1;
-  return a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id);
-}
-
-/**
- * The admin page: mentors on the site first, in their public order, then the
- * hidden and pending ones.
- */
-export function compareMentorsForAdmin(a: MentorRecord, b: MentorRecord): number {
-  const la = isMentorPubliclyListed(a);
-  const lb = isMentorPubliclyListed(b);
-  if (la !== lb) return la ? -1 : 1;
-  return compareMentorsByPublicOrder(a, b);
-}
+export { compareMentorsByPublicOrder, compareMentorsForAdmin } from '@/lib/mentor-order';
 
 export type SaveOrderResult =
   | { ok: true; order: string[] }
