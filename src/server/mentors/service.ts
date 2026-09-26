@@ -4,6 +4,7 @@ import type { CreateMentorInput, UpdateMentorInput, MentorAvailabilityPatch } fr
 import { DEFAULT_AVAILABILITY_TIMEZONE } from '@/types/mentor';
 import { slugify, uniqueSlug } from '@/lib/slugify';
 import { isMentorApproved, isMentorPubliclyListed } from '@/lib/mentor-approval';
+import { compareMentorsByPublicOrder } from './order';
 
 /**
  * Derive a unique slug for a mentor from their full name, avoiding collisions
@@ -66,7 +67,9 @@ async function backfillMentorSlugs(mentors: MentorRecord[]): Promise<MentorRecor
 export async function listMentors(): Promise<MentorRecord[]> {
   const data = await db.read();
   const mentors = await backfillMentorSlugs(data.mentors ?? []);
-  return [...mentors].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  // Public order (admin-set), then date added — see ./order.ts. Every list,
+  // public or admin, starts from this.
+  return [...mentors].sort(compareMentorsByPublicOrder);
 }
 
 /**

@@ -1001,6 +1001,7 @@ export type AuditAction =
   | 'MENTOR_REJECTED'
   | 'MENTOR_PUBLISHED'
   | 'MENTOR_UNPUBLISHED'
+  | 'MENTOR_REORDERED'
   | 'STARTUP_DELETED'
   // Consultant contracts (e-signature). The contract's own
   // `auditTrail` is the evidentiary record; these entries put the ADMIN side of
@@ -2406,6 +2407,14 @@ export interface MentorRecord {
    * single gate is `isMentorPubliclyListed` in `@/lib/mentor-approval`.
    */
   publiclyListed?: boolean;
+  /**
+   * Place on the public lists (mentors page, home carousel, directory), set
+   * by the admin — lower comes first. Absent ⇒ after every positioned mentor,
+   * by date added (a new mentor lands at the end). Kept while the mentor is
+   * hidden, so publishing them again returns them to their place. Sorting
+   * goes through `compareMentorsByPublicOrder` only.
+   */
+  publicOrder?: number | null;
   /** True once the consultant's phone was verified (OTP). Absent ⇒ false. PRIVATE. */
   phoneVerified?: boolean;
   /**

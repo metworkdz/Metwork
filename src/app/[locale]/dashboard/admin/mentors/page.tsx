@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { MentorsManager } from '@/components/features/admin/mentors-manager';
 import { requireRole } from '@/lib/auth-guards';
 import { listMentors } from '@/server/mentors/service';
+import { compareMentorsForAdmin } from '@/server/mentors/order';
 import { toMentorPrivateDto } from '@/server/mentors/serialize';
 import { listMentorCategories } from '@/server/mentor-categories/service';
 
@@ -21,7 +22,8 @@ export default async function AdminMentorsPage({ params }: PageProps) {
   // Server-render with the live roster — instant first paint, no flash.
   // Admin view → private DTO so the edit form sees the consultant phone.
   const [mentors, categories] = await Promise.all([
-    listMentors().then((list) => list.map(toMentorPrivateDto)),
+    // On-site mentors first in their public order, then hidden / pending.
+    listMentors().then((list) => [...list].sort(compareMentorsForAdmin).map(toMentorPrivateDto)),
     listMentorCategories(),
   ]);
 
