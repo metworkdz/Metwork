@@ -187,7 +187,14 @@ export function RegistrationsTable({
         setRegistrations((prev) =>
           prev.map((r) => (r.id === id ? { ...r, status: 'CANCELLED' } : r)),
         );
+        // The seat counter and the answer summary follow.
+        void fetchData({ page, q: search, status: statusFilter });
+        return;
       }
+      // Say why — a participant who paid online is cancelled from their
+      // booking, which handles the refund; a silent no-op left hosts guessing.
+      const body = await res.json().catch(() => null) as { error?: { message?: string } } | null;
+      alert(body?.error?.message ?? t('cancelFailed'));
     });
   }
 

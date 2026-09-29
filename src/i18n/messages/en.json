@@ -5382,7 +5382,8 @@
     "resendTitle": "Resend the confirmation",
     "resendConfirm": "Resend the confirmation and the receipt to this participant?",
     "resendDone": "Sent.",
-    "resendFailed": "Could not resend."
+    "resendFailed": "Could not resend.",
+    "cancelFailed": "The registration could not be cancelled."
   },
   "registrationDashboard": {
     "tabRegistrations": "Registrations",

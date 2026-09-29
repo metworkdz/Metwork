@@ -109,8 +109,8 @@ beforeEach(async () => {
       program('p-m1', { mentorId: 'mentor-1' }),
     ];
     d.bookings = [
-      { id: 'bk-owing', paymentStatus: 'AWAITING_CASH', cashRemainingAmount: 3000, status: 'CONFIRMED' } as never,
-      { id: 'bk-paid', paymentStatus: 'PAID', cashRemainingAmount: 3000, status: 'CONFIRMED' } as never,
+      { id: 'bk-owing', paymentMethod: 'manual', paymentStatus: 'AWAITING_CASH', cashRemainingAmount: 3000, status: 'CONFIRMED' } as never,
+      { id: 'bk-paid', paymentMethod: 'manual', paymentStatus: 'PAID', cashRemainingAmount: 3000, status: 'CONFIRMED' } as never,
     ];
     d.registrations = [
       reg('r-zoe', 'p-a', 'Zoé Mansouri', { bookingId: 'bk-paid' }),

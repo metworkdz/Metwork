@@ -197,6 +197,19 @@ export async function PATCH(
       }
     }
 
+    // A program/event participant is ONE seat on two rows — this booking and
+    // the registration built from it. Cancelling only the booking left the
+    // registration CONFIRMED, still counted in attendance and in the host's
+    // list. Both go together (the reverse path lives in cancelRegistration).
+    if (input.status === 'CANCELLED') {
+      for (const reg of d.registrations ?? []) {
+        if (reg.bookingId === booking.id && reg.status !== 'CANCELLED') {
+          reg.status = 'CANCELLED';
+          reg.updatedAt = now;
+        }
+      }
+    }
+
     // ── Wallet movements ─────────────────────────────────────────────────
     // Three disjoint payment models:
     //   • manual  — offline/cash with no online leg → never touches a wallet.

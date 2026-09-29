@@ -23,6 +23,7 @@ import {
   type EmailLang,
 } from '@/server/notifications/email';
 import { countAttendance } from '@/server/attendance';
+import { bookingHoldsSeat } from '@/server/bookings/status';
 import { getProgramOwner, isProgramPubliclyReachable } from '@/server/programs/ownership';
 
 /* ─────────────────────────── Owner scope ─────────────────────────── */
@@ -602,21 +603,54 @@ export async function listRegistrations(
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-/** Cancel a single registration (incubator action). */
+export type CancelRegistrationResult =
+  | { ok: true; registration: RegistrationRecord }
+  | { ok: false; reason: 'NOT_FOUND' | 'PAID_ONLINE' };
+
+/**
+ * Cancel a registration — and free the seat it held.
+ *
+ * A participant is ONE seat but can be two rows: the registration, and the
+ * booking behind it (a desk sign-up's cash booking, or a paid checkout).
+ * Attendance counts both, so cancelling only the registration left its
+ * booking CONFIRMED and the seat taken: a 12/12 program stayed 12/12 after a
+ * participant was removed, and nobody else could be added.
+ *
+ *  - A booking with no money through the platform (desk / cash, `manual`) is
+ *    cancelled with it, in the same write — as the booking-cancel route does
+ *    for manual bookings, it touches no wallet. Handing cash back is the
+ *    host's, off-platform.
+ *  - A booking paid ONLINE (card or wallet) is refused here: cancelling it
+ *    must reverse the payout and commission, which only the booking-cancel
+ *    flow does. Nothing is written; the host cancels the booking instead,
+ *    which now cancels this registration too.
+ */
 export async function cancelRegistration(
   id: string,
   owner: OwnerScope,
-): Promise<RegistrationRecord | null> {
-  return db.update((d) => {
+): Promise<CancelRegistrationResult> {
+  return db.update<CancelRegistrationResult>((d) => {
     const idx = (d.registrations ?? []).findIndex((r) => r.id === id && ownedBy(r, owner));
-    if (idx === -1) return null;
-    const updated: RegistrationRecord = {
-      ...d.registrations[idx]!,
-      status: 'CANCELLED',
-      updatedAt: new Date().toISOString(),
-    };
+    if (idx === -1) return { ok: false, reason: 'NOT_FOUND' };
+    const reg = d.registrations[idx]!;
+
+    const booking = reg.bookingId ? (d.bookings ?? []).find((b) => b.id === reg.bookingId) : undefined;
+    const bookingHoldsTheSeat = booking && bookingHoldsSeat(booking);
+    // Refused before anything is written — the store saves the draft whatever
+    // this returns.
+    if (bookingHoldsTheSeat && booking.paymentMethod !== 'manual') {
+      return { ok: false, reason: 'PAID_ONLINE' };
+    }
+
+    const now = new Date().toISOString();
+    if (bookingHoldsTheSeat) {
+      booking.status = 'CANCELLED';
+      booking.declineReason = booking.declineReason ?? 'REGISTRATION_CANCELLED';
+      booking.updatedAt = now;
+    }
+    const updated: RegistrationRecord = { ...reg, status: 'CANCELLED', updatedAt: now };
     d.registrations[idx] = updated;
-    return updated;
+    return { ok: true, registration: updated };
   });
 }
 

@@ -5382,7 +5382,8 @@
     "resendTitle": "إعادة إرسال التأكيد",
     "resendConfirm": "إعادة إرسال التأكيد والإيصال إلى هذا المشارك؟",
     "resendDone": "تم الإرسال.",
-    "resendFailed": "تعذّر الإرسال."
+    "resendFailed": "تعذّر الإرسال.",
+    "cancelFailed": "تعذّر إلغاء التسجيل."
   },
   "registrationDashboard": {
     "tabRegistrations": "التسجيلات",

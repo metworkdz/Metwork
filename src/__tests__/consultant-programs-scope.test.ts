@@ -126,8 +126,8 @@ describe('registrations are scoped by the program owner', () => {
 
   it('an incubator cannot cancel a consultant program registration', async () => {
     const { registration } = await register(MENTOR_PROGRAM, 'a@test.dz');
-    expect(await cancelRegistration(registration.id, incubatorScope(INC))).toBeNull();
-    expect(await cancelRegistration(registration.id, mentorScope(MENTOR))).not.toBeNull();
+    expect(await cancelRegistration(registration.id, incubatorScope(INC))).toEqual({ ok: false, reason: 'NOT_FOUND' });
+    expect(await cancelRegistration(registration.id, mentorScope(MENTOR))).toMatchObject({ ok: true });
   });
 
   it('CSV export is scoped too', async () => {

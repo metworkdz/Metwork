@@ -72,10 +72,13 @@ export async function DELETE(req: NextRequest) {
     return json({ deleted: result.deleted });
   }
 
-  const updated = await cancelRegistration(input.id, owner);
-  if (!updated) return jsonError(404, 'NOT_FOUND', 'Registration not found');
-
-  return json({ registration: updated });
+  const result = await cancelRegistration(input.id, owner);
+  if (!result.ok) {
+    return result.reason === 'PAID_ONLINE'
+      ? jsonError(409, 'PAID_ONLINE', 'Ce participant a payé en ligne : annulez sa réservation dans Réservations, qui gère le remboursement. Son inscription sera annulée avec.')
+      : jsonError(404, 'NOT_FOUND', 'Registration not found');
+  }
+  return json({ registration: result.registration });
 }
 
 /**

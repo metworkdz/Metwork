@@ -5382,7 +5382,8 @@
     "resendTitle": "Renvoyer la confirmation",
     "resendConfirm": "Renvoyer la confirmation et le reçu à ce participant ?",
     "resendDone": "Envoyé.",
-    "resendFailed": "Échec de l’envoi."
+    "resendFailed": "Échec de l’envoi.",
+    "cancelFailed": "L’inscription n’a pas pu être annulée."
   },
   "registrationDashboard": {
     "tabRegistrations": "Inscriptions",
