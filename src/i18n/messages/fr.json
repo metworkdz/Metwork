@@ -1412,7 +1412,10 @@
       "errorGeneric": "Une erreur s'est produite. Veuillez réessayer.",
       "restore": "Restaurer",
       "deleteBody": "Elle passe dans la vue Supprimées et peut être restaurée. L’enregistrement est conservé.",
-      "deleteNotify": "Prévenir le client par e-mail que sa réservation a été retirée."
+      "deleteNotify": "Prévenir le client par e-mail que sa réservation a été retirée.",
+      "labelPaid": "Montant payé (DZD)",
+      "paidHint": "Espèces déjà remises. Égal au montant total = payé en entier.",
+      "errorPaidExceeds": "Le montant payé ne peut pas dépasser le montant total."
     },
     "eventForm": {
       "addEvent": "Ajouter un événement",
@@ -5375,7 +5378,7 @@
     "delete": "Supprimer",
     "deleteConfirm": "Supprimer définitivement cette inscription annulée ? Ses réponses seront perdues et cette action est irréversible.",
     "editTitle": "Modifier le participant",
-    "editDescription": "Corrigez le nom, l’e-mail ou le téléphone. Le reste demeure tel qu’il a été soumis.",
+    "editDescription": "Corrigez le nom, l’e-mail, le téléphone — et, pour un paiement en espèces, le prix et le montant payé. Les réponses restent telles qu’elles ont été soumises.",
     "editSave": "Enregistrer",
     "editCancel": "Annuler",
     "editFailed": "Impossible d’enregistrer les modifications.",
@@ -5383,7 +5386,14 @@
     "resendConfirm": "Renvoyer la confirmation et le reçu à ce participant ?",
     "resendDone": "Envoyé.",
     "resendFailed": "Échec de l’envoi.",
-    "cancelFailed": "L’inscription n’a pas pu être annulée."
+    "cancelFailed": "L’inscription n’a pas pu être annulée.",
+    "editPrice": "Prix (DZD)",
+    "editPaid": "Montant payé (DZD)",
+    "editPaidHint": "Mis à jour aussi dans Réservations et dans le rapport financier.",
+    "editPaymentLocked": "Payé : {paid} sur {total}. Ce montant ne peut pas être modifié ici (paiement en ligne, ou réservation pas encore confirmée).",
+    "editPaidExceeds": "Le montant payé ne peut pas dépasser le prix.",
+    "editRemaining": "Reste à payer : {amount}",
+    "paidOf": "Payé {paid} / {total}"
   },
   "registrationDashboard": {
     "tabRegistrations": "Inscriptions",

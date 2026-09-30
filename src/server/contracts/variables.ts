@@ -171,7 +171,8 @@ export function resolveContractVariables(ctx: ResolveContext): Record<ContractVa
   let amountPaid: number;
   let amountDue: number;
   if (booking.paymentMode === 'CASH_DEPOSIT') {
-    const deposit = booking.onlinePaidAmount ?? 0;
+    // Card deposit, or cash handed over at the desk — one or the other.
+    const deposit = (booking.onlinePaidAmount ?? 0) + (booking.cashDepositPaidAmount ?? 0);
     amountPaid = cashCollected ? total : deposit;
     amountDue = cashCollected ? 0 : booking.cashRemainingAmount ?? Math.max(0, total - deposit);
   } else if (booking.paymentMode === 'ONLINE_FULL') {

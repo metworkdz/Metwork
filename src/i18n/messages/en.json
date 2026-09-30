@@ -1412,7 +1412,10 @@
       "errorGeneric": "Something went wrong. Please try again.",
       "restore": "Restore",
       "deleteBody": "It moves to the Deleted view and can be restored. The record itself is kept.",
-      "deleteNotify": "Tell the client by email that their booking was removed."
+      "deleteNotify": "Tell the client by email that their booking was removed.",
+      "labelPaid": "Amount paid (DZD)",
+      "paidHint": "Cash already handed over. Equal to the total = paid in full.",
+      "errorPaidExceeds": "The amount paid cannot exceed the total amount."
     },
     "eventForm": {
       "addEvent": "Add event",
@@ -5375,7 +5378,7 @@
     "delete": "Delete",
     "deleteConfirm": "Delete this cancelled registration for good? Their answers go with it and this cannot be undone.",
     "editTitle": "Edit participant",
-    "editDescription": "Correct the name, email or phone. Everything else stays as submitted.",
+    "editDescription": "Correct the name, email, phone — and, for a cash payment, the price and the amount paid. The answers stay as submitted.",
     "editSave": "Save",
     "editCancel": "Cancel",
     "editFailed": "Could not save the changes.",
@@ -5383,7 +5386,14 @@
     "resendConfirm": "Resend the confirmation and the receipt to this participant?",
     "resendDone": "Sent.",
     "resendFailed": "Could not resend.",
-    "cancelFailed": "The registration could not be cancelled."
+    "cancelFailed": "The registration could not be cancelled.",
+    "editPrice": "Price (DZD)",
+    "editPaid": "Amount paid (DZD)",
+    "editPaidHint": "Also updated in Bookings and in the finance report.",
+    "editPaymentLocked": "Paid: {paid} of {total}. This amount cannot be changed here (paid online, or the booking is not confirmed yet).",
+    "editPaidExceeds": "The amount paid cannot exceed the price.",
+    "editRemaining": "Left to pay: {amount}",
+    "paidOf": "Paid {paid} / {total}"
   },
   "registrationDashboard": {
     "tabRegistrations": "Registrations",

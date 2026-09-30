@@ -13,7 +13,9 @@
  *  - Custom field answer expansion
  */
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { formatCurrency } from '@/lib/format';
+import type { Locale } from '@/i18n/config';
 import {
   Search, Download, Loader2, ChevronLeft, ChevronRight,
   CheckCircle2, Clock, XCircle, ChevronDown, ChevronUp, Pencil, Send,
@@ -411,6 +413,7 @@ function RegistrationRow({
         <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{reg.phone}</td>
         <td className="px-4 py-3">
           <StatusBadge status={reg.status} />
+          <PaidLine reg={reg} />
         </td>
         <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell">
           {new Date(reg.createdAt).toLocaleDateString()}
@@ -533,8 +536,9 @@ function RegistrationCard({
           {reg.email && <p className="truncate text-xs text-muted-foreground">{reg.email}</p>}
           {reg.phone && <p className="truncate text-xs text-muted-foreground">{reg.phone}</p>}
         </div>
-        <div className="shrink-0">
+        <div className="shrink-0 text-end">
           <StatusBadge status={reg.status} />
+          <PaidLine reg={reg} />
         </div>
       </div>
 
@@ -637,5 +641,18 @@ function StatusBadge({ status }: { status: RegistrationStatus }) {
     <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
       <XCircle className="size-3" /> Cancelled
     </span>
+  );
+}
+
+/** « Payé 4 000 DA / 6 000 DA » — what the booking behind the row has received. */
+function PaidLine({ reg }: { reg: Registration }) {
+  const t = useTranslations('registrationsTable');
+  const lang = useLocale() as Locale;
+  const p = reg.payment;
+  if (!p || p.total === 0 || reg.status === 'CANCELLED') return null;
+  return (
+    <p className={`mt-1 whitespace-nowrap text-xs tabular-nums ${p.paid < p.total ? 'text-amber-600' : 'text-muted-foreground'}`}>
+      {t('paidOf', { paid: formatCurrency(p.paid, lang), total: formatCurrency(p.total, lang) })}
+    </p>
   );
 }

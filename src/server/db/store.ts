@@ -662,6 +662,18 @@ export interface BookingRecord {
   cashCollectedAt?: string | null;
   cashCollectedBy?: string | null;
 
+  /**
+   * Every correction of a desk booking's price or amount paid, oldest first
+   * (see `@/server/bookings/desk-payment`). The amounts on the row are the
+   * current truth; this is how they got there.
+   */
+  paymentEdits?: Array<{
+    at: string;
+    by: string;
+    from: { total: number; paid: number };
+    to: { total: number; paid: number };
+  }>;
+
   /** Receipt dedup guards — interim deposit receipt and final paid receipt. */
   depositReceiptSentAt?: string | null;
   finalReceiptSentAt?: string | null;

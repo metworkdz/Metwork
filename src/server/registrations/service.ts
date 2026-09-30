@@ -24,6 +24,11 @@ import {
 } from '@/server/notifications/email';
 import { countAttendance } from '@/server/attendance';
 import { bookingHoldsSeat } from '@/server/bookings/status';
+import {
+  applyDeskPayment,
+  planDeskPayment,
+  type DeskPaymentPlan,
+} from '@/server/bookings/desk-payment';
 import { getProgramOwner, isProgramPubliclyReachable } from '@/server/programs/ownership';
 
 /* ─────────────────────────── Owner scope ─────────────────────────── */
@@ -697,17 +702,27 @@ export interface RegistrationPatch {
   fullName?: string;
   email?: string;
   phone?: string;
+  /** The price of the desk booking behind this participant. */
+  totalAmount?: number;
+  /** How much of it has been handed over. */
+  paidAmount?: number;
 }
 
 export type UpdateRegistrationResult =
   | { ok: true; registration: RegistrationRecord }
-  | { ok: false; reason: 'NOT_FOUND' | 'EMAIL_TAKEN' };
+  | {
+      ok: false;
+      reason: 'NOT_FOUND' | 'EMAIL_TAKEN' | 'NO_BOOKING' | 'PAYMENT_NOT_EDITABLE' | 'PAID_EXCEEDS_TOTAL';
+    };
 
 /**
- * Correct the person's name, email or phone — and nothing else.
+ * Correct the person's name, email or phone — and, for a participant who pays
+ * at the desk, the price and how much of it has been paid.
  *
- * Not the answers, not the amount, not the status: this exists to fix a typo
- * in a phone number, not to rewrite what somebody submitted.
+ * Not the answers, not the status: this exists to fix a typo, or to record
+ * what was actually charged and handed over — not to rewrite what somebody
+ * submitted. The money goes through `@/server/bookings/desk-payment`, the same
+ * rule Réservations uses, and is refused on a payment made online.
  *
  * It writes BOTH records. A registration and its booking each carry the name
  * and the email, and changing one would leave the other stale — the receipt
@@ -722,6 +737,8 @@ export async function updateRegistration(
   id: string,
   owner: OwnerScope,
   patch: RegistrationPatch,
+  /** Who made the change — stamped on a price/payment correction. */
+  actorId = 'unknown',
 ): Promise<UpdateRegistrationResult> {
   return db.update<UpdateRegistrationResult>((d) => {
     const idx = (d.registrations ?? []).findIndex((r) => r.id === id && ownedBy(r, owner));
@@ -743,6 +760,23 @@ export async function updateRegistration(
       if (clash) return { ok: false, reason: 'EMAIL_TAKEN' };
     }
 
+    // Checked before anything is written — the store saves the draft whatever
+    // this returns.
+    const booking = row.bookingId ? (d.bookings ?? []).find((b) => b.id === row.bookingId) : undefined;
+    const moneyPatch = patch.totalAmount !== undefined || patch.paidAmount !== undefined;
+    let plan: Extract<DeskPaymentPlan, { ok: true }> | null = null;
+    if (moneyPatch) {
+      if (!booking) return { ok: false, reason: 'NO_BOOKING' };
+      const planned = planDeskPayment(booking, { totalAmount: patch.totalAmount, paidAmount: patch.paidAmount });
+      if (!planned.ok) {
+        return {
+          ok: false,
+          reason: planned.reason === 'PAID_EXCEEDS_TOTAL' ? 'PAID_EXCEEDS_TOTAL' : 'PAYMENT_NOT_EDITABLE',
+        };
+      }
+      plan = planned;
+    }
+
     const now = new Date().toISOString();
     if (patch.fullName !== undefined) row.fullName = patch.fullName.trim();
     if (nextEmail !== undefined) row.email = nextEmail;
@@ -752,14 +786,12 @@ export async function updateRegistration(
     // The booking carries its own copy of the person. On a paid booking the
     // name is part of a financial record, which is the other reason both
     // halves have to move together.
-    if (row.bookingId) {
-      const booking = (d.bookings ?? []).find((b) => b.id === row.bookingId);
-      if (booking) {
-        if (patch.fullName !== undefined) booking.clientName = row.fullName;
-        if (nextEmail !== undefined) booking.clientEmail = row.email;
-        if (patch.phone !== undefined) booking.clientPhone = row.phone;
-        booking.updatedAt = now;
-      }
+    if (booking) {
+      if (patch.fullName !== undefined) booking.clientName = row.fullName;
+      if (nextEmail !== undefined) booking.clientEmail = row.email;
+      if (patch.phone !== undefined) booking.clientPhone = row.phone;
+      if (plan) applyDeskPayment(booking, plan, actorId, now);
+      booking.updatedAt = now;
     }
 
     return { ok: true, registration: { ...row } };

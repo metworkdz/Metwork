@@ -96,6 +96,8 @@ interface Copy {
   colAmount: string;
   totalPaid: string;
   depositPaid: string;
+  /** A deposit handed over in cash at the desk — never touched a card. */
+  depositPaidCash: string;
   cashBalance: string;
   paidInFull: string;
   awaitingCash: string;
@@ -151,6 +153,7 @@ const COPY: Record<ReceiptLang, Copy> = {
     colAmount: 'Montant (DZD)',
     totalPaid: 'Total payé',
     depositPaid: 'Acompte payé (carte)',
+    depositPaidCash: 'Acompte payé (espèces)',
     cashBalance: 'Solde (espèces sur place)',
     paidInFull: 'Payé intégralement',
     awaitingCash: 'En attente d’espèces sur place',
@@ -190,6 +193,7 @@ const COPY: Record<ReceiptLang, Copy> = {
     colAmount: 'Amount (DZD)',
     totalPaid: 'Total paid',
     depositPaid: 'Deposit paid (card)',
+    depositPaidCash: 'Deposit paid (cash)',
     cashBalance: 'Balance (cash on-site)',
     paidInFull: 'Paid in full',
     awaitingCash: 'Awaiting cash on-site',
@@ -500,6 +504,8 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
     ? (booking.paymentStatus === 'PAID' ? 'final' : 'deposit')
     : 'standard');
   const onlinePaid  = booking.onlinePaidAmount ?? 0;
+  // A desk deposit is cash in hand, on its own field (see BookingRecord).
+  const deskDeposit = booking.cashDepositPaidAmount ?? 0;
   const cashBalance = booking.cashRemainingAmount ?? 0;
   const payerFee    = booking.payerFeeAmount ?? 0;
 
@@ -555,7 +561,8 @@ export async function generateBookingReceiptPdf(input: BookingReceiptInput): Pro
   // ── Deposit / balance split (card CASH_DEPOSIT) ──
   if (isCashDeposit) {
     doc.moveDown(0.2);
-    labelLine(doc, c.depositPaid, fmtMoney(onlinePaid));
+    if (deskDeposit > 0 && onlinePaid === 0) labelLine(doc, c.depositPaidCash, fmtMoney(deskDeposit));
+    else labelLine(doc, c.depositPaid, fmtMoney(onlinePaid));
     if (payerFee > 0) labelLine(doc, c.platformFee, `+ ${fmtMoney(payerFee)}`);
     labelLine(doc, c.cashBalance, `${fmtMoney(cashBalance)} — ${variant === 'final' ? c.paidInFull : c.awaitingCash}`);
   }

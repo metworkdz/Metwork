@@ -15,6 +15,7 @@ import { z, ZodError } from 'zod';
 import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db, type BookingRecord, type TransactionRecord, type WalletRecord } from '@/server/db/store';
 import { checkSpaceAvailability } from '@/server/bookings/availability';
+import { applyDeskPayment, deskPaymentOf, MAX_DESK_AMOUNT, planDeskPayment } from '@/server/bookings/desk-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { createNotification } from '@/server/notifications/create-notification';
 import {
@@ -519,12 +520,14 @@ const editSchema = z.object({
   startsAt:    z.string().datetime(),
   endsAt:      z.string().datetime(),
   unit:        z.enum(['HOUR', 'HALF_DAY', 'DAY', 'MONTH']),
-  totalAmount: z.number().min(0),
+  totalAmount: z.number().min(0).max(MAX_DESK_AMOUNT),
+  /** Cash handed over so far. Omitted → unchanged (see planDeskPayment). */
+  paidAmount:  z.number().int().min(0).max(MAX_DESK_AMOUNT).optional(),
   clientName:  z.string().min(1).max(120),
   clientEmail: z.string().email().max(200).optional().nullable(),
   notes:       z.string().max(500).optional().nullable(),
-}).refine((d) => new Date(d.endsAt) > new Date(d.startsAt), {
-  message: 'endsAt must be after startsAt',
+}).refine((d) => new Date(d.endsAt) >= new Date(d.startsAt), {
+  message: 'endsAt must not be before startsAt',
   path: ['endsAt'],
 });
 
@@ -557,6 +560,13 @@ export async function PUT(
     if (!isManualBooking(booking)) return 'NOT_EDITABLE' as const;
     if (booking.status === 'CANCELLED' || booking.status === 'REFUNDED') return 'ALREADY_FINAL' as const;
 
+    // A space is booked for a span of time, so it must end after it starts.
+    // A one-day program or event is stored with the same start and end, and
+    // must stay editable (its price, its amount paid).
+    if (booking.itemKind === 'SPACE' && new Date(input.endsAt) <= new Date(input.startsAt)) {
+      return 'BAD_RANGE' as const;
+    }
+
     // Re-check availability for SPACE bookings, excluding THIS booking so it
     // never conflicts with its own current slot. Blackouts + capacity apply.
     if (booking.itemKind === 'SPACE') {
@@ -573,16 +583,57 @@ export async function PUT(
       if (!avail.ok) return avail.reason;
     }
 
+    // The price and the amount paid go through the one desk-payment rule the
+    // participants dialog also uses, so the balance due, the paid badge and
+    // the finance report follow. Only when they actually change: a booking
+    // that cannot take a money correction (not confirmed yet) can still have
+    // its dates or notes fixed.
+    const current = deskPaymentOf(booking);
+    const nextTotal = Math.round(input.totalAmount);
+    const moneyChanged =
+      nextTotal !== current.total ||
+      (input.paidAmount !== undefined && input.paidAmount !== current.paid);
+    const plan = moneyChanged
+      ? planDeskPayment(booking, { totalAmount: nextTotal, paidAmount: input.paidAmount })
+      : null;
+    if (plan && !plan.ok) {
+      return plan.reason === 'NOT_EDITABLE' ? ('PAYMENT_NOT_EDITABLE' as const) : plan.reason;
+    }
+
+    // A desk participant is also a registration: it carries its own copy of
+    // the name and the email, which must move with the booking. The same
+    // guard as the participants dialog — attendance de-duplicates by email,
+    // so two participants must never share one on a listing.
+    const registration = (d.registrations ?? []).find((r) => r.bookingId === booking.id);
+    const nextEmail = input.clientEmail?.trim().toLowerCase() || null;
+    if (registration && nextEmail && nextEmail !== registration.email.trim().toLowerCase()) {
+      const clash = (d.registrations ?? []).some(
+        (r) =>
+          r.id !== registration.id &&
+          r.entityType === registration.entityType &&
+          r.entityId === registration.entityId &&
+          r.status !== 'CANCELLED' &&
+          r.email.trim().toLowerCase() === nextEmail,
+      );
+      if (clash) return 'EMAIL_TAKEN' as const;
+    }
+
     const now = new Date().toISOString();
     booking.startsAt    = input.startsAt;
     booking.endsAt      = input.endsAt;
     booking.unit        = input.unit;
     booking.quantity    = computeQuantity(input.unit, input.startsAt, input.endsAt);
-    booking.totalAmount = Math.round(input.totalAmount);
+    if (plan?.ok) applyDeskPayment(booking, plan, guard.user.id, now);
     booking.clientName  = input.clientName.trim();
     booking.clientEmail = input.clientEmail ?? null;
     booking.notes       = input.notes ?? null;
     booking.updatedAt   = now;
+
+    if (registration) {
+      registration.fullName = booking.clientName;
+      if (nextEmail) registration.email = nextEmail;
+      registration.updatedAt = now;
+    }
 
     return {
       booking,
@@ -599,6 +650,11 @@ export async function PUT(
       case 'FORBIDDEN':       return jsonError(403, 'FORBIDDEN', 'Not your booking');
       case 'NOT_EDITABLE':    return jsonError(409, 'NOT_EDITABLE', 'Only manual (offline) bookings can be edited');
       case 'ALREADY_FINAL':   return jsonError(409, 'ALREADY_FINAL', 'Booking is already in a final state');
+      case 'PAYMENT_NOT_EDITABLE': return jsonError(409, 'PAYMENT_NOT_EDITABLE', 'Confirmez la réservation avant de modifier son prix ou le montant payé.');
+      case 'BAD_RANGE':       return jsonError(422, 'BAD_RANGE', 'La fin doit être postérieure au début.');
+      case 'INVALID_AMOUNT':  return jsonError(422, 'INVALID_AMOUNT', 'Montant invalide.');
+      case 'PAID_EXCEEDS_TOTAL': return jsonError(409, 'PAID_EXCEEDS_TOTAL', 'Le montant payé ne peut pas dépasser le prix.');
+      case 'EMAIL_TAKEN':     return jsonError(409, 'EMAIL_TAKEN', 'Un autre participant de ce programme utilise déjà cette adresse e-mail.');
       case 'SPACE_NOT_FOUND': return jsonError(404, 'SPACE_NOT_FOUND', 'Space not found');
       case 'OVERLAP_CONFLICT':  return jsonError(409, 'OVERLAP_CONFLICT', 'This time slot is already booked');
       case 'DATE_UNAVAILABLE':  return jsonError(409, 'DATE_UNAVAILABLE', 'This date is blocked. Unblock it in the availability calendar first.');

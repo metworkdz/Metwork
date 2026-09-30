@@ -1,5 +1,5 @@
 /**
- * POST /api/consultant/registrations/edit — body { id, fullName?, email?, phone? }
+ * POST /api/consultant/registrations/edit — body { id, fullName?, email?, phone?, totalAmount?, paidAmount? }
  *
  * Same handler and same contract as the incubator surface; only the owner
  * scope differs, exactly as for the list and the desk participant.
@@ -16,5 +16,5 @@ export async function POST(req: NextRequest) {
   const guard = await requireConsultant();
   if (!guard.ok) return guard.response;
 
-  return handleEditRegistration(req, mentorScope(guard.mentorId));
+  return handleEditRegistration(req, mentorScope(guard.mentorId), `mentor:${guard.mentorId}`);
 }

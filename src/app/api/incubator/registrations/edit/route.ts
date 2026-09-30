@@ -1,5 +1,5 @@
 /**
- * POST /api/incubator/registrations/edit — body { id, fullName?, email?, phone? }
+ * POST /api/incubator/registrations/edit — body { id, fullName?, email?, phone?, totalAmount?, paidAmount? }
  *
  * A sub-route rather than a verb on the collection: the consultant surface
  * already spends PATCH on "cancel", and the participants table is shared, so
@@ -22,5 +22,5 @@ export async function POST(req: NextRequest) {
   const inc = await findIncubatorByUserEmail(guard.user.email);
   if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile linked to this account');
 
-  return handleEditRegistration(req, incubatorScope(inc.id));
+  return handleEditRegistration(req, incubatorScope(inc.id), guard.user.id);
 }

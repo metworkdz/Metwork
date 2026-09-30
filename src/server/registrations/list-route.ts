@@ -21,6 +21,7 @@ import { listRegistrations, type OwnerScope } from '@/server/registrations/servi
 import { listAbandonedCheckouts } from '@/server/registrations/abandoned-checkouts';
 import { buildAnswerSummary } from '@/server/registrations/answer-summary';
 import { programOwnedBy } from '@/server/certificates/service';
+import { deskPaymentOf } from '@/server/bookings/desk-payment';
 
 type StoreData = Awaited<ReturnType<typeof db.read>>;
 
@@ -109,7 +110,13 @@ export async function handleListRegistrations(req: NextRequest, owner: OwnerScop
   }
 
   const total = registrations.length;
-  const items = registrations.slice((page - 1) * pageSize, page * pageSize);
+  // Each row carries the money of the booking behind it, so the table can
+  // show — and the edit dialog correct — what this participant owes and paid.
+  const bookingById = new Map((data.bookings ?? []).map((b) => [b.id, b]));
+  const items = registrations.slice((page - 1) * pageSize, page * pageSize).map((r) => {
+    const booking = r.bookingId ? bookingById.get(r.bookingId) : undefined;
+    return { ...r, payment: booking ? deskPaymentOf(booking) : null };
+  });
 
   return json({
     items,

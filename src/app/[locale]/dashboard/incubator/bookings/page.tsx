@@ -29,6 +29,7 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { bookingCountsAsRevenue, bookingIsDeleted, bookingCanBeDeleted } from '@/server/bookings/status';
 import { db } from '@/server/db/store';
+import { deskPaymentOf } from '@/server/bookings/desk-payment';
 import type { BookingStatus } from '@/types/domain';
 import type { Locale } from '@/i18n/config';
 
@@ -73,6 +74,9 @@ interface IncubatorBookingRow {
   paidAlready: number;
   paidAtOffice: boolean;
   awaitingCash: boolean;
+  /** Price paid so far, and whether it may be corrected (desk cash only). */
+  paidAmount: number;
+  paymentEditable: boolean;
   unit: 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH';
   notes: string;
   // Applicable contract templates for this booking (SPACE bookings only).
@@ -160,6 +164,8 @@ export default async function IncubatorBookingsPage({ params, searchParams }: Pa
           awaitingCash:  b.paymentMode === 'CASH_DEPOSIT' &&
                          b.status === 'CONFIRMED' &&
                          b.paymentStatus === 'AWAITING_CASH',
+          paidAmount:      deskPaymentOf(b).paid,
+          paymentEditable: deskPaymentOf(b).editable,
           unit:          (b.unit ?? 'DAY') as 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH',
           notes:         b.notes ?? '',
           contractTemplates: b.itemKind === 'SPACE'
@@ -369,11 +375,14 @@ export default async function IncubatorBookingsPage({ params, searchParams }: Pa
                               <BookingRowActions
                                 booking={{
                                   id:          b.id,
+                                  itemKind:    b.itemKind,
                                   itemName:    b.itemName,
                                   startsAt:    b.startsAt,
                                   endsAt:      b.endsAt,
                                   unit:        b.unit,
                                   totalAmount: b.totalAmount,
+                                  paidAmount:  b.paidAmount,
+                                  paymentEditable: b.paymentEditable,
                                   clientName:  b.customerName,
                                   clientEmail: b.customerEmail,
                                   notes:       b.notes,
@@ -471,8 +480,9 @@ export default async function IncubatorBookingsPage({ params, searchParams }: Pa
                         {b.isManual && !showDeleted && (
                           <BookingRowActions
                             booking={{
-                              id: b.id, itemName: b.itemName, startsAt: b.startsAt,
+                              id: b.id, itemKind: b.itemKind, itemName: b.itemName, startsAt: b.startsAt,
                               endsAt: b.endsAt, unit: b.unit, totalAmount: b.totalAmount,
+                              paidAmount: b.paidAmount, paymentEditable: b.paymentEditable,
                               clientName: b.customerName, clientEmail: b.customerEmail,
                               notes: b.notes,
                             }}

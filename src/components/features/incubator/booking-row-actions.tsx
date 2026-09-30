@@ -40,11 +40,16 @@ type Unit = 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH';
 
 export interface EditableBooking {
   id: string;
+  itemKind: 'SPACE' | 'PROGRAM' | 'EVENT';
   itemName: string;
   startsAt: string;
   endsAt: string;
   unit: Unit;
   totalAmount: number;
+  /** What has been handed over so far (see `@/server/bookings/desk-payment`). */
+  paidAmount: number;
+  /** A confirmed cash booking — the only kind whose amount paid can change. */
+  paymentEditable: boolean;
   clientName: string;
   clientEmail: string;
   notes: string;
@@ -73,6 +78,7 @@ export function BookingRowActions({ booking }: { booking: EditableBooking }) {
   const [endTime, setEndTime]         = useState(booking.endsAt.slice(11, 16));
   const [unit, setUnit]               = useState<Unit>(booking.unit);
   const [amount, setAmount]           = useState(String(booking.totalAmount ?? 0));
+  const [paid, setPaid]               = useState(String(booking.paidAmount ?? 0));
   const [notes, setNotes]             = useState(booking.notes);
 
   function reseed() {
@@ -84,6 +90,7 @@ export function BookingRowActions({ booking }: { booking: EditableBooking }) {
     setEndTime(booking.endsAt.slice(11, 16));
     setUnit(booking.unit);
     setAmount(String(booking.totalAmount ?? 0));
+    setPaid(String(booking.paidAmount ?? 0));
     setNotes(booking.notes);
     setError(null);
   }
@@ -93,8 +100,16 @@ export function BookingRowActions({ booking }: { booking: EditableBooking }) {
     setError(null);
     const startsAt = toIso(startDate, startTime);
     const endsAt   = toIso(endDate, endTime);
-    if (new Date(endsAt) <= new Date(startsAt)) {
+    // Same start and end is a one-day program or event; only a space needs a span.
+    const end = new Date(endsAt), start = new Date(startsAt);
+    if (booking.itemKind === 'SPACE' ? end <= start : end < start) {
       setError(t('errorEndAfterStart'));
+      return;
+    }
+    const total = Math.round(Number(amount) || 0);
+    const paidNow = Math.round(Number(paid) || 0);
+    if (booking.paymentEditable && paidNow > total) {
+      setError(t('errorPaidExceeds'));
       return;
     }
     setSaving(true);
@@ -106,7 +121,8 @@ export function BookingRowActions({ booking }: { booking: EditableBooking }) {
           startsAt,
           endsAt,
           unit,
-          totalAmount:  Number(amount) || 0,
+          totalAmount:  total,
+          ...(booking.paymentEditable ? { paidAmount: paidNow } : {}),
           clientName:   clientName.trim(),
           clientEmail:  clientEmail.trim() || null,
           notes:        notes.trim() || null,
@@ -241,6 +257,15 @@ export function BookingRowActions({ booking }: { booking: EditableBooking }) {
                   onChange={(e) => setAmount(e.target.value)} />
               </div>
             </div>
+
+            {booking.paymentEditable && (
+              <div>
+                <Label htmlFor="eb-paid">{t('labelPaid')}</Label>
+                <Input id="eb-paid" type="number" min="0" inputMode="numeric" className="mt-1" value={paid}
+                  onChange={(e) => setPaid(e.target.value)} aria-describedby="eb-paid-hint" />
+                <p id="eb-paid-hint" className="mt-1 text-xs text-muted-foreground">{t('paidHint')}</p>
+              </div>
+            )}
 
             <div>
               <Label htmlFor="eb-notes">{t('labelNotes')}</Label>

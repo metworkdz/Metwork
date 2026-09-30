@@ -15,22 +15,36 @@ import {
   resendRegistrationConfirmation,
   type OwnerScope,
 } from '@/server/registrations/service';
+import { deskPaymentOf, MAX_DESK_AMOUNT } from '@/server/bookings/desk-payment';
+import { db } from '@/server/db/store';
 
 /**
- * Name, email and phone. Nothing else is editable on purpose: this is for
- * fixing a typo, not for rewriting what somebody submitted.
+ * Name, email and phone — and, for a desk participant, the price and the
+ * amount paid. Nothing else is editable on purpose: this is for fixing a typo
+ * or recording money, not for rewriting what somebody submitted.
  */
+const amount = z.number().int().min(0).max(MAX_DESK_AMOUNT);
 const editSchema = z.object({
   id: z.string().min(1),
   fullName: z.string().trim().min(1).max(160).optional(),
   email: z.string().trim().email().max(320).optional(),
   phone: z.string().trim().min(4).max(30).optional(),
+  totalAmount: amount.optional(),
+  paidAmount: amount.optional(),
 }).refine(
-  (v) => v.fullName !== undefined || v.email !== undefined || v.phone !== undefined,
+  (v) => [v.fullName, v.email, v.phone, v.totalAmount, v.paidAmount].some((x) => x !== undefined),
   { message: 'Nothing to change' },
 );
 
-export async function handleEditRegistration(req: NextRequest, owner: OwnerScope) {
+const REFUSALS = {
+  NOT_FOUND: [404, 'Registration not found'],
+  EMAIL_TAKEN: [409, 'Un autre participant de cette liste utilise déjà cette adresse e-mail.'],
+  NO_BOOKING: [409, 'Ce participant n’a pas de réservation : il n’y a pas de montant à modifier.'],
+  PAYMENT_NOT_EDITABLE: [409, 'Ce montant ne peut pas être modifié : le participant a payé en ligne, ou sa réservation n’est pas confirmée.'],
+  PAID_EXCEEDS_TOTAL: [409, 'Le montant payé ne peut pas dépasser le prix.'],
+} as const;
+
+export async function handleEditRegistration(req: NextRequest, owner: OwnerScope, actorId: string) {
   let body: unknown;
   try { body = await req.json(); }
   catch { return jsonError(400, 'INVALID_JSON', 'Request body must be JSON'); }
@@ -46,18 +60,24 @@ export async function handleEditRegistration(req: NextRequest, owner: OwnerScope
     fullName: input.fullName,
     email: input.email,
     phone: input.phone,
-  });
+    totalAmount: input.totalAmount,
+    paidAmount: input.paidAmount,
+  }, actorId);
 
   if (!result.ok) {
-    return result.reason === 'NOT_FOUND'
-      ? jsonError(404, 'NOT_FOUND', 'Registration not found')
-      : jsonError(
-          409, 'EMAIL_TAKEN',
-          'Un autre participant de cette liste utilise déjà cette adresse e-mail.',
-        );
+    const [status, message] = REFUSALS[result.reason];
+    return jsonError(status, result.reason, message);
   }
 
-  return json({ registration: result.registration });
+  // The row goes back with its booking's money, as the list serves it, so the
+  // table shows the corrected amounts without a refetch.
+  const data = await db.read();
+  const booking = result.registration.bookingId
+    ? (data.bookings ?? []).find((x) => x.id === result.registration.bookingId)
+    : undefined;
+  return json({
+    registration: { ...result.registration, payment: booking ? deskPaymentOf(booking) : null },
+  });
 }
 
 const resendSchema = z.object({ id: z.string().min(1) });

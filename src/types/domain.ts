@@ -216,6 +216,12 @@ export interface Registration {
    * registration has none — and nothing to resend a receipt for.
    */
   bookingId?: string | null;
+  /**
+   * The price of that booking and how much has been paid. `editable` only on
+   * a confirmed desk (cash) booking — an online payment is frozen. Present on
+   * rows from the registrations list; absent without a booking.
+   */
+  payment?: { total: number; paid: number; editable: boolean } | null;
   createdAt: string;
   updatedAt: string;
 }
