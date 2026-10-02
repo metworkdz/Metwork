@@ -125,6 +125,23 @@ describe('the two books never mix', () => {
     expect((await listClients(asConsultant)).map((c) => c.fullName)).toEqual(['Chez le consultant']);
   });
 
+  it('refuses a row that carries BOTH owner ids', async () => {
+    // Exactly one is ever written, but the predicate checks both halves rather
+    // than trusting that — a stale sibling id lingering on a row must not
+    // quietly widen someone's scope. Same guard as the other owner predicates
+    // in this codebase.
+    await db.update((d) => {
+      d.clients = [{
+        id: 'both', incubatorId: INC_ID, mentorId: MENTOR_ID,
+        fullName: 'Ambigu', email: '', phone: '',
+        idCardNumber: null, companyName: null, notes: null,
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      } as never];
+    });
+    expect(await listClients(CONSULTANT)).toEqual([]);
+    expect(await listClients(INCUBATOR)).toEqual([]);
+  });
+
   it('keeps document lists apart', async () => {
     await issueInvoice(CONSULTANT, { clientDraft: draft(), lines: LINES, paymentMethod: 'ESPECE' });
     await issueInvoice(INCUBATOR, { clientDraft: draft(), lines: LINES, paymentMethod: 'ESPECE' });

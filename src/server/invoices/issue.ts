@@ -26,6 +26,7 @@ import {
   issuerSnapshotFrom,
   ownerFields,
   ownsClient,
+  ownsInvoice,
   type InvoiceOwner,
 } from '@/server/invoices/owner';
 
@@ -172,7 +173,7 @@ export async function issueInvoice(
       input.seq !== undefined &&
       d.invoices.some(
         (i) =>
-          (owner.type === 'INCUBATOR' ? i.incubatorId === owner.id : i.mentorId === owner.id) &&
+          ownsInvoice(i, owner) &&
           i.year === year &&
           i.seq === input.seq &&
           (i.kind ?? 'FACTURE') === kind,

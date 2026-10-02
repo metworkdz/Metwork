@@ -47,8 +47,19 @@ export function ownerFields(owner: InvoiceOwner): { incubatorId?: string; mentor
   return owner.type === 'INCUBATOR' ? { incubatorId: owner.id } : { mentorId: owner.id };
 }
 
+/**
+ * Exactly one owner id is ever written, and this checks BOTH halves of that
+ * rather than trusting it: an incubator scope must not match a row that also
+ * carries a mentorId, and the reverse. Same shape as the other owner
+ * predicates in this codebase (`registrations/service.ts`,
+ * `bookings/soft-delete.ts`, `program-finance/service.ts`), which guard the
+ * same way for the same reason — a stale sibling id lingering on a row must
+ * not quietly widen someone's scope.
+ */
 function ownedBy(rec: { incubatorId?: string | null; mentorId?: string | null }, owner: InvoiceOwner): boolean {
-  return owner.type === 'INCUBATOR' ? rec.incubatorId === owner.id : rec.mentorId === owner.id;
+  return owner.type === 'INCUBATOR'
+    ? !rec.mentorId && rec.incubatorId === owner.id
+    : !rec.incubatorId && rec.mentorId === owner.id;
 }
 
 export function ownsInvoice(invoice: InvoiceRecord, owner: InvoiceOwner): boolean {
