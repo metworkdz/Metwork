@@ -5750,5 +5750,32 @@
     "answered": "{count, plural, one {# réponse} other {# réponses}}",
     "multi": "plusieurs choix possibles",
     "other": "{count, plural, one {# réponse} other {# réponses}} ne correspond plus à aucun choix actuel"
+  },
+  "feedbackPage": {
+    "metaTitle": "Votre avis sur la formation",
+    "eyebrow": "Votre avis",
+    "byOrganizer": "Organisé par {organizer}",
+    "greeting": "Bonjour {name},",
+    "privateNote": "Vos réponses sont privées : seule l’équipe organisatrice les lit. Elles ne sont jamais publiées.",
+    "requiredHint": "* réponse obligatoire",
+    "zero": "0",
+    "zeroLabel": "0 étoile",
+    "starLabel": "{count, plural, one {# étoile} other {# étoiles}}",
+    "clear": "Effacer",
+    "textPlaceholder": "Votre réponse…",
+    "submit": "Envoyer mon avis",
+    "submitting": "Envoi…",
+    "alreadyAnswered": "Vous avez déjà répondu. Vous pouvez modifier vos réponses tant que le questionnaire est ouvert.",
+    "update": "Mettre à jour mon avis",
+    "thanksTitle": "Merci !",
+    "thanksBody": "Votre avis a bien été enregistré. Il nous aide à améliorer nos formations.",
+    "editAgain": "Modifier mes réponses",
+    "invalidTitle": "Lien introuvable",
+    "invalidBody": "Ce lien n’est pas valide ou n’est plus actif. Utilisez le lien du dernier e-mail reçu, ou contactez l’organisateur.",
+    "closedTitle": "Questionnaire clôturé",
+    "closedBody": "Ce questionnaire n’accepte plus de réponses. Merci de votre intérêt.",
+    "errorMissing": "Merci de répondre à : « {label} »",
+    "errorGeneric": "L’envoi a échoué. Vérifiez votre connexion et réessayez.",
+    "errorRate": "Trop de tentatives. Réessayez dans quelques minutes."
   }
 }

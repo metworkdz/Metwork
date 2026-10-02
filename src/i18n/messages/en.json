@@ -5750,5 +5750,32 @@
     "answered": "{count, plural, one {# answer} other {# answers}}",
     "multi": "several choices allowed",
     "other": "{count, plural, one {# answer matches} other {# answers match}} no current choice"
+  },
+  "feedbackPage": {
+    "metaTitle": "Your opinion of the training",
+    "eyebrow": "Your opinion",
+    "byOrganizer": "Organised by {organizer}",
+    "greeting": "Hello {name},",
+    "privateNote": "Your answers are private: only the organising team reads them. They are never published.",
+    "requiredHint": "* required",
+    "zero": "0",
+    "zeroLabel": "0 stars",
+    "starLabel": "{count, plural, one {# star} other {# stars}}",
+    "clear": "Clear",
+    "textPlaceholder": "Your answer…",
+    "submit": "Send my feedback",
+    "submitting": "Sending…",
+    "alreadyAnswered": "You have already answered. You can change your answers while the survey is open.",
+    "update": "Update my feedback",
+    "thanksTitle": "Thank you!",
+    "thanksBody": "Your feedback has been saved. It helps us improve our trainings.",
+    "editAgain": "Change my answers",
+    "invalidTitle": "Link not found",
+    "invalidBody": "This link is not valid or no longer active. Use the link in the latest email you received, or contact the organiser.",
+    "closedTitle": "Survey closed",
+    "closedBody": "This survey no longer accepts answers. Thank you for your interest.",
+    "errorMissing": "Please answer: “{label}”",
+    "errorGeneric": "Sending failed. Check your connection and try again.",
+    "errorRate": "Too many attempts. Try again in a few minutes."
   }
 }
