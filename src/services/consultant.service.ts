@@ -279,6 +279,116 @@ export interface ConsultantContract {
   pdfUrl: string | null;
 }
 
+
+/* ─────────────────── Invoicing ─────────────────── */
+
+export type ConsultantInvoiceKind = 'FACTURE' | 'PROFORMA' | 'DEVIS';
+
+export interface ConsultantInvoiceLine {
+  designation: string;
+  quantity: number;
+  unitPriceHt: number;
+}
+
+/** One issued document, as the portal needs to list and open it. */
+export interface ConsultantInvoice {
+  id: string;
+  kind?: ConsultantInvoiceKind;
+  number: string;
+  year: number;
+  seq: number;
+  issuedAt: string;
+  validUntil?: string | null;
+  clientSnapshot: { name: string; legalName?: string | null; clientType: 'COMPANY' | 'INDIVIDUAL' };
+  lines: ConsultantInvoiceLine[];
+  vatRate: number;
+  paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT';
+  totals: { ht: number; tva: number; ttc: number; timbre: number; net: number };
+  status: 'ISSUED' | 'CANCELLED';
+}
+
+/** The consultant's letterhead, as stored. */
+export interface ConsultantIssuerProfile {
+  name: string;
+  address: string | null;
+  reg: string | null;
+  regLabel: string;
+  nif: string | null;
+  nis: string | null;
+  ai: string | null;
+  logoUrl: string | null;
+  stampUrl: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  bankName: string | null;
+  bankRib: string | null;
+  defaultVatRate: number;
+  invoiceTemplate: 'CLASSIC' | 'GREEN_BAND' | 'MINIMAL';
+}
+
+export interface ConsultantInvoiceList {
+  items: ConsultantInvoice[];
+  total: number;
+  issuer: ConsultantIssuerProfile | null;
+  /** What the next document of each kind will be numbered. */
+  nextSeq: Record<ConsultantInvoiceKind, number> | null;
+}
+
+export interface ConsultantInvoiceSettingsDto {
+  issuer: ConsultantIssuerProfile;
+  /** False while the legal header is incomplete — issuing is refused. */
+  complete: boolean;
+  canInvoiceByTransfer: boolean;
+}
+
+export interface ConsultantClient {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  companyName?: string | null;
+  clientType?: 'COMPANY' | 'INDIVIDUAL';
+  legalName?: string | null;
+  address?: string | null;
+  rc?: string | null;
+  nif?: string | null;
+  nis?: string | null;
+  ai?: string | null;
+}
+
+export interface ConsultantClientInput {
+  fullName: string;
+  email?: string | null;
+  phone?: string | null;
+  clientType?: 'COMPANY' | 'INDIVIDUAL';
+  legalName?: string | null;
+  address?: string | null;
+  rc?: string | null;
+  nif?: string | null;
+  nis?: string | null;
+  ai?: string | null;
+}
+
+export interface ConsultantInvoiceInput {
+  clientId?: string;
+  clientDraft?: {
+    clientType: 'COMPANY' | 'INDIVIDUAL';
+    name: string;
+    legalName?: string | null;
+    address?: string | null;
+    rc?: string | null;
+    nif?: string | null;
+  };
+  lines: ConsultantInvoiceLine[];
+  vatRate?: number;
+  paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT';
+  kind?: ConsultantInvoiceKind;
+  validUntil?: string | null;
+  withStamp?: boolean;
+  note?: string | null;
+  seq?: number;
+}
+
 export const consultantService = {
   me: () => apiClient.get<ConsultantMe>('/consultant/me'),
 
@@ -446,4 +556,32 @@ export const consultantService = {
     ),
   contractPdfUrl: (id: string) =>
     apiClient.get<{ url: string }>(`/consultant/contracts/${encodeURIComponent(id)}/pdf`),
+  // ── Invoicing (factures / proforma / devis) ──
+  invoices: () => apiClient.get<ConsultantInvoiceList>('/consultant/invoices'),
+  issueInvoice: (body: ConsultantInvoiceInput) =>
+    apiClient.post<ConsultantInvoice>('/consultant/invoices', body),
+  cancelInvoice: (id: string) =>
+    apiClient.patch<{ invoice: ConsultantInvoice }>(
+      `/consultant/invoices/${encodeURIComponent(id)}`,
+      { status: 'CANCELLED' },
+    ),
+  /** The PDF is streamed, so the caller opens this URL rather than fetching JSON. */
+  invoicePdfPath: (id: string) => `/api/consultant/invoices/${encodeURIComponent(id)}/pdf`,
+
+  invoiceSettings: () =>
+    apiClient.get<ConsultantInvoiceSettingsDto>('/consultant/invoices/settings'),
+  saveInvoiceSettings: (body: Record<string, unknown>) =>
+    apiClient.patch<ConsultantInvoiceSettingsDto>('/consultant/invoices/settings', body),
+
+  invoiceClients: () => apiClient.get<{ items: ConsultantClient[] }>('/consultant/clients'),
+  searchInvoiceClients: (q: string) =>
+    apiClient.get<{ items: ConsultantClient[] }>(
+      `/consultant/clients/search?q=${encodeURIComponent(q)}`,
+    ),
+  createInvoiceClient: (body: ConsultantClientInput) =>
+    apiClient.post<ConsultantClient>('/consultant/clients', body),
+  updateInvoiceClient: (id: string, body: Partial<ConsultantClientInput>) =>
+    apiClient.patch<ConsultantClient>(`/consultant/clients/${encodeURIComponent(id)}`, body),
+  deleteInvoiceClient: (id: string) =>
+    apiClient.delete<{ ok: true }>(`/consultant/clients/${encodeURIComponent(id)}`),
 };

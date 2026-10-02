@@ -4908,6 +4908,114 @@
       "userId": "qa-investor-id",
       "expiresAt": "2026-09-20T00:23:44.762Z",
       "createdAt": "2026-09-13T00:23:44.762Z"
+    },
+    {
+      "idHash": "e1a2454f90cde4992f66813ae3b47c7ef04e7d3d51f0233992d739752eefc147",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-10-09T21:11:16.735Z",
+      "createdAt": "2026-10-02T21:11:16.735Z"
+    },
+    {
+      "idHash": "878cbf7cd84582b3fc54defd535ccdf234df05f5ec608566ebfe80006fc73068",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-10-09T21:11:19.012Z",
+      "createdAt": "2026-10-02T21:11:19.012Z"
+    },
+    {
+      "idHash": "723d9d61e5c41599e7e9ab6ef43fbc15c20b30e20668cdcc9816e225e668f938",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-10-09T21:11:21.197Z",
+      "createdAt": "2026-10-02T21:11:21.197Z"
+    },
+    {
+      "idHash": "3078eb8a4cad92fb1c50aefe49a8f460f0a0786e96bd0f43511869cede45d1f7",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-10-09T21:11:23.406Z",
+      "createdAt": "2026-10-02T21:11:23.406Z"
+    },
+    {
+      "idHash": "cb0dcda4762433ea2024d671fb92eaf3f7b0da969a46c4b3da3493116b6454b0",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-10-09T21:11:25.076Z",
+      "createdAt": "2026-10-02T21:11:25.076Z"
+    },
+    {
+      "idHash": "c7f695178749ab06b5a636c4011befb22cb10a58c6efdc07781db1eddcded4bb",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-10-09T21:11:26.300Z",
+      "createdAt": "2026-10-02T21:11:26.300Z"
+    },
+    {
+      "idHash": "950614fa57a6f9e0a3e14a58d037ca956a15b8cbd3b7851e5781cc9c6f564c9c",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-10-09T21:14:06.229Z",
+      "createdAt": "2026-10-02T21:14:06.229Z"
+    },
+    {
+      "idHash": "ebc0f3ebbb9aed7c7f22e609ffbf9de804ddd4b7c0223e8187cb93d079ff2fba",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-10-09T21:14:09.339Z",
+      "createdAt": "2026-10-02T21:14:09.339Z"
+    },
+    {
+      "idHash": "c2c7c5e9fe5b94ae3f2bbbcf328290a9b4d43f5d9f1c6710f6937cfc83ac30c3",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-10-09T21:14:11.388Z",
+      "createdAt": "2026-10-02T21:14:11.388Z"
+    },
+    {
+      "idHash": "012e5b9fe81eb43b1fa4d5d427b0a14ae6892eb46155a98b8d7c1602862ad9e2",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-10-09T21:14:13.519Z",
+      "createdAt": "2026-10-02T21:14:13.519Z"
+    },
+    {
+      "idHash": "dec6f8b8f5d6c0cae117624add66723f839541494de2a7c6d70598b345619424",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-10-09T21:14:14.732Z",
+      "createdAt": "2026-10-02T21:14:14.732Z"
+    },
+    {
+      "idHash": "d8e4f3450b29a797f1bc6179c74e500f8eb2f0fbdbc49a85aacdcf7065ba59ce",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-10-09T21:14:16.034Z",
+      "createdAt": "2026-10-02T21:14:16.034Z"
+    },
+    {
+      "idHash": "6d53b4bac0acc90fa62809a11258e46876a499d026f766efe32a1012c192a02d",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-10-09T21:15:11.603Z",
+      "createdAt": "2026-10-02T21:15:11.603Z"
+    },
+    {
+      "idHash": "dbc3f7416de0fa7fb99b084ede3e30e9284f869dbb5a2ae997da1393c8b07c6e",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-10-09T21:15:12.829Z",
+      "createdAt": "2026-10-02T21:15:12.829Z"
+    },
+    {
+      "idHash": "6da276967de6e885fcab050022cfa48ccd9a4fed39a67636702627f5d6aaa69d",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-10-09T21:15:13.996Z",
+      "createdAt": "2026-10-02T21:15:13.996Z"
+    },
+    {
+      "idHash": "9727ec631d14e69acb4d0d090ad9c77830c7fd7e6f8122d847cb4d96d9221eb1",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-10-09T21:15:15.154Z",
+      "createdAt": "2026-10-02T21:15:15.154Z"
+    },
+    {
+      "idHash": "854e0461144f95aea89aec4870c435aee08ec7cd62ccc945f2664de6f2091271",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-10-09T21:15:16.346Z",
+      "createdAt": "2026-10-02T21:15:16.346Z"
+    },
+    {
+      "idHash": "230fc28061c19e0bcf710e3bd99c5de3616ec3b1da78e19213f6bf89c8f39a4a",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-10-09T21:15:17.553Z",
+      "createdAt": "2026-10-02T21:15:17.553Z"
     }
   ],
   "otps": [
@@ -4927,6 +5035,15 @@
       "expiresAt": "2026-09-13T17:59:27.307Z",
       "attempts": 0,
       "consumed": false,
+      "channel": "email"
+    },
+    {
+      "id": "064ab9e8993f4869bcc87159",
+      "userId": "mentor:acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "codeHash": "00b3ea9f465a2151c99b26041049f9c00552a9895f563fdd8a3c4618409041de",
+      "expiresAt": "2026-10-02T21:19:34.961Z",
+      "attempts": 1,
+      "consumed": true,
       "channel": "email"
     }
   ],
@@ -17530,7 +17647,7 @@
       "field": "Financement",
       "consultationFee": 4000,
       "createdAt": "2026-09-13T00:11:24.157Z",
-      "updatedAt": "2026-09-13T00:22:07.223Z",
+      "updatedAt": "2026-10-02T21:10:48.057Z",
       "approvalStatus": "APPROVED",
       "source": "SELF",
       "publiclyListed": true,
@@ -17601,7 +17718,17 @@
       },
       "approvedAt": "2026-09-13T00:14:02.281Z",
       "address": "14 Boulevard Emir Abdelkader, Oran Centre, Oran",
-      "idNumber": "109412345678"
+      "idNumber": "109412345678",
+      "invoiceLegalStatus": "REGISTRE_COMMERCE",
+      "invoiceRegNumber": "31/00-9988776",
+      "nif": "002431112519476",
+      "bankName": "BNA",
+      "bankRib": "00400123456789012345",
+      "invoiceCounters": {
+        "2026": 2,
+        "DEVIS:2026": 1
+      },
+      "defaultVatRate": 19
     }
   ],
   "mentorCategories": [
@@ -28285,6 +28412,25 @@
       "createdAt": "2026-06-19T23:41:07.200Z",
       "updatedAt": "2026-06-19T23:41:07.200Z",
       "clientType": "INDIVIDUAL"
+    },
+    {
+      "id": "6110e7e4-d9f8-4b8e-b176-9d86fcb0c089",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "fullName": "Yacine Belkacem",
+      "email": "contact@technova.dz",
+      "phone": "",
+      "idCardNumber": null,
+      "companyName": null,
+      "notes": null,
+      "clientType": "COMPANY",
+      "legalName": "SARL TechNova",
+      "address": "Cité 200 logts, Bab Ezzouar, Alger",
+      "rc": "16/00-1234567B26",
+      "nif": "002616123456789",
+      "nis": null,
+      "ai": null,
+      "createdAt": "2026-10-02T21:10:15.495Z",
+      "updatedAt": "2026-10-02T21:10:15.495Z"
     }
   ],
   "services": [
@@ -28353,7 +28499,194 @@
     }
   ],
   "contractTemplates": [],
-  "invoices": [],
+  "invoices": [
+    {
+      "id": "304c755f-8077-42ed-9e84-23fe86de3534",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "kind": "FACTURE",
+      "number": "01/2026",
+      "year": 2026,
+      "seq": 1,
+      "validUntil": null,
+      "issuedAt": "2026-10-02T21:10:15.545Z",
+      "clientId": "6110e7e4-d9f8-4b8e-b176-9d86fcb0c089",
+      "clientSnapshot": {
+        "clientType": "COMPANY",
+        "name": "Yacine Belkacem",
+        "legalName": "SARL TechNova",
+        "address": "Cité 200 logts, Bab Ezzouar, Alger",
+        "rc": "16/00-1234567B26",
+        "nif": "002616123456789",
+        "nis": null,
+        "ai": null,
+        "phone": null,
+        "email": "contact@technova.dz"
+      },
+      "issuerSnapshot": {
+        "name": "Mohamed Amine",
+        "address": "14 Boulevard Emir Abdelkader, Oran Centre, Oran",
+        "rc": "AE-31-0045127",
+        "rcLabel": "Carte AE",
+        "nif": "002431112519476",
+        "nis": null,
+        "ai": null,
+        "logoUrl": null,
+        "website": null,
+        "contactEmail": "mohamed.amine.demo+test@metwork.test",
+        "contactPhone": "+213555000000",
+        "bankName": "BNA",
+        "bankRib": "00400123456789012345",
+        "stampUrl": null
+      },
+      "lines": [
+        {
+          "designation": "Accompagnement stratégique — octobre",
+          "quantity": 12,
+          "unitPriceHt": 3000
+        }
+      ],
+      "withStamp": false,
+      "note": null,
+      "vatRate": 0,
+      "paymentMethod": "VIREMENT",
+      "template": "CLASSIC",
+      "totals": {
+        "ht": 36000,
+        "tva": 0,
+        "ttc": 36000,
+        "timbre": 0,
+        "net": 36000
+      },
+      "amountInWords": "TRENTE SIX MILLE DINARS",
+      "status": "ISSUED",
+      "createdAt": "2026-10-02T21:10:15.545Z",
+      "updatedAt": "2026-10-02T21:10:15.545Z"
+    },
+    {
+      "id": "1284c28e-90fe-4647-99e9-0e595752c6df",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "kind": "DEVIS",
+      "number": "DV 01/2026",
+      "year": 2026,
+      "seq": 1,
+      "validUntil": "2026-12-31",
+      "issuedAt": "2026-10-02T21:10:15.593Z",
+      "clientId": "6110e7e4-d9f8-4b8e-b176-9d86fcb0c089",
+      "clientSnapshot": {
+        "clientType": "COMPANY",
+        "name": "Yacine Belkacem",
+        "legalName": "SARL TechNova",
+        "address": "Cité 200 logts, Bab Ezzouar, Alger",
+        "rc": "16/00-1234567B26",
+        "nif": "002616123456789",
+        "nis": null,
+        "ai": null,
+        "phone": null,
+        "email": "contact@technova.dz"
+      },
+      "issuerSnapshot": {
+        "name": "Mohamed Amine",
+        "address": "14 Boulevard Emir Abdelkader, Oran Centre, Oran",
+        "rc": "AE-31-0045127",
+        "rcLabel": "Carte AE",
+        "nif": "002431112519476",
+        "nis": null,
+        "ai": null,
+        "logoUrl": null,
+        "website": null,
+        "contactEmail": "mohamed.amine.demo+test@metwork.test",
+        "contactPhone": "+213555000000",
+        "bankName": "BNA",
+        "bankRib": "00400123456789012345",
+        "stampUrl": null
+      },
+      "lines": [
+        {
+          "designation": "Audit financier",
+          "quantity": 1,
+          "unitPriceHt": 95000
+        }
+      ],
+      "withStamp": false,
+      "note": null,
+      "vatRate": 0,
+      "paymentMethod": "ESPECE",
+      "template": "CLASSIC",
+      "totals": {
+        "ht": 95000,
+        "tva": 0,
+        "ttc": 95000,
+        "timbre": 0,
+        "net": 95000
+      },
+      "amountInWords": "QUATRE VINGT QUINZE MILLE DINARS",
+      "status": "ISSUED",
+      "createdAt": "2026-10-02T21:10:15.593Z",
+      "updatedAt": "2026-10-02T21:10:15.593Z"
+    },
+    {
+      "id": "d73313dc-967c-4013-bab9-b675fa7a2488",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "kind": "FACTURE",
+      "number": "02/2026",
+      "year": 2026,
+      "seq": 2,
+      "validUntil": null,
+      "issuedAt": "2026-10-02T21:10:48.057Z",
+      "clientId": "6110e7e4-d9f8-4b8e-b176-9d86fcb0c089",
+      "clientSnapshot": {
+        "clientType": "COMPANY",
+        "name": "Yacine Belkacem",
+        "legalName": "SARL TechNova",
+        "address": "Cité 200 logts, Bab Ezzouar, Alger",
+        "rc": "16/00-1234567B26",
+        "nif": "002616123456789",
+        "nis": null,
+        "ai": null,
+        "phone": null,
+        "email": "contact@technova.dz"
+      },
+      "issuerSnapshot": {
+        "name": "Mohamed Amine",
+        "address": "14 Boulevard Emir Abdelkader, Oran Centre, Oran",
+        "rc": "31/00-9988776",
+        "rcLabel": "RCN",
+        "nif": "002431112519476",
+        "nis": null,
+        "ai": null,
+        "logoUrl": null,
+        "website": null,
+        "contactEmail": "mohamed.amine.demo+test@metwork.test",
+        "contactPhone": "+213555000000",
+        "bankName": "BNA",
+        "bankRib": "00400123456789012345",
+        "stampUrl": null
+      },
+      "lines": [
+        {
+          "designation": "Conseil en financement",
+          "quantity": 4,
+          "unitPriceHt": 5000
+        }
+      ],
+      "withStamp": false,
+      "note": null,
+      "vatRate": 19,
+      "paymentMethod": "ESPECE",
+      "template": "CLASSIC",
+      "totals": {
+        "ht": 20000,
+        "tva": 3800,
+        "ttc": 23800,
+        "timbre": 238,
+        "net": 24038
+      },
+      "amountInWords": "VINGT QUATRE MILLE TRENTE HUIT DINARS",
+      "status": "ISSUED",
+      "createdAt": "2026-10-02T21:10:48.057Z",
+      "updatedAt": "2026-10-02T21:10:48.057Z"
+    }
+  ],
   "expenses": [],
   "income": [],
   "landingContent": null,
@@ -36000,6 +36333,12 @@
       "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
       "expiresAt": "2026-10-13T00:11:32.133Z",
       "createdAt": "2026-09-13T00:11:32.133Z"
+    },
+    {
+      "idHash": "82fe0d4b741ba90189d7a4bd6b3686c02e3e65e44d9f2ebd01ea152524eb83f1",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "expiresAt": "2026-11-01T21:09:46.603Z",
+      "createdAt": "2026-10-02T21:09:46.603Z"
     }
   ],
   "mentorDeviceTokens": [],

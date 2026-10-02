@@ -260,7 +260,10 @@ export function Spinner({ className, tone = 'dark' }: { className?: string; tone
  * POST a file to the consultant self-upload endpoint (session-guarded).
  * Shared by the profile editor and the signup CV step — one upload path.
  */
-export async function uploadConsultantFile(file: File, kind: 'avatar' | 'cv'): Promise<string> {
+export async function uploadConsultantFile(
+  file: File,
+  kind: 'avatar' | 'cv' | 'invoice-logo' | 'invoice-stamp',
+): Promise<string> {
   const fd = new FormData();
   fd.append('file', file);
   fd.append('kind', kind);
