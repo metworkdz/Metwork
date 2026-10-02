@@ -5016,6 +5016,42 @@
       "userId": "qa-investor-id",
       "expiresAt": "2026-10-09T21:15:17.553Z",
       "createdAt": "2026-10-02T21:15:17.553Z"
+    },
+    {
+      "idHash": "43c5a1009d7b0afb3b9c1b37d6276093a1f764a3dd48eda84c41ab162879a43d",
+      "userId": "qa-admin-id",
+      "expiresAt": "2026-10-09T21:30:54.715Z",
+      "createdAt": "2026-10-02T21:30:54.715Z"
+    },
+    {
+      "idHash": "d3ea3dc4aae86b5214165557f7884832b1ad5555b6e02ef56d70dc4f46e68e04",
+      "userId": "qa-incubator-user-id",
+      "expiresAt": "2026-10-09T21:31:00.167Z",
+      "createdAt": "2026-10-02T21:31:00.167Z"
+    },
+    {
+      "idHash": "ba6daeb04fc56ecaa6788abf3cf0ecc11295581d92940a3b82b0ba744635c204",
+      "userId": "qa-builder-id",
+      "expiresAt": "2026-10-09T21:31:03.688Z",
+      "createdAt": "2026-10-02T21:31:03.688Z"
+    },
+    {
+      "idHash": "b15f2c58ac3dd15d0be67d4897f82cae91e5ed480c34fe70ca1b07761f3c0951",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-10-09T21:31:06.685Z",
+      "createdAt": "2026-10-02T21:31:06.685Z"
+    },
+    {
+      "idHash": "c5b41c450d27ea558d328c5d7a67e30508d7105bcbc0196fd98ae822c6e90107",
+      "userId": "qa-explorer-id",
+      "expiresAt": "2026-10-09T21:31:07.991Z",
+      "createdAt": "2026-10-02T21:31:07.991Z"
+    },
+    {
+      "idHash": "ecc43ebf8f0d4c35fdf4043e6cb886eea1e3912035c458d5d5c088acc7617c7d",
+      "userId": "qa-investor-id",
+      "expiresAt": "2026-10-09T21:31:09.194Z",
+      "createdAt": "2026-10-02T21:31:09.194Z"
     }
   ],
   "otps": [
@@ -17647,7 +17683,7 @@
       "field": "Financement",
       "consultationFee": 4000,
       "createdAt": "2026-09-13T00:11:24.157Z",
-      "updatedAt": "2026-10-02T21:10:48.057Z",
+      "updatedAt": "2026-10-02T21:29:03.703Z",
       "approvalStatus": "APPROVED",
       "source": "SELF",
       "publiclyListed": true,
@@ -17725,10 +17761,12 @@
       "bankName": "BNA",
       "bankRib": "00400123456789012345",
       "invoiceCounters": {
-        "2026": 2,
+        "2026": 3,
         "DEVIS:2026": 1
       },
-      "defaultVatRate": 19
+      "defaultVatRate": null,
+      "invoiceRcType": "PERSONNE_PHYSIQUE",
+      "ai": "A-1234"
     }
   ],
   "mentorCategories": [
@@ -28685,6 +28723,68 @@
       "status": "ISSUED",
       "createdAt": "2026-10-02T21:10:48.057Z",
       "updatedAt": "2026-10-02T21:10:48.057Z"
+    },
+    {
+      "id": "a8e727c1-d5a8-4fc0-9c6d-c14a2f773d3c",
+      "mentorId": "acb20041-5994-4e00-a4a3-a88494eb5abe",
+      "kind": "FACTURE",
+      "number": "03/2026",
+      "year": 2026,
+      "seq": 3,
+      "validUntil": null,
+      "issuedAt": "2026-10-02T21:29:03.703Z",
+      "clientId": "6110e7e4-d9f8-4b8e-b176-9d86fcb0c089",
+      "clientSnapshot": {
+        "clientType": "COMPANY",
+        "name": "Yacine Belkacem",
+        "legalName": "SARL TechNova",
+        "address": "Cité 200 logts, Bab Ezzouar, Alger",
+        "rc": "16/00-1234567B26",
+        "nif": "002616123456789",
+        "nis": null,
+        "ai": null,
+        "phone": null,
+        "email": "contact@technova.dz"
+      },
+      "issuerSnapshot": {
+        "name": "Mohamed Amine",
+        "address": "14 Boulevard Emir Abdelkader, Oran Centre, Oran",
+        "rc": "31/00-9988776",
+        "rcLabel": "RCN",
+        "nif": "002431112519476",
+        "nis": null,
+        "ai": "A-1234",
+        "logoUrl": null,
+        "website": null,
+        "contactEmail": "mohamed.amine.demo+test@metwork.test",
+        "contactPhone": "+213555000000",
+        "bankName": "BNA",
+        "bankRib": "00400123456789012345",
+        "stampUrl": null
+      },
+      "lines": [
+        {
+          "designation": "Mission de conseil",
+          "quantity": 3,
+          "unitPriceHt": 15000
+        }
+      ],
+      "withStamp": false,
+      "note": null,
+      "vatRate": 0,
+      "paymentMethod": "ESPECE",
+      "template": "CLASSIC",
+      "totals": {
+        "ht": 45000,
+        "tva": 0,
+        "ttc": 45000,
+        "timbre": 675,
+        "net": 45675
+      },
+      "amountInWords": "QUARANTE CINQ MILLE SIX CENT SOIXANTE QUINZE DINARS",
+      "status": "ISSUED",
+      "createdAt": "2026-10-02T21:29:03.703Z",
+      "updatedAt": "2026-10-02T21:29:03.703Z"
     }
   ],
   "expenses": [],

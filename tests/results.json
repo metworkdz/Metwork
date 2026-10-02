@@ -409,7 +409,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 11,
+                  "duration": 10,
                   "errors": [],
                   "stdout": [
                     {
@@ -418,7 +418,7 @@
                   ],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T21:15:18.486Z",
+                  "startTime": "2026-10-02T21:31:10.891Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -434,13 +434,13 @@
       ]
     },
     {
-      "title": "../cleanup/tmp-invoices.cleanup.ts",
-      "file": "../cleanup/tmp-invoices.cleanup.ts",
+      "title": "../cleanup/tmp-settings.cleanup.ts",
+      "file": "../cleanup/tmp-settings.cleanup.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "invoices tab",
+          "title": "legal settings",
           "ok": true,
           "tags": [],
           "tests": [
@@ -455,12 +455,12 @@
                   "workerIndex": 1,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 9009,
+                  "duration": 12727,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-10-02T21:15:18.485Z",
+                  "startTime": "2026-10-02T21:31:10.890Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -468,9 +468,9 @@
               "status": "expected"
             }
           ],
-          "id": "44944cd0bc2030c5341f-bf94ee95f8e839cedd69",
-          "file": "../cleanup/tmp-invoices.cleanup.ts",
-          "line": 14,
+          "id": "8b538b8cbdebaa099114-5a73ebda8dbe3d7243ce",
+          "file": "../cleanup/tmp-settings.cleanup.ts",
+          "line": 5,
           "column": 5
         }
       ]
@@ -478,8 +478,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-02T21:15:09.879Z",
-    "duration": 17811.868000000002,
+    "startTime": "2026-10-02T21:30:43.056Z",
+    "duration": 40765.092,
     "expected": 2,
     "skipped": 0,
     "unexpected": 0,

@@ -79,6 +79,12 @@ export function clientsFor(d: InvoiceStoreSlice, owner: InvoiceOwner): ClientRec
  */
 export interface IssuerProfile {
   name: string;
+  /**
+   * Set only for a consultant on a registre de commerce — it decides the VAT
+   * default and is what the settings screen asks for. Null for an incubator
+   * (always au réel) and for an auto-entrepreneur.
+   */
+  rcType?: 'PERSONNE_PHYSIQUE' | 'PERSONNE_MORALE' | null;
   address: string | null;
   /** Registre de Commerce, or a carte d'auto-entrepreneur number. */
   reg: string | null;
@@ -150,6 +156,7 @@ export function findIssuer(
         // only carry `registrationNumber` (the receipt's RC line).
         reg: nz(inc.commercialRegNumber) ?? nz(inc.registrationNumber),
         regLabel: REG_LABEL_REGISTRE_COMMERCE,
+        rcType: null,
         nif: nz(inc.nif),
         nis: nz(inc.nis),
         ai: nz(inc.ai),
@@ -169,6 +176,10 @@ export function findIssuer(
   const m = (d.mentors ?? []).find((x) => x.id === owner.id);
   if (!m) return null;
   const autoEntrepreneur = m.invoiceLegalStatus === 'AUTO_ENTREPRENEUR';
+  // Who is under the IFU: an auto-entrepreneur, and a personne physique on a
+  // registre de commerce. Both charge no VAT. Only a personne morale is au
+  // réel by default — which is why the RC type has to be asked for.
+  const underIfu = autoEntrepreneur || m.invoiceRcType === 'PERSONNE_PHYSIQUE';
   return {
     counterHolder: m,
     profile: {
@@ -178,6 +189,7 @@ export function findIssuer(
       address: nz(m.address),
       reg: nz(m.invoiceRegNumber),
       regLabel: autoEntrepreneur ? REG_LABEL_AUTO_ENTREPRENEUR : REG_LABEL_REGISTRE_COMMERCE,
+      rcType: autoEntrepreneur ? null : m.invoiceRcType ?? null,
       nif: nz(m.nif),
       nis: nz(m.nis),
       ai: nz(m.ai),
@@ -191,8 +203,7 @@ export function findIssuer(
       contactPhone: nz(m.phone),
       bankName: nz(m.bankName),
       bankRib: nz(m.bankRib),
-      defaultVatRate:
-        m.defaultVatRate ?? (autoEntrepreneur ? 0 : DEFAULT_VAT_RATE),
+      defaultVatRate: m.defaultVatRate ?? (underIfu ? 0 : DEFAULT_VAT_RATE),
       invoiceTemplate: m.invoiceTemplate ?? 'CLASSIC',
     },
   };
@@ -217,15 +228,40 @@ export function issuerLegalGate(
   paymentMethod: InvoicePaymentMethod,
   owner: InvoiceOwner,
 ): IssuerGateResult {
+  const settingsHint =
+    owner.type === 'CONSULTANT'
+      ? 'Facturation → Informations légales'
+      : 'Paramètres';
+
   if (!profile.name?.trim() || !profile.reg || !profile.nif) {
     return {
       ok: false,
       code: 'ISSUER_LEGAL_INCOMPLETE',
-      message:
-        owner.type === 'CONSULTANT'
-          ? 'Complétez vos informations légales dans Facturation → Informations légales'
-          : 'Complétez vos informations légales dans Paramètres',
+      message: `Complétez vos informations légales dans ${settingsHint}`,
     };
+  }
+
+  // A consultant on a registre de commerce owes two more things. The TYPE
+  // because it decides the tax regime — a personne physique is under the IFU
+  // and charges no VAT, a personne morale is au réel — so without it the
+  // document cannot know what rate it should have offered. And the article
+  // d'imposition, which an RC document carries and a carte d'auto-entrepreneur
+  // does not.
+  if (owner.type === 'CONSULTANT' && profile.regLabel === REG_LABEL_REGISTRE_COMMERCE) {
+    if (!profile.rcType) {
+      return {
+        ok: false,
+        code: 'ISSUER_LEGAL_INCOMPLETE',
+        message: `Précisez si vous êtes personne physique ou personne morale dans ${settingsHint}`,
+      };
+    }
+    if (!profile.ai) {
+      return {
+        ok: false,
+        code: 'ISSUER_LEGAL_INCOMPLETE',
+        message: `Ajoutez votre article d'imposition dans ${settingsHint}`,
+      };
+    }
   }
   if (paymentMethod === 'VIREMENT' && !profile.bankRib) {
     return {

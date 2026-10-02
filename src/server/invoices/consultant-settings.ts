@@ -13,6 +13,12 @@ import { db, type MentorRecord } from '@/server/db/store';
 export const consultantInvoiceSettingsSchema = z.object({
   /** Which register they are in — decides whether the header says RCN or Carte AE. */
   invoiceLegalStatus: z.enum(['AUTO_ENTREPRENEUR', 'REGISTRE_COMMERCE']).nullable().optional(),
+  /**
+   * For a registre de commerce: personne physique (IFU, no VAT) or personne
+   * morale (au réel). It decides the default rate, so it is asked for, not
+   * assumed.
+   */
+  invoiceRcType: z.enum(['PERSONNE_PHYSIQUE', 'PERSONNE_MORALE']).nullable().optional(),
   /** The carte d'auto-entrepreneur number, or the Registre de Commerce number. */
   invoiceRegNumber: z.string().max(100).nullable().optional(),
   nif: z.string().max(100).nullable().optional(),
@@ -45,7 +51,17 @@ export async function updateConsultantInvoiceSettings(
     const m = (d.mentors ?? []).find((x) => x.id === mentorId);
     if (!m) return null;
 
+    // Changing the regime invalidates a rate that was derived from the old
+    // one: a consultant who moves from personne morale to personne physique
+    // must not keep defaulting to 19 %. An explicit rate on a document is
+    // unaffected — this is only the default the form starts from.
+    const regimeChanged =
+      (patch.invoiceLegalStatus !== undefined && patch.invoiceLegalStatus !== m.invoiceLegalStatus) ||
+      (patch.invoiceRcType !== undefined && patch.invoiceRcType !== m.invoiceRcType);
+    if (regimeChanged && patch.defaultVatRate === undefined) m.defaultVatRate = null;
+
     if (patch.invoiceLegalStatus !== undefined) m.invoiceLegalStatus = patch.invoiceLegalStatus;
+    if (patch.invoiceRcType !== undefined) m.invoiceRcType = patch.invoiceRcType;
     if (patch.invoiceRegNumber !== undefined) m.invoiceRegNumber = trimmed(patch.invoiceRegNumber);
     if (patch.nif !== undefined) m.nif = trimmed(patch.nif);
     if (patch.nis !== undefined) m.nis = trimmed(patch.nis);

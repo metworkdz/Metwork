@@ -611,7 +611,6 @@
       "statusRegistreCommerce": "Commercial register",
       "cardNumber": "Sole-trader card number",
       "rcNumber": "Commercial register number",
-      "vatHintAutoEntrepreneur": "Under the IFU regime your documents are issued without VAT by default.",
       "taxArticle": "Tax article",
       "addressHint": "Your full address, as it should appear on the document.",
       "bankName": "Bank",
@@ -620,7 +619,14 @@
       "stamp": "Stamp",
       "stampHint": "Optional, printed on the document.",
       "upload": "Upload",
-      "replace": "Replace"
+      "replace": "Replace",
+      "rcType": "Register type",
+      "rcTypeHint": "It sets your tax regime, and so the VAT.",
+      "personnePhysique": "Sole proprietor",
+      "personneMorale": "Company",
+      "vatHintIfu": "Under the IFU regime your documents are issued without VAT by default.",
+      "vatHintReel": "Under the régime réel your documents carry 19 % VAT by default.",
+      "taxArticleRequired": "Tax article (required)"
     }
   },
   "common": {

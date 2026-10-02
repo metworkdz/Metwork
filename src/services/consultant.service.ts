@@ -313,6 +313,8 @@ export interface ConsultantIssuerProfile {
   address: string | null;
   reg: string | null;
   regLabel: string;
+  /** Set only under a registre de commerce — it decides the VAT default. */
+  rcType?: 'PERSONNE_PHYSIQUE' | 'PERSONNE_MORALE' | null;
   nif: string | null;
   nis: string | null;
   ai: string | null;

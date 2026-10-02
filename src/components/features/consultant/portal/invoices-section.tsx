@@ -700,6 +700,9 @@ function SettingsView({ settings, onSaved }: { settings: ConsultantInvoiceSettin
   const [status, setStatus] = useState<'AUTO_ENTREPRENEUR' | 'REGISTRE_COMMERCE'>(
     issuer.regLabel === 'Carte AE' ? 'AUTO_ENTREPRENEUR' : 'REGISTRE_COMMERCE',
   );
+  const [rcType, setRcType] = useState<'PERSONNE_PHYSIQUE' | 'PERSONNE_MORALE' | null>(
+    issuer.rcType ?? null,
+  );
   const [reg, setReg] = useState(issuer.reg ?? '');
   const [nif, setNif] = useState(issuer.nif ?? '');
   const [nis, setNis] = useState(issuer.nis ?? '');
@@ -710,6 +713,9 @@ function SettingsView({ settings, onSaved }: { settings: ConsultantInvoiceSettin
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /** Under the IFU — an auto-entrepreneur, or a personne physique on an RC. */
+  const noVat = status === 'AUTO_ENTREPRENEUR' || rcType === 'PERSONNE_PHYSIQUE';
 
   /* Letterhead + stamp. Their OWN fields: the consultant's photo is not a
      letterhead, and there is no fallback to Metwork's mark — printing it would
@@ -742,6 +748,9 @@ function SettingsView({ settings, onSaved }: { settings: ConsultantInvoiceSettin
     try {
       await consultantService.saveInvoiceSettings({
         invoiceLegalStatus: status,
+        // Only meaningful under an RC; cleared otherwise so a consultant who
+        // moves to auto-entrepreneur does not keep a stale regime.
+        invoiceRcType: status === 'REGISTRE_COMMERCE' ? rcType : null,
         invoiceRegNumber: reg,
         nif, nis, ai, address, bankName, bankRib,
       });
@@ -778,16 +787,40 @@ function SettingsView({ settings, onSaved }: { settings: ConsultantInvoiceSettin
           </div>
         </Field>
 
+        {status === 'REGISTRE_COMMERCE' && (
+          <Field label={t('rcType')} hint={t('rcTypeHint')}>
+            <div className="grid grid-cols-2 gap-1 rounded-md border border-border bg-muted p-1">
+              {(['PERSONNE_PHYSIQUE', 'PERSONNE_MORALE'] as const).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setRcType(k)}
+                  className={cn(
+                    'rounded px-2 py-2 text-sm transition-colors',
+                    rcType === k ? 'bg-primary font-semibold text-primary-foreground' : 'text-muted-foreground',
+                  )}
+                >
+                  {k === 'PERSONNE_PHYSIQUE' ? t('personnePhysique') : t('personneMorale')}
+                </button>
+              ))}
+            </div>
+          </Field>
+        )}
+
         <Field
           label={status === 'AUTO_ENTREPRENEUR' ? t('cardNumber') : t('rcNumber')}
-          hint={status === 'AUTO_ENTREPRENEUR' ? t('vatHintAutoEntrepreneur') : undefined}
+          hint={noVat ? t('vatHintIfu') : status === 'REGISTRE_COMMERCE' && rcType ? t('vatHintReel') : undefined}
         >
           <input className={cpInputClassLight} value={reg} onChange={(e) => setReg(e.target.value)} />
         </Field>
         <Field label="NIF"><input className={cpInputClassLight} value={nif} onChange={(e) => setNif(e.target.value)} /></Field>
         <div className="grid grid-cols-2 gap-2">
           <Field label="NIS"><input className={cpInputClassLight} value={nis} onChange={(e) => setNis(e.target.value)} /></Field>
-          <Field label={t('taxArticle')}><input className={cpInputClassLight} value={ai} onChange={(e) => setAi(e.target.value)} /></Field>
+          <Field
+            label={status === 'REGISTRE_COMMERCE' ? t('taxArticleRequired') : t('taxArticle')}
+          >
+            <input className={cpInputClassLight} value={ai} onChange={(e) => setAi(e.target.value)} />
+          </Field>
         </div>
         <Field label={t('address')} hint={t('addressHint')}>
           <input className={cpInputClassLight} value={address} onChange={(e) => setAddress(e.target.value)} />

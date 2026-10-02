@@ -47,6 +47,17 @@ function mentor(over: Partial<MentorRecord> = {}): MentorRecord {
   } as unknown as MentorRecord;
 }
 
+/** A consultant on a registre de commerce — personne morale unless told otherwise. */
+function rcMentor(over: Partial<MentorRecord> = {}): MentorRecord {
+  return mentor({
+    invoiceLegalStatus: 'REGISTRE_COMMERCE',
+    invoiceRcType: 'PERSONNE_MORALE',
+    invoiceRegNumber: '31/00-9988776',
+    ai: 'A-1234',
+    ...over,
+  });
+}
+
 function incubator(over: Partial<IncubatorRecord> = {}): IncubatorRecord {
   return {
     id: INC_ID,
@@ -184,9 +195,30 @@ describe('the legal header', () => {
   });
 
   it('labels a registered consultant’s number "RCN"', async () => {
-    await seed(mentor({ invoiceLegalStatus: 'REGISTRE_COMMERCE', invoiceRegNumber: '31/00-9988776' }));
+    await seed(rcMentor());
     const res = await issueInvoice(CONSULTANT, { clientDraft: draft(), lines: LINES, paymentMethod: 'ESPECE' });
     expect(res.ok && res.invoice.issuerSnapshot.rcLabel).toBe(REG_LABEL_REGISTRE_COMMERCE);
+  });
+
+  it('asks an RC holder which kind they are, and for their article d’imposition', async () => {
+    // Not cosmetic: the type decides the tax regime, so a document issued
+    // without it cannot know what rate it should have offered.
+    await seed(mentor({ invoiceLegalStatus: 'REGISTRE_COMMERCE', invoiceRegNumber: '31/00-9988776', ai: 'A-1234' }));
+    const noType = await issueInvoice(CONSULTANT, { clientDraft: draft(), lines: LINES, paymentMethod: 'ESPECE' });
+    expect(noType.ok).toBe(false);
+    if (!noType.ok) expect(noType.message).toContain('personne physique');
+
+    await seed(rcMentor({ ai: null }));
+    const noAi = await issueInvoice(CONSULTANT, { clientDraft: draft(), lines: LINES, paymentMethod: 'ESPECE' });
+    expect(noAi.ok).toBe(false);
+    if (!noAi.ok) expect(noAi.message).toContain("article d'imposition");
+  });
+
+  it('asks an auto-entrepreneur for neither', async () => {
+    // A carte d'auto-entrepreneur carries no article d'imposition, and there
+    // is no "type" to choose.
+    const res = await issueInvoice(CONSULTANT, { clientDraft: draft(), lines: LINES, paymentMethod: 'ESPECE' });
+    expect(res.ok).toBe(true);
   });
 
   it('refuses to issue without a registration number or a NIF', async () => {
@@ -235,11 +267,31 @@ describe('VAT', () => {
     expect(buildInvoiceViewModel(res.invoice).showVat).toBe(false);
   });
 
-  it('defaults a registered consultant to 19 and shows the line', async () => {
-    await seed(mentor({ invoiceLegalStatus: 'REGISTRE_COMMERCE', invoiceRegNumber: '31/00-9988776' }));
+  it('defaults a personne morale to 19 and shows the line', async () => {
+    await seed(rcMentor());
     const res = await issueInvoice(CONSULTANT, { clientDraft: draft(), lines: LINES, paymentMethod: 'ESPECE' });
     expect(res.ok && res.invoice.vatRate).toBe(19);
     expect(res.ok && buildInvoiceViewModel(res.invoice).showVat).toBe(true);
+  });
+
+  it('defaults a personne physique to 0 — an RC is not the same as au réel', async () => {
+    // The correction that prompted this: a personne physique is under the IFU
+    // exactly like an auto-entrepreneur, and charges no VAT.
+    await seed(rcMentor({ invoiceRcType: 'PERSONNE_PHYSIQUE' }));
+    const res = await issueInvoice(CONSULTANT, { clientDraft: draft(), lines: LINES, paymentMethod: 'ESPECE' });
+    expect(res.ok && res.invoice.vatRate).toBe(0);
+    expect(res.ok && buildInvoiceViewModel(res.invoice).showVat).toBe(false);
+    // Still an RC header, with its article d'imposition.
+    expect(res.ok && res.invoice.issuerSnapshot.rcLabel).toBe(REG_LABEL_REGISTRE_COMMERCE);
+    expect(res.ok && res.invoice.issuerSnapshot.ai).toBe('A-1234');
+  });
+
+  it('lets a personne physique au réel charge VAT on the document', async () => {
+    await seed(rcMentor({ invoiceRcType: 'PERSONNE_PHYSIQUE' }));
+    const res = await issueInvoice(CONSULTANT, {
+      clientDraft: draft(), lines: LINES, paymentMethod: 'ESPECE', vatRate: 19,
+    });
+    expect(res.ok && res.invoice.totals.tva).toBe(3800);
   });
 
   it('lets an auto-entrepreneur who is assujetti charge VAT anyway', async () => {
@@ -270,7 +322,7 @@ describe('findIssuer', () => {
     expect(findIssuer(await db.read(), { type: 'CONSULTANT', id: 'nope' })).toBeNull();
     expect(
       issuerLegalGate(
-        { name: '', address: null, reg: null, regLabel: 'RCN', nif: null, nis: null, ai: null,
+        { name: '', address: null, reg: null, regLabel: 'RCN', rcType: null, nif: null, nis: null, ai: null,
           logoUrl: null, stampUrl: null, website: null, contactEmail: null, contactPhone: null,
           bankName: null, bankRib: null, defaultVatRate: 0, invoiceTemplate: 'CLASSIC' },
         'ESPECE',

@@ -2363,6 +2363,16 @@ export interface MentorRecord {
    */
   invoiceLegalStatus?: 'AUTO_ENTREPRENEUR' | 'REGISTRE_COMMERCE' | null;
   /**
+   * For a registre de commerce, WHICH kind — and it changes the tax regime,
+   * not just the wording. A personne physique is under the IFU like an
+   * auto-entrepreneur and charges no VAT; a personne morale is au réel and
+   * does. Absent ⇒ not set, and no document may be issued under an RC.
+   *
+   * It sets the DEFAULT only: a personne physique above the IFU threshold is
+   * au réel and can still enter a rate on the document itself.
+   */
+  invoiceRcType?: 'PERSONNE_PHYSIQUE' | 'PERSONNE_MORALE' | null;
+  /**
    * The number itself: a carte d'auto-entrepreneur number or a Registre de
    * Commerce number, per `invoiceLegalStatus`. ONE field rather than two,
    * because a consultant has exactly one of them and a document prints exactly

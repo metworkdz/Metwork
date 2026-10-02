@@ -611,7 +611,6 @@
       "statusRegistreCommerce": "Registre de commerce",
       "cardNumber": "N° carte d’auto-entrepreneur",
       "rcNumber": "N° registre de commerce",
-      "vatHintAutoEntrepreneur": "Au régime IFU, vos documents sont établis sans TVA par défaut.",
       "taxArticle": "Article d’imposition",
       "addressHint": "Votre adresse complète, telle qu’elle doit figurer sur le document.",
       "bankName": "Banque",
@@ -620,7 +619,14 @@
       "stamp": "Cachet",
       "stampHint": "Facultatif, imprimé sur le document.",
       "upload": "Téléverser",
-      "replace": "Remplacer"
+      "replace": "Remplacer",
+      "rcType": "Type de registre",
+      "rcTypeHint": "Il détermine votre régime fiscal, donc la TVA.",
+      "personnePhysique": "Personne physique",
+      "personneMorale": "Personne morale",
+      "vatHintIfu": "Au régime IFU, vos documents sont établis sans TVA par défaut.",
+      "vatHintReel": "Au régime réel, vos documents portent la TVA à 19 % par défaut.",
+      "taxArticleRequired": "Article d’imposition (requis)"
     }
   },
   "common": {
