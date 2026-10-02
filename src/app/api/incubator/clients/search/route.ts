@@ -6,9 +6,9 @@
  */
 import type { NextRequest } from 'next/server';
 import { requireApiRole } from '@/server/auth/api-guards';
-import { db } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { json, jsonError } from '@/server/http/json';
+import { searchClients } from '@/server/invoices/clients';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,19 +20,6 @@ export async function GET(req: NextRequest) {
   const inc = await findIncubatorByUserEmail(guard.user.email);
   if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile linked to this account');
 
-  const q = (req.nextUrl.searchParams.get('q') ?? '').trim().toLowerCase();
-  if (!q || q.length < 1) return json({ items: [] });
-
-  const data = await db.read();
-  const results = (data.clients ?? [])
-    .filter((c) => c.incubatorId === inc.id)
-    .filter((c) =>
-      c.fullName.toLowerCase().includes(q) ||
-      c.email.toLowerCase().includes(q) ||
-      c.phone.includes(q) ||
-      (c.companyName ?? '').toLowerCase().includes(q),
-    )
-    .slice(0, 10);
-
-  return json({ items: results });
+  const items = await searchClients({ type: 'INCUBATOR', id: inc.id }, req.nextUrl.searchParams.get('q') ?? '');
+  return json({ items });
 }

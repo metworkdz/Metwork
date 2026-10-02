@@ -39,6 +39,13 @@ export interface InvoiceViewModel {
    */
   showTimbre: boolean;
   /**
+   * Whether to draw the TVA column and the TVA total at all. False at a 0 %
+   * rate — an auto-entrepreneur under the IFU regime does not charge VAT, and
+   * an ABSENT line is the truthful rendering: a "TVA 0,00 DA" row asserts that
+   * VAT was charged and came to nothing.
+   */
+  showVat: boolean;
+  /**
    * What this document is, in its own words — the "ne vaut pas facture"
    * disclaimer, the validity date. Empty for a facture.
    */
@@ -133,7 +140,9 @@ export function buildInvoiceViewModel(invoice: InvoiceRecord): InvoiceViewModel 
   const issuerLines: string[] = [];
   pushLine(issuerLines, issuer.name);
   pushLine(issuerLines, issuer.address);
-  pushLine(issuerLines, issuer.rc, 'RCN');
+  // "RCN" for a registre de commerce, "Carte AE" for an auto-entrepreneur —
+  // read off the frozen snapshot, defaulting to what every older document said.
+  pushLine(issuerLines, issuer.rc, issuer.rcLabel?.trim() || 'RCN');
   pushLine(issuerLines, issuer.nif, 'NIF');
   pushLine(issuerLines, issuer.nis, 'NIS');
   pushLine(issuerLines, issuer.ai, 'Art N');
@@ -202,6 +211,7 @@ export function buildInvoiceViewModel(invoice: InvoiceRecord): InvoiceViewModel 
     paymentLabel: PAYMENT_LABELS[invoice.paymentMethod],
     // Mirrors computeStampDuty: no timbre on a document nobody has paid.
     showTimbre: kind === 'FACTURE' && invoice.paymentMethod === 'ESPECE',
+    showVat: invoice.vatRate > 0,
     notices,
     showAcceptance: kind === 'DEVIS',
     bankLines,

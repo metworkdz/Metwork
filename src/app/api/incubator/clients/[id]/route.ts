@@ -3,31 +3,14 @@
  * DELETE /api/incubator/clients/:id  — delete a client
  */
 import type { NextRequest } from 'next/server';
-import { z, ZodError } from 'zod';
+import { ZodError } from 'zod';
 import { requireApprovedApiRole } from '@/server/auth/api-guards';
-import { db } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { clientPatchSchema, deleteClient, updateClient } from '@/server/invoices/clients';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const patchSchema = z.object({
-  fullName:     z.string().min(2).max(120).optional(),
-  email:        z.string().email().max(200).optional(),
-  phone:        z.string().min(6).max(30).optional(),
-  idCardNumber: z.string().max(30).nullable().optional(),
-  companyName:  z.string().max(120).nullable().optional(),
-  notes:        z.string().max(2000).nullable().optional(),
-  // Invoice billing profile (additive — legacy callers omit them).
-  clientType:   z.enum(['COMPANY', 'INDIVIDUAL']).optional(),
-  legalName:    z.string().max(200).nullable().optional(),
-  address:      z.string().max(500).nullable().optional(),
-  rc:           z.string().max(100).nullable().optional(),
-  nif:          z.string().max(100).nullable().optional(),
-  nis:          z.string().max(100).nullable().optional(),
-  ai:           z.string().max(100).nullable().optional(),
-});
 
 export async function PATCH(
   req: NextRequest,
@@ -45,34 +28,13 @@ export async function PATCH(
   catch { return jsonError(400, 'INVALID_JSON', 'Request body must be JSON'); }
 
   let input;
-  try { input = patchSchema.parse(body); }
+  try { input = clientPatchSchema.parse(body); }
   catch (err) {
     if (err instanceof ZodError) return fromZod(err);
     throw err;
   }
 
-  const result = await db.update((d) => {
-    if (!Array.isArray(d.clients)) d.clients = [];
-    const c = d.clients.find((x) => x.id === id && x.incubatorId === inc.id);
-    if (!c) return null;
-
-    if (input.fullName     !== undefined) c.fullName     = input.fullName.trim();
-    if (input.email        !== undefined) c.email        = input.email.trim().toLowerCase();
-    if (input.phone        !== undefined) c.phone        = input.phone.trim();
-    if (input.idCardNumber !== undefined) c.idCardNumber = input.idCardNumber;
-    if (input.companyName  !== undefined) c.companyName  = input.companyName;
-    if (input.notes        !== undefined) c.notes        = input.notes;
-    if (input.clientType   !== undefined) c.clientType   = input.clientType;
-    if (input.legalName    !== undefined) c.legalName    = input.legalName;
-    if (input.address      !== undefined) c.address      = input.address;
-    if (input.rc           !== undefined) c.rc           = input.rc;
-    if (input.nif          !== undefined) c.nif          = input.nif;
-    if (input.nis          !== undefined) c.nis          = input.nis;
-    if (input.ai           !== undefined) c.ai           = input.ai;
-    c.updatedAt = new Date().toISOString();
-    return c;
-  });
-
+  const result = await updateClient({ type: 'INCUBATOR', id: inc.id }, id, input);
   if (!result) return jsonError(404, 'NOT_FOUND', 'Client not found');
   return json(result);
 }
@@ -88,11 +50,6 @@ export async function DELETE(
   if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile linked to this account');
 
   const { id } = await params;
-
-  await db.update((d) => {
-    if (!Array.isArray(d.clients)) d.clients = [];
-    d.clients = d.clients.filter((c) => !(c.id === id && c.incubatorId === inc.id));
-  });
-
+  await deleteClient({ type: 'INCUBATOR', id: inc.id }, id);
   return json({ ok: true });
 }

@@ -74,7 +74,10 @@ export interface TableStyle {
  */
 export function drawLinesTable(doc: Doc, vm: InvoiceViewModel, style: TableStyle = {}): void {
   const xService = style.x0 ?? MARGIN;
-  const xTva = PAGE_W - MARGIN - COL_TVA_W;
+  // At a 0 % rate the TVA column is dropped entirely and the money column
+  // becomes the last one — the designation gets the width back.
+  const tvaW = vm.showVat ? COL_TVA_W : 0;
+  const xTva = PAGE_W - MARGIN - tvaW;
   const xHt = xTva - COL_HT_W;
   const xQty = xHt - COL_QTY_W;
   const serviceW = xQty - xService - 10;
@@ -85,7 +88,7 @@ export function drawLinesTable(doc: Doc, vm: InvoiceViewModel, style: TableStyle
     doc.text('SERVICE', xService, hy, { width: serviceW });
     doc.text('QTY', xQty, hy, { width: COL_QTY_W - 8, align: 'right' });
     doc.text('Montant HT', xHt, hy, { width: COL_HT_W - 8, align: 'right' });
-    doc.text('TVA', xTva, hy, { width: COL_TVA_W, align: 'right' });
+    if (vm.showVat) doc.text('TVA', xTva, hy, { width: COL_TVA_W, align: 'right' });
     const bottom = doc.y + 5;
     doc.moveTo(xService, bottom).lineTo(PAGE_W - MARGIN, bottom)
       .lineWidth(0.9).strokeColor(style.headerRule ?? BLACK).stroke();
@@ -110,8 +113,10 @@ export function drawLinesTable(doc: Doc, vm: InvoiceViewModel, style: TableStyle
       .text(line.quantity, xQty, ry, { width: COL_QTY_W - 8, align: 'right' });
     sg(doc).fillColor(BLACK).fontSize(10)
       .text(line.amountHt, xHt, ry, { width: COL_HT_W - 8, align: 'right' });
-    sg(doc).fillColor(GRAY).fontSize(10)
-      .text(line.vat, xTva, ry, { width: COL_TVA_W, align: 'right' });
+    if (vm.showVat) {
+      sg(doc).fillColor(GRAY).fontSize(10)
+        .text(line.vat, xTva, ry, { width: COL_TVA_W, align: 'right' });
+    }
 
     doc.y = Math.max(afterService, ry + rowH) + 6;
     if (style.rowRule) {
@@ -147,11 +152,9 @@ export function drawBankLines(doc: Doc, vm: InvoiceViewModel, x: number, labelCo
  * The whole block is kept together (moved to a new page if it can't fit).
  */
 export function drawTotalsBlock(doc: Doc, vm: InvoiceViewModel, labelColor: string = BLACK): void {
-  const rows: Array<[string, string, boolean]> = [
-    ['TOTAL HT', vm.totals.ht, false],
-    ['TVA', vm.totals.tva, false],
-    ['TOTAL TTC', vm.totals.ttc, false],
-  ];
+  const rows: Array<[string, string, boolean]> = [['TOTAL HT', vm.totals.ht, false]];
+  if (vm.showVat) rows.push(['TVA', vm.totals.tva, false]);
+  rows.push(['TOTAL TTC', vm.totals.ttc, false]);
   if (vm.showTimbre) rows.push(['Droit de timbre', vm.totals.timbre, false]);
   rows.push(['Net à Payer', vm.totals.net, true]);
 

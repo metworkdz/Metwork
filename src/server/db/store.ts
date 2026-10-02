@@ -2350,6 +2350,61 @@ export interface MentorRecord {
    * Unlike `address`/`idNumber` this is NOT required to draft a contract.
    */
   nif?: string | null;
+
+  // ─── Invoicing identity (consultant-issued factures / proforma / devis) ───
+  // All additive & nullable: a consultant who never invoices carries none of
+  // them, and the legal gate in `invoices/owner.ts` refuses issuance until the
+  // required ones are filled in.
+
+  /**
+   * How this consultant is registered, which decides what the invoice header
+   * calls their registration number — "Carte AE" or "RCN". Absent ⇒ not set,
+   * and no document may be issued.
+   */
+  invoiceLegalStatus?: 'AUTO_ENTREPRENEUR' | 'REGISTRE_COMMERCE' | null;
+  /**
+   * The number itself: a carte d'auto-entrepreneur number or a Registre de
+   * Commerce number, per `invoiceLegalStatus`. ONE field rather than two,
+   * because a consultant has exactly one of them and a document prints exactly
+   * one line.
+   */
+  invoiceRegNumber?: string | null;
+  /** Numéro d'Identification Statistique — optional, printed when present. */
+  nis?: string | null;
+  /** Article d'Imposition ("Art N" on the header) — optional. */
+  ai?: string | null;
+  /** Bank name + 20-digit RIB. Required before invoicing by VIREMENT. */
+  bankName?: string | null;
+  bankRib?: string | null;
+  /**
+   * Letterhead logo for invoices — DISTINCT from `imageUrl`, which is the
+   * consultant's photo. A headshot is not a letterhead, and there is
+   * deliberately NO fallback to Metwork's own mark: printing it would put the
+   * platform's identity on a document between the consultant and their client.
+   */
+  invoiceLogoUrl?: string | null;
+  /**
+   * The consultant's own stamp. A THIRD stamp in this codebase, and the same
+   * rule as the other two: never fall back from one to another. `stampUrl` on
+   * IncubatorRecord is the incubator's; `platformSettings.adminStampImageUrl`
+   * is Metwork's for consultant contracts; this one is the consultant's.
+   */
+  invoiceStampUrl?: string | null;
+  /** Preferred PDF template. Absent ⇒ CLASSIC. */
+  invoiceTemplate?: InvoiceTemplate | null;
+  /**
+   * Default VAT rate on new documents. An auto-entrepreneur under the IFU
+   * regime does not charge VAT, so the portal defaults them to 0 — and a 0
+   * rate makes the PDF omit the TVA line entirely rather than print "0,00".
+   */
+  defaultVatRate?: number | null;
+  /**
+   * Per-year, per-kind document counters — same shape and same `counterKey()`
+   * as the incubator's, so a consultant's "01/2026" and an incubator's are
+   * independent sequences that cannot collide.
+   */
+  invoiceCounters?: Record<string, number> | null;
+
   /** Optional per-session fee in DZD. 0 or absent = free. */
   consultationFee?: number;
   createdAt: string;
@@ -2532,7 +2587,14 @@ export interface MentorCategoryRecord {
 
 export interface ClientRecord {
   id: string;
-  incubatorId: string;
+  /**
+   * Owning incubator — optional for the same reason as on InvoiceRecord: a
+   * consultant keeps their own client book, and the two never mix. Read it
+   * through `invoices/owner.ts`, never directly.
+   */
+  incubatorId?: string;
+  /** Owning consultant (MentorRecord.id), for a client added from the portal. */
+  mentorId?: string | null;
   fullName: string;
   email: string;
   phone: string;
@@ -2659,7 +2721,16 @@ export type InvoiceKind = 'FACTURE' | 'PROFORMA' | 'DEVIS';
 
 export interface InvoiceRecord {
   id: string;
-  incubatorId: string;
+  /**
+   * Owning incubator. Optional since consultants issue their own documents —
+   * exactly one of `incubatorId` / `mentorId` is set, and `invoices/owner.ts`
+   * is the only place allowed to read or write either. Nothing was migrated:
+   * every record issued before consultant invoicing carries `incubatorId`, and
+   * an invoice is a legal document that is frozen at issue.
+   */
+  incubatorId?: string;
+  /** Owning consultant (MentorRecord.id), for documents issued from the portal. */
+  mentorId?: string | null;
   /**
    * Which document this is. Additive and optional: every record issued before
    * proforma/devis existed is a facture, so an absent value reads as FACTURE
@@ -2697,7 +2768,18 @@ export interface InvoiceRecord {
   issuerSnapshot: {
     name: string;
     address?: string | null;
+    /**
+     * Registration number — a Registre de Commerce for a company, a carte
+     * d'auto-entrepreneur number for a sole trader.
+     */
     rc?: string | null;
+    /**
+     * What to call that number in the header. Frozen with the rest of the
+     * letterhead: "RCN" for a registre de commerce, "Carte AE" for an
+     * auto-entrepreneur. Absent ⇒ "RCN", which is what every pre-existing
+     * document printed.
+     */
+    rcLabel?: string | null;
     nif?: string | null;
     nis?: string | null;
     ai?: string | null;

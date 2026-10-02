@@ -1,40 +1,20 @@
 /**
  * GET  /api/incubator/clients  — list clients (newest first)
  * POST /api/incubator/clients  — create a client
+ *
+ * Thin over `@/server/invoices/clients`, which the consultant portal uses too:
+ * one definition of the billing profile, the dedupe rule and the COMPANY rule.
  */
-import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
-import { z, ZodError } from 'zod';
+import { ZodError } from 'zod';
 import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
-import { db, type ClientRecord } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { clientCreateSchema, createClient, listClients } from '@/server/invoices/clients';
+import type { InvoiceOwner } from '@/server/invoices/owner';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const createSchema = z.object({
-  fullName:     z.string().min(2).max(120),
-  // Email & phone are optional in the CRM "add client" form (a name-only record
-  // is valid). Stored as '' when omitted, matching ClientRecord and the
-  // find-or-create in the manual-bookings route.
-  email:        z.string().email().max(200).optional().nullable(),
-  phone:        z.string().min(6).max(30).optional().nullable(),
-  idCardNumber: z.string().max(30).optional().nullable(),
-  companyName:  z.string().max(120).optional().nullable(),
-  notes:        z.string().max(2000).optional().nullable(),
-  // Invoice billing profile (additive — legacy callers omit them).
-  clientType:   z.enum(['COMPANY', 'INDIVIDUAL']).optional(),
-  legalName:    z.string().max(200).optional().nullable(),
-  address:      z.string().max(500).optional().nullable(),
-  rc:           z.string().max(100).optional().nullable(),
-  nif:          z.string().max(100).optional().nullable(),
-  nis:          z.string().max(100).optional().nullable(),
-  ai:           z.string().max(100).optional().nullable(),
-}).refine(
-  (v) => v.clientType !== 'COMPANY' || !!v.legalName?.trim(),
-  { message: 'legalName is required for a COMPANY client', path: ['legalName'] },
-);
 
 export async function GET() {
   const guard = await requireApiRole(['INCUBATOR']);
@@ -43,12 +23,9 @@ export async function GET() {
   const inc = await findIncubatorByUserEmail(guard.user.email);
   if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile linked to this account');
 
-  const data = await db.read();
-  const clients = (data.clients ?? [])
-    .filter((c) => c.incubatorId === inc.id)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-
-  return json({ items: clients, total: clients.length });
+  const owner: InvoiceOwner = { type: 'INCUBATOR', id: inc.id };
+  const items = await listClients(owner);
+  return json({ items, total: items.length });
 }
 
 export async function POST(req: NextRequest) {
@@ -63,48 +40,12 @@ export async function POST(req: NextRequest) {
   catch { return jsonError(400, 'INVALID_JSON', 'Request body must be JSON'); }
 
   let input;
-  try { input = createSchema.parse(body); }
+  try { input = clientCreateSchema.parse(body); }
   catch (err) {
     if (err instanceof ZodError) return fromZod(err);
     throw err;
   }
 
-  const email = (input.email ?? '').trim().toLowerCase();
-  const phone = (input.phone ?? '').trim();
-  const now = new Date().toISOString();
-  const record = await db.update<ClientRecord>((d) => {
-    if (!Array.isArray(d.clients)) d.clients = [];
-    // Dedup by email within this incubator — but only when an email is given.
-    // Name-only clients (empty email) must never collapse into one another.
-    if (email) {
-      const existing = d.clients.find(
-        (c) => c.incubatorId === inc.id && c.email.toLowerCase() === email,
-      );
-      if (existing) return existing; // idempotent — return existing if same email
-    }
-
-    const client: ClientRecord = {
-      id:           randomUUID(),
-      incubatorId:  inc.id,
-      fullName:     input.fullName.trim(),
-      email,
-      phone,
-      idCardNumber: input.idCardNumber ?? null,
-      companyName:  input.companyName ?? null,
-      notes:        input.notes ?? null,
-      clientType:   input.clientType ?? (input.companyName ? 'COMPANY' : 'INDIVIDUAL'),
-      legalName:    input.legalName?.trim() || null,
-      address:      input.address?.trim() || null,
-      rc:           input.rc?.trim() || null,
-      nif:          input.nif?.trim() || null,
-      nis:          input.nis?.trim() || null,
-      ai:           input.ai?.trim() || null,
-      createdAt:    now,
-      updatedAt:    now,
-    };
-    d.clients.push(client);
-    return client;
-  });
-
+  const record = await createClient({ type: 'INCUBATOR', id: inc.id }, input);
   return json(record, { status: 201 });
 }

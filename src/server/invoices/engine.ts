@@ -180,7 +180,10 @@ export function formatInvoiceNumber(
  * existing invoice of the same incubator + year.
  */
 export function allocateInvoiceNumber(
-  incubator: IncubatorRecord,
+  // Anything that carries counters — an IncubatorRecord or a MentorRecord.
+  // Only `invoiceCounters` is read or written, so the structural type is the
+  // honest signature and keeps one allocator for both issuers.
+  incubator: { invoiceCounters?: Record<string, number> | null },
   year: number,
   requestedSeq?: number,
   kind: InvoiceKind = 'FACTURE',
@@ -202,7 +205,7 @@ export function allocateInvoiceNumber(
  * form can show it without consuming it.
  */
 export function peekNextSeq(
-  incubator: Pick<IncubatorRecord, 'invoiceCounters'>,
+  incubator: { invoiceCounters?: Record<string, number> | null },
   year: number,
   kind: InvoiceKind = 'FACTURE',
 ): number {
