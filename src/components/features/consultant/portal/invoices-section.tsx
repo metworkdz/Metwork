@@ -224,6 +224,10 @@ function DocumentRow({ invoice, onChanged }: { invoice: ConsultantInvoice; onCha
             tone="light"
             disabled={busy}
             onClick={async () => {
+              // Irreversible, and a mis-tap on a phone is easy: a cancelled
+              // document cannot be restored — the correction path is to issue
+              // a new one. The incubator side asks the same question.
+              if (!window.confirm(t(`confirmCancel${kind}` as 'confirmCancelFACTURE', { number: invoice.number }))) return;
               setBusy(true);
               try { await consultantService.cancelInvoice(invoice.id); await onChanged(); }
               finally { setBusy(false); }

@@ -626,7 +626,10 @@
       "personneMorale": "Company",
       "vatHintIfu": "Under the IFU regime your documents are issued without VAT by default.",
       "vatHintReel": "Under the régime réel your documents carry 19 % VAT by default.",
-      "taxArticleRequired": "Tax article (required)"
+      "taxArticleRequired": "Tax article (required)",
+      "confirmCancelFACTURE": "Permanently cancel invoice {number}? A cancelled invoice cannot be restored — to correct it, issue a new one.",
+      "confirmCancelPROFORMA": "Permanently cancel proforma {number}? It cannot be restored.",
+      "confirmCancelDEVIS": "Permanently cancel quote {number}? It cannot be restored."
     }
   },
   "common": {

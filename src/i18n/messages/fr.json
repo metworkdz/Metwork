@@ -626,7 +626,10 @@
       "personneMorale": "Personne morale",
       "vatHintIfu": "Au régime IFU, vos documents sont établis sans TVA par défaut.",
       "vatHintReel": "Au régime réel, vos documents portent la TVA à 19 % par défaut.",
-      "taxArticleRequired": "Article d’imposition (requis)"
+      "taxArticleRequired": "Article d’imposition (requis)",
+      "confirmCancelFACTURE": "Annuler définitivement la facture {number} ? Une facture annulée ne peut pas être rétablie — pour corriger, émettez-en une nouvelle.",
+      "confirmCancelPROFORMA": "Annuler définitivement la proforma {number} ? Elle ne pourra pas être rétablie.",
+      "confirmCancelDEVIS": "Annuler définitivement le devis {number} ? Il ne pourra pas être rétabli."
     }
   },
   "common": {
