@@ -9,7 +9,7 @@
  * documented to run only inside db.update().
  */
 import type {
-  IncubatorRecord, InvoiceKind, InvoiceLine, InvoicePaymentMethod,
+  InvoiceKind, InvoiceLine, InvoicePaymentMethod,
 } from '@/server/db/store';
 import { amountInWords } from '@/server/notifications/amount-words';
 
