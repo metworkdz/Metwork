@@ -12,6 +12,7 @@
  */
 
 import type { CertificateSettings, Civility } from '@/server/certificates/types';
+import type { FeedbackAnswer, FeedbackQuestion } from '@/server/feedback/types';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type {
   UserRole,
@@ -1611,6 +1612,60 @@ export interface CertificateRecord {
   emailClaimedAt?: string | null;
   /** Set when the host marks the participant absent after issuing. */
   revokedAt?: string | null;
+}
+
+/**
+ * A program's feedback form — one per program. See `@/server/feedback`.
+ * Owned like the program: exactly one of incubatorId / mentorId.
+ */
+export interface FeedbackFormRecord {
+  id: string;
+  programId: string;
+  incubatorId: string | null;
+  mentorId: string | null;
+  title: string;
+  intro: string | null;
+  questions: FeedbackQuestion[];
+  /** Closed → the page shows « clôturé » and refuses answers. */
+  isOpen: boolean;
+  /** The copyable link for a group chat. Off until the host turns it on. */
+  sharedLinkEnabled: boolean;
+  /**
+   * Bumped to retire every shared link handed out so far: the link is signed
+   * with this number, so a new one stops the old one working.
+   */
+  sharedLinkVersion: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * One participant's personal feedback link. The link itself is never stored:
+ * it is signed from this id with the server secret, so a leaked store holds
+ * nothing that opens a form, and resending gives the same link.
+ */
+export interface FeedbackInviteRecord {
+  id: string;
+  formId: string;
+  programId: string;
+  registrationId: string;
+  /** Last time it was emailed. */
+  sentAt: string | null;
+  /** A send run holds this invite (see certificates' emailClaimedAt). */
+  emailClaimedAt?: string | null;
+  createdAt: string;
+}
+
+export interface FeedbackResponseRecord {
+  id: string;
+  formId: string;
+  programId: string;
+  /** Through a personal link — one response per invite, edited in place. */
+  inviteId: string | null;
+  registrationId: string | null;
+  answers: FeedbackAnswer[];
+  submittedAt: string;
+  updatedAt: string;
 }
 
 /* ─────────────── Network Passes & Partner Program ─────────────── */
@@ -3541,6 +3596,10 @@ interface DbShape {
    * predate it; readers must default to [].
    */
   certificates?: CertificateRecord[];
+  /** Program feedback (see `@/server/feedback`). Optional — readers default to []. */
+  feedbackForms?: FeedbackFormRecord[];
+  feedbackInvites?: FeedbackInviteRecord[];
+  feedbackResponses?: FeedbackResponseRecord[];
 
   // ─── One-off email campaigns ──────────────────────────────────────────
   /**

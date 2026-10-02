@@ -24,6 +24,7 @@ import {
 } from '@/server/notifications/email';
 import { countAttendance } from '@/server/attendance';
 import { bookingHoldsSeat } from '@/server/bookings/status';
+import { pruneFeedbackForProgramSync, pruneFeedbackForRegistrationsSync } from '@/server/feedback/prune';
 import {
   applyDeskPayment,
   planDeskPayment,
@@ -337,6 +338,8 @@ export function pruneListingChildrenSync(
   if (entityType === 'PROGRAM' && d.certificates) {
     d.certificates = d.certificates.filter((c) => c.programId !== entityId);
   }
+  // Its feedback form, the links sent and the answers go with it too.
+  if (entityType === 'PROGRAM') pruneFeedbackForProgramSync(d, entityId);
 
   return {
     formFields: fieldsBefore - d.registrationFormFields.length,
@@ -692,6 +695,8 @@ export async function deleteRegistration(
     // Its certificate (already invalid — the registration was cancelled) goes
     // with it, rather than keeping the person's name on a dead record.
     if (d.certificates) d.certificates = d.certificates.filter((c) => c.registrationId !== row.id);
+    // So do their feedback link and answers, which name them.
+    pruneFeedbackForRegistrationsSync(d, new Set([row.id]));
     return { ok: true, deleted: row };
   });
 }

@@ -8,6 +8,7 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
+import { pruneFeedbackForRegistrationsSync } from '@/server/feedback/prune';
 import { fromZod, json, jsonError, noContent } from '@/server/http/json';
 import { appendAuditLog } from '@/server/audit/service';
 
@@ -137,6 +138,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
       (store.registrations ?? []).filter((r) => r.userId === id).map((r) => r.id),
     );
     store.certificates         = (store.certificates ?? []).filter((c) => !goneRegistrationIds.has(c.registrationId));
+    pruneFeedbackForRegistrationsSync(store, goneRegistrationIds);
     store.registrations        = (store.registrations ?? []).filter((r) => r.userId !== id);
 
     // Partner affiliations: release the seat this member held against each
