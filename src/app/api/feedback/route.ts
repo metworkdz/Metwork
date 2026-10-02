@@ -48,10 +48,13 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
+  // Sized for a whole class answering at the end of a session over the
+  // training room's one Wi-Fi (one address), and for a shared link posted in a
+  // group of a few dozen — while still stopping a script from stuffing it.
   const ip = clientIp(req);
   const [byIp, byLink] = await Promise.all([
-    checkRateLimitDistributed(`feedback-submit:ip:${ip}`, 20, 10 * 60_000),
-    checkRateLimitDistributed(`feedback-submit:link:${input.token}`, 30, 10 * 60_000),
+    checkRateLimitDistributed(`feedback-submit:ip:${ip}`, 60, 10 * 60_000),
+    checkRateLimitDistributed(`feedback-submit:link:${input.token}`, 200, 10 * 60_000),
   ]);
   if (!byIp || !byLink) {
     return jsonError(429, 'RATE_LIMITED', 'Trop de réponses envoyées. Réessayez dans quelques minutes.');

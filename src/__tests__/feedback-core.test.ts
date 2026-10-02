@@ -18,6 +18,7 @@ import {
   type SaveFeedbackFormInput,
 } from '@/server/feedback/service';
 import { pruneFeedbackForProgramSync } from '@/server/feedback/prune';
+import { pruneListingChildrenSync } from '@/server/registrations/service';
 import { parseFeedbackToken, personalFeedbackToken, sharedFeedbackToken } from '@/server/feedback/tokens';
 import { checkFeedbackAnswers, computeFeedbackResults, type FeedbackQuestion } from '@/server/feedback/types';
 
@@ -244,6 +245,15 @@ describe('deleting', () => {
     const d = await db.read();
     expect(d.feedbackInvites).toHaveLength(0);
     expect(d.feedbackResponses).toHaveLength(0);
+  });
+
+  it('the program delete path (pruneListingChildrenSync) takes the feedback too', async () => {
+    const form = await saveDefaults();
+    const inv = await invite('r1');
+    await submitFeedback(personalFeedbackToken(inv.id), ratingsAll(form.questions, 5));
+    await db.update((d) => { pruneListingChildrenSync(d, 'PROGRAM', PROG); });
+    const d = await db.read();
+    expect([d.feedbackForms, d.feedbackInvites, d.feedbackResponses].map((x) => x!.length)).toEqual([0, 0, 0]);
   });
 
   it('a deleted program takes its form, invites and answers', async () => {
