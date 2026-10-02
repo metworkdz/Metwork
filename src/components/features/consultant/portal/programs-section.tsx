@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  ArrowLeft, Award, Copy, Wallet, GraduationCap, Loader2, Pencil, PhoneMissed, Plus, Settings2, Trash2, Users,
+  ArrowLeft, Award, Copy, Wallet, GraduationCap, Loader2, Pencil, PhoneMissed, Plus, Settings2, Star, Trash2, Users,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ApiClientError } from '@/lib/api-client';
@@ -34,6 +34,7 @@ import { CertificatesPanel } from '@/components/features/certificates/certificat
 import { ProgramVisibilityField } from '@/components/features/programs/program-visibility-field';
 import { DatesTbcToggle } from '@/components/features/programs/dates-tbc-toggle';
 import { ProgramFinancesPanel } from '@/components/features/program-finance/program-finances-panel';
+import { FeedbackPanel } from '@/components/features/feedback/feedback-panel';
 import type { RegistrationFormField } from '@/types/domain';
 import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
 import { AlgerianCitySelect } from '@/components/shared/algerian-city-select';
@@ -504,7 +505,7 @@ function ShareLink({ slug, label, copied }: { slug: string; label: string; copie
 function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; onBack: () => void }) {
   const t = useTranslations('consultantPortal.programs');
   const tDash = useTranslations('registrationDashboard');
-  const [tab, setTab] = useState<'registrants' | 'abandoned' | 'form' | 'certificates' | 'finances'>('registrants');
+  const [tab, setTab] = useState<'registrants' | 'abandoned' | 'form' | 'certificates' | 'finances' | 'feedback'>('registrants');
   const [fields, setFields] = useState<RegistrationFormField[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -533,6 +534,7 @@ function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; on
     { key: 'form' as const, label: tDash('tabFormBuilder'), Icon: Settings2 },
     { key: 'certificates' as const, label: tDash('tabCertificates'), Icon: Award },
     { key: 'finances' as const, label: tDash('tabFinances'), Icon: Wallet },
+    { key: 'feedback' as const, label: tDash('tabFeedback'), Icon: Star },
   ];
 
   return (
@@ -588,6 +590,8 @@ function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; on
           entityId={program.id}
           endpoint="/api/consultant/registrations"
         />
+      ) : tab === 'feedback' ? (
+        <FeedbackPanel programId={program.id} apiBase="/api/consultant/programs" />
       ) : tab === 'finances' ? (
         <ProgramFinancesPanel
           programId={program.id}

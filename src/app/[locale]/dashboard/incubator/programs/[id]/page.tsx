@@ -15,10 +15,13 @@ import { resolveListingPricing } from '@/lib/listing-price';
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
+  /** `?tab=feedback` opens a tab directly — the « Avis » page links here. */
+  searchParams: Promise<{ tab?: string }>;
 }
 
-export default async function IncubatorProgramDetailPage({ params }: PageProps) {
+export default async function IncubatorProgramDetailPage({ params, searchParams }: PageProps) {
   const { locale, id } = await params;
+  const { tab } = await searchParams;
   setRequestLocale(locale);
 
   const user = await requireRole(['INCUBATOR']);
@@ -38,6 +41,7 @@ export default async function IncubatorProgramDetailPage({ params }: PageProps) 
         subtitle={`${program.city} · ${program.type}`}
       />
       <ProgramRegistrationDashboard
+        initialTab={tab === 'feedback' ? 'feedback' : undefined}
         entityType="PROGRAM"
         entityId={id}
         entityTitle={program.title}
