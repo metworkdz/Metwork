@@ -294,6 +294,22 @@ export default defineConfig({
       },
     },
     {
+      // Proof that the Facturation tab is reachable on a phone — the bottom bar
+      // does not carry it, the "Plus" sheet does. Drives the real portal at
+      // iPhone 13 metrics and writes a JPEG per step. Needs CONSULTANT_SESSION
+      // (and optionally SHOTS_DIR); see the spec header.
+      //   npx playwright test --project=consultant-invoices-mobile
+      name: 'consultant-invoices-mobile',
+      testMatch: '**/consultant-invoices-mobile.spec.ts',
+      retries: 0,
+      timeout: 120_000,
+      use: {
+        // iPhone 13 metrics on Chromium — the repo only provisions Chromium.
+        ...devices['iPhone 13'],
+        browserName: 'chromium',
+      },
+    },
+    {
       // Manual withdrawal — requester UI (payout-account gate, RIB/RIP form) +
       // a hydration guard on the pages this feature touched. Default session is
       // the entrepreneur `builder` (a clean wallet not used by the api
