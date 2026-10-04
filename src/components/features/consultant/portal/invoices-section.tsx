@@ -608,6 +608,8 @@ function ClientSheet({
   const [address, setAddress] = useState(initial?.address ?? '');
   const [rc, setRc] = useState(initial?.rc ?? '');
   const [nif, setNif] = useState(initial?.nif ?? '');
+  const [nis, setNis] = useState(initial?.nis ?? '');
+  const [ai, setAi] = useState(initial?.ai ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -624,8 +626,13 @@ function ClientSheet({
       email: email.trim() || null,
       phone: phone.trim() || null,
       address: address.trim() || null,
-      rc: rc.trim() || null,
-      nif: nif.trim() || null,
+      // Scoped to COMPANY on purpose: switching a client to INDIVIDUAL must
+      // clear these, or the record keeps a registre de commerce behind a
+      // personal name and the PDF prints it.
+      rc: company ? rc.trim() || null : null,
+      nif: company ? nif.trim() || null : null,
+      nis: company ? nis.trim() || null : null,
+      ai: company ? ai.trim() || null : null,
     };
     try {
       const saved = initial
@@ -676,7 +683,7 @@ function ClientSheet({
             <input className={cpInputClassLight} value={legalName} onChange={(e) => setLegalName(e.target.value)} />
           </Field>
         )}
-        <Field label={t('email')}>
+        <Field label={t('email')} hint={t('contactOptional')}>
           <input className={cpInputClassLight} inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </Field>
         <Field label={t('phone')}>
@@ -686,10 +693,16 @@ function ClientSheet({
           <input className={cpInputClassLight} value={address} onChange={(e) => setAddress(e.target.value)} />
         </Field>
         {company && (
-          <div className="grid grid-cols-2 gap-2">
-            <Field label="RC"><input className={cpInputClassLight} value={rc} onChange={(e) => setRc(e.target.value)} /></Field>
-            <Field label="NIF"><input className={cpInputClassLight} value={nif} onChange={(e) => setNif(e.target.value)} /></Field>
-          </div>
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="RC"><input className={cpInputClassLight} value={rc} onChange={(e) => setRc(e.target.value)} /></Field>
+              <Field label="NIF"><input className={cpInputClassLight} value={nif} onChange={(e) => setNif(e.target.value)} /></Field>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="NIS"><input className={cpInputClassLight} value={nis} onChange={(e) => setNis(e.target.value)} /></Field>
+              <Field label={t('taxArticle')}><input className={cpInputClassLight} value={ai} onChange={(e) => setAi(e.target.value)} /></Field>
+            </div>
+          </>
         )}
       </div>
     </FlowSheet>

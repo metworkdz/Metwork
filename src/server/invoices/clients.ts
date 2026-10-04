@@ -43,8 +43,13 @@ export const clientCreateSchema = z
 
 export const clientPatchSchema = z.object({
   fullName: z.string().min(2).max(120).optional(),
-  email: z.string().email().max(200).optional(),
-  phone: z.string().min(6).max(30).optional(),
+  // Nullable, like every other optional field here: a form edits the whole
+  // record and sends `null` for the boxes left empty. Accepting `undefined`
+  // only would mean a client with no email could never be saved again — the
+  // patch would 422 on the very field the user cleared. '' is how an absent
+  // email is stored (see createClient), so null and '' mean the same thing.
+  email: z.string().email().max(200).optional().nullable(),
+  phone: z.string().min(6).max(30).optional().nullable(),
   idCardNumber: z.string().max(30).nullable().optional(),
   companyName: z.string().max(120).nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
@@ -146,8 +151,8 @@ export async function updateClient(
     if (!c) return null;
 
     if (input.fullName !== undefined) c.fullName = input.fullName.trim();
-    if (input.email !== undefined) c.email = input.email.trim().toLowerCase();
-    if (input.phone !== undefined) c.phone = input.phone.trim();
+    if (input.email !== undefined) c.email = (input.email ?? '').trim().toLowerCase();
+    if (input.phone !== undefined) c.phone = (input.phone ?? '').trim();
     if (input.idCardNumber !== undefined) c.idCardNumber = input.idCardNumber;
     if (input.companyName !== undefined) c.companyName = input.companyName;
     if (input.notes !== undefined) c.notes = input.notes;

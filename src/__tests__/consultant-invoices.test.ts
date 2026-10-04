@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { db, type IncubatorRecord, type MentorRecord } from '@/server/db/store';
 import { issueInvoice } from '@/server/invoices/issue';
-import { createClient, listClients, searchClients } from '@/server/invoices/clients';
+import { createClient, listClients, searchClients, updateClient, clientPatchSchema } from '@/server/invoices/clients';
 import {
   findIssuer,
   invoicesFor,
@@ -346,5 +346,68 @@ describe('findIssuer', () => {
         CONSULTANT,
       ).ok,
     ).toBe(false);
+  });
+});
+
+describe('the client book carries what a company invoice must print', () => {
+  it('round-trips NIS and AI onto the document', async () => {
+    // The PDF prints RC, NIF, NIS and AI for a COMPANY client, so a client
+    // record that cannot hold the last two cannot produce a compliant invoice.
+    const client = await createClient(CONSULTANT, {
+      fullName: 'Karim Benali',
+      clientType: 'COMPANY',
+      legalName: 'SARL Bâtir',
+      rc: '16/00-1234567',
+      nif: '000216001234567',
+      nis: '099216001234567',
+      ai: '16000123456',
+    });
+    expect(client.nis).toBe('099216001234567');
+    expect(client.ai).toBe('16000123456');
+
+    const res = await issueInvoice(CONSULTANT, {
+      kind: 'FACTURE',
+      clientId: client.id,
+      lines: LINES,
+      paymentMethod: 'ESPECE',
+    });
+    if (!res.ok) throw new Error(res.message);
+    expect(res.invoice.clientSnapshot.nis).toBe('099216001234567');
+    expect(res.invoice.clientSnapshot.ai).toBe('16000123456');
+
+    const vm = buildInvoiceViewModel(res.invoice);
+    expect(vm.clientLines).toContain('NIS: 099216001234567');
+    expect(vm.clientLines).toContain('AI: 16000123456');
+  });
+});
+
+describe('email is optional, on edit as well as on create', () => {
+  it('creates a client with no email at all', async () => {
+    const c = await createClient(CONSULTANT, { fullName: 'Sans email' });
+    expect(c.email).toBe('');
+  });
+
+  it('lets an existing client have their email cleared', async () => {
+    // The form edits the whole record and sends null for the empty boxes.
+    // Before the fix the patch schema took `undefined` but not `null`, so a
+    // client without an email could never be saved again — a 422 on the very
+    // field the consultant had just emptied.
+    const c = await createClient(CONSULTANT, { fullName: 'Avec email', email: 'avant@example.dz' });
+    expect(clientPatchSchema.safeParse({ email: null, phone: null }).success).toBe(true);
+
+    const updated = await updateClient(CONSULTANT, c.id, { email: null, phone: null });
+    expect(updated).not.toBeNull();
+    expect(updated!.email).toBe('');
+    expect(updated!.phone).toBe('');
+  });
+
+  it('still refuses an email that is not one', async () => {
+    expect(clientPatchSchema.safeParse({ email: 'pas-un-email' }).success).toBe(false);
+  });
+
+  it('does not touch a field the patch leaves out', async () => {
+    const c = await createClient(CONSULTANT, { fullName: 'Garde', email: 'garde@example.dz' });
+    const updated = await updateClient(CONSULTANT, c.id, { fullName: 'Gardé' });
+    expect(updated!.email).toBe('garde@example.dz');
   });
 });
