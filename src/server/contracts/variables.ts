@@ -17,6 +17,7 @@ import type {
   UserRecord,
 } from '@/server/db/store';
 import { bookingCountsAsRevenue } from '@/server/bookings/status';
+import type { ContractClientMatch } from './client';
 
 export type ContractLang = 'fr' | 'en' | 'ar';
 
@@ -26,6 +27,7 @@ export type ContractVariableToken =
   | 'client_phone'
   | 'client_email'
   | 'client_id_number'
+  | 'client_address'
   | 'client_city'
   | 'space_name'
   | 'space_category'
@@ -53,6 +55,7 @@ export const CONTRACT_VARIABLES: { token: ContractVariableToken; descriptionKey:
   { token: 'client_phone',      descriptionKey: 'clientPhone' },
   { token: 'client_email',      descriptionKey: 'clientEmail' },
   { token: 'client_id_number',  descriptionKey: 'clientIdNumber' },
+  { token: 'client_address',    descriptionKey: 'clientAddress' },
   { token: 'client_city',       descriptionKey: 'clientCity' },
   { token: 'space_name',        descriptionKey: 'spaceName' },
   { token: 'space_category',    descriptionKey: 'spaceCategory' },
@@ -146,6 +149,12 @@ export interface ResolveContext {
   user: UserRecord | null;
   lang: ContractLang;
   contractNumber: string;
+  /**
+   * The client-book entry this contract is about (`findContractClient`). It is where
+   * the ID number and address come from; omit it and those fall back to what the
+   * booking itself carries.
+   */
+  client?: ContractClientMatch | null;
 }
 
 /**
@@ -154,7 +163,8 @@ export interface ResolveContext {
  * incubator — nothing here requires the incubator to re-enter data.
  */
 export function resolveContractVariables(ctx: ResolveContext): Record<ContractVariableToken, string> {
-  const { booking, space, incubator, user, lang, contractNumber } = ctx;
+  const { booking, space, incubator, user, lang, contractNumber, client } = ctx;
+  const book = client?.client ?? null;
 
   const category = space?.category ?? null;
 
@@ -189,10 +199,16 @@ export function resolveContractVariables(ctx: ResolveContext): Record<ContractVa
   }
 
   return {
-    client_name:       user?.fullName ?? booking.clientName ?? '',
-    client_phone:      user?.phone ?? booking.clientPhone ?? '',
-    client_email:      user?.email ?? booking.clientEmail ?? '',
-    client_id_number:  booking.clientIdNumber ?? '',
+    client_name:       user?.fullName ?? booking.clientName ?? book?.fullName ?? '',
+    client_phone:      user?.phone ?? booking.clientPhone ?? book?.phone ?? '',
+    client_email:      user?.email ?? booking.clientEmail ?? book?.email ?? '',
+    // An explicit link means the host chose this person, so the client book is the source
+    // of truth (fix a typo there once and every later contract is right). A merely-guessed
+    // match never overrides what was typed on the booking itself.
+    client_id_number:  (client?.linked
+      ? book?.idCardNumber || booking.clientIdNumber
+      : booking.clientIdNumber || book?.idCardNumber) ?? '',
+    client_address:    book?.address ?? '',
     // Client's own city — only platform users carry it; offline bookings don't
     // store one, so it falls back to blank (never the booking/listing city).
     client_city:       user?.city ?? '',
@@ -246,6 +262,7 @@ export function buildSampleVariables(lang: ContractLang): Record<ContractVariabl
     client_phone:      '+213 555 12 34 56',
     client_email:      'ahmed.benali@example.dz',
     client_id_number:  '1234567890',
+    client_address:    lang === 'ar' ? '5 شارع العربي بن مهيدي، وهران' : '5 Rue Larbi Ben M\'hidi, Oran',
     client_city:       lang === 'ar' ? 'الجزائر' : 'Algiers',
     space_name:        lang === 'ar' ? 'قاعة التدريب أ' : 'Training Room A',
     space_category:    CATEGORY_WORDS[lang][cat],

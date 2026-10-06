@@ -27,7 +27,9 @@ import { applicableTemplates } from '@/server/contracts/service';
 import { requireRole } from '@/lib/auth-guards';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
-import { bookingCountsAsRevenue, bookingIsDeleted, bookingCanBeDeleted } from '@/server/bookings/status';
+import {
+  bookingCountsAsRevenue, bookingIsDeleted, bookingCanBeDeleted, bookingIsManual, manualBookingCanBeCancelled,
+} from '@/server/bookings/status';
 import { db } from '@/server/db/store';
 import { deskPaymentOf } from '@/server/bookings/desk-payment';
 import type { BookingStatus } from '@/types/domain';
@@ -67,6 +69,8 @@ interface IncubatorBookingRow {
   isManual: boolean;
   /** Holds no seat → the host may delete it (see bookingCanBeDeleted). */
   canDelete: boolean;
+  /** A manual booking that holds its desk: the host can cancel it from the row menu. */
+  canCancel: boolean;
   /** Telling the client is only meaningful when they knew about it. */
   canNotifyOnDelete: boolean;
   /** Cash still owed, and how much has already been handed over. */
@@ -148,8 +152,9 @@ export default async function IncubatorBookingsPage({ params, searchParams }: Pa
           customerName:  customer?.fullName ?? b.clientName ?? 'Unknown',
           customerEmail: customer?.email    ?? b.clientEmail ?? '',
           customerPhone: customer?.phone    ?? b.clientPhone ?? '',
-          isManual:      b.source === 'offline' || b.paymentMethod === 'manual',
+          isManual:      bookingIsManual(b),
           canDelete:         bookingCanBeDeleted(b),
+          canCancel:         manualBookingCanBeCancelled(b),
           // An unpaid attempt is always deleted silently — the server enforces
           // this too; here it just keeps the option off the screen.
           canNotifyOnDelete: b.status !== 'PENDING_PAYMENT',
@@ -386,6 +391,8 @@ export default async function IncubatorBookingsPage({ params, searchParams }: Pa
                                   clientName:  b.customerName,
                                   clientEmail: b.customerEmail,
                                   notes:       b.notes,
+                                  holdsSeat:   !b.canDelete,
+                                  canCancel:   b.canCancel,
                                 }}
                               />
                             )}
@@ -484,7 +491,7 @@ export default async function IncubatorBookingsPage({ params, searchParams }: Pa
                               endsAt: b.endsAt, unit: b.unit, totalAmount: b.totalAmount,
                               paidAmount: b.paidAmount, paymentEditable: b.paymentEditable,
                               clientName: b.customerName, clientEmail: b.customerEmail,
-                              notes: b.notes,
+                              notes: b.notes, holdsSeat: !b.canDelete, canCancel: b.canCancel,
                             }}
                           />
                         )}

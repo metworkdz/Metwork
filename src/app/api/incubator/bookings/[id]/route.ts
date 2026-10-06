@@ -34,6 +34,7 @@ import {
 import {
   softDeleteBooking, restoreBooking, deleteNotifiesClient,
 } from '@/server/bookings/soft-delete';
+import { bookingIsManual } from '@/server/bookings/status';
 
 type StoreData = Parameters<Parameters<typeof db.update>[0]>[0];
 
@@ -51,7 +52,7 @@ function bookingOwnedByIncubator(d: StoreData, incubatorId: string, booking: Boo
 
 /** A manual/offline booking carries no wallet/ledger entries — safe to edit/delete. */
 function isManualBooking(b: BookingRecord): boolean {
-  return b.source === 'offline' || b.paymentMethod === 'manual';
+  return bookingIsManual(b);
 }
 
 function computeQuantity(unit: 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH', startsAt: string, endsAt: string): number {
@@ -624,6 +625,17 @@ export async function PUT(
     booking.unit        = input.unit;
     booking.quantity    = computeQuantity(input.unit, input.startsAt, input.endsAt);
     if (plan?.ok) applyDeskPayment(booking, plan, guard.user.id, now);
+    // The ID number, phone and client-book link describe the person this booking was MADE
+    // for. Renaming it to someone else must not leave the previous person's ID number on
+    // what becomes a legal document — drop them, and the contract re-matches by what the
+    // booking now says (see `findContractClient`).
+    const renamed = booking.clientName?.trim().toLowerCase().replace(/\s+/g, ' ')
+      !== input.clientName.trim().toLowerCase().replace(/\s+/g, ' ');
+    if (renamed) {
+      booking.clientId = null;
+      booking.clientIdNumber = null;
+      booking.clientPhone = null;
+    }
     booking.clientName  = input.clientName.trim();
     booking.clientEmail = input.clientEmail ?? null;
     booking.notes       = input.notes ?? null;

@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
-import { db, type BookingRecord } from '@/server/db/store';
+import { db, type BookingRecord, type ClientRecord } from '@/server/db/store';
 import { checkSpaceAvailability } from '@/server/bookings/availability';
 import { bookingIsDeleted } from '@/server/bookings/status';
 import { holdDeskForBooking } from '@/server/spaces/availability';
@@ -23,6 +23,12 @@ const manualBookingSchema = z.object({
   clientName:      z.string().min(1).max(120),
   /** Optional — when provided, a PDF receipt is emailed to the client. */
   clientEmail:     z.string().email().max(200).optional().nullable(),
+  /**
+   * The client-book entry the host picked. Optional (a typed name has none). Checked
+   * against THIS incubator's book below — an id is a claim, not proof. It is what lets
+   * the contract read the client's ID number and address.
+   */
+  clientId:        z.string().min(1).max(100).optional().nullable(),
   startsAt:        z.string().datetime(),
   endsAt:          z.string().datetime(),
   unit:            z.enum(['HOUR', 'HALF_DAY', 'DAY', 'MONTH']),
@@ -127,6 +133,17 @@ export async function POST(req: NextRequest) {
     const space = (d.spaces ?? []).find((s) => s.id === input.spaceId && s.incubatorId === inc.id);
     if (!space) return { ok: false, reason: 'SPACE_NOT_FOUND' };
 
+    // The picked client must be one of THIS incubator's own. A foreign or unknown id is
+    // refused rather than ignored, so the host is told instead of getting a booking whose
+    // contract silently has no ID on it.
+    let pickedClient: ClientRecord | null = null;
+    if (input.clientId) {
+      pickedClient = (d.clients ?? []).find(
+        (c) => c.id === input.clientId && c.incubatorId === inc.id && !c.mentorId,
+      ) ?? null;
+      if (!pickedClient) return { ok: false, reason: 'CLIENT_NOT_FOUND' };
+    }
+
     // Idempotency: a retried submit (same space, window, client + amount) must
     // not create a duplicate offline booking. Return the existing one instead.
     const totalAmount = Math.round(input.totalAmount);
@@ -229,6 +246,12 @@ export async function POST(req: NextRequest) {
       paymentMethod:   'manual',       // offline settlement (cash/online/other label is request-only)
       clientName:      input.clientName.trim(),
       clientEmail:     input.clientEmail ?? null,
+      // Snapshot the book entry's contact details and keep the link. The contract reads the
+      // ID number and address through `clientId` (live, so a correction in the client book
+      // reaches the next contract); the snapshot keeps receipts and old exports meaningful.
+      clientId:        pickedClient?.id ?? null,
+      clientPhone:     pickedClient?.phone?.trim() || null,
+      clientIdNumber:  pickedClient?.idCardNumber?.trim() || null,
       notes:           input.notes ?? null,
       createdAt:       now,
       updatedAt:       now,
@@ -240,6 +263,8 @@ export async function POST(req: NextRequest) {
   if (!result.ok) {
     if (result.reason === 'SPACE_NOT_FOUND')
       return jsonError(404, 'SPACE_NOT_FOUND', 'Space not found or does not belong to this incubator');
+    if (result.reason === 'CLIENT_NOT_FOUND')
+      return jsonError(422, 'CLIENT_NOT_FOUND', 'That client was not found. Pick the client again.');
     if (result.reason === 'OVERLAP_CONFLICT')
       return jsonError(409, 'OVERLAP_CONFLICT', 'This time slot is already booked');
     if (result.reason === 'DATE_UNAVAILABLE')

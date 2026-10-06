@@ -193,6 +193,8 @@ export function ManualBookingDialog({ spaces, onCreated }: ManualBookingDialogPr
           deskName: (requiresDesk || requiresOffice) ? deskName : undefined,
           clientName:  clientName.trim(),
           clientEmail: clientEmail.trim() || null,
+          // The picked client-book entry: lets the contract read their ID number and address.
+          clientId:    client?.id ?? null,
           startsAt,
           endsAt,
           unit,

@@ -1,15 +1,18 @@
 'use client';
 
 /**
- * Per-row Edit / Delete actions for an incubator's MANUAL (offline) bookings.
- * - Edit  → PUT  /api/incubator/bookings/:id (re-checks availability, emails the client)
- * - Delete→ DELETE /api/incubator/bookings/:id (removes it, emails the client)
- * Only rendered for manual bookings; online/card/wallet bookings keep the
+ * Per-row Edit / Cancel / Delete actions for an incubator's MANUAL (offline) bookings.
+ * - Edit   → PUT  /api/incubator/bookings/:id (re-checks availability, emails the client)
+ * - Cancel → POST /api/incubator/bookings/:id/cancel-reservation (frees the desk, no money moves)
+ * - Delete → DELETE /api/incubator/bookings/:id (hides it; restorable from the Deleted view)
+ * A reservation that still holds its desk cannot be deleted, so Delete on one
+ * explains that and offers the cancel right there instead of failing after the
+ * fact. Only rendered for manual bookings; online/card/wallet bookings keep the
  * existing confirm/cancel flow and never expose these controls.
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Ban, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +56,10 @@ export interface EditableBooking {
   clientName: string;
   clientEmail: string;
   notes: string;
+  /** Still occupies its desk/seat — so it cannot be deleted until it is cancelled. */
+  holdsSeat: boolean;
+  /** The host may cancel it from here (a manual booking that holds a seat). */
+  canCancel: boolean;
 }
 
 function toIso(date: string, time: string) {
@@ -64,9 +71,15 @@ export function BookingRowActions({ booking }: { booking: EditableBooking }) {
   const router = useRouter();
 
   const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  // Which confirm is showing. Delete on a booking that holds its desk shows the
+  // cancel-first explanation in the same dialog, then turns into the delete
+  // confirm by itself once the refreshed booking no longer holds a seat.
+  const [dialog, setDialog] = useState<null | 'cancel' | 'delete'>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [notifyClient, setNotifyClient] = useState(false);
+  const [justCancelled, setJustCancelled] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Edit form state (seeded from the row's current values)
@@ -142,6 +155,33 @@ export function BookingRowActions({ booking }: { booking: EditableBooking }) {
     }
   }
 
+  async function handleCancel() {
+    setError(null);
+    setCancelling(true);
+    try {
+      const qs = notifyClient && booking.clientEmail ? '?notify=true' : '';
+      const res = await fetch(`/api/incubator/bookings/${booking.id}/cancel-reservation${qs}`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      // 409 ALREADY_FINAL = cancelled in another tab; the refresh below shows the truth.
+      if (!res.ok && res.status !== 409) {
+        const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
+        setError(d.error?.message ?? t('errorGeneric'));
+        return;
+      }
+      setJustCancelled(true);
+      // From Delete the dialog stays open and flips to the delete confirm once the
+      // refreshed row no longer holds a seat; from Cancel there is nothing left to do.
+      if (dialog === 'cancel') setDialog(null);
+      router.refresh();
+    } catch {
+      setError(t('errorGeneric'));
+    } finally {
+      setCancelling(false);
+    }
+  }
+
   async function handleDelete() {
     setError(null);
     setDeleting(true);
@@ -153,7 +193,7 @@ export function BookingRowActions({ booking }: { booking: EditableBooking }) {
         setError(d.error?.message ?? t('errorGeneric'));
         return;
       }
-      setDeleteOpen(false);
+      setDialog(null);
       router.refresh();
     } catch {
       setError(t('errorGeneric'));
@@ -178,9 +218,18 @@ export function BookingRowActions({ booking }: { booking: EditableBooking }) {
             <Pencil className="size-4" />
             {t('edit')}
           </DropdownMenuItem>
+          {booking.canCancel && (
+            <DropdownMenuItem
+              className="cursor-pointer gap-2"
+              onSelect={(e) => { e.preventDefault(); setError(null); setNotifyClient(false); setDialog('cancel'); }}
+            >
+              <Ban className="size-4" />
+              {t('cancelReservation')}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             className="cursor-pointer gap-2 text-destructive focus:text-destructive"
-            onSelect={(e) => { e.preventDefault(); setError(null); setDeleteOpen(true); }}
+            onSelect={(e) => { e.preventDefault(); setError(null); setNotifyClient(false); setJustCancelled(false); setDialog('delete'); }}
           >
             <Trash2 className="size-4" />
             {t('delete')}
@@ -290,24 +339,85 @@ export function BookingRowActions({ booking }: { booking: EditableBooking }) {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirm */}
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{t('deleteTitle')}</DialogTitle>
-            <DialogDescription>{t('deleteDescription', { item: booking.itemName })}</DialogDescription>
-          </DialogHeader>
-          {error && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-              {error}
-            </div>
+      {/* Cancel / Delete confirm */}
+      <Dialog open={dialog !== null} onOpenChange={(v) => { if (!v) setDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          {(dialog === 'cancel' || (dialog === 'delete' && booking.holdsSeat)) ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>
+                  {dialog === 'delete' ? t('holdsSeatTitle') : t('cancelTitle')}
+                </DialogTitle>
+                <DialogDescription>
+                  {dialog === 'delete' && !booking.canCancel
+                    ? t('holdsSeatNoCancel')
+                    : dialog === 'delete'
+                      ? t('holdsSeatBody', { item: booking.itemName })
+                      : t('cancelBody', { item: booking.itemName })}
+                </DialogDescription>
+              </DialogHeader>
+
+              {booking.canCancel && (
+                <>
+                  {booking.paidAmount > 0 && (
+                    <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                      {t('cancelPaidWarning', { amount: `${booking.paidAmount.toLocaleString()} DZD` })}
+                    </p>
+                  )}
+                  {booking.clientEmail && (
+                    <label className="flex items-start gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 size-4"
+                        checked={notifyClient}
+                        onChange={(e) => setNotifyClient(e.target.checked)}
+                      />
+                      <span>{t('cancelNotify')}</span>
+                    </label>
+                  )}
+                </>
+              )}
+
+              {error && (
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                  {error}
+                </div>
+              )}
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setDialog(null)} disabled={cancelling}>
+                  {t('keepReservation')}
+                </Button>
+                {booking.canCancel && (
+                  <Button type="button" variant="destructive" loading={cancelling} onClick={() => void handleCancel()}>
+                    {t('cancelConfirm')}
+                  </Button>
+                )}
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>{t('deleteTitle')}</DialogTitle>
+                <DialogDescription>{t('deleteDescription', { item: booking.itemName })}</DialogDescription>
+              </DialogHeader>
+              {justCancelled && (
+                <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800" role="status">
+                  {t('cancelledNowDelete')}
+                </p>
+              )}
+              {error && (
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                  {error}
+                </div>
+              )}
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setDialog(null)}>{t('cancel')}</Button>
+                <Button type="button" variant="destructive" loading={deleting} onClick={() => void handleDelete()}>
+                  {t('deleteConfirm')}
+                </Button>
+              </DialogFooter>
+            </>
           )}
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDeleteOpen(false)}>{t('cancel')}</Button>
-            <Button type="button" variant="destructive" loading={deleting} onClick={() => void handleDelete()}>
-              {t('deleteConfirm')}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

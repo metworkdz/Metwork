@@ -14,6 +14,7 @@ import { requireApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { jsonError } from '@/server/http/json';
 import { resolveContractIncubator } from '@/server/contracts/service';
+import { findContractClient } from '@/server/contracts/client';
 import {
   generateContractNumber,
   renderTemplate,
@@ -69,6 +70,7 @@ export async function GET(
     space,
     incubator: inc,
     user,
+    client: findContractClient(data.clients, inc.id, booking, user),
     lang: template.language,
     contractNumber,
   });

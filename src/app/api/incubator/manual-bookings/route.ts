@@ -232,8 +232,16 @@ export async function POST(req: NextRequest) {
       client = newClient;
     }
 
+    // A typed ID number completes a client-book entry that lacks one, so the contract (which
+    // reads the book through `clientId`) has it; an entry that already has one is left alone.
+    if (input.clientIdNumber && !client.idCardNumber) {
+      client.idCardNumber = input.clientIdNumber;
+      client.updatedAt = now;
+    }
+
     const booking = {
       id: bookingId,
+      clientId: client.id,
       userId: null,
       source: 'offline' as const,
       paymentMethod: 'manual' as const,

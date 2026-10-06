@@ -59,6 +59,35 @@ export function bookingHoldsSeat(b: HasStatus): boolean {
   );
 }
 
+/**
+ * A booking the host recorded themselves (a desk sale, a walk-in) rather than
+ * one the client paid for through Metwork. It carries no wallet or card
+ * movement, which is what makes it safe to edit, cancel and delete without any
+ * ledger consequence.
+ */
+export function bookingIsManual(b: { source?: string | null; paymentMethod?: string | null }): boolean {
+  return b.source === 'offline' || b.paymentMethod === 'manual';
+}
+
+/**
+ * Can the host cancel this booking themselves, right now, with no money moving?
+ *
+ * Manual bookings that hold a seat. REQUEST-mode bookings still awaiting
+ * approval or payment have their own approve / decline controls, and an unpaid
+ * one has its own cancel path; online bookings that were paid go through the
+ * refund flow, never this one.
+ */
+export function manualBookingCanBeCancelled(
+  b: HasStatus & { source?: string | null; paymentMethod?: string | null },
+): boolean {
+  return (
+    bookingIsManual(b) &&
+    bookingHoldsSeat(b) &&
+    b.status !== 'AWAITING_APPROVAL' &&
+    b.status !== 'APPROVED_UNPAID'
+  );
+}
+
 /* ─────────────────── Deletion ─────────────────── */
 
 /** Minimal shape for the deletion predicates. */

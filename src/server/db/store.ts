@@ -574,6 +574,13 @@ export interface BookingRecord {
   clientEmail?: string | null;
   /** National ID / passport number — shown on the receipt. */
   clientIdNumber?: string | null;
+  /**
+   * The incubator's client-book entry this booking was made for (ClientRecord.id).
+   * Additive & nullable: absent on every booking made before the link existed, and
+   * on a host-typed name that was never picked from the book. The contract reads the
+   * client's ID number and address through it — see `@/server/contracts/client`.
+   */
+  clientId?: string | null;
   itemKind: BookingItemKind;
   itemId: string;
   /** Cached display fields — denormalized so the bookings list doesn't need a join. */

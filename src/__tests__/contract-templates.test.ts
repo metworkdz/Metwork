@@ -123,7 +123,8 @@ describe('CONTRACT_VARIABLES catalogue', () => {
   it('lists every documented token', () => {
     expect(CONTRACT_VARIABLES.map((v) => v.token)).toContain('contract_number');
     expect(CONTRACT_VARIABLES.map((v) => v.token)).toContain('client_city');
-    expect(CONTRACT_VARIABLES.length).toBe(21);
+    expect(CONTRACT_VARIABLES.map((v) => v.token)).toContain('client_address');
+    expect(CONTRACT_VARIABLES.length).toBe(22);
   });
 });
 
