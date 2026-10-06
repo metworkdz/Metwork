@@ -2057,6 +2057,74 @@
         "ACTIVE": "Actif",
         "REJECTED": "Rejeté"
       }
+    },
+    "promoCodes": {
+      "newCode": "Nouveau code promo",
+      "emptyTitle": "Aucun code promo pour l'instant",
+      "emptyDescription": "Créez un code et choisissez précisément les programmes et espaces sur lesquels il fonctionne. Il ne s'appliquera jamais ailleurs.",
+      "colCode": "Code",
+      "colDiscount": "Remise (%)",
+      "colValidFor": "Valable pour",
+      "colUsage": "Utilisations",
+      "colExpiry": "Expire le",
+      "colStatus": "Statut",
+      "colUsageLimit": "Limite d'utilisation",
+      "statusActive": "Actif",
+      "statusInactive": "Inactif",
+      "statusExpired": "Expiré",
+      "statusLimit": "Limite atteinte",
+      "removedTargets": "{count, plural, one {# élément supprimé} other {# éléments supprimés}}",
+      "edit": "Modifier",
+      "deactivate": "Désactiver",
+      "reactivate": "Réactiver",
+      "delete": "Supprimer",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "create": "Créer le code",
+      "deleteTitle": "Supprimer {code} ?",
+      "deleteBody": "Utilisé {count, plural, one {# fois} other {# fois}}. Il cesse de fonctionner immédiatement, disparaît de cette liste et son nom redevient disponible. Les inscriptions passées qui l'ont utilisé gardent leur prix. Pour simplement le mettre en pause, utilisez Désactiver.",
+      "deleteConfirm": "Supprimer le code",
+      "newTitle": "Nouveau code promo",
+      "newNote": "Choisissez précisément où il peut être utilisé. Il ne s'appliquera jamais ailleurs.",
+      "editTitle": "Modifier le code promo",
+      "editNote": "Les modifications ne s'appliquent qu'aux utilisations futures. Un paiement déjà en cours conserve le prix annoncé.",
+      "noListings": "Vous n'avez encore aucun programme ni espace. Créez-en un d'abord, puis revenez ajouter un code promo.",
+      "codeHint": "Lettres, chiffres, - et _ · ne doit pas déjà exister",
+      "codePlaceholder": "RAMADAN20",
+      "noExpiry": "Laisser vide pour aucune expiration",
+      "noLimit": "Laisser vide pour illimité",
+      "validFor": "Valable pour",
+      "pickAtLeastOne": "choisissez-en au moins un",
+      "programsGroup": "Programmes",
+      "spacesGroup": "Espaces",
+      "selectAll": "Tout sélectionner",
+      "clear": "Effacer",
+      "nothingFound": "Aucun résultat",
+      "searchPlaceholder": "Rechercher un programme ou un espace",
+      "selectedCount": "{count, plural, one {# sélectionné} other {# sélectionnés}}",
+      "newListingsNote": "les programmes et espaces ajoutés plus tard ne sont PAS inclus automatiquement",
+      "errCodeFormat": "Le code doit comporter 3 à 32 caractères : lettres, chiffres, - ou _",
+      "errDiscountRange": "La remise doit être entre 1 et 100",
+      "errScopeEmpty": "Choisissez au moins un programme ou un espace",
+      "errScopeInvalid": "Un ou plusieurs programmes ou espaces sélectionnés sont introuvables",
+      "errCodeExists": "Ce nom de code est déjà utilisé. Choisissez-en un autre.",
+      "errCodeExistsInactive": "Un de vos codes désactivés porte déjà ce nom. Réactivez-le, renommez-le ou supprimez-le pour libérer le nom.",
+      "errSave": "Enregistrement impossible. Veuillez réessayer.",
+      "errNetwork": "Erreur réseau. Veuillez réessayer.",
+      "panelTitle": "Codes valables pour ce programme",
+      "panelCount": "{codes, plural, one {# code} other {# codes}} · {uses, plural, one {# utilisation} other {# utilisations}}",
+      "attachExisting": "Rattacher un code existant",
+      "newForProgram": "Nouveau code pour ce programme",
+      "programEmptyTitle": "Aucun code promo pour ce programme",
+      "programEmptyDescription": "Créez-en un avec ce programme déjà coché, ou rattachez un code que vous avez déjà.",
+      "alsoValidFor": "Valable aussi pour :",
+      "detach": "Détacher de ce programme",
+      "detachLast": "{code} ne fonctionne que sur ce programme. Ajoutez d'abord un autre programme ou espace, ou supprimez le code depuis la page Codes promo.",
+      "detachNote": "Détacher retire seulement ce programme d'un code. Pour désactiver ou supprimer un code, rendez-vous sur",
+      "manageAll": "la page Codes promo.",
+      "attachTitle": "Rattacher des codes existants",
+      "attachNote": "Choisissez les codes qui doivent aussi fonctionner sur {program}.",
+      "attach": "Rattacher"
     }
   },
   "dashboard": {
@@ -2724,6 +2792,10 @@
         "services": {
           "title": "Services",
           "subtitle": "Gérez votre catalogue de services — utilisé lors de l'enregistrement des revenus."
+        },
+        "promoCodes": {
+          "title": "Codes promo",
+          "subtitle": "Des remises que vos clients peuvent utiliser sur les programmes et espaces que vous choisissez."
         }
       },
       "investor": {
@@ -4005,7 +4077,11 @@
       "deleteFailed": "Échec de la suppression du code promo",
       "codeExistsInactive": "Un code désactivé porte déjà ce nom. Réactivez-le, renommez-le ou supprimez-le pour libérer le nom.",
       "deactivate": "Désactiver",
-      "reactivate": "Réactiver"
+      "reactivate": "Réactiver",
+      "colOwner": "Propriétaire",
+      "ownerPlatform": "Plateforme",
+      "ownerUnknown": "Incubateur",
+      "scopeSummary": "{programs, plural, one {# programme} other {# programmes}} · {spaces, plural, one {# espace} other {# espaces}}"
     },
     "partnerManagement": {
       "title": "Incubateurs partenaires ({count})",
@@ -5507,7 +5583,8 @@
     "tabAbandoned": "Paiement non finalisé",
     "tabCertificates": "Attestations",
     "tabFinances": "Finances",
-    "tabFeedback": "Avis"
+    "tabFeedback": "Avis",
+    "tabPromo": "Codes promo"
   },
   "booking": {
     "guest": {

@@ -2057,6 +2057,74 @@
         "ACTIVE": "Active",
         "REJECTED": "Rejected"
       }
+    },
+    "promoCodes": {
+      "newCode": "New promo code",
+      "emptyTitle": "No promo codes yet",
+      "emptyDescription": "Create a code and choose exactly which programs and spaces it works on. It will never apply anywhere else.",
+      "colCode": "Code",
+      "colDiscount": "Discount (%)",
+      "colValidFor": "Valid for",
+      "colUsage": "Usage",
+      "colExpiry": "Expires",
+      "colStatus": "Status",
+      "colUsageLimit": "Usage limit",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "statusExpired": "Expired",
+      "statusLimit": "Limit reached",
+      "removedTargets": "{count, plural, one {# removed listing} other {# removed listings}}",
+      "edit": "Edit",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "save": "Save changes",
+      "create": "Create code",
+      "deleteTitle": "Delete {code}?",
+      "deleteBody": "Used {count, plural, one {# time} other {# times}}. It stops working immediately and disappears from this list, and its name becomes free to use again. Past registrations that used it keep their price. To pause it instead, use Deactivate.",
+      "deleteConfirm": "Delete code",
+      "newTitle": "New promo code",
+      "newNote": "Choose exactly where it can be used. It will never apply anywhere else.",
+      "editTitle": "Edit promo code",
+      "editNote": "Changes apply to future uses only. A checkout already in progress keeps the price it was quoted.",
+      "noListings": "You have no programs or spaces yet. Create one first, then come back to add a promo code for it.",
+      "codeHint": "Letters, digits, - and _ · must not be in use",
+      "codePlaceholder": "RAMADAN20",
+      "noExpiry": "Leave blank for no expiry",
+      "noLimit": "Leave blank for unlimited",
+      "validFor": "Valid for",
+      "pickAtLeastOne": "pick at least one",
+      "programsGroup": "Programs",
+      "spacesGroup": "Spaces",
+      "selectAll": "Select all",
+      "clear": "Clear",
+      "nothingFound": "Nothing found",
+      "searchPlaceholder": "Search programs and spaces",
+      "selectedCount": "{count, plural, one {# selected} other {# selected}}",
+      "newListingsNote": "programs and spaces you add later are NOT included automatically",
+      "errCodeFormat": "The code must be 3–32 characters: letters, digits, - or _",
+      "errDiscountRange": "Discount must be between 1 and 100",
+      "errScopeEmpty": "Choose at least one program or space",
+      "errScopeInvalid": "One or more selected programs or spaces were not found",
+      "errCodeExists": "This code name is already in use. Choose another.",
+      "errCodeExistsInactive": "One of your deactivated codes already has this name. Reactivate it, rename it, or delete it to free the name.",
+      "errSave": "Could not save. Please try again.",
+      "errNetwork": "Network error. Please try again.",
+      "panelTitle": "Codes valid for this program",
+      "panelCount": "{codes, plural, one {# code} other {# codes}} · {uses, plural, one {# use} other {# uses}}",
+      "attachExisting": "Attach existing code",
+      "newForProgram": "New code for this program",
+      "programEmptyTitle": "No promo code for this program yet",
+      "programEmptyDescription": "Create one with this program already ticked, or attach a code you already have.",
+      "alsoValidFor": "Also valid for:",
+      "detach": "Detach from this program",
+      "detachLast": "{code} only works on this program. Add another program or space first, or delete the code from the Promo codes page.",
+      "detachNote": "Detach only removes this program from a code. Deactivating or deleting a code is done on",
+      "manageAll": "the Promo codes page.",
+      "attachTitle": "Attach existing codes",
+      "attachNote": "Pick the codes that should also work on {program}.",
+      "attach": "Attach"
     }
   },
   "dashboard": {
@@ -2724,6 +2792,10 @@
         "services": {
           "title": "Services",
           "subtitle": "Manage your service catalog — used when recording income and generating reports."
+        },
+        "promoCodes": {
+          "title": "Promo codes",
+          "subtitle": "Discounts your clients can use on the programs and spaces you choose."
         }
       },
       "investor": {
@@ -4005,7 +4077,11 @@
       "deleteFailed": "Failed to delete the promo code",
       "codeExistsInactive": "A deactivated code already has this name. Reactivate it, rename it, or delete it to free the name.",
       "deactivate": "Deactivate",
-      "reactivate": "Reactivate"
+      "reactivate": "Reactivate",
+      "colOwner": "Owner",
+      "ownerPlatform": "Platform",
+      "ownerUnknown": "Incubator",
+      "scopeSummary": "{programs, plural, one {# program} other {# programs}} · {spaces, plural, one {# space} other {# spaces}}"
     },
     "partnerManagement": {
       "title": "Partner incubators ({count})",
@@ -5507,7 +5583,8 @@
     "tabAbandoned": "Unpaid",
     "tabCertificates": "Certificates",
     "tabFinances": "Finances",
-    "tabFeedback": "Feedback"
+    "tabFeedback": "Feedback",
+    "tabPromo": "Promo codes"
   },
   "booking": {
     "guest": {

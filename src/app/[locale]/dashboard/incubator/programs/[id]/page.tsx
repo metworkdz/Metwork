@@ -12,6 +12,8 @@ import { listFormFields } from '@/server/registrations/service';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { ProgramRegistrationDashboard } from '@/components/features/registrations/program-registration-dashboard';
 import { resolveListingPricing } from '@/lib/listing-price';
+import { listIncubatorPromoCodes } from '@/server/promo-codes/incubator-service';
+import { toScopedPromoCode } from '@/lib/promo-code-ui';
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
@@ -34,6 +36,19 @@ export default async function IncubatorProgramDetailPage({ params, searchParams 
 
   const formFields = await listFormFields('PROGRAM', id);
 
+  // Feeds the « Promo codes » tab: the incubator's own codes plus the listings a code can be ticked for.
+  const promoData = {
+    codes: (await listIncubatorPromoCodes(incubator.id)).map(toScopedPromoCode),
+    programs: (data.programs ?? [])
+      .filter((p) => p.incubatorId === incubator.id)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map((p) => ({ id: p.id, title: p.title, city: p.city })),
+    spaces: (data.spaces ?? [])
+      .filter((s) => s.incubatorId === incubator.id)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map((s) => ({ id: s.id, name: s.name, city: s.city })),
+  };
+
   return (
     <div className="space-y-6">
       <DashboardPageHeader
@@ -48,6 +63,7 @@ export default async function IncubatorProgramDetailPage({ params, searchParams 
         entitySlug={program.slug ?? null}
         initialFormFields={formFields}
         defaultAmount={resolveListingPricing(program.price, program).cash}
+        promoData={promoData}
       />
     </div>
   );

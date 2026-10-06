@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { requireRole } from '@/lib/auth-guards';
 import { listPromoCodes } from '@/server/promo-codes/service';
+import { db } from '@/server/db/store';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { CreatePromoCodeForm } from '@/components/features/admin/create-promo-code-form';
@@ -30,6 +31,8 @@ export default async function AdminPromoCodesPage({ params }: PageProps) {
   await requireRole(['ADMIN']);
 
   const codes = await listPromoCodes();
+  const tc = await getTranslations('admin.promoCodes');
+  const incubatorName = new Map((await db.read()).incubators.map((i) => [i.id, i.name]));
 
   return (
     <div className="space-y-6">
@@ -57,6 +60,7 @@ export default async function AdminPromoCodesPage({ params }: PageProps) {
                 <thead>
                   <tr className="border-b border-border bg-muted/30 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     <th className="px-4 py-3">Code</th>
+                    <th className="px-4 py-3">{tc('colOwner')}</th>
                     <th className="px-4 py-3">Discount</th>
                     <th className="px-4 py-3">Applies to</th>
                     <th className="px-4 py-3">Usage</th>
@@ -69,8 +73,17 @@ export default async function AdminPromoCodesPage({ params }: PageProps) {
                   {codes.map((code) => (
                     <tr key={code.id} className="border-b border-border last:border-0 hover:bg-muted/20">
                       <td className="px-4 py-3 font-mono font-semibold tracking-wide">{code.code}</td>
+                      <td className="px-4 py-3">
+                        {code.ownerIncubatorId
+                          ? <Badge variant="info">{incubatorName.get(code.ownerIncubatorId) ?? tc('ownerUnknown')}</Badge>
+                          : <span className="text-muted-foreground">{tc('ownerPlatform')}</span>}
+                      </td>
                       <td className="px-4 py-3">{code.discountPercent}%</td>
-                      <td className="px-4 py-3 capitalize">{code.appliesTo.toLowerCase()}</td>
+                      <td className="px-4 py-3 capitalize">
+                        {code.scope
+                          ? tc('scopeSummary', { programs: code.scope.programIds.length, spaces: code.scope.spaceIds.length })
+                          : code.appliesTo.toLowerCase()}
+                      </td>
                       <td className="px-4 py-3">
                         {code.usedCount}
                         {code.usageLimit !== null ? ` / ${code.usageLimit}` : ''}
@@ -83,7 +96,7 @@ export default async function AdminPromoCodesPage({ params }: PageProps) {
                       <td className="px-4 py-3">{statusBadge(code)}</td>
                       <td className="px-4 py-3 text-end">
                         <div className="flex justify-end gap-2">
-                          <PromoCodeEditButton promo={code} />
+                          <PromoCodeEditButton promo={code} owned={!!code.ownerIncubatorId} />
                           <PromoCodeToggle id={code.id} isActive={code.isActive} />
                           <PromoCodeDeleteButton id={code.id} code={code.code} usedCount={code.usedCount ?? 0} />
                         </div>

@@ -7,20 +7,24 @@
  * Tab 2: Abandoned checkouts
  * Tab 3: Registration Form Builder
  * Tab 4: Participation certificates (programs only)
- * Tab 5: Finances, Tab 6: Avis — training feedback (programs only)
+ * Tab 5: Finances, Tab 6: Avis — training feedback, Tab 7: Promo codes (programs only)
  *
  * Used on both /dashboard/incubator/programs/[id] and
  * /dashboard/incubator/events/[id].
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Award, ClipboardList, Settings2, ExternalLink, PhoneMissed, Star, Wallet } from 'lucide-react';
+import { Award, ClipboardList, Settings2, ExternalLink, PhoneMissed, Star, Tag, Wallet } from 'lucide-react';
 import { RegistrationFormBuilder } from './form-builder';
 import { RegistrationsTable } from './registrations-table';
 import { AbandonedCheckoutsTable } from './abandoned-checkouts-table';
 import { CertificatesPanel } from '@/components/features/certificates/certificates-panel';
 import { ProgramFinancesPanel } from '@/components/features/program-finance/program-finances-panel';
 import { FeedbackPanel } from '@/components/features/feedback/feedback-panel';
+import {
+  ProgramPromoCodesPanel,
+  type ProgramPromoData,
+} from '@/components/features/incubator/program-promo-codes-panel';
 import type { RegistrationFormField } from '@/types/domain';
 
 interface ProgramRegistrationDashboardProps {
@@ -33,9 +37,11 @@ interface ProgramRegistrationDashboardProps {
   defaultAmount?: number;
   /** Open on this tab (a link from the « Avis » page). */
   initialTab?: 'feedback';
+  /** Programs only: the incubator's codes + listings, which enables the Promo codes tab. */
+  promoData?: ProgramPromoData;
 }
 
-type Tab = 'form' | 'registrations' | 'abandoned' | 'certificates' | 'finances' | 'feedback';
+type Tab = 'form' | 'registrations' | 'abandoned' | 'certificates' | 'finances' | 'feedback' | 'promo';
 
 export function ProgramRegistrationDashboard({
   entityType,
@@ -45,6 +51,7 @@ export function ProgramRegistrationDashboard({
   initialFormFields,
   defaultAmount = 0,
   initialTab,
+  promoData,
 }: ProgramRegistrationDashboardProps) {
   const t = useTranslations('registrationDashboard');
   const [tab, setTab] = useState<Tab>(initialTab && entityType === 'PROGRAM' ? initialTab : 'registrations');
@@ -62,6 +69,7 @@ export function ProgramRegistrationDashboard({
       ? [
           { id: 'certificates' as const, labelKey: 'tabCertificates', Icon: Award },
           { id: 'finances' as const, labelKey: 'tabFinances', Icon: Wallet },
+          ...(promoData ? [{ id: 'promo' as const, labelKey: 'tabPromo', Icon: Tag }] : []),
           { id: 'feedback' as const, labelKey: 'tabFeedback', Icon: Star },
         ]
       : []),
@@ -130,6 +138,14 @@ export function ProgramRegistrationDashboard({
             programId={entityId}
             apiBase="/api/incubator/programs"
             uploadEndpoint="/api/incubator/upload"
+          />
+        ) : tab === 'promo' && promoData ? (
+          <ProgramPromoCodesPanel
+            programId={entityId}
+            programTitle={entityTitle}
+            codes={promoData.codes}
+            programs={promoData.programs}
+            spaces={promoData.spaces}
           />
         ) : tab === 'certificates' ? (
           <CertificatesPanel

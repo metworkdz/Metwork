@@ -16,6 +16,7 @@ import { FormField } from '@/components/ui/form-field';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { toLocalInput } from '@/lib/promo-code-ui';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -31,16 +32,7 @@ export interface EditablePromoCode {
   usageLimit: number | null;
 }
 
-/** ISO instant → the local `YYYY-MM-DDTHH:mm` a datetime-local input expects. */
-function toLocalInput(iso: string | null): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-export function PromoCodeEditButton({ promo }: { promo: EditablePromoCode }) {
+export function PromoCodeEditButton({ promo, owned = false }: { promo: EditablePromoCode; owned?: boolean }) {
   const t = useTranslations('admin.promoCodes');
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -79,7 +71,8 @@ export function PromoCodeEditButton({ promo }: { promo: EditablePromoCode }) {
     const patch = {
       ...(nextCode !== promo.code ? { code: nextCode } : {}),
       ...(discountNum !== promo.discountPercent ? { discountPercent: discountNum } : {}),
-      ...(appliesTo !== promo.appliesTo ? { appliesTo } : {}),
+      // An incubator-owned code is restricted by its scope, not by appliesTo — nothing to edit here.
+      ...(!owned && appliesTo !== promo.appliesTo ? { appliesTo } : {}),
       // Compare in the input's own (minute-resolution) form: the stored instant has seconds/ms
       // that the datetime-local control cannot show, so an untouched field must not count as edited.
       ...(toLocalInput(promo.expiresAt) !== expiresAt ? { expiresAt: nextExpiry } : {}),
@@ -142,6 +135,7 @@ export function PromoCodeEditButton({ promo }: { promo: EditablePromoCode }) {
                   onChange={(e) => { setDiscount(e.target.value); setError(null); }}
                 />
               </FormField>
+              {!owned && (
               <FormField label={t('colAppliesTo')} htmlFor="pce-applies">
                 <Select value={appliesTo} onValueChange={(v) => setAppliesTo(v as AppliesTo)}>
                   <SelectTrigger id="pce-applies"><SelectValue /></SelectTrigger>
@@ -153,6 +147,7 @@ export function PromoCodeEditButton({ promo }: { promo: EditablePromoCode }) {
                   </SelectContent>
                 </Select>
               </FormField>
+              )}
               <FormField label={t('colUsageLimit')} htmlFor="pce-limit" hint={t('noLimit')}>
                 <Input
                   id="pce-limit"

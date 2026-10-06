@@ -147,6 +147,7 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.spaces',    href: '/dashboard/incubator/spaces',       icon: Building2 },
     { labelKey: 'dashboard.domiciliation', href: '/dashboard/incubator/domiciliation', icon: Mailbox },
     { labelKey: 'dashboard.programs',  href: '/dashboard/incubator/programs',     icon: Briefcase },
+    { labelKey: 'dashboard.promoCodes', href: '/dashboard/incubator/promo-codes',  icon: Tag },
     { labelKey: 'dashboard.feedback',  href: '/dashboard/incubator/feedback',     icon: MessageSquare },
     { labelKey: 'dashboard.events',    href: '/dashboard/incubator/events',       icon: Calendar },
     { labelKey: 'dashboard.bookings',  href: '/dashboard/incubator/bookings',     icon: CalendarIcon },
