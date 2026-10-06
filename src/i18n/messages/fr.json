@@ -1226,7 +1226,11 @@
       "noRevenueData": "Aucune donnée de revenus pour cette période.",
       "noTrendData": "Aucune donnée de tendance pour cette période.",
       "legendIncome": "Revenus",
-      "legendExpenses": "Dépenses"
+      "legendExpenses": "Dépenses",
+      "incomeSplit": "{bookings} des réservations · {ledger} saisis manuellement",
+      "netAfterFees": "après {fees} de frais de plateforme",
+      "colFees": "Frais de plateforme",
+      "loadError": "Impossible de charger les statistiques. Veuillez réessayer."
     },
     "bookings": {
       "statPendingReview": "En attente de validation",

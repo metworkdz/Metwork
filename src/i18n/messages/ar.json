@@ -1226,7 +1226,11 @@
       "noRevenueData": "لا توجد بيانات إيرادات لهذه الفترة.",
       "noTrendData": "لا توجد بيانات اتجاه لهذه الفترة.",
       "legendIncome": "الإيرادات",
-      "legendExpenses": "المصاريف"
+      "legendExpenses": "المصاريف",
+      "incomeSplit": "{bookings} من الحجوزات · {ledger} مُدخلة يدوياً",
+      "netAfterFees": "بعد خصم {fees} من رسوم المنصة",
+      "colFees": "رسوم المنصة",
+      "loadError": "تعذّر تحميل الإحصائيات. يرجى المحاولة مجدداً."
     },
     "bookings": {
       "statPendingReview": "في انتظار المراجعة",

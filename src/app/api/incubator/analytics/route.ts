@@ -6,128 +6,119 @@
  *   to    — YYYY-MM-DD (default: today)
  *   grain — 'day' | 'week' | 'month' (default: 'month')
  *
- * Returns financial analytics for the given period.
+ * Financial analytics for the signed-in incubator over the given period.
+ *
+ * Income is the platform bookings on the incubator's own spaces, programs and
+ * events PLUS the manual income ledger — see `@/server/incubator/finance` for why
+ * both are needed and how double counting is avoided. This endpoint used to read
+ * the ledger alone, which is why it showed 0 for anyone whose revenue came
+ * through bookings.
  */
 import type { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
-import { findIncubatorByUserEmail } from '@/server/incubator/service';
-import { bookingCountsAsRevenue } from '@/server/bookings/status';
 import { json, jsonError } from '@/server/http/json';
+import {
+  bucketKey,
+  bucketRange,
+  incubatorExpenseRows,
+  incubatorIncomeRows,
+  incubatorMonthIncome,
+} from '@/server/incubator/finance';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-function toDate(s: string): Date { return new Date(`${s}T00:00:00`); }
+/** A real calendar date, not just something shaped like one ("2026-02-31" is refused). */
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(
+  (s) => {
+    const d = new Date(`${s}T00:00:00Z`);
+    return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+  },
+  { message: 'Not a valid date' },
+);
 
-function dateRange(from: string, to: string, grain: 'day' | 'week' | 'month'): string[] {
-  const result: string[] = [];
-  const cur = toDate(from);
-  const end = toDate(to);
-  while (cur <= end) {
-    if (grain === 'day') {
-      result.push(cur.toISOString().slice(0, 10));
-      cur.setDate(cur.getDate() + 1);
-    } else if (grain === 'week') {
-      result.push(cur.toISOString().slice(0, 10));
-      cur.setDate(cur.getDate() + 7);
-    } else {
-      result.push(cur.toISOString().slice(0, 7)); // YYYY-MM
-      cur.setMonth(cur.getMonth() + 1);
-    }
-  }
-  return [...new Set(result)];
-}
+const querySchema = z.object({
+  from: isoDate.optional(),
+  to: isoDate.optional(),
+  grain: z.enum(['day', 'week', 'month']).default('month'),
+});
 
-function bucketKey(date: string, grain: 'day' | 'week' | 'month'): string {
-  if (grain === 'month') return date.slice(0, 7);
-  if (grain === 'week') {
-    // Week key: Monday of the week
-    const d = toDate(date);
-    const day = d.getDay(); // 0=Sun
-    const diff = (day === 0 ? -6 : 1) - day;
-    d.setDate(d.getDate() + diff);
-    return d.toISOString().slice(0, 10);
-  }
-  return date;
-}
+/** Enough for several years of months or a year of days; stops a hostile range from looping. */
+const MAX_BUCKETS = 800;
 
 export async function GET(req: NextRequest) {
   const guard = await requireApiRole(['INCUBATOR']);
   if (!guard.ok) return guard.response;
 
-  const inc = await findIncubatorByUserEmail(guard.user.email);
+  const data = await db.read();
+  // By managerId, like the dashboard pages — not by a contact email two accounts could share.
+  const inc = (data.incubators ?? []).find((i) => i.managerId === guard.user.id);
   if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile linked to this account');
 
-  const url   = req.nextUrl;
   const today = new Date().toISOString().slice(0, 10);
-  const firstOfMonth = today.slice(0, 7) + '-01';
+  const params = querySchema.safeParse({
+    from: req.nextUrl.searchParams.get('from') ?? undefined,
+    to: req.nextUrl.searchParams.get('to') ?? undefined,
+    grain: req.nextUrl.searchParams.get('grain') ?? undefined,
+  });
+  if (!params.success) return jsonError(422, 'VALIDATION_ERROR', 'from/to must be real YYYY-MM-DD dates and grain day, week or month');
 
-  const from  = url.searchParams.get('from')  ?? firstOfMonth;
-  const to    = url.searchParams.get('to')    ?? today;
-  const grain = (url.searchParams.get('grain') ?? 'month') as 'day' | 'week' | 'month';
+  const from = params.data.from ?? `${today.slice(0, 7)}-01`;
+  const to = params.data.to ?? today;
+  const grain = params.data.grain;
+  if (from > to) return jsonError(422, 'INVALID_RANGE', '"from" must not be after "to"');
 
-  const data = await db.read();
-
-  const incomeRows  = (data.income   ?? []).filter((o) => o.incubatorId === inc.id && o.date >= from && o.date <= to);
-  const expenseRows = (data.expenses ?? []).filter((e) => e.incubatorId === inc.id && e.date >= from && e.date <= to);
-
-  // Aggregations
-  const totalIncome   = incomeRows.reduce((s, o) => s + o.amount, 0);
-  const totalExpenses = expenseRows.reduce((s, e) => s + e.amount, 0);
-  const netProfit     = totalIncome - totalExpenses;
-
-  // MRR — income in the current calendar month
-  const currentMonth = today.slice(0, 7);
-  const mrr = (data.income ?? [])
-    .filter((o) => o.incubatorId === inc.id && o.date.startsWith(currentMonth))
-    .reduce((s, o) => s + o.amount, 0);
-
-  // Revenue by service
-  const byService: Record<string, number> = {};
-  for (const o of incomeRows) {
-    byService[o.serviceName] = (byService[o.serviceName] ?? 0) + o.amount;
+  const buckets = bucketRange(from, to, grain);
+  if (buckets.length > MAX_BUCKETS) {
+    return jsonError(422, 'RANGE_TOO_LARGE', 'That range has too many periods — choose a coarser grain or a shorter range');
   }
-  const revenueByService = Object.entries(byService)
+
+  const inRange = <T extends { date: string }>(rows: T[]) => rows.filter((r) => r.date >= from && r.date <= to);
+  const incomeRows = inRange(incubatorIncomeRows(data, inc));
+  const expenseRows = inRange(incubatorExpenseRows(data, inc));
+
+  const sum = (rows: Array<{ amount: number }>) => rows.reduce((s, r) => s + r.amount, 0);
+  const totalIncome = sum(incomeRows);
+  const totalExpenses = sum(expenseRows);
+  const totalFees = incomeRows.reduce((s, r) => s + r.fee, 0);
+  const netProfit = totalIncome - totalExpenses - totalFees;
+
+  // Where the income came from, so a host can see bookings and the ledger are both in the figure.
+  const incomeFromBookings = sum(incomeRows.filter((r) => r.source === 'BOOKING'));
+  const bookingCount = incomeRows.filter((r) => r.source === 'BOOKING').length;
+
+  // MRR — income recognised in the current calendar month, whatever range is on screen.
+  const mrr = incubatorMonthIncome(data, inc, today.slice(0, 7));
+
+  const byLabel = new Map<string, number>();
+  for (const r of incomeRows) byLabel.set(r.label, (byLabel.get(r.label) ?? 0) + r.amount);
+  const revenueByService = [...byLabel.entries()]
     .map(([name, amount]) => ({ name, amount }))
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 10);
 
-  // Time-series buckets
-  const buckets = dateRange(from, to, grain);
-  const incomeByBucket: Record<string, number>  = {};
-  const expenseByBucket: Record<string, number> = {};
-  for (const b of buckets) { incomeByBucket[b] = 0; expenseByBucket[b] = 0; }
-
-  for (const o of incomeRows) {
-    const k = bucketKey(o.date, grain);
-    if (k in incomeByBucket) incomeByBucket[k] = (incomeByBucket[k] ?? 0) + o.amount;
+  const income = new Map(buckets.map((b) => [b, 0]));
+  const expenses = new Map(buckets.map((b) => [b, 0]));
+  const fees = new Map(buckets.map((b) => [b, 0]));
+  for (const r of incomeRows) {
+    const k = bucketKey(r.date, grain);
+    income.set(k, (income.get(k) ?? 0) + r.amount);
+    fees.set(k, (fees.get(k) ?? 0) + r.fee);
   }
-  for (const e of expenseRows) {
-    const k = bucketKey(e.date, grain);
-    if (k in expenseByBucket) expenseByBucket[k] = (expenseByBucket[k] ?? 0) + e.amount;
+  for (const r of expenseRows) {
+    const k = bucketKey(r.date, grain);
+    expenses.set(k, (expenses.get(k) ?? 0) + r.amount);
   }
 
   const trend = buckets.map((b) => ({
-    period:   b,
-    income:   incomeByBucket[b] ?? 0,
-    expenses: expenseByBucket[b] ?? 0,
-    net:      (incomeByBucket[b] ?? 0) - (expenseByBucket[b] ?? 0),
+    period: b,
+    income: income.get(b) ?? 0,
+    expenses: expenses.get(b) ?? 0,
+    fees: fees.get(b) ?? 0,
+    net: (income.get(b) ?? 0) - (expenses.get(b) ?? 0) - (fees.get(b) ?? 0),
   }));
-
-  // Total booking count for this incubator (from platform bookings)
-  const spaceIds   = new Set((data.spaces   ?? []).filter((s) => s.incubatorId === inc.id).map((s) => s.id));
-  const programIds = new Set((data.programs ?? []).filter((p) => p.incubatorId === inc.id).map((p) => p.id));
-  const eventIds   = new Set((data.events   ?? []).filter((e) => e.incubatorId === inc.id).map((e) => e.id));
-  // Awaiting-payment intents are excluded from analytics, matching every other
-  // financial surface (shared rule).
-  const bookingCount = data.bookings.filter((b) => {
-    if (!bookingCountsAsRevenue(b)) return false;
-    if (b.itemKind === 'SPACE'   && spaceIds.has(b.itemId))   return true;
-    if (b.itemKind === 'PROGRAM' && programIds.has(b.itemId)) return true;
-    if (b.itemKind === 'EVENT'   && eventIds.has(b.itemId))   return true;
-    return false;
-  }).length;
 
   return json({
     from,
@@ -135,9 +126,12 @@ export async function GET(req: NextRequest) {
     grain,
     totalIncome,
     totalExpenses,
+    totalFees,
     netProfit,
     mrr,
     bookingCount,
+    incomeFromBookings,
+    incomeFromLedger: totalIncome - incomeFromBookings,
     revenueByService,
     trend,
   });

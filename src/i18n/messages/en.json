@@ -1226,7 +1226,11 @@
       "noRevenueData": "No revenue data for this period.",
       "noTrendData": "No trend data for this period.",
       "legendIncome": "Income",
-      "legendExpenses": "Expenses"
+      "legendExpenses": "Expenses",
+      "incomeSplit": "{bookings} from bookings · {ledger} entered manually",
+      "netAfterFees": "after {fees} platform fees",
+      "colFees": "Platform fees",
+      "loadError": "Could not load analytics. Please try again."
     },
     "bookings": {
       "statPendingReview": "Pending review",

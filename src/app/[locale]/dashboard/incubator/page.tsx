@@ -16,6 +16,7 @@ import {
 import { mobileQuickActionsByRole } from '@/config/mobile-nav';
 import { db } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
+import { incubatorMonthBookingCount, incubatorMonthIncome } from '@/server/incubator/finance';
 import { IncubatorPendingApprovalBanner } from '@/components/features/incubator/pending-approval-banner';
 import { formatCurrency } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
@@ -49,23 +50,11 @@ export default async function IncubatorDashboard({ params }: PageProps) {
   let mrrIncome = 0;
 
   if (inc) {
-    const spaceIds   = new Set(mySpaces.map((s) => s.id));
-    const programIds = new Set((data.programs ?? []).filter((p) => p.incubatorId === inc.id).map((p) => p.id));
-    const eventIds   = new Set((data.events   ?? []).filter((e) => e.incubatorId === inc.id).map((e) => e.id));
-
-    bookingsThisMonth = (data.bookings ?? []).filter((b) => {
-      const inMonth = b.createdAt?.startsWith(currentMonth);
-      const owned   =
-        (b.itemKind === 'SPACE'   && spaceIds.has(b.itemId)) ||
-        (b.itemKind === 'PROGRAM' && programIds.has(b.itemId)) ||
-        (b.itemKind === 'EVENT'   && eventIds.has(b.itemId));
-      return inMonth && owned;
-    }).length;
-
-    // MRR from manual income records (current month)
-    mrrIncome = (data.income ?? [])
-      .filter((o) => o.incubatorId === inc.id && o.date.startsWith(currentMonth))
-      .reduce((s, o) => s + o.amount, 0);
+    // The same figures the Analytics page shows: bookings that count as revenue, and income from
+    // bookings plus the manual ledger. This card used to read the ledger alone and sat at 0 for
+    // anyone whose revenue came through bookings.
+    bookingsThisMonth = incubatorMonthBookingCount(data, inc.id, currentMonth);
+    mrrIncome = incubatorMonthIncome(data, inc, currentMonth);
   }
 
   // Client count

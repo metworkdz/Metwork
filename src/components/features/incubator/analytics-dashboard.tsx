@@ -27,6 +27,8 @@ interface TrendPoint {
   period: string;
   income: number;
   expenses: number;
+  /** Platform fees actually deducted on bookings in this period. */
+  fees: number;
   net: number;
 }
 
@@ -41,9 +43,13 @@ interface AnalyticsData {
   grain: 'day' | 'week' | 'month';
   totalIncome: number;
   totalExpenses: number;
+  totalFees: number;
   netProfit: number;
   mrr: number;
   bookingCount: number;
+  /** Income split, so it is visible that bookings AND manual entries are both counted. */
+  incomeFromBookings: number;
+  incomeFromLedger: number;
   revenueByService: ServiceRevenue[];
   trend: TrendPoint[];
 }
@@ -267,6 +273,7 @@ function Controls({
 export function AnalyticsDashboard() {
   const locale    = useLocale() as Locale;
   const t         = useTranslations('incubator.analytics');
+  const tr        = t; // fetchData's own parameter names must not shadow the translator
   const today     = new Date().toISOString().slice(0, 10);
   const yearStart = today.slice(0, 4) + '-01-01';
 
@@ -277,17 +284,17 @@ export function AnalyticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
 
-  async function fetchData(f: string, t: string, g: string) {
+  async function fetchData(f: string, to: string, g: string) {
     setLoading(true); setError(null);
     try {
       const res = await fetch(
-        `/api/incubator/analytics?from=${f}&to=${t}&grain=${g}`,
+        `/api/incubator/analytics?from=${f}&to=${to}&grain=${g}`,
         { cache: 'no-store' },
       );
-      if (!res.ok) throw new Error('Failed to load analytics');
+      if (!res.ok) throw new Error(tr('loadError'));
       setData(await res.json() as AnalyticsData);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error loading analytics');
+      setError(e instanceof Error ? e.message : tr('loadError'));
     } finally {
       setLoading(false);
     }
@@ -328,6 +335,12 @@ export function AnalyticsDashboard() {
             <KpiCard
               label={t('totalIncome')}
               value={formatCurrency(data.totalIncome, locale)}
+              sub={data.incomeFromBookings > 0 && data.incomeFromLedger > 0
+                ? t('incomeSplit', {
+                    bookings: formatCurrency(data.incomeFromBookings, locale),
+                    ledger: formatCurrency(data.incomeFromLedger, locale),
+                  })
+                : undefined}
               icon={TrendingUp}
               positive
             />
@@ -340,6 +353,7 @@ export function AnalyticsDashboard() {
             <KpiCard
               label={t('netProfit')}
               value={formatCurrency(data.netProfit, locale)}
+              sub={data.totalFees > 0 ? t('netAfterFees', { fees: formatCurrency(data.totalFees, locale) }) : undefined}
               icon={Wallet}
               positive={data.netProfit >= 0}
             />
@@ -392,6 +406,9 @@ export function AnalyticsDashboard() {
                       <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">{t('colPeriod')}</th>
                       <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">{t('colIncome')}</th>
                       <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">{t('colExpenses')}</th>
+                      {data.totalFees > 0 && (
+                        <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">{t('colFees')}</th>
+                      )}
                       <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">{t('colNet')}</th>
                     </tr>
                   </thead>
@@ -405,6 +422,11 @@ export function AnalyticsDashboard() {
                         <td className="px-4 py-2.5 text-right text-destructive">
                           {p.expenses > 0 ? `-${formatCurrency(p.expenses, locale)}` : '—'}
                         </td>
+                        {data.totalFees > 0 && (
+                          <td className="px-4 py-2.5 text-right text-destructive">
+                            {p.fees > 0 ? `-${formatCurrency(p.fees, locale)}` : '—'}
+                          </td>
+                        )}
                         <td className={[
                           'px-4 py-2.5 text-right font-medium',
                           p.net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive',
