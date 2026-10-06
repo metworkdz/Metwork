@@ -3990,7 +3990,22 @@
       "consultationsOnly": "Consultations only",
       "noExpiry": "Leave blank for no expiry",
       "noLimit": "Leave blank for unlimited",
-      "create": "Create code"
+      "create": "Create code",
+      "edit": "Edit",
+      "editTitle": "Edit promo code",
+      "editNote": "Changes apply to future uses only. A checkout already in progress keeps the price it was quoted.",
+      "renameHint": "Renaming checks the new name is free",
+      "save": "Save changes",
+      "saveFailed": "Failed to save changes",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "deleteTitle": "Delete {code}?",
+      "deleteBody": "Used {count, plural, one {# time} other {# times}}. Deleting removes the code for good and frees its name so it can be created again. Checkouts already in progress keep the price they were quoted. To pause it instead, use Deactivate.",
+      "deleteConfirm": "Delete permanently",
+      "deleteFailed": "Failed to delete the promo code",
+      "codeExistsInactive": "A deactivated code already has this name. Reactivate it, rename it, or delete it to free the name.",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate"
     },
     "partnerManagement": {
       "title": "Partner incubators ({count})",

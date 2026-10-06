@@ -3990,7 +3990,22 @@
       "consultationsOnly": "Consultations uniquement",
       "noExpiry": "Laisser vide pour aucune expiration",
       "noLimit": "Laisser vide pour illimité",
-      "create": "Créer le code"
+      "create": "Créer le code",
+      "edit": "Modifier",
+      "editTitle": "Modifier le code promo",
+      "editNote": "Les modifications ne s'appliquent qu'aux utilisations futures. Un paiement déjà en cours conserve le prix annoncé.",
+      "renameHint": "Le renommage vérifie que le nouveau nom est libre",
+      "save": "Enregistrer",
+      "saveFailed": "Échec de l'enregistrement",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer {code} ?",
+      "deleteBody": "Utilisé {count, plural, one {# fois} other {# fois}}. La suppression est définitive et libère le nom pour pouvoir le recréer. Les paiements déjà en cours conservent le prix annoncé. Pour simplement le mettre en pause, utilisez Désactiver.",
+      "deleteConfirm": "Supprimer définitivement",
+      "deleteFailed": "Échec de la suppression du code promo",
+      "codeExistsInactive": "Un code désactivé porte déjà ce nom. Réactivez-le, renommez-le ou supprimez-le pour libérer le nom.",
+      "deactivate": "Désactiver",
+      "reactivate": "Réactiver"
     },
     "partnerManagement": {
       "title": "Incubateurs partenaires ({count})",

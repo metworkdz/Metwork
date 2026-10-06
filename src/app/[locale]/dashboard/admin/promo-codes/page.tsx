@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { CreatePromoCodeForm } from '@/components/features/admin/create-promo-code-form';
 import { PromoCodeToggle } from '@/components/features/admin/promo-code-toggle';
+import { PromoCodeEditButton } from '@/components/features/admin/promo-code-edit-button';
+import { PromoCodeDeleteButton } from '@/components/features/admin/promo-code-delete-button';
 import type { PromoCodeRecord } from '@/server/db/store';
 
 interface PageProps {
@@ -80,7 +82,11 @@ export default async function AdminPromoCodesPage({ params }: PageProps) {
                       </td>
                       <td className="px-4 py-3">{statusBadge(code)}</td>
                       <td className="px-4 py-3 text-end">
-                        <PromoCodeToggle id={code.id} isActive={code.isActive} />
+                        <div className="flex justify-end gap-2">
+                          <PromoCodeEditButton promo={code} />
+                          <PromoCodeToggle id={code.id} isActive={code.isActive} />
+                          <PromoCodeDeleteButton id={code.id} code={code.code} usedCount={code.usedCount ?? 0} />
+                        </div>
                       </td>
                     </tr>
                   ))}

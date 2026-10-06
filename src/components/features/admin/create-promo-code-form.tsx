@@ -73,8 +73,9 @@ export function CreatePromoCodeForm() {
         });
         const data = await res.json();
         if (!res.ok) {
-          if (res.status === 409) setError(t('codeExists'));
-          else setError(data.message ?? t('failed'));
+          if (data?.error?.code === 'PROMO_CODE_EXISTS_INACTIVE') setError(t('codeExistsInactive'));
+          else if (res.status === 409) setError(t('codeExists'));
+          else setError(data?.error?.message ?? t('failed'));
           return;
         }
         setSuccess(t('success', { code: data.code }));

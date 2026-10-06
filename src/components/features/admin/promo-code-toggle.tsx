@@ -5,6 +5,7 @@
  * Calls PATCH /api/admin/promo-codes/:id with { isActive } then refreshes.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function PromoCodeToggle({ id, isActive }: Props) {
+  const t = useTranslations('admin.promoCodes');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -40,7 +42,7 @@ export function PromoCodeToggle({ id, isActive }: Props) {
       onClick={toggle}
       className={isActive ? 'text-destructive hover:text-destructive' : 'text-muted-foreground'}
     >
-      {isActive ? 'Deactivate' : 'Reactivate'}
+      {isActive ? t('deactivate') : t('reactivate')}
     </Button>
   );
 }

@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Promo codes mockup</title>
+<style>
+  :root{
+    --bg:#fff; --fg:#0e1a12; --card:#fff; --muted:#f6f6f7; --muted-fg:#64748b; --border:#e5e7eb;
+    --primary:#1b7f3a; --primary-fg:#fff; --primary-soft:#e8f5ec; --danger:#c21f1f; --danger-soft:#fdeaea;
+    --warn:#a16207; --warn-soft:#fef6dc; --radius:10px; --side:#fbfbfc;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0d1210; --fg:#e8efe9; --card:#121917; --muted:#1a2320; --muted-fg:#93a29a; --border:#26322d;
+      --primary:#3ec06a; --primary-fg:#06140b; --primary-soft:#143222; --danger:#ff6b6b; --danger-soft:#3a1717;
+      --warn:#f0c04a; --warn-soft:#352a0c; --side:#0f1513; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:16px}
+  h1{font-size:18px;margin:0 0 4px} .lead{color:var(--muted-fg);margin:0 0 14px}
+  .switch{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .switch button{border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:999px;padding:8px 14px;font:inherit;cursor:pointer}
+  .switch button.on{background:var(--primary);color:var(--primary-fg);border-color:var(--primary)}
+  .note{background:var(--warn-soft);color:var(--warn);border-radius:var(--radius);padding:10px 12px;margin:0 0 12px;font-size:13px}
+  .note b{color:inherit}
+  .screen{display:none} .screen.on{display:block}
+  .app{display:grid;grid-template-columns:210px 1fr;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--bg);min-height:520px}
+  .side{background:var(--side);border-inline-end:1px solid var(--border);padding:12px 8px;font-size:13px}
+  .side .brand{font-weight:700;padding:4px 10px 12px;color:var(--primary)}
+  .side a{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;color:var(--muted-fg);text-decoration:none}
+  .side a.on{background:var(--primary-soft);color:var(--primary);font-weight:600}
+  .side a.new::after{content:"NEW";margin-inline-start:auto;font-size:9px;font-weight:700;background:var(--primary);color:var(--primary-fg);border-radius:4px;padding:1px 5px}
+  .dot{width:14px;height:14px;border-radius:4px;border:1.5px solid currentColor;opacity:.6;flex:none}
+  .main{padding:20px 22px;min-width:0}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+  .head h2{margin:0;font-size:20px} .head p{margin:2px 0 0;color:var(--muted-fg)}
+  .btn{border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:8px;padding:8px 14px;font:inherit;cursor:pointer;min-height:36px}
+  .btn.p{background:var(--primary);color:var(--primary-fg);border-color:var(--primary);font-weight:600}
+  .btn.d{color:var(--danger);border-color:var(--danger-soft)} .btn.d.solid{background:var(--danger);color:#fff;border-color:var(--danger)}
+  .btn.s{padding:5px 10px;min-height:30px;font-size:13px}
+  .card{border:1px solid var(--border);border-radius:var(--radius);background:var(--card)}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-fg);text-align:start;padding:10px 14px;background:var(--muted);font-weight:600}
+  td{padding:12px 14px;border-top:1px solid var(--border);vertical-align:middle}
+  .code{font-family:ui-monospace,Menlo,monospace;font-weight:700;letter-spacing:.04em}
+  .chip{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;background:var(--muted);color:var(--muted-fg);margin:1px 3px 1px 0}
+  .chip.prog{background:var(--primary-soft);color:var(--primary)} .chip.space{background:#e7efff;color:#2849a8}
+  @media (prefers-color-scheme: dark){.chip.space{background:#17233f;color:#8fb0ff}}
+  .badge{border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600}
+  .b-ok{background:var(--primary-soft);color:var(--primary)} .b-off{background:var(--muted);color:var(--muted-fg)} .b-bad{background:var(--danger-soft);color:var(--danger)}
+  td .bar{flex:none;width:60px} td{white-space:normal} td:nth-child(4){white-space:nowrap}
+  .bar{height:6px;border-radius:99px;background:var(--muted);overflow:hidden;min-width:70px} .bar i{display:block;height:100%;background:var(--primary)}
+  .tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto}
+  .tabs span{padding:9px 14px;color:var(--muted-fg);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+  .tabs span.on{color:var(--fg);border-color:var(--primary);font-weight:600}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+  .overlay.on{display:flex}
+  .dialog{background:var(--card);border:1px solid var(--border);border-radius:14px;width:100%;max-width:560px;max-height:92vh;overflow:auto;padding:20px}
+  .dialog h3{margin:0 0 4px;font-size:17px} .dialog .sub{color:var(--muted-fg);margin:0 0 14px}
+  label{display:block;font-size:12px;font-weight:600;margin:0 0 4px}
+  input[type=text],input[type=number],input[type=datetime-local],select{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 10px;font:inherit;font-size:16px;background:var(--bg);color:var(--fg);min-height:40px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .hint{font-size:12px;color:var(--muted-fg);margin-top:3px}
+  .scope{border:1px solid var(--border);border-radius:10px;margin:4px 0 12px;overflow:hidden}
+  .scope .grp{padding:8px 12px;background:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-fg);font-weight:700;display:flex;justify-content:space-between;align-items:center}
+  .scope .grp button{all:unset;color:var(--primary);cursor:pointer;font-size:12px;text-transform:none;letter-spacing:0;font-weight:600}
+  .opt{display:flex;gap:10px;align-items:center;padding:9px 12px;border-top:1px solid var(--border);cursor:pointer}
+  .opt input{width:18px;height:18px;accent-color:var(--primary)} .opt small{color:var(--muted-fg);margin-inline-start:auto}
+  .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+  .tip{border:1px dashed var(--primary);background:var(--primary-soft);color:var(--primary);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:14px}
+  .co{max-width:420px;margin:0 auto;border:1px solid var(--border);border-radius:14px;padding:16px;background:var(--card)}
+  .co .row{display:flex;justify-content:space-between;padding:5px 0}
+  .co .total{border-top:1px solid var(--border);margin-top:6px;padding-top:8px;font-weight:700}
+  .promo{display:flex;gap:8px;margin:10px 0 6px}
+  .ok{color:var(--primary)} .err{color:var(--danger)} .strike{text-decoration:line-through;color:var(--muted-fg)}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .mcards{display:none}
+  @media (max-width:900px){
+    .app{grid-template-columns:1fr} .side{display:none} .main{padding:14px}
+    .cols{grid-template-columns:1fr} .grid2{grid-template-columns:1fr}
+    table.resp{display:none} .mcards{display:block}
+    .mcard{padding:12px 14px;border-top:1px solid var(--border)} .mcard:first-child{border-top:0}
+    .mcard .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+    .mcard .acts{display:flex;gap:8px;margin-top:10px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Promo codes — mockup (not built yet)</h1>
+  <p class="lead">Click through the 5 screens. Clickable parts: <b>New code</b>, <b>Delete</b>, scope checklists. Narrow the window to see the phone layout.</p>
+
+  <div class="switch" id="switch">
+    <button data-s="a" class="on">1 · Incubator: Promo codes page</button>
+    <button data-s="c">2 · Inside a program (tab)</button>
+    <button data-s="d">3 · What the customer sees</button>
+    <button data-s="e">4 · Admin: edit &amp; delete</button>
+  </div>
+
+  <!-- ============ SCREEN A: incubator page ============ -->
+  <div class="screen on" id="s-a">
+    <div class="note"><b>Recommendation:</b> this page is the home of all incubator codes (it's the only place that can cover spaces and multi-program codes). Screen 2 shows the same list filtered inside a program.</div>
+    <div class="app">
+      <nav class="side">
+        <div class="brand">Metwork · Incubator</div>
+        <a><span class="dot"></span>Overview</a><a><span class="dot"></span>Spaces</a><a><span class="dot"></span>Programs</a>
+        <a class="on new"><span class="dot"></span>Promo codes</a>
+        <a><span class="dot"></span>Feedback</a><a><span class="dot"></span>Events</a><a><span class="dot"></span>Bookings</a><a><span class="dot"></span>Revenue</a><a><span class="dot"></span>Wallet</a>
+      </nav>
+      <div class="main">
+        <div class="head">
+          <div><h2>Promo codes</h2><p>Discounts your clients can use on the programs and spaces you choose.</p></div>
+          <button class="btn p" data-open="dlg-new">+ New promo code</button>
+        </div>
+        <div class="card" style="overflow-x:auto">
+          <table class="resp" style="min-width:760px">
+            <thead><tr><th>Code</th><th>Discount</th><th>Valid for</th><th>Usage</th><th>Expires</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="code">RAMADAN20</td><td>20%</td>
+                <td><span class="chip prog">Startup Bootcamp</span><span class="chip prog">Pitch Lab</span></td>
+                <td><div style="display:flex;gap:8px;align-items:center">14 / 50<div class="bar"><i style="width:28%"></i></div></div></td>
+                <td>30 Apr 2027</td><td><span class="badge b-ok">Active</span></td>
+                <td style="text-align:end;white-space:nowrap"><button class="btn s">Edit</button> <button class="btn s">Deactivate</button> <button class="btn s d" data-open="dlg-del-inc">Delete</button></td></tr>
+              <tr><td class="code">COWORK10</td><td>10%</td>
+                <td><span class="chip space">Open space · Alger</span><span class="chip space">Meeting room A</span></td>
+                <td><div style="display:flex;gap:8px;align-items:center">3 / ∞</div></td>
+                <td>—</td><td><span class="badge b-ok">Active</span></td>
+                <td style="text-align:end;white-space:nowrap"><button class="btn s">Edit</button> <button class="btn s">Deactivate</button> <button class="btn s d" data-open="dlg-del-inc">Delete</button></td></tr>
+              <tr><td class="code">EARLYBIRD</td><td>30%</td>
+                <td><span class="chip prog">Startup Bootcamp</span><span class="chip space">Meeting room A</span></td>
+                <td><div style="display:flex;gap:8px;align-items:center">20 / 20<div class="bar"><i style="width:100%"></i></div></div></td>
+                <td>01 Mar 2027</td><td><span class="badge b-bad">Limit reached</span></td>
+                <td style="text-align:end;white-space:nowrap"><button class="btn s">Edit</button> <button class="btn s">Deactivate</button> <button class="btn s d" data-open="dlg-del-inc">Delete</button></td></tr>
+              <tr><td class="code">SPRING15</td><td>15%</td>
+                <td><span class="chip prog">Pitch Lab</span></td>
+                <td>0 / 30</td><td>15 Jan 2027</td><td><span class="badge b-off">Inactive</span></td>
+                <td style="text-align:end;white-space:nowrap"><button class="btn s">Edit</button> <button class="btn s">Reactivate</button> <button class="btn s d" data-open="dlg-del-inc">Delete</button></td></tr>
+            </tbody>
+          </table>
+          <div class="mcards">
+            <div class="mcard"><div class="top"><span class="code">RAMADAN20</span><span class="badge b-ok">Active</span></div>
+              <div>20% off · 14 / 50 uses · until 30 Apr 2027</div>
+              <div style="margin-top:6px"><span class="chip prog">Startup Bootcamp</span><span class="chip prog">Pitch Lab</span></div>
+              <div class="acts"><button class="btn s">Edit</button><button class="btn s">Deactivate</button><button class="btn s d" data-open="dlg-del-inc">Delete</button></div></div>
+            <div class="mcard"><div class="top"><span class="code">COWORK10</span><span class="badge b-ok">Active</span></div>
+              <div>10% off · 3 uses · no expiry</div>
+              <div style="margin-top:6px"><span class="chip space">Open space · Alger</span><span class="chip space">Meeting room A</span></div>
+              <div class="acts"><button class="btn s">Edit</button><button class="btn s">Deactivate</button><button class="btn s d" data-open="dlg-del-inc">Delete</button></div></div>
+          </div>
+        </div>
+        <p class="hint" style="margin-top:10px">Usage shows how many times a code was redeemed. It does not show the amount discounted (not tracked today).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN C: in program ============ -->
+  <div class="screen" id="s-c">
+    <div class="note"><b>Same component, filtered.</b> The new <b>Promo codes</b> tab sits right after Finances. "New code" opens the same dialog with this program pre-ticked.</div>
+    <div class="app">
+      <nav class="side">
+        <div class="brand">Metwork · Incubator</div>
+        <a><span class="dot"></span>Overview</a><a><span class="dot"></span>Spaces</a><a class="on"><span class="dot"></span>Programs</a>
+        <a class="new"><span class="dot"></span>Promo codes</a>
+        <a><span class="dot"></span>Feedback</a><a><span class="dot"></span>Events</a><a><span class="dot"></span>Bookings</a><a><span class="dot"></span>Revenue</a><a><span class="dot"></span>Wallet</a>
+      </nav>
+      <div class="main">
+        <div class="head"><div><h2>Startup Bootcamp</h2><p>Alger · Bootcamp</p></div></div>
+        <div class="tabs"><span>Registrations</span><span>Abandoned</span><span>Form builder</span><span>Certificates</span><span>Finances</span><span>Feedback</span><span class="on">Promo codes</span></div>
+        <div class="head" style="margin-bottom:10px">
+          <div><b>Codes valid for this program</b><div class="hint">2 codes · 14 total uses</div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn">Attach existing code</button><button class="btn p" data-open="dlg-new-prog">+ New code for this program</button></div>
+        </div>
+        <div class="card" style="overflow:hidden">
+          <div class="mcard" style="display:block;border-top:0"><div class="top" style="display:flex;justify-content:space-between"><span class="code">RAMADAN20</span><span class="badge b-ok">Active</span></div>
+            <div>20% off · 14 / 50 uses · until 30 Apr 2027</div>
+            <div class="hint">Also valid for: <span class="chip prog">Pitch Lab</span></div>
+            <div style="display:flex;gap:8px;margin-top:8px"><button class="btn s">Edit</button><button class="btn s">Detach from this program</button></div></div>
+          <div class="mcard" style="display:block"><div class="top" style="display:flex;justify-content:space-between"><span class="code">EARLYBIRD</span><span class="badge b-bad">Limit reached</span></div>
+            <div>30% off · 20 / 20 uses · until 01 Mar 2027</div>
+            <div class="hint">Also valid for: <span class="chip space">Meeting room A</span></div>
+            <div style="display:flex;gap:8px;margin-top:8px"><button class="btn s">Edit</button><button class="btn s">Detach from this program</button></div></div>
+        </div>
+        <p class="hint" style="margin-top:10px">"Detach" only removes this program from the code's list. Deleting a code happens on the Promo codes page.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN D: customer ============ -->
+  <div class="screen" id="s-d">
+    <div class="note"><b>Why the validate call gets the program/space:</b> today the checkout only sends the code, so a restricted code would show a discount the booking then silently drops. With the item attached, the customer sees the truth before paying.</div>
+    <div class="cols">
+      <div>
+        <p class="hint" style="margin:0 0 6px"><b>On “Startup Bootcamp”</b> — code RAMADAN20 (valid here)</p>
+        <div class="co">
+          <b>Register · Startup Bootcamp</b>
+          <div class="row" style="margin-top:8px"><span>Price</span><span class="strike">20 000 DZD</span></div>
+          <div class="promo"><input type="text" value="RAMADAN20" readonly><button class="btn">Remove</button></div>
+          <div class="ok" style="font-size:13px">✓ RAMADAN20 applied — 20% off</div>
+          <div class="row"><span>Discount</span><span class="ok">− 4 000 DZD</span></div>
+          <div class="row total"><span>Total</span><span>16 000 DZD</span></div>
+          <button class="btn p" style="width:100%;margin-top:10px">Pay 16 000 DZD</button>
+        </div>
+      </div>
+      <div>
+        <p class="hint" style="margin:0 0 6px"><b>On “Leadership Workshop”</b> — same code (not in its list)</p>
+        <div class="co">
+          <b>Register · Leadership Workshop</b>
+          <div class="row" style="margin-top:8px"><span>Price</span><span>15 000 DZD</span></div>
+          <div class="promo"><input type="text" value="RAMADAN20" readonly><button class="btn">Apply</button></div>
+          <div class="err" style="font-size:13px">This code isn't valid for this program.</div>
+          <div class="row total"><span>Total</span><span>15 000 DZD</span></div>
+          <button class="btn p" style="width:100%;margin-top:10px">Pay 15 000 DZD</button>
+        </div>
+      </div>
+    </div>
+    <p class="hint" style="margin-top:12px">The server enforces the same rule at payment time — the message above is a courtesy, not the security.</p>
+  </div>
+
+  <!-- ============ SCREEN E: admin ============ -->
+  <div class="screen" id="s-e">
+    <div class="note"><b>Fixes your reuse problem:</b> Delete frees the code name immediately (old behaviour: a deactivated code still blocked the name forever). Edit also lets you <i>rename</i> a code.</div>
+    <div class="app" style="grid-template-columns:1fr">
+      <div class="main">
+        <div class="head"><div><h2>Promo codes · Admin</h2><p>Platform codes and incubator codes.</p></div><button class="btn p">+ New promo code</button></div>
+        <div class="card" style="overflow-x:auto">
+          <table class="resp" style="min-width:760px">
+            <thead><tr><th>Code</th><th>Owner</th><th>Discount</th><th>Applies to</th><th>Usage</th><th>Expires</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="code">WELCOME50</td><td>Platform</td><td>50%</td><td>All purchases</td><td>12 / 100</td><td>31 Dec 2027</td><td><span class="badge b-ok">Active</span></td>
+                <td style="text-align:end;white-space:nowrap"><button class="btn s" data-open="dlg-edit">Edit</button> <button class="btn s">Deactivate</button> <button class="btn s d" data-open="dlg-del-admin">Delete</button></td></tr>
+              <tr><td class="code">SUMMER25</td><td>Platform</td><td>25%</td><td>Spaces only</td><td>0 / ∞</td><td>—</td><td><span class="badge b-off">Inactive</span></td>
+                <td style="text-align:end;white-space:nowrap"><button class="btn s" data-open="dlg-edit">Edit</button> <button class="btn s">Reactivate</button> <button class="btn s d" data-open="dlg-del-admin">Delete</button></td></tr>
+              <tr><td class="code">RAMADAN20</td><td><span class="chip">Incubator · Startup Hub</span></td><td>20%</td><td><span class="chip prog">2 programs</span></td><td>14 / 50</td><td>30 Apr 2027</td><td><span class="badge b-ok">Active</span></td>
+                <td style="text-align:end;white-space:nowrap"><button class="btn s" data-open="dlg-edit">Edit</button> <button class="btn s">Deactivate</button> <button class="btn s d" data-open="dlg-del-admin">Delete</button></td></tr>
+            </tbody>
+          </table>
+          <div class="mcards">
+            <div class="mcard"><div class="top"><span class="code">WELCOME50</span><span class="badge b-ok">Active</span></div>50% · All purchases · 12 / 100
+              <div class="acts"><button class="btn s" data-open="dlg-edit">Edit</button><button class="btn s d" data-open="dlg-del-admin">Delete</button></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DIALOGS ============ -->
+<div class="overlay" id="dlg-new" data-close>
+  <div class="dialog" role="dialog" aria-label="New promo code">
+    <h3>New promo code</h3><p class="sub">Choose exactly where it can be used. It will never apply anywhere else.</p>
+    <div class="grid2"><div><label>Code</label><input type="text" value="RAMADAN20"><div class="hint">Letters, digits, - and _ · must not be in use</div></div>
+      <div><label>Discount (%)</label><input type="number" value="20" min="1" max="100"></div></div>
+    <div class="grid2"><div><label>Expires <span style="font-weight:400;color:var(--muted-fg)">(optional)</span></label><input type="datetime-local"></div>
+      <div><label>Usage limit <span style="font-weight:400;color:var(--muted-fg)">(optional)</span></label><input type="number" placeholder="50"></div></div>
+    <label>Valid for <span style="font-weight:400;color:var(--muted-fg)">— pick at least one</span></label>
+    <div class="scope">
+      <div class="grp">Programs <button type="button" data-all="prog">Select all</button></div>
+      <label class="opt"><input type="checkbox" data-g="prog" checked> Startup Bootcamp <small>Alger</small></label>
+      <label class="opt"><input type="checkbox" data-g="prog" checked> Pitch Lab <small>Alger</small></label>
+      <label class="opt"><input type="checkbox" data-g="prog"> Leadership Workshop <small>Oran</small></label>
+      <div class="grp">Spaces <button type="button" data-all="space">Select all</button></div>
+      <label class="opt"><input type="checkbox" data-g="space"> Open space · Alger <small>Coworking</small></label>
+      <label class="opt"><input type="checkbox" data-g="space"> Meeting room A <small>Salle</small></label>
+    </div>
+    <div class="hint" id="scope-count">2 selected · new programs/spaces are NOT added automatically</div>
+    <div class="foot"><button class="btn" data-close-btn>Cancel</button><button class="btn p" data-close-btn>Create code</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="dlg-new-prog" data-close>
+  <div class="dialog" role="dialog" aria-label="New promo code for program">
+    <h3>New promo code</h3><p class="sub">For <b>Startup Bootcamp</b></p>
+    <div class="tip">Startup Bootcamp is already ticked. You can add other programs or spaces below.</div>
+    <div class="grid2"><div><label>Code</label><input type="text" placeholder="e.g. EARLY20"></div><div><label>Discount (%)</label><input type="number" placeholder="20"></div></div>
+    <div class="scope"><div class="grp">Programs</div>
+      <label class="opt"><input type="checkbox" checked> Startup Bootcamp <small>this program</small></label>
+      <label class="opt"><input type="checkbox"> Pitch Lab</label>
+      <label class="opt"><input type="checkbox"> Leadership Workshop</label></div>
+    <div class="foot"><button class="btn" data-close-btn>Cancel</button><button class="btn p" data-close-btn>Create code</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="dlg-del-inc" data-close>
+  <div class="dialog" style="max-width:440px" role="alertdialog" aria-label="Delete promo code">
+    <h3>Delete this promo code?</h3>
+    <p class="sub">It stops working immediately and disappears from this list. Past registrations that used it keep their price.</p>
+    <div class="note" style="margin:0">Prefer to pause it? <b>Deactivate</b> keeps it and lets you switch it back on.</div>
+    <div class="foot"><button class="btn" data-close-btn>Cancel</button><button class="btn d solid" data-close-btn>Delete code</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="dlg-del-admin" data-close>
+  <div class="dialog" style="max-width:460px" role="alertdialog" aria-label="Delete promo code">
+    <h3>Delete WELCOME50?</h3>
+    <p class="sub">Used <b>12 times</b>. Deleting removes the code for good and <b>frees the name</b> so you can create it again. Checkouts already in progress keep the price they were quoted.</p>
+    <div class="foot"><button class="btn" data-close-btn>Cancel</button><button class="btn d solid" data-close-btn>Delete permanently</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="dlg-edit" data-close>
+  <div class="dialog" role="dialog" aria-label="Edit promo code">
+    <h3>Edit promo code</h3><p class="sub">Changes apply to future uses only. Already-quoted checkouts are unaffected.</p>
+    <div class="grid2"><div><label>Code</label><input type="text" value="WELCOME50"><div class="hint">Renaming checks the new name is free</div></div><div><label>Discount (%)</label><input type="number" value="50"></div></div>
+    <div class="grid2"><div><label>Applies to</label><select><option>All purchases</option><option>Memberships only</option><option>Spaces only</option><option>Consultations only</option></select></div>
+      <div><label>Usage limit</label><input type="number" value="100"></div></div>
+    <div class="grid2"><div><label>Expires</label><input type="datetime-local"></div><div></div></div>
+    <div class="foot"><button class="btn" data-close-btn>Cancel</button><button class="btn p" data-close-btn>Save changes</button></div>
+  </div>
+</div>
+
+<script>
+  const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+  $$('#switch button').forEach(b=>b.onclick=()=>{
+    $$('#switch button').forEach(x=>x.classList.toggle('on',x===b));
+    $$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+b.dataset.s));
+  });
+  $$('[data-open]').forEach(b=>b.onclick=()=>$('#'+b.dataset.open).classList.add('on'));
+  $$('[data-close-btn]').forEach(b=>b.onclick=()=>b.closest('.overlay').classList.remove('on'));
+  $$('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('on'); }));
+  function count(){ const n=$$('#dlg-new .opt input:checked').length; $('#scope-count').textContent=n+' selected · new programs/spaces are NOT added automatically'; }
+  $$('#dlg-new .opt input').forEach(i=>i.onchange=count);
+  $$('[data-all]').forEach(b=>b.onclick=()=>{ $$('#dlg-new input[data-g="'+b.dataset.all+'"]').forEach(i=>i.checked=true); count(); });
+</script>
+</body>
+</html>

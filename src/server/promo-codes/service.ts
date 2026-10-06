@@ -210,7 +210,19 @@ export interface CreatePromoCodeInput {
   usageLimit:      number | null;
 }
 
-/** Create a new promo code. Throws 'PROMO_CODE_EXISTS' if code already taken. */
+/**
+ * Thrown when a code name is already taken. `inactive` tells the caller the
+ * holder is a deactivated code — the admin can reactivate, rename or delete it,
+ * which is a more useful message than a bare "already exists".
+ */
+export class PromoCodeExistsError extends Error {
+  constructor(public readonly inactive: boolean) {
+    super('PROMO_CODE_EXISTS');
+    this.name = 'PromoCodeExistsError';
+  }
+}
+
+/** Create a new promo code. Throws PromoCodeExistsError if the name is already taken. */
 export async function createPromoCode(input: CreatePromoCodeInput): Promise<PromoCodeRecord> {
   await ensurePromoCodesSeeded();
 
@@ -222,7 +234,7 @@ export async function createPromoCode(input: CreatePromoCodeInput): Promise<Prom
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const exists = (d.promoCodes as any[]).find((c) => c.code === upper);
-    if (exists) throw new Error('PROMO_CODE_EXISTS');
+    if (exists) throw new PromoCodeExistsError(!exists.isActive);
 
     const record = {
       id:              randomUUID(),
@@ -252,13 +264,21 @@ export async function createPromoCode(input: CreatePromoCodeInput): Promise<Prom
 }
 
 export interface UpdatePromoCodeInput {
+  code?:           string;
+  appliesTo?:      CreatePromoCodeInput['appliesTo'];
   isActive?:       boolean;
   usageLimit?:     number | null;
   expiresAt?:      string | null;
   discountPercent?: number;
 }
 
-/** Update a promo code. Returns null if not found. */
+/**
+ * Update a promo code. Returns null if not found. Throws PromoCodeExistsError
+ * when a rename collides with another code.
+ *
+ * Edits only affect FUTURE redemptions: card checkouts freeze the discounted
+ * total at intent time, so a quoted price never moves under a customer.
+ */
 export async function updatePromoCode(
   id: string,
   input: UpdatePromoCodeInput,
@@ -270,6 +290,16 @@ export async function updatePromoCode(
     const promo = (d.promoCodes as any[]).find((c) => c.id === id);
     if (!promo) return null;
 
+    if (input.code !== undefined) {
+      const upper = input.code.toUpperCase().trim();
+      if (upper !== promo.code) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const clash = (d.promoCodes as any[]).find((c) => c.code === upper && c.id !== id);
+        if (clash) throw new PromoCodeExistsError(!clash.isActive);
+        promo.code = upper;
+      }
+    }
+    if (input.appliesTo      !== undefined) promo.appliesTo      = input.appliesTo;
     if (input.isActive       !== undefined) promo.isActive       = input.isActive;
     if (input.usageLimit     !== undefined) { promo.usageLimit    = input.usageLimit; promo.maxUses = input.usageLimit; }
     if (input.expiresAt      !== undefined) { promo.expiresAt     = input.expiresAt;  promo.validUntil = input.expiresAt; }
@@ -277,5 +307,24 @@ export async function updatePromoCode(
     promo.updatedAt = new Date().toISOString();
 
     return promo as PromoCodeRecord;
+  });
+}
+
+/**
+ * Permanently delete a promo code, freeing its name for reuse. Returns the
+ * deleted record, or null if it did not exist.
+ *
+ * Safe because nothing reads a promo record by id after the fact: bookings keep
+ * `promoCodeId` only for settlement, and `consumePromoCodeSync` is a no-op for
+ * an id that no longer exists. A checkout already in flight keeps the discounted
+ * total it was quoted; it simply stops counting toward a (now gone) usage limit.
+ */
+export async function deletePromoCode(id: string): Promise<PromoCodeRecord | null> {
+  return await db.update((d) => {
+    if (!Array.isArray(d.promoCodes)) return null;
+    const idx = d.promoCodes.findIndex((c) => c.id === id);
+    if (idx === -1) return null;
+    const [removed] = d.promoCodes.splice(idx, 1);
+    return removed as PromoCodeRecord;
   });
 }
