@@ -322,6 +322,7 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
         <PromoCodeInput
           key={afterMembership}
           originalAmount={afterMembership}
+          item={{ kind: 'EVENT', id: event.id }}
           onApplied={setPromoResult}
           disabled={submitting}
         />

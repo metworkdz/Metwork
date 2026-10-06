@@ -1002,6 +1002,7 @@ export function SpaceBookingForm({
         <PromoCodeInput
           key={afterMembershipDiscount}
           originalAmount={afterMembershipDiscount}
+          item={{ kind: 'SPACE', id: space.id }}
           onApplied={setPromoResult}
           disabled={submitting}
         />

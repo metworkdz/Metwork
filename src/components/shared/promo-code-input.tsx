@@ -30,9 +30,16 @@ interface PromoCodeInputProps {
   /** Called when a valid code is applied */
   onApplied: (result: PromoResult | null) => void;
   disabled?: boolean;
+  /**
+   * What is being bought. Pass it for any listing (space / program / event): a code
+   * an incubator has limited to certain listings is only valid for those, and without
+   * this the field would accept it here and the checkout would then drop it. Omit for
+   * memberships and consultations.
+   */
+  item?: { kind: 'SPACE' | 'PROGRAM' | 'EVENT'; id: string };
 }
 
-export function PromoCodeInput({ originalAmount, onApplied, disabled }: PromoCodeInputProps) {
+export function PromoCodeInput({ originalAmount, onApplied, disabled, item }: PromoCodeInputProps) {
   const t = useTranslations('common');
   const [code,     setCode]     = useState('');
   const [loading,  setLoading]  = useState(false);
@@ -49,7 +56,11 @@ export function PromoCodeInput({ originalAmount, onApplied, disabled }: PromoCod
       const res = await fetch('/api/promo-codes/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: trimmed, originalAmount }),
+        body: JSON.stringify({
+          code: trimmed,
+          originalAmount,
+          ...(item ? { itemKind: item.kind, itemId: item.id } : {}),
+        }),
       });
       const data = await res.json() as {
         valid: boolean;

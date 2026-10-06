@@ -42,6 +42,7 @@
 
 import { db, type PromoCodeRecord, type PartnerPromoCodeRecord } from '@/server/db/store';
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { promoScopeAllows, resolvePromoItem, type PromoItemKind } from './service';
 
 // ────────────────────────────────────────────────────────────────────────
 // Public result shape (discriminated union)
@@ -91,7 +92,8 @@ export type UnifiedPromoCodeResult =
         | 'LIMIT_REACHED'    // regular promo only
         | 'ALREADY_USED'     // partner promo only
         | 'PARTNER_INACTIVE' // partner-only
-        | 'INVALID_FORMAT';  // empty / wrong type input
+        | 'INVALID_FORMAT'   // empty / wrong type input
+        | 'NOT_APPLICABLE';  // incubator-owned code presented for something outside its scope
       /** Human-readable hint suitable for logs / debugging. Not for end users. */
       detail?: string;
     };
@@ -147,7 +149,11 @@ function safeHashEquals(storedHash: string, candidateHash: string): boolean {
  * unified here. Forcing it through one function would hide the asymmetry
  * and create bugs.
  */
-export async function lookupAnyPromoCode(input: string): Promise<UnifiedPromoCodeResult> {
+export async function lookupAnyPromoCode(
+  input: string,
+  /** What is being bought. Omit for memberships/consultations — an incubator-owned code then never matches. */
+  item?: { kind: PromoItemKind; id: string },
+): Promise<UnifiedPromoCodeResult> {
   if (!input || typeof input !== 'string') {
     return { kind: 'INVALID', reason: 'INVALID_FORMAT', detail: 'empty or non-string input' };
   }
@@ -176,6 +182,9 @@ export async function lookupAnyPromoCode(input: string): Promise<UnifiedPromoCod
     const used  = regular.usedCount ?? regular.useCount ?? 0;
     if (limit !== null && used >= limit) {
       return { kind: 'INVALID', reason: 'LIMIT_REACHED', detail: `regular code at ${used}/${limit}` };
+    }
+    if (!promoScopeAllows(regular, item ? resolvePromoItem(data, item.kind, item.id) : undefined)) {
+      return { kind: 'INVALID', reason: 'NOT_APPLICABLE', detail: `regular code ${code} outside its scope` };
     }
     const discountPercent =
       regular.discountPercent
@@ -234,6 +243,11 @@ export function promoAppliesTo(
 ): boolean {
   if (result.kind === 'INVALID') return false;
   if (result.kind === 'PARTNER') return type === 'MEMBERSHIP';
+  // An incubator-owned code only ever applies to a listing (space / program), never to a
+  // membership or consultation, whatever its `appliesTo` says.
+  if (result.record.scope != null || result.record.ownerIncubatorId != null) {
+    return type === 'SPACE' || type === 'PROGRAM';
+  }
   // REGULAR: 'ALL' matches everything; otherwise check exact match.
   if (result.appliesTo === 'ALL') return true;
   // appliesTo schema only includes MEMBERSHIP/SPACE/CONSULTATION today,

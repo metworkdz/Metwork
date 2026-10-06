@@ -1059,6 +1059,20 @@ export interface PromoCodeRecord {
   /** How many times this code has been successfully used. */
   usedCount: number;
   isActive: boolean;
+  /**
+   * Owning incubator (IncubatorRecord.id). Additive & nullable — absent on every
+   * platform/admin code, which is all of them before incubator-owned codes shipped.
+   * When set, `scope` is also set and is the ONLY place the code may be redeemed.
+   */
+  ownerIncubatorId?: string | null;
+  /**
+   * Where an incubator-owned code works: explicit listing ids, never "all", so a
+   * program created next month is not silently included. Fail-closed — a record
+   * with a `scope` is rejected by every redemption path that does not present a
+   * matching item (memberships and consultations never do). Events are not
+   * scopable yet. Absent on platform codes.
+   */
+  scope?: { programIds: string[]; spaceIds: string[] } | null;
   createdAt: string;
   updatedAt: string;
 }

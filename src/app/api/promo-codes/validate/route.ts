@@ -19,10 +19,19 @@ import { checkRateLimitDistributed } from '@/lib/rate-limit';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const schema = z.object({
-  code:           z.string().min(1).max(50),
-  originalAmount: z.number().int().min(0),
-});
+const schema = z
+  .object({
+    code:           z.string().min(1).max(50),
+    originalAmount: z.number().int().min(0),
+    // What is being bought. Both or neither: a code an incubator has limited to
+    // certain listings is only valid for those, so a listing purchase must say
+    // which one. Memberships and consultations send neither.
+    itemKind:       z.enum(['SPACE', 'PROGRAM', 'EVENT']).optional(),
+    itemId:         z.string().min(1).max(100).optional(),
+  })
+  .refine((v) => (v.itemKind === undefined) === (v.itemId === undefined), {
+    message: 'itemKind and itemId must be sent together',
+  });
 
 function getClientIp(req: NextRequest): string {
   return (
@@ -45,6 +54,8 @@ function errorMessageForReason(reason: string): string {
     case 'ALREADY_USED':      return 'This promo code has already been used';
     case 'PARTNER_INACTIVE':  return 'This promo code is no longer active';
     case 'INVALID_FORMAT':    return 'Invalid promo code';
+    // Deliberately generic: it must not say what the code IS valid for.
+    case 'NOT_APPLICABLE':    return 'This promo code is not valid for this item';
     default:                  return 'Invalid promo code';
   }
 }
@@ -79,7 +90,10 @@ export async function POST(req: NextRequest) {
 
   // Unified lookup: checks the regular promo table first, then partner
   // promo codes. Consumers no longer need to know which system answers.
-  const result = await lookupAnyPromoCode(input.code);
+  const result = await lookupAnyPromoCode(
+    input.code,
+    input.itemKind && input.itemId ? { kind: input.itemKind, id: input.itemId } : undefined,
+  );
 
   if (result.kind === 'INVALID') {
     return json({ valid: false, error: errorMessageForReason(result.reason) });

@@ -75,6 +75,7 @@ import {
   validatePromoCodeSync,
   consumePromoCodeSync,
   ensurePromoCodesSeeded,
+  resolvePromoItem,
 } from '@/server/promo-codes/service';
 import { getActiveProvider } from '@/server/payments/registry';
 import { getSlickPayTransferStatus } from '@/server/payments/slickpay-provider';
@@ -514,7 +515,10 @@ export async function createCardBookingIntent(
     let total = item.total;
     let promoCodeId: string | null = null;
     if (input.promoCode && input.promoCode.trim()) {
-      const promo = validatePromoCodeSync(d.promoCodes ?? [], input.promoCode, item.total, item.promoKind);
+      const promo = validatePromoCodeSync(
+        d.promoCodes ?? [], input.promoCode, item.total, item.promoKind,
+        resolvePromoItem(d, item.promoKind, item.itemId),
+      );
       if (promo.valid) {
         total = promo.finalAmount;
         promoCodeId = promo.promoCodeId;

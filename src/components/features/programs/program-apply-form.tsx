@@ -438,6 +438,7 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
         <PromoCodeInput
           key={method}
           originalAmount={basePrice}
+          item={{ kind: 'PROGRAM', id: program.id }}
           onApplied={setPromoResult}
           disabled={submitting}
         />

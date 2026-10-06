@@ -505,6 +505,7 @@ export function RegistrationForm({
               <PromoCodeInput
                 key={method}
                 originalAmount={total}
+                item={{ kind: entityType, id: entityId }}
                 onApplied={setPromo}
                 disabled={isPending}
               />

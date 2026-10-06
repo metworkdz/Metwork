@@ -67,13 +67,14 @@ export async function POST(req: NextRequest) {
 
   // ── Promo code early validation (before the DB write) ───────────────────
   if (input.promoCode) {
-    const promoResult = await validatePromoCode(input.promoCode);
+    const promoResult = await validatePromoCode(input.promoCode, { kind: 'SPACE', id: input.spaceId });
     if (!promoResult.valid) {
       const msg: Record<string, string> = {
         NOT_FOUND: 'Promo code not found',
         INACTIVE: 'Promo code is no longer active',
         EXPIRED: 'Promo code has expired',
         LIMIT_REACHED: 'Promo code has reached its usage limit',
+        NOT_APPLICABLE: 'This promo code is not valid for this space',
       };
       return jsonError(422, 'INVALID_PROMO_CODE', msg[promoResult.reason] ?? 'Invalid promo code');
     }

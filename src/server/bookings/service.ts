@@ -33,7 +33,7 @@ import { applyClockTime, isClockTime } from '@/lib/booking-when';
 import { countAttendance } from '@/server/attendance';
 import { resolveMemberBenefits } from '@/server/memberships/service';
 import { isNetworkPassEnabled } from '@/config/feature-flags';
-import { validatePromoCodeSync as validatePromoCode, consumePromoCodeSync as consumePromoCode, ensurePromoCodesSeeded } from '@/server/promo-codes/service';
+import { validatePromoCodeSync as validatePromoCode, consumePromoCodeSync as consumePromoCode, ensurePromoCodesSeeded, resolvePromoItem } from '@/server/promo-codes/service';
 import type {
   ApplyToProgramResult,
   CreateSpaceBookingResult,
@@ -463,7 +463,7 @@ export async function createSpaceBooking(
     let total = baseTotal;
     let promoCodeId: string | null = null;
     if (!isCash && args.promoCode && args.promoCode.trim()) {
-      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal, 'SPACE');
+      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal, 'SPACE', resolvePromoItem(d, 'SPACE', args.spaceId));
       if (promo.valid) {
         total       = promo.finalAmount;
         promoCodeId = promo.promoCodeId;
@@ -1037,7 +1037,7 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
     let total = baseTotal;
     let promoCodeId: string | null = null;
     if (args.promoCode && args.promoCode.trim() && baseTotal > 0) {
-      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal, 'PROGRAM');
+      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal, 'PROGRAM', resolvePromoItem(d, 'PROGRAM', args.programId));
       if (promo.valid) {
         total       = promo.finalAmount;
         promoCodeId = promo.promoCodeId;
@@ -1244,7 +1244,7 @@ export async function registerForEvent(
     let total = baseTotal;
     let promoCodeId: string | null = null;
     if (args.promoCode && args.promoCode.trim() && baseTotal > 0) {
-      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal, 'EVENT');
+      const promo = validatePromoCode(d.promoCodes ?? [], args.promoCode, baseTotal, 'EVENT', resolvePromoItem(d, 'EVENT', args.eventId));
       if (promo.valid) {
         total       = promo.finalAmount;
         promoCodeId = promo.promoCodeId;
