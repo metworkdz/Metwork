@@ -16,8 +16,12 @@
  *     cash paid is a pure audit/lifecycle transition.
  *   • Transition: paymentStatus AWAITING_CASH → PAID, stamping cashCollectedAt
  *     and cashCollectedBy. Idempotent — a booking already PAID returns as-is.
+ *   • An unpaid cash reservation (manual, PENDING_PAYMENT) is collected in full
+ *     the same way and becomes CONFIRMED: `cashRemainingAmount` (the whole
+ *     price) is what the finance report reads as collected once PAID.
  */
 import { db, type BookingRecord } from '@/server/db/store';
+import { isUnpaidSeatReservation } from './desk-payment';
 
 export interface MarkCashPaidBooking extends BookingRecord {
   customerName: string;
@@ -48,14 +52,22 @@ export async function markCashPaid(input: {
     // The CASH_DEPOSIT test is what does the work: a plain manual booking
     // leaves `paymentMode` unset and is still refused, so this cannot become a
     // way to mark an arbitrary booking paid.
+    //
+    // Plus one more: a cash reservation still waiting for its money
+    // (manual + PENDING_PAYMENT, nothing paid online). The client pays the
+    // host in full on site, so collecting it confirms the reservation.
+    // Programs and events only — see isUnpaidSeatReservation (a space hold
+    // must pass the availability gate to be confirmed).
+    const unpaidCashReservation = isUnpaidSeatReservation(booking);
     if (
-      (booking.paymentMethod !== 'card' && booking.paymentMethod !== 'manual') ||
-      booking.paymentMode !== 'CASH_DEPOSIT'
+      !unpaidCashReservation &&
+      ((booking.paymentMethod !== 'card' && booking.paymentMethod !== 'manual') ||
+        booking.paymentMode !== 'CASH_DEPOSIT')
     ) {
       return { ok: false, reason: 'NOT_CASH_DEPOSIT' };
     }
     // A reversed/cancelled booking has no balance to collect.
-    if (booking.status !== 'CONFIRMED') return { ok: false, reason: 'NOT_CONFIRMED' };
+    if (!unpaidCashReservation && booking.status !== 'CONFIRMED') return { ok: false, reason: 'NOT_CONFIRMED' };
 
     const withCustomer = (): MarkCashPaidBooking => {
       const user = booking.userId ? d.users.find((u) => u.id === booking.userId) : null;
@@ -69,9 +81,12 @@ export async function markCashPaid(input: {
 
     // Idempotent: already collected → return unchanged.
     if (booking.paymentStatus === 'PAID') return { ok: true, booking: withCustomer() };
-    if (booking.paymentStatus !== 'AWAITING_CASH') return { ok: false, reason: 'NOT_AWAITING_CASH' };
+    if (!unpaidCashReservation && booking.paymentStatus !== 'AWAITING_CASH') {
+      return { ok: false, reason: 'NOT_AWAITING_CASH' };
+    }
 
     const now = new Date().toISOString();
+    if (unpaidCashReservation) booking.status = 'CONFIRMED';
     booking.paymentStatus = 'PAID';
     booking.cashCollectedAt = now;
     booking.cashCollectedBy = input.collectedByActorId;

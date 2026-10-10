@@ -5590,7 +5590,10 @@
     "editPaymentLocked": "مدفوع: {paid} من {total}. لا يمكن تعديل هذا المبلغ هنا (دفع عبر الإنترنت، أو الحجز غير مؤكد بعد).",
     "editPaidExceeds": "لا يمكن أن يتجاوز المبلغ المدفوع السعر.",
     "editRemaining": "المتبقي للدفع: {amount}",
-    "paidOf": "مدفوع {paid} / {total}"
+    "paidOf": "مدفوع {paid} / {total}",
+    "markPaid": "تحديد كمدفوع",
+    "markPaidConfirm": "تسجيل أن هذا المشارك دفع المبلغ كاملاً ({total})؟ سيتم تأكيد حجزه.",
+    "markPaidFailed": "تعذر التحديد كمدفوع."
   },
   "registrationDashboard": {
     "tabRegistrations": "التسجيلات",

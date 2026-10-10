@@ -56,6 +56,16 @@ export async function PATCH(
       }
     }
 
+    // A program/event participant is one seat on two rows — this booking and
+    // the registration written with it. Both go together, as on the host's
+    // cancel path, or the seat stays held by a registration nobody attends.
+    for (const reg of store.registrations ?? []) {
+      if (reg.bookingId === booking.id && reg.status !== 'CANCELLED') {
+        reg.status = 'CANCELLED';
+        reg.updatedAt = now;
+      }
+    }
+
     // Refund when the booking was still PENDING (incubator hasn't been credited).
     if (wasStatus === 'PENDING' && booking.totalAmount > 0) {
       const wallet = store.wallets.find((w) => w.userId === booking.userId);

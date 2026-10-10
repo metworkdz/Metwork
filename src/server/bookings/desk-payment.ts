@@ -7,7 +7,9 @@
  * the booking row, the balance due, the « Espèces encaissées » badge and the
  * program's finance report can never disagree.
  *
- * Only a `manual` booking — money handed over off-platform — can be corrected.
+ * Only a `manual` booking — money handed over off-platform — can be corrected,
+ * including a public cash reservation still awaiting its money, which the
+ * correction confirms.
  * A card or wallet payment moved real money through the platform, with a
  * commission and a payout; its amounts are frozen, and a refund goes through
  * the booking cancel flow.
@@ -31,20 +33,38 @@ export const MAX_DESK_AMOUNT = 100_000_000;
 export interface DeskPayment {
   total: number;
   paid: number;
-  /** False on an online payment, and on a booking that is not confirmed. */
+  /** False on an online payment, and on a cancelled booking. */
   editable: boolean;
 }
 
 /**
- * Confirmed (or completed) only: a cancelled booking's money is settled, and a
- * public cash reservation still PENDING_PAYMENT is confirmed first — editing
- * its amounts would mark money received on a booking nobody has accepted.
+ * Confirmed, completed, or a cash reservation still awaiting its money
+ * (PENDING_PAYMENT). A cancelled booking's money is settled and stays frozen.
+ *
+ * A program / event cash reservation waits in PENDING_PAYMENT, and
+ * nothing else on the dashboard can move it on — so the host recording what
+ * was handed over IS the acceptance: `applyDeskPayment` confirms it.
  */
 function isEditable(b: BookingRecord): boolean {
   return (
     b.paymentMethod === 'manual' &&
     (b.onlinePaidAmount ?? 0) === 0 &&
-    (b.status === 'CONFIRMED' || b.status === 'COMPLETED')
+    (b.status === 'CONFIRMED' || b.status === 'COMPLETED' || isUnpaidSeatReservation(b))
+  );
+}
+
+/**
+ * A program / event cash reservation still awaiting its money. Its seat is
+ * already held by the registration written with it, so accepting it can never
+ * overbook. A SPACE cash hold is NOT one of these: it holds no slot, and
+ * confirming it must pass the availability gate, which this rule does not run.
+ */
+export function isUnpaidSeatReservation(b: BookingRecord): boolean {
+  return (
+    b.paymentMethod === 'manual' &&
+    b.status === 'PENDING_PAYMENT' &&
+    (b.onlinePaidAmount ?? 0) === 0 &&
+    (b.itemKind === 'PROGRAM' || b.itemKind === 'EVENT')
   );
 }
 
@@ -115,6 +135,11 @@ export function applyDeskPayment(
       b.cashCollectedBy = null;
     }
   }
+
+  // Recording money on an unpaid cash reservation accepts it (see isEditable).
+  // Its seat is already held by the CONFIRMED registration written with it,
+  // and attendance dedupes the two, so this moves no seat count.
+  if (isUnpaidSeatReservation(b)) b.status = 'CONFIRMED';
 
   b.paymentEdits = [
     ...(b.paymentEdits ?? []),

@@ -17,6 +17,7 @@ import {
 } from '@/server/registrations/service';
 import { deskPaymentOf, MAX_DESK_AMOUNT } from '@/server/bookings/desk-payment';
 import { db } from '@/server/db/store';
+import { dispatchReceiptIfDue } from '@/server/bookings/card-payment';
 
 /**
  * Name, email and phone — and, for a desk participant, the price and the
@@ -67,6 +68,12 @@ export async function handleEditRegistration(req: NextRequest, owner: OwnerScope
   if (!result.ok) {
     const [status, message] = REFUSALS[result.reason];
     return jsonError(status, result.reason, message);
+  }
+
+  // Paid in full at the desk → the receipt, exactly once (stamped), as when
+  // « Espèces encaissées » is pressed in Réservations. Never throws.
+  if (result.registration.bookingId && (input.totalAmount !== undefined || input.paidAmount !== undefined)) {
+    await dispatchReceiptIfDue(result.registration.bookingId);
   }
 
   // The row goes back with its booking's money, as the list serves it, so the

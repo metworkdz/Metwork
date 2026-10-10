@@ -5590,7 +5590,10 @@
     "editPaymentLocked": "Paid: {paid} of {total}. This amount cannot be changed here (paid online, or the booking is not confirmed yet).",
     "editPaidExceeds": "The amount paid cannot exceed the price.",
     "editRemaining": "Left to pay: {amount}",
-    "paidOf": "Paid {paid} / {total}"
+    "paidOf": "Paid {paid} / {total}",
+    "markPaid": "Mark as paid",
+    "markPaidConfirm": "Record that this participant paid the full {total}? Their reservation will be confirmed.",
+    "markPaidFailed": "Could not mark as paid."
   },
   "registrationDashboard": {
     "tabRegistrations": "Registrations",

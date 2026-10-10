@@ -259,12 +259,115 @@ describe('from Réservations', () => {
     expect((await res.json()).error.code).toBe('BAD_RANGE');
   });
 
-  it('an unconfirmed cash reservation: amounts are refused, notes still save', async () => {
+  it('an unconfirmed cash reservation: notes alone leave it awaiting payment', async () => {
     const reg = await addAtDesk('a@x.dz', 0);
     await db.update((d) => { d.bookings[0]!.status = 'PENDING_PAYMENT'; });
-    expect((await (await editBooking(reg.bookingId!, { paidAmount: 6000 })).json()).error.code)
-      .toBe('PAYMENT_NOT_EDITABLE');
     expect((await editBooking(reg.bookingId!, { paidAmount: 0, notes: 'appelé' })).status).toBe(200);
-    expect((await bookingOf(reg.bookingId!)).notes).toBe('appelé');
+    const b = await bookingOf(reg.bookingId!);
+    expect(b.notes).toBe('appelé');
+    expect(b.status).toBe('PENDING_PAYMENT');
+  });
+
+  it('an unconfirmed cash reservation: recording the money confirms it', async () => {
+    const reg = await addAtDesk('a@x.dz', 0);
+    await db.update((d) => { d.bookings[0]!.status = 'PENDING_PAYMENT'; });
+    const res = await editBooking(reg.bookingId!, { paidAmount: 6000 });
+    expect(res.status).toBe(200);
+    const b = await bookingOf(reg.bookingId!);
+    expect(b.status).toBe('CONFIRMED');
+    expect(deskPaymentOf(b)).toEqual({ total: 6000, paid: 6000, editable: true });
+    expect(bookingMoney(b).cash).toBe(6000);
+  });
+});
+
+describe('an unpaid cash reservation from the public page', () => {
+  async function reserveForCash(email: string) {
+    const { createRegistration } = await import('@/server/registrations/service');
+    const { registration } = await createRegistration({
+      entityType: 'PROGRAM', entityId: PROG, userId: null, fullName: email, email, phone: '0555000000',
+      answers: [],
+      cashReservation: {
+        listing: { id: PROG, title: 'Formation', vendorName: 'Hub', city: 'Oran', startsAt: NOW, endsAt: NOW },
+        amountDue: 6000,
+        clientReference: `cash-${PROG}-${email}`,
+      },
+    });
+    return registration;
+  }
+
+  it('is editable, and marking it paid in full confirms it', async () => {
+    const reg = await reserveForCash('p@x.dz');
+    const before = await bookingOf(reg.bookingId!);
+    expect(before.status).toBe('PENDING_PAYMENT');
+    expect(deskPaymentOf(before)).toEqual({ total: 6000, paid: 0, editable: true });
+
+    const res = await editRegistration({ id: reg.id, paidAmount: 6000 });
+    expect(res.status).toBe(200);
+    expect((await res.json()).registration.payment).toEqual({ total: 6000, paid: 6000, editable: true });
+    const after = await bookingOf(reg.bookingId!);
+    expect(after.status).toBe('CONFIRMED');
+    expect(after.paymentStatus).toBe('PAID');
+  });
+
+  it('a partial payment confirms it with the balance still due', async () => {
+    const reg = await reserveForCash('q@x.dz');
+    const res = await editRegistration({ id: reg.id, totalAmount: 5000, paidAmount: 2000 });
+    expect(res.status).toBe(200);
+    const b = await bookingOf(reg.bookingId!);
+    expect(b.status).toBe('CONFIRMED');
+    expect(b.paymentStatus).toBe('AWAITING_CASH');
+    expect(deskPaymentOf(b)).toEqual({ total: 5000, paid: 2000, editable: true });
+  });
+
+  it('« Espèces encaissées » collects it in full and confirms it', async () => {
+    const reg = await reserveForCash('r@x.dz');
+    const { markCashPaid } = await import('@/server/bookings/mark-cash-paid');
+    const r = await markCashPaid({ bookingId: reg.bookingId!, isOwned: () => true, collectedByActorId: 'mgr' });
+    expect(r.ok).toBe(true);
+    const b = await bookingOf(reg.bookingId!);
+    expect(b.status).toBe('CONFIRMED');
+    expect(b.paymentStatus).toBe('PAID');
+    expect(bookingMoney(b).cash).toBe(6000);
+    // Replay moves nothing.
+    expect((await markCashPaid({ bookingId: reg.bookingId!, isOwned: () => true, collectedByActorId: 'mgr' })).ok).toBe(true);
+  });
+
+  it('cancelling the unpaid booking releases the registration too', async () => {
+    const reg = await reserveForCash('s@x.dz');
+    const { cancelUnpaidBooking } = await import('@/server/bookings/incubator-cancel');
+    const r = await cancelUnpaidBooking({ bookingId: reg.bookingId!, managerId: 'mgr' });
+    expect(r.ok).toBe(true);
+    const row = (await db.read()).registrations.find((x) => x.id === reg.id)!;
+    expect(row.status).toBe('CANCELLED');
+  });
+
+  it('cancelling the registration closes the unpaid booking too', async () => {
+    const reg = await reserveForCash('t@x.dz');
+    const { cancelRegistration } = await import('@/server/registrations/service');
+    expect((await cancelRegistration(reg.id, owner)).ok).toBe(true);
+    expect((await bookingOf(reg.bookingId!)).status).toBe('CANCELLED');
+  });
+
+  it('a SPACE cash hold is not confirmed this way — it must pass the availability gate', async () => {
+    await db.update((d) => {
+      d.bookings.push({
+        id: 'bk-space-hold', itemKind: 'SPACE', itemId: 'sp-1', status: 'PENDING_PAYMENT', paymentMethod: 'manual',
+        totalAmount: 1000, userId: null, clientName: 'S', clientEmail: null, unit: 'HOUR',
+        startsAt: NOW, endsAt: NOW, createdAt: NOW, updatedAt: NOW,
+      } as BookingRecord);
+    });
+    const b = await bookingOf('bk-space-hold');
+    expect(deskPaymentOf(b).editable).toBe(false);
+    const { markCashPaid } = await import('@/server/bookings/mark-cash-paid');
+    const r = await markCashPaid({ bookingId: 'bk-space-hold', isOwned: () => true, collectedByActorId: 'mgr' });
+    expect(r.ok).toBe(false);
+    expect((await bookingOf('bk-space-hold')).status).toBe('PENDING_PAYMENT');
+  });
+
+  it('a cancelled one stays frozen', async () => {
+    const reg = await reserveForCash('u@x.dz');
+    await db.update((d) => { d.bookings.find((b) => b.id === reg.bookingId)!.status = 'CANCELLED'; });
+    const res = await editRegistration({ id: reg.id, paidAmount: 6000 });
+    expect(res.status).toBe(409);
   });
 });

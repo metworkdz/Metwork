@@ -651,7 +651,10 @@ export async function cancelRegistration(
     }
 
     const now = new Date().toISOString();
-    if (bookingHoldsTheSeat) {
+    // An unpaid cash reservation is the money half of this same place: left
+    // open it would keep showing the host a debt for a seat nobody holds.
+    const unpaidCash = booking?.status === 'PENDING_PAYMENT' && booking.paymentMethod === 'manual';
+    if (booking && (bookingHoldsTheSeat || unpaidCash)) {
       booking.status = 'CANCELLED';
       booking.declineReason = booking.declineReason ?? 'REGISTRATION_CANCELLED';
       booking.updatedAt = now;

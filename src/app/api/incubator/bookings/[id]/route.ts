@@ -35,6 +35,7 @@ import {
   softDeleteBooking, restoreBooking, deleteNotifiesClient,
 } from '@/server/bookings/soft-delete';
 import { bookingIsManual } from '@/server/bookings/status';
+import { dispatchReceiptIfDue } from '@/server/bookings/card-payment';
 
 type StoreData = Parameters<Parameters<typeof db.update>[0]>[0];
 
@@ -352,6 +353,32 @@ export async function PATCH(
             completedAt: now,
           };
           d.transactions.push(clawbackTx);
+
+          // A wallet payment settled through the shared payout engine also
+          // paid a commission; the incubator only ever received the net, so
+          // the commission comes back with the reversal (as on the card rail).
+          // Legacy escrow bookings carry no commissionAmount and move nothing.
+          const commission = booking.commissionAmount ?? 0;
+          if (commission > 0) {
+            incubatorWallet.balance += commission;
+            incubatorWallet.updatedAt = now;
+            d.transactions.push({
+              id: randomUUID(),
+              walletId: incubatorWallet.id,
+              userId: incubator.managerId!,
+              type: 'ADJUSTMENT',
+              amount: commission,
+              balanceAfter: incubatorWallet.balance,
+              status: 'COMPLETED',
+              description: `Platform commission reversed — ${booking.itemName}`,
+              reference: `commission-reversal-${booking.id}`,
+              provider: 'internal',
+              providerTxnId: null,
+              metadata: { bookingId: booking.id },
+              createdAt: now,
+              completedAt: now,
+            });
+          }
         }
       }
     }
@@ -692,6 +719,10 @@ export async function PUT(
       'fr',
     );
   }
+
+  // Paid in full at the desk → the receipt, exactly once (stamped), as when
+  // « Espèces encaissées » is pressed. Nothing goes out while money is owed.
+  await dispatchReceiptIfDue(result.booking.id);
 
   return json({ booking: result.booking });
 }

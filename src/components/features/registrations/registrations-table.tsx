@@ -7,7 +7,7 @@
  *  - Search by name / email / phone
  *  - Status filter tabs (All / Confirmed / Waitlisted / Cancelled)
  *  - Paginated results
- *  - Cancel, edit and "resend the confirmation" per row
+ *  - Cancel, edit, "mark as paid" and "resend the confirmation" per row
  *  - Add a participant recorded at the desk
  *  - CSV export button
  *  - Custom field answer expansion
@@ -18,7 +18,7 @@ import { formatCurrency } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 import {
   Search, Download, Loader2, ChevronLeft, ChevronRight,
-  CheckCircle2, Clock, XCircle, ChevronDown, ChevronUp, Pencil, Send,
+  CheckCircle2, Clock, XCircle, ChevronDown, ChevronUp, Pencil, Send, Banknote,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +53,7 @@ export function RegistrationsTable({
   endpoint = '/api/incubator/registrations',
 }: RegistrationsTableProps) {
   const t = useTranslations('registrationsTable');
+  const lang = useLocale() as Locale;
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [formFields, setFormFields] = useState<RegistrationFormField[]>([]);
   const [total, setTotal] = useState(0);
@@ -61,6 +62,7 @@ export function RegistrationsTable({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [editing, setEditing] = useState<Registration | null>(null);
   const [resending, setResending] = useState<string | null>(null);
+  const [markingPaid, setMarkingPaid] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   /** Bumped on every successful load, so the answer summary follows changes. */
   const [dataVersion, setDataVersion] = useState(0);
@@ -173,6 +175,36 @@ export function RegistrationsTable({
       alert(t('resendFailed'));
     } finally {
       setResending(null);
+    }
+  }
+
+  /**
+   * Record that a cash participant handed over the whole price. The same edit
+   * route as the dialog, so the server applies the one desk-payment rule —
+   * and an unpaid cash reservation becomes confirmed.
+   */
+  async function handleMarkPaid(reg: Registration) {
+    const total = reg.payment?.total ?? 0;
+    if (!confirm(t('markPaidConfirm', { total: formatCurrency(total, lang) }))) return;
+    setMarkingPaid(reg.id);
+    try {
+      const res = await fetch(`${endpoint}/edit`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: reg.id, paidAmount: total }),
+      });
+      const body = await res.json().catch(() => null) as
+        { registration?: Registration; error?: { message?: string } } | null;
+      if (res.ok && body?.registration) {
+        handleSaved(body.registration);
+        return;
+      }
+      alert(body?.error?.message ?? t('markPaidFailed'));
+    } catch {
+      alert(t('markPaidFailed'));
+    } finally {
+      setMarkingPaid(null);
     }
   }
 
@@ -317,6 +349,8 @@ export function RegistrationsTable({
                   onEdit={() => setEditing(reg)}
                   onResend={() => void handleResend(reg.id)}
                   resending={resending === reg.id}
+                  onMarkPaid={() => void handleMarkPaid(reg)}
+                  markingPaid={markingPaid === reg.id}
                   onDelete={() => handleDelete(reg.id)}
                 />
               ))}
@@ -335,6 +369,8 @@ export function RegistrationsTable({
               onEdit={() => setEditing(reg)}
               onResend={() => void handleResend(reg.id)}
               resending={resending === reg.id}
+              onMarkPaid={() => void handleMarkPaid(reg)}
+              markingPaid={markingPaid === reg.id}
               onDelete={() => handleDelete(reg.id)}
             />
           ))}
@@ -391,6 +427,8 @@ function RegistrationRow({
   onEdit,
   onResend,
   resending,
+  onMarkPaid,
+  markingPaid,
 }: {
   registration: Registration;
   formFields: RegistrationFormField[];
@@ -399,6 +437,8 @@ function RegistrationRow({
   onEdit: () => void;
   onResend: () => void;
   resending: boolean;
+  onMarkPaid: () => void;
+  markingPaid: boolean;
 }) {
   const t = useTranslations('registrationsTable');
   const [expanded, setExpanded] = useState(false);
@@ -435,6 +475,7 @@ function RegistrationRow({
           <div className="flex items-center justify-end gap-1">
             {reg.status !== 'CANCELLED' && (
               <>
+                <MarkPaidButton reg={reg} onClick={onMarkPaid} loading={markingPaid} />
                 <Button
                   variant="ghost"
                   size="icon"
@@ -514,6 +555,8 @@ function RegistrationCard({
   onEdit,
   onResend,
   resending,
+  onMarkPaid,
+  markingPaid,
 }: {
   registration: Registration;
   formFields: RegistrationFormField[];
@@ -522,6 +565,8 @@ function RegistrationCard({
   onEdit: () => void;
   onResend: () => void;
   resending: boolean;
+  onMarkPaid: () => void;
+  markingPaid: boolean;
 }) {
   const t = useTranslations('registrationsTable');
   const [expanded, setExpanded] = useState(false);
@@ -558,6 +603,7 @@ function RegistrationCard({
           )}
             {reg.status !== 'CANCELLED' && (
               <>
+                <MarkPaidButton reg={reg} onClick={onMarkPaid} loading={markingPaid} />
                 <Button
                   variant="ghost"
                   size="icon"
@@ -641,6 +687,29 @@ function StatusBadge({ status }: { status: RegistrationStatus }) {
     <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
       <XCircle className="size-3" /> Cancelled
     </span>
+  );
+}
+
+/**
+ * « Marquer comme payé » — only on a cash participant who still owes money.
+ * An online payment is never editable (`payment.editable` is false), so this
+ * can never be offered on a card or wallet seat.
+ */
+function MarkPaidButton({ reg, onClick, loading }: { reg: Registration; onClick: () => void; loading: boolean }) {
+  const t = useTranslations('registrationsTable');
+  const p = reg.payment;
+  if (!p?.editable || p.total === 0 || p.paid >= p.total) return null;
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-8 gap-1 text-xs"
+      title={t('markPaid')}
+      loading={loading}
+      onClick={onClick}
+    >
+      <Banknote className="size-3.5" /> {t('markPaid')}
+    </Button>
   );
 }
 

@@ -45,8 +45,6 @@ import {
   type BookingUnit,
   type IncubatorRecord,
   type MentorRecord,
-  type TransactionRecord,
-  type WalletRecord,
 } from '@/server/db/store';
 import { countAttendance } from '@/server/attendance';
 import { computeDeposit } from './pricing';
@@ -78,6 +76,7 @@ import {
   resolvePromoItem,
 } from '@/server/promo-codes/service';
 import { getActiveProvider } from '@/server/payments/registry';
+import { creditIncubatorPayoutDraft, findOwningIncubator } from './incubator-payout';
 import { getSlickPayTransferStatus } from '@/server/payments/slickpay-provider';
 import { ProviderNotConfiguredError } from '@/server/payments/errors';
 import { sendBookingReceiptEmail } from '@/server/notifications/mock';
@@ -177,42 +176,6 @@ export interface CardPayView {
 /* ──────────────────────────── Internal helpers ──────────────────────────── */
 
 type StoreDraft = Parameters<Parameters<typeof db.update>[0]>[0];
-
-function ensureWallet(d: StoreDraft, userId: string): WalletRecord {
-  let wallet = d.wallets.find((w) => w.userId === userId);
-  if (!wallet) {
-    const now = new Date().toISOString();
-    wallet = {
-      id: randomUUID(),
-      userId,
-      balance: 0,
-      currency: 'DZD',
-      status: 'ACTIVE',
-      createdAt: now,
-      updatedAt: now,
-    };
-    d.wallets.push(wallet);
-  }
-  return wallet;
-}
-
-/** Resolve the incubator record that owns a SPACE / PROGRAM / EVENT. */
-function findOwningIncubator(
-  d: StoreDraft,
-  kind: BookingItemKind,
-  itemId: string,
-): IncubatorRecord | null {
-  let incubatorId: string | undefined;
-  if (kind === 'SPACE') incubatorId = d.spaces?.find((s) => s.id === itemId)?.incubatorId;
-  // A consultant-owned program has no incubatorId (null) and therefore no
-  // incubator wallet to settle into — it resolves to no owning incubator here.
-  // Consultant earnings use the PARALLEL mentorId-keyed ledger, which this
-  // incubator-wallet settlement path deliberately does not touch.
-  else if (kind === 'PROGRAM') incubatorId = d.programs?.find((p) => p.id === itemId)?.incubatorId ?? undefined;
-  else incubatorId = d.events?.find((e) => e.id === itemId)?.incubatorId;
-  if (!incubatorId) return null;
-  return d.incubators.find((i) => i.id === incubatorId) ?? null;
-}
 
 /** Resolve the consultant record that owns a mentor-owned PROGRAM (null for any other kind/owner). */
 function findOwningMentor(d: StoreDraft, kind: BookingItemKind, itemId: string): MentorRecord | null {
@@ -744,79 +707,16 @@ async function applyCardSettlement(bookingId: string, providerRef: string | null
     const mentor = incubator ? null : findOwningMentor(d, booking.itemKind, booking.itemId);
 
     if (incubator?.managerId) {
-      // Central commission engine. Receiver commission is taken on the ONLINE
-      // portion P (deposit D or full T) — never the cash remainder — so the
-      // net credited (P − commission) is always ≥ 0. FLAT/Pro incubators are
-      // exempt.
-      const providerPlan: ProviderPlan = getEffectiveSubscriptionCode(incubator);
-      const quote = quoteCommission({
-        transactionType: 'PAYMENT',
-        providerPlan,
-        baseAmount: online,
-        config: d.meta?.platformConfig,
+      // Central commission engine, shared with the wallet rail. Receiver
+      // commission is taken on the ONLINE portion P (deposit D or full T) —
+      // never the cash remainder — so the net credited is always ≥ 0.
+      creditIncubatorPayoutDraft(d, {
+        booking,
+        incubator: { ...incubator, managerId: incubator.managerId },
+        amount: online,
+        providerRef,
+        now,
       });
-      const commission = quote.receiverCommission;
-      booking.commissionRate = quote.receiverRate;
-      booking.commissionAmount = commission;
-      const wallet = ensureWallet(d, incubator.managerId);
-      // Credit the online card money received (deposit or full).
-      if (online > 0 && wallet.status !== 'FROZEN') {
-        wallet.balance += online;
-        wallet.updatedAt = now;
-        const payoutTx: TransactionRecord = {
-          id: randomUUID(),
-          walletId: wallet.id,
-          userId: incubator.managerId,
-          type: 'PAYOUT',
-          amount: online,
-          balanceAfter: wallet.balance,
-          status: 'COMPLETED',
-          description: `Booking online payment — ${booking.itemName}`,
-          reference: `payout-${booking.id}`,
-          provider: 'internal',
-          providerTxnId: providerRef,
-          metadata: {
-            bookingId: booking.id,
-            customerId: booking.userId,
-            paymentMode: booking.paymentMode,
-            total: booking.totalAmount,
-          },
-          createdAt: now,
-          completedAt: now,
-        };
-        d.transactions.push(payoutTx);
-      }
-      // Debit the receiver commission on the ONLINE portion P. Net stays ≥ 0
-      // (commission ≤ P), so no negative-balance debt under the engine model.
-      if (commission > 0 && wallet.status !== 'FROZEN') {
-        wallet.balance -= commission;
-        wallet.updatedAt = now;
-        const commissionTx: TransactionRecord = {
-          id: randomUUID(),
-          walletId: wallet.id,
-          userId: incubator.managerId,
-          type: 'COMMISSION',
-          amount: -commission,
-          balanceAfter: wallet.balance,
-          status: 'COMPLETED',
-          description: `Platform commission — ${booking.itemName}`,
-          reference: `commission-${booking.id}`,
-          provider: 'internal',
-          providerTxnId: null,
-          metadata: {
-            bookingId: booking.id,
-            total: booking.totalAmount,
-            base: online,
-            rate: quote.receiverRate,
-            payerFee: booking.payerFeeAmount ?? 0,
-            payerRate: booking.payerFeeRate ?? 0,
-            platformTake: quote.platformTake,
-          },
-          createdAt: now,
-          completedAt: now,
-        };
-        d.transactions.push(commissionTx);
-      }
     } else if (mentor) {
       // Mentor-owned program: credit the parallel mentorId-keyed ledger instead
       // of a WalletRecord, through the SAME canonical earning function

@@ -40,6 +40,8 @@ import type {
   RegisterForEventResult,
 } from './types';
 import { programDates } from '@/lib/program-dates';
+import { creditIncubatorPayoutDraft, findOwningIncubator } from './incubator-payout';
+import { insertRegistrationSync } from '@/server/registrations/service';
 
 /** Returns the YYYY-MM-DD portion of an ISO datetime string or Date. */
 function toDateStr(iso: string): string {
@@ -914,6 +916,78 @@ export async function listBookingsForUser(userId: string) {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
+type StoreDraft = Parameters<Parameters<typeof db.update>[0]>[0];
+
+/**
+ * Settle a program / event application paid from the Metwork wallet, inside
+ * the same mutation that debited the wallet and wrote the booking.
+ *
+ * The wallet debit IS the payment, so the booking is CONFIRMED and PAID right
+ * away and the incubator is credited through the same commission engine as a
+ * card payment (`incubator-payout.ts`). It used to be left PENDING in escrow
+ * until the incubator pressed Confirm — a button the bookings page no longer
+ * shows — so the client's money never reached the host, the host saw an unpaid
+ * booking, and no registration row existed for the participants list.
+ *
+ * The registration row is written here too, linked by bookingId, so the paid
+ * participant appears in the list and receives the confirmation. Attendance
+ * dedupes the booking and the registration by userId: still ONE seat.
+ */
+export function settleWalletApplicationDraft(
+  d: StoreDraft,
+  booking: BookingRecord & { itemKind: 'PROGRAM' | 'EVENT' },
+  userId: string,
+  now: string,
+): void {
+  booking.status = 'CONFIRMED';
+  booking.settledAt = now;
+  if (booking.totalAmount > 0) {
+    booking.paymentStatus = 'PAID';
+    const incubator = findOwningIncubator(d, booking.itemKind, booking.itemId);
+    if (incubator?.managerId) {
+      creditIncubatorPayoutDraft(d, {
+        booking,
+        incubator: { ...incubator, managerId: incubator.managerId },
+        amount: booking.totalAmount,
+        providerRef: null,
+        now,
+      });
+    }
+  }
+
+  registerApplicantDraft(d, booking, userId);
+}
+
+/**
+ * Write the participant row for an in-app application, linked to its booking.
+ *
+ * The participants list reads registrations, not bookings, so an applicant
+ * without one was counted in the seats (by their booking) yet missing from the
+ * list — « 1 inscrit », and nobody there. The public form already writes both
+ * halves; this gives the in-app wallet and cash paths the same shape. A row
+ * carrying a bookingId is always CONFIRMED (the seat was capacity-checked just
+ * before), and attendance dedupes it with the booking by userId.
+ */
+function registerApplicantDraft(
+  d: StoreDraft,
+  booking: BookingRecord & { itemKind: 'PROGRAM' | 'EVENT' },
+  userId: string,
+): void {
+  const user = d.users.find((u) => u.id === userId);
+  if (!user) return;
+  insertRegistrationSync(d, {
+    entityType: booking.itemKind,
+    entityId: booking.itemId,
+    userId,
+    fullName: user.fullName,
+    email: user.email,
+    phone: user.phone ?? '',
+    answers: [],
+    locale: user.locale ?? null,
+    bookingId: booking.id,
+  });
+}
+
 /* ─────────────────────────── Programs ─────────────────────────── */
 
 export interface ApplyToProgramArgs {
@@ -1029,6 +1103,7 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
         updatedAt: now,
       };
       d.bookings.push(booking);
+      registerApplicantDraft(d, booking as BookingRecord & { itemKind: 'PROGRAM' }, args.userId);
       return { ok: true, replayed: false, booking, transaction: null, wallet };
     }
 
@@ -1103,7 +1178,7 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
       ...(isClockTime(program.startTime) ? { startsAtHasClockTime: true } : {}),
       endsAt: dates.endDate,
       totalAmount: total,
-      status: 'PENDING',
+      status: 'CONFIRMED',
       clientReference: args.clientReference,
       transactionId: tx?.id ?? null,
       paymentMethod: 'wallet',
@@ -1111,6 +1186,7 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
       updatedAt: now,
     };
     d.bookings.push(booking);
+    settleWalletApplicationDraft(d, booking as BookingRecord & { itemKind: 'PROGRAM' }, args.userId, now);
 
     return { ok: true, replayed: false, booking, transaction: tx, wallet };
   });
@@ -1236,6 +1312,7 @@ export async function registerForEvent(
         updatedAt: now,
       };
       d.bookings.push(booking);
+      registerApplicantDraft(d, booking as BookingRecord & { itemKind: 'EVENT' }, args.userId);
       return { ok: true, replayed: false, booking, transaction: null, wallet };
     }
 
@@ -1308,7 +1385,7 @@ export async function registerForEvent(
       startsAt: event.eventDate,
       endsAt: event.eventDate,
       totalAmount: total,
-      status: 'PENDING',
+      status: 'CONFIRMED',
       clientReference: args.clientReference,
       transactionId: tx?.id ?? null,
       paymentMethod: 'wallet',
@@ -1316,6 +1393,7 @@ export async function registerForEvent(
       updatedAt: now,
     };
     d.bookings.push(booking);
+    settleWalletApplicationDraft(d, booking as BookingRecord & { itemKind: 'EVENT' }, args.userId, now);
 
     return { ok: true, replayed: false, booking, transaction: tx, wallet };
   });

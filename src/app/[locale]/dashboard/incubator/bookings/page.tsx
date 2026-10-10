@@ -31,7 +31,7 @@ import {
   bookingCountsAsRevenue, bookingIsDeleted, bookingCanBeDeleted, bookingIsManual, manualBookingCanBeCancelled,
 } from '@/server/bookings/status';
 import { db } from '@/server/db/store';
-import { deskPaymentOf } from '@/server/bookings/desk-payment';
+import { deskPaymentOf, isUnpaidSeatReservation } from '@/server/bookings/desk-payment';
 import type { BookingStatus } from '@/types/domain';
 import type { Locale } from '@/i18n/config';
 
@@ -139,6 +139,9 @@ export default async function IncubatorBookingsPage({ params, searchParams }: Pa
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .map((b) => {
         const customer = b.userId ? userMap.get(b.userId) : undefined;
+        // A program/event cash reservation still waiting for its money: the
+        // whole price is due on site, and collecting it confirms the booking.
+        const unpaidCash = isUnpaidSeatReservation(b);
         return {
           id:            b.id,
           itemKind:      b.itemKind as 'SPACE' | 'PROGRAM' | 'EVENT',
@@ -161,14 +164,17 @@ export default async function IncubatorBookingsPage({ params, searchParams }: Pa
           // A cash leg exists on a card deposit AND on a desk sale. The money
           // already in hand comes from a different field on each, because one
           // went through a card rail and the other did not.
-          balanceDue:    b.paymentMode === 'CASH_DEPOSIT' ? (b.cashRemainingAmount ?? 0) : 0,
+          balanceDue:    b.paymentMode === 'CASH_DEPOSIT'
+                           ? (b.cashRemainingAmount ?? 0)
+                           : unpaidCash ? b.totalAmount : 0,
           paidAlready:   (b.cashDepositPaidAmount ?? 0) > 0
                            ? (b.cashDepositPaidAmount ?? 0)
                            : (b.onlineChargeAmount ?? b.onlinePaidAmount ?? 0),
           paidAtOffice:  (b.cashDepositPaidAmount ?? 0) > 0,
-          awaitingCash:  b.paymentMode === 'CASH_DEPOSIT' &&
-                         b.status === 'CONFIRMED' &&
-                         b.paymentStatus === 'AWAITING_CASH',
+          awaitingCash:  unpaidCash ||
+                         (b.paymentMode === 'CASH_DEPOSIT' &&
+                          b.status === 'CONFIRMED' &&
+                          b.paymentStatus === 'AWAITING_CASH'),
           paidAmount:      deskPaymentOf(b).paid,
           paymentEditable: deskPaymentOf(b).editable,
           unit:          (b.unit ?? 'DAY') as 'HOUR' | 'HALF_DAY' | 'DAY' | 'MONTH',

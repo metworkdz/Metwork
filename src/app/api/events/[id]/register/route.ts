@@ -16,9 +16,13 @@ import { fromZod, json, jsonError } from '@/server/http/json';
 import { db } from '@/server/db/store';
 import { findIncubatorById } from '@/server/incubator/service';
 import { sendBookingReceiptEmail, sendAdminOrderNotification, notifyIncubatorNewBooking } from '@/server/notifications/mock';
+import { dispatchReceiptIfDue } from '@/server/bookings/card-payment';
+import { dispatchRegistrationConfirmationIfDue } from '@/server/registrations/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// The confirmation, the receipt PDF and the alerts are awaited below.
+export const maxDuration = 60;
 
 export async function POST(
   req: NextRequest,
@@ -84,8 +88,10 @@ export async function POST(
     }
   }
 
+  // AWAITED, not fire-and-forget: on Vercel the lambda freezes once the
+  // response is returned, and a floating send is then never delivered.
   if (!result.replayed) {
-    void (async () => {
+    await (async () => {
       try {
         const data      = await db.read();
         const user      = data.users.find((u) => u.id === guard.user.id);
@@ -94,11 +100,19 @@ export async function POST(
         const incubator = event ? await findIncubatorById(event.incubatorId) : null;
         if (!incubator) return;
         const lang = user.locale === 'en' ? 'en' : 'fr';
-        await sendBookingReceiptEmail({ booking: result.booking, clientName: user.fullName, clientEmail: user.email, incubator, lang });
+        if (result.booking.paymentMethod === 'wallet') {
+          // Paid and confirmed in the same write (see settleWalletApplicationDraft):
+          // the same exactly-once dispatchers the card rail uses, so a later
+          // « resend » from the dashboard never duplicates or contradicts these.
+          await dispatchRegistrationConfirmationIfDue(result.booking.id);
+          await dispatchReceiptIfDue(result.booking.id);
+        } else {
+          await sendBookingReceiptEmail({ booking: result.booking, clientName: user.fullName, clientEmail: user.email, incubator, lang });
+        }
 
         // Incubator alert (email + WhatsApp) — event registrations are
         // already CONFIRMED at creation, no approval step, so this is FYI only.
-        void notifyIncubatorNewBooking(incubator, {
+        await notifyIncubatorNewBooking(incubator, {
           customerName: user.fullName,
           itemName:     result.booking.itemName,
           startsAt:     result.booking.startsAt,

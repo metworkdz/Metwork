@@ -56,6 +56,14 @@ export async function cancelUnpaidBooking(args: {
     booking.status = 'CANCELLED';
     booking.declineReason = 'CANCELLED_BY_PROVIDER_UNPAID';
     booking.updatedAt = now;
+    // A cash reservation's seat is held by the registration written with it;
+    // cancelling only the booking left that participant listed and counted.
+    for (const reg of d.registrations ?? []) {
+      if (reg.bookingId === booking.id && reg.status !== 'CANCELLED') {
+        reg.status = 'CANCELLED';
+        reg.updatedAt = now;
+      }
+    }
 
     const user = booking.userId ? d.users.find((u) => u.id === booking.userId) : null;
     return {
