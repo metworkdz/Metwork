@@ -93,7 +93,7 @@ test.describe('Availability calendar — single canonical source', () => {
 
     const first = await bookSpace(user, space.id, 'DAY', startsAt, endsAt, 'ONLINE');
     expect(first.status(), `first booking → ${first.status()} ${await first.text()}`).toBe(201);
-    expect((await first.json()).booking.status).toBe('PENDING'); // PENDING holds a seat
+    expect((await first.json()).booking.status).toBe('CONFIRMED'); // a paid wallet booking confirms itself
 
     const view = await getAvailability(user, space.id, RANGE_FROM, RANGE_TO);
     expect(hasInterval(view, date, 'BOOKING'), 'Y should show a BOOKING interval').toBe(true);

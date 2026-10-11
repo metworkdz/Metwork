@@ -2,7 +2,7 @@
  * Space reservation modes (Airbnb-style) — INSTANT vs REQUEST, API-driven.
  *
  * Asserts MONEY MOVEMENT, not just labels:
- *   - INSTANT: debit at reservation, auto-CONFIRMED, incubator credited, no
+ *   - INSTANT (and unset mode): debit at reservation, auto-CONFIRMED, incubator credited, no
  *     approval step.
  *   - REQUEST: no debit at reservation (AWAITING_APPROVAL soft-holds the
  *     seat) → incubator approves (APPROVED_UNPAID, still no money) → client
@@ -30,6 +30,7 @@ import {
   utcWindow,
   lastPayLinkFor,
   countSinkEmails,
+  readLocalDb,
 } from './_helpers';
 
 test.describe.configure({ mode: 'serial' });
@@ -50,6 +51,10 @@ test.afterAll(async () => {
 });
 
 /** Fresh single-capacity space; TRAINING_ROOM keeps desk semantics out. */
+/** The receiver commission the shared payout engine took on a booking. */
+const commissionOf = (bookingId: string): number =>
+  readLocalDb().bookings.find((b) => b.id === bookingId)?.commissionAmount ?? 0;
+
 function newSpace(reservationMode: 'INSTANT' | 'REQUEST') {
   return createSpace(inc, { reservationMode, category: 'TRAINING_ROOM', capacity: 1, pricePerHour: 500 });
 }
@@ -76,7 +81,7 @@ test('INSTANT: debit at reservation, auto-confirmed, incubator credited, no appr
 
   // Money moved BOTH ways atomically: client debited, incubator credited.
   expect(await walletBalance(user)).toBe(userBefore - 1000);
-  expect(await walletBalance(inc)).toBe(incBefore + 1000);
+  expect(await walletBalance(inc)).toBe(incBefore + 1000 - commissionOf(booking.id));
 });
 
 test('REQUEST: no debit until approval, then payment link, then confirmed (idempotent)', async () => {
@@ -139,7 +144,7 @@ test('REQUEST: no debit until approval, then payment link, then confirmed (idemp
   const userAfterPay = await walletBalance(user);
   const incAfterPay = await walletBalance(inc);
   expect(userAfterPay).toBe(userAfterTopUp - 1000);
-  expect(incAfterPay).toBe(incStart + 1000);
+  expect(incAfterPay).toBe(incStart + 1000 - commissionOf(booking.id));
 
   // 5) Idempotency: replaying the pay call does not double-charge or
   //    double-credit — it returns the already-confirmed result.
@@ -214,17 +219,19 @@ test('REQUEST: decline releases the seat, no charge', async () => {
   expect((await rebook.json()).booking.status).toBe('AWAITING_APPROVAL');
 });
 
-test('legacy (unset mode): behavior untouched — escrow debit at booking, PENDING status', async () => {
+test('legacy (unset mode): a wallet booking confirms itself and the incubator is credited', async () => {
   const space = await createSpace(inc, { category: 'TRAINING_ROOM', capacity: 1, pricePerHour: 500 });
   const { startsAt, endsAt } = bookWindow(12);
 
   const before = await walletBalance(user);
+  const incBefore = await walletBalance(inc);
   const res = await bookSpace(user, space.id, 'HOUR', startsAt, endsAt, 'ONLINE');
   expect(res.status(), await res.text()).toBe(201);
   const { booking } = await res.json();
 
-  // Exactly the pre-feature behavior: escrowed debit, PENDING until the
-  // incubator's manual confirmation.
-  expect(booking.status).toBe('PENDING');
+  // The old escrow waited for a Confirm button the dashboard no longer shows,
+  // so the money never reached the host. It now settles like INSTANT.
+  expect(booking.status).toBe('CONFIRMED');
   expect(await walletBalance(user)).toBe(before - 1000);
+  expect(await walletBalance(inc)).toBe(incBefore + 1000 - commissionOf(booking.id));
 });

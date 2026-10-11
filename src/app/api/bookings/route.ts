@@ -33,6 +33,8 @@ import { track } from '@/lib/analytics';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// The receipt PDF, the confirmation and the alerts are awaited below.
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   const guard = await requireApprovedApiSession();
@@ -215,10 +217,10 @@ export async function POST(req: NextRequest) {
             lang: lang === 'ar' ? 'fr' : lang,
           });
 
-          // INSTANT mode auto-confirms with no approval step, so the
-          // "confirmed" email (QR + receipt) is sent at creation time —
-          // the incubator PATCH that normally sends it never runs.
-          if (result.booking.reservationMode === 'INSTANT' && result.booking.status === 'CONFIRMED') {
+          // A wallet payment auto-confirms (INSTANT spaces and spaces with no
+          // mode set) with no approval step, so the "confirmed" email (QR +
+          // receipt) is sent at creation time — no incubator action follows.
+          if (result.booking.paymentMethod === 'wallet' && result.booking.status === 'CONFIRMED') {
             await sendBookingConfirmedWithQrEmail(user.email, {
               customerName: user.fullName,
               bookingId:    result.booking.id,
@@ -233,11 +235,10 @@ export async function POST(req: NextRequest) {
             });
           }
 
-          // Incubator alert (email + WhatsApp) — INSTANT/NETWORK_PASS bookings
-          // land CONFIRMED (FYI only); cash (PENDING_PAYMENT) and legacy-escrow
-          // (PENDING) bookings still need the incubator to confirm / collect
-          // payment via the incubator/bookings dashboard.
-          void notifyIncubatorNewBooking(incubator, {
+          // Incubator alert (email + WhatsApp) — wallet and NETWORK_PASS
+          // bookings land CONFIRMED (FYI only); cash (PENDING_PAYMENT) bookings
+          // still need the incubator to collect payment on site.
+          await notifyIncubatorNewBooking(incubator, {
             customerName: user.fullName,
             itemName:     result.booking.itemName,
             startsAt:     result.booking.startsAt,
@@ -268,14 +269,10 @@ export async function POST(req: NextRequest) {
       } catch { /* receipt errors must never break the booking response */ }
     })()
     : null;
-  // REQUEST bookings: AWAIT delivery — a serverless lambda can freeze right
-  // after the response, dropping void-fired work, and the incubator's
-  // "new request" email/notification is what drives the approval flow.
-  // Legacy paths keep their original fire-and-forget timing untouched.
-  if (notifyAfterCreate) {
-    if (result.booking.status === 'AWAITING_APPROVAL') await notifyAfterCreate;
-    else void notifyAfterCreate;
-  }
+  // AWAITED for every booking: a serverless lambda can freeze right after the
+  // response, dropping void-fired work — and these are the client's receipt
+  // and confirmation, and the incubator's alert. Never throws (caught inside).
+  if (notifyAfterCreate) await notifyAfterCreate;
 
   // Analytics: only fire on NEW bookings, never on idempotent replays —
   // otherwise the same booking would inflate the funnel count every time

@@ -74,7 +74,7 @@ test.describe.serial('Registered user booking matrix', () => {
     expect(body.booking.totalAmount).toBe(3000);
     expect(body.booking.unit).toBe('DAY');
     expect(body.transaction.amount).toBe(-3000);
-    expect(body.booking.status).toBe('PENDING'); // wallet booking awaits incubator confirm
+    expect(body.booking.status).toBe('CONFIRMED'); // a paid wallet booking confirms itself
   });
 
   // 2. Space HOURLY booking spanning 3 hours → charged pricePerHour × 3.

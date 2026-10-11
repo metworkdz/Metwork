@@ -11,8 +11,8 @@
  *      short-circuits the debit (crash-recovery replay).
  *   3. Debit the user wallet (insufficient → { needsTopUp } with NO state change).
  *   4. Set paidAt, transition APPROVED_UNPAID → CONFIRMED, credit the
- *      incubator wallet (same full-amount PAYOUT accounting as the legacy
- *      approve path, reference `payout-${bookingId}`).
+ *      incubator wallet through the shared payout engine (incubator-payout.ts:
+ *      PAYOUT + receiver COMMISSION, reference `payout-${bookingId}`).
  *
  * Emails / in-app notifications fire after the critical section and are
  * non-blocking — a notification failure can never roll back the payment.
@@ -25,6 +25,7 @@ import { db, type TransactionRecord, type WalletRecord } from '@/server/db/store
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { hashPaymentLinkToken } from '@/server/bookings/request-mode';
+import { creditIncubatorPayoutDraft } from '@/server/bookings/incubator-payout';
 import { toBookingDto } from '@/server/bookings/serialize';
 import { findIncubatorById } from '@/server/incubator/service';
 import { createNotification } from '@/server/notifications/create-notification';
@@ -154,8 +155,8 @@ export async function POST(
     booking.transactionId = tx?.id ?? booking.transactionId ?? null;
     booking.updatedAt = now;
 
-    // ── Credit the incubator wallet — same accounting as the legacy approve
-    // path (full amount, PAYOUT tx, reference `payout-${bookingId}`).
+    // ── Credit the incubator wallet, net of the receiver commission
+    // (reference `payout-${bookingId}`, guarded so a replay never pays twice).
     const spaceRec = (d.spaces ?? []).find((s) => s.id === booking.itemId);
     const incubator = spaceRec ? d.incubators.find((i) => i.id === spaceRec.incubatorId) : undefined;
     if (incubator?.managerId && total > 0) {
@@ -164,31 +165,17 @@ export async function POST(
         (t) => t.reference === payoutRef && t.status !== 'FAILED',
       );
       if (!existingPayout) {
-        let incubatorWallet = d.wallets.find((w) => w.userId === incubator.managerId);
-        if (!incubatorWallet) {
-          incubatorWallet = newWallet(incubator.managerId);
-          d.wallets.push(incubatorWallet);
-        }
-        if (incubatorWallet.status !== 'FROZEN') {
-          incubatorWallet.balance += total;
-          incubatorWallet.updatedAt = now;
-          d.transactions.push({
-            id: randomUUID(),
-            walletId: incubatorWallet.id,
-            userId: incubator.managerId,
-            type: 'PAYOUT',
-            amount: total,
-            balanceAfter: incubatorWallet.balance,
-            status: 'COMPLETED',
-            description: `Booking revenue — ${booking.itemName}`,
-            reference: payoutRef,
-            provider: 'internal',
-            providerTxnId: null,
-            metadata: { bookingId: booking.id, customerId: booking.userId, reservationMode: 'REQUEST' },
-            createdAt: now,
-            completedAt: now,
-          });
-        }
+        // Shared payout engine (receiver commission, FLAT/Pro exempt) —
+        // the same credit card and instant wallet payments use.
+        booking.settledAt = now;
+        booking.paymentStatus = 'PAID';
+        creditIncubatorPayoutDraft(d, {
+          booking,
+          incubator: { ...incubator, managerId: incubator.managerId },
+          amount: total,
+          providerRef: null,
+          now,
+        });
       }
     }
 

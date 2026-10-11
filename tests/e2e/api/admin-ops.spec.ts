@@ -48,27 +48,28 @@ test.describe.serial('Admin / provider operations', () => {
     await founder.dispose();
   });
 
-  // 1. Incubator approves a PENDING wallet booking → CONFIRMED + payout credit.
-  test('approving a pending wallet booking confirms it and credits the incubator payout wallet', async () => {
+  // 1. A wallet booking confirms itself and credits the incubator (net of the
+  //    receiver commission); a later "confirm" from the dashboard moves nothing.
+  test('a wallet booking confirms itself and credits the incubator payout wallet once', async () => {
     const space = await createSpace(inc, { pricePerHour: 800, workingDays: ALL_WEEK });
     const day = futureWeekdayUtc(19);
     const { startsAt, endsAt } = utcWindow(day, 9, 11);
 
+    const incBefore = walletOf(SEED.incubatorUserId);
     const res = await bookSpace(founder, space.id, 'HOUR', startsAt, endsAt, 'ONLINE');
     expect(res.status(), `book → ${res.status()} ${await res.text()}`).toBe(201);
     const { booking } = await res.json();
-    expect(booking.status).toBe('PENDING');
+    expect(booking.status).toBe('CONFIRMED');
 
-    const incBefore = walletOf(SEED.incubatorUserId);
+    const commission = readLocalDb().bookings.find((b) => b.id === booking.id)?.commissionAmount ?? 0;
+    const credited = incBefore + booking.totalAmount - commission;
+    expect(walletOf(SEED.incubatorUserId), 'incubator credited the booking total, net').toBe(credited);
+
     const approve = await inc.patch(`/api/incubator/bookings/${booking.id}`, {
       data: { status: 'CONFIRMED' },
     });
-    expect(approve.status(), `approve → ${approve.status()} ${await approve.text()}`).toBe(200);
-    expect((await approve.json()).booking.status).toBe('CONFIRMED');
-
-    expect(walletOf(SEED.incubatorUserId), 'incubator credited the booking total').toBe(
-      incBefore + booking.totalAmount,
-    );
+    expect(approve.status(), `confirm → ${approve.status()} ${await approve.text()}`).toBe(200);
+    expect(walletOf(SEED.incubatorUserId), 'idempotent: no second credit').toBe(credited);
   });
 
   // 2. Withdrawal: request holds escrow; admin approval is terminal.

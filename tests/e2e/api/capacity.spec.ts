@@ -183,7 +183,10 @@ test.describe('Capacity gates', () => {
       'QA Founder',
     );
     const sameUserBody = (await sameUserReg.json()) as RegistrationResponse;
-    expect(sameUserReg.status(), `same-user registration should be 201 → ${JSON.stringify(sameUserBody)}`).toBe(201);
+    // The application already wrote this person's registration row (linked to
+    // the booking), so the form recognises them rather than adding a second.
+    expect(sameUserReg.status(), `same-user registration is already on file → ${JSON.stringify(sameUserBody)}`).toBe(200);
+    expect(sameUserBody.alreadyRegistered).toBe(true);
     expect(sameUserBody.registration.status, 'same-user registration should be CONFIRMED').toBe('CONFIRMED');
 
     // Re-read: still 1 — the same person deduped across booking + registration.

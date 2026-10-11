@@ -44,7 +44,8 @@
         "USE_LOCAL_DB": "true",
         "API_INTERNAL_URL": "http://localhost:3000/api",
         "PAYMENT_PROVIDER": "mock",
-        "MOCK_PAYMENT_MODE": "sync"
+        "MOCK_PAYMENT_MODE": "sync",
+        "NEXT_PUBLIC_APP_URL": "http://localhost:3000"
       }
     },
     {

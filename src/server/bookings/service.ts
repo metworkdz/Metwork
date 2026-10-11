@@ -334,7 +334,17 @@ export async function createSpaceBooking(
   {
     const snap = await db.read();
     const rawSpace = snap.spaces?.find((s) => s.id === args.spaceId);
-    if (rawSpace) {
+    // A replay of a booking that already went through finds its OWN booking
+    // holding the slot; reporting that as a conflict told a client whose retry
+    // was harmless that their paid slot was taken. Let it reach the
+    // idempotency check inside the lock, which returns the original.
+    const isReplay = snap.bookings.some(
+      (b) =>
+        (b.userId ?? null) === bookerUserId &&
+        (b.mentorId ?? null) === bookerMentorId &&
+        b.clientReference === args.clientReference,
+    );
+    if (rawSpace && !isReplay) {
       const pre = checkSpaceAvailability({
         space: rawSpace,
         bookings: snap.bookings,
@@ -863,45 +873,31 @@ export async function createSpaceBooking(
     commitDeskHold();
     d.bookings.push(booking);
 
-    // ── INSTANT mode: auto-confirm + credit the incubator, same critical
-    // section as the debit above so the two movements can never disagree.
-    // Same accounting as the manual-approve path (full amount, PAYOUT tx,
-    // reference `payout-${booking.id}`), just without the approval step.
-    // If the incubator/manager can't be resolved, the booking stays on the
-    // legacy PENDING escrow so the manual approval flow settles it.
-    if (spaceRec?.reservationMode === 'INSTANT') {
-      const incubator = d.incubators.find((i) => i.id === spaceRec.incubatorId);
-      if (incubator?.managerId) {
-        booking.status = 'CONFIRMED';
-        booking.reservationMode = 'INSTANT';
-        booking.paidAt = now;
-        if (total > 0) {
-          let incubatorWallet = d.wallets.find((w) => w.userId === incubator.managerId);
-          if (!incubatorWallet) {
-            incubatorWallet = newWallet(incubator.managerId);
-            d.wallets.push(incubatorWallet);
-          }
-          if (incubatorWallet.status !== 'FROZEN') {
-            incubatorWallet.balance += total;
-            incubatorWallet.updatedAt = now;
-            d.transactions.push({
-              id: randomUUID(),
-              walletId: incubatorWallet.id,
-              userId: incubator.managerId,
-              type: 'PAYOUT',
-              amount: total,
-              balanceAfter: incubatorWallet.balance,
-              status: 'COMPLETED',
-              description: `Booking revenue — ${booking.itemName}`,
-              reference: `payout-${booking.id}`,
-              provider: 'internal',
-              providerTxnId: null,
-              metadata: { bookingId: booking.id, customerId: booking.userId, reservationMode: 'INSTANT' },
-              createdAt: now,
-              completedAt: now,
-            });
-          }
-        }
+    // ── Auto-confirm + credit the incubator, same critical section as the
+    // debit above so the two movements can never disagree. INSTANT spaces and
+    // spaces with no mode set (the legacy default) both settle here — the
+    // legacy escrow waited for a Confirm button the bookings page no longer
+    // shows, so the client was debited and the host never paid. REQUEST mode
+    // returned above and settles in POST /api/bookings/[id]/pay.
+    // The credit is the shared payout engine (receiver commission, FLAT/Pro
+    // exempt) — the same one card payments and program applications use.
+    // If the incubator/manager can't be resolved, the booking stays PENDING
+    // rather than settling into nobody's wallet.
+    const incubator = spaceRec ? d.incubators.find((i) => i.id === spaceRec.incubatorId) : undefined;
+    if (incubator?.managerId) {
+      booking.status = 'CONFIRMED';
+      if (spaceRec?.reservationMode === 'INSTANT') booking.reservationMode = 'INSTANT';
+      booking.paidAt = now;
+      booking.settledAt = now;
+      if (total > 0) {
+        booking.paymentStatus = 'PAID';
+        creditIncubatorPayoutDraft(d, {
+          booking,
+          incubator: { ...incubator, managerId: incubator.managerId },
+          amount: total,
+          providerRef: null,
+          now,
+        });
       }
     }
 
