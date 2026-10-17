@@ -1886,7 +1886,7 @@
       "avatarUrl": null,
       "locale": "fr",
       "createdAt": "2026-08-22T00:12:22.265Z",
-      "updatedAt": "2026-10-17T18:13:29.673Z"
+      "updatedAt": "2026-08-22T00:12:22.265Z"
     },
     {
       "id": "qa-builder-id",
@@ -5052,18 +5052,6 @@
       "userId": "qa-investor-id",
       "expiresAt": "2026-10-09T21:31:09.194Z",
       "createdAt": "2026-10-02T21:31:09.194Z"
-    },
-    {
-      "idHash": "dd90f62ffe5063dafe12d48e2d60b3063873469e3a3d8a588249d650b52a1819",
-      "userId": "qa-incubator-user-id",
-      "expiresAt": "2026-10-24T18:13:28.930Z",
-      "createdAt": "2026-10-17T18:13:28.930Z"
-    },
-    {
-      "idHash": "2abf56aa449efff9cddd71c265b3cd24f88793a6db139d69c7e81acec42a64a6",
-      "userId": "qa-incubator-user-id",
-      "expiresAt": "2026-10-24T18:14:13.590Z",
-      "createdAt": "2026-10-17T18:14:13.590Z"
     }
   ],
   "otps": [
@@ -22048,13 +22036,7 @@
       "subscriptionStatus": "ACTIVE",
       "status": "ACTIVE",
       "createdAt": "2026-08-22T00:12:22.265Z",
-      "updatedAt": "2026-10-17T18:14:46.756Z",
-      "commercialRegNumber": "31/00-TEST B24",
-      "nif": "002431000000001",
-      "invoiceCounters": {
-        "2026": 1,
-        "PROFORMA:2026": 1
-      }
+      "updatedAt": "2026-08-22T00:12:22.265Z"
     }
   ],
   "promoCodes": [
@@ -28487,25 +28469,6 @@
       "ai": null,
       "createdAt": "2026-10-02T21:10:15.495Z",
       "updatedAt": "2026-10-02T21:10:15.495Z"
-    },
-    {
-      "id": "42c9445d-1184-4560-809b-3673d68637bc",
-      "incubatorId": "qa-incubator-profile-id",
-      "fullName": "Sarl Mdm Test",
-      "email": "",
-      "phone": "0540261586",
-      "idCardNumber": null,
-      "companyName": null,
-      "notes": null,
-      "clientType": "INDIVIDUAL",
-      "legalName": null,
-      "address": null,
-      "rc": null,
-      "nif": null,
-      "nis": null,
-      "ai": null,
-      "createdAt": "2026-10-17T18:13:30.606Z",
-      "updatedAt": "2026-10-17T18:13:30.606Z"
     }
   ],
   "services": [
@@ -28822,134 +28785,6 @@
       "status": "ISSUED",
       "createdAt": "2026-10-02T21:29:03.703Z",
       "updatedAt": "2026-10-02T21:29:03.703Z"
-    },
-    {
-      "id": "e0c2aad2-0d93-4448-a5f2-548e271b2d6a",
-      "incubatorId": "qa-incubator-profile-id",
-      "kind": "PROFORMA",
-      "number": "FP 01/2026",
-      "year": 2026,
-      "seq": 1,
-      "validUntil": null,
-      "issuedAt": "2026-10-17T18:13:36.715Z",
-      "clientId": "42c9445d-1184-4560-809b-3673d68637bc",
-      "clientSnapshot": {
-        "clientType": "INDIVIDUAL",
-        "name": "Sarl Mdm Test",
-        "legalName": null,
-        "address": null,
-        "rc": null,
-        "nif": null,
-        "nis": null,
-        "ai": null,
-        "phone": "0540261586",
-        "email": null
-      },
-      "issuerSnapshot": {
-        "name": "QA Incubator Hub",
-        "address": "10 Rue des Tests, Alger",
-        "rc": "31/00-TEST B24",
-        "rcLabel": "RCN",
-        "nif": "002431000000001",
-        "nis": null,
-        "ai": null,
-        "logoUrl": null,
-        "website": null,
-        "contactEmail": "test.incubator@metwork.test",
-        "contactPhone": "+213070000001",
-        "bankName": null,
-        "bankRib": null,
-        "stampUrl": null
-      },
-      "lines": [
-        {
-          "designation": "Conseil en Vente",
-          "quantity": 2,
-          "unitPriceHt": 24000
-        }
-      ],
-      "withStamp": false,
-      "note": "Avance de 50%",
-      "vatRate": 19,
-      "paymentMethod": "CHEQUE",
-      "template": "CLASSIC",
-      "totals": {
-        "ht": 48000,
-        "tva": 9120,
-        "ttc": 57120,
-        "timbre": 0,
-        "net": 57120
-      },
-      "amountInWords": "CINQUANTE SEPT MILLE CENT VINGT DINARS",
-      "status": "ISSUED",
-      "createdAt": "2026-10-17T18:13:36.715Z",
-      "updatedAt": "2026-10-17T18:14:46.756Z",
-      "convertedToInvoiceId": "70f19c9c-cc7d-43bd-9159-1a89738f13dc",
-      "convertedToNumber": "01/2026",
-      "convertedAt": "2026-10-17T18:14:46.756Z"
-    },
-    {
-      "id": "70f19c9c-cc7d-43bd-9159-1a89738f13dc",
-      "incubatorId": "qa-incubator-profile-id",
-      "kind": "FACTURE",
-      "number": "01/2026",
-      "year": 2026,
-      "seq": 1,
-      "validUntil": null,
-      "issuedAt": "2026-10-17T18:14:46.756Z",
-      "clientId": "42c9445d-1184-4560-809b-3673d68637bc",
-      "clientSnapshot": {
-        "clientType": "INDIVIDUAL",
-        "name": "Sarl Mdm Test",
-        "legalName": null,
-        "address": null,
-        "rc": null,
-        "nif": null,
-        "nis": null,
-        "ai": null,
-        "phone": "0540261586",
-        "email": null
-      },
-      "issuerSnapshot": {
-        "name": "QA Incubator Hub",
-        "address": "10 Rue des Tests, Alger",
-        "rc": "31/00-TEST B24",
-        "rcLabel": "RCN",
-        "nif": "002431000000001",
-        "nis": null,
-        "ai": null,
-        "logoUrl": null,
-        "website": null,
-        "contactEmail": "test.incubator@metwork.test",
-        "contactPhone": "+213070000001",
-        "bankName": null,
-        "bankRib": null,
-        "stampUrl": null
-      },
-      "lines": [
-        {
-          "designation": "Conseil en Vente",
-          "quantity": 2,
-          "unitPriceHt": 24000
-        }
-      ],
-      "withStamp": false,
-      "note": "Avance de 50%",
-      "vatRate": 19,
-      "paymentMethod": "CHEQUE",
-      "template": "CLASSIC",
-      "totals": {
-        "ht": 48000,
-        "tva": 9120,
-        "ttc": 57120,
-        "timbre": 0,
-        "net": 57120
-      },
-      "amountInWords": "CINQUANTE SEPT MILLE CENT VINGT DINARS",
-      "status": "ISSUED",
-      "convertedFromId": "e0c2aad2-0d93-4448-a5f2-548e271b2d6a",
-      "createdAt": "2026-10-17T18:14:46.756Z",
-      "updatedAt": "2026-10-17T18:14:46.756Z"
     }
   ],
   "expenses": [],
