@@ -8,7 +8,7 @@
  * portal); the route files only resolve the owner. Every refusal comes before
  * the first write — `db.update` persists the draft whatever it returns.
  */
-import { z } from 'zod';
+import type { z } from 'zod';
 
 import { db, type InvoiceRecord } from '@/server/db/store';
 import { amountToFrenchWords, computeInvoiceTotals } from '@/server/invoices/engine';
