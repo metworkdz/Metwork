@@ -29,7 +29,7 @@ import {
 
 type ClientType = 'COMPANY' | 'INDIVIDUAL';
 
-interface ClientValues {
+export interface ClientValues {
   id: string;
   fullName: string;
   email: string;
@@ -79,6 +79,8 @@ interface ClientFormDialogProps {
    * to `onSaved`.
    */
   onCreated?: (client: CreatedClient) => void;
+  /** Optional: receive the saved record after an edit. */
+  onUpdated?: (client: CreatedClient) => void;
   /**
    * Optional controlled open state. When provided the dialog renders no
    * trigger (the caller opens it). Omitted → self-managed with its trigger.
@@ -92,6 +94,7 @@ export function ClientFormDialog({
   trigger,
   onSaved,
   onCreated,
+  onUpdated,
   open: controlledOpen,
   onOpenChange,
 }: ClientFormDialogProps) {
@@ -193,6 +196,9 @@ export function ClientFormDialog({
       if (onCreated && !isEdit) {
         const record = await res.json().catch(() => null) as CreatedClient | null;
         if (record) onCreated(record);
+      } else if (onUpdated && isEdit) {
+        const record = await res.json().catch(() => null) as CreatedClient | null;
+        if (record) onUpdated(record);
       }
       onSaved();
       setOpen(false);

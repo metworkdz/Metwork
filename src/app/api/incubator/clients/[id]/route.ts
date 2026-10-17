@@ -1,16 +1,34 @@
 /**
+ * GET    /api/incubator/clients/:id  — one client (the invoice form loads it in
+ *                                      full before editing, so the save cannot
+ *                                      blank fields it never showed)
  * PATCH  /api/incubator/clients/:id  — update a client
  * DELETE /api/incubator/clients/:id  — delete a client
  */
 import type { NextRequest } from 'next/server';
 import { ZodError } from 'zod';
-import { requireApprovedApiRole } from '@/server/auth/api-guards';
+import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards';
+import { db } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { clientPatchSchema, deleteClient, updateClient } from '@/server/invoices/clients';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const guard = await requireApiRole(['INCUBATOR']);
+  if (!guard.ok) return guard.response;
+  const inc = await findIncubatorByUserEmail(guard.user.email);
+  if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile linked to this account');
+  const { id } = await params;
+  const client = ((await db.read()).clients ?? []).find((c) => c.id === id && c.incubatorId === inc.id);
+  if (!client) return jsonError(404, 'NOT_FOUND', 'Client not found');
+  return json(client);
+}
 
 export async function PATCH(
   req: NextRequest,

@@ -1771,7 +1771,10 @@
       "stampMissing": "No stamp on file — upload one in Settings first.",
       "labelNote": "Note (optional)",
       "notePlaceholder": "e.g. Payment within 30 days by cheque payable to…",
-      "noteHint": "Printed at the bottom of this document only. Nothing is saved for next time."
+      "noteHint": "Printed at the bottom of this document only. Nothing is saved for next time.",
+      "legalGapCompany": "This client has no RC or NIF: their legal block will be empty on the document.",
+      "legalGapLooksCompany": "This client looks like a company but is filed as an individual: their RC, NIF, NIS and AI won’t appear.",
+      "completeClient": "Complete the client record"
     },
     "listingTable": {
       "newListing": "New listing",

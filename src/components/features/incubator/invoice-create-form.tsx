@@ -27,8 +27,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { ClientSelector, type ClientHit } from './client-selector';
-import { ClientFormDialog, type CreatedClient } from './client-form-dialog';
+import { ClientFormDialog, type ClientValues, type CreatedClient } from './client-form-dialog';
 import { safeUUID } from '@/lib/safe-uuid';
+import { clientLegalGap } from '@/lib/client-legal-gap';
 import {
   computeInvoiceTotals, formatDZD, formatInvoiceNumber, amountToFrenchWords,
 } from '@/server/invoices/engine';
@@ -107,6 +108,9 @@ export function InvoiceCreateForm({
   const [note, setNote] = useState('');
   const [client, setClient] = useState<ClientHit | null>(null);
   const [newClientOpen, setNewClientOpen] = useState(false);
+  const [editClientOpen, setEditClientOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<ClientValues | null>(null);
+  const [loadingClient, setLoadingClient] = useState(false);
   const [lines, setLines] = useState<LineDraft[]>([emptyLine()]);
   const [vatRate, setVatRate] = useState(String(defaultVatRate));
   const [paymentMethod, setPaymentMethod] = useState<InvoicePaymentMethod>('ESPECE');
@@ -165,6 +169,32 @@ export function InvoiceCreateForm({
     setSeq(String(nextSeq[next]));
     setValidUntil(next === 'DEVIS' ? (validUntil || dayFromNow(30)) : next === 'PROFORMA' ? validUntil : '');
     setError(null);
+  }
+
+  /**
+   * Load the WHOLE client before editing: the dialog saves every field, so
+   * opening it with only what the search returned would blank the ID card
+   * and the notes.
+   */
+  async function openClientEditor() {
+    if (!client) return;
+    setLoadingClient(true);
+    try {
+      const res = await fetch(`/api/incubator/clients/${client.id}`, { credentials: 'include' });
+      if (!res.ok) { setError(t('errorNetwork')); return; }
+      const full = await res.json() as ClientValues & { clientType?: 'COMPANY' | 'INDIVIDUAL' };
+      const looksCompany = clientLegalGap(full) === 'LOOKS_LIKE_COMPANY';
+      setEditingClient({
+        ...full,
+        // A company filed as a person (or with no type, as a booking creates
+        // it) opens on « Entreprise », with its name as the legal name.
+        clientType: looksCompany ? 'COMPANY' : full.clientType,
+        legalName: full.legalName ?? (looksCompany ? full.fullName : null),
+      });
+      setEditClientOpen(true);
+    } finally {
+      setLoadingClient(false);
+    }
   }
 
   function handleClientCreated(record: CreatedClient) {
@@ -251,6 +281,7 @@ export function InvoiceCreateForm({
     );
   }
 
+  const legalGap = client ? clientLegalGap(client) : null;
   const clientPreviewLines: string[] = client ? [
     ...(client.clientType === 'COMPANY' && client.legalName ? [client.legalName] : []),
     ...(client.address ? [client.address] : []),
@@ -418,7 +449,27 @@ export function InvoiceCreateForm({
                   ) : (
                     <p className="text-xs text-muted-foreground">{t('noLegalInfo')}</p>
                   )}
+                  {legalGap && (
+                    <div role="status" className="mt-2.5 space-y-2 rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+                      <p className="flex items-start gap-1.5">
+                        <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                        {legalGap === 'COMPANY_NO_LEGAL' ? t('legalGapCompany') : t('legalGapLooksCompany')}
+                      </p>
+                      <Button type="button" size="sm" variant="outline" loading={loadingClient} onClick={() => void openClientEditor()}>
+                        {t('completeClient')}
+                      </Button>
+                    </div>
+                  )}
                 </div>
+              )}
+              {editingClient && (
+                <ClientFormDialog
+                  client={editingClient}
+                  open={editClientOpen}
+                  onOpenChange={setEditClientOpen}
+                  onSaved={() => setEditClientOpen(false)}
+                  onUpdated={handleClientCreated}
+                />
               )}
             </CardContent>
           </Card>

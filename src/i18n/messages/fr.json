@@ -1771,7 +1771,10 @@
       "stampMissing": "Aucun cachet enregistré — ajoutez-en un dans les Paramètres.",
       "labelNote": "Note (facultatif)",
       "notePlaceholder": "ex. Règlement à 30 jours par chèque à l’ordre de…",
-      "noteHint": "Imprimée au bas de ce document uniquement. Rien n’est conservé pour la prochaine fois."
+      "noteHint": "Imprimée au bas de ce document uniquement. Rien n’est conservé pour la prochaine fois.",
+      "legalGapCompany": "Ce client n’a ni RC ni NIF : son bloc légal sera vide sur le document.",
+      "legalGapLooksCompany": "Ce client semble être une société mais il est enregistré comme personne physique : son RC, NIF, NIS et AI n’apparaîtront pas.",
+      "completeClient": "Compléter la fiche client"
     },
     "listingTable": {
       "newListing": "Nouvelle annonce",
