@@ -65,6 +65,11 @@ interface Props {
   year: number;
   /** Whether a stamp image is on file — without one there is nothing to print. */
   hasStamp: boolean;
+  /**
+   * A proforma or devis being corrected: the form opens on it, the kind and
+   * number are fixed, and saving rewrites it (PUT) instead of issuing a new one.
+   */
+  editing?: InvoiceRecord;
 }
 
 function emptyLine(): LineDraft {
@@ -95,26 +100,46 @@ export function InvoiceCreateForm({
   nextSeq,
   year,
   hasStamp,
+  editing,
 }: Props) {
   const t = useTranslations('incubator.invoiceForm');
   const router = useRouter();
 
-  const [kind, setKind] = useState<InvoiceKind>(initialKind);
-  const [seq, setSeq] = useState(String(nextSeq[initialKind]));
-  const [validUntil, setValidUntil] = useState(initialKind === 'DEVIS' ? dayFromNow(30) : '');
+  const [kind, setKind] = useState<InvoiceKind>(editing?.kind ?? initialKind);
+  const [seq, setSeq] = useState(String(editing?.seq ?? nextSeq[initialKind]));
+  const [validUntil, setValidUntil] = useState(
+    editing ? (editing.validUntil ?? '') : initialKind === 'DEVIS' ? dayFromNow(30) : '',
+  );
   // On by default when there is a stamp to print — an incubator who uploaded
-  // one generally wants it.
-  const [withStamp, setWithStamp] = useState(hasStamp);
-  const [note, setNote] = useState('');
-  const [client, setClient] = useState<ClientHit | null>(null);
+  // one generally wants it. An edit keeps the document's own choice.
+  const [withStamp, setWithStamp] = useState(editing ? Boolean(editing.withStamp) : hasStamp);
+  const [note, setNote] = useState(editing?.note ?? '');
+  const [client, setClient] = useState<ClientHit | null>(() => (editing?.clientId ? {
+    id: editing.clientId,
+    fullName: editing.clientSnapshot.name,
+    email: editing.clientSnapshot.email ?? '',
+    phone: editing.clientSnapshot.phone ?? '',
+    companyName: editing.clientSnapshot.legalName ?? null,
+    clientType: editing.clientSnapshot.clientType,
+    legalName: editing.clientSnapshot.legalName,
+    address: editing.clientSnapshot.address,
+    rc: editing.clientSnapshot.rc,
+    nif: editing.clientSnapshot.nif,
+    nis: editing.clientSnapshot.nis,
+    ai: editing.clientSnapshot.ai,
+  } : null));
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [editClientOpen, setEditClientOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientValues | null>(null);
   const [loadingClient, setLoadingClient] = useState(false);
-  const [lines, setLines] = useState<LineDraft[]>([emptyLine()]);
-  const [vatRate, setVatRate] = useState(String(defaultVatRate));
-  const [paymentMethod, setPaymentMethod] = useState<InvoicePaymentMethod>('ESPECE');
-  const [template, setTemplate] = useState<InvoiceTemplate>(defaultTemplate);
+  const [lines, setLines] = useState<LineDraft[]>(() => (editing
+    ? editing.lines.map((l) => ({
+        key: safeUUID(), designation: l.designation, quantity: String(l.quantity), unitPriceHt: String(l.unitPriceHt),
+      }))
+    : [emptyLine()]));
+  const [vatRate, setVatRate] = useState(String(editing?.vatRate ?? defaultVatRate));
+  const [paymentMethod, setPaymentMethod] = useState<InvoicePaymentMethod>(editing?.paymentMethod ?? 'ESPECE');
+  const [template, setTemplate] = useState<InvoiceTemplate>(editing?.template ?? defaultTemplate);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<InvoiceRecord | null>(null);
@@ -220,10 +245,20 @@ export function InvoiceCreateForm({
     setError(null);
     setSubmitting(true);
     try {
-      const res = await fetch('/api/incubator/invoices', {
-        method: 'POST',
+      const res = await fetch(editing ? `/api/incubator/invoices/${editing.id}` : '/api/incubator/invoices', {
+        method: editing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(editing ? {
+          // The kind and the number are the document's; everything else is rewritten.
+          clientId: client.id,
+          lines: parsedLines,
+          vatRate: parsedVat,
+          paymentMethod,
+          template,
+          validUntil: validUntil || null,
+          withStamp: hasStamp && withStamp,
+          note: note.trim() || null,
+        } : {
           clientId: client.id,
           lines: parsedLines,
           vatRate: parsedVat,
@@ -244,8 +279,8 @@ export function InvoiceCreateForm({
         setError(d.error?.message ?? t('errorSubmit'));
         return;
       }
-      const invoice = await res.json() as InvoiceRecord;
-      setCreated(invoice);
+      const body = await res.json() as InvoiceRecord | { invoice: InvoiceRecord };
+      setCreated('invoice' in body ? body.invoice : body);
     } catch {
       setError(t('errorNetwork'));
     } finally {
@@ -260,7 +295,9 @@ export function InvoiceCreateForm({
         <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
           <CheckCircle2 className="size-10 text-primary" />
           <div>
-            <p className="text-lg font-semibold">{t(copy.success, { number: created.number })}</p>
+            <p className="text-lg font-semibold">
+              {editing ? t('editSaved', { number: created.number }) : t(copy.success, { number: created.number })}
+            </p>
             <p className="mt-1 text-sm text-muted-foreground">
               {t('successSubtitle', { net: formatDZD(created.totals.net) })}
             </p>
@@ -336,12 +373,14 @@ export function InvoiceCreateForm({
                     key={id}
                     type="button"
                     onClick={() => chooseKind(id)}
+                    disabled={Boolean(editing) && id !== kind}
                     aria-pressed={kind === id}
                     className={cn(
                       'rounded-lg border p-3 text-start transition-colors',
                       kind === id
                         ? 'border-primary bg-primary/5 ring-1 ring-primary'
                         : 'border-border hover:border-primary/40 hover:bg-accent/40',
+                      'disabled:cursor-not-allowed disabled:opacity-40',
                     )}
                   >
                     <span className="flex items-center gap-2 text-sm font-semibold">
@@ -366,6 +405,7 @@ export function InvoiceCreateForm({
                     step="1"
                     className="mt-1 max-w-[9rem]"
                     value={seq}
+                    readOnly={Boolean(editing)}
                     onChange={(e) => setSeq(e.target.value)}
                     required
                   />
@@ -378,7 +418,7 @@ export function InvoiceCreateForm({
                   )}>
                     {seqValid ? formatInvoiceNumber(parsedSeq, year, kind) : t('numberInvalid')}
                   </p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t('numberHint')}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{editing ? t('numberLocked') : t('numberHint')}</p>
                 </div>
 
                 {kind !== 'FACTURE' && (
@@ -688,7 +728,7 @@ export function InvoiceCreateForm({
               )}
 
               <Button type="submit" className="w-full" loading={submitting} disabled={!canSubmit}>
-                {t(copy.submit)}
+                {editing ? t('editSubmit') : t(copy.submit)}
               </Button>
               {!client && (
                 <p className="text-center text-xs text-muted-foreground">{t(copy.selectClient)}</p>

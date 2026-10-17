@@ -1702,7 +1702,12 @@
       "emptyQuoteDescription": "Envoyez une offre chiffrée que le client peut accepter et signer — sans jamais toucher à votre numérotation de factures.",
       "emptyQuoteCta": "Créer un devis",
       "statusIssuedQuote": "Émis",
-      "statusCancelledQuote": "Annulé"
+      "statusCancelledQuote": "Annulé",
+      "actionEdit": "Modifier",
+      "actionStampAdd": "Ajouter le cachet",
+      "actionStampRemove": "Retirer le cachet",
+      "actionFailed": "L’action a échoué. Réessayez.",
+      "statusConverted": "Convertie → {number}"
     },
     "invoiceForm": {
       "sectionClient": "Client",
@@ -1774,7 +1779,12 @@
       "noteHint": "Imprimée au bas de ce document uniquement. Rien n’est conservé pour la prochaine fois.",
       "legalGapCompany": "Ce client n’a ni RC ni NIF : son bloc légal sera vide sur le document.",
       "legalGapLooksCompany": "Ce client semble être une société mais il est enregistré comme personne physique : son RC, NIF, NIS et AI n’apparaîtront pas.",
-      "completeClient": "Compléter la fiche client"
+      "completeClient": "Compléter la fiche client",
+      "editSaved": "Modifications enregistrées — {number}",
+      "editTitle": "Modifier {number}",
+      "editSubtitle": "Le numéro et la date restent les mêmes. Le client et l’en-tête sont relus tels qu’ils sont aujourd’hui.",
+      "numberLocked": "Le numéro d’un document émis ne change pas.",
+      "editSubmit": "Enregistrer les modifications"
     },
     "listingTable": {
       "newListing": "Nouvelle annonce",

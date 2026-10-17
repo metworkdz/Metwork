@@ -11,7 +11,7 @@
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlertTriangle, Ban, Download, FilePlus2, FileText, Plus, Search } from 'lucide-react';
+import { AlertTriangle, Ban, Download, FilePlus2, FileText, Pencil, Plus, Search, Stamp } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,9 @@ interface Props {
   legalComplete: boolean;
   /** The owner of the rows records the cancellation — see InvoicesTabs. */
   onCancelled: (id: string) => void;
+  /** A row the server rewrote, or a new one (see InvoicesTabs). */
+  onChanged: (invoice: InvoiceListItem) => void;
+  hasStamp: boolean;
 }
 
 const METHOD_LABEL_KEY = {
@@ -72,7 +75,7 @@ function formatDay(day: string): string {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : day;
 }
 
-export function InvoiceList({ kind, rows, legalComplete, onCancelled }: Props) {
+export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged, hasStamp }: Props) {
   const t = useTranslations('incubator.invoicesPage');
   const copy = COPY[kind];
   const newHref = `/dashboard/incubator/invoices/new?kind=${kind}` as const;
@@ -81,6 +84,24 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled }: Props) {
   const showValidity = kind !== 'FACTURE';
   const [q, setQ] = useState('');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [stampingId, setStampingId] = useState<string | null>(null);
+
+  /** One click: add or remove the stamp on a proforma / devis. */
+  async function toggleStamp(invoice: InvoiceListItem) {
+    setStampingId(invoice.id);
+    try {
+      const res = await fetch(`/api/incubator/invoices/${invoice.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ withStamp: !invoice.withStamp }),
+      });
+      const body = await res.json().catch(() => null) as { invoice?: InvoiceListItem; error?: { message?: string } } | null;
+      if (res.ok && body?.invoice) onChanged(body.invoice);
+      else alert(body?.error?.message ?? t('actionFailed'));
+    } finally {
+      setStampingId(null);
+    }
+  }
 
   const filtered = q.trim()
     ? rows.filter((i) => {
@@ -172,12 +193,16 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled }: Props) {
                     <TableHead className="text-end">{t('colNet')}</TableHead>
                     <TableHead>{t('colMethod')}</TableHead>
                     <TableHead>{t('colStatus')}</TableHead>
-                    <TableHead className="w-24" />
+                    <TableHead className="w-40" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map((invoice) => {
                     const cancelled = invoice.status === 'CANCELLED';
+                    // A proforma / devis is a draft of a sale: editable until
+                    // cancelled or turned into a facture. A facture never is.
+                    const converted = Boolean(invoice.convertedToInvoiceId);
+                    const editable = kind !== 'FACTURE' && !cancelled && !converted;
                     return (
                       <TableRow key={invoice.id} className={cancelled ? 'opacity-60' : undefined}>
                         <TableCell className="font-medium tabular-nums">{invoice.number}</TableCell>
@@ -206,7 +231,11 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled }: Props) {
                         <TableCell>
                           {cancelled
                             ? <Badge variant="outline" className="border-destructive/40 text-destructive">{t(copy.statusCancelled)}</Badge>
-                            : <Badge variant="outline" className="border-primary/40 text-primary">{t(copy.statusIssued)}</Badge>}
+                            : converted
+                              ? <Badge variant="outline" className="border-blue-500/40 text-blue-700 dark:text-blue-300">
+                                  {t('statusConverted', { number: invoice.convertedToNumber ?? '' })}
+                                </Badge>
+                              : <Badge variant="outline" className="border-primary/40 text-primary">{t(copy.statusIssued)}</Badge>}
                         </TableCell>
                         <TableCell className="text-end">
                           <div className="flex items-center justify-end gap-1">
@@ -220,7 +249,26 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled }: Props) {
                                 <Download className="size-4" />
                               </a>
                             </Button>
-                            {!cancelled && (
+                            {editable && (
+                              <Button variant="ghost" size="icon" title={t('actionEdit')} asChild>
+                                <Link href={`/dashboard/incubator/invoices/${invoice.id}/edit`}>
+                                  <Pencil className="size-4" />
+                                </Link>
+                              </Button>
+                            )}
+                            {editable && hasStamp && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title={invoice.withStamp ? t('actionStampRemove') : t('actionStampAdd')}
+                                aria-pressed={Boolean(invoice.withStamp)}
+                                loading={stampingId === invoice.id}
+                                onClick={() => void toggleStamp(invoice)}
+                              >
+                                <Stamp className={invoice.withStamp ? 'size-4 text-primary' : 'size-4 text-muted-foreground'} />
+                              </Button>
+                            )}
+                            {!cancelled && !converted && (
                               <Button
                                 variant="ghost"
                                 size="icon"

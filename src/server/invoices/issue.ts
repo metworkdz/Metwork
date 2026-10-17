@@ -52,7 +52,8 @@ const clientDraftSchema = z.object({
   email: z.string().email().max(200).optional().nullable(),
 });
 
-export const issueInvoiceSchema = z
+/** The fields of a document, before the cross-field rules. Shared with editing. */
+export const invoiceFieldsSchema = z
   .object({
     clientId: z.string().min(1).optional(),
     clientDraft: clientDraftSchema.optional(),
@@ -74,7 +75,9 @@ export const issueInvoiceSchema = z
      * where their own books left off; the counter then continues from there.
      */
     seq: z.number().int().positive().max(999_999).optional(),
-  })
+  });
+
+export const issueInvoiceSchema = invoiceFieldsSchema
   .refine((v) => v.clientId || v.clientDraft, {
     message: 'Provide clientId or clientDraft',
     path: ['clientId'],
@@ -105,6 +108,41 @@ function clientSnapshotFrom(c: ClientRecord): InvoiceRecord['clientSnapshot'] {
     ai: c.ai ?? null,
     phone: c.phone || null,
     email: c.email || null,
+  };
+}
+
+type StoreDraft = Parameters<Parameters<typeof db.update>[0]>[0];
+
+/**
+ * The recipient of a document, frozen: a saved client of this owner (read as
+ * it is NOW), or an ad-hoc draft. Null when the client is not this owner's.
+ * Call inside the transaction that writes the document.
+ */
+export function resolveRecipient(
+  d: StoreDraft,
+  owner: InvoiceOwner,
+  input: Pick<IssueInvoiceInput, 'clientId' | 'clientDraft'>,
+): { clientId: string | null; clientSnapshot: InvoiceRecord['clientSnapshot'] } | null {
+  if (input.clientId) {
+    const client = (d.clients ?? []).find((c) => c.id === input.clientId && ownsClient(c, owner));
+    return client ? { clientId: client.id, clientSnapshot: clientSnapshotFrom(client) } : null;
+  }
+  const draft = input.clientDraft;
+  if (!draft) return null;
+  return {
+    clientId: null,
+    clientSnapshot: {
+      clientType: draft.clientType,
+      name: draft.name,
+      legalName: draft.legalName ?? null,
+      address: draft.address ?? null,
+      rc: draft.rc ?? null,
+      nif: draft.nif ?? null,
+      nis: draft.nis ?? null,
+      ai: draft.ai ?? null,
+      phone: draft.phone ?? null,
+      email: draft.email ?? null,
+    },
   };
 }
 
@@ -139,30 +177,11 @@ export async function issueInvoice(
 
     // Resolve the recipient inside the transaction so a concurrent client edit
     // can't slip between read and snapshot.
-    let clientSnapshot: InvoiceRecord['clientSnapshot'];
-    let clientId: string | null = null;
-    if (input.clientId) {
-      const client = (d.clients ?? []).find((c) => c.id === input.clientId && ownsClient(c, owner));
-      if (!client) {
-        return { ok: false, status: 404, code: 'CLIENT_NOT_FOUND', message: 'Client not found' };
-      }
-      clientId = client.id;
-      clientSnapshot = clientSnapshotFrom(client);
-    } else {
-      const draft = input.clientDraft!;
-      clientSnapshot = {
-        clientType: draft.clientType,
-        name: draft.name,
-        legalName: draft.legalName ?? null,
-        address: draft.address ?? null,
-        rc: draft.rc ?? null,
-        nif: draft.nif ?? null,
-        nis: draft.nis ?? null,
-        ai: draft.ai ?? null,
-        phone: draft.phone ?? null,
-        email: draft.email ?? null,
-      };
+    const recipient = resolveRecipient(d, owner, input);
+    if (!recipient) {
+      return { ok: false, status: 404, code: 'CLIENT_NOT_FOUND', message: 'Client not found' };
     }
+    const { clientId, clientSnapshot } = recipient;
 
     if (!Array.isArray(d.invoices)) d.invoices = [];
 

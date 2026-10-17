@@ -1702,7 +1702,12 @@
       "emptyQuoteDescription": "أرسل عرضاً مسعّراً يوقّعه العميل للموافقة — دون أي أثر على ترقيم فواتيرك.",
       "emptyQuoteCta": "إنشاء عرض سعر",
       "statusIssuedQuote": "صادر",
-      "statusCancelledQuote": "ملغى"
+      "statusCancelledQuote": "ملغى",
+      "actionEdit": "تعديل",
+      "actionStampAdd": "إضافة الختم",
+      "actionStampRemove": "إزالة الختم",
+      "actionFailed": "فشل الإجراء. أعد المحاولة.",
+      "statusConverted": "حُوِّلت ← {number}"
     },
     "invoiceForm": {
       "sectionClient": "العميل",
@@ -1774,7 +1779,12 @@
       "noteHint": "تُطبع أسفل هذا المستند فقط. لا يُحفظ شيء للمرة القادمة.",
       "legalGapCompany": "لا يملك هذا العميل سجلاً تجارياً ولا رقماً جبائياً: ستكون بياناته القانونية فارغة في الوثيقة.",
       "legalGapLooksCompany": "يبدو أن هذا العميل شركة لكنه مسجَّل كشخص طبيعي: لن تظهر بياناته القانونية (RC، NIF، NIS، AI).",
-      "completeClient": "إكمال بطاقة العميل"
+      "completeClient": "إكمال بطاقة العميل",
+      "editSaved": "تم حفظ التعديلات — {number}",
+      "editTitle": "تعديل {number}",
+      "editSubtitle": "يبقى الرقم والتاريخ كما هما. تُقرأ بيانات العميل والترويسة كما هي اليوم.",
+      "numberLocked": "يحتفظ المستند الصادر برقمه.",
+      "editSubmit": "حفظ التعديلات"
     },
     "listingTable": {
       "newListing": "إدراج جديد",

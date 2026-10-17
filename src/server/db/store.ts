@@ -2837,6 +2837,18 @@ export interface InvoiceRecord {
    */
   withStamp?: boolean;
   /**
+   * PROFORMA/DEVIS only. Set when the document was turned into a facture —
+   * from then on it is locked (no edit, no second conversion).
+   */
+  convertedToInvoiceId?: string | null;
+  /** That facture's number, so the proforma list can name it without loading it. */
+  convertedToNumber?: string | null;
+  convertedAt?: string | null;
+  /** FACTURE only: the proforma or devis it was converted from. */
+  convertedFromId?: string | null;
+  /** Last edit of a proforma/devis (a facture is never edited). */
+  editedAt?: string | null;
+  /**
    * Free text printed at the bottom: payment terms, a delivery note, whatever
    * this one document needs. Per document, deliberately not a default in
    * settings.

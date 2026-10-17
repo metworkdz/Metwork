@@ -26,9 +26,11 @@ interface Props {
   invoices: InvoiceListItem[];
   receipts: BookingWithCustomer[];
   legalComplete: boolean;
+  /** A stamp is on file — the list offers the Cachet toggle only then. */
+  hasStamp: boolean;
 }
 
-export function InvoicesTabs({ invoices, receipts, legalComplete }: Props) {
+export function InvoicesTabs({ invoices, receipts, legalComplete, hasStamp }: Props) {
   const t = useTranslations('incubator.invoicesPage');
   const [tab, setTab] = useState<InvoiceKind | 'receipts'>('FACTURE');
   /**
@@ -40,6 +42,11 @@ export function InvoicesTabs({ invoices, receipts, legalComplete }: Props) {
 
   const markCancelled = (id: string) =>
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, status: 'CANCELLED' as const } : r)));
+  /** A row the server rewrote (stamp, conversion) — or a new one (the facture a conversion created). */
+  const upsert = (invoice: InvoiceListItem) =>
+    setRows((rs) => (rs.some((r) => r.id === invoice.id)
+      ? rs.map((r) => (r.id === invoice.id ? invoice : r))
+      : [invoice, ...rs]));
 
   // Records issued before the other kinds existed carry no `kind` — they are
   // factures, and must keep showing up under Factures.
@@ -97,6 +104,8 @@ export function InvoicesTabs({ invoices, receipts, legalComplete }: Props) {
             rows={visible}
             legalComplete={legalComplete}
             onCancelled={markCancelled}
+            onChanged={upsert}
+            hasStamp={hasStamp}
           />
         )}
     </div>

@@ -77,6 +77,7 @@ export default async function IncubatorInvoicesPage({ params }: PageProps) {
         invoices={invoices}
         receipts={receipts}
         legalComplete={legalComplete}
+        hasStamp={Boolean(incubator?.stampUrl?.trim())}
       />
     </div>
   );
