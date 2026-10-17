@@ -15,7 +15,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Download, Plus, Search, Trash2, X } from 'lucide-react';
+import { Download, FileCheck2, Pencil, Plus, Search, Stamp, Trash2, X } from 'lucide-react';
 import {
   consultantService,
   type ConsultantClient,
@@ -130,6 +130,8 @@ function DocumentsView({
   const t = useTranslations('consultantPortal.invoices');
   const [filter, setFilter] = useState<KindFilter>('ALL');
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<ConsultantInvoice | null>(null);
+  const [converting, setConverting] = useState<ConsultantInvoice | null>(null);
 
   const shown = data.items.filter((i) => filter === 'ALL' || (i.kind ?? 'FACTURE') === filter);
 
@@ -171,7 +173,14 @@ function DocumentsView({
         <SectionCard><EmptyBlock>{t('empty')}</EmptyBlock></SectionCard>
       ) : (
         <div className="flex flex-col gap-2">
-          {shown.map((inv) => <DocumentRow key={inv.id} invoice={inv} onChanged={onChanged} />)}
+          {shown.map((inv) => (
+            <DocumentRow
+              key={inv.id} invoice={inv} onChanged={onChanged}
+              hasStamp={Boolean(settings.issuer.stampUrl)}
+              onEdit={() => setEditing(inv)}
+              onConvert={() => setConverting(inv)}
+            />
+          ))}
         </div>
       )}
 
@@ -184,15 +193,45 @@ function DocumentsView({
           onIssued={async () => { setCreating(false); await onChanged(); }}
         />
       )}
+      {editing && (
+        <CreateSheet
+          nextSeq={data.nextSeq}
+          defaultVatRate={settings.issuer.defaultVatRate}
+          canTransfer={settings.canInvoiceByTransfer}
+          editing={editing}
+          hasStamp={Boolean(settings.issuer.stampUrl)}
+          onClose={() => setEditing(null)}
+          onIssued={async () => { setEditing(null); await onChanged(); }}
+        />
+      )}
+      {converting && (
+        <ConvertSheet
+          source={converting}
+          nextNumber={data.nextSeq ? `${String(data.nextSeq.FACTURE).padStart(2, '0')}/${new Date().getUTCFullYear()}` : ''}
+          hasStamp={Boolean(settings.issuer.stampUrl)}
+          canTransfer={settings.canInvoiceByTransfer}
+          onClose={() => setConverting(null)}
+          onConverted={async () => { await onChanged(); }}
+        />
+      )}
     </div>
   );
 }
 
-function DocumentRow({ invoice, onChanged }: { invoice: ConsultantInvoice; onChanged: () => void | Promise<void> }) {
+function DocumentRow({ invoice, onChanged, hasStamp, onEdit, onConvert }: {
+  invoice: ConsultantInvoice;
+  onChanged: () => void | Promise<void>;
+  hasStamp: boolean;
+  onEdit: () => void;
+  onConvert: () => void;
+}) {
   const t = useTranslations('consultantPortal.invoices');
   const [busy, setBusy] = useState(false);
   const kind = invoice.kind ?? 'FACTURE';
   const cancelled = invoice.status === 'CANCELLED';
+  const converted = Boolean(invoice.convertedToInvoiceId);
+  // A proforma / devis can be corrected until cancelled or converted.
+  const editable = kind !== 'FACTURE' && !cancelled && !converted;
 
   return (
     <div className="rounded-lg border border-border bg-card p-3">
@@ -212,14 +251,43 @@ function DocumentRow({ invoice, onChanged }: { invoice: ConsultantInvoice; onCha
           <span className="text-sm font-semibold tabular-nums">{formatDZD(invoice.totals.net)}</span>
         </div>
       </div>
-      <div className="mt-2.5 flex gap-2">
+      <div className="mt-2.5 flex flex-wrap gap-2">
         <GhostButton
           tone="light"
           onClick={() => window.open(consultantService.invoicePdfPath(invoice.id), '_blank', 'noopener')}
         >
           <Download className="size-3.5" /> {t('downloadPdf')}
         </GhostButton>
-        {!cancelled && (
+        {editable && (
+          <GhostButton tone="light" disabled={busy} onClick={onEdit}>
+            <Pencil className="size-3.5" /> {t('edit')}
+          </GhostButton>
+        )}
+        {editable && hasStamp && (
+          <GhostButton
+            tone="light"
+            disabled={busy}
+            aria-pressed={Boolean(invoice.withStamp)}
+            onClick={async () => {
+              setBusy(true);
+              try { await consultantService.setInvoiceStamp(invoice.id, !invoice.withStamp); await onChanged(); }
+              catch (e) { window.alert(e instanceof Error ? e.message : t('actionFailed')); }
+              finally { setBusy(false); }
+            }}
+          >
+            <Stamp className={cn('size-3.5', invoice.withStamp && 'text-primary')} />
+            {invoice.withStamp ? t('stampRemove') : t('stampAdd')}
+          </GhostButton>
+        )}
+        {editable && (
+          <GhostButton tone="light" disabled={busy} onClick={onConvert}>
+            <FileCheck2 className="size-3.5" /> {t('convert')}
+          </GhostButton>
+        )}
+        {converted && (
+          <span className="self-center text-xs font-medium text-blue-700">{t('convertedTo', { number: invoice.convertedToNumber ?? '' })}</span>
+        )}
+        {!cancelled && !converted && (
           <GhostButton
             tone="light"
             disabled={busy}
@@ -242,27 +310,119 @@ function DocumentRow({ invoice, onChanged }: { invoice: ConsultantInvoice; onCha
   );
 }
 
+/* ═══════════════════ Convert ═══════════════════ */
+
+function ConvertSheet({ source, nextNumber, hasStamp, canTransfer, onClose, onConverted }: {
+  source: ConsultantInvoice;
+  nextNumber: string;
+  hasStamp: boolean;
+  canTransfer: boolean;
+  onClose: () => void;
+  onConverted: () => void | Promise<void>;
+}) {
+  const t = useTranslations('consultantPortal.invoices');
+  const [paymentMethod, setPaymentMethod] = useState(source.paymentMethod);
+  const [withStamp, setWithStamp] = useState(hasStamp && Boolean(source.withStamp));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<ConsultantInvoice | null>(null);
+
+  async function convert() {
+    setSaving(true);
+    setError(null);
+    try {
+      const { invoice } = await consultantService.convertInvoice(source.id, { paymentMethod, withStamp: hasStamp && withStamp });
+      setDone(invoice);
+      await onConverted();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('actionFailed'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <FlowSheet
+      open
+      onOpenChange={(o) => { if (!o) onClose(); }}
+      title={t('convertTitle', { number: source.number })}
+      footer={done ? (
+        <BrandButton tone="light" className="w-full"
+          onClick={() => window.open(consultantService.invoicePdfPath(done.id), '_blank', 'noopener')}>
+          <Download className="size-4" /> {t('downloadPdf')}
+        </BrandButton>
+      ) : (
+        <BrandButton tone="light" className="w-full" loading={saving} onClick={convert}>
+          {t('convertConfirm', { number: nextNumber })}
+        </BrandButton>
+      )}
+    >
+      <div className="flex flex-col gap-4">
+        {error && <ErrorBanner tone="light" message={error} />}
+        {done ? (
+          <p className="text-sm font-semibold">{t('convertDone', { number: done.number })}</p>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">{t('convertHint')}</p>
+            <Field label={t('paymentMethod')}>
+              <select className={cpInputClassLight} value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value as 'ESPECE')}>
+                <option value="ESPECE">{t('payEspece')}</option>
+                <option value="CHEQUE">{t('payCheque')}</option>
+                <option value="VIREMENT" disabled={!canTransfer}>
+                  {canTransfer ? t('payVirement') : t('payVirementNoRib')}
+                </option>
+              </select>
+            </Field>
+            {hasStamp && (
+              <label className="flex items-center gap-2.5 text-sm">
+                <input type="checkbox" className="size-4 accent-primary" checked={withStamp}
+                  aria-label={t('stampLabel')} onChange={(e) => setWithStamp(e.target.checked)} />
+                {t('stampLabel')}
+              </label>
+            )}
+            <p className="text-xs text-muted-foreground">{t('convertKeeps', { number: source.number })}</p>
+          </>
+        )}
+      </div>
+    </FlowSheet>
+  );
+}
+
 /* ═══════════════════ Create ═══════════════════ */
 
 interface DraftLine { designation: string; quantity: string; unitPriceHt: string }
 
 function CreateSheet({
-  nextSeq, defaultVatRate, canTransfer, onClose, onIssued,
+  nextSeq, defaultVatRate, canTransfer, onClose, onIssued, editing, hasStamp = false,
 }: {
   nextSeq: Record<ConsultantInvoiceKind, number> | null;
   defaultVatRate: number;
   canTransfer: boolean;
   onClose: () => void;
   onIssued: () => void | Promise<void>;
+  /** A proforma / devis being corrected: kind and number fixed, saved with PUT. */
+  editing?: ConsultantInvoice;
+  hasStamp?: boolean;
 }) {
   const t = useTranslations('consultantPortal.invoices');
-  const [kind, setKind] = useState<ConsultantInvoiceKind>('FACTURE');
-  const [client, setClient] = useState<ConsultantClient | null>(null);
-  const [lines, setLines] = useState<DraftLine[]>([{ designation: '', quantity: '1', unitPriceHt: '' }]);
-  const [vatRate, setVatRate] = useState(String(defaultVatRate));
-  const [paymentMethod, setPaymentMethod] = useState<'ESPECE' | 'CHEQUE' | 'VIREMENT'>('ESPECE');
-  const [validUntil, setValidUntil] = useState(defaultValidUntil());
-  const [note, setNote] = useState('');
+  const [kind, setKind] = useState<ConsultantInvoiceKind>(editing?.kind ?? 'FACTURE');
+  const [client, setClient] = useState<ConsultantClient | null>(editing?.clientId ? {
+    id: editing.clientId,
+    fullName: editing.clientSnapshot.name,
+    email: '',
+    phone: '',
+    clientType: editing.clientSnapshot.clientType,
+    legalName: editing.clientSnapshot.legalName ?? null,
+  } : null);
+  const [lines, setLines] = useState<DraftLine[]>(editing
+    ? editing.lines.map((l) => ({ designation: l.designation, quantity: String(l.quantity), unitPriceHt: String(l.unitPriceHt) }))
+    : [{ designation: '', quantity: '1', unitPriceHt: '' }]);
+  const [vatRate, setVatRate] = useState(String(editing?.vatRate ?? defaultVatRate));
+  const [paymentMethod, setPaymentMethod] = useState<'ESPECE' | 'CHEQUE' | 'VIREMENT'>(editing?.paymentMethod ?? 'ESPECE');
+  const [validUntil, setValidUntil] = useState(editing?.validUntil ?? defaultValidUntil());
+  const [note, setNote] = useState(editing?.note ?? '');
+  const [withStamp, setWithStamp] = useState(Boolean(editing?.withStamp));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -284,6 +444,21 @@ function CreateSheet({
     setSaving(true);
     setError(null);
     try {
+      if (editing) {
+        await consultantService.updateInvoice(editing.id, {
+          clientId: client!.id,
+          lines: lines
+            .filter((l) => l.designation.trim())
+            .map((l) => ({ designation: l.designation.trim(), quantity: Number(l.quantity) || 1, unitPriceHt: Number(l.unitPriceHt) || 0 })),
+          vatRate: Number(vatRate) || 0,
+          paymentMethod,
+          validUntil: kind === 'DEVIS' ? validUntil : (editing.validUntil ?? null),
+          withStamp: hasStamp && withStamp,
+          note: note.trim() || null,
+        });
+        await onIssued();
+        return;
+      }
       await consultantService.issueInvoice({
         clientId: client!.id,
         kind,
@@ -311,10 +486,10 @@ function CreateSheet({
     <FlowSheet
       open
       onOpenChange={(o) => { if (!o) onClose(); }}
-      title={t('newDocument')}
+      title={editing ? t('editTitle', { number: editing.number }) : t('newDocument')}
       footer={
         <BrandButton tone="light" className="w-full" disabled={!ready} loading={saving} onClick={submit}>
-          {t(`issue${kind}` as 'issueFACTURE')}
+          {editing ? t('saveChanges') : t(`issue${kind}` as 'issueFACTURE')}
         </BrandButton>
       }
     >
@@ -327,7 +502,9 @@ function CreateSheet({
               key={k}
               type="button"
               onClick={() => setKind(k)}
+              disabled={Boolean(editing) && k !== kind}
               className={cn(
+                'disabled:opacity-40',
                 'rounded px-2 py-2 text-sm transition-colors',
                 kind === k ? 'bg-primary font-semibold text-primary-foreground' : 'text-muted-foreground',
               )}
@@ -337,7 +514,7 @@ function CreateSheet({
           ))}
         </div>
 
-        {nextSeq && (
+        {nextSeq && !editing && (
           <p className="text-xs text-muted-foreground">
             {t('willBeNumbered', { number: String(nextSeq[kind]).padStart(2, '0') })}
           </p>
@@ -427,6 +604,14 @@ function CreateSheet({
               onChange={(e) => setValidUntil(e.target.value)}
             />
           </Field>
+        )}
+
+        {editing && hasStamp && (
+          <label className="flex items-center gap-2.5 text-sm">
+            <input type="checkbox" className="size-4 accent-primary" checked={withStamp}
+              aria-label={t('stampLabel')} onChange={(e) => setWithStamp(e.target.checked)} />
+            {t('stampLabel')}
+          </label>
         )}
 
         <Field label={t('note')}>

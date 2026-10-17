@@ -10,12 +10,15 @@
  */
 import type { z } from 'zod';
 
-import { db, type InvoiceRecord } from '@/server/db/store';
-import { amountToFrenchWords, computeInvoiceTotals } from '@/server/invoices/engine';
+import { randomUUID } from 'node:crypto';
+
+import { db, type InvoicePaymentMethod, type InvoiceRecord } from '@/server/db/store';
+import { allocateInvoiceNumber, amountToFrenchWords, computeInvoiceTotals } from '@/server/invoices/engine';
 import {
   findIssuer,
   issuerLegalGate,
   issuerSnapshotFrom,
+  ownerFields,
   ownsInvoice,
   type InvoiceOwner,
 } from '@/server/invoices/owner';
@@ -113,5 +116,92 @@ export async function setDraftStamp(owner: InvoiceOwner, id: string, withStamp: 
     invoice.editedAt = now;
     invoice.updatedAt = now;
     return { ok: true, invoice: { ...invoice } };
+  });
+}
+
+/* ─────────────────── Turning a proforma / devis into a facture ─────────────────── */
+
+export type ConvertResult =
+  | { ok: true; invoice: InvoiceRecord; source: InvoiceRecord }
+  | DraftRefusal;
+
+/**
+ * Issue the facture a proforma or devis announced — in ONE write, so it can
+ * never happen twice: the facture takes the next number of the FACTURE
+ * sequence (no hole, no reuse), today's date, the client as they are NOW
+ * (a client completed since the proforma shows up), and the services, VAT,
+ * note and template of the source. The payment method and the stamp are
+ * confirmed by the host, since « paiement prévu » is not always how it was
+ * paid. The timbre follows the engine (cash factures only). The source stays,
+ * marked converted and locked.
+ */
+export async function convertDraftToInvoice(
+  owner: InvoiceOwner,
+  id: string,
+  input: { paymentMethod: InvoicePaymentMethod; withStamp: boolean },
+): Promise<ConvertResult> {
+  const pre = findIssuer(await db.read(), owner);
+  if (!pre) return { ok: false, status: 404, code: 'ISSUER_NOT_FOUND', message: 'Issuer not found' };
+  const gate = issuerLegalGate(pre.profile, input.paymentMethod, owner);
+  if (!gate.ok) return { ok: false, status: 422, code: gate.code, message: gate.message };
+
+  return db.update<ConvertResult>((d) => {
+    const source = (d.invoices ?? []).find((i) => i.id === id && ownsInvoice(i, owner));
+    if (!source) return notFound;
+    const lock = draftLock(source);
+    if (lock) return lock;
+    const issuer = findIssuer(d, owner);
+    if (!issuer) return { ok: false, status: 404, code: 'ISSUER_NOT_FOUND', message: 'Issuer not found' };
+    if (input.withStamp && !issuer.profile.stampUrl) {
+      return { ok: false, status: 422, code: 'NO_STAMP', message: 'Aucun cachet enregistré : ajoutez-le dans Paramètres.' };
+    }
+    // The saved client as it is now; an ad-hoc recipient keeps the source's copy.
+    let clientId = source.clientId ?? null;
+    let clientSnapshot = source.clientSnapshot;
+    if (clientId) {
+      const recipient = resolveRecipient(d, owner, { clientId });
+      if (!recipient) return { ok: false, status: 404, code: 'CLIENT_NOT_FOUND', message: 'Client introuvable' };
+      ({ clientId, clientSnapshot } = recipient);
+    }
+
+    const now = new Date().toISOString();
+    const year = new Date().getUTCFullYear();
+    const { number, seq } = allocateInvoiceNumber(issuer.counterHolder, year, undefined, 'FACTURE');
+    issuer.counterHolder.updatedAt = now;
+    const totals = computeInvoiceTotals(source.lines, source.vatRate, input.paymentMethod, 'FACTURE');
+
+    const invoice: InvoiceRecord = {
+      id: randomUUID(),
+      ...ownerFields(owner),
+      kind: 'FACTURE',
+      number,
+      year,
+      seq,
+      validUntil: null,
+      issuedAt: now,
+      clientId,
+      clientSnapshot,
+      issuerSnapshot: issuerSnapshotFrom(issuer.profile),
+      lines: source.lines,
+      withStamp: input.withStamp,
+      note: source.note ?? null,
+      vatRate: source.vatRate,
+      paymentMethod: input.paymentMethod,
+      template: source.template,
+      totals,
+      amountInWords: amountToFrenchWords(totals.net),
+      status: 'ISSUED',
+      convertedFromId: source.id,
+      createdAt: now,
+      updatedAt: now,
+    };
+    if (!Array.isArray(d.invoices)) d.invoices = [];
+    d.invoices.push(invoice);
+
+    source.convertedToInvoiceId = invoice.id;
+    source.convertedToNumber = invoice.number;
+    source.convertedAt = now;
+    source.updatedAt = now;
+    return { ok: true, invoice: { ...invoice }, source: { ...source } };
   });
 }

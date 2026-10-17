@@ -630,7 +630,21 @@
       "taxArticleRequired": "مادة الإخضاع (مطلوبة)",
       "confirmCancelFACTURE": "إلغاء الفاتورة {number} نهائيًا؟ لا يمكن استرجاع فاتورة ملغاة — للتصحيح أصدر فاتورة جديدة.",
       "confirmCancelPROFORMA": "إلغاء الفاتورة الأولية {number} نهائيًا؟ لا يمكن استرجاعها.",
-      "confirmCancelDEVIS": "إلغاء عرض السعر {number} نهائيًا؟ لا يمكن استرجاعه."
+      "confirmCancelDEVIS": "إلغاء عرض السعر {number} نهائيًا؟ لا يمكن استرجاعه.",
+      "edit": "تعديل",
+      "editTitle": "تعديل {number}",
+      "saveChanges": "حفظ التعديلات",
+      "stampAdd": "إضافة الختم",
+      "stampRemove": "إزالة الختم",
+      "stampLabel": "وضع الختم",
+      "convert": "تحويل إلى فاتورة",
+      "convertedTo": "حُوِّلت ← {number}",
+      "convertTitle": "تحويل {number} إلى فاتورة",
+      "convertHint": "تُنقل الخدمات والرسم والملاحظة والعميل. تأخذ الفاتورة الرقم التالي وتاريخ اليوم.",
+      "convertConfirm": "إنشاء الفاتورة {number}",
+      "convertDone": "تم إنشاء الفاتورة {number}",
+      "convertKeeps": "يبقى {number} في القائمة، موسوماً «محوَّل» ومقفلاً.",
+      "actionFailed": "فشل الإجراء. أعد المحاولة."
     }
   },
   "common": {
@@ -1707,7 +1721,23 @@
       "actionStampAdd": "إضافة الختم",
       "actionStampRemove": "إزالة الختم",
       "actionFailed": "فشل الإجراء. أعد المحاولة.",
-      "statusConverted": "حُوِّلت ← {number}"
+      "statusConverted": "حُوِّلت ← {number}",
+      "actionConvert": "تحويل إلى فاتورة",
+      "convertTitle": "تحويل {number} إلى فاتورة",
+      "convertDescription": "تُنقل الخدمات والرسم والملاحظة والعميل. أكِّد ما يتغيّر.",
+      "convertNumber": "رقم الفاتورة",
+      "convertDate": "التاريخ",
+      "convertBase": "المجموع مع الرسم",
+      "convertLegalGap": "لا يملك هذا العميل بيانات قانونية (RC، NIF…): لن تظهر في الفاتورة. أكمل بطاقته في العملاء قبل التحويل.",
+      "convertTimbre": "سيُضاف حق الطابع (دفع نقدي).",
+      "convertStamp": "وضع الختم",
+      "convertKeeps": "يبقى {number} في القائمة، موسوماً «محوَّل» ومقفلاً.",
+      "convertCancel": "إلغاء",
+      "convertConfirm": "إنشاء الفاتورة {number}",
+      "convertDone": "تم إنشاء الفاتورة {number}",
+      "convertDoneHint": "تظهر في تبويب الفواتير.",
+      "convertDownload": "تحميل الفاتورة",
+      "convertClose": "إغلاق"
     },
     "invoiceForm": {
       "sectionClient": "العميل",

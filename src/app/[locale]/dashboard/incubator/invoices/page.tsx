@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { InvoicesTabs } from '@/components/features/incubator/invoices-tabs';
+import { peekNextSeq } from '@/server/invoices/engine';
 import { db, type BookingRecord, type InvoiceRecord } from '@/server/db/store';
 
 interface PageProps {
@@ -78,6 +79,8 @@ export default async function IncubatorInvoicesPage({ params }: PageProps) {
         receipts={receipts}
         legalComplete={legalComplete}
         hasStamp={Boolean(incubator?.stampUrl?.trim())}
+        factureYear={new Date().getUTCFullYear()}
+        nextFactureSeq={peekNextSeq({ invoiceCounters: incubator?.invoiceCounters ?? null }, new Date().getUTCFullYear(), 'FACTURE')}
       />
     </div>
   );

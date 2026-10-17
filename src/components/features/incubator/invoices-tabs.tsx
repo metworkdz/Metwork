@@ -10,6 +10,7 @@
  * components is how they would drift apart.
  */
 import { useState } from 'react';
+import { formatInvoiceNumber } from '@/server/invoices/engine';
 import { useTranslations } from 'next-intl';
 import { FileText, FileSignature, ReceiptText, ScrollText } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -28,9 +29,13 @@ interface Props {
   legalComplete: boolean;
   /** A stamp is on file — the list offers the Cachet toggle only then. */
   hasStamp: boolean;
+  /** The year the facture sequence counts in, resolved on the server. */
+  factureYear: number;
+  /** The facture counter's next value when the page loaded. */
+  nextFactureSeq: number;
 }
 
-export function InvoicesTabs({ invoices, receipts, legalComplete, hasStamp }: Props) {
+export function InvoicesTabs({ invoices, receipts, legalComplete, hasStamp, factureYear, nextFactureSeq }: Props) {
   const t = useTranslations('incubator.invoicesPage');
   const [tab, setTab] = useState<InvoiceKind | 'receipts'>('FACTURE');
   /**
@@ -106,6 +111,12 @@ export function InvoicesTabs({ invoices, receipts, legalComplete, hasStamp }: Pr
             onCancelled={markCancelled}
             onChanged={upsert}
             hasStamp={hasStamp}
+            nextFactureNumber={formatInvoiceNumber(
+              // Factures converted since the page loaded have taken numbers too.
+              nextFactureSeq + rows.filter((r) => r.convertedFromId && !invoices.some((i) => i.id === r.id)).length,
+              factureYear,
+              'FACTURE',
+            )}
           />
         )}
     </div>

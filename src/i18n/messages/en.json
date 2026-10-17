@@ -630,7 +630,21 @@
       "taxArticleRequired": "Tax article (required)",
       "confirmCancelFACTURE": "Permanently cancel invoice {number}? A cancelled invoice cannot be restored — to correct it, issue a new one.",
       "confirmCancelPROFORMA": "Permanently cancel proforma {number}? It cannot be restored.",
-      "confirmCancelDEVIS": "Permanently cancel quote {number}? It cannot be restored."
+      "confirmCancelDEVIS": "Permanently cancel quote {number}? It cannot be restored.",
+      "edit": "Edit",
+      "editTitle": "Edit {number}",
+      "saveChanges": "Save changes",
+      "stampAdd": "Add stamp",
+      "stampRemove": "Remove stamp",
+      "stampLabel": "Add the stamp",
+      "convert": "Convert to invoice",
+      "convertedTo": "Converted → {number}",
+      "convertTitle": "Convert {number} to an invoice",
+      "convertHint": "Services, VAT, note and client are carried over. The invoice takes the next number and today’s date.",
+      "convertConfirm": "Create invoice {number}",
+      "convertDone": "Invoice {number} created",
+      "convertKeeps": "{number} stays in the list, marked “Converted” and locked.",
+      "actionFailed": "The action failed. Try again."
     }
   },
   "common": {
@@ -1707,7 +1721,23 @@
       "actionStampAdd": "Add the stamp",
       "actionStampRemove": "Remove the stamp",
       "actionFailed": "The action failed. Try again.",
-      "statusConverted": "Converted → {number}"
+      "statusConverted": "Converted → {number}",
+      "actionConvert": "Convert to invoice",
+      "convertTitle": "Convert {number} to an invoice",
+      "convertDescription": "The services, VAT, note and client are carried over. Confirm what changes.",
+      "convertNumber": "Invoice number",
+      "convertDate": "Date",
+      "convertBase": "Total incl. VAT",
+      "convertLegalGap": "This client has no legal information (RC, NIF…): it won’t appear on the invoice. Complete their record in Clients before converting.",
+      "convertTimbre": "The stamp duty will be added (cash payment).",
+      "convertStamp": "Add the stamp",
+      "convertKeeps": "{number} stays in the list, marked “Converted” and locked.",
+      "convertCancel": "Cancel",
+      "convertConfirm": "Create invoice {number}",
+      "convertDone": "Invoice {number} created",
+      "convertDoneHint": "It appears in the Invoices tab.",
+      "convertDownload": "Download the invoice",
+      "convertClose": "Close"
     },
     "invoiceForm": {
       "sectionClient": "Client",

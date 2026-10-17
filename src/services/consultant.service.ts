@@ -305,6 +305,13 @@ export interface ConsultantInvoice {
   paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT';
   totals: { ht: number; tva: number; ttc: number; timbre: number; net: number };
   status: 'ISSUED' | 'CANCELLED';
+  clientId?: string | null;
+  note?: string | null;
+  withStamp?: boolean;
+  /** Proforma / devis turned into a facture — locked from then on. */
+  convertedToInvoiceId?: string | null;
+  convertedToNumber?: string | null;
+  convertedFromId?: string | null;
 }
 
 /** The consultant's letterhead, as stored. */
@@ -562,6 +569,16 @@ export const consultantService = {
   invoices: () => apiClient.get<ConsultantInvoiceList>('/consultant/invoices'),
   issueInvoice: (body: ConsultantInvoiceInput) =>
     apiClient.post<ConsultantInvoice>('/consultant/invoices', body),
+  /** Correct a proforma / devis in place (same number). A facture is refused. */
+  updateInvoice: (id: string, body: Omit<ConsultantInvoiceInput, 'kind' | 'seq'>) =>
+    apiClient.put<{ invoice: ConsultantInvoice }>(`/consultant/invoices/${encodeURIComponent(id)}`, body),
+  setInvoiceStamp: (id: string, withStamp: boolean) =>
+    apiClient.patch<{ invoice: ConsultantInvoice }>(`/consultant/invoices/${encodeURIComponent(id)}`, { withStamp }),
+  /** Turn a proforma / devis into a facture (next facture number, today). */
+  convertInvoice: (id: string, body: { paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT'; withStamp: boolean }) =>
+    apiClient.post<{ invoice: ConsultantInvoice; source: ConsultantInvoice }>(
+      `/consultant/invoices/${encodeURIComponent(id)}/convert`, body,
+    ),
   cancelInvoice: (id: string) =>
     apiClient.patch<{ invoice: ConsultantInvoice }>(
       `/consultant/invoices/${encodeURIComponent(id)}`,

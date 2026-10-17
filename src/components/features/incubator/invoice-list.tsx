@@ -11,7 +11,8 @@
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlertTriangle, Ban, Download, FilePlus2, FileText, Pencil, Plus, Search, Stamp } from 'lucide-react';
+import { AlertTriangle, Ban, Download, FileCheck2, FilePlus2, FileText, Pencil, Plus, Search, Stamp } from 'lucide-react';
+import { ConvertToInvoiceDialog } from './convert-to-invoice-dialog';
 import { Link } from '@/i18n/routing';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,8 @@ interface Props {
   /** A row the server rewrote, or a new one (see InvoicesTabs). */
   onChanged: (invoice: InvoiceListItem) => void;
   hasStamp: boolean;
+  /** The facture number a conversion would take next (preview only). */
+  nextFactureNumber: string;
 }
 
 const METHOD_LABEL_KEY = {
@@ -75,7 +78,7 @@ function formatDay(day: string): string {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : day;
 }
 
-export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged, hasStamp }: Props) {
+export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged, hasStamp, nextFactureNumber }: Props) {
   const t = useTranslations('incubator.invoicesPage');
   const copy = COPY[kind];
   const newHref = `/dashboard/incubator/invoices/new?kind=${kind}` as const;
@@ -85,6 +88,7 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged,
   const [q, setQ] = useState('');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [stampingId, setStampingId] = useState<string | null>(null);
+  const [converting, setConverting] = useState<InvoiceListItem | null>(null);
 
   /** One click: add or remove the stamp on a proforma / devis. */
   async function toggleStamp(invoice: InvoiceListItem) {
@@ -193,7 +197,7 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged,
                     <TableHead className="text-end">{t('colNet')}</TableHead>
                     <TableHead>{t('colMethod')}</TableHead>
                     <TableHead>{t('colStatus')}</TableHead>
-                    <TableHead className="w-40" />
+                    <TableHead className={kind === 'FACTURE' ? 'w-24' : 'w-72'} />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -268,6 +272,17 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged,
                                 <Stamp className={invoice.withStamp ? 'size-4 text-primary' : 'size-4 text-muted-foreground'} />
                               </Button>
                             )}
+                            {editable && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="ms-1 whitespace-nowrap border-primary/50 text-primary hover:text-primary"
+                                onClick={() => setConverting(invoice)}
+                              >
+                                <FileCheck2 className="size-4" />
+                                {t('actionConvert')}
+                              </Button>
+                            )}
                             {!cancelled && !converted && (
                               <Button
                                 variant="ghost"
@@ -290,6 +305,15 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged,
           )}
         </CardContent>
       </Card>
+      {kind !== 'FACTURE' && (
+        <ConvertToInvoiceDialog
+          source={converting}
+          nextNumber={nextFactureNumber}
+          hasStamp={hasStamp}
+          onOpenChange={(o) => { if (!o) setConverting(null); }}
+          onConverted={(invoice, source) => { onChanged(source); onChanged(invoice); }}
+        />
+      )}
     </div>
   );
 }

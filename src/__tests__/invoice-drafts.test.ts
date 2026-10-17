@@ -136,3 +136,67 @@ describe('the stamp toggle', () => {
     expect(((await (await patch(f.id, { status: 'CANCELLED' })).json()).invoice as InvoiceRecord).status).toBe('CANCELLED');
   });
 });
+
+describe('converting to a facture', () => {
+  const convert = async (id: string, body: Record<string, unknown>) => {
+    const { POST } = await import('@/app/api/incubator/invoices/[id]/convert/route');
+    return POST(new NextRequest('http://localhost/x', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+    }), ctx(id));
+  };
+
+  it('issues the next facture number, today, with the client as completed since, and locks the proforma', async () => {
+    await issue('FACTURE'); // 01
+    const fp = await issue('PROFORMA', { note: 'Avance 50 %' });
+    await db.update((d) => {
+      Object.assign(d.clients.find((c) => c.id === 'cl-mdm')!, { clientType: 'COMPANY', legalName: 'SARL MDM', rc: 'RC-1', nif: 'NIF-1' });
+    });
+
+    const res = await convert(fp.id, { paymentMethod: 'ESPECE', withStamp: true });
+    expect(res.status).toBe(201);
+    const { invoice, source } = await res.json() as { invoice: InvoiceRecord; source: InvoiceRecord };
+    const year = new Date().getUTCFullYear();
+    expect(invoice).toMatchObject({
+      kind: 'FACTURE', number: `02/${year}`, convertedFromId: fp.id, withStamp: true, note: 'Avance 50 %',
+      lines: fp.lines, vatRate: 19, paymentMethod: 'ESPECE', status: 'ISSUED',
+    });
+    // A cash facture carries the timbre the proforma did not.
+    expect(invoice.totals.timbre).toBeGreaterThan(0);
+    expect(fp.totals.timbre).toBe(0);
+    expect(buildInvoiceViewModel(invoice).clientLines).toEqual(expect.arrayContaining(['SARL MDM', 'RC: RC-1']));
+    expect(source).toMatchObject({ convertedToInvoiceId: invoice.id, convertedToNumber: `02/${year}`, status: 'ISSUED' });
+
+    // Locked: no second conversion, no edit, no stamp toggle — and no extra facture.
+    expect((await (await convert(fp.id, { paymentMethod: 'ESPECE', withStamp: false })).json()).error.code).toBe('CONVERTED');
+    expect((await put(fp.id, edit)).status).toBe(409);
+    expect((await patch(fp.id, { withStamp: false })).status).toBe(409);
+    expect((await db.read()).invoices!.filter((i) => (i.kind ?? 'FACTURE') === 'FACTURE')).toHaveLength(2);
+
+    // The next facture continues the sequence: no hole, no reuse.
+    expect((await issue('FACTURE')).number).toBe(`03/${year}`);
+  });
+
+  it('converts a devis too', async () => {
+    const dv = await issue('DEVIS');
+    expect((await convert(dv.id, { paymentMethod: 'CHEQUE', withStamp: false })).status).toBe(201);
+  });
+
+  it('refuses a facture, a cancelled proforma, and virement without a RIB — writing nothing', async () => {
+    const f = await issue('FACTURE');
+    expect((await (await convert(f.id, { paymentMethod: 'ESPECE', withStamp: false })).json()).error.code).toBe('FACTURE_LOCKED');
+    const fp = await issue('PROFORMA');
+    await patch(fp.id, { status: 'CANCELLED' });
+    expect((await (await convert(fp.id, { paymentMethod: 'ESPECE', withStamp: false })).json()).error.code).toBe('CANCELLED');
+    const fp2 = await issue('PROFORMA');
+    await db.update((d) => { (d.incubators[0] as { bankRib?: string | null }).bankRib = null; });
+    expect((await convert(fp2.id, { paymentMethod: 'VIREMENT', withStamp: false })).status).toBe(422);
+    const d = await db.read();
+    expect(d.invoices!.filter((i) => (i.kind ?? 'FACTURE') === 'FACTURE')).toHaveLength(1);
+    expect(d.invoices!.every((i) => !i.convertedToInvoiceId)).toBe(true);
+  });
+
+  it('rejects a bad body', async () => {
+    const fp = await issue('PROFORMA');
+    expect((await convert(fp.id, { paymentMethod: 'BITCOIN', withStamp: false })).status).toBe(422);
+  });
+});
