@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Cairo, Plus_Jakarta_Sans, Space_Grotesk } from 'next/font/google';
+import { inter, cairoArabic, cairoLatin, cairoVariable, plusJakartaSans, spaceGrotesk } from '@/fonts';
 import { notFound } from 'next/navigation';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { Providers } from '@/components/providers';
@@ -10,33 +10,6 @@ import { getServerSession } from '@/lib/session';
 import { siteConfig } from '@/config/site';
 import { locales, getDirection } from '@/i18n/config';
 import { cn } from '@/lib/utils';
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
-
-const cairo = Cairo({
-  subsets: ['arabic', 'latin'],
-  variable: '--font-cairo',
-  display: 'swap',
-});
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  variable: '--font-display',
-  display: 'swap',
-  weight: ['500', '600', '700', '800'],
-});
-
-// Nav badge numerals only (design system: red badge counts use Space Grotesk).
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-grotesk',
-  display: 'swap',
-  weight: ['500', '700'],
-});
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -150,7 +123,10 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         {/* Must run before hydration — the install hook fires once and early. */}
         <InstallPromptCapture />
       </head>
-      <body className={cn(inter.variable, cairo.variable, plusJakartaSans.variable, spaceGrotesk.variable, 'min-h-screen bg-background font-sans')}>
+      <body
+        className={cn(inter.variable, cairoArabic.variable, cairoLatin.variable, plusJakartaSans.variable, spaceGrotesk.variable, 'min-h-screen bg-background font-sans')}
+        style={cairoVariable}
+      >
         <Providers locale={locale} messages={messages} initialUser={sessionUser}>
           {children}
         </Providers>
