@@ -46,12 +46,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 const FEATURES = [
   { key: 'f1', icon: BadgeCheck, live: true },
   { key: 'f2', icon: Users, live: false },
-  { key: 'f3', icon: FileText, live: false },
-  { key: 'f4', icon: Link2, live: false },
+  { key: 'f3', icon: FileText, live: true },
+  { key: 'f4', icon: Link2, live: true },
   { key: 'f5', icon: CalendarClock, live: false },
   { key: 'f6', icon: Sparkles, live: false },
   { key: 'f7', icon: FileSignature, live: false },
-  { key: 'f8', icon: Building2, live: false },
+  { key: 'f8', icon: Building2, live: true },
 ] as const;
 
 export default async function FreelancersPage({ params }: PageProps) {
