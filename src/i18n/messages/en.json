@@ -798,7 +798,8 @@
     "logout": "Log out",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "badgeNewActivity": "{count, plural, one {# new activity} other {# new activities}}"
+    "badgeNewActivity": "{count, plural, one {# new activity} other {# new activities}}",
+    "forFreelancers": "For Freelancers"
   },
   "footer": {
     "tagline": "Building Algeria's startup future, together.",
@@ -968,7 +969,9 @@
       "instagramPlaceholder": "@yourhandle or profile link",
       "linkedinLabel": "LinkedIn",
       "linkedinHint": "Recommended — helps us verify your profile faster",
-      "linkedinPlaceholder": "linkedin.com/in/yourprofile"
+      "linkedinPlaceholder": "linkedin.com/in/yourprofile",
+      "roleFreelancer": "Freelancer / auto-entrepreneur",
+      "roleFreelancerDesc": "I sell my services: invoicing, payment links and clients across Algeria"
     },
     "verifyOtp": {
       "title": "Verify your phone",
@@ -2292,7 +2295,10 @@
     "payments": "Payments",
     "domiciliation": "Domiciliation",
     "consultantContracts": "Consultant contracts",
-    "feedback": "Feedback"
+    "feedback": "Feedback",
+    "profile": "Profile",
+    "legalReviews": "Document reviews",
+    "venture": "My business"
   },
   "pages": {
     "consultationPay": {
@@ -2666,7 +2672,9 @@
           "statConsultations": "Consultations",
           "statConsultationDiscount": "{percent}% off",
           "statConsultationHintUpgrade": "Upgrade to save on consultations",
-          "statConsultationHintDiscount": "Your consultation discount"
+          "statConsultationHintDiscount": "Your consultation discount",
+          "addVentureTitle": "Add your business",
+          "addVentureBody": "Startup, company, activity or idea: tell us about it and we'll show you who can help."
         },
         "bookings": {
           "title": "Bookings",
@@ -3147,7 +3155,9 @@
         "membership": {
           "title": "Membership",
           "subtitle": "Your plan, its renewal and what it includes."
-        }
+        },
+        "completeTitle": "Complete your profile",
+        "completeBody": "Reach 100 % to get verified and unlock a free month of Premium."
       }
     },
     "payment": {
@@ -3640,6 +3650,58 @@
       "s13Email": "Email:",
       "s13p2": "We will acknowledge your request within 5 business days and provide a substantive response within 30 calendar days. If your request is complex or you have submitted multiple requests, we may extend this period by up to two additional months, in which case we will inform you accordingly.",
       "paymentsCountryName": "United Kingdom"
+    },
+    "freelancers": {
+      "metaTitle": "For freelancers & auto-entrepreneurs",
+      "metaDescription": "Get found by entrepreneurs across Algeria, invoice properly, get paid in DZD and stay on top of your tax obligations.",
+      "heroEyebrow": "Freelancers & auto-entrepreneurs",
+      "heroTitle": "Your freelance business,",
+      "heroTitleHighlight": "from the first quote to the G12",
+      "heroSubtitle": "Find clients across Algeria, invoice properly, get paid by CIB and Edahabia and never miss a tax deadline — all in one place.",
+      "heroPrimaryCta": "Create my free profile",
+      "heroSecondaryCta": "See the plans",
+      "trialNote": "Complete your profile 100 % and get 1 month of Premium free.",
+      "featuresEyebrow": "What you get",
+      "featuresTitle": "Everything you need to work for yourself",
+      "featuresSubtitle": "Some tools are live today, the rest arrive over the coming weeks. Every account gets them as they launch.",
+      "soon": "Soon",
+      "f1Title": "A profile clients trust",
+      "f1Desc": "Photo, expertise, portfolio and your verified auto-entrepreneur card or commercial register.",
+      "f2Title": "Clients from across Algeria",
+      "f2Desc": "Entrepreneurs find you in their hiring tab, and our AI recommends you for their briefs.",
+      "f3Title": "Proper invoices",
+      "f3Desc": "Invoices, quotes and proformas with NIF, NIS, RC and the auto-entrepreneur mention.",
+      "f4Title": "Get paid in DZD",
+      "f4Desc": "Payment links by CIB and Edahabia that you send on WhatsApp.",
+      "f5Title": "Taxes made simple",
+      "f5Desc": "A calendar for CASNOS, G12 and G12 bis, with a short Jibayatic guide for each.",
+      "f6Title": "AI copilot",
+      "f6Desc": "Ask about accounting and Algerian business law; answers cite the official texts.",
+      "f7Title": "Contracts",
+      "f7Desc": "Service agreements and NDAs signed online.",
+      "f8Title": "Spaces and mentors",
+      "f8Desc": "10 % off coworking spaces and mentor sessions on Premium.",
+      "howEyebrow": "How it works",
+      "howTitle": "Three steps to your first client",
+      "step1Title": "Create your profile",
+      "step1Desc": "Sign up for free and add your expertise, portfolio and business document.",
+      "step2Title": "Get verified",
+      "step2Desc": "We check your card or register automatically, usually in seconds.",
+      "step3Title": "Start working",
+      "step3Desc": "Share your profile, send quotes and get paid in dinars.",
+      "plansEyebrow": "Plans",
+      "plansTitle": "Start free, upgrade when clients come in",
+      "plansFreeName": "Free",
+      "plansFreeDesc": "Profile, limited invoices and payment links, tax calendar.",
+      "plansPremiumName": "Premium",
+      "plansPremiumDesc": "No limits, verified badge, priority with clients, 10 % off spaces and mentors.",
+      "plansPremiumPrice": "{price} / month",
+      "plansPremiumSoon": "Opening soon",
+      "plansLink": "Compare plans",
+      "ctaTitle": "Ready to launch your activity?",
+      "ctaSubtitle": "Free forever. Upgrade only when it pays for itself.",
+      "ctaPrimary": "Join now",
+      "ctaSecondary": "Talk to us"
     }
   },
   "spaces": {
@@ -4876,7 +4938,8 @@
         "consultant": "Consultant",
         "pricing": "Memberships",
         "about": "About",
-        "contact": "Contact"
+        "contact": "Contact",
+        "freelancers": "For freelancers"
       },
       "saveSettings": "Save settings",
       "settingsSaved": "Settings saved.",
@@ -5008,6 +5071,55 @@
       "colAssignedAt": "Assigned on",
       "statusAvailable": "Available",
       "statusAssigned": "Assigned"
+    },
+    "legalReviews": {
+      "title": "Business document reviews",
+      "subtitle": "Auto-entrepreneur cards and commercial registers the automatic check could not approve.",
+      "tab": {
+        "PENDING": "To review",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected"
+      },
+      "empty": "Nothing here.",
+      "loadError": "Could not load the queue.",
+      "openDocument": "Open document",
+      "declared": "Declared",
+      "read": {
+        "type": "Read as",
+        "name": "Name",
+        "number": "Number",
+        "expiry": "Expiry",
+        "confidence": "Confidence",
+        "illegible": "illegible"
+      },
+      "status": {
+        "AUTO_ENTREPRENEUR": "Auto-entrepreneur",
+        "INDIVIDUAL_IFU": "Trader / craftsman",
+        "COMPANY": "Company",
+        "LIBERAL_PROFESSION": "Liberal profession",
+        "ASSOCIATION": "Association",
+        "UNREGISTERED": "Unregistered"
+      },
+      "kind": {
+        "AUTO_ENTREPRENEUR_CARD": "Auto-entrepreneur card",
+        "COMMERCE_REGISTER": "Commercial register",
+        "OTHER": "Other document"
+      },
+      "reason": {
+        "AI_UNAVAILABLE": "Automatic reading unavailable",
+        "NOT_LEGIBLE": "Not legible",
+        "LOW_CONFIDENCE": "Low confidence",
+        "WRONG_DOCUMENT": "Wrong document type",
+        "NAME_MISMATCH": "Name does not match the profile",
+        "NUMBER_MISSING": "No document number",
+        "EXPIRED": "Expired",
+        "DUPLICATE_NUMBER": "Number used by another account"
+      },
+      "notePlaceholder": "Note to the freelancer (required to reject)",
+      "noteRequired": "Write a note before rejecting.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "decideError": "Could not save the decision."
     }
   },
   "bookings": {
@@ -6180,5 +6292,228 @@
     "notSentYet": "Not sent yet",
     "emptyPrograms": "No programs yet.",
     "open": "Open"
+  },
+  "join": {
+    "chooserTitle": "Join Metwork",
+    "chooserSubtitle": "Tell us who you are — we'll show you what matters to you.",
+    "haveAccount": "Already have an account?",
+    "login": "Log in",
+    "entrepreneur": {
+      "card": "I have a project or a company",
+      "cardDesc": "Startup, SME, activity or idea — book spaces, find mentors and people to work with",
+      "eyebrow": "For founders",
+      "title": "Build your company with the whole ecosystem behind you",
+      "subtitle": "Free to join. Book spaces, meet mentors and investors, and find the people you need.",
+      "point1": "Coworking spaces and offices across Algeria",
+      "point2": "Mentors, programs and events for every stage",
+      "point3": "Founder plan: 10 % off spaces and consultations, gold badge"
+    },
+    "freelancer": {
+      "card": "I'm a freelancer or auto-entrepreneur",
+      "cardDesc": "Sell your services, invoice properly and get paid in DZD",
+      "eyebrow": "For freelancers & auto-entrepreneurs",
+      "title": "Your freelance business, from the first quote to the G12",
+      "subtitle": "Free to join. Get found by entrepreneurs across Algeria and run your business in one place.",
+      "point1": "A public profile entrepreneurs can hire you from",
+      "point2": "Invoices, quotes and DZD payment links (CIB, Edahabia)",
+      "point3": "Complete your profile: 1 month of Premium free"
+    },
+    "investor": {
+      "card": "I invest",
+      "cardDesc": "Discover vetted Algerian startups raising funds",
+      "eyebrow": "For investors",
+      "title": "Meet the startups Algeria is building",
+      "subtitle": "Browse founders who are raising, follow their progress and request meetings.",
+      "point1": "Startups with pitch decks and funding goals",
+      "point2": "Meeting requests handled by the Metwork team",
+      "point3": "Accounts are reviewed before access"
+    },
+    "space": {
+      "card": "I run a space, incubator or training centre",
+      "cardDesc": "List your offer and manage bookings, clients and invoices",
+      "eyebrow": "For incubators & spaces",
+      "title": "Fill your spaces and run your programs on Metwork",
+      "subtitle": "List coworking desks, offices and rooms, sell programs and manage everything from one dashboard.",
+      "point1": "Online bookings paid by CIB and Edahabia",
+      "point2": "Clients, invoices, contracts and revenue in one place",
+      "point3": "Accounts are reviewed before going live"
+    },
+    "consultant": {
+      "card": "I'm a consultant or mentor",
+      "cardDesc": "Offer paid sessions to entrepreneurs"
+    }
+  },
+  "freelancer": {
+    "profile": {
+      "title": "My profile",
+      "subtitle": "What entrepreneurs see when they hire you. Reach 100 % to unlock a free month of Premium.",
+      "ringLabel": "Profile {percent} % complete",
+      "ringCaption": "complete",
+      "items": {
+        "photo": "Profile photo",
+        "bio": "Biography",
+        "expertise": "Expertise and skills",
+        "personal": "Personal details",
+        "portfolio": "Portfolio",
+        "document": "Approved business document",
+        "payout": "Payout account"
+      },
+      "trial": {
+        "lockedTitle": "1 month of Premium at 100 %",
+        "lockedBody": "{points} points to go.",
+        "unlockedTitle": "Your free Premium month is unlocked",
+        "unlockedBody": "Start it whenever you want. No card, nothing charged.",
+        "unlockedNotOpen": "It stays unlocked. You can start it as soon as Premium opens.",
+        "startedTitle": "Free Premium month used",
+        "startedBody": "Your free month has been started. See Membership for its end date.",
+        "start": "Start my free month",
+        "error": "Could not start the trial."
+      },
+      "detailsTitle": "About you",
+      "headline": "Job title",
+      "headlineHint": "One line, e.g. UI/UX designer, Next.js developer.",
+      "headlinePlaceholder": "UI/UX designer",
+      "bio": "Biography",
+      "bioHint": "At least {min} characters ({count} so far). What you do, for whom, and how.",
+      "bioPlaceholder": "I design websites and apps for startups and SMEs…",
+      "skills": "Skills",
+      "skillsHint": "Add at least {min}. Press Enter after each one.",
+      "skillsPlaceholder": "Figma",
+      "addSkill": "Add skill",
+      "removeSkill": "Remove {skill}",
+      "dayRate": "Day rate (DZD)",
+      "dayRateHint": "Indicative. You quote each job separately.",
+      "address": "Address",
+      "addressHint": "Only shown to clients you work with.",
+      "languages": "Languages",
+      "lang": {
+        "ar": "Arabic",
+        "fr": "French",
+        "en": "English",
+        "tzm": "Tamazight"
+      },
+      "remote": "I accept remote work",
+      "portfolio": "Portfolio",
+      "portfolioHint": "Add at least {min} examples of your work.",
+      "portfolioTitle": "Title",
+      "portfolioLink": "Link (optional)",
+      "portfolioAdd": "Add an image",
+      "portfolioRemove": "Remove",
+      "portfolioUntitled": "Untitled work",
+      "save": "Save",
+      "saved": "Saved",
+      "saveError": "Could not save. Check the fields and try again.",
+      "photoHint": "Profile photo, name and phone are edited in",
+      "photoLink": "Settings",
+      "document": {
+        "title": "Business document",
+        "intro": "Your auto-entrepreneur card or commercial register proves your activity is real. It earns the verified badge with Premium.",
+        "statusLabel": "My legal status",
+        "status": {
+          "AUTO_ENTREPRENEUR": "Auto-entrepreneur",
+          "INDIVIDUAL_IFU": "Trader / craftsman (IFU)",
+          "COMPANY": "Company (SARL, EURL…)"
+        },
+        "kind": {
+          "AUTO_ENTREPRENEUR_CARD": "your auto-entrepreneur card",
+          "COMMERCE_REGISTER": "your commercial register extract"
+        },
+        "needs": "Upload {document} — a clear photo or PDF, 4 MB max.",
+        "upload": "Upload my document",
+        "replace": "Replace the document",
+        "checking": "Checking…",
+        "state": {
+          "APPROVED": "Approved",
+          "PENDING": "Under review",
+          "REJECTED": "Not accepted"
+        },
+        "pendingBody": "We could not confirm everything automatically. Our team will check it, usually within one working day.",
+        "privacy": "Stored privately. Only Metwork admins can open it, and every view is logged.",
+        "tooLarge": "The file must be 4 MB or smaller.",
+        "unsupported": "Upload a JPG, PNG, WebP or PDF.",
+        "rateLimited": "Too many uploads. Try again in an hour.",
+        "uploadError": "Upload failed. Please try again."
+      },
+      "payout": {
+        "title": "Payout account",
+        "empty": "Add the RIB or RIP where your earnings are paid.",
+        "saved": "{holder} · account ending {last4}",
+        "add": "Add an account",
+        "edit": "Change"
+      }
+    }
+  },
+  "venture": {
+    "title": "My business",
+    "subtitleCreate": "Tell us what you're building. It takes two minutes and shapes what Metwork shows you.",
+    "subtitleEdit": "Keep your business details up to date.",
+    "kindTitle": "What are you building?",
+    "kind": {
+      "STARTUP": "Startup",
+      "COMPANY": "Company / SME",
+      "AUTO_ENTREPRENEUR": "Auto-entrepreneur activity",
+      "PROJECT": "Project or idea",
+      "ASSOCIATION": "Association"
+    },
+    "kindDesc": {
+      "STARTUP": "Innovative, eligible for the Label Startup",
+      "COMPANY": "SARL, EURL, SPA, SNC…",
+      "AUTO_ENTREPRENEUR": "Auto-entrepreneur card, IFU regime",
+      "PROJECT": "Not registered yet",
+      "ASSOCIATION": "Approved or in progress"
+    },
+    "detailsTitle": "Details",
+    "name": "Name",
+    "sector": "Sector",
+    "sectorPlaceholder": "AgriTech, retail, education…",
+    "wilaya": "Wilaya",
+    "wilayaPlaceholder": "Choose a wilaya",
+    "stage": "Stage",
+    "stages": {
+      "IDEA": "Idea",
+      "PROTOTYPE": "Prototype",
+      "LAUNCHED": "Launched",
+      "GROWTH": "Growing"
+    },
+    "description": "Description",
+    "website": "Website (optional)",
+    "legalTitle": "Legal status",
+    "legalStatus": "Status",
+    "legal": {
+      "UNREGISTERED": "Not registered yet",
+      "AUTO_ENTREPRENEUR": "Auto-entrepreneur",
+      "INDIVIDUAL_IFU": "Trader / craftsman (IFU)",
+      "LIBERAL_PROFESSION": "Liberal profession",
+      "COMPANY": "Company",
+      "ASSOCIATION": "Association"
+    },
+    "companyForm": "Legal form",
+    "companyFormPlaceholder": "Choose a form",
+    "startupLabel": "We hold the Label Startup",
+    "legalHint": "Your status decides which tax obligations Metwork will remind you of.",
+    "needsTitle": "I'm looking for…",
+    "needsHint": "Your answers decide what Metwork suggests to you.",
+    "needs": {
+      "COFOUNDER": "A cofounder",
+      "FREELANCER": "A freelancer",
+      "INVESTORS": "Investors",
+      "SPACE": "A space",
+      "MENTOR": "A mentor",
+      "ACCOUNTANT": "An accountant",
+      "INCUBATOR": "An incubator"
+    },
+    "publicTitle": "Public page",
+    "publicToggle": "Publish a public page for my business",
+    "publicFounderOnly": "A public page is part of the Founder plan.",
+    "publicUpgrade": "See Founder",
+    "publicView": "View my public page",
+    "create": "Create my business",
+    "save": "Save",
+    "saved": "Saved",
+    "saveError": "Could not save. Check the fields and try again.",
+    "labelBadge": "Label Startup",
+    "publicLookingFor": "Looking for",
+    "publicFounder": "Founder",
+    "publicWebsite": "Website"
   }
 }

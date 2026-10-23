@@ -22,6 +22,7 @@ export const SIGNUP_ROLE_FIELDS: Record<SignupRole, SignupRoleFields> = {
   ENTREPRENEUR: { organization: false, linkedin: false, sex: true },
   INVESTOR:     { organization: false, linkedin: true,  sex: true },
   INCUBATOR:    { organization: true,  linkedin: false, sex: false },
+  FREELANCER:   { organization: false, linkedin: false, sex: true },
 };
 
 export function signupFieldsFor(role: SignupRole): SignupRoleFields {

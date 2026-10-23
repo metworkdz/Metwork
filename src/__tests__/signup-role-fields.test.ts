@@ -23,6 +23,7 @@ describe('signup role config', () => {
     expect(SIGNUP_ROLE_FIELDS.ENTREPRENEUR).toEqual({ organization: false, linkedin: false, sex: true });
     expect(SIGNUP_ROLE_FIELDS.INVESTOR).toEqual({ organization: false, linkedin: true, sex: true });
     expect(SIGNUP_ROLE_FIELDS.INCUBATOR).toEqual({ organization: true, linkedin: false, sex: false });
+    expect(SIGNUP_ROLE_FIELDS.FREELANCER).toEqual({ organization: false, linkedin: false, sex: true });
   });
 
   it('still requires an organisation kind for providers only', () => {
@@ -35,9 +36,9 @@ describe('signup role config', () => {
     expect(signupSchema.safeParse({ ...base, role: 'INVESTOR' }).success).toBe(true);
   });
 
-  it('does not let anyone self-sign-up as a freelancer or admin yet', () => {
+  it('lets freelancers self-sign-up, never admins', () => {
     expect(USER_ROLES).toContain('FREELANCER');
-    expect(signupSchema.safeParse({ ...base, role: 'FREELANCER' }).success).toBe(false);
+    expect(signupSchema.safeParse({ ...base, role: 'FREELANCER' }).success).toBe(true);
     expect(signupSchema.safeParse({ ...base, role: 'ADMIN' }).success).toBe(false);
   });
 });

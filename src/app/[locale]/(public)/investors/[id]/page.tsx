@@ -94,7 +94,7 @@ export default async function StartupDetailPage({ params }: PageProps) {
       {/* CTA */}
       <div className="mt-10 flex flex-col gap-3 sm:flex-row">
         <Button size="lg" asChild>
-          <Link href="/signup">{t('ctaConnect')}</Link>
+          <Link href="/join/investor">{t('ctaConnect')}</Link>
         </Button>
         <Button size="lg" variant="outline" asChild>
           <Link href="/investors">{t('ctaBrowse')}</Link>

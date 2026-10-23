@@ -245,7 +245,7 @@ function AccountSummary({
 
 /* ─────────────────────────── Step 1 — payout account ─────────────────────────── */
 
-function PayoutAccountStep({
+export function PayoutAccountStep({
   initial, onSaved,
 }: {
   initial: PayoutAccount | null;

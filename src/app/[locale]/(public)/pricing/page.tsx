@@ -100,7 +100,7 @@ export default async function PricingPage({ params }: PageProps) {
             <p className="mt-3 text-base text-muted-foreground">{t('entrepreneurSubtitle')}</p>
           </div>
 
-          <MembershipPlans tiers={tiers} locale={lang} mostPopularLabel={tm('recommended')} ctaHref="/signup" />
+          <MembershipPlans tiers={tiers} locale={lang} mostPopularLabel={tm('recommended')} ctaHref="/join/entrepreneur" />
 
           {/* FAQ link */}
           <p className="mt-10 text-center text-sm text-muted-foreground">
@@ -122,7 +122,7 @@ export default async function PricingPage({ params }: PageProps) {
               </h2>
               <p className="mt-3 text-base text-muted-foreground">{t('freelancerSubtitle')}</p>
             </div>
-            <MembershipPlans tiers={freelancerTiers} locale={lang} mostPopularLabel={tm('recommended')} ctaHref="/signup" />
+            <MembershipPlans tiers={freelancerTiers} locale={lang} mostPopularLabel={tm('recommended')} ctaHref="/join/freelancer" />
           </Container>
         </section>
       )}
@@ -167,7 +167,7 @@ export default async function PricingPage({ params }: PageProps) {
                   variant="outline"
                   className="mt-6 w-full rounded-full text-sm font-semibold"
                 >
-                  <Link href="/signup">
+                  <Link href="/join/space">
                     {tm('choosePlan')}
                     <ArrowRight className="size-4 rtl:rotate-180" />
                   </Link>
@@ -210,7 +210,7 @@ export default async function PricingPage({ params }: PageProps) {
                   size="lg"
                   className="mt-6 w-full rounded-full text-sm font-bold uppercase tracking-wider"
                 >
-                  <Link href="/signup">
+                  <Link href="/join/space">
                     {t('incubatorProCta')}
                     <ArrowRight className="size-4 rtl:rotate-180" />
                   </Link>

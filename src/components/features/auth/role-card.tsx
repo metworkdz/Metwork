@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Rocket, TrendingUp, Building2, GraduationCap, Check } from 'lucide-react';
+import { Rocket, TrendingUp, Building2, GraduationCap, Briefcase, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SignupRole } from '@/types/auth';
 
@@ -36,6 +36,11 @@ const ROLE_META: Record<RoleCardValue, { icon: typeof Rocket; titleKey: string; 
     icon: Building2,
     titleKey: 'auth.signup.roleIncubator',
     descKey: 'auth.signup.roleIncubatorDesc',
+  },
+  FREELANCER: {
+    icon: Briefcase,
+    titleKey: 'auth.signup.roleFreelancer',
+    descKey: 'auth.signup.roleFreelancerDesc',
   },
   CONSULTANT: {
     icon: GraduationCap,

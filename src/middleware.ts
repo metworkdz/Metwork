@@ -21,7 +21,7 @@ const PORTAL_DEFAULT_LOCALE = 'fr';
 const PROTECTED_PREFIXES = ['/dashboard'];
 
 /** Pages that should redirect away if user is already authenticated */
-const GUEST_ONLY_PREFIXES = ['/login', '/signup', '/forgot-password'];
+const GUEST_ONLY_PREFIXES = ['/login', '/signup', '/join', '/forgot-password'];
 
 function stripLocale(pathname: string): { locale: string | null; path: string } {
   const segments = pathname.split('/').filter(Boolean);

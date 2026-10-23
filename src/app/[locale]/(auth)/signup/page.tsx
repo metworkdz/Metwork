@@ -1,25 +1,22 @@
-import type { Metadata } from 'next';
-import { Suspense } from 'react';
-import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { SignupForm } from '@/components/features/auth/signup-form';
+import { setRequestLocale } from 'next-intl/server';
+import { redirect } from '@/i18n/routing';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+/**
+ * /signup → /join. Kept so every existing link, ad and email keeps working.
+ * A "book before you sign up" intent only exists for entrepreneurs (space
+ * bookings), so it goes straight to their page with the intent preserved.
+ */
+export default async function SignupPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations('auth.signup');
-  return { title: t('title') };
-}
-
-export default async function SignupPage({ params }: PageProps) {
-  const { locale } = await params;
-  setRequestLocale(locale);
-  return (
-    <Suspense fallback={null}>
-      <SignupForm />
-    </Suspense>
-  );
+  const intent = (await searchParams).bookingIntent;
+  if (typeof intent === 'string' && intent) {
+    redirect({ href: `/join/entrepreneur?bookingIntent=${encodeURIComponent(intent)}`, locale });
+  }
+  redirect({ href: '/join', locale });
 }

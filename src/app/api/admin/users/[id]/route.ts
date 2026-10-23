@@ -11,6 +11,7 @@ import { db } from '@/server/db/store';
 import { pruneFeedbackForRegistrationsSync } from '@/server/feedback/prune';
 import { fromZod, json, jsonError, noContent } from '@/server/http/json';
 import { appendAuditLog } from '@/server/audit/service';
+import { deleteLegalDocumentFile } from '@/server/freelancers/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -102,6 +103,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     return jsonError(403, 'FORBIDDEN', 'Cannot delete your own admin account');
   }
 
+  // Captured before the cascade removes the profile that references it.
+  const legalDocumentId = (await db.read()).freelancerProfiles?.find((p) => p.userId === id)?.legal?.documentPublicId;
   const result = await db.update((store) => {
     const idx = store.users.findIndex((u) => u.id === id);
     if (idx === -1) return null;
@@ -133,6 +136,9 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     store.withdrawalRequests   = (store.withdrawalRequests ?? []).filter((w) => w.userId !== id);
     store.networkVisits        = (store.networkVisits ?? []).filter((v) => v.userId !== id);
     store.perkVouchers         = (store.perkVouchers ?? []).filter((v) => v.userId !== id);
+    // Metwork 2.0: profile (incl. the identity-document reference) and ventures.
+    store.freelancerProfiles   = (store.freelancerProfiles ?? []).filter((p) => p.userId !== id);
+    store.ventures             = (store.ventures ?? []).filter((v) => v.ownerId !== id);
     // Certificates follow their registration out: they carry the member's name.
     const goneRegistrationIds = new Set(
       (store.registrations ?? []).filter((r) => r.userId === id).map((r) => r.id),
@@ -164,6 +170,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   });
 
   if (!result) return jsonError(404, 'NOT_FOUND', 'User not found');
+  await deleteLegalDocumentFile(legalDocumentId);
 
   await appendAuditLog({
     adminId: guard.user.id,

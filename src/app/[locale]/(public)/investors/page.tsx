@@ -282,7 +282,7 @@ export default async function InvestorsPage({ params }: PageProps) {
           {listings.length > 0 && (
             <div className="mt-10 text-center">
               <Link
-                href="/signup"
+                href="/join/investor"
                 className="inline-flex items-center gap-2 rounded-lg px-8 py-4 text-sm font-bold text-white shadow-lg transition-all hover:scale-[1.02]"
                 style={{
                   background: 'linear-gradient(135deg, hsl(142,65%,30%) 0%, hsl(142,70%,23%) 100%)',
@@ -310,7 +310,7 @@ export default async function InvestorsPage({ params }: PageProps) {
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link
-              href="/signup"
+              href="/join/investor"
               className="inline-flex items-center gap-2 rounded-lg px-8 py-4 text-sm font-bold text-white shadow-xl transition-all hover:scale-[1.02]"
               style={{
                 background: 'linear-gradient(135deg, hsl(42,95%,52%) 0%, hsl(36,90%,48%) 100%)',

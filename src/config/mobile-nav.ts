@@ -51,6 +51,7 @@ const primaryTabHrefsByRole: Record<UserRole, string[]> = {
   ],
   FREELANCER: [
     '/dashboard/freelancer',
+    '/dashboard/freelancer/profile',
     '/dashboard/freelancer/membership',
     '/dashboard/freelancer/settings',
   ],

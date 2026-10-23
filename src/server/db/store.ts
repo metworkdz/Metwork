@@ -22,6 +22,7 @@ import type {
   IncubatorBusinessType,
   LegalVerificationStatus,
 } from '@/types/auth';
+import type { LegalDocumentKind, LegalIdentity, LegalStatus } from '@/types/legal-status';
 import type { LandingContent } from '@/types/cms';
 import type { WeeklyAvailabilityDay } from '@/types/mentor';
 
@@ -951,7 +952,106 @@ export interface UserMembershipRecord {
   renewalReminderSentAt?: string;
   /** The membership this record renewed, when it was created by the cron. */
   renewedFromId?: string;
+  /** Free Premium month earned by completing a freelancer profile. Never charged, never renews. */
+  trial?: boolean;
 }
+
+/* ─────────────────────── Metwork 2.0 — freelancers ─────────────────────── */
+
+export interface FreelancerPortfolioItem {
+  id: string;
+  title: string;
+  /** Cloudinary image (or a local /uploads path in dev). */
+  imageUrl: string | null;
+  /** External link to the work (https only). */
+  url: string | null;
+}
+
+/** What the document reader extracted. Stored as evidence for the admin queue. */
+export interface LegalDocumentExtraction {
+  documentType: 'AUTO_ENTREPRENEUR_CARD' | 'COMMERCE_REGISTER' | 'OTHER';
+  holderName: string | null;
+  documentNumber: string | null;
+  activity: string | null;
+  issueDate: string | null;
+  expiryDate: string | null;
+  legible: boolean;
+  /** 0–1, the reader's own confidence. */
+  confidence: number;
+}
+
+export interface FreelancerLegalDocument {
+  status: LegalStatus;
+  documentKind: LegalDocumentKind;
+  /** Cloudinary AUTHENTICATED raw asset — reachable only through a signed admin link. */
+  documentPublicId: string;
+  mimeType: string;
+  submittedAt: string;
+  extracted: LegalDocumentExtraction | null;
+  /** Normalized document number, for the one-account-per-document check. */
+  numberKey: string | null;
+  review: {
+    state: LegalVerificationStatus;
+    /** 'AUTO' or the reviewing admin's user id. */
+    by: string;
+    /** Why it was not approved automatically (codes), or the admin's note. */
+    reasons: string[];
+    at: string;
+  };
+}
+
+export interface FreelancerProfileRecord {
+  userId: string;
+  headline: string | null;
+  bio: string | null;
+  skills: string[];
+  languages: string[];
+  remote: boolean;
+  /** Indicative day rate in DZD. */
+  dayRate: number | null;
+  address: string | null;
+  portfolio: FreelancerPortfolioItem[];
+  legal: FreelancerLegalDocument | null;
+  /** The Premium trial earned at 100 % completion. Once started, never again. */
+  trial?: { unlockedAt: string; startedAt?: string; membershipId?: string };
+  createdAt: string;
+  updatedAt: string;
+}
+
+/* ──────────────────────── Metwork 2.0 — ventures ──────────────────────── */
+
+export interface VentureRecord {
+  id: string;
+  ownerId: string;
+  name: string;
+  /** Platform-unique, for the public page /ventures/{slug}. */
+  slug: string;
+  kind: 'STARTUP' | 'COMPANY' | 'AUTO_ENTREPRENEUR' | 'PROJECT' | 'ASSOCIATION';
+  legal: LegalIdentity;
+  stage: 'IDEA' | 'PROTOTYPE' | 'LAUNCHED' | 'GROWTH';
+  sector: string;
+  /** Wilaya code, same vocabulary as UserRecord.city. */
+  wilaya: string;
+  description: string;
+  website: string | null;
+  logoUrl: string | null;
+  lookingFor: VentureNeed[];
+  /** The fundraising listing this venture was created from or linked to. */
+  listingId: string | null;
+  /** Public page on. Effective only while the owner holds the Founder plan. */
+  isPublic: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type VentureNeed =
+  | 'COFOUNDER'
+  | 'FREELANCER'
+  | 'INVESTORS'
+  | 'SPACE'
+  | 'MENTOR'
+  | 'ACCOUNTANT'
+  | 'INCUBATOR';
 
 /* ──────────────────── Membership plan configuration ──────────────────── */
 
@@ -1042,6 +1142,9 @@ export type AuditAction =
   | 'MENTOR_UNPUBLISHED'
   | 'MENTOR_REORDERED'
   | 'STARTUP_DELETED'
+  | 'LEGAL_DOCUMENT_APPROVED'
+  | 'LEGAL_DOCUMENT_REJECTED'
+  | 'LEGAL_DOCUMENT_VIEWED'
   // Consultant contracts (e-signature). The contract's own
   // `auditTrail` is the evidentiary record; these entries put the ADMIN side of
   // the same actions into the platform-wide log the audit-log page reads.
@@ -3671,6 +3774,10 @@ interface DbShape {
    * legacy blobs predate it; readers must default to [] and seed additively.
    */
   membershipPlanConfigs?: MembershipPlanConfigRecord[];
+  /** Metwork 2.0 — one profile per FREELANCER user (keyed by userId). */
+  freelancerProfiles?: FreelancerProfileRecord[];
+  /** Metwork 2.0 — entrepreneur businesses (startup, company, activity, project). */
+  ventures?: VentureRecord[];
   /** Audit log entries for admin actions. */
   auditLogs: AuditLogRecord[];
   /** In-app notifications per user. */

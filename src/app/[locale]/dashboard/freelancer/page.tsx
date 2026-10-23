@@ -2,6 +2,9 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { FileText, Link2, Users, CalendarClock } from 'lucide-react';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
+import { Link } from '@/i18n/routing';
+import { db } from '@/server/db/store';
+import { computeCompletion } from '@/lib/freelancer-completion';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -25,6 +28,10 @@ export default async function FreelancerOverviewPage({ params }: PageProps) {
   const t = await getTranslations('pages.dashboard.freelancer');
   const user = await requireRole(['FREELANCER']);
   const firstName = user.fullName.split(' ')[0] ?? user.fullName;
+  const data = await db.read();
+  const record = data.users.find((u) => u.id === user.id);
+  const profile = data.freelancerProfiles?.find((p) => p.userId === user.id) ?? null;
+  const { percent } = computeCompletion(record ?? user, profile);
 
   const upcoming = [
     { icon: FileText,      label: t('upcomingInvoices') },
@@ -36,6 +43,18 @@ export default async function FreelancerOverviewPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <DashboardPageHeader title={t('greeting', { name: firstName })} subtitle={t('subtitle')} />
+      {percent < 100 && (
+        <Link
+          href="/dashboard/freelancer/profile"
+          className="flex items-center gap-4 rounded-lg border border-primary-200 bg-primary-50/50 p-5 transition-colors hover:bg-primary-50 dark:bg-primary/10"
+        >
+          <span className="text-3xl font-bold tabular-nums text-primary-700">{percent}%</span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold">{t('completeTitle')}</span>
+            <span className="block text-xs text-muted-foreground">{t('completeBody')}</span>
+          </span>
+        </Link>
+      )}
       <section className="rounded-lg border border-border bg-background p-5 sm:p-6">
         <h2 className="text-base font-semibold">{t('comingTitle')}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t('comingBody')}</p>

@@ -2240,7 +2240,9 @@ export interface MembershipRenewalNotice {
   /** REMINDER only: the wallet would not cover the renewal today. */
   walletShort?: boolean;
   /** LAPSED only. */
-  reason?: 'INSUFFICIENT_FUNDS' | 'PLAN_UNAVAILABLE';
+  reason?: 'INSUFFICIENT_FUNDS' | 'PLAN_UNAVAILABLE' | 'TRIAL_ENDED';
+  /** The free Premium month (never charged): REMINDER and LAPSED read differently. */
+  trial?: boolean;
 }
 
 const RENEWAL_PLAN_NAME: Record<EmailLang, Record<MembershipRenewalNotice['plan'], string>> = {
@@ -2268,6 +2270,17 @@ function renewalCopy(n: MembershipRenewalNotice, lang: EmailLang): { subject: st
     day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Algiers',
   });
   const first = n.fullName.split(' ')[0] ?? n.fullName;
+  if (n.trial) {
+    if (lang === 'ar') return n.kind === 'REMINDER'
+      ? { subject: `ينتهي شهر ${plan} المجاني يوم ${date}`, lines: [`مرحبًا ${first}،`, `ينتهي شهرك المجاني في ${plan} يوم ${date}. لن يُخصم أي مبلغ.`, `للاحتفاظ بـ ${plan}، اشترك من لوحة التحكم ← الاشتراك.`] }
+      : { subject: `انتهى شهر ${plan} المجاني`, lines: [`مرحبًا ${first}،`, `انتهى شهرك المجاني في ${plan} وعاد حسابك إلى الخطة المجانية.`, `يمكنك الاشتراك في أي وقت من لوحة التحكم.`] };
+    if (lang === 'en') return n.kind === 'REMINDER'
+      ? { subject: `Your free ${plan} month ends on ${date}`, lines: [`Hello ${first},`, `Your free ${plan} month ends on ${date}. Nothing will be charged.`, `To keep ${plan}, subscribe from Dashboard → Membership.`] }
+      : { subject: `Your free ${plan} month has ended`, lines: [`Hello ${first},`, `Your free ${plan} month has ended and your account is back on the Free plan.`, `You can subscribe at any time from your dashboard.`] };
+    return n.kind === 'REMINDER'
+      ? { subject: `Votre mois ${plan} offert se termine le ${date}`, lines: [`Bonjour ${first},`, `Votre mois ${plan} offert se termine le ${date}. Rien ne sera prélevé.`, `Pour garder ${plan}, abonnez-vous depuis Tableau de bord → Abonnement.`] }
+      : { subject: `Votre mois ${plan} offert est terminé`, lines: [`Bonjour ${first},`, `Votre mois ${plan} offert est terminé et votre compte est revenu à l'offre gratuite.`, `Vous pouvez vous abonner à tout moment depuis votre tableau de bord.`] };
+  }
   if (lang === 'ar') {
     if (n.kind === 'REMINDER') return {
       subject: `يتجدد اشتراك ${plan} يوم ${date}`,

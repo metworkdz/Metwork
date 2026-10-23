@@ -13,6 +13,9 @@
  *     sale for the member's role, the membership lapses and the member drops
  *     to Free (same field footprint as the downgrade cron's FREE branch).
  *
+ * A free Premium trial (`trial: true`) goes through the same loop: it gets
+ * the 3-day notice and then ends — it is never charged.
+ *
  * A member with a scheduled downgrade is skipped: that is how a monthly plan
  * is cancelled (see `/api/memberships/downgrade`), and the downgrade cron owns
  * the end of that period.
@@ -47,7 +50,7 @@ export interface RenewalRunResult {
   errors: string[];
 }
 
-type LapseReason = 'INSUFFICIENT_FUNDS' | 'PLAN_UNAVAILABLE';
+type LapseReason = 'INSUFFICIENT_FUNDS' | 'PLAN_UNAVAILABLE' | 'TRIAL_ENDED';
 
 export async function runMembershipRenewals(now = new Date()): Promise<RenewalRunResult> {
   const nowIso = now.toISOString();
@@ -58,7 +61,7 @@ export async function runMembershipRenewals(now = new Date()): Promise<RenewalRu
     const configs = planConfigsFrom(d);
     // Snapshot the list: renewing pushes new records onto the same array.
     const due = (d.userMemberships ?? []).filter(
-      (m) => m.status === 'ACTIVE' && m.autoRenew === true && !!m.expiresAt,
+      (m) => m.status === 'ACTIVE' && (m.autoRenew === true || m.trial === true) && !!m.expiresAt,
     );
 
     for (const m of due) {
@@ -91,7 +94,8 @@ export async function runMembershipRenewals(now = new Date()): Promise<RenewalRu
               ...recipient,
               kind: 'REMINDER',
               date: m.expiresAt!,
-              walletShort: !wallet || wallet.status === 'FROZEN' || wallet.balance < price,
+              trial: m.trial === true,
+              walletShort: !m.trial && (!wallet || wallet.status === 'FROZEN' || wallet.balance < price),
             });
             result.reminded.push(m.id);
           }
@@ -101,7 +105,9 @@ export async function runMembershipRenewals(now = new Date()): Promise<RenewalRu
         // ── Due: renew or lapse ────────────────────────────────────────────
         const wallet = d.wallets.find((w) => w.userId === user.id);
         let lapse: LapseReason | null = null;
-        if (!planCode || !config || !canPurchasePlan(user.role, planCode) || user.status !== 'ACTIVE') {
+        if (m.trial) {
+          lapse = 'TRIAL_ENDED';
+        } else if (!planCode || !config || !canPurchasePlan(user.role, planCode) || user.status !== 'ACTIVE') {
           lapse = 'PLAN_UNAVAILABLE';
         } else if (!wallet || wallet.status === 'FROZEN' || wallet.balance < price) {
           lapse = 'INSUFFICIENT_FUNDS';
@@ -126,7 +132,7 @@ export async function runMembershipRenewals(now = new Date()): Promise<RenewalRu
           user.networkCreditsMax = 0;
           user.networkPassesUsedThisMonth = 0;
           user.updatedAt = nowIso;
-          notices.push({ ...recipient, kind: 'LAPSED', date: m.expiresAt!, reason: lapse });
+          notices.push({ ...recipient, kind: 'LAPSED', date: m.expiresAt!, reason: lapse, trial: m.trial === true });
           result.lapsed.push(m.id);
           continue;
         }

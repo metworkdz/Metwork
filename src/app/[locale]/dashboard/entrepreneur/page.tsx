@@ -17,6 +17,9 @@ import { mobileQuickActionsByRole } from '@/config/mobile-nav';
 import { db } from '@/server/db/store';
 import { formatCurrency } from '@/lib/format';
 import { getEffectiveMembershipCode, getConsultationDiscountForUser } from '@/server/memberships/service';
+import { ventureOf } from '@/server/ventures/service';
+import { PLAN_COPY_KEYS } from '@/server/memberships/plan-view';
+import { normalizePlanCode } from '@/lib/membership-benefits';
 import type { Locale } from '@/i18n/config';
 
 interface PageProps {
@@ -32,6 +35,7 @@ export default async function EntrepreneurDashboard({ params }: PageProps) {
   const user = await requireRole(['ENTREPRENEUR']);
 
   const data = await db.read();
+  const hasVenture = ventureOf(data, user.id) !== null;
 
   // Active / pending bookings
   const activeBookings = data.bookings.filter(
@@ -59,7 +63,10 @@ export default async function EntrepreneurDashboard({ params }: PageProps) {
 
   // Membership
   const effectiveCode = getEffectiveMembershipCode(user);
-  const membershipLabel = effectiveCode === 'FREE' ? 'Free' : effectiveCode.charAt(0) + effectiveCode.slice(1).toLowerCase();
+  // The plan's translated name — never the raw code/tier (BUILDER, FOUNDER…).
+  const tm = await getTranslations('membership');
+  const planCode = normalizePlanCode(effectiveCode);
+  const membershipLabel = tm(PLAN_COPY_KEYS[planCode ?? 'FREE'].nameKey);
   // Automatic consultation discount, resolved through the snapshot-aware
   // resolver so a grandfathered member sees their own rate (0 for Free).
   const consultationDiscountPercent = Math.round(
@@ -76,6 +83,19 @@ export default async function EntrepreneurDashboard({ params }: PageProps) {
 
   return (
     <>
+      {/* Both layouts: the venture is the first thing a new founder sets up. */}
+      {!hasVenture && (
+        <Link
+          href="/dashboard/entrepreneur/venture"
+          className="mb-4 flex items-center gap-4 rounded-lg border border-primary-200 bg-primary-50/50 p-4 transition-colors hover:bg-primary-50 dark:bg-primary/10 lg:mb-6 lg:p-5"
+        >
+          <Rocket className="size-8 shrink-0 text-primary-700" />
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold">{t('entrepreneur.overview.addVentureTitle')}</span>
+            <span className="block text-xs text-muted-foreground">{t('entrepreneur.overview.addVentureBody')}</span>
+          </span>
+        </Link>
+      )}
       {/* ── Mobile app UI (below lg) ─────────────────────────────────────── */}
       <div className="lg:hidden">
         <MobileGreeting

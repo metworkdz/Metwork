@@ -81,7 +81,7 @@ export default async function IncubatorsPage({ params }: PageProps) {
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button asChild size="lg" className="w-full sm:w-auto">
-                <Link href="/signup">
+                <Link href="/join/space">
                   {t('heroPrimaryCta')}
                   <ArrowRight className="size-4 rtl:rotate-180" />
                 </Link>
@@ -222,7 +222,7 @@ export default async function IncubatorsPage({ params }: PageProps) {
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg" className="w-full sm:w-auto">
-              <Link href="/signup">
+              <Link href="/join/space">
                 {t('ctaPrimary')}
                 <ArrowRight className="size-4 rtl:rotate-180" />
               </Link>

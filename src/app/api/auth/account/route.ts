@@ -9,6 +9,7 @@ import { requireApiSession } from '@/server/auth/api-guards';
 import { db, type AuditLogRecord } from '@/server/db/store';
 import { verifyPassword } from '@/server/auth/password';
 import { json, jsonError, fromZod } from '@/server/http/json';
+import { deleteLegalDocumentFile } from '@/server/freelancers/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -46,6 +47,8 @@ export async function DELETE(req: NextRequest) {
   }
 
   // Delete the user and all their data; anonymize bookings for accounting
+  // Captured before the cascade removes the profile that references it.
+  const legalDocumentId = (await db.read()).freelancerProfiles?.find((p) => p.userId === userId)?.legal?.documentPublicId;
   const deletionResult = await db.update<{ deleted: boolean }>((d) => {
     const stillExists = (d.users ?? []).some((u) => u.id === userId);
     if (!stillExists) return { deleted: false };
@@ -106,6 +109,11 @@ export async function DELETE(req: NextRequest) {
       if (w.userId === userId) w.userId = deletedSentinel;
     }
 
+    // Freelancer profile (with the identity-document reference) and ventures
+    // are personal data with no accounting value — removed outright.
+    d.freelancerProfiles = (d.freelancerProfiles ?? []).filter((p) => p.userId !== userId);
+    d.ventures           = (d.ventures ?? []).filter((v) => v.ownerId !== userId);
+
     // Notifications and user memberships have no post-deletion value.
     d.notifications   = (d.notifications   ?? []).filter((n)  => n.userId  !== userId);
     d.userMemberships = (d.userMemberships ?? []).filter((um) => um.userId !== userId);
@@ -142,6 +150,7 @@ export async function DELETE(req: NextRequest) {
   if (!deletionResult.deleted) {
     return jsonError(404, 'USER_NOT_FOUND', 'User not found');
   }
+  await deleteLegalDocumentFile(legalDocumentId);
 
   // Clear the session cookie in the response
   const cookieName = process.env.AUTH_COOKIE_NAME ?? 'metwork_session';

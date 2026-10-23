@@ -561,6 +561,16 @@ export function SignupForm({ lockedRole }: SignupFormProps = {}) {
           {busy ? t('signup.submitting') : t('signup.submit')}
         </Button>
       </form>
+
+      {/* With the picker skipped, this is the page's only route to login. */}
+      {lockedRole && (
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          {t('signup.haveAccount')}{' '}
+          <Link href={loginHref} className="font-medium text-primary hover:underline">
+            {t('signup.loginLink')}
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

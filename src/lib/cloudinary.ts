@@ -106,6 +106,11 @@ export async function destroyRawResource(publicId: string): Promise<void> {
   await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
 }
 
+/** Deletes a PRIVATE (`authenticated`) raw asset, e.g. an identity document on account deletion. */
+export async function destroyAuthenticatedRaw(publicId: string): Promise<void> {
+  await cloudinary.uploader.destroy(publicId, { resource_type: 'raw', type: 'authenticated' });
+}
+
 /**
  * Server-side upload of a PRIVATE raw asset (`type: 'authenticated'`).
  *

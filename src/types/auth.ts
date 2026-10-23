@@ -10,9 +10,8 @@
  * neither appears in this union — every persisted record has been rewritten.
  *
  * `FREELANCER` (Metwork 2.0, phase 0) is a real role with its own dashboard.
- * It is deliberately NOT in `SIGNUP_ROLES` yet: self-signup opens with the
- * /join pages in phase 2. Until then a freelancer account exists only when
- * seeded, and every pre-existing `requireRole([...])` simply denies it.
+ * Self-signup opened with the /join pages (phase 2). Every pre-existing
+ * `requireRole([...])` simply denies it; freelancer features grant it explicitly.
  */
 export const USER_ROLES = ['ENTREPRENEUR', 'INVESTOR', 'INCUBATOR', 'ADMIN', 'FREELANCER'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -26,7 +25,7 @@ export type UserRole = (typeof USER_ROLES)[number];
  * `IncubatorBusinessType` instead. The literal stays in `USER_ROLES` above so
  * any record written before the merge still types/reads correctly.
  */
-export const SIGNUP_ROLES = ['ENTREPRENEUR', 'INVESTOR', 'INCUBATOR'] as const;
+export const SIGNUP_ROLES = ['ENTREPRENEUR', 'INVESTOR', 'INCUBATOR', 'FREELANCER'] as const;
 export type SignupRole = (typeof SIGNUP_ROLES)[number];
 
 /**

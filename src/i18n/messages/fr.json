@@ -798,7 +798,8 @@
     "logout": "Se déconnecter",
     "openMenu": "Ouvrir le menu",
     "closeMenu": "Fermer le menu",
-    "badgeNewActivity": "{count, plural, one {# nouvelle activité} other {# nouvelles activités}}"
+    "badgeNewActivity": "{count, plural, one {# nouvelle activité} other {# nouvelles activités}}",
+    "forFreelancers": "Pour les freelancers"
   },
   "footer": {
     "tagline": "Construisons ensemble l'avenir startup de l'Algérie.",
@@ -968,7 +969,9 @@
       "instagramPlaceholder": "@votrecompte ou lien du profil",
       "linkedinLabel": "LinkedIn",
       "linkedinHint": "Recommandé — nous aide à vérifier votre profil plus vite",
-      "linkedinPlaceholder": "linkedin.com/in/votreprofil"
+      "linkedinPlaceholder": "linkedin.com/in/votreprofil",
+      "roleFreelancer": "Freelancer / auto-entrepreneur",
+      "roleFreelancerDesc": "Je vends mes services : facturation, liens de paiement et clients partout en Algérie"
     },
     "verifyOtp": {
       "title": "Vérifiez votre téléphone",
@@ -2292,7 +2295,10 @@
     "payments": "Paiements",
     "domiciliation": "Domiciliation",
     "consultantContracts": "Contrats consultants",
-    "feedback": "Avis"
+    "feedback": "Avis",
+    "profile": "Profil",
+    "legalReviews": "Vérification des documents",
+    "venture": "Mon entreprise"
   },
   "pages": {
     "consultationPay": {
@@ -2666,7 +2672,9 @@
           "statConsultations": "Consultations",
           "statConsultationDiscount": "{percent} % de réduction",
           "statConsultationHintUpgrade": "Passez à une offre pour économiser sur les consultations",
-          "statConsultationHintDiscount": "Votre remise sur les consultations"
+          "statConsultationHintDiscount": "Votre remise sur les consultations",
+          "addVentureTitle": "Ajoutez votre entreprise",
+          "addVentureBody": "Startup, société, activité ou idée : présentez-la et nous vous montrerons qui peut vous aider."
         },
         "bookings": {
           "title": "Réservations",
@@ -3147,7 +3155,9 @@
         "membership": {
           "title": "Abonnement",
           "subtitle": "Votre offre, son renouvellement et ce qu'elle inclut."
-        }
+        },
+        "completeTitle": "Complétez votre profil",
+        "completeBody": "Atteignez 100 % pour être vérifié et débloquer un mois de Premium offert."
       }
     },
     "payment": {
@@ -3640,6 +3650,58 @@
       "s13Email": "E-mail :",
       "s13p2": "Nous accuserons réception de votre demande sous 5 jours ouvrables et fournirons une réponse sur le fond sous 30 jours calendaires. Si votre demande est complexe ou si vous en avez soumis plusieurs, nous pourrons prolonger ce délai de deux mois supplémentaires au maximum, auquel cas nous vous en informerons.",
       "paymentsCountryName": "Royaume-Uni"
+    },
+    "freelancers": {
+      "metaTitle": "Pour les freelancers et auto-entrepreneurs",
+      "metaDescription": "Soyez trouvé par les entrepreneurs partout en Algérie, facturez en règle, encaissez en DZD et suivez vos obligations fiscales.",
+      "heroEyebrow": "Freelancers et auto-entrepreneurs",
+      "heroTitle": "Votre activité freelance,",
+      "heroTitleHighlight": "du premier devis à la G12",
+      "heroSubtitle": "Trouvez des clients partout en Algérie, facturez en règle, encaissez par CIB et Edahabia et ne ratez plus une échéance fiscale, au même endroit.",
+      "heroPrimaryCta": "Créer mon profil gratuit",
+      "heroSecondaryCta": "Voir les offres",
+      "trialNote": "Profil complété à 100 % : 1 mois de Premium offert.",
+      "featuresEyebrow": "Ce que vous obtenez",
+      "featuresTitle": "Tout ce qu'il faut pour travailler à votre compte",
+      "featuresSubtitle": "Certains outils sont disponibles aujourd'hui, les autres arrivent dans les prochaines semaines. Chaque compte les reçoit dès leur lancement.",
+      "soon": "Bientôt",
+      "f1Title": "Un profil qui inspire confiance",
+      "f1Desc": "Photo, expertise, portfolio et votre carte d'auto-entrepreneur ou registre de commerce vérifié.",
+      "f2Title": "Des clients partout en Algérie",
+      "f2Desc": "Les entrepreneurs vous trouvent dans leur onglet Recrutement et notre IA vous recommande.",
+      "f3Title": "Des factures conformes",
+      "f3Desc": "Factures, devis et proformas avec NIF, NIS, RC et la mention auto-entrepreneur.",
+      "f4Title": "Encaissez en DZD",
+      "f4Desc": "Des liens de paiement CIB et Edahabia à envoyer sur WhatsApp.",
+      "f5Title": "La fiscalité simplifiée",
+      "f5Desc": "Un calendrier CASNOS, G12 et G12 bis, avec un court guide Jibayatic pour chacun.",
+      "f6Title": "Copilote IA",
+      "f6Desc": "Posez vos questions de comptabilité et de droit des affaires ; les réponses citent les textes officiels.",
+      "f7Title": "Contrats",
+      "f7Desc": "Contrats de prestation et accords de confidentialité signés en ligne.",
+      "f8Title": "Espaces et mentors",
+      "f8Desc": "-10 % sur les espaces de coworking et les séances de mentorat en Premium.",
+      "howEyebrow": "Comment ça marche",
+      "howTitle": "Trois étapes jusqu'à votre premier client",
+      "step1Title": "Créez votre profil",
+      "step1Desc": "Inscrivez-vous gratuitement et ajoutez votre expertise, votre portfolio et votre document.",
+      "step2Title": "Faites-vous vérifier",
+      "step2Desc": "Nous vérifions votre carte ou registre automatiquement, en général en quelques secondes.",
+      "step3Title": "Commencez à travailler",
+      "step3Desc": "Partagez votre profil, envoyez des devis et encaissez en dinars.",
+      "plansEyebrow": "Offres",
+      "plansTitle": "Commencez gratuitement, évoluez quand les clients arrivent",
+      "plansFreeName": "Gratuit",
+      "plansFreeDesc": "Profil, factures et liens de paiement limités, calendrier fiscal.",
+      "plansPremiumName": "Premium",
+      "plansPremiumDesc": "Sans limites, badge vérifié, priorité auprès des clients, -10 % sur espaces et mentors.",
+      "plansPremiumPrice": "{price} / mois",
+      "plansPremiumSoon": "Ouverture prochaine",
+      "plansLink": "Comparer les offres",
+      "ctaTitle": "Prêt à lancer votre activité ?",
+      "ctaSubtitle": "Gratuit pour toujours. Passez Premium seulement quand c'est rentable.",
+      "ctaPrimary": "Rejoindre maintenant",
+      "ctaSecondary": "Nous contacter"
     }
   },
   "spaces": {
@@ -4876,7 +4938,8 @@
         "consultant": "Consultant",
         "pricing": "Abonnements",
         "about": "À propos",
-        "contact": "Contact"
+        "contact": "Contact",
+        "freelancers": "Pour les freelancers"
       },
       "saveSettings": "Enregistrer les paramètres",
       "settingsSaved": "Paramètres enregistrés.",
@@ -5008,6 +5071,55 @@
       "colAssignedAt": "Attribué le",
       "statusAvailable": "Disponible",
       "statusAssigned": "Attribué"
+    },
+    "legalReviews": {
+      "title": "Vérification des documents professionnels",
+      "subtitle": "Cartes d'auto-entrepreneur et registres de commerce que la vérification automatique n'a pas pu approuver.",
+      "tab": {
+        "PENDING": "À vérifier",
+        "APPROVED": "Approuvés",
+        "REJECTED": "Refusés"
+      },
+      "empty": "Rien ici.",
+      "loadError": "Impossible de charger la file.",
+      "openDocument": "Ouvrir le document",
+      "declared": "Déclaré",
+      "read": {
+        "type": "Lu comme",
+        "name": "Nom",
+        "number": "Numéro",
+        "expiry": "Expiration",
+        "confidence": "Confiance",
+        "illegible": "illisible"
+      },
+      "status": {
+        "AUTO_ENTREPRENEUR": "Auto-entrepreneur",
+        "INDIVIDUAL_IFU": "Commerçant / artisan",
+        "COMPANY": "Société",
+        "LIBERAL_PROFESSION": "Profession libérale",
+        "ASSOCIATION": "Association",
+        "UNREGISTERED": "Non immatriculé"
+      },
+      "kind": {
+        "AUTO_ENTREPRENEUR_CARD": "Carte d'auto-entrepreneur",
+        "COMMERCE_REGISTER": "Registre de commerce",
+        "OTHER": "Autre document"
+      },
+      "reason": {
+        "AI_UNAVAILABLE": "Lecture automatique indisponible",
+        "NOT_LEGIBLE": "Illisible",
+        "LOW_CONFIDENCE": "Confiance faible",
+        "WRONG_DOCUMENT": "Mauvais type de document",
+        "NAME_MISMATCH": "Le nom ne correspond pas au profil",
+        "NUMBER_MISSING": "Aucun numéro de document",
+        "EXPIRED": "Expiré",
+        "DUPLICATE_NUMBER": "Numéro utilisé par un autre compte"
+      },
+      "notePlaceholder": "Note au freelancer (obligatoire pour refuser)",
+      "noteRequired": "Écrivez une note avant de refuser.",
+      "approve": "Approuver",
+      "reject": "Refuser",
+      "decideError": "Impossible d'enregistrer la décision."
     }
   },
   "bookings": {
@@ -6180,5 +6292,228 @@
     "notSentYet": "Pas encore envoyé",
     "emptyPrograms": "Aucun programme pour l’instant.",
     "open": "Ouvrir"
+  },
+  "join": {
+    "chooserTitle": "Rejoindre Metwork",
+    "chooserSubtitle": "Dites-nous qui vous êtes, nous vous montrons ce qui compte pour vous.",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "login": "Se connecter",
+    "entrepreneur": {
+      "card": "J'ai un projet ou une entreprise",
+      "cardDesc": "Startup, PME, activité ou idée : espaces, mentors et personnes avec qui travailler",
+      "eyebrow": "Pour les fondateurs",
+      "title": "Construisez votre entreprise avec tout l'écosystème derrière vous",
+      "subtitle": "Inscription gratuite. Réservez des espaces, rencontrez mentors et investisseurs, trouvez les bonnes personnes.",
+      "point1": "Espaces de coworking et bureaux partout en Algérie",
+      "point2": "Mentors, programmes et événements à chaque étape",
+      "point3": "Offre Founder : -10 % sur espaces et consultations, badge or"
+    },
+    "freelancer": {
+      "card": "Je suis freelancer ou auto-entrepreneur",
+      "cardDesc": "Vendez vos services, facturez en règle et encaissez en DZD",
+      "eyebrow": "Pour les freelancers et auto-entrepreneurs",
+      "title": "Votre activité freelance, du premier devis à la G12",
+      "subtitle": "Inscription gratuite. Soyez trouvé par les entrepreneurs partout en Algérie et gérez votre activité au même endroit.",
+      "point1": "Un profil public depuis lequel les entrepreneurs vous recrutent",
+      "point2": "Factures, devis et liens de paiement en DZD (CIB, Edahabia)",
+      "point3": "Profil complété : 1 mois de Premium offert"
+    },
+    "investor": {
+      "card": "J'investis",
+      "cardDesc": "Découvrez des startups algériennes qui lèvent des fonds",
+      "eyebrow": "Pour les investisseurs",
+      "title": "Rencontrez les startups que l'Algérie construit",
+      "subtitle": "Parcourez les fondateurs en levée, suivez leurs progrès et demandez des rendez-vous.",
+      "point1": "Startups avec pitch deck et objectif de levée",
+      "point2": "Demandes de rendez-vous traitées par l'équipe Metwork",
+      "point3": "Les comptes sont vérifiés avant l'accès"
+    },
+    "space": {
+      "card": "Je gère un espace, un incubateur ou un centre de formation",
+      "cardDesc": "Publiez votre offre et gérez réservations, clients et factures",
+      "eyebrow": "Pour les incubateurs et espaces",
+      "title": "Remplissez vos espaces et gérez vos programmes sur Metwork",
+      "subtitle": "Publiez postes de coworking, bureaux et salles, vendez vos programmes et gérez tout depuis un tableau de bord.",
+      "point1": "Réservations en ligne payées par CIB et Edahabia",
+      "point2": "Clients, factures, contrats et revenus au même endroit",
+      "point3": "Les comptes sont vérifiés avant la mise en ligne"
+    },
+    "consultant": {
+      "card": "Je suis consultant ou mentor",
+      "cardDesc": "Proposez des séances payantes aux entrepreneurs"
+    }
+  },
+  "freelancer": {
+    "profile": {
+      "title": "Mon profil",
+      "subtitle": "Ce que voient les entrepreneurs qui vous recrutent. Atteignez 100 % pour débloquer un mois de Premium offert.",
+      "ringLabel": "Profil complété à {percent} %",
+      "ringCaption": "complété",
+      "items": {
+        "photo": "Photo de profil",
+        "bio": "Biographie",
+        "expertise": "Expertise et compétences",
+        "personal": "Informations personnelles",
+        "portfolio": "Portfolio",
+        "document": "Document professionnel approuvé",
+        "payout": "Compte de versement"
+      },
+      "trial": {
+        "lockedTitle": "1 mois de Premium à 100 %",
+        "lockedBody": "Plus que {points} points.",
+        "unlockedTitle": "Votre mois Premium offert est débloqué",
+        "unlockedBody": "Démarrez-le quand vous voulez. Sans carte, rien n'est prélevé.",
+        "unlockedNotOpen": "Il reste débloqué. Vous pourrez le démarrer dès l'ouverture de Premium.",
+        "startedTitle": "Mois Premium offert utilisé",
+        "startedBody": "Votre mois offert a démarré. Consultez Abonnement pour sa date de fin.",
+        "start": "Démarrer mon mois offert",
+        "error": "Impossible de démarrer l'essai."
+      },
+      "detailsTitle": "À propos de vous",
+      "headline": "Métier",
+      "headlineHint": "Une ligne, par ex. Designer UI/UX, Développeur Next.js.",
+      "headlinePlaceholder": "Designer UI/UX",
+      "bio": "Biographie",
+      "bioHint": "Au moins {min} caractères ({count} pour l'instant). Ce que vous faites, pour qui, et comment.",
+      "bioPlaceholder": "Je conçois des sites et des applications pour startups et PME…",
+      "skills": "Compétences",
+      "skillsHint": "Ajoutez-en au moins {min}. Appuyez sur Entrée après chacune.",
+      "skillsPlaceholder": "Figma",
+      "addSkill": "Ajouter la compétence",
+      "removeSkill": "Retirer {skill}",
+      "dayRate": "Tarif journalier (DZD)",
+      "dayRateHint": "Indicatif. Vous établissez un devis pour chaque mission.",
+      "address": "Adresse",
+      "addressHint": "Visible uniquement par vos clients.",
+      "languages": "Langues",
+      "lang": {
+        "ar": "Arabe",
+        "fr": "Français",
+        "en": "Anglais",
+        "tzm": "Tamazight"
+      },
+      "remote": "J'accepte le travail à distance",
+      "portfolio": "Portfolio",
+      "portfolioHint": "Ajoutez au moins {min} exemples de travaux.",
+      "portfolioTitle": "Titre",
+      "portfolioLink": "Lien (facultatif)",
+      "portfolioAdd": "Ajouter une image",
+      "portfolioRemove": "Retirer",
+      "portfolioUntitled": "Travail sans titre",
+      "save": "Enregistrer",
+      "saved": "Enregistré",
+      "saveError": "Enregistrement impossible. Vérifiez les champs et réessayez.",
+      "photoHint": "La photo, le nom et le téléphone se modifient dans",
+      "photoLink": "Paramètres",
+      "document": {
+        "title": "Document professionnel",
+        "intro": "Votre carte d'auto-entrepreneur ou votre registre de commerce prouve que votre activité est réelle. Avec Premium, il vous donne le badge vérifié.",
+        "statusLabel": "Mon statut juridique",
+        "status": {
+          "AUTO_ENTREPRENEUR": "Auto-entrepreneur",
+          "INDIVIDUAL_IFU": "Commerçant / artisan (IFU)",
+          "COMPANY": "Société (SARL, EURL…)"
+        },
+        "kind": {
+          "AUTO_ENTREPRENEUR_CARD": "votre carte d'auto-entrepreneur",
+          "COMMERCE_REGISTER": "votre extrait de registre de commerce"
+        },
+        "needs": "Téléversez {document} : photo nette ou PDF, 4 Mo maximum.",
+        "upload": "Téléverser mon document",
+        "replace": "Remplacer le document",
+        "checking": "Vérification…",
+        "state": {
+          "APPROVED": "Approuvé",
+          "PENDING": "En cours de vérification",
+          "REJECTED": "Non accepté"
+        },
+        "pendingBody": "Nous n'avons pas pu tout confirmer automatiquement. Notre équipe le vérifie, en général sous un jour ouvré.",
+        "privacy": "Conservé de façon privée. Seuls les administrateurs Metwork peuvent l'ouvrir, et chaque consultation est enregistrée.",
+        "tooLarge": "Le fichier doit faire 4 Mo maximum.",
+        "unsupported": "Téléversez un JPG, PNG, WebP ou PDF.",
+        "rateLimited": "Trop d'envois. Réessayez dans une heure.",
+        "uploadError": "Échec de l'envoi. Réessayez."
+      },
+      "payout": {
+        "title": "Compte de versement",
+        "empty": "Ajoutez le RIB ou RIP sur lequel vos gains sont versés.",
+        "saved": "{holder} · compte se terminant par {last4}",
+        "add": "Ajouter un compte",
+        "edit": "Modifier"
+      }
+    }
+  },
+  "venture": {
+    "title": "Mon entreprise",
+    "subtitleCreate": "Dites-nous ce que vous construisez. Deux minutes suffisent, et cela oriente ce que Metwork vous propose.",
+    "subtitleEdit": "Gardez les informations de votre entreprise à jour.",
+    "kindTitle": "Que construisez-vous ?",
+    "kind": {
+      "STARTUP": "Startup",
+      "COMPANY": "Entreprise / PME",
+      "AUTO_ENTREPRENEUR": "Activité auto-entrepreneur",
+      "PROJECT": "Projet ou idée",
+      "ASSOCIATION": "Association"
+    },
+    "kindDesc": {
+      "STARTUP": "Innovante, éligible au Label Startup",
+      "COMPANY": "SARL, EURL, SPA, SNC…",
+      "AUTO_ENTREPRENEUR": "Carte d'auto-entrepreneur, régime IFU",
+      "PROJECT": "Pas encore immatriculé",
+      "ASSOCIATION": "Agréée ou en cours"
+    },
+    "detailsTitle": "Informations",
+    "name": "Nom",
+    "sector": "Secteur",
+    "sectorPlaceholder": "AgriTech, commerce, éducation…",
+    "wilaya": "Wilaya",
+    "wilayaPlaceholder": "Choisissez une wilaya",
+    "stage": "Stade",
+    "stages": {
+      "IDEA": "Idée",
+      "PROTOTYPE": "Prototype",
+      "LAUNCHED": "Lancé",
+      "GROWTH": "En croissance"
+    },
+    "description": "Description",
+    "website": "Site web (facultatif)",
+    "legalTitle": "Statut juridique",
+    "legalStatus": "Statut",
+    "legal": {
+      "UNREGISTERED": "Pas encore immatriculé",
+      "AUTO_ENTREPRENEUR": "Auto-entrepreneur",
+      "INDIVIDUAL_IFU": "Commerçant / artisan (IFU)",
+      "LIBERAL_PROFESSION": "Profession libérale",
+      "COMPANY": "Société",
+      "ASSOCIATION": "Association"
+    },
+    "companyForm": "Forme juridique",
+    "companyFormPlaceholder": "Choisissez une forme",
+    "startupLabel": "Nous avons le Label Startup",
+    "legalHint": "Votre statut détermine les obligations fiscales que Metwork vous rappellera.",
+    "needsTitle": "Je cherche…",
+    "needsHint": "Vos réponses orientent ce que Metwork vous suggère.",
+    "needs": {
+      "COFOUNDER": "Un cofondateur",
+      "FREELANCER": "Un freelancer",
+      "INVESTORS": "Des investisseurs",
+      "SPACE": "Un espace",
+      "MENTOR": "Un mentor",
+      "ACCOUNTANT": "Un comptable",
+      "INCUBATOR": "Un incubateur"
+    },
+    "publicTitle": "Page publique",
+    "publicToggle": "Publier une page publique pour mon entreprise",
+    "publicFounderOnly": "La page publique fait partie de l'offre Founder.",
+    "publicUpgrade": "Voir Founder",
+    "publicView": "Voir ma page publique",
+    "create": "Créer mon entreprise",
+    "save": "Enregistrer",
+    "saved": "Enregistré",
+    "saveError": "Enregistrement impossible. Vérifiez les champs et réessayez.",
+    "labelBadge": "Label Startup",
+    "publicLookingFor": "Recherche",
+    "publicFounder": "Fondateur",
+    "publicWebsite": "Site web"
   }
 }
