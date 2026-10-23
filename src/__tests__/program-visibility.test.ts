@@ -140,6 +140,10 @@ describe('creating', () => {
     const c = await (await consultant.POST(post(valid))).json();
     expect(a.slug).toBe('formation-juridique');
     expect(new Set([a.slug, b.slug, c.slug]).size).toBe(3);
+    // A consultant's program opens only once an admin approved it.
+    expect(await findProgramBySlugOrId(c.slug)).toBeNull();
+    const { db } = await import('@/server/db/store');
+    await db.update((d) => { d.programs.find((x) => x.id === c.id)!.reviewStatus = 'APPROVED'; });
     // Each link opens its own program.
     for (const p of [a, b, c]) expect((await findProgramBySlugOrId(p.slug))?.id).toBe(p.id);
   });

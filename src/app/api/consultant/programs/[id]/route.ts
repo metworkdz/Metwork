@@ -145,6 +145,11 @@ export async function PATCH(
     if (input.status !== undefined) p.isActive = input.status === 'PUBLISHED';
     if (input.slug !== undefined) p.slug = input.slug ?? undefined;
     if (input.visibility !== undefined) p.visibility = input.visibility;
+    // A refused program the consultant corrects goes back to the admin.
+    if (p.reviewStatus === 'REJECTED') {
+      p.reviewStatus = 'PENDING';
+      p.reviewRejectionReason = null;
+    }
     p.updatedAt = new Date().toISOString();
     return p;
   });

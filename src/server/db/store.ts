@@ -1434,6 +1434,17 @@ export interface ProgramRecord {
   /** Absent on every program created before this existed ⇒ PUBLIC. */
   visibility?: ProgramVisibility;
   /**
+   * Admin review of a CONSULTANT's program (incubator programs are never
+   * reviewed). PENDING / REJECTED: not reachable, not listed. Absent on
+   * programs created before review existed — those keep the old rule (listed
+   * only while their consultant is published). See server/programs/ownership.
+   */
+  reviewStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedAt?: string | null;
+  reviewedBy?: string | null;
+  /** Why it was refused — shown to the consultant. */
+  reviewRejectionReason?: string | null;
+  /**
    * The dates are still to confirm: the program takes free pre-registrations
    * and no payment until the host sets them. See `@/lib/program-dates`.
    */

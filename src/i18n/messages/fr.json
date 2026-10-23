@@ -333,7 +333,11 @@
       "labelSplitPricing": "Un tarif différent en espèces ?",
       "splitPricingHint": "Laissez vide pour appliquer le même tarif aux deux. Utile quand le paiement par carte a des frais.",
       "labelOnlinePrice": "Tarif par carte (DZD)",
-      "labelCashPrice": "Tarif en espèces (DZD)"
+      "labelCashPrice": "Tarif en espèces (DZD)",
+      "reviewPending": "En attente de validation",
+      "reviewPendingHint": "Metwork vérifie votre programme. Il apparaîtra sur la page Programmes dès qu’il sera validé.",
+      "reviewRejected": "Refusé",
+      "reviewRejectedHint": "Refusé par Metwork : {reason} Modifiez le programme pour le soumettre à nouveau."
     },
     "earnings": {
       "pending": "En attente",
@@ -2239,7 +2243,8 @@
     "payments": "Paiements",
     "domiciliation": "Domiciliation",
     "consultantContracts": "Contrats consultants",
-    "feedback": "Avis"
+    "feedback": "Avis",
+    "programApprovals": "Programmes à valider"
   },
   "pages": {
     "consultationPay": {
@@ -4931,6 +4936,34 @@
       "colAssignedAt": "Attribué le",
       "statusAvailable": "Disponible",
       "statusAssigned": "Attribué"
+    },
+    "programApprovals": {
+      "title": "Programmes à valider",
+      "subtitle": "Les programmes ajoutés par les consultants. Approuvé, un programme apparaît sur la page Programmes ; refusé, le consultant voit la raison et peut le corriger.",
+      "statPending": "En attente",
+      "statApproved": "Approuvés",
+      "statRejected": "Refusés",
+      "tabPENDING": "En attente",
+      "tabAPPROVED": "Approuvés",
+      "tabREJECTED": "Refusés",
+      "emptyPENDING": "Aucun programme en attente.",
+      "emptyAPPROVED": "Aucun programme approuvé.",
+      "emptyREJECTED": "Aucun programme refusé.",
+      "by": "Par {name}",
+      "public": "Public",
+      "unlisted": "Non répertorié",
+      "free": "Gratuit",
+      "datesTbc": "Dates à confirmer",
+      "seats": "{count} places",
+      "submitted": "Soumis le {date}",
+      "approve": "Approuver",
+      "reject": "Refuser",
+      "reasonLabel": "Raison du refus",
+      "reasonPlaceholder": "Expliquez ce qu’il faut corriger : le consultant verra ce message.",
+      "confirmReject": "Refuser le programme",
+      "cancel": "Annuler",
+      "reasonShown": "Raison : {reason}",
+      "failed": "L’action a échoué. Réessayez."
     }
   },
   "bookings": {

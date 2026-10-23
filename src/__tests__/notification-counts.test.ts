@@ -51,6 +51,7 @@ describe('registry shape', () => {
     expect(sourceKeysForRole('ADMIN')).toEqual([
       'approvals',
       'incubators',
+      'programApprovals',
       'consultants',
       'consultations',
       'bookings',
@@ -125,6 +126,7 @@ describe('getNotificationCounts — ADMIN', () => {
     expect(counts).toEqual({
       approvals: 1,
       incubators: 1,
+      programApprovals: 0,
       consultants: 1, // SELF+PENDING only
       consultations: 1, // PENDING only
       bookings: 0, // present even at zero

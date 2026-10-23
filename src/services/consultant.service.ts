@@ -210,6 +210,9 @@ export interface ConsultantProgram {
   isActive: boolean;
   /** UNLISTED = reachable by link only. Absent ⇒ PUBLIC. */
   visibility?: 'PUBLIC' | 'UNLISTED';
+  /** Admin review: a new program is PENDING until approved; REJECTED shows why. */
+  reviewStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewRejectionReason?: string | null;
 }
 
 export interface ConsultantRegistration {

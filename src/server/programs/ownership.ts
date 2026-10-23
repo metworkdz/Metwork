@@ -136,7 +136,7 @@ type OwnerLookups = {
  * good standing (incubator ACTIVE + not archived, or consultant APPROVED).
  */
 export function isProgramPubliclyReachable(
-  program: ProgramOwnershipShape & Pick<ProgramRecord, 'isActive'>,
+  program: ProgramOwnershipShape & Pick<ProgramRecord, 'isActive'> & { reviewStatus?: ProgramRecord['reviewStatus'] },
   lookups: OwnerLookups,
 ): boolean {
   if (!program.isActive) return false;
@@ -144,6 +144,9 @@ export function isProgramPubliclyReachable(
   if (!owner) return false;
 
   if (owner.kind === 'MENTOR') {
+    // A consultant's program waits for an admin: not even its link works
+    // before approval, or it could take payments unreviewed.
+    if (program.reviewStatus === 'PENDING' || program.reviewStatus === 'REJECTED') return false;
     const mentor = lookups.mentors.find((m) => m.id === owner.mentorId);
     return !!mentor && isMentorApproved(mentor);
   }
@@ -161,17 +164,20 @@ export function programVisibility(program: Pick<ProgramRecord, 'visibility'>): '
  * `isProgramPubliclyReachable` in two ways:
  *  - an UNLISTED program is reachable by its link but never listed — the host
  *    shares that link themselves;
- *  - a self-signed-up consultant is not on public list surfaces unless an
- *    admin published them, so neither are their programs.
+ *  - a consultant's program is listed once an admin APPROVED it — whether or
+ *    not the consultant is on the mentors page. One from before review existed
+ *    (no reviewStatus) keeps the old rule: listed only while its consultant is
+ *    published.
  */
 export function isProgramPubliclyListed(
-  program: ProgramOwnershipShape & Pick<ProgramRecord, 'isActive' | 'visibility'>,
+  program: ProgramOwnershipShape & Pick<ProgramRecord, 'isActive' | 'visibility'> & { reviewStatus?: ProgramRecord['reviewStatus'] },
   lookups: OwnerLookups,
 ): boolean {
   if (!isProgramPubliclyReachable(program, lookups)) return false;
   if (programVisibility(program) === 'UNLISTED') return false;
   const owner = getProgramOwner(program);
   if (owner?.kind !== 'MENTOR') return true;
+  if (program.reviewStatus === 'APPROVED') return true;
   const mentor = lookups.mentors.find((m) => m.id === owner.mentorId);
   return !!mentor && isMentorPubliclyListed(mentor);
 }

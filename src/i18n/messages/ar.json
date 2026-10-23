@@ -333,7 +333,11 @@
       "labelSplitPricing": "سعر مختلف نقداً؟",
       "splitPricingHint": "اتركه فارغاً لتطبيق نفس السعر على الطريقتين. مفيد عندما يحمل الدفع بالبطاقة رسوماً.",
       "labelOnlinePrice": "السعر بالبطاقة (دج)",
-      "labelCashPrice": "السعر نقداً (دج)"
+      "labelCashPrice": "السعر نقداً (دج)",
+      "reviewPending": "في انتظار المراجعة",
+      "reviewPendingHint": "تراجع Metwork برنامجك. سيظهر في صفحة البرامج فور الموافقة عليه.",
+      "reviewRejected": "مرفوض",
+      "reviewRejectedHint": "رفضته Metwork: {reason} عدّل البرنامج لإعادة إرساله."
     },
     "earnings": {
       "pending": "معلّق",
@@ -2239,7 +2243,8 @@
     "payments": "المدفوعات",
     "domiciliation": "التوطين",
     "consultantContracts": "عقود المستشارين",
-    "feedback": "الآراء"
+    "feedback": "الآراء",
+    "programApprovals": "برامج للمراجعة"
   },
   "pages": {
     "consultationPay": {
@@ -4931,6 +4936,34 @@
       "colAssignedAt": "تاريخ الإسناد",
       "statusAvailable": "متاح",
       "statusAssigned": "مُسند"
+    },
+    "programApprovals": {
+      "title": "برامج للمراجعة",
+      "subtitle": "البرامج التي يضيفها المستشارون. عند الموافقة يظهر البرنامج في صفحة البرامج؛ وعند الرفض يرى المستشار السبب ويمكنه التصحيح.",
+      "statPending": "قيد الانتظار",
+      "statApproved": "مقبولة",
+      "statRejected": "مرفوضة",
+      "tabPENDING": "قيد الانتظار",
+      "tabAPPROVED": "مقبولة",
+      "tabREJECTED": "مرفوضة",
+      "emptyPENDING": "لا توجد برامج في الانتظار.",
+      "emptyAPPROVED": "لا توجد برامج مقبولة.",
+      "emptyREJECTED": "لا توجد برامج مرفوضة.",
+      "by": "من {name}",
+      "public": "عام",
+      "unlisted": "غير مُدرج",
+      "free": "مجاني",
+      "datesTbc": "التواريخ ستُحدَّد",
+      "seats": "{count} مقاعد",
+      "submitted": "أُرسل في {date}",
+      "approve": "قبول",
+      "reject": "رفض",
+      "reasonLabel": "سبب الرفض",
+      "reasonPlaceholder": "اشرح ما يجب تصحيحه: سيرى المستشار هذه الرسالة.",
+      "confirmReject": "رفض البرنامج",
+      "cancel": "إلغاء",
+      "reasonShown": "السبب: {reason}",
+      "failed": "فشل الإجراء. أعد المحاولة."
     }
   },
   "bookings": {

@@ -333,7 +333,11 @@
       "labelSplitPricing": "Different price for cash?",
       "splitPricingHint": "Leave blank to charge the same price on both. Useful when card payments carry a fee.",
       "labelOnlinePrice": "Price by card (DZD)",
-      "labelCashPrice": "Price in cash (DZD)"
+      "labelCashPrice": "Price in cash (DZD)",
+      "reviewPending": "Awaiting review",
+      "reviewPendingHint": "Metwork is reviewing your program. It will appear on the Programs page once approved.",
+      "reviewRejected": "Rejected",
+      "reviewRejectedHint": "Rejected by Metwork: {reason} Edit the program to submit it again."
     },
     "earnings": {
       "pending": "Pending",
@@ -2239,7 +2243,8 @@
     "payments": "Payments",
     "domiciliation": "Domiciliation",
     "consultantContracts": "Consultant contracts",
-    "feedback": "Feedback"
+    "feedback": "Feedback",
+    "programApprovals": "Programs to review"
   },
   "pages": {
     "consultationPay": {
@@ -4931,6 +4936,34 @@
       "colAssignedAt": "Assigned on",
       "statusAvailable": "Available",
       "statusAssigned": "Assigned"
+    },
+    "programApprovals": {
+      "title": "Programs to review",
+      "subtitle": "Programs added by consultants. Approved, a program appears on the Programs page; rejected, the consultant sees the reason and can fix it.",
+      "statPending": "Pending",
+      "statApproved": "Approved",
+      "statRejected": "Rejected",
+      "tabPENDING": "Pending",
+      "tabAPPROVED": "Approved",
+      "tabREJECTED": "Rejected",
+      "emptyPENDING": "No program waiting.",
+      "emptyAPPROVED": "No approved program.",
+      "emptyREJECTED": "No rejected program.",
+      "by": "By {name}",
+      "public": "Public",
+      "unlisted": "Unlisted",
+      "free": "Free",
+      "datesTbc": "Dates to be confirmed",
+      "seats": "{count} seats",
+      "submitted": "Submitted {date}",
+      "approve": "Approve",
+      "reject": "Reject",
+      "reasonLabel": "Reason for rejection",
+      "reasonPlaceholder": "Explain what to fix: the consultant will see this message.",
+      "confirmReject": "Reject the program",
+      "cancel": "Cancel",
+      "reasonShown": "Reason: {reason}",
+      "failed": "The action failed. Try again."
     }
   },
   "bookings": {
