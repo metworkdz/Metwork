@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { BadgeCheck, MapPin, Search, Sparkles, Wifi } from 'lucide-react';
+import { BadgeCheck, MapPin, Search, Sparkles, Star, Wifi } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -169,6 +169,9 @@ export function FreelancerTile({ card, reasons, top }: { card: Card; reasons?: s
             {card.verified && !card.badge && <BadgeCheck className="size-4 shrink-0 text-sky-600" aria-label={t('verified')} />}
           </p>
           <p className="line-clamp-2 text-sm text-muted-foreground">{card.headline}</p>
+          {card.rating !== null && (
+            <p className="mt-0.5 flex items-center gap-1 text-xs"><Star className="size-3.5 fill-amber-400 text-amber-400" /><span className="font-medium">{card.rating}</span><span className="text-muted-foreground">({card.reviewCount})</span></p>
+          )}
         </div>
       </div>
       <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">

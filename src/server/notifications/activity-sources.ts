@@ -297,6 +297,23 @@ export const NOTIFICATION_SOURCES: readonly NotificationSource[] = [
   // Threads with an unread message (Metwork 2.0). Pending: clears when read, not on visit.
   { key: 'messages', roles: ['ENTREPRENEUR'], mode: 'pending', href: '/dashboard/entrepreneur/messages', count: ({ user }) => unreadThreads(user.id) },
   { key: 'messages', roles: ['FREELANCER'], mode: 'pending', href: '/dashboard/freelancer/messages', count: ({ user }) => unreadThreads(user.id) },
+  // Hiring orders waiting on this member (pay, deliver, review).
+  {
+    key: 'orders',
+    roles: ['ENTREPRENEUR'],
+    mode: 'pending',
+    href: '/dashboard/entrepreneur/orders',
+    count: ({ data, user }) => (data.serviceOrders ?? []).filter((o) =>
+      o.entrepreneurId === user.id && (o.status === 'AWAITING_DEPOSIT' || o.status === 'DELIVERED' || (o.status === 'COMPLETED' && !o.review)),
+    ).length,
+  },
+  {
+    key: 'orders',
+    roles: ['FREELANCER'],
+    mode: 'pending',
+    href: '/dashboard/freelancer/orders',
+    count: ({ data, user }) => (data.serviceOrders ?? []).filter((o) => o.freelancerId === user.id && o.status === 'IN_PROGRESS').length,
+  },
 ];
 
 /* ────────────────────────────── Lookups ────────────────────────────── */

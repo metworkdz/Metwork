@@ -2308,7 +2308,8 @@
     "copilotKb": "Documents du copilote",
     "messages": "Messages",
     "messageReports": "Signalements",
-    "hire": "Recrutement"
+    "hire": "Recrutement",
+    "orders": "Commandes"
   },
   "pages": {
     "consultationPay": {
@@ -6957,6 +6958,23 @@
       "INVALID_ATTACHMENT": "Ce document ne peut pas être partagé.",
       "MESSAGING_UNAVAILABLE": "La messagerie est momentanément indisponible.",
       "GENERIC": "Une erreur est survenue. Réessayez."
+    },
+    "order": "Commande",
+    "viewOrder": "Voir la commande",
+    "acceptDevis": "Accepter et commander",
+    "acceptDevisHint": "Vous payez 50 % pour démarrer, le solde à la livraison.",
+    "orderStatus": {
+      "AWAITING_DEPOSIT": "Acompte à payer",
+      "IN_PROGRESS": "En cours",
+      "DELIVERED": "Livré · solde à payer",
+      "COMPLETED": "Terminée",
+      "CANCELLED": "Annulée"
+    },
+    "orderErrors": {
+      "ALREADY_ORDERED": "Ce devis a déjà été accepté.",
+      "BLOCKED": "Vous ne pouvez pas commander à ce freelancer.",
+      "TOO_SMALL": "Ce montant est trop faible pour une commande.",
+      "GENERIC": "Une erreur est survenue. Réessayez."
     }
   },
   "hiring": {
@@ -7020,6 +7038,71 @@
       "GENERIC": "Une erreur est survenue. Réessayez."
     },
     "msgBudget": "Budget",
-    "msgDeadline": "Délai"
+    "msgDeadline": "Délai",
+    "reviewsCount": "{count, plural, one {# avis} other {# avis}}",
+    "reviewsTitle": "{count, plural, one {# avis} other {# avis}}",
+    "reviewVerified": "Avis d’une commande payée"
+  },
+  "orders": {
+    "pageTitle": "Commandes",
+    "subtitleEntrepreneur": "Le travail commandé à des freelancers : ce qu’il reste à payer, ce qui a été livré.",
+    "subtitleFreelancer": "Le travail qu’on vous a commandé via Metwork.",
+    "emptyTitle": "Aucune commande pour l’instant",
+    "emptyEntrepreneur": "Commandez un gig ou acceptez un devis depuis l’onglet Recrutement.",
+    "emptyFreelancer": "Les commandes arrivent ici quand un fondateur commande un de vos gigs ou accepte votre devis.",
+    "back": "Toutes les commandes",
+    "withFreelancer": "Avec {name}",
+    "forClient": "Pour {name}",
+    "progress": "Avancement de la commande",
+    "cancelled": "Cette commande a été annulée avant tout paiement.",
+    "deposit": "Acompte (50 %)",
+    "balance": "Solde",
+    "total": "Total",
+    "status": {
+      "AWAITING_DEPOSIT": "Acompte à payer",
+      "IN_PROGRESS": "En cours",
+      "DELIVERED": "Livré · solde à payer",
+      "COMPLETED": "Terminée",
+      "CANCELLED": "Annulée"
+    },
+    "netNote": "Vous recevez {net} dans votre portefeuille pour cette commande, après la commission Metwork de {percent} % sur le travail trouvé via Metwork.",
+    "payDeposit": "Payez l’acompte pour lancer le travail",
+    "payBalance": "Le travail est livré : payez le solde",
+    "feeNote": "Frais de paiement inclus. Le freelancer est payé immédiatement ; aucun argent n’est bloqué.",
+    "payWallet": "Payer avec mon portefeuille",
+    "payCard": "Payer par carte (CIB / Edahabia)",
+    "walletBalance": "Solde du portefeuille : {amount}",
+    "topUp": "Recharger",
+    "deliverTitle": "Livré ?",
+    "deliverBody": "Une fois le travail terminé, marquez-le comme livré : votre client est invité à payer le solde.",
+    "markDelivered": "Marquer comme livré",
+    "waitDeposit": "En attente de l’acompte du client. Ne commencez pas avant.",
+    "waitBalance": "En attente du paiement du solde par le client.",
+    "reviewTitle": "Comment ça s’est passé ?",
+    "reviewPlaceholder": "Quelques mots pour les autres fondateurs (facultatif)",
+    "reviewSend": "Publier mon avis",
+    "conversation": "Ouvrir la conversation",
+    "cancel": "Annuler la commande",
+    "confirmCancel": "Annuler cette commande ? Rien n’a encore été payé.",
+    "supportNote": "Un problème avec cette commande ? Écrivez d’abord à l’autre personne ; si ça ne se règle pas, signalez la conversation et notre équipe interviendra.",
+    "orderGig": "Commander ce gig",
+    "howItWorks": "Vous payez 50 % maintenant pour lancer le travail, et le solde à la livraison. Chaque paiement va directement au freelancer ; vous payez avec votre portefeuille ou par carte.",
+    "confirmOrder": "Commander pour {amount}",
+    "newOrderMessage": "Bonjour, je viens de commander votre gig. Je règle l’acompte pour que vous puissiez commencer.",
+    "errors": {
+      "INSUFFICIENT_FUNDS": "Le solde de votre portefeuille est insuffisant. Rechargez-le ou payez par carte.",
+      "NO_WALLET": "Vous n’avez pas encore de portefeuille : payez par carte.",
+      "WALLET_FROZEN": "Votre portefeuille est gelé. Payez par carte ou contactez-nous.",
+      "NOT_PAYABLE": "Ce paiement n’est plus dû. Actualisez la page.",
+      "WRONG_STATUS": "Impossible à cette étape. Actualisez la page.",
+      "ALREADY_REVIEWED": "Vous avez déjà donné votre avis.",
+      "BLOCKED": "Vous ne pouvez pas commander à ce freelancer.",
+      "CONTACT_LIMIT": "Vous avez atteint les nouveaux contacts de la semaine avec l’offre gratuite.",
+      "TOO_SMALL": "Ce montant est trop faible pour une commande via Metwork.",
+      "NOT_ALLOWED": "Indisponible pour ce compte.",
+      "RATE_LIMITED": "Trop de tentatives. Réessayez plus tard.",
+      "MESSAGING_UNAVAILABLE": "La messagerie est momentanément indisponible.",
+      "GENERIC": "Une erreur est survenue. Réessayez."
+    }
   }
 }

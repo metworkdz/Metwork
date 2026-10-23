@@ -20,7 +20,8 @@ export type ContextType = (typeof CONTEXT_TYPES)[number];
 /** A card in a thread: ids only — rendered from the live record. */
 export type MessageAttachment =
   | { kind: 'INVOICE'; invoiceId: string }
-  | { kind: 'PAYMENT_LINK'; linkId: string };
+  | { kind: 'PAYMENT_LINK'; linkId: string }
+  | { kind: 'ORDER'; orderId: string };
 
 export interface Conversation {
   id: string;

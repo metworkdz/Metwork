@@ -2308,7 +2308,8 @@
     "copilotKb": "Copilot documents",
     "messages": "Messages",
     "messageReports": "Reported chats",
-    "hire": "Hire"
+    "hire": "Hire",
+    "orders": "Orders"
   },
   "pages": {
     "consultationPay": {
@@ -6957,6 +6958,23 @@
       "INVALID_ATTACHMENT": "This document can’t be shared.",
       "MESSAGING_UNAVAILABLE": "Messaging is temporarily unavailable.",
       "GENERIC": "Something went wrong. Try again."
+    },
+    "order": "Order",
+    "viewOrder": "View the order",
+    "acceptDevis": "Accept and order",
+    "acceptDevisHint": "You pay 50% to start, the balance on delivery.",
+    "orderStatus": {
+      "AWAITING_DEPOSIT": "Deposit due",
+      "IN_PROGRESS": "In progress",
+      "DELIVERED": "Delivered · balance due",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "orderErrors": {
+      "ALREADY_ORDERED": "This devis has already been accepted.",
+      "BLOCKED": "You can’t order from this freelancer.",
+      "TOO_SMALL": "This amount is too small to order.",
+      "GENERIC": "Something went wrong. Try again."
     }
   },
   "hiring": {
@@ -7020,6 +7038,71 @@
       "GENERIC": "Something went wrong. Try again."
     },
     "msgBudget": "Budget",
-    "msgDeadline": "Deadline"
+    "msgDeadline": "Deadline",
+    "reviewsCount": "{count, plural, one {# review} other {# reviews}}",
+    "reviewsTitle": "{count, plural, one {# review} other {# reviews}}",
+    "reviewVerified": "Review from a paid order"
+  },
+  "orders": {
+    "pageTitle": "Orders",
+    "subtitleEntrepreneur": "Work you ordered from freelancers: what to pay, what was delivered.",
+    "subtitleFreelancer": "Work ordered from you through Metwork.",
+    "emptyTitle": "No orders yet",
+    "emptyEntrepreneur": "Order a gig or accept a devis from the hiring tab.",
+    "emptyFreelancer": "Orders appear here when a founder orders one of your gigs or accepts your devis.",
+    "back": "All orders",
+    "withFreelancer": "With {name}",
+    "forClient": "For {name}",
+    "progress": "Order progress",
+    "cancelled": "This order was cancelled before any payment.",
+    "deposit": "Deposit (50%)",
+    "balance": "Balance",
+    "total": "Total",
+    "status": {
+      "AWAITING_DEPOSIT": "Deposit due",
+      "IN_PROGRESS": "In progress",
+      "DELIVERED": "Delivered · balance due",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "netNote": "You receive {net} in your wallet for this order, after Metwork’s {percent}% commission on work found through Metwork.",
+    "payDeposit": "Pay the deposit to start",
+    "payBalance": "The work is delivered: pay the balance",
+    "feeNote": "Includes the payment fee. The freelancer is paid straight away; no money is held.",
+    "payWallet": "Pay from my wallet",
+    "payCard": "Pay by card (CIB / Edahabia)",
+    "walletBalance": "Wallet balance: {amount}",
+    "topUp": "Top up",
+    "deliverTitle": "Delivered?",
+    "deliverBody": "When the work is done, mark it delivered: your client is asked to pay the balance.",
+    "markDelivered": "Mark as delivered",
+    "waitDeposit": "Waiting for the client to pay the deposit. Don’t start before.",
+    "waitBalance": "Waiting for the client to pay the balance.",
+    "reviewTitle": "How did it go?",
+    "reviewPlaceholder": "A few words for other founders (optional)",
+    "reviewSend": "Publish my review",
+    "conversation": "Open the conversation",
+    "cancel": "Cancel the order",
+    "confirmCancel": "Cancel this order? Nothing has been paid yet.",
+    "supportNote": "A problem with this order? Write to the other person first; if it can’t be solved, report the conversation and our team will step in.",
+    "orderGig": "Order this gig",
+    "howItWorks": "You pay 50% now to start, and the balance when the work is delivered. Each payment goes to the freelancer at once; you can pay from your wallet or by card.",
+    "confirmOrder": "Order for {amount}",
+    "newOrderMessage": "Hello, I just ordered your gig. I’ll pay the deposit so you can start.",
+    "errors": {
+      "INSUFFICIENT_FUNDS": "Your wallet balance is too low. Top it up or pay by card.",
+      "NO_WALLET": "You have no wallet yet: pay by card.",
+      "WALLET_FROZEN": "Your wallet is frozen. Pay by card or contact us.",
+      "NOT_PAYABLE": "This payment is no longer due. Refresh the page.",
+      "WRONG_STATUS": "Not possible at this stage. Refresh the page.",
+      "ALREADY_REVIEWED": "You already reviewed this order.",
+      "BLOCKED": "You can’t order from this freelancer.",
+      "CONTACT_LIMIT": "You’ve reached this week’s new contacts on the Free plan.",
+      "TOO_SMALL": "This amount is too small to order through Metwork.",
+      "NOT_ALLOWED": "Not available for this account.",
+      "RATE_LIMITED": "Too many attempts. Try again later.",
+      "MESSAGING_UNAVAILABLE": "Messaging is temporarily unavailable.",
+      "GENERIC": "Something went wrong. Try again."
+    }
   }
 }

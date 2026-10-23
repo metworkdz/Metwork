@@ -89,7 +89,8 @@ export async function freelancerQuotaRefusal(userId: string, quota: FreelancerQu
       ? (data.invoices ?? []).filter((i) => i.freelancerId === userId && new Date(i.createdAt) >= monthStart).length
       : quota === 'client'
         ? (data.clients ?? []).filter((c) => c.freelancerId === userId).length
-        : (data.paymentLinks ?? []).filter((l) => l.freelancerId === userId && l.status === 'ACTIVE').length;
+        // Order deposit/balance links are created by orders, not by the freelancer.
+        : (data.paymentLinks ?? []).filter((l) => l.freelancerId === userId && l.status === 'ACTIVE' && !l.orderId).length;
   if (withinLimit(limit, used)) return null;
   return jsonError(403, 'PLAN_LIMIT_REACHED', 'Free plan limit reached — upgrade to Premium for unlimited use', { limit, used });
 }

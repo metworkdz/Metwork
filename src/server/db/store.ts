@@ -460,6 +460,13 @@ export interface PaymentLinkRecord {
   /** Dedup stamps — claimed inside the settlement mutation. */
   paidReceiptSentAt?: string | null;
   incubatorNotifiedAt?: string | null;
+  /**
+   * Metwork 2.0: the hiring order this link pays (deposit or balance). Such a
+   * link is created and cancelled only by the order; its receiver commission
+   * is the order's frozen sourced-work rate, not the plan's link fee.
+   */
+  orderId?: string | null;
+  orderPart?: 'DEPOSIT' | 'BALANCE' | null;
   createdAt: string;
   paidAt?: string | null;
   updatedAt: string;
@@ -1134,6 +1141,43 @@ export interface QuoteRequestRecord {
   deadline: string | null;
   status: 'OPEN' | 'ANSWERED' | 'CLOSED';
   conversationId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ServiceOrderStatus = 'AWAITING_DEPOSIT' | 'IN_PROGRESS' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
+
+/**
+ * Work a founder orders from a freelancer through Metwork (approved model):
+ * 50 % deposit, then the balance once delivered, each through a DZD payment
+ * link. No escrow: each payment goes straight to the freelancer's wallet,
+ * minus the sourced-work commission frozen here at creation.
+ */
+export interface ServiceOrderRecord {
+  id: string;
+  /** Human reference, e.g. "CMD-2026-0042". */
+  number: string;
+  entrepreneurId: string;
+  freelancerId: string;
+  source: { type: 'GIG'; gigId: string } | { type: 'QUOTE'; invoiceId: string; quoteId: string | null };
+  title: string;
+  /** DZD — the gig price, or the devis total. */
+  total: number;
+  depositAmount: number;
+  balanceAmount: number;
+  /** Receiver commission on each payment (0–1), frozen at creation from the freelancer's plan. */
+  commissionRate: number;
+  depositLinkId: string | null;
+  balanceLinkId: string | null;
+  status: ServiceOrderStatus;
+  conversationId: string | null;
+  depositPaidAt: string | null;
+  deliveredAt: string | null;
+  completedAt: string | null;
+  cancelledAt: string | null;
+  cancelledBy: string | null;
+  /** One review by the founder, only once the order is COMPLETED. */
+  review: { rating: number; comment: string | null; createdAt: string } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -3946,6 +3990,8 @@ interface DbShape {
   messageReports?: MessageReportRecord[];
   /** Metwork 2.0 — quote requests from the hiring tab (founder → freelancer). */
   quoteRequests?: QuoteRequestRecord[];
+  /** Metwork 2.0 — work ordered through Metwork (a gig, or an accepted devis). */
+  serviceOrders?: ServiceOrderRecord[];
   /** Audit log entries for admin actions. */
   auditLogs: AuditLogRecord[];
   /** In-app notifications per user. */

@@ -17,6 +17,7 @@ import { hasPaidPlanForAudience } from '@/lib/entitlements';
 import { memberBadgeFor, type MemberBadge } from '@/lib/member-badge';
 import { tokenize } from '@/lib/text-search';
 import { findCityCode } from '@/config/cities';
+import { reviewsOf, type ReviewSummary } from '@/server/orders/reviews';
 
 type Store = Awaited<ReturnType<typeof db.read>>;
 
@@ -39,6 +40,9 @@ export interface FreelancerCard {
   verified: boolean;
   premium: boolean;
   badge: MemberBadge | null;
+  /** From reviews on paid orders; null until the first one. */
+  rating: number | null;
+  reviewCount: number;
 }
 
 export interface GigView {
@@ -51,6 +55,7 @@ export interface GigView {
 }
 
 export interface FreelancerProfileView extends FreelancerCard {
+  reviews: ReviewSummary['items'];
   bio: string | null;
   portfolio: FreelancerPortfolioItem[];
   gigs: GigView[];
@@ -84,6 +89,7 @@ function cards(data: Store): { card: FreelancerCard; terms: Set<string>; skillTe
     const skills = p.skills.filter((s) => s.trim());
     if (!p.headline?.trim() || skills.length < MIN_SKILLS) continue;
     const gigs = (data.gigs ?? []).filter((g) => g.freelancerId === u.id && g.isActive);
+    const reviews = reviewsOf(data, u.id);
     const card: FreelancerCard = {
       id: u.id,
       name: u.fullName,
@@ -101,6 +107,8 @@ function cards(data: Store): { card: FreelancerCard; terms: Set<string>; skillTe
       verified: u.legalVerificationStatus === 'APPROVED',
       premium: hasPaidPlanForAudience(u),
       badge: memberBadgeFor(u),
+      rating: reviews.average,
+      reviewCount: reviews.count,
     };
     const text = [card.headline, skills.join(' '), p.bio ?? '', gigs.map((g) => `${g.title} ${g.description}`).join(' '), p.portfolio.map((x) => x.title).join(' ')].join(' ');
     out.push({ card, terms: new Set(tokenize(text)), skillTerms: new Set(tokenize(`${skills.join(' ')} ${card.headline}`)) });
@@ -137,7 +145,9 @@ function placeFit(need: HiringNeed | null, card: FreelancerCard): number {
 }
 
 function quality(card: FreelancerCard): number {
-  return Math.min(1, card.completion / 100 + (card.verified ? 0.1 : 0) + Math.min(card.gigCount, 3) * 0.03);
+  // Reviews come from paid orders only; they count once there are a few.
+  const reviews = card.rating !== null && card.reviewCount >= 2 ? ((card.rating - 3) / 2) * 0.15 : 0;
+  return Math.max(0, Math.min(1, card.completion / 100 + (card.verified ? 0.1 : 0) + Math.min(card.gigCount, 3) * 0.03 + reviews));
 }
 
 /** Below this, a word in passing (a bio mentioning "site") is not a match. */
@@ -193,6 +203,7 @@ export function freelancerProfile(data: Store, freelancerId: string): Freelancer
   const u = data.users.find((x) => x.id === freelancerId)!;
   return {
     ...entry.card,
+    reviews: reviewsOf(data, freelancerId).items.slice(0, 20),
     bio: p.bio,
     portfolio: p.portfolio,
     gigs: (data.gigs ?? [])

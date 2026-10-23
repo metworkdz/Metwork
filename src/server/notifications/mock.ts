@@ -2497,3 +2497,49 @@ export async function sendNewMessageAlert(n: NewMessageAlert): Promise<void> {
     n.phone ? deliverClientText(n.phone, [copy.subject, copy.lines[2], n.url].join('\n'), 'new-message') : Promise.resolve(),
   ]);
 }
+
+/* ─────────────────────────── Hiring order notices (Metwork 2.0) ─────────────────────────── */
+
+export interface OrderNotice {
+  kind: 'DEPOSIT_PAID' | 'COMPLETED';
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  locale: string | null;
+  orderNumber: string;
+  title: string;
+  url: string;
+}
+
+/** Email + WhatsApp to the freelancer when an order's deposit or balance is paid. Never throws. */
+export async function sendOrderNotice(n: OrderNotice): Promise<void> {
+  const lang = normalizeEmailLang(n.locale);
+  const first = n.fullName.split(' ')[0] ?? n.fullName;
+  const ref = `${n.orderNumber} — ${n.title}`;
+  const copy =
+    lang === 'ar'
+      ? n.kind === 'DEPOSIT_PAID'
+        ? { subject: `تم دفع العربون: ${ref}`, lines: [`مرحبًا ${first}،`, `دفع العميل عربون 50 % للطلب ${ref}. المبلغ في محفظتك على Metwork.`, 'يمكنك بدء العمل. عند التسليم، اضغط «تم التسليم» ليُطلب الباقي.'] }
+        : { subject: `اكتمل الطلب: ${ref}`, lines: [`مرحبًا ${first}،`, `دفع العميل باقي مبلغ الطلب ${ref}. المبلغ في محفظتك.`, 'شكرًا على عملك!'] }
+      : lang === 'en'
+        ? n.kind === 'DEPOSIT_PAID'
+          ? { subject: `Deposit paid: ${ref}`, lines: [`Hello ${first},`, `Your client paid the 50% deposit for ${ref}. It is in your Metwork wallet.`, 'You can start. When you deliver, tap “Mark as delivered” to request the balance.'] }
+          : { subject: `Order completed: ${ref}`, lines: [`Hello ${first},`, `Your client paid the balance for ${ref}. It is in your wallet.`, 'Thank you for your work!'] }
+        : n.kind === 'DEPOSIT_PAID'
+          ? { subject: `Acompte payé : ${ref}`, lines: [`Bonjour ${first},`, `Votre client a payé l’acompte de 50 % pour ${ref}. Il est dans votre portefeuille Metwork.`, 'Vous pouvez commencer. À la livraison, appuyez sur « Marquer comme livré » pour demander le solde.'] }
+          : { subject: `Commande terminée : ${ref}`, lines: [`Bonjour ${first},`, `Votre client a payé le solde de ${ref}. Il est dans votre portefeuille.`, 'Merci pour votre travail !'] };
+  const html = simpleNoticeHtml(
+    escapeRenewalHtml(copy.subject),
+    [...copy.lines.map(escapeRenewalHtml), `<a href="${n.url}">${n.url}</a>`],
+    lang === 'ar' ? 'rtl' : 'ltr',
+  );
+  await Promise.allSettled([
+    n.email
+      ? sendResendEmail({ to: n.email, subject: copy.subject, html }).catch((err: Error) =>
+          // eslint-disable-next-line no-console
+          console.error(`${banner} order notice email failed →`, err.message),
+        )
+      : Promise.resolve(),
+    n.phone ? deliverClientText(n.phone, [copy.subject, copy.lines[1], n.url].join('\n'), 'order-notice') : Promise.resolve(),
+  ]);
+}

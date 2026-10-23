@@ -6,6 +6,8 @@ import { Link } from '@/i18n/routing';
 import { MemberBadge } from '@/components/shared/member-badge';
 import { ContactButton } from '@/components/features/messaging/contact-button';
 import { QuoteDialog } from '@/components/features/hiring/quote-dialog';
+import { OrderGigButton } from '@/components/features/orders/order-gig-button';
+import { Stars } from '@/components/features/orders/order-detail';
 import { db } from '@/server/db/store';
 import { freelancerProfile } from '@/server/hiring/directory';
 import { quotesUsedThisMonth } from '@/server/hiring/quotes';
@@ -72,6 +74,9 @@ export default async function FreelancerProfilePage({ params }: PageProps) {
               {p.remote && <span className="inline-flex items-center gap-1"><Wifi className="size-4" />{t('remote')}</span>}
               <span>{t('memberSince', { date: formatDate(p.memberSince, lang, { month: 'long', year: 'numeric' }) })}</span>
             </p>
+            {p.rating !== null && (
+              <p className="flex items-center gap-1.5 text-sm"><Stars value={p.rating} size="sm" /><span className="font-medium">{p.rating}</span><span className="text-muted-foreground">({t('reviewsCount', { count: p.reviewCount })})</span></p>
+            )}
           </div>
         </div>
         <div className="flex flex-col gap-2 sm:items-end">
@@ -118,6 +123,20 @@ export default async function FreelancerProfilePage({ params }: PageProps) {
               </div>
             </section>
           )}
+          {p.reviews.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="text-sm font-semibold">{t('reviewsTitle', { count: p.reviewCount })}</h2>
+              <ul className="space-y-3">
+                {p.reviews.map((r, i) => (
+                  <li key={i} className="space-y-1 rounded-lg border p-3 text-sm">
+                    <p className="flex flex-wrap items-center gap-2"><Stars value={r.rating} size="sm" /><span className="text-xs text-muted-foreground">{r.author} · {formatDate(r.createdAt, lang, { dateStyle: 'medium' })}</span></p>
+                    {r.comment && <p className="whitespace-pre-line" dir="auto">{r.comment}</p>}
+                    <p className="text-xs text-muted-foreground">{t('reviewVerified')}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
 
         <aside className="space-y-3">
@@ -133,6 +152,7 @@ export default async function FreelancerProfilePage({ params }: PageProps) {
                 <span className="inline-flex items-center gap-1"><RefreshCw className="size-3.5" />{t('revisions', { count: g.revisions })}</span>
               </p>
               <div className="flex flex-col gap-2">
+                <OrderGigButton gigId={g.id} title={g.title} price={g.price} />
                 <QuoteDialog freelancerId={p.id} freelancerName={first} gig={{ id: g.id, title: g.title }} remaining={remaining} variant="outline" size="sm" />
                 <ContactButton toId={p.id} toName={first} contextType="GIG_ORDER" contextId={g.id} viewerRole="ENTREPRENEUR" returnPath={returnPath} label={t('askQuestion')} variant="ghost" size="sm" />
               </div>

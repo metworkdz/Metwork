@@ -58,6 +58,7 @@ import {
 } from '@/server/notifications/mock';
 import { entitlementsForUser } from '@/lib/entitlements';
 import type { CommissionQuote } from '@/server/payments/commission';
+import { applyOrderPaymentInDraft, orderCommissionRate, type OrderPaymentEvent } from '@/server/orders/state';
 
 type StoreDraft = Parameters<Parameters<typeof db.update>[0]>[0];
 
@@ -128,11 +129,14 @@ function receiverOf(d: StoreDraft | StoreRead, link: PaymentLinkRecord): LinkRec
     if (!user) return null;
     const settings = (d.freelancerProfiles ?? []).find((p) => p.userId === user.id)?.invoiceSettings ?? {};
     const ent = entitlementsForUser(user);
+    // An order's link carries the sourced-work commission frozen on the order
+    // (approved: it REPLACES the plan's link fee, it is not added to it).
+    const orderRate = orderCommissionRate(d, link);
     return {
       kind: 'FREELANCER',
       walletUserId: user.id,
       incubator: null,
-      receiverRate: (ent?.paymentLinkFeePercent ?? 3) / 100,
+      receiverRate: orderRate ?? (ent?.paymentLinkFeePercent ?? 3) / 100,
       walletPath: '/dashboard/freelancer/wallet',
       issuer: {
         id: user.id,
@@ -180,6 +184,11 @@ function quoteFor(d: StoreDraft | StoreRead, link: PaymentLinkRecord): Commissio
   };
 }
 
+/** What a payer is charged for a link (base + payer fee) — the same quote checkout uses. */
+export function payerGrossFor(d: StoreRead, link: PaymentLinkRecord): number {
+  return link.grossChargedToPayer ?? quoteFor(d, link).grossChargedToPayer;
+}
+
 /* ──────────────────────────── Incubator-facing CRUD ──────────────────────────── */
 
 export interface CreatePaymentLinkInput {
@@ -192,6 +201,9 @@ export interface CreatePaymentLinkInput {
   hasExpiry: boolean;
   /** Required when hasExpiry — ISO date string. */
   expiresAt?: string | null;
+  /** Hiring orders only (`server/orders`). */
+  orderId?: string | null;
+  orderPart?: 'DEPOSIT' | 'BALANCE' | null;
 }
 
 /** Create an ACTIVE payment link with a freshly-minted unique slug. */
@@ -226,6 +238,7 @@ export async function createPaymentLink(
       locale: null,
       paidReceiptSentAt: null,
       incubatorNotifiedAt: null,
+      ...(input.orderId ? { orderId: input.orderId, orderPart: input.orderPart ?? null } : {}),
       createdAt: now,
       paidAt: null,
       updatedAt: now,
@@ -255,7 +268,7 @@ export async function listPaymentLinks(owner: string | PaymentLinkOwner): Promis
 
 export type CancelPaymentLinkResult =
   | { ok: true; link: PaymentLinkRecord }
-  | { ok: false; reason: 'NOT_FOUND' | 'ALREADY_PAID' };
+  | { ok: false; reason: 'NOT_FOUND' | 'ALREADY_PAID' | 'ORDER_LINK' };
 
 /**
  * Cancel a link — only while it has not been PAID. Idempotent: cancelling an
@@ -271,6 +284,8 @@ export async function cancelPaymentLink(
     const link = (d.paymentLinks ?? []).find((l) => l.id === id && ownsLink(l, o));
     if (!link) return { ok: false, reason: 'NOT_FOUND' };
     if (link.status === 'PAID') return { ok: false, reason: 'ALREADY_PAID' };
+    // An order's link is cancelled with the order, never on its own.
+    if (link.orderId) return { ok: false, reason: 'ORDER_LINK' };
     if (link.status === 'CANCELLED') return { ok: true, link };
     link.status = 'CANCELLED';
     link.updatedAt = new Date().toISOString();
@@ -351,7 +366,7 @@ export async function getPaymentLinkPayView(slug: string): Promise<PaymentLinkPa
 /* ──────────────────────────── Settlement ──────────────────────────── */
 
 type SettleOutcome =
-  | { kind: 'SETTLED'; link: PaymentLinkRecord; claimed: boolean }
+  | { kind: 'SETTLED'; link: PaymentLinkRecord; claimed: boolean; order?: OrderPaymentEvent }
   | { kind: 'CANCELLED'; link: PaymentLinkRecord }
   | { kind: 'NOT_FOUND' };
 
@@ -366,97 +381,119 @@ async function applyPaymentLinkSettlement(
   id: string,
   providerRef: string | null,
 ): Promise<SettleOutcome> {
-  return db.update<SettleOutcome>((d) => {
+  const outcome = await db.update<SettleOutcome>((d) => {
     const link = (d.paymentLinks ?? []).find((l) => l.id === id);
     if (!link) return { kind: 'NOT_FOUND' };
 
     if (link.status === 'PAID') return { kind: 'SETTLED', link, claimed: false };
     if (link.status === 'CANCELLED') return { kind: 'CANCELLED', link };
 
-    const now = new Date().toISOString();
-
-    // ── Claim the PAID transition ─────────────────────────────────────────
-    link.status = 'PAID';
-    link.paidAt = now;
-    if (providerRef) link.providerRef = providerRef;
-    link.updatedAt = now;
-
-    // ── Commission (central engine) on the base amount ────────────────────
-    const receiver = receiverOf(d, link);
-    const walletUserId = receiver?.walletUserId ?? null;
-    const base = link.amount;
-    const quote = quoteFor(d, link);
-    const commission = quote.receiverCommission;
-    link.commissionRate = quote.receiverRate;
-    link.commissionAmount = commission;
-    // Freeze the payer fee too if init never recorded it (defensive).
-    if (link.payerFeeAmount == null) {
-      link.payerFeeAmount = quote.payerFee;
-      link.payerFeeRate = quote.payerRate;
-      link.grossChargedToPayer = quote.grossChargedToPayer;
-    }
-
-    // ── Receiver wallet: +base (PAYOUT), −commission (COMMISSION) ──────────
-    if (walletUserId) {
-      const wallet = ensureWallet(d, walletUserId);
-      if (base > 0 && wallet.status !== 'FROZEN') {
-        wallet.balance += base;
-        wallet.updatedAt = now;
-        const payoutTx: TransactionRecord = {
-          id: newSlug(),
-          walletId: wallet.id,
-          userId: walletUserId,
-          type: 'PAYOUT',
-          amount: base,
-          balanceAfter: wallet.balance,
-          status: 'COMPLETED',
-          description: `Payment link — ${link.serviceName}`,
-          reference: `payout-link-${link.id}`,
-          provider: 'internal',
-          providerTxnId: providerRef,
-          metadata: {
-            paymentLinkId: link.id,
-            payerEmail: link.payerEmail,
-            payerName: link.payerName,
-          },
-          createdAt: now,
-          completedAt: now,
-        };
-        d.transactions.push(payoutTx);
-      }
-      // Net stays ≥ 0 (commission ≤ base), so no negative-balance debt.
-      if (commission > 0 && wallet.status !== 'FROZEN') {
-        wallet.balance -= commission;
-        wallet.updatedAt = now;
-        const commissionTx: TransactionRecord = {
-          id: newSlug(),
-          walletId: wallet.id,
-          userId: walletUserId,
-          type: 'COMMISSION',
-          amount: -commission,
-          balanceAfter: wallet.balance,
-          status: 'COMPLETED',
-          description: `Platform commission — ${link.serviceName}`,
-          reference: `commission-link-${link.id}`,
-          provider: 'internal',
-          providerTxnId: null,
-          metadata: {
-            paymentLinkId: link.id,
-            base,
-            rate: quote.receiverRate,
-            payerFee: link.payerFeeAmount ?? 0,
-            payerRate: link.payerFeeRate ?? 0,
-            platformTake: quote.platformTake,
-          },
-          createdAt: now,
-          completedAt: now,
-        };
-        d.transactions.push(commissionTx);
-      }
-    }
-
-    return { kind: 'SETTLED', link, claimed: true };
+    return settleLinkInDraft(d, link, providerRef);
   });
+  if (outcome.kind === 'SETTLED' && outcome.claimed && outcome.order) void notifyOrderPayment(outcome.order);
+  return outcome;
+}
+
+/** Order notices load lazily: the order module imports this one. */
+async function notifyOrderPayment(event: NonNullable<OrderPaymentEvent>): Promise<void> {
+  try {
+    const { notifyOrderPaid } = await import('@/server/orders/service');
+    await notifyOrderPaid(event);
+  } catch (err) {
+    console.error('[orders] payment notice failed', String(err));
+  }
+}
+
+/**
+ * The PAID claim and the money movement, inside a caller's mutation. Shared
+ * by the provider paths (card) and the wallet path, so both settle the same
+ * way. The caller has already checked the link is ACTIVE.
+ */
+function settleLinkInDraft(d: StoreDraft, link: PaymentLinkRecord, providerRef: string | null): SettleOutcome {
+  const now = new Date().toISOString();
+
+  // ── Claim the PAID transition ─────────────────────────────────────────
+  link.status = 'PAID';
+  link.paidAt = now;
+  if (providerRef) link.providerRef = providerRef;
+  link.updatedAt = now;
+
+  // ── Commission (central engine) on the base amount ────────────────────
+  const receiver = receiverOf(d, link);
+  const walletUserId = receiver?.walletUserId ?? null;
+  const base = link.amount;
+  const quote = quoteFor(d, link);
+  const commission = quote.receiverCommission;
+  link.commissionRate = quote.receiverRate;
+  link.commissionAmount = commission;
+  // Freeze the payer fee too if init never recorded it (defensive).
+  if (link.payerFeeAmount == null) {
+    link.payerFeeAmount = quote.payerFee;
+    link.payerFeeRate = quote.payerRate;
+    link.grossChargedToPayer = quote.grossChargedToPayer;
+  }
+
+  // ── Receiver wallet: +base (PAYOUT), −commission (COMMISSION) ──────────
+  if (walletUserId) {
+    const wallet = ensureWallet(d, walletUserId);
+    if (base > 0 && wallet.status !== 'FROZEN') {
+      wallet.balance += base;
+      wallet.updatedAt = now;
+      const payoutTx: TransactionRecord = {
+        id: newSlug(),
+        walletId: wallet.id,
+        userId: walletUserId,
+        type: 'PAYOUT',
+        amount: base,
+        balanceAfter: wallet.balance,
+        status: 'COMPLETED',
+        description: `Payment link — ${link.serviceName}`,
+        reference: `payout-link-${link.id}`,
+        provider: 'internal',
+        providerTxnId: providerRef,
+        metadata: {
+          paymentLinkId: link.id,
+          payerEmail: link.payerEmail,
+          payerName: link.payerName,
+        },
+        createdAt: now,
+        completedAt: now,
+      };
+      d.transactions.push(payoutTx);
+    }
+    // Net stays ≥ 0 (commission ≤ base), so no negative-balance debt.
+    if (commission > 0 && wallet.status !== 'FROZEN') {
+      wallet.balance -= commission;
+      wallet.updatedAt = now;
+      const commissionTx: TransactionRecord = {
+        id: newSlug(),
+        walletId: wallet.id,
+        userId: walletUserId,
+        type: 'COMMISSION',
+        amount: -commission,
+        balanceAfter: wallet.balance,
+        status: 'COMPLETED',
+        description: `Platform commission — ${link.serviceName}`,
+        reference: `commission-link-${link.id}`,
+        provider: 'internal',
+        providerTxnId: null,
+        metadata: {
+          paymentLinkId: link.id,
+          base,
+          rate: quote.receiverRate,
+          payerFee: link.payerFeeAmount ?? 0,
+          payerRate: link.payerFeeRate ?? 0,
+          platformTake: quote.platformTake,
+        },
+        createdAt: now,
+        completedAt: now,
+      };
+      d.transactions.push(commissionTx);
+    }
+  }
+
+  const order = applyOrderPaymentInDraft(d, link, now);
+  return { kind: 'SETTLED', link, claimed: true, order };
 }
 
 /* ──────────────────────────── Notifications ──────────────────────────── */
@@ -692,4 +729,79 @@ export async function reconcilePendingPaymentLinks(
     if (view.state === 'PAID') settled += 1;
   }
   return { checked: candidates.length, settled };
+}
+
+/* ──────────────────────────── Wallet payment (orders) ──────────────────────────── */
+
+export type WalletPayResult =
+  | { ok: true; link: PaymentLinkRecord }
+  | { ok: false; reason: 'NOT_FOUND' | 'NOT_PAYABLE' | 'NO_WALLET' | 'INSUFFICIENT_FUNDS' | 'WALLET_FROZEN' };
+
+/**
+ * Pay an ACTIVE link from a member's Metwork wallet: debit the payer the same
+ * gross a card payer would be charged (base + payer fee), then settle exactly
+ * like a card payment — one mutation, so the debit and the credit happen
+ * together or not at all. Only for links the caller is allowed to pay
+ * (checked by the order service before calling).
+ */
+export async function payLinkFromWallet(linkId: string, payerUserId: string): Promise<WalletPayResult> {
+  // Validate before mutating: db.update has no rollback.
+  const before = await db.read();
+  const l0 = (before.paymentLinks ?? []).find((l) => l.id === linkId);
+  if (!l0) return { ok: false, reason: 'NOT_FOUND' };
+  if (l0.status !== 'ACTIVE' || isExpired(l0)) return { ok: false, reason: 'NOT_PAYABLE' };
+  const w0 = before.wallets.find((w) => w.userId === payerUserId);
+  if (!w0) return { ok: false, reason: 'NO_WALLET' };
+  if (w0.status === 'FROZEN') return { ok: false, reason: 'WALLET_FROZEN' };
+  if (w0.balance < quoteFor(before, l0).grossChargedToPayer) return { ok: false, reason: 'INSUFFICIENT_FUNDS' };
+
+  const outcome = await db.update<WalletPayResult & { order?: OrderPaymentEvent }>((d) => {
+    const link = (d.paymentLinks ?? []).find((l) => l.id === linkId);
+    if (!link) return { ok: false, reason: 'NOT_FOUND' };
+    // Re-checked under the lock: a concurrent payment may have claimed it.
+    if (link.status !== 'ACTIVE' || isExpired(link)) return { ok: false, reason: 'NOT_PAYABLE' };
+    const payer = d.users.find((u) => u.id === payerUserId);
+    const wallet = d.wallets.find((w) => w.userId === payerUserId);
+    if (!payer || !wallet) return { ok: false, reason: 'NO_WALLET' };
+    if (wallet.status === 'FROZEN') return { ok: false, reason: 'WALLET_FROZEN' };
+    const quote = quoteFor(d, link);
+    const gross = quote.grossChargedToPayer;
+    if (wallet.balance < gross) return { ok: false, reason: 'INSUFFICIENT_FUNDS' };
+
+    const now = new Date().toISOString();
+    wallet.balance -= gross;
+    wallet.updatedAt = now;
+    d.transactions.push({
+      id: newSlug(),
+      walletId: wallet.id,
+      userId: payerUserId,
+      type: 'PAYMENT',
+      amount: -gross,
+      balanceAfter: wallet.balance,
+      status: 'COMPLETED',
+      description: link.serviceName,
+      reference: `wallet-link-${link.id}`,
+      provider: 'wallet',
+      providerTxnId: null,
+      metadata: { paymentLinkId: link.id, orderId: link.orderId ?? null, base: link.amount, payerFee: quote.payerFee },
+      createdAt: now,
+      completedAt: now,
+    });
+    link.payerName = payer.fullName;
+    link.payerEmail = payer.email;
+    link.payerFeeAmount = quote.payerFee;
+    link.payerFeeRate = quote.payerRate;
+    link.grossChargedToPayer = gross;
+    link.locale = payer.locale ?? 'fr';
+    const settled = settleLinkInDraft(d, link, `wallet:${wallet.id}`);
+    return settled.kind === 'SETTLED'
+      ? { ok: true, link: { ...settled.link }, order: settled.order }
+      : { ok: false, reason: 'NOT_PAYABLE' };
+  });
+  if (outcome.ok) {
+    if (outcome.order) void notifyOrderPayment(outcome.order);
+    void dispatchPaymentLinkNotificationsIfDue(linkId);
+    return { ok: true, link: outcome.link };
+  }
+  return outcome;
 }

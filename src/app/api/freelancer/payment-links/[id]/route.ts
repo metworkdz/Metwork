@@ -28,6 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const result = await cancelPaymentLink(id, { freelancerId: guard.user.id });
   if (!result.ok) {
     if (result.reason === 'NOT_FOUND') return jsonError(404, 'NOT_FOUND', 'Payment link not found');
+    if (result.reason === 'ORDER_LINK') return jsonError(409, 'ORDER_LINK', 'This link belongs to an order: cancel the order instead');
     return jsonError(409, 'ALREADY_PAID', 'A paid payment link cannot be cancelled');
   }
   return json(result.link);

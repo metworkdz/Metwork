@@ -76,6 +76,7 @@ export interface ThreadSummary {
 export type AttachmentView =
   | { kind: 'INVOICE'; invoiceId: string; docKind: 'FACTURE' | 'PROFORMA' | 'DEVIS'; number: string; total: number; status: string }
   | { kind: 'PAYMENT_LINK'; linkId: string; title: string; amount: number; status: string; payPath: string }
+  | { kind: 'ORDER'; orderId: string; number: string; title: string; total: number; status: string }
   | { kind: 'UNAVAILABLE' };
 
 export interface MessageView {
@@ -112,6 +113,11 @@ function contextView(data: Store, type: ContextType, id: string | null): Context
 
 function attachmentView(data: Store, senderId: string, a: MessageAttachment | null): AttachmentView | null {
   if (!a) return null;
+  if (a.kind === 'ORDER') {
+    const o = (data.serviceOrders ?? []).find((x) => x.id === a.orderId && (x.entrepreneurId === senderId || x.freelancerId === senderId));
+    if (!o) return { kind: 'UNAVAILABLE' };
+    return { kind: 'ORDER', orderId: o.id, number: o.number, title: o.title, total: o.total, status: o.status };
+  }
   if (a.kind === 'INVOICE') {
     const inv = (data.invoices ?? []).find((i) => i.id === a.invoiceId && ownsInvoice(i, { type: 'FREELANCER', id: senderId }));
     if (!inv) return { kind: 'UNAVAILABLE' };
@@ -123,7 +129,7 @@ function attachmentView(data: Store, senderId: string, a: MessageAttachment | nu
 }
 
 const preview = (body: string, a: MessageAttachment | null) =>
-  (body.trim() || (a ? (a.kind === 'INVOICE' ? '📄' : '🔗') : '')).replace(/\s+/g, ' ').slice(0, PREVIEW_CHARS);
+  (body.trim() || (a ? ({ INVOICE: '📄', PAYMENT_LINK: '🔗', ORDER: '📦' } as const)[a.kind] : '')).replace(/\s+/g, ' ').slice(0, PREVIEW_CHARS);
 
 /* ─────────────────────────── Context rules ─────────────────────────── */
 
@@ -165,8 +171,14 @@ export type MessagingError =
 
 export type Result<T> = { ok: true; value: T } | { ok: false; reason: MessagingError; limit?: number };
 
-function checkAttachment(data: Store, senderId: string, a: MessageAttachment | null): boolean {
+function checkAttachment(data: Store, senderId: string, a: MessageAttachment | null, recipientId?: string): boolean {
   if (!a) return true;
+  if (a.kind === 'ORDER') {
+    // An order card goes only between the two parties of that order.
+    const o = (data.serviceOrders ?? []).find((x) => x.id === a.orderId);
+    const parties = o ? [o.entrepreneurId, o.freelancerId] : [];
+    return parties.includes(senderId) && (!recipientId || parties.includes(recipientId));
+  }
   if (a.kind === 'INVOICE') {
     const inv = (data.invoices ?? []).find((i) => i.id === a.invoiceId);
     return Boolean(inv && inv.status !== 'CANCELLED' && ownsInvoice(inv, { type: 'FREELANCER', id: senderId }));
@@ -182,15 +194,19 @@ export async function startConversation(input: {
   contextType: ContextType;
   contextId: string | null;
   body: string;
+  /** A card sent with the first message (e.g. the order a gig order opens with). */
+  attachment?: MessageAttachment | null;
 }): Promise<Result<{ conversationId: string }>> {
   const body = input.body.trim();
-  if (!body) return { ok: false, reason: 'EMPTY' };
+  const attachment = input.attachment ?? null;
+  if (!body && !attachment) return { ok: false, reason: 'EMPTY' };
   const data = await db.read();
   const from = data.users.find((u) => u.id === input.fromId);
   const to = data.users.find((u) => u.id === input.toId);
   if (!canMessage(from) || !canMessage(to) || input.fromId === input.toId) return { ok: false, reason: 'NOT_ALLOWED' };
   if (!validateContext(data, input.fromId, input.toId, input.contextType, input.contextId)) return { ok: false, reason: 'NOT_FOUND' };
 
+  if (!checkAttachment(data, input.fromId, attachment, input.toId)) return { ok: false, reason: 'INVALID_ATTACHMENT' };
   const repo = messagingRepo();
   if (await repo.isBlockedEitherWay(input.fromId, input.toId)) return { ok: false, reason: 'BLOCKED' };
 
@@ -214,7 +230,7 @@ export async function startConversation(input: {
       userIds: [input.fromId, input.toId],
     });
   }
-  const sent = await deliver(data, conv.id, input.fromId, input.toId, body, null);
+  const sent = await deliver(data, conv.id, input.fromId, input.toId, body, attachment);
   return sent.ok ? { ok: true, value: { conversationId: conv.id } } : sent;
 }
 
@@ -236,7 +252,7 @@ export async function sendMessage(input: {
   if (!conv || !other || !conv.participants.some((p) => p.userId === input.userId)) return { ok: false, reason: 'NOT_FOUND' };
   if (!canMessage(data.users.find((u) => u.id === other.userId))) return { ok: false, reason: 'NOT_ALLOWED' };
   if (await repo.isBlockedEitherWay(input.userId, other.userId)) return { ok: false, reason: 'BLOCKED' };
-  if (!checkAttachment(data, input.userId, input.attachment)) return { ok: false, reason: 'INVALID_ATTACHMENT' };
+  if (!checkAttachment(data, input.userId, input.attachment, other.userId)) return { ok: false, reason: 'INVALID_ATTACHMENT' };
   const sent = await deliver(data, conv.id, input.userId, other.userId, body, input.attachment, conv);
   // A devis sent in a quote thread answers the request.
   if (sent.ok && conv.contextType === 'QUOTE_REQUEST' && input.attachment?.kind === 'INVOICE') {

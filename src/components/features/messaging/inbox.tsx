@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ArrowLeft, ArrowUp, BellOff, Bell, Ban, FileText, Flag, Link2, MessageSquare, MoreVertical, Paperclip } from 'lucide-react';
+import { ArrowLeft, ArrowUp, BellOff, Bell, Ban, FileText, Flag, Link2, MessageSquare, MoreVertical, Package, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -109,7 +109,7 @@ export function Inbox({ basePath, initialThreadId, canAttach }: Props) {
       </aside>
       <section className={cn('min-h-0', !openId && 'hidden md:flex md:items-center md:justify-center')}>
         {openId ? (
-          <Thread key={openId} id={openId} canAttach={canAttach} onBack={() => open(null)} onChanged={() => void loadInbox()} />
+          <Thread key={openId} id={openId} canAttach={canAttach} ordersPath={basePath.replace(/messages$/, 'orders')} onBack={() => open(null)} onChanged={() => void loadInbox()} />
         ) : (
           <p className="text-sm text-muted-foreground">{t('pick')}</p>
         )}
@@ -128,7 +128,7 @@ function Avatar({ name, url }: { name: string; url: string | null }) {
   );
 }
 
-function Thread({ id, canAttach, onBack, onChanged }: { id: string; canAttach: boolean; onBack: () => void; onChanged: () => void }) {
+function Thread({ id, canAttach, ordersPath, onBack, onChanged }: { id: string; canAttach: boolean; ordersPath: string; onBack: () => void; onChanged: () => void }) {
   const t = useTranslations('inbox');
   const locale = useLocale() as Locale;
   const [view, setView] = useState<ThreadView | null>(null);
@@ -246,7 +246,7 @@ function Thread({ id, canAttach, onBack, onChanged }: { id: string; canAttach: b
               {(!prev || prev.createdAt.slice(0, 10) !== day) && (
                 <p className="text-center text-[11px] text-muted-foreground">{formatDate(m.createdAt, locale, { dateStyle: 'medium' })}</p>
               )}
-              <Bubble m={m} threadId={id} />
+              <Bubble m={m} threadId={id} ordersPath={ordersPath} canAccept={!canAttach} />
             </div>
           );
         })}
@@ -301,7 +301,7 @@ function MenuItem({ icon: Icon, label, onClick, danger }: { icon: typeof Bell; l
   );
 }
 
-function Bubble({ m, threadId }: { m: MessageView; threadId: string }) {
+function Bubble({ m, threadId, ordersPath, canAccept }: { m: MessageView; threadId: string; ordersPath: string; canAccept: boolean }) {
   const locale = useLocale() as Locale;
   const time = new Date(m.createdAt).toLocaleTimeString(locale === 'ar' ? 'ar-DZ' : locale, { hour: '2-digit', minute: '2-digit' });
   return (
@@ -311,17 +311,49 @@ function Bubble({ m, threadId }: { m: MessageView; threadId: string }) {
           {m.body}
         </p>
       )}
-      {m.attachment && <Card a={m.attachment} fromMe={m.fromMe} threadId={threadId} />}
+      {m.attachment && <Card a={m.attachment} fromMe={m.fromMe} threadId={threadId} ordersPath={ordersPath} canAccept={canAccept} />}
       <span className="mt-0.5 text-[10px] text-muted-foreground">{time}</span>
     </div>
   );
 }
 
-function Card({ a, fromMe, threadId }: { a: AttachmentView; fromMe: boolean; threadId: string }) {
+function Card({ a, fromMe, threadId, ordersPath, canAccept }: { a: AttachmentView; fromMe: boolean; threadId: string; ordersPath: string; canAccept: boolean }) {
   const t = useTranslations('inbox');
   const locale = useLocale() as Locale;
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   if (a.kind === 'UNAVAILABLE') return <p className="rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">{t('cardUnavailable')}</p>;
+  if (a.kind === 'ORDER') {
+    return (
+      <div className="w-[85%] max-w-xs space-y-1.5 rounded-xl border-2 border-primary-200 bg-card p-3 text-sm">
+        <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground"><Package className="size-3.5" />{t('order')} · {a.number}</p>
+        <p className="font-medium" dir="auto">{a.title}</p>
+        <p className="text-lg font-bold tabular-nums">{formatCurrency(a.total, locale)}</p>
+        <p className="text-xs text-muted-foreground">{t(`orderStatus.${a.status}`)}</p>
+        <Button asChild size="sm" variant="outline" className="w-full"><Link href={`${ordersPath}/${a.orderId}`}>{t('viewOrder')}</Link></Button>
+      </div>
+    );
+  }
   if (a.kind === 'INVOICE') {
+    async function accept() {
+      if (a.kind !== 'INVOICE') return;
+      setBusy(true);
+      setErr(null);
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: 'DEVIS', conversationId: threadId, invoiceId: a.invoiceId }),
+      });
+      setBusy(false);
+      if (!res.ok) {
+        const code = await errorCode(res);
+        setErr(t(`orderErrors.${['ALREADY_ORDERED', 'BLOCKED', 'TOO_SMALL'].includes(code) ? code : 'GENERIC'}`));
+        return;
+      }
+      const { id } = (await res.json()) as { id: string };
+      router.push(`${ordersPath}/${id}`);
+    }
     return (
       <div className="w-[85%] max-w-xs space-y-1.5 rounded-xl border bg-card p-3 text-sm">
         <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground"><FileText className="size-3.5" />{t(`doc.${a.docKind}`)} · {a.number}</p>
@@ -329,6 +361,13 @@ function Card({ a, fromMe, threadId }: { a: AttachmentView; fromMe: boolean; thr
         <a href={`/api/messages/${threadId}/invoice/${a.invoiceId}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[36px] items-center text-sm font-medium text-primary hover:underline">
           {t('viewPdf')}
         </a>
+        {canAccept && !fromMe && a.docKind === 'DEVIS' && a.status !== 'CANCELLED' && (
+          <>
+            <Button type="button" size="sm" className="w-full" loading={busy} onClick={() => void accept()}>{t('acceptDevis')}</Button>
+            <p className="text-[11px] text-muted-foreground">{t('acceptDevisHint')}</p>
+          </>
+        )}
+        {err && <p role="alert" className="text-xs text-destructive">{err}</p>}
       </div>
     );
   }
