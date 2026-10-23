@@ -156,6 +156,7 @@ export function welcomeEmailHtml(opts: { fullName: string; role: string; dashboa
     opts.role === 'ENTREPRENEUR' ? 'entrepreneur'
     : opts.role === 'INVESTOR'   ? 'investor'
     : opts.role === 'INCUBATOR'  ? 'incubator manager'
+    : opts.role === 'FREELANCER' ? 'freelancer'
     : 'member';
 
   return layout(`

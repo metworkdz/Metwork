@@ -3074,6 +3074,21 @@
           "title": "عقود المستشارين",
           "subtitle": "إصدار عقود العمولة التي يوقّعها المستشارون وإرسالها ومتابعتها."
         }
+      },
+      "freelancer": {
+        "title": "مساحة المستقل",
+        "greeting": "مرحبًا {name}",
+        "subtitle": "مساحتك كمستقل على Metwork.",
+        "comingTitle": "مساحتك قادمة",
+        "comingBody": "نعمل على إعداد هذه الأدوات وستظهر هنا فور إطلاقها.",
+        "upcomingInvoices": "الفواتير وعروض الأسعار والفواتير الأولية",
+        "upcomingPaymentLinks": "روابط الدفع بالدينار (CIB، الذهبية)",
+        "upcomingClients": "العملاء والمشاريع",
+        "upcomingTaxCalendar": "الرزنامة الجبائية مع التذكيرات",
+        "settings": {
+          "title": "الإعدادات",
+          "subtitle": "أدِر تفضيلات حسابك."
+        }
       }
     },
     "payment": {
@@ -4051,7 +4066,8 @@
       "fromDate": "من",
       "toDate": "إلى",
       "exportCsv": "تصدير CSV",
-      "exportXlsx": "تصدير XLSX"
+      "exportXlsx": "تصدير XLSX",
+      "freelancers": "المستقلون"
     },
     "bookings": {
       "pendingReview": "في انتظار المراجعة",

@@ -21,13 +21,23 @@ import { signupSchema, type SignupInput } from '@/lib/validators';
 import { authService } from '@/services/auth.service';
 import { ApiClientError } from '@/lib/api-client';
 import { algerianCities, getCityName } from '@/config/cities';
-import { SIGNUP_ROLES } from '@/types/auth';
+import { SIGNUP_ROLES, type SignupRole } from '@/types/auth';
+import { signupFieldsFor } from '@/config/signup-roles';
 import { RoleCard, type RoleCardValue } from './role-card';
 import type { Locale } from '@/i18n/config';
 
 type Step = 'role' | 'details';
 
-export function SignupForm() {
+interface SignupFormProps {
+  /**
+   * Fix the role and skip the role-picker step — for audience-specific signup
+   * pages (/join/<role>). Omitted, the form shows the picker exactly as /signup
+   * always has.
+   */
+  lockedRole?: SignupRole;
+}
+
+export function SignupForm({ lockedRole }: SignupFormProps = {}) {
   const t = useTranslations('auth');
   const locale = useLocale() as Locale;
   const router = useRouter();
@@ -43,7 +53,7 @@ export function SignupForm() {
   const loginHref = bookingIntent
     ? `/login?bookingIntent=${encodeURIComponent(bookingIntent)}`
     : '/login';
-  const [step, setStep] = useState<Step>('role');
+  const [step, setStep] = useState<Step>(lockedRole ? 'details' : 'role');
   const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -60,7 +70,7 @@ export function SignupForm() {
     resolver: zodResolver(signupSchema),
     mode: 'onBlur',
     defaultValues: {
-      role: 'ENTREPRENEUR',
+      role: lockedRole ?? 'ENTREPRENEUR',
       fullName: '',
       email: '',
       phone: '',
@@ -79,6 +89,7 @@ export function SignupForm() {
   });
 
   const selectedRole = watch('role');
+  const fields = signupFieldsFor(selectedRole);
 
   // Step-1 card highlight state. Deliberately separate from the RHF `role`
   // field: 'CONSULTANT' is a routing shortcut, not a real signup role, and
@@ -86,7 +97,7 @@ export function SignupForm() {
   // `setValue` entirely (rather than filtering it at submit time) means a
   // stray consultant selection can't leak into the signup payload even if
   // this component is changed later.
-  const [cardSelection, setCardSelection] = useState<RoleCardValue>('ENTREPRENEUR');
+  const [cardSelection, setCardSelection] = useState<RoleCardValue>(lockedRole ?? 'ENTREPRENEUR');
 
   function handleRoleSelect(role: RoleCardValue) {
     setCardSelection(role);
@@ -182,15 +193,17 @@ export function SignupForm() {
   return (
     <div className="rounded-lg border border-border bg-background p-5 shadow-sm sm:p-8">
       <div className="mb-6">
-        <button
-          type="button"
-          onClick={() => setStep('role')}
-          className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="size-4 rtl:rotate-180" />
-          {t('signup.back')}
-        </button>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight">{t('signup.step2Title')}</h1>
+        {!lockedRole && (
+          <button
+            type="button"
+            onClick={() => setStep('role')}
+            className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="size-4 rtl:rotate-180" />
+            {t('signup.back')}
+          </button>
+        )}
+        <h1 className={`${lockedRole ? '' : 'mt-3 '}text-2xl font-semibold tracking-tight`}>{t('signup.step2Title')}</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">{t('signup.step2Subtitle')}</p>
       </div>
 
@@ -212,11 +225,11 @@ export function SignupForm() {
           />
         </FormField>
 
-        {/* Organisation kind — required single-select, INCUBATOR only.
+        {/* Organisation kind — required single-select, provider roles only.
             Informational once stored: it labels the account, it grants no
             capability. Required here at signup; still optional/nullable on
             the settings-page picker and the underlying DB field. */}
-        {selectedRole === 'INCUBATOR' && (
+        {fields.organization && (
           <Controller
             control={control}
             name="businessType"
@@ -245,8 +258,8 @@ export function SignupForm() {
           />
         )}
 
-        {/* Organisation name — shown for INCUBATOR providers */}
-        {selectedRole === 'INCUBATOR' && (
+        {/* Organisation name — shown for provider roles */}
+        {fields.organization && (
           <FormField
             label={t('signup.organizationNameLabel')}
             htmlFor="incubatorName"
@@ -265,8 +278,8 @@ export function SignupForm() {
           </FormField>
         )}
 
-        {/* Website + Instagram — optional, shown for INCUBATOR */}
-        {selectedRole === 'INCUBATOR' && (
+        {/* Website + Instagram — optional, shown for provider roles */}
+        {fields.organization && (
           <>
             <FormField
               label={t('signup.websiteLabel')}
@@ -309,8 +322,8 @@ export function SignupForm() {
           </>
         )}
 
-        {/* LinkedIn — optional (recommended), shown for INVESTOR */}
-        {selectedRole === 'INVESTOR' && (
+        {/* LinkedIn — optional (recommended) */}
+        {fields.linkedin && (
           <FormField
             label={t('signup.linkedinLabel')}
             htmlFor="linkedin"
@@ -413,8 +426,8 @@ export function SignupForm() {
           )}
         />
 
-        {/* Sex — shown for ENTREPRENEUR and INVESTOR */}
-        {(selectedRole === 'ENTREPRENEUR' || selectedRole === 'INVESTOR') && (
+        {/* Sex — optional */}
+        {fields.sex && (
           <Controller
             control={control}
             name="sex"

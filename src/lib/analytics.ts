@@ -38,6 +38,7 @@
  */
 
 import { clientEnvVars } from './env';
+import type { UserRole } from '@/types/auth';
 
 // ────────────────────────────────────────────────────────────────────────
 // Event taxonomy — the source of truth
@@ -90,7 +91,7 @@ export type AnalyticsEvent =
  */
 export type EventProps = {
   signup_started:               { source?: 'pricing' | 'homepage' | 'mentors' | 'direct' };
-  otp_verified:                 { role: 'ENTREPRENEUR' | 'INVESTOR' | 'INCUBATOR' | 'ADMIN' };
+  otp_verified:                 { role: UserRole };
   profile_completed:            Record<string, never>;
   first_booking_created:        { itemKind: 'SPACE' | 'CONSULTATION' };
   first_payment_completed:      { amount: number };
@@ -229,7 +230,7 @@ export async function track<E extends AnalyticsEvent>(args: TrackArgs<E>): Promi
 // ────────────────────────────────────────────────────────────────────────
 
 export interface IdentifyTraits {
-  role: 'ENTREPRENEUR' | 'INVESTOR' | 'INCUBATOR' | 'ADMIN';
+  role: UserRole;
   /** Membership tier — for cohort analysis. Optional. */
   tier?: 'EXPLORER' | 'BUILDER' | 'FOUNDER';
   /** City (broad-ish geo signal, less identifying than precise location). */

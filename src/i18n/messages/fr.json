@@ -3074,6 +3074,21 @@
           "title": "Contrats consultants",
           "subtitle": "Émettez, envoyez et suivez les contrats de commission signés par les consultants."
         }
+      },
+      "freelancer": {
+        "title": "Espace freelancer",
+        "greeting": "Bonjour {name}",
+        "subtitle": "Votre espace freelancer sur Metwork.",
+        "comingTitle": "Votre espace arrive",
+        "comingBody": "Ces outils sont en cours de création et apparaîtront ici dès leur lancement.",
+        "upcomingInvoices": "Factures, devis et proformas",
+        "upcomingPaymentLinks": "Liens de paiement en DZD (CIB, Edahabia)",
+        "upcomingClients": "Clients et projets",
+        "upcomingTaxCalendar": "Calendrier fiscal avec rappels",
+        "settings": {
+          "title": "Paramètres",
+          "subtitle": "Gérez vos préférences de compte."
+        }
       }
     },
     "payment": {
@@ -4051,7 +4066,8 @@
       "fromDate": "Du",
       "toDate": "Au",
       "exportCsv": "Exporter CSV",
-      "exportXlsx": "Exporter XLSX"
+      "exportXlsx": "Exporter XLSX",
+      "freelancers": "Freelancers"
     },
     "bookings": {
       "pendingReview": "En attente de validation",

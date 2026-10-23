@@ -8,8 +8,13 @@
  * — see `INCUBATOR_BUSINESS_TYPES` below). Both legacy literals are migrated
  * to `INCUBATOR` on read (see store.load() → applyOneTimeMigrations()), so
  * neither appears in this union — every persisted record has been rewritten.
+ *
+ * `FREELANCER` (Metwork 2.0, phase 0) is a real role with its own dashboard.
+ * It is deliberately NOT in `SIGNUP_ROLES` yet: self-signup opens with the
+ * /join pages in phase 2. Until then a freelancer account exists only when
+ * seeded, and every pre-existing `requireRole([...])` simply denies it.
  */
-export const USER_ROLES = ['ENTREPRENEUR', 'INVESTOR', 'INCUBATOR', 'ADMIN'] as const;
+export const USER_ROLES = ['ENTREPRENEUR', 'INVESTOR', 'INCUBATOR', 'ADMIN', 'FREELANCER'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 /**

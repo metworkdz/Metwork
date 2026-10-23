@@ -3074,6 +3074,21 @@
           "title": "Consultant contracts",
           "subtitle": "Issue, send and track the consultant contracts consultants sign."
         }
+      },
+      "freelancer": {
+        "title": "Freelancer workspace",
+        "greeting": "Hello {name}",
+        "subtitle": "Your freelancer workspace on Metwork.",
+        "comingTitle": "Your workspace is on its way",
+        "comingBody": "These tools are being built for you and will appear here as they launch.",
+        "upcomingInvoices": "Invoices, quotes and proformas",
+        "upcomingPaymentLinks": "Payment links in DZD (CIB, Edahabia)",
+        "upcomingClients": "Clients and projects",
+        "upcomingTaxCalendar": "Tax calendar with reminders",
+        "settings": {
+          "title": "Settings",
+          "subtitle": "Manage your account preferences."
+        }
       }
     },
     "payment": {
@@ -4051,7 +4066,8 @@
       "fromDate": "From",
       "toDate": "To",
       "exportCsv": "Export CSV",
-      "exportXlsx": "Export XLSX"
+      "exportXlsx": "Export XLSX",
+      "freelancers": "Freelancers"
     },
     "bookings": {
       "pendingReview": "Pending review",

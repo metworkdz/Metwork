@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { SIGNUP_ROLES, INCUBATOR_BUSINESS_TYPES } from '@/types/auth';
+import { signupFieldsFor } from '@/config/signup-roles';
 
 /**
  * Algerian phone numbers:
@@ -115,7 +116,7 @@ export const signupSchema = z
     path: ['confirmPassword'],
     message: 'passwordMismatch',
   })
-  .refine((data) => data.role !== 'INCUBATOR' || !!data.businessType, {
+  .refine((data) => !signupFieldsFor(data.role).organization || !!data.businessType, {
     path: ['businessType'],
     message: 'businessTypeRequired',
   });

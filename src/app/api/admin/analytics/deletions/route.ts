@@ -47,6 +47,7 @@ export async function GET(_req: NextRequest) {
     INCUBATOR: 0,
     ADMIN: 0,
     INVESTOR: 0,
+    FREELANCER: 0,
   };
   for (const log of deletions) {
     // Audit logs are append-only and never rewritten by the BUSINESS→INCUBATOR

@@ -58,6 +58,7 @@ const roleVariant: Record<UserRole, React.ComponentProps<typeof Badge>['variant'
   INVESTOR:     'info',
   INCUBATOR:    'warning',
   ADMIN:        'danger',
+  FREELANCER:   'success',
 };
 
 const statusVariant: Record<UserStatus, React.ComponentProps<typeof Badge>['variant']> = {
@@ -198,6 +199,7 @@ export function AdminUsersTable({ initial }: { initial: AdminUserView[] }) {
             <SelectItem value="ENTREPRENEUR">{t('entrepreneurs')}</SelectItem>
             <SelectItem value="INVESTOR">{t('investors')}</SelectItem>
             <SelectItem value="INCUBATOR">{t('incubators')}</SelectItem>
+            <SelectItem value="FREELANCER">{t('freelancers')}</SelectItem>
             <SelectItem value="ADMIN">{t('admins')}</SelectItem>
           </SelectContent>
         </Select>

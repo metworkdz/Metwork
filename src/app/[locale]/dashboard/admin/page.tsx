@@ -71,6 +71,7 @@ export default async function AdminDashboard({ params }: PageProps) {
     INVESTOR: 0,
     INCUBATOR: 0,
     ADMIN: 0,
+    FREELANCER: 0,
   };
   for (const log of deletionLogs) {
     // Audit logs are append-only and never rewritten by the BUSINESS→INCUBATOR
@@ -206,6 +207,8 @@ export default async function AdminDashboard({ params }: PageProps) {
                 <span className="font-semibold">{deletionsByRole.INCUBATOR}</span>{' '}
                 · Investor:{' '}
                 <span className="font-semibold">{deletionsByRole.INVESTOR}</span>{' '}
+                · Freelancer:{' '}
+                <span className="font-semibold">{deletionsByRole.FREELANCER}</span>{' '}
                 · Admin:{' '}
                 <span className="font-semibold">{deletionsByRole.ADMIN}</span>
               </p>

@@ -32,6 +32,11 @@ export function MobileTabBar({ role }: MobileTabBarProps) {
   const { badges } = useNotificationCounts();
   // Aggregate for the collapsed state: everything hidden inside the More sheet.
   const moreBadgeTotal = moreItems.reduce((sum, i) => sum + (badges[i.href] ?? 0), 0);
+  // A role whose every destination fits in the bar (the freelancer shell) gets
+  // no "More" cell — an empty sheet is a dead end. Columns follow the cell
+  // count so the tabs span the bar; 4 tabs + More stays the original 5 columns.
+  const showMore = moreItems.length > 0;
+  const columnCount = tabs.length + (showMore ? 1 : 0);
 
   const isActive = (href: string) =>
     pathname === href || (href !== homeHref && pathname.startsWith(href));
@@ -49,7 +54,10 @@ export function MobileTabBar({ role }: MobileTabBarProps) {
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 shadow-[0_-1px_12px_rgba(13,13,13,0.06)] backdrop-blur-xl lg:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <ul className="mx-auto grid max-w-md grid-cols-5">
+        <ul
+          className="mx-auto grid max-w-md"
+          style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+        >
           {tabs.map((item) => (
             <li key={item.href}>
               <TabLink
@@ -61,30 +69,32 @@ export function MobileTabBar({ role }: MobileTabBarProps) {
               />
             </li>
           ))}
-          <li>
-            <button
-              type="button"
-              onClick={() => setMoreOpen(true)}
-              aria-haspopup="dialog"
-              aria-label={t(MORE_NAV.labelKey)}
-              className={cn(
-                'flex h-[3.25rem] w-full flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium transition-colors',
-                moreActive ? 'text-primary-600' : 'text-muted-foreground',
-              )}
-            >
-              <span className="relative">
-                {MORE_NAV.icon && (
-                  <MORE_NAV.icon className="size-[1.375rem]" strokeWidth={moreActive ? 2.5 : 2} />
+          {showMore && (
+            <li>
+              <button
+                type="button"
+                onClick={() => setMoreOpen(true)}
+                aria-haspopup="dialog"
+                aria-label={t(MORE_NAV.labelKey)}
+                className={cn(
+                  'flex h-[3.25rem] w-full flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium transition-colors',
+                  moreActive ? 'text-primary-600' : 'text-muted-foreground',
                 )}
-                <NavBadge
-                  count={moreBadgeTotal}
-                  label={t('nav.badgeNewActivity', { count: moreBadgeTotal })}
-                  className="absolute -top-1.5 -end-2.5"
-                />
-              </span>
-              <span className="leading-none">{t(MORE_NAV.labelKey)}</span>
-            </button>
-          </li>
+              >
+                <span className="relative">
+                  {MORE_NAV.icon && (
+                    <MORE_NAV.icon className="size-[1.375rem]" strokeWidth={moreActive ? 2.5 : 2} />
+                  )}
+                  <NavBadge
+                    count={moreBadgeTotal}
+                    label={t('nav.badgeNewActivity', { count: moreBadgeTotal })}
+                    className="absolute -top-1.5 -end-2.5"
+                  />
+                </span>
+                <span className="leading-none">{t(MORE_NAV.labelKey)}</span>
+              </button>
+            </li>
+          )}
         </ul>
       </nav>
 

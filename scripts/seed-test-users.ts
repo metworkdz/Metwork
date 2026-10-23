@@ -3,7 +3,8 @@
  *
  * Run: USE_LOCAL_DB=true npx tsx scripts/seed-test-users.ts
  *
- * Creates 5 accounts (admin, incubator, builder, founder, explorer) by
+ * Creates the QA accounts (admin, incubator, builder, founder, explorer,
+ * investor, freelancer) by
  * writing directly to the local JSON DB — no OTP required.
  */
 
@@ -86,6 +87,15 @@ const TEST_USERS = [
     password: 'TestInvestor2026!',
     fullName: 'QA Investor',
     role: 'INVESTOR' as const,
+    membershipCode: null,
+    membershipTier: 'EXPLORER' as const,
+  },
+  {
+    id: 'qa-freelancer-id',
+    email: 'test.freelancer@metwork.test',
+    password: 'TestFreelancer2026!',
+    fullName: 'QA Freelancer',
+    role: 'FREELANCER' as const,
     membershipCode: null,
     membershipTier: 'EXPLORER' as const,
   },

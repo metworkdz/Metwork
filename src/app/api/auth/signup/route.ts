@@ -21,6 +21,7 @@ import { sendOtpWhatsApp, sendOtpEmail } from '@/server/notifications/mock';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import type { Locale } from '@/i18n/config';
+import { signupFieldsFor } from '@/config/signup-roles';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -77,6 +78,8 @@ export async function POST(req: NextRequest) {
 
   const passwordHash = await hashPassword(input.password);
   const locale = pickLocale(req);
+  // Keep only the optional fields this role collects (see SIGNUP_ROLE_FIELDS).
+  const fields = signupFieldsFor(input.role);
 
   const { id, otpCode } = await issuePendingUser({
     fullName: input.fullName.trim(),
@@ -86,14 +89,14 @@ export async function POST(req: NextRequest) {
     role: input.role,
     city: input.city,
     locale,
-    incubatorName: input.role === 'INCUBATOR' ? input.incubatorName?.trim() : undefined,
-    website: input.role === 'INCUBATOR' ? input.website?.trim() : undefined,
-    instagram: input.role === 'INCUBATOR' ? input.instagram?.trim() : undefined,
-    linkedin: input.role === 'INVESTOR' ? input.linkedin?.trim() : undefined,
-    sex: input.sex,
+    incubatorName: fields.organization ? input.incubatorName?.trim() : undefined,
+    website: fields.organization ? input.website?.trim() : undefined,
+    instagram: fields.organization ? input.instagram?.trim() : undefined,
+    linkedin: fields.linkedin ? input.linkedin?.trim() : undefined,
+    sex: fields.sex ? input.sex : undefined,
     // Organisation kind — informational label on the provider record. Optional,
     // so an omitted value simply leaves `businessType` null.
-    businessType: input.role === 'INCUBATOR' ? input.businessType : undefined,
+    businessType: fields.organization ? input.businessType : undefined,
   });
 
   // Primary: WhatsApp (Infobip). Secondary: email as reliable fallback.
