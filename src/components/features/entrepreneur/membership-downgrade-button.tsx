@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { ArrowDown, CheckCircle2 } from 'lucide-react';
 import {
   Dialog,
@@ -14,8 +15,12 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from '@/i18n/routing';
 import type { Locale } from '@/i18n/config';
 
+/**
+ * Cancel a paid plan: schedules the switch to Free at the end of the paid
+ * period. For a monthly plan this is also what stops the auto-renewal.
+ */
 interface Props {
-  targetPlan: 'ENTREPRENEUR' | 'FREE';
+  targetPlan: 'FREE';
   targetName: string;
   /** ISO date when the change will take effect (membership expiry). Null = ~30 days from now. */
   scheduledDate: string | null;
@@ -31,6 +36,7 @@ export function MembershipDowngradeButton({
   locale,
   alreadyScheduled = false,
 }: Props) {
+  const t = useTranslations('membership.cancel');
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<'confirm' | 'success'>('confirm');
@@ -39,7 +45,7 @@ export function MembershipDowngradeButton({
 
   const formattedDate = scheduledDate
     ? new Date(scheduledDate).toLocaleDateString(locale, { dateStyle: 'long' })
-    : 'the end of your current billing period';
+    : t('periodEnd');
 
   function handleConfirm() {
     setErrorMsg('');
@@ -50,9 +56,11 @@ export function MembershipDowngradeButton({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ plan: targetPlan }),
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          setErrorMsg(data.message ?? 'Could not schedule downgrade. Please try again.');
+          // The API error envelope is `{ error: { code, message } }`.
+          const err = (data as { error?: { message?: string } }).error;
+          setErrorMsg(err?.message ?? t('error'));
           return;
         }
         setStep('success');
@@ -62,7 +70,7 @@ export function MembershipDowngradeButton({
           router.refresh();
         }, 1800);
       } catch {
-        setErrorMsg('Network error. Please try again.');
+        setErrorMsg(t('networkError'));
       }
     });
   }
@@ -81,7 +89,7 @@ export function MembershipDowngradeButton({
         disabled={alreadyScheduled}
       >
         <ArrowDown className="size-4" />
-        {alreadyScheduled ? 'Downgrade scheduled' : `Downgrade to ${targetName}`}
+        {alreadyScheduled ? t('scheduled') : t('button', { plan: targetName })}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -89,11 +97,9 @@ export function MembershipDowngradeButton({
           {step === 'confirm' ? (
             <>
               <DialogHeader>
-                <DialogTitle>Downgrade to {targetName}</DialogTitle>
+                <DialogTitle>{t('title', { plan: targetName })}</DialogTitle>
                 <DialogDescription>
-                  You&apos;ll be downgraded to <strong>{targetName}</strong> on{' '}
-                  <strong>{formattedDate}</strong>. You&apos;ll keep your current benefits
-                  until then.
+                  {t('body', { plan: targetName, date: formattedDate })}
                 </DialogDescription>
               </DialogHeader>
 
@@ -109,10 +115,10 @@ export function MembershipDowngradeButton({
                   onClick={() => setOpen(false)}
                   disabled={isPending}
                 >
-                  Cancel
+                  {t('keep')}
                 </Button>
                 <Button onClick={handleConfirm} loading={isPending}>
-                  {isPending ? 'Scheduling…' : 'Confirm downgrade'}
+                  {isPending ? t('scheduling') : t('confirm')}
                 </Button>
               </DialogFooter>
             </>
@@ -120,7 +126,7 @@ export function MembershipDowngradeButton({
             <div className="flex flex-col items-center gap-3 py-6">
               <CheckCircle2 className="size-10 text-green-600" />
               <p className="text-center text-sm font-medium">
-                Downgrade scheduled for {formattedDate}.
+                {t('done', { date: formattedDate })}
               </p>
             </div>
           )}

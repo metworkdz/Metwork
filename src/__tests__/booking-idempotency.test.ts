@@ -15,7 +15,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 // These tests are what keeps the redemption path alive for the day it is
 // switched back on, so they run against the feature ENABLED — gating it would
 // have quietly stopped exercising the thing this file exists to protect.
-vi.mock('@/config/feature-flags', () => ({ isNetworkPassEnabled: () => true }));
+vi.mock('@/config/feature-flags', () => ({ isNetworkPassEnabled: () => true, isFreelancerPremiumOnSale: () => false }));
 
 import { db } from '@/server/db/store';
 import { createSpaceBooking } from '@/server/bookings/service';

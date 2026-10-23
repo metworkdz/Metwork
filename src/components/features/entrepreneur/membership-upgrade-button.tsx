@@ -10,36 +10,40 @@ import { safeUUID } from '@/lib/safe-uuid';
 import { cn } from '@/lib/utils';
 import { Link, useRouter } from '@/i18n/routing';
 import type { Locale } from '@/i18n/config';
+import type { PaidPlanCode, PurchaseCycle } from '@/lib/membership-benefits';
 
 interface Props {
-  plan: 'ENTREPRENEUR' | 'STARTUP';
-  /** Per-month display figure (never charged directly). */
+  plan: PaidPlanCode;
+  /** Charged each month on the monthly cycle (which renews from the wallet). */
   priceMonthly: number;
-  /** Full amount charged for a 6-month period (monthly × 6, no discount). */
-  priceSemesterly: number;
-  /** Full amount charged for a 12-month period (monthly × 12 × 0.7). */
+  /** Full amount charged for twelve months (discounted, does not renew). */
   priceYearly: number;
+  /** Configured annual discount, for the savings tag. */
+  yearlyDiscountPercent: number;
   planName: string;
   highlighted?: boolean;
   locale: Locale;
+  /** Where "Top up" sends the member — their role's wallet page. */
+  walletHref: string;
 }
 
-type BillingPeriod = 'semesterly' | 'yearly';
+type BillingPeriod = PurchaseCycle;
 type DialogStep = 'idle' | 'confirm' | 'success' | 'error' | 'topup';
 
 export function MembershipUpgradeButton({
   plan,
   priceMonthly,
-  priceSemesterly,
   priceYearly,
+  yearlyDiscountPercent,
   planName,
   highlighted,
   locale,
+  walletHref,
 }: Props) {
   const t = useTranslations('entrepreneur.membershipUpgrade');
   const router = useRouter();
   const [step, setStep] = useState<DialogStep>('idle');
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('semesterly');
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
   const [promoCode, setPromoCode] = useState('');
   const [promoStatus, setPromoStatus] = useState<{
     checking: boolean;
@@ -68,7 +72,7 @@ export function MembershipUpgradeButton({
     return purchaseRef.current;
   }
 
-  const basePrice = billingPeriod === 'yearly' ? priceYearly : priceSemesterly;
+  const basePrice = billingPeriod === 'yearly' ? priceYearly : priceMonthly;
   const perMonth = billingPeriod === 'yearly' ? Math.round(priceYearly / 12) : priceMonthly;
   const discountAmount = Math.floor((basePrice * promoStatus.discount) / 100);
   const finalPrice = Math.max(0, basePrice - discountAmount);
@@ -204,7 +208,7 @@ export function MembershipUpgradeButton({
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button asChild size="sm" className="flex-1 text-xs">
-            <Link href="/dashboard/entrepreneur/wallet">{t('topUpCta')}</Link>
+            <Link href={walletHref}>{t('topUpCta')}</Link>
           </Button>
           <Button
             variant="outline"
@@ -226,19 +230,20 @@ export function MembershipUpgradeButton({
 
       {/* Billing period toggle */}
       <div className="flex overflow-hidden rounded-md border border-input text-xs font-medium">
-        {(['semesterly', 'yearly'] as BillingPeriod[]).map((period) => (
+        {(['monthly', 'yearly'] as BillingPeriod[]).map((period) => (
           <button
             key={period}
             type="button"
+            aria-pressed={billingPeriod === period}
             onClick={() => setBillingPeriod(period)}
             className={cn(
-              'flex-1 py-1.5 text-center transition-colors',
+              'min-h-[40px] flex-1 py-1.5 text-center transition-colors',
               billingPeriod === period
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-background text-muted-foreground hover:bg-muted',
             )}
           >
-            {period === 'semesterly' ? t('billingSemesterly') : t('billingYearly')}
+            {period === 'monthly' ? t('billingMonthly') : t('billingYearly')}
           </button>
         ))}
       </div>
@@ -251,14 +256,14 @@ export function MembershipUpgradeButton({
         <span className="text-xs text-muted-foreground">{t('perMonth')}</span>
         {billingPeriod === 'yearly' && (
           <span className="ms-1 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700">
-            {t('yearlySave', { percent: 30 })}
+            {t('yearlySave', { percent: yearlyDiscountPercent })}
           </span>
         )}
       </div>
       <p className="-mt-1 text-center text-[11px] text-muted-foreground">
         {billingPeriod === 'yearly'
           ? t('billedYearly', { total: formatCurrency(priceYearly, locale) })
-          : t('billedSemesterly', { total: formatCurrency(priceSemesterly, locale) })}
+          : t('billedMonthlyAutoRenew', { total: formatCurrency(priceMonthly, locale) })}
       </p>
 
       {/* Promo code */}
@@ -272,7 +277,7 @@ export function MembershipUpgradeButton({
               setPromoCode(e.target.value.toUpperCase());
               if (promoStatus.valid !== null) clearPromo();
             }}
-            className="ps-8 text-xs uppercase"
+            className="ps-8 text-base uppercase sm:text-xs"
             disabled={promoStatus.valid === true}
           />
         </div>

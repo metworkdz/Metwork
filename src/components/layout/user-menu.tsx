@@ -16,6 +16,8 @@ import {
 import { Link, useRouter } from '@/i18n/routing';
 import { useAuth } from '@/components/providers/auth-provider';
 import type { SessionUser } from '@/types/auth';
+import { MemberBadge } from '@/components/shared/member-badge';
+import { memberBadgeFor } from '@/lib/member-badge';
 
 function getInitials(name: string): string {
   return name
@@ -37,6 +39,7 @@ export function UserMenu({ user }: UserMenuProps) {
   const [isPending, startTransition] = useTransition();
 
   const dashboardHref = `/dashboard/${user.role.toLowerCase()}` as const;
+  const badge = memberBadgeFor(user);
 
   function onLogout() {
     startTransition(async () => {
@@ -58,11 +61,15 @@ export function UserMenu({ user }: UserMenuProps) {
             {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.fullName} />}
             <AvatarFallback>{getInitials(user.fullName)}</AvatarFallback>
           </Avatar>
+          <MemberBadge badge={badge} className="absolute -bottom-0.5 -end-0.5 ring-2 ring-background" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="flex flex-col gap-0.5 font-normal">
-          <span className="text-sm font-medium">{user.fullName}</span>
+          <span className="flex items-center gap-1.5 text-sm font-medium">
+            <span className="truncate">{user.fullName}</span>
+            <MemberBadge badge={badge} />
+          </span>
           <span className="text-xs text-muted-foreground">{user.email}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

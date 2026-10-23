@@ -1047,16 +1047,24 @@
   "membership": {
     "tiers": {
       "free": {
-        "name": "Explorer",
-        "description": "Discover the ecosystem — no commitment"
+        "name": "Free",
+        "description": "Book spaces and mentors, join events — no commitment"
       },
       "entrepreneur": {
         "name": "Entrepreneur",
-        "description": "Everything you need to launch and grow your startup"
+        "description": "Our former plan, no longer offered"
       },
       "startup": {
-        "name": "Startup",
-        "description": "Raise funds, get noticed, and build your empire"
+        "name": "Founder",
+        "description": "For founders building a real company: lower prices, more visibility, gold badge"
+      },
+      "freelancerFree": {
+        "name": "Free",
+        "description": "Run your freelance business on Metwork at no cost"
+      },
+      "freelancerPremium": {
+        "name": "Premium",
+        "description": "No limits, priority with clients, verified badge"
       }
     },
     "features": {
@@ -1078,7 +1086,20 @@
       "networkPass": "{count} Network Pass coworking credits per month",
       "perks": "Exclusive perks and partner discounts",
       "exclusiveEvents": "Access to exclusive member events",
-      "marketplaceFeature": "Featured startup placement in the marketplace"
+      "marketplaceFeature": "Featured startup placement in the marketplace",
+      "goldBadge": "Gold Founder badge on your profile",
+      "cofounderMatching": "Find a cofounder: 30 profiles a day, chat when you match",
+      "invoicingUnlimited": "Unlimited invoices, quotes and contracts",
+      "invoicingLimited": "5 invoices or quotes a month",
+      "copilotUnlimited": "AI copilot for tax and business law, unlimited",
+      "copilotLimited": "AI copilot: 15 questions a month",
+      "cofounderPreview": "Find a cofounder: 3 profiles a day",
+      "freelancerProfile": "Public profile and listing in the freelancer directory",
+      "paymentLinksLimited": "2 payment links in DZD (3 % fee)",
+      "paymentLinksUnlimited": "Unlimited payment links in DZD, no Metwork fee",
+      "taxCalendar": "Tax calendar with reminders (CASNOS, G12, G12 bis)",
+      "verifiedBadge": "Verified badge once your business document is approved",
+      "searchPriority": "Shown first to entrepreneurs looking to hire"
     },
     "billingMonthly": "Monthly",
     "billingYearly": "Yearly",
@@ -1120,7 +1141,39 @@
     "currentPlanLabel": "Current plan",
     "upgradeAvailable": "Upgrade available",
     "renewsOn": "Renews on {date}",
-    "grandfatheredNotice": "You keep the price and benefits from when you joined until {date}."
+    "grandfatheredNotice": "You keep the price and benefits from when you joined until {date}.",
+    "billingCycleLabel": "Billing cycle",
+    "billedMonthlyAutoRenew": "Billed monthly, renews automatically from your wallet",
+    "soon": "Soon",
+    "renewsAutomatically": "Renews automatically on {date}",
+    "endsOn": "Ends on {date}",
+    "retiredPlanNotice": "This plan is no longer offered. It stays active until {date}. You can switch to Founder at any time.",
+    "verifiedBadgePending": "Your verified badge appears once your auto-entrepreneur card or commercial register is approved.",
+    "availableSoon": "Available soon",
+    "orYearly": "or {yearly} / year — save {percent}%",
+    "badges": {
+      "gold": "Founder member",
+      "verified": "Verified freelancer"
+    },
+    "cancel": {
+      "button": "Switch to {plan}",
+      "scheduled": "Switch scheduled",
+      "title": "Switch to {plan}?",
+      "body": "Your plan stops renewing. You move to {plan} on {date} and keep your current benefits until then.",
+      "keep": "Keep my plan",
+      "confirm": "Confirm",
+      "scheduling": "Scheduling…",
+      "done": "Done. You move to the Free plan on {date}.",
+      "periodEnd": "the end of your paid period",
+      "error": "Could not schedule the change. Please try again.",
+      "networkError": "Network error. Please try again."
+    },
+    "scheduledCancel": {
+      "title": "Your plan ends and moves to {plan}",
+      "body": "On {date}. You keep your current benefits until then, and nothing more is charged.",
+      "keep": "Keep my plan",
+      "restoring": "Restoring…"
+    }
   },
   "investorApproval": {
     "title": "Your account is awaiting validation",
@@ -2500,7 +2553,9 @@
       "perBooking": "per booking",
       "incubatorProTrial": "First month free",
       "incubatorBilledYearly": "or {yearly} / year — save {percent}%",
-      "incubatorProCta": "Start free month"
+      "incubatorProCta": "Start free month",
+      "freelancerTitle": "For freelancers & auto-entrepreneurs",
+      "freelancerSubtitle": "Start free. Go Premium when clients start coming in."
     },
     "incubators": {
       "metaTitle": "For Incubators & Coworking Spaces",
@@ -3088,6 +3143,10 @@
         "settings": {
           "title": "Settings",
           "subtitle": "Manage your account preferences."
+        },
+        "membership": {
+          "title": "Membership",
+          "subtitle": "Your plan, its renewal and what it includes."
         }
       }
     },
@@ -4337,8 +4396,10 @@
       "priceError": "Enter a valid amount",
       "passError": "Enter a whole number between 0 and 100",
       "perMonth": "/ month",
-      "planEntrepreneur": "Entrepreneur",
-      "planStartup": "Startup"
+      "planEntrepreneur": "Entrepreneur (retired, not sold)",
+      "planStartup": "Founder (entrepreneurs)",
+      "planFreelancerPremium": "Premium (freelancers)",
+      "monthlyTotal": "Billed monthly, auto-renews"
     },
     "withdrawals": {
       "pendingReview": "Pending review",
@@ -5099,7 +5160,7 @@
     "membershipUpgrade": {
       "upgradeTo": "Upgrade to {planName}",
       "upgradedTo": "Upgraded to {planName}!",
-      "billingMonthly": "Monthly — {price}",
+      "billingMonthly": "Monthly",
       "billingYearly": "Yearly",
       "promoPlaceholder": "Promo code",
       "promoRemove": "Remove",
@@ -5127,7 +5188,8 @@
       "topUpTitle": "Not enough in your wallet yet",
       "topUpBody": "This plan costs {required}. Your wallet holds {balance}, so you need {shortfall} more. Top up and come back — nothing has been charged.",
       "topUpCta": "Top up wallet",
-      "topUpBack": "Back"
+      "topUpBack": "Back",
+      "billedMonthlyAutoRenew": "{total} a month, renews automatically from your wallet"
     },
     "profileForm": {
       "profilePictureTitle": "Profile picture",

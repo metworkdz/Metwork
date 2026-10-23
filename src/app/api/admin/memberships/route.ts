@@ -9,6 +9,7 @@ import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { db, type UserMembershipRecord } from '@/server/db/store';
 import { planConfigsFrom, passCountFrom, normalizePlanCode } from '@/server/memberships/plan-config';
+import { PLAN_AUDIENCE, tierForPlan } from '@/lib/membership-benefits';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
@@ -20,7 +21,7 @@ const schema = z.object({
   // A uuid() guard rejected those with a bare "Invalid input" 422, which reads
   // in the admin UI as "the grant silently did nothing".
   userId:    z.string().min(1).max(120),
-  plan:      z.enum(['FREE', 'ENTREPRENEUR', 'STARTUP']),
+  plan:      z.enum(['FREE', 'ENTREPRENEUR', 'STARTUP', 'FREELANCER_PREMIUM']),
   expiresAt: z.string().datetime().nullable().default(null),
 });
 
@@ -54,6 +55,15 @@ export async function POST(req: NextRequest) {
     const user = store.users.find((u) => u.id === input.userId);
     if (!user) return null;
 
+    // Freelancer Premium only for freelancers, and freelancers only get
+    // Premium. Entrepreneur plans stay grantable to other roles (incubator
+    // owners are given them for Network Pass access).
+    const granted = normalizePlanCode(input.plan);
+    if (granted) {
+      const isFreelancerPlan = PLAN_AUDIENCE[granted] === 'FREELANCER';
+      if (isFreelancerPlan !== (user.role === 'FREELANCER')) return 'ROLE_MISMATCH' as const;
+    }
+
     // Cancel any existing active membership for this user
     store.userMemberships
       .filter((m) => m.userId === input.userId && m.status === 'ACTIVE')
@@ -86,8 +96,7 @@ export async function POST(req: NextRequest) {
       ? planConfigsFrom(store).find((c) => c.planCode === planCode) ?? null
       : null;
 
-    const tier: 'EXPLORER' | 'BUILDER' | 'FOUNDER' =
-      input.plan === 'STARTUP' ? 'FOUNDER' : input.plan === 'ENTREPRENEUR' ? 'BUILDER' : 'EXPLORER';
+    const tier: 'EXPLORER' | 'BUILDER' | 'FOUNDER' = planCode ? tierForPlan(planCode) : 'EXPLORER';
 
     // Freeze the granted terms onto the record + user mirror, exactly like a
     // paid purchase, so the grant is not silently repriced by a later edit.
@@ -126,5 +135,8 @@ export async function POST(req: NextRequest) {
   });
 
   if (!result) return jsonError(404, 'NOT_FOUND', 'User not found');
+  if (result === 'ROLE_MISMATCH') {
+    return jsonError(422, 'PLAN_ROLE_MISMATCH', 'This plan does not match the account type');
+  }
   return json({ membership: result }, { status: 201 });
 }

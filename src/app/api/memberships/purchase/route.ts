@@ -14,8 +14,13 @@
  * Idempotent: pass a stable `clientReference` and a retry returns the original
  * membership instead of charging the wallet twice.
  *
+ * Who can buy what is decided by `purchasablePlansFor(role)` — entrepreneurs
+ * buy Founder (STARTUP), freelancers buy Premium (FREELANCER_PREMIUM), every
+ * other role gets 403. A monthly purchase renews itself from the wallet (see
+ * `@/server/memberships/renewals`); an annual one simply expires.
+ *
  * Body:
- *   { plan: 'ENTREPRENEUR' | 'STARTUP', billingPeriod: 'semesterly' | 'yearly',
+ *   { plan: 'STARTUP' | 'FREELANCER_PREMIUM', billingPeriod: 'monthly' | 'yearly',
  *     promoCode?: string, clientReference?: string }
  *
  * Response (201):
@@ -29,14 +34,20 @@ import { db } from '@/server/db/store';
 import { validatePromoCode, consumePromoCode } from '@/server/promo-codes/service';
 import { getPlanConfig, pricesForConfig, passCountFrom } from '@/server/memberships/plan-config';
 import { computePeriodEnd } from '@/lib/billing-cycles';
+import {
+  PAID_PLAN_CODES,
+  PURCHASE_CYCLES,
+  canPurchasePlan,
+  tierForPlan,
+} from '@/lib/membership-benefits';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const schema = z.object({
-  plan: z.enum(['ENTREPRENEUR', 'STARTUP']),
-  billingPeriod: z.enum(['semesterly', 'yearly']).default('semesterly'),
+  plan: z.enum(PAID_PLAN_CODES),
+  billingPeriod: z.enum(PURCHASE_CYCLES).default('monthly'),
   promoCode: z.string().optional(),
   /** Idempotency key — a retry with the same value never charges twice. */
   clientReference: z.string().min(8).max(120).optional(),
@@ -59,6 +70,11 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     if (err instanceof ZodError) return fromZod(err);
     throw err;
+  }
+
+  // ── Role scoping — checked before anything is priced or charged ───────────
+  if (!canPurchasePlan(guard.user.role, input.plan)) {
+    return jsonError(403, 'PLAN_NOT_AVAILABLE', 'This plan is not available for your account type');
   }
 
   // ── Promo code validation ──────────────────────────────────────────────────
@@ -87,7 +103,9 @@ export async function POST(req: NextRequest) {
   const planConfig = await getPlanConfig(input.plan);
   if (!planConfig) return jsonError(422, 'UNKNOWN_PLAN', 'Unknown membership plan');
   const prices = pricesForConfig(planConfig);
-  const basePrice = input.billingPeriod === 'yearly' ? prices.annual : prices.semesterly;
+  const isYearly = input.billingPeriod === 'yearly';
+  const basePrice = isYearly ? prices.annual : prices.monthly;
+  const autoRenew = !isYearly;
   const discountAmount = Math.floor((basePrice * discountPercent) / 100);
   const finalPrice = Math.max(0, basePrice - discountAmount);
 
@@ -95,8 +113,7 @@ export async function POST(req: NextRequest) {
   const now = new Date();
   const expiresAtIso = computePeriodEnd(
     now.toISOString(),
-    input.billingPeriod === 'yearly' ? 'ANNUAL' : 'SEMESTERLY',
-    planConfig.semesterlyMonths,
+    isYearly ? 'ANNUAL' : 'MONTHLY',
   );
 
   const userId = guard.user.id;
@@ -208,6 +225,7 @@ export async function POST(req: NextRequest) {
       consultationDiscountRate: planConfig.consultationDiscountRate,
       monthlyPassCount: creditsMax,
       snapshotAt: now.toISOString(),
+      autoRenew,
       ...(input.clientReference && { clientReference: input.clientReference }),
     });
 
@@ -215,12 +233,16 @@ export async function POST(req: NextRequest) {
     user.membershipCode      = input.plan;
     user.membershipExpiresAt = expiresAtIso;
     user.membershipStartDate = now.toISOString();
+    user.membershipRenewalDate = autoRenew ? expiresAtIso : null;
+    // A fresh purchase overrides any downgrade the member scheduled earlier;
+    // left in place, the downgrade cron would undo what they just paid for.
+    user.scheduledMembershipChange = null;
+    user.scheduledChangeDate       = null;
 
     // Resolve the new-style tier and assign Network Pass credits.
     // The allowance comes from the canonical platform config (Builder 0,
     // Founder 5 by default) — never from a literal in this route.
-    const isFounder          = input.plan === 'STARTUP';
-    user.membershipTier      = isFounder ? 'FOUNDER' : 'BUILDER';
+    user.membershipTier      = tierForPlan(input.plan);
     user.networkCreditsMax   = creditsMax;
     // A purchase starts a fresh allowance period: grant the full allowance and
     // zero the usage counter. Capping matters now that Builder has 0 passes —

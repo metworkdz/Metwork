@@ -32,6 +32,8 @@ import { InlineEmptyState } from '@/components/shared/inline-empty-state';
  * dropdown would guarantee they go stale.
  */
 const GRANTABLE_PLANS = ['FREE', 'ENTREPRENEUR', 'STARTUP'] as const;
+/** Freelancers can only hold Premium — the grant API refuses anything else. */
+const FREELANCER_GRANTABLE_PLANS = ['FREE', 'FREELANCER_PREMIUM'] as const;
 
 export interface MembershipRow {
   userId:         string;
@@ -48,6 +50,7 @@ const PLAN_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']
   FREE:         'default',
   ENTREPRENEUR: 'primary',
   STARTUP:      'success',
+  FREELANCER_PREMIUM: 'info',
 };
 
 interface AssignDialogProps {
@@ -58,8 +61,13 @@ interface AssignDialogProps {
 
 function AssignDialog({ user, onClose, onSaved }: AssignDialogProps) {
   const t = useTranslations('admin.memberships');
-  // Pre-fill with the user's current plan, defaulting to ENTREPRENEUR
-  const [plan,    setPlan]   = useState<string>(user?.membershipCode ?? 'ENTREPRENEUR');
+  // Pre-fill with the user's current plan, defaulting to the plan on sale
+  // for their role (Founder, or Premium for freelancers).
+  const isFreelancer = user?.role === 'FREELANCER';
+  const grantable: readonly string[] = isFreelancer ? FREELANCER_GRANTABLE_PLANS : GRANTABLE_PLANS;
+  const [plan,    setPlan]   = useState<string>(
+    user?.membershipCode ?? (isFreelancer ? 'FREELANCER_PREMIUM' : 'STARTUP'),
+  );
   const [saving,  setSaving] = useState(false);
   const [error,   setError]  = useState<string | null>(null);
 
@@ -123,7 +131,7 @@ function AssignDialog({ user, onClose, onSaved }: AssignDialogProps) {
             <Select value={plan} onValueChange={setPlan}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {GRANTABLE_PLANS.map((code) => (
+                {grantable.map((code) => (
                   <SelectItem key={code} value={code}>
                     {code} {code === 'FREE' ? t('freePlan') : ''}
                   </SelectItem>

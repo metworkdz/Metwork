@@ -2221,3 +2221,131 @@ export async function sendBookingPaidIncubatorEmail(
       console.error(`${banner} Booking paid incubator email failed →`, err.message),
     );
 }
+
+/* ───────────────────── Membership auto-renewal notices ───────────────────── */
+
+/** One notice from the renewal cron (`@/server/memberships/renewals`). */
+export interface MembershipRenewalNotice {
+  kind: 'REMINDER' | 'RENEWED' | 'LAPSED';
+  userId: string;
+  email: string;
+  phone?: string | null;
+  fullName: string;
+  locale?: string | null;
+  plan: 'ENTREPRENEUR' | 'STARTUP' | 'FREELANCER_PREMIUM';
+  /** Monthly price in DZD. */
+  amount: number;
+  /** REMINDER/LAPSED: the period end. RENEWED: the NEW period end. */
+  date: string;
+  /** REMINDER only: the wallet would not cover the renewal today. */
+  walletShort?: boolean;
+  /** LAPSED only. */
+  reason?: 'INSUFFICIENT_FUNDS' | 'PLAN_UNAVAILABLE';
+}
+
+const RENEWAL_PLAN_NAME: Record<EmailLang, Record<MembershipRenewalNotice['plan'], string>> = {
+  en: { ENTREPRENEUR: 'Entrepreneur', STARTUP: 'Founder', FREELANCER_PREMIUM: 'Premium' },
+  fr: { ENTREPRENEUR: 'Entrepreneur', STARTUP: 'Founder', FREELANCER_PREMIUM: 'Premium' },
+  ar: { ENTREPRENEUR: 'رائد أعمال', STARTUP: 'المؤسس', FREELANCER_PREMIUM: 'بريميوم' },
+};
+
+const RENEWAL_DATE_LOCALE: Record<EmailLang, string> = { en: 'en-GB', fr: 'fr-DZ', ar: 'ar-DZ' };
+
+/** The copy carries the member's own name, so it is escaped before going into HTML. */
+function escapeRenewalHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renewalCopy(n: MembershipRenewalNotice, lang: EmailLang): { subject: string; lines: string[] } {
+  const plan = RENEWAL_PLAN_NAME[lang][n.plan];
+  const amount = `${n.amount.toLocaleString('fr-DZ')} DA`;
+  const date = new Date(n.date).toLocaleDateString(RENEWAL_DATE_LOCALE[lang], {
+    day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Algiers',
+  });
+  const first = n.fullName.split(' ')[0] ?? n.fullName;
+  if (lang === 'ar') {
+    if (n.kind === 'REMINDER') return {
+      subject: `يتجدد اشتراك ${plan} يوم ${date}`,
+      lines: [`مرحبًا ${first}،`, `سيتجدد اشتراكك ${plan} تلقائيًا يوم ${date} بمبلغ ${amount} من محفظتك على Metwork.`,
+        n.walletShort ? `رصيد محفظتك غير كافٍ حاليًا. اشحنها قبل هذا التاريخ حتى لا تفقد مزاياك.` : `لا شيء عليك فعله.`,
+        `لإلغاء التجديد: لوحة التحكم ← الاشتراك.`],
+    };
+    if (n.kind === 'RENEWED') return {
+      subject: `تم تجديد اشتراك ${plan}`,
+      lines: [`مرحبًا ${first}،`, `تم تجديد اشتراكك ${plan} وخصم ${amount} من محفظتك.`, `الفترة الجديدة سارية حتى ${date}.`],
+    };
+    return {
+      subject: `انتهى اشتراك ${plan}`,
+      lines: [`مرحبًا ${first}،`, n.reason === 'INSUFFICIENT_FUNDS'
+        ? `لم نتمكن من تجديد اشتراكك ${plan} لأن رصيد محفظتك لا يغطي ${amount}.`
+        : `لم يعد اشتراك ${plan} متاحًا لحسابك، فلم يتم تجديده.`,
+        `أصبح حسابك الآن على الخطة المجانية. يمكنك الاشتراك من جديد في أي وقت من لوحة التحكم.`],
+    };
+  }
+  if (lang === 'en') {
+    if (n.kind === 'REMINDER') return {
+      subject: `Your ${plan} plan renews on ${date}`,
+      lines: [`Hello ${first},`, `Your ${plan} plan renews automatically on ${date} for ${amount}, taken from your Metwork wallet.`,
+        n.walletShort ? `Your wallet balance does not cover it yet. Top it up before that date to keep your benefits.` : `There is nothing you need to do.`,
+        `To stop the renewal: Dashboard → Membership.`],
+    };
+    if (n.kind === 'RENEWED') return {
+      subject: `Your ${plan} plan has renewed`,
+      lines: [`Hello ${first},`, `Your ${plan} plan has renewed and ${amount} was taken from your wallet.`, `Your new period runs until ${date}.`],
+    };
+    return {
+      subject: `Your ${plan} plan has ended`,
+      lines: [`Hello ${first},`, n.reason === 'INSUFFICIENT_FUNDS'
+        ? `We could not renew your ${plan} plan because your wallet balance does not cover ${amount}.`
+        : `The ${plan} plan is no longer available for your account, so it was not renewed.`,
+        `Your account is now on the Free plan. You can subscribe again at any time from your dashboard.`],
+    };
+  }
+  if (n.kind === 'REMINDER') return {
+    subject: `Votre abonnement ${plan} se renouvelle le ${date}`,
+    lines: [`Bonjour ${first},`, `Votre abonnement ${plan} se renouvelle automatiquement le ${date} pour ${amount}, prélevés sur votre portefeuille Metwork.`,
+      n.walletShort ? `Le solde de votre portefeuille ne suffit pas encore. Rechargez-le avant cette date pour garder vos avantages.` : `Vous n'avez rien à faire.`,
+      `Pour arrêter le renouvellement : Tableau de bord → Abonnement.`],
+  };
+  if (n.kind === 'RENEWED') return {
+    subject: `Votre abonnement ${plan} est renouvelé`,
+    lines: [`Bonjour ${first},`, `Votre abonnement ${plan} est renouvelé et ${amount} ont été prélevés sur votre portefeuille.`, `Votre nouvelle période court jusqu'au ${date}.`],
+  };
+  return {
+    subject: `Votre abonnement ${plan} a pris fin`,
+    lines: [`Bonjour ${first},`, n.reason === 'INSUFFICIENT_FUNDS'
+      ? `Nous n'avons pas pu renouveler votre abonnement ${plan} : le solde de votre portefeuille ne couvre pas ${amount}.`
+      : `L'abonnement ${plan} n'est plus disponible pour votre compte, il n'a donc pas été renouvelé.`,
+      `Votre compte est maintenant sur l'offre gratuite. Vous pouvez vous réabonner à tout moment depuis votre tableau de bord.`],
+  };
+}
+
+/**
+ * Email + WhatsApp for a renewal event. Localized en/fr/ar from the member's
+ * saved locale. Self-catching — never throws.
+ */
+export async function sendMembershipRenewalNotice(n: MembershipRenewalNotice): Promise<void> {
+  const lang = normalizeEmailLang(n.locale);
+  const { subject, lines } = renewalCopy(n, lang);
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/${lang}/dashboard`;
+  const html = simpleNoticeHtml(
+    escapeRenewalHtml(subject),
+    [...lines.map(escapeRenewalHtml), `<a href="${dashboardUrl}">${dashboardUrl}</a>`],
+    lang === 'ar' ? 'rtl' : 'ltr',
+  );
+  const emailSend = n.email
+    ? sendResendEmail({ to: n.email, subject, html }).catch((err: Error) =>
+        // eslint-disable-next-line no-console
+        console.error(`${banner} membership ${n.kind} email failed →`, err.message),
+      )
+    : Promise.resolve();
+  const phoneSend = n.phone
+    ? deliverClientText(n.phone, [subject, ...lines.slice(1)].join('\n'), `membership-${n.kind.toLowerCase()}`)
+    : Promise.resolve();
+  await Promise.allSettled([emailSend, phoneSend]);
+}

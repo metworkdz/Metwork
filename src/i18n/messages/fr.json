@@ -1047,16 +1047,24 @@
   "membership": {
     "tiers": {
       "free": {
-        "name": "Explorateur",
-        "description": "Découvrez l'écosystème — sans engagement"
+        "name": "Gratuit",
+        "description": "Réservez espaces et mentors, participez aux événements — sans engagement"
       },
       "entrepreneur": {
         "name": "Entrepreneur",
-        "description": "Tout ce qu'il faut pour lancer et développer votre startup"
+        "description": "Notre ancienne offre, plus proposée"
       },
       "startup": {
-        "name": "Startup",
-        "description": "Levez des fonds, faites-vous remarquer, bâtissez votre empire"
+        "name": "Founder",
+        "description": "Pour les fondateurs qui construisent une vraie entreprise : prix réduits, visibilité, badge or"
+      },
+      "freelancerFree": {
+        "name": "Gratuit",
+        "description": "Gérez votre activité freelance sur Metwork, gratuitement"
+      },
+      "freelancerPremium": {
+        "name": "Premium",
+        "description": "Sans limites, priorité auprès des clients, badge vérifié"
       }
     },
     "features": {
@@ -1078,7 +1086,20 @@
       "networkPass": "{count} crédits Network Pass de coworking par mois",
       "perks": "Avantages et réductions partenaires exclusifs",
       "exclusiveEvents": "Accès aux événements membres exclusifs",
-      "marketplaceFeature": "Mise en avant de votre startup dans la marketplace"
+      "marketplaceFeature": "Mise en avant de votre startup dans la marketplace",
+      "goldBadge": "Badge Founder or sur votre profil",
+      "cofounderMatching": "Trouver un cofondateur : 30 profils par jour, discussion en cas de match",
+      "invoicingUnlimited": "Factures, devis et contrats illimités",
+      "invoicingLimited": "5 factures ou devis par mois",
+      "copilotUnlimited": "Copilote IA fiscalité et droit des affaires, illimité",
+      "copilotLimited": "Copilote IA : 15 questions par mois",
+      "cofounderPreview": "Trouver un cofondateur : 3 profils par jour",
+      "freelancerProfile": "Profil public et présence dans l'annuaire des freelancers",
+      "paymentLinksLimited": "2 liens de paiement en DZD (frais 3 %)",
+      "paymentLinksUnlimited": "Liens de paiement en DZD illimités, sans frais Metwork",
+      "taxCalendar": "Calendrier fiscal avec rappels (CASNOS, G12, G12 bis)",
+      "verifiedBadge": "Badge vérifié dès l'approbation de votre document",
+      "searchPriority": "Mis en avant auprès des entrepreneurs qui recrutent"
     },
     "billingMonthly": "Mensuel",
     "billingYearly": "Annuel",
@@ -1120,7 +1141,39 @@
     "currentPlanLabel": "Formule actuelle",
     "upgradeAvailable": "Mise à niveau disponible",
     "renewsOn": "Renouvellement le {date}",
-    "grandfatheredNotice": "Vous conservez le tarif et les avantages de votre inscription jusqu'au {date}."
+    "grandfatheredNotice": "Vous conservez le tarif et les avantages de votre inscription jusqu'au {date}.",
+    "billingCycleLabel": "Période de facturation",
+    "billedMonthlyAutoRenew": "Facturé chaque mois, renouvelé automatiquement depuis votre portefeuille",
+    "soon": "Bientôt",
+    "renewsAutomatically": "Renouvellement automatique le {date}",
+    "endsOn": "Se termine le {date}",
+    "retiredPlanNotice": "Cette offre n'est plus proposée. Elle reste active jusqu'au {date}. Vous pouvez passer à Founder à tout moment.",
+    "verifiedBadgePending": "Votre badge vérifié s'affiche dès que votre carte d'auto-entrepreneur ou votre registre de commerce est approuvé.",
+    "availableSoon": "Bientôt disponible",
+    "orYearly": "ou {yearly} / an — économisez {percent} %",
+    "badges": {
+      "gold": "Membre Founder",
+      "verified": "Freelancer vérifié"
+    },
+    "cancel": {
+      "button": "Passer à {plan}",
+      "scheduled": "Changement programmé",
+      "title": "Passer à {plan} ?",
+      "body": "Votre abonnement ne se renouvelle plus. Vous passez à {plan} le {date} et gardez vos avantages actuels d'ici là.",
+      "keep": "Garder mon abonnement",
+      "confirm": "Confirmer",
+      "scheduling": "Enregistrement…",
+      "done": "C'est fait. Vous passez à l'offre gratuite le {date}.",
+      "periodEnd": "la fin de votre période payée",
+      "error": "Impossible d'enregistrer le changement. Réessayez.",
+      "networkError": "Erreur réseau. Réessayez."
+    },
+    "scheduledCancel": {
+      "title": "Votre abonnement se termine et passe à {plan}",
+      "body": "Le {date}. Vous gardez vos avantages actuels d'ici là, et rien d'autre n'est prélevé.",
+      "keep": "Garder mon abonnement",
+      "restoring": "Rétablissement…"
+    }
   },
   "investorApproval": {
     "title": "Votre compte est en attente de validation",
@@ -2500,7 +2553,9 @@
       "perBooking": "par réservation",
       "incubatorProTrial": "Premier mois offert",
       "incubatorBilledYearly": "ou {yearly} / an — économisez {percent}%",
-      "incubatorProCta": "Commencer le mois gratuit"
+      "incubatorProCta": "Commencer le mois gratuit",
+      "freelancerTitle": "Pour les freelancers et auto-entrepreneurs",
+      "freelancerSubtitle": "Commencez gratuitement. Passez Premium quand les clients arrivent."
     },
     "incubators": {
       "metaTitle": "Pour les incubateurs et espaces de coworking",
@@ -3088,6 +3143,10 @@
         "settings": {
           "title": "Paramètres",
           "subtitle": "Gérez vos préférences de compte."
+        },
+        "membership": {
+          "title": "Abonnement",
+          "subtitle": "Votre offre, son renouvellement et ce qu'elle inclut."
         }
       }
     },
@@ -4337,8 +4396,10 @@
       "priceError": "Saisissez un montant valide",
       "passError": "Saisissez un nombre entier entre 0 et 100",
       "perMonth": "/ mois",
-      "planEntrepreneur": "Entrepreneur",
-      "planStartup": "Startup"
+      "planEntrepreneur": "Entrepreneur (ancienne offre, non vendue)",
+      "planStartup": "Founder (entrepreneurs)",
+      "planFreelancerPremium": "Premium (freelancers)",
+      "monthlyTotal": "Facturé chaque mois, renouvelé automatiquement"
     },
     "withdrawals": {
       "pendingReview": "Pending review",
@@ -5099,7 +5160,7 @@
     "membershipUpgrade": {
       "upgradeTo": "Passer à {planName}",
       "upgradedTo": "Passé à {planName} !",
-      "billingMonthly": "Mensuel — {price}",
+      "billingMonthly": "Mensuel",
       "billingYearly": "Annuel",
       "promoPlaceholder": "Code promo",
       "promoRemove": "Supprimer",
@@ -5127,7 +5188,8 @@
       "topUpTitle": "Solde insuffisant dans votre portefeuille",
       "topUpBody": "Ce plan coûte {required}. Votre portefeuille contient {balance}, il vous manque donc {shortfall}. Rechargez puis revenez — rien n'a été débité.",
       "topUpCta": "Recharger le portefeuille",
-      "topUpBack": "Retour"
+      "topUpBack": "Retour",
+      "billedMonthlyAutoRenew": "{total} par mois, renouvelé automatiquement depuis votre portefeuille"
     },
     "profileForm": {
       "profilePictureTitle": "Photo de profil",

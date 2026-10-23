@@ -1,7 +1,8 @@
 /**
  * PATCH /api/admin/membership-plans/[code]
  *
- * Update one entrepreneur membership plan's pricing and benefits. Admin only.
+ * Update one membership plan's pricing and benefits (entrepreneur Founder,
+ * the retired Entrepreneur plan, or freelancer Premium). Admin only.
  * Mirrors the commission-rules editor: partial body, seeds defaults on first
  * write, returns the updated record.
  *
@@ -22,6 +23,7 @@ import { DEFAULT_MEMBERSHIP_PLAN_CONFIGS } from '@/server/admin/settings-default
 import { normalizePlanCode, passCountFrom } from '@/server/memberships/plan-config';
 import { getAdminCreditConfig, setAdminCreditConfig } from '@/server/network/credit-service';
 import { computeCyclePrices } from '@/lib/billing-cycles';
+import { PLAN_AUDIENCE } from '@/lib/membership-benefits';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -62,6 +64,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     throw err;
   }
 
+  if (input.monthlyPassCount !== undefined && planCode === 'FREELANCER_PREMIUM') {
+    return jsonError(422, 'INVALID_PASS_COUNT', 'Freelancer Premium has no Network Pass allowance');
+  }
+
   // ── Pass count goes to its canonical home first ─────────────────────────
   // Done before the plan write so a rejected allowance fails the whole request
   // rather than leaving prices updated and passes not.
@@ -96,13 +102,17 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (input.consultationDiscountRate !== undefined) plan.consultationDiscountRate = input.consultationDiscountRate;
     if (input.spaceDiscountRate        !== undefined) plan.spaceDiscountRate        = input.spaceDiscountRate;
     if (input.isActive                 !== undefined) plan.isActive                 = input.isActive;
-    // "Recommended" is exclusive: promoting one plan demotes the others, so
-    // the pricing page can never render two badges.
+    // "Recommended" is exclusive within an audience: promoting one plan
+    // demotes the others shown beside it, so a pricing section can never
+    // render two badges. Founder and Premium sit in different sections.
     if (input.recommended !== undefined) {
       plan.recommended = input.recommended;
       if (input.recommended) {
         for (const other of store.membershipPlanConfigs) {
-          if (other.planCode !== planCode) other.recommended = false;
+          const otherCode = normalizePlanCode(other.planCode);
+          if (other.planCode !== planCode && otherCode && PLAN_AUDIENCE[otherCode] === PLAN_AUDIENCE[planCode]) {
+            other.recommended = false;
+          }
         }
       }
     }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, ArrowRight } from 'lucide-react';
+import { Check, ArrowRight, Clock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
@@ -12,34 +12,33 @@ import { cn } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 
 export interface MembershipPlanCard {
-  code: 'FREE' | 'ENTREPRENEUR' | 'STARTUP';
+  code: string;
   name: string;
   description: string;
-  /** Per-month display figure (never charged directly for paid tiers). */
+  /** Charged each month on the monthly cycle. */
   priceMonthly: number;
-  /** Full amount charged for a 6-month period (monthly × 6, no discount). */
-  priceSemesterly: number;
-  /** Full amount charged for a 12-month period (monthly × 12 × 0.7). */
+  /** Full amount charged for twelve months (discounted). */
   priceYearly: number;
   yearlyDiscountPercent: number;
-  /** Months in a semesterly cycle — drives the "billed every N months" copy. */
-  semesterlyMonths: number;
   highlighted: boolean;
-  features: string[];
+  features: { label: string; soon?: boolean }[];
 }
 
 interface Props {
   tiers: MembershipPlanCard[];
   locale: Locale;
   mostPopularLabel: string;
+  /** Where the CTA sends a visitor (the audience's signup page). */
+  ctaHref: string;
 }
 
-type BillingPeriod = 'semesterly' | 'yearly';
+type BillingPeriod = 'monthly' | 'yearly';
 
-export function MembershipPlans({ tiers, locale, mostPopularLabel }: Props) {
+/** Public plan cards: Free + one paid plan, monthly or yearly. */
+export function MembershipPlans({ tiers, locale, mostPopularLabel, ctaHref }: Props) {
   const tm = useTranslations('membership');
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('semesterly');
-  // Savings badge reads the configured discount off the paid plans rather than
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
+  // Savings badge reads the configured discount off the paid plan rather than
   // a literal, so an admin changing the annual discount updates the badge too.
   const annualDiscountPercent =
     tiers.find((t) => t.priceMonthly > 0)?.yearlyDiscountPercent ?? 0;
@@ -47,21 +46,26 @@ export function MembershipPlans({ tiers, locale, mostPopularLabel }: Props) {
   return (
     <div>
       {/* Billing toggle */}
-      <div className="mx-auto mb-10 flex w-fit items-center rounded-full border border-border/70 bg-background p-1 text-sm font-medium shadow-sm">
-        {(['semesterly', 'yearly'] as BillingPeriod[]).map((period) => (
+      <div
+        role="group"
+        aria-label={tm('billingCycleLabel')}
+        className="mx-auto mb-10 flex w-fit items-center rounded-full border border-border/70 bg-background p-1 text-sm font-medium shadow-sm"
+      >
+        {(['monthly', 'yearly'] as BillingPeriod[]).map((period) => (
           <button
             key={period}
             type="button"
+            aria-pressed={billingPeriod === period}
             onClick={() => setBillingPeriod(period)}
             className={cn(
-              'rounded-full px-5 py-2 transition-colors',
+              'min-h-[44px] rounded-full px-5 py-2 transition-colors',
               billingPeriod === period
                 ? 'bg-primary text-primary-foreground shadow'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            {period === 'semesterly' ? tm('billingSemesterly') : tm('billingYearly')}
-            {period === 'yearly' && (
+            {period === 'monthly' ? tm('billingMonthly') : tm('billingYearly')}
+            {period === 'yearly' && annualDiscountPercent > 0 && (
               <span
                 className={cn(
                   'ms-2 rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
@@ -77,12 +81,11 @@ export function MembershipPlans({ tiers, locale, mostPopularLabel }: Props) {
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
         {tiers.map((tier) => {
-          const isFree = tier.code === 'FREE';
+          const isFree = tier.priceMonthly === 0;
           const perMonth =
             billingPeriod === 'yearly' ? Math.round(tier.priceYearly / 12) : tier.priceMonthly;
-          const billedTotal = billingPeriod === 'yearly' ? tier.priceYearly : tier.priceSemesterly;
 
           return (
             <Card
@@ -96,9 +99,9 @@ export function MembershipPlans({ tiers, locale, mostPopularLabel }: Props) {
                 <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary-500 to-primary-700" />
               )}
 
-              <CardContent className="flex flex-1 flex-col p-8">
+              <CardContent className="flex flex-1 flex-col p-6 sm:p-8">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="font-display text-xl font-bold uppercase tracking-wide text-foreground">
                       {tier.name}
                     </h3>
@@ -112,14 +115,14 @@ export function MembershipPlans({ tiers, locale, mostPopularLabel }: Props) {
                 </div>
 
                 {/* Price */}
-                <div className="mt-8 min-h-[88px]">
+                <div className="mt-8 min-h-[72px]">
                   {isFree ? (
                     <span className="font-display text-4xl font-bold text-foreground">
                       {tm('priceFree')}
                     </span>
                   ) : (
                     <>
-                      <div className="flex items-baseline gap-1.5">
+                      <div className="flex flex-wrap items-baseline gap-1.5">
                         <span className="font-display text-4xl font-bold text-foreground">
                           {formatCurrency(perMonth, locale)}
                         </span>
@@ -127,8 +130,8 @@ export function MembershipPlans({ tiers, locale, mostPopularLabel }: Props) {
                       </div>
                       <p className="mt-1.5 text-xs text-muted-foreground">
                         {billingPeriod === 'yearly'
-                          ? tm('billedYearly', { total: formatCurrency(billedTotal, locale) })
-                          : tm('billedSemesterly', { total: formatCurrency(billedTotal, locale) })}
+                          ? tm('billedYearly', { total: formatCurrency(tier.priceYearly, locale) })
+                          : tm('billedMonthlyAutoRenew')}
                       </p>
                     </>
                   )}
@@ -144,28 +147,54 @@ export function MembershipPlans({ tiers, locale, mostPopularLabel }: Props) {
                     tier.highlighted && 'font-bold uppercase tracking-wider',
                   )}
                 >
-                  <Link href="/signup">
+                  <Link href={ctaHref}>
                     {isFree ? tm('choosePlan') : tm('upgrade')}
                     <ArrowRight className="size-4 rtl:rotate-180" />
                   </Link>
                 </Button>
 
-                {/* Features */}
-                <ul className="mt-8 space-y-3">
-                  {tier.features.map((label) => (
-                    <li key={label} className="flex items-start gap-3">
-                      <div className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700">
-                        <Check className="size-2.5" strokeWidth={3} />
-                      </div>
-                      <span className="text-sm text-muted-foreground">{label}</span>
-                    </li>
-                  ))}
-                </ul>
+                <PlanFeatureList features={tier.features} soonLabel={tm('soon')} className="mt-8" />
               </CardContent>
             </Card>
           );
         })}
       </div>
     </div>
+  );
+}
+
+/** Feature bullets; announced-but-not-live items are muted and tagged. */
+export function PlanFeatureList({
+  features,
+  soonLabel,
+  className,
+}: {
+  features: { label: string; soon?: boolean }[];
+  soonLabel: string;
+  className?: string;
+}) {
+  return (
+    <ul className={cn('space-y-3', className)}>
+      {features.map(({ label, soon }) => (
+        <li key={label} className="flex items-start gap-3">
+          <div
+            className={cn(
+              'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full',
+              soon ? 'bg-muted text-muted-foreground' : 'bg-primary-100 text-primary-700',
+            )}
+          >
+            {soon ? <Clock className="size-2.5" strokeWidth={3} /> : <Check className="size-2.5" strokeWidth={3} />}
+          </div>
+          <span className={cn('min-w-0 text-sm', soon ? 'text-muted-foreground/80' : 'text-muted-foreground')}>
+            {label}
+            {soon && (
+              <span className="ms-2 inline-block rounded bg-muted px-1.5 py-px align-middle text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {soonLabel}
+              </span>
+            )}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }

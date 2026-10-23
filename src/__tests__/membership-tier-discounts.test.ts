@@ -143,14 +143,14 @@ describe('per-user discount resolution (no snapshot ⇒ live config)', () => {
     expect(await getConsultationDiscountForUser(id)).toBe(0.10);
   });
 
-  it('tier-only Startup (FOUNDER) user gets the higher consultation rate', async () => {
+  it('tier-only Founder (FOUNDER) user gets the Founder terms (10 % / 10 %)', async () => {
     const id = await seedUser({
       membershipCode: null,
       membershipTier: 'FOUNDER',
       membershipExpiresAt: FUTURE,
     });
-    expect(await getSpaceDiscountForUser(id)).toBe(0.15);
-    expect(await getConsultationDiscountForUser(id)).toBe(0.20);
+    expect(await getSpaceDiscountForUser(id)).toBe(0.10);
+    expect(await getConsultationDiscountForUser(id)).toBe(0.10);
   });
 
   it('expired membership gets no discount', async () => {

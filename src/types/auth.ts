@@ -70,6 +70,9 @@ export const APPROVAL_GATED_ROLES = ['INCUBATOR', 'INVESTOR'] as const;
 
 export type UserStatus = 'PENDING_VERIFICATION' | 'ACTIVE' | 'SUSPENDED' | 'BANNED';
 
+/** Review state of a member's business document (see SessionUser). */
+export type LegalVerificationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
 export interface SessionUser {
   id: string;
   email: string;
@@ -112,6 +115,12 @@ export interface SessionUser {
    */
   membershipSpaceDiscountRate?: number;
   membershipConsultationDiscountRate?: number;
+  /**
+   * Review state of the business document (auto-entrepreneur card or RC).
+   * Written by the document review (Metwork 2.0 phase 2); the verified badge
+   * needs APPROVED. Absent ⇒ never submitted.
+   */
+  legalVerificationStatus?: LegalVerificationStatus | null;
   /** Network pass credits remaining this billing cycle. */
   networkCredits?: number;
   /** Monthly allowance for this tier. */

@@ -44,3 +44,22 @@ const NETWORK_PASS_ENABLED = false;
 export function isNetworkPassEnabled(): boolean {
   return NETWORK_PASS_ENABLED;
 }
+
+/**
+ * Freelancer Premium on sale (Metwork 2.0).
+ *
+ * OFF until the benefits it sells actually work for freelancers: the 10 % on
+ * spaces and mentor consultations needs freelancer booking (phase 3) and the
+ * verified badge needs the document review (phase 2). Selling a plan whose
+ * benefits the APIs would refuse is exactly what this module exists to stop.
+ *
+ * What it controls: `purchasablePlansFor('FREELANCER')` — and through it the
+ * purchase route, the renewal cron and every plan card — plus the freelancer
+ * section of the public pricing page. Admin grants are unaffected.
+ */
+const FREELANCER_PREMIUM_ON_SALE = false;
+
+/** Whether freelancers can currently buy Premium. */
+export function isFreelancerPremiumOnSale(): boolean {
+  return FREELANCER_PREMIUM_ON_SALE;
+}

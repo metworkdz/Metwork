@@ -10,7 +10,8 @@ import {
   type MembershipPlanCard,
 } from '@/components/features/membership/membership-plans';
 import { incubatorSubscriptionTiers } from '@/config/memberships';
-import { getMembershipPlanViews } from '@/server/memberships/plan-view';
+import { getMembershipPlanViews, type MembershipPlanView } from '@/server/memberships/plan-view';
+import { isFreelancerPremiumOnSale } from '@/config/feature-flags';
 import { formatCurrency } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 import { assertLandingVisible } from '@/lib/landing-visibility';
@@ -49,19 +50,24 @@ export default async function PricingPage({ params }: PageProps) {
   // Display-ready tiers, built from the admin-editable plan config. Prices,
   // discount percentages, pass counts and the Recommended tag all come from
   // the DB — this page hardcodes none of them.
-  const planViews = await getMembershipPlanViews();
-  const tiers: MembershipPlanCard[] = planViews.map((plan) => ({
-    code: plan.code,
-    name: tm(plan.nameKey),
-    description: tm(plan.descriptionKey),
-    priceMonthly: plan.prices.monthly,
-    priceSemesterly: plan.prices.semesterly,
-    priceYearly: plan.prices.annual,
-    yearlyDiscountPercent: plan.prices.annualDiscountPercent,
-    semesterlyMonths: plan.prices.semesterlyMonths,
-    highlighted: plan.recommended,
-    features: plan.features.map((f) => tm(`features.${f.key}`, f.values)),
-  }));
+  const toCards = (views: MembershipPlanView[]): MembershipPlanCard[] =>
+    views.map((plan) => ({
+      code: plan.code,
+      name: tm(plan.nameKey),
+      description: tm(plan.descriptionKey),
+      priceMonthly: plan.prices.monthly,
+      priceYearly: plan.prices.annual,
+      yearlyDiscountPercent: plan.prices.annualDiscountPercent,
+      highlighted: plan.recommended,
+      features: plan.features.map((f) => ({ label: tm(`features.${f.key}`, f.values), soon: f.soon })),
+    }));
+  // Freelancer plans are listed only once Premium is on sale — until then the
+  // section would advertise a plan nobody can buy.
+  const showFreelancers = isFreelancerPremiumOnSale();
+  const [tiers, freelancerTiers] = await Promise.all([
+    getMembershipPlanViews('ENTREPRENEUR').then(toCards),
+    showFreelancers ? getMembershipPlanViews('FREELANCER').then(toCards) : Promise.resolve([]),
+  ]);
 
   const commissionTier = incubatorSubscriptionTiers[0];
   const proTier = incubatorSubscriptionTiers[1];
@@ -94,7 +100,7 @@ export default async function PricingPage({ params }: PageProps) {
             <p className="mt-3 text-base text-muted-foreground">{t('entrepreneurSubtitle')}</p>
           </div>
 
-          <MembershipPlans tiers={tiers} locale={lang} mostPopularLabel={tm('recommended')} />
+          <MembershipPlans tiers={tiers} locale={lang} mostPopularLabel={tm('recommended')} ctaHref="/signup" />
 
           {/* FAQ link */}
           <p className="mt-10 text-center text-sm text-muted-foreground">
@@ -105,6 +111,21 @@ export default async function PricingPage({ params }: PageProps) {
           </p>
         </Container>
       </section>
+
+      {/* Freelancer memberships */}
+      {showFreelancers && (
+        <section id="freelancers" className="scroll-mt-20 border-t border-border/60 py-14 sm:py-20">
+          <Container>
+            <div className="mx-auto mb-10 max-w-2xl text-center">
+              <h2 className="font-display text-2xl font-bold uppercase tracking-tight sm:text-3xl">
+                {t('freelancerTitle')}
+              </h2>
+              <p className="mt-3 text-base text-muted-foreground">{t('freelancerSubtitle')}</p>
+            </div>
+            <MembershipPlans tiers={freelancerTiers} locale={lang} mostPopularLabel={tm('recommended')} ctaHref="/signup" />
+          </Container>
+        </section>
+      )}
 
       {/* Incubator plans */}
       <section

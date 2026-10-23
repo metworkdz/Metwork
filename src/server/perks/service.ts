@@ -44,6 +44,8 @@ const TIER_RANK: Record<string, number> = {
   BUILDER: 1,
   STARTUP: 2,
   FOUNDER: 2,
+  // Freelancer Premium is a top paid tier: all perks, like Founder.
+  FREELANCER_PREMIUM: 2,
 };
 
 /** Normalized display tier for a given effective code. */

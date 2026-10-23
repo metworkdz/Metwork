@@ -8,10 +8,11 @@
  * These helpers normalise both representations into a single `MembershipTier`
  * enum value so the UI doesn't need to branch on both.
  *
- * NOTE ON NAMES: the enum values are stored data and keep the plans' ORIGINAL
- * names — BUILDER and FOUNDER. The plans are now called Entrepreneur and
- * Startup everywhere a member can see, which is what `TIER_LABELS` renders.
- * Renaming the stored values would buy nothing and mutate live records.
+ * NOTE ON NAMES: the enum values are stored data. BUILDER is the retired
+ * "Entrepreneur" plan; FOUNDER is the entrepreneur "Founder" plan (called
+ * "Startup" from 2026-08 until Metwork 2.0) and also the tier freelancer
+ * Premium members carry. Renaming the stored values would buy nothing and
+ * mutate live records. For a role-aware name, use `planDisplayKey`.
  */
 
 export type MembershipTier = 'EXPLORER' | 'BUILDER' | 'FOUNDER';
@@ -36,6 +37,8 @@ export function resolveTier(user: TierSource): MembershipTier {
   switch (user.membershipCode) {
     case 'ENTREPRENEUR': return 'BUILDER';
     case 'STARTUP':      return 'FOUNDER';
+    // Freelancer Premium ranks with the top paid tier (see PAID_PLAN_CODES).
+    case 'FREELANCER_PREMIUM': return 'FOUNDER';
     default:             return 'EXPLORER';
   }
 }
@@ -52,7 +55,7 @@ export function resolveTier(user: TierSource): MembershipTier {
 export const TIER_LABELS: Record<MembershipTier, string> = {
   EXPLORER: 'Explorer',
   BUILDER:  'Entrepreneur',
-  FOUNDER:  'Startup',
+  FOUNDER:  'Founder',
 };
 
 /** Emoji icon for each tier. */

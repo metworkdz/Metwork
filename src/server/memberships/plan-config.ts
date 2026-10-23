@@ -109,7 +109,8 @@ export function passCountFrom(
   codeOrTier: string | null | undefined,
 ): number {
   const planCode = normalizePlanCode(codeOrTier);
-  if (!planCode) return 0;
+  // Network Pass is an entrepreneur benefit; freelancer Premium grants none.
+  if (!planCode || planCode === 'FREELANCER_PREMIUM') return 0;
   const cfg = data.meta?.platformConfig;
   const value =
     planCode === 'STARTUP'
@@ -195,9 +196,11 @@ export async function ensureMembershipPlanConfigs(): Promise<MembershipPlanConfi
   return db.update((store) => {
     // ── 1. Append missing plan configs (never modify existing ones) ────────
     if (!Array.isArray(store.membershipPlanConfigs)) store.membershipPlanConfigs = [];
+    const appendedNow = new Set<string>();
     for (const def of DEFAULT_MEMBERSHIP_PLAN_CONFIGS) {
       if (!store.membershipPlanConfigs.some((c) => c.planCode === def.planCode)) {
         store.membershipPlanConfigs.push({ ...def });
+        appendedNow.add(def.planCode);
       }
     }
 
@@ -217,7 +220,8 @@ export async function ensureMembershipPlanConfigs(): Promise<MembershipPlanConfi
         // Already snapshotted (bought after this release) — leave untouched.
         if (m.spaceDiscountRate !== undefined) continue;
         const planCode = normalizePlanCode(m.plan);
-        if (!planCode) continue;
+        // Freelancer Premium postdates snapshotting — none can be pre-snapshot.
+        if (!planCode || planCode === 'FREELANCER_PREMIUM') continue;
         const legacy = LEGACY_PLAN_DISCOUNT_RATES[planCode];
         m.spaceDiscountRate        = legacy.spaceDiscountRate;
         m.consultationDiscountRate = legacy.consultationDiscountRate;
@@ -235,7 +239,10 @@ export async function ensureMembershipPlanConfigs(): Promise<MembershipPlanConfi
     // terms a grandfathered member bought, which are the pre-repricing ones.
     if (!store.meta[STARTUP_REPRICE_FLAG]) {
       const stored = store.membershipPlanConfigs.find((c) => c.planCode === 'STARTUP');
-      if (stored) {
+      // Never on a record step 1 just appended (it already carries the current
+      // shipped terms) nor once Metwork 2.0 terms are in — either way the
+      // 2026-08 terms would be a step backwards.
+      if (stored && !appendedNow.has('STARTUP') && !store.meta[METWORK2_TERMS_FLAG]) {
         stored.monthlyPrice             = STARTUP_REPRICE.monthlyPrice;
         stored.consultationDiscountRate = STARTUP_REPRICE.consultationDiscountRate;
         stored.updatedAt                = new Date().toISOString();
@@ -247,4 +254,155 @@ export async function ensureMembershipPlanConfigs(): Promise<MembershipPlanConfi
 
     return planConfigsFrom(store);
   });
+}
+
+// ---------------------------------------------------------------------------
+// Metwork 2.0 plan terms — one-time, explicitly triggered
+// ---------------------------------------------------------------------------
+
+/** Meta flag marking the Metwork 2.0 terms as applied. */
+const METWORK2_TERMS_FLAG = 'membershipMetwork2TermsAt';
+
+/**
+ * The fields Metwork 2.0 changes on an already-stored config. Anything else an
+ * admin edited (pass counts, semester length) is left alone.
+ *
+ *   Founder (STARTUP)  1 900 /mo, 20 % off annually, 10 % consultations, 10 % spaces
+ *   Entrepreneur       no longer recommended (and no longer sold — see
+ *                      PURCHASABLE_PLANS; the config stays so its members resolve)
+ *
+ * FREELANCER_PREMIUM needs nothing here: step 1 of `ensureMembershipPlanConfigs`
+ * appends it at its shipped defaults, and `planConfigsFrom` falls back to those
+ * defaults until then.
+ */
+export const METWORK2_PLAN_TERMS = {
+  STARTUP: {
+    monthlyPrice:             1_900,
+    annualDiscountPercent:    20,
+    consultationDiscountRate: 0.10,
+    spaceDiscountRate:        0.10,
+    recommended:              true,
+  },
+  ENTREPRENEUR: { recommended: false },
+} as const;
+
+/** What `applyMetwork2PlanTerms` did (or would do, on a dry run). */
+export interface Metwork2TermsReport {
+  alreadyApplied: boolean;
+  /** Active memberships that had no frozen rates and were frozen at their current terms. */
+  frozenMembershipIds: string[];
+  /** Paid users with no membership record and no mirror, given a mirror of their current terms. */
+  mirroredUserIds: string[];
+  startupBefore: Pick<MembershipPlanConfigRecord, 'monthlyPrice' | 'annualDiscountPercent' | 'consultationDiscountRate' | 'spaceDiscountRate'> | null;
+}
+
+/** Minimal draft slice `applyMetwork2PlanTerms` mutates. */
+type Metwork2Draft = {
+  membershipPlanConfigs?: MembershipPlanConfigRecord[];
+  userMemberships?: UserMembershipRecordLike[];
+  users: Array<{
+    id: string;
+    membershipCode: string | null;
+    membershipTier?: string | null;
+    membershipExpiresAt?: string | null;
+    membershipSpaceDiscountRate?: number;
+    membershipConsultationDiscountRate?: number;
+  }>;
+  meta?: { platformConfig?: PlatformConfig; [METWORK2_TERMS_FLAG]?: string } & Record<string, unknown>;
+};
+type UserMembershipRecordLike = {
+  id: string;
+  userId: string;
+  plan: string;
+  status: string;
+  spaceDiscountRate?: number;
+  consultationDiscountRate?: number;
+  monthlyPassCount?: number;
+  snapshotAt?: string;
+};
+
+/**
+ * Apply the Metwork 2.0 terms to a store draft. Pure over its argument, so the
+ * script can run it against a clone for a dry run and against the real draft
+ * inside `db.update` with `--confirm`.
+ *
+ * Grandfathering comes FIRST: every active member who would otherwise read the
+ * live config is frozen at the terms they have today, then the config moves.
+ * A Startup member who paid 3 500 for 20 % consultations keeps 20 % until
+ * their period ends; they renew as Founder at the new terms.
+ *
+ * Deliberately not run from `ensureMembershipPlanConfigs` (an admin page
+ * visit): a live price change ships only when someone runs the script.
+ * Idempotent through the meta flag.
+ */
+export function applyMetwork2PlanTerms(store: Metwork2Draft, now = new Date()): Metwork2TermsReport {
+  const startup = (store.membershipPlanConfigs ?? []).find((c) => c.planCode === 'STARTUP') ?? null;
+  const report: Metwork2TermsReport = {
+    alreadyApplied: Boolean(store.meta?.[METWORK2_TERMS_FLAG]),
+    frozenMembershipIds: [],
+    mirroredUserIds: [],
+    startupBefore: startup
+      ? {
+          monthlyPrice:             startup.monthlyPrice,
+          annualDiscountPercent:    startup.annualDiscountPercent,
+          consultationDiscountRate: startup.consultationDiscountRate,
+          spaceDiscountRate:        startup.spaceDiscountRate,
+        }
+      : null,
+  };
+  if (report.alreadyApplied) return report;
+
+  const nowIso = now.toISOString();
+  const configs = planConfigsFrom(store);
+  const configFor = (code: PaidPlanCode) => configs.find((c) => c.planCode === code)!;
+
+  // ── 1. Freeze every active membership still reading live config ─────────
+  const memberships = store.userMemberships ?? [];
+  for (const m of memberships) {
+    if (m.status !== 'ACTIVE' || m.spaceDiscountRate !== undefined) continue;
+    const planCode = normalizePlanCode(m.plan);
+    if (!planCode) continue;
+    const current = configFor(planCode);
+    m.spaceDiscountRate        = current.spaceDiscountRate;
+    m.consultationDiscountRate = current.consultationDiscountRate;
+    m.monthlyPassCount         = passCountFrom(store, planCode);
+    m.snapshotAt               = nowIso;
+    report.frozenMembershipIds.push(m.id);
+  }
+
+  // ── 2. Mirror paid users that have neither a snapshot nor a mirror ──────
+  for (const u of store.users) {
+    if (u.membershipExpiresAt && new Date(u.membershipExpiresAt) <= now) continue;
+    const planCode = normalizePlanCode(u.membershipCode) ?? normalizePlanCode(u.membershipTier);
+    if (!planCode) continue;
+    if (typeof u.membershipSpaceDiscountRate === 'number') continue;
+    const hasSnapshot = memberships.some(
+      (m) =>
+        m.userId === u.id &&
+        m.status === 'ACTIVE' &&
+        normalizePlanCode(m.plan) === planCode &&
+        m.spaceDiscountRate !== undefined,
+    );
+    if (hasSnapshot) continue;
+    const current = configFor(planCode);
+    u.membershipSpaceDiscountRate        = current.spaceDiscountRate;
+    u.membershipConsultationDiscountRate = current.consultationDiscountRate;
+    report.mirroredUserIds.push(u.id);
+  }
+
+  // ── 3. Move the stored configs to the new terms ─────────────────────────
+  if (!Array.isArray(store.membershipPlanConfigs)) store.membershipPlanConfigs = [];
+  for (const def of DEFAULT_MEMBERSHIP_PLAN_CONFIGS) {
+    if (!store.membershipPlanConfigs.some((c) => c.planCode === def.planCode)) {
+      store.membershipPlanConfigs.push({ ...def });
+    }
+  }
+  for (const c of store.membershipPlanConfigs) {
+    if (c.planCode === 'STARTUP') Object.assign(c, METWORK2_PLAN_TERMS.STARTUP, { updatedAt: nowIso });
+    if (c.planCode === 'ENTREPRENEUR') Object.assign(c, METWORK2_PLAN_TERMS.ENTREPRENEUR, { updatedAt: nowIso });
+  }
+
+  if (!store.meta) store.meta = {};
+  store.meta[METWORK2_TERMS_FLAG] = nowIso;
+  return report;
 }

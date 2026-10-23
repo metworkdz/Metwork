@@ -8,8 +8,13 @@
  * (`/api/cron/process-downgrades`) flips `membershipCode` once
  * `scheduledChangeDate` passes.
  *
+ * Scheduling a downgrade is also how a member CANCELS a monthly plan: the
+ * renewal cron never renews a member with a scheduled change, so the plan
+ * runs to the end of the paid month and then drops to Free. DELETE undoes it,
+ * which turns renewal back on.
+ *
  * Body (POST):
- *   { plan: 'ENTREPRENEUR' | 'FREE' }
+ *   { plan: 'FREE' }   — the retired Entrepreneur plan is no longer a target
  *
  * Response (200):
  *   { scheduledMembershipChange, scheduledChangeDate }
@@ -27,7 +32,7 @@ export const dynamic = 'force-dynamic';
 
 const schema = z.object({
   /** Target tier — must be strictly lower than the user's current effective tier. */
-  plan: z.enum(['ENTREPRENEUR', 'FREE']),
+  plan: z.enum(['FREE']),
 });
 
 // Tier rank — higher number = higher tier. Keyed by every value
@@ -38,6 +43,7 @@ const TIER_RANK: Record<string, number> = {
   BUILDER: 1,
   STARTUP: 2,
   FOUNDER: 2,
+  FREELANCER_PREMIUM: 2,
 };
 
 export async function POST(req: NextRequest) {

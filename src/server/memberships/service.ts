@@ -66,7 +66,13 @@ export function getEffectiveMembershipCode(user: MembershipUserLike): string {
   // 'builder'/'founder' in lowercase, which must resolve to the same tier.
   const code = user.membershipCode ? user.membershipCode.toUpperCase() : null;
   if (code && code !== 'FREE') {
-    if (code === 'ENTREPRENEUR' || code === 'STARTUP' || code === 'BUILDER' || code === 'FOUNDER') {
+    if (
+      code === 'ENTREPRENEUR' ||
+      code === 'STARTUP' ||
+      code === 'BUILDER' ||
+      code === 'FOUNDER' ||
+      code === 'FREELANCER_PREMIUM'
+    ) {
       return code;
     }
     // Unrecognized code: a recognized tier wins over an opaque legacy value.

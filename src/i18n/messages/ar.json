@@ -1047,16 +1047,24 @@
   "membership": {
     "tiers": {
       "free": {
-        "name": "مستكشف",
-        "description": "اكتشف المنظومة — بدون أي التزام"
+        "name": "مجاني",
+        "description": "احجز المساحات والمرشدين وشارك في الفعاليات — بدون أي التزام"
       },
       "entrepreneur": {
         "name": "رائد أعمال",
-        "description": "كل ما تحتاجه لإطلاق شركتك الناشئة وتنميتها"
+        "description": "اشتراكنا السابق، لم يعد متاحًا"
       },
       "startup": {
-        "name": "شركة ناشئة",
-        "description": "اجمع التمويل، ابرز للعالم، وابنِ إمبراطوريتك"
+        "name": "المؤسس",
+        "description": "للمؤسسين الذين يبنون شركة حقيقية: أسعار أقل، ظهور أكبر، شارة ذهبية"
+      },
+      "freelancerFree": {
+        "name": "مجاني",
+        "description": "أدِر نشاطك الحر على Metwork مجانًا"
+      },
+      "freelancerPremium": {
+        "name": "بريميوم",
+        "description": "بلا حدود، أولوية لدى العملاء، شارة موثّق"
       }
     },
     "features": {
@@ -1078,7 +1086,20 @@
       "networkPass": "{count} رصيد Network Pass شهرياً للعمل المشترك",
       "perks": "امتيازات وتخفيضات حصرية من الشركاء",
       "exclusiveEvents": "وصول إلى الفعاليات الحصرية للأعضاء",
-      "marketplaceFeature": "تمييز شركتك الناشئة في السوق"
+      "marketplaceFeature": "تمييز شركتك الناشئة في السوق",
+      "goldBadge": "شارة المؤسس الذهبية على ملفك",
+      "cofounderMatching": "ابحث عن شريك مؤسس: 30 ملفًا يوميًا ومحادثة عند التطابق",
+      "invoicingUnlimited": "فواتير وعروض أسعار وعقود بلا حدود",
+      "invoicingLimited": "5 فواتير أو عروض أسعار شهريًا",
+      "copilotUnlimited": "مساعد ذكي في الجباية وقانون الأعمال، بلا حدود",
+      "copilotLimited": "المساعد الذكي: 15 سؤالًا شهريًا",
+      "cofounderPreview": "ابحث عن شريك مؤسس: 3 ملفات يوميًا",
+      "freelancerProfile": "ملف عام وظهور في دليل المستقلين",
+      "paymentLinksLimited": "رابطا دفع بالدينار (رسوم 3٪)",
+      "paymentLinksUnlimited": "روابط دفع بالدينار بلا حدود وبدون رسوم Metwork",
+      "taxCalendar": "رزنامة جبائية مع تذكيرات (CASNOS، G12، G12 مكرر)",
+      "verifiedBadge": "شارة التوثيق بعد الموافقة على وثيقتك",
+      "searchPriority": "الظهور أولًا لرواد الأعمال الباحثين عن مستقلين"
     },
     "billingMonthly": "شهري",
     "billingYearly": "سنوي",
@@ -1120,7 +1141,39 @@
     "currentPlanLabel": "الباقة الحالية",
     "upgradeAvailable": "الترقية متاحة",
     "renewsOn": "يتجدد في {date}",
-    "grandfatheredNotice": "تحتفظ بالسعر والمزايا التي اشتركت بها حتى {date}."
+    "grandfatheredNotice": "تحتفظ بالسعر والمزايا التي اشتركت بها حتى {date}.",
+    "billingCycleLabel": "دورة الفوترة",
+    "billedMonthlyAutoRenew": "يُفوتر شهريًا ويتجدد تلقائيًا من محفظتك",
+    "soon": "قريبًا",
+    "renewsAutomatically": "يتجدد تلقائيًا يوم {date}",
+    "endsOn": "ينتهي يوم {date}",
+    "retiredPlanNotice": "هذا الاشتراك لم يعد متاحًا. يبقى ساريًا حتى {date}، ويمكنك الانتقال إلى المؤسس في أي وقت.",
+    "verifiedBadgePending": "تظهر شارة التوثيق بمجرد الموافقة على بطاقة المقاول الذاتي أو السجل التجاري.",
+    "availableSoon": "متاح قريبًا",
+    "orYearly": "أو {yearly} / سنة — وفّر {percent}٪",
+    "badges": {
+      "gold": "عضو مؤسس",
+      "verified": "مستقل موثّق"
+    },
+    "cancel": {
+      "button": "الانتقال إلى {plan}",
+      "scheduled": "تمت جدولة التغيير",
+      "title": "الانتقال إلى {plan}؟",
+      "body": "لن يتجدد اشتراكك بعد الآن. ستنتقل إلى {plan} يوم {date} وتحتفظ بمزاياك الحالية حتى ذلك الحين.",
+      "keep": "الاحتفاظ باشتراكي",
+      "confirm": "تأكيد",
+      "scheduling": "جارٍ الحفظ…",
+      "done": "تم. ستنتقل إلى الخطة المجانية يوم {date}.",
+      "periodEnd": "نهاية الفترة المدفوعة",
+      "error": "تعذّر حفظ التغيير. حاول مرة أخرى.",
+      "networkError": "خطأ في الشبكة. حاول مرة أخرى."
+    },
+    "scheduledCancel": {
+      "title": "ينتهي اشتراكك وينتقل إلى {plan}",
+      "body": "يوم {date}. تحتفظ بمزاياك الحالية حتى ذلك الحين ولن يُخصم أي مبلغ آخر.",
+      "keep": "الاحتفاظ باشتراكي",
+      "restoring": "جارٍ الاستعادة…"
+    }
   },
   "investorApproval": {
     "title": "حسابك قيد التحقق",
@@ -2500,7 +2553,9 @@
       "perBooking": "لكل حجز",
       "incubatorProTrial": "الشهر الأول مجانًا",
       "incubatorBilledYearly": "أو {yearly} / سنة — وفّر {percent}%",
-      "incubatorProCta": "ابدأ الشهر المجاني"
+      "incubatorProCta": "ابدأ الشهر المجاني",
+      "freelancerTitle": "للمستقلين والمقاولين الذاتيين",
+      "freelancerSubtitle": "ابدأ مجانًا، وانتقل إلى بريميوم عندما يأتي العملاء."
     },
     "incubators": {
       "metaTitle": "للحاضنات وفضاءات العمل المشترك",
@@ -3088,6 +3143,10 @@
         "settings": {
           "title": "الإعدادات",
           "subtitle": "أدِر تفضيلات حسابك."
+        },
+        "membership": {
+          "title": "الاشتراك",
+          "subtitle": "خطتك وتجديدها وما تتضمنه."
         }
       }
     },
@@ -4337,8 +4396,10 @@
       "priceError": "أدخل مبلغاً صالحاً",
       "passError": "أدخل عدداً صحيحاً بين 0 و100",
       "perMonth": "/ شهر",
-      "planEntrepreneur": "رائد أعمال",
-      "planStartup": "شركة ناشئة"
+      "planEntrepreneur": "رائد أعمال (اشتراك سابق، غير معروض)",
+      "planStartup": "المؤسس (رواد الأعمال)",
+      "planFreelancerPremium": "بريميوم (المستقلون)",
+      "monthlyTotal": "يُفوتر شهريًا ويتجدد تلقائيًا"
     },
     "withdrawals": {
       "pendingReview": "Pending review",
@@ -5099,7 +5160,7 @@
     "membershipUpgrade": {
       "upgradeTo": "الترقية إلى {planName}",
       "upgradedTo": "تمت الترقية إلى {planName}!",
-      "billingMonthly": "شهري — {price}",
+      "billingMonthly": "شهري",
       "billingYearly": "سنوي",
       "promoPlaceholder": "رمز الخصم",
       "promoRemove": "إزالة",
@@ -5127,7 +5188,8 @@
       "topUpTitle": "رصيد محفظتك غير كافٍ",
       "topUpBody": "تكلفة هذه الخطة {required}. رصيد محفظتك {balance}، لذا تحتاج إلى {shortfall} إضافية. اشحن محفظتك ثم عُد — لم يتم خصم أي مبلغ.",
       "topUpCta": "شحن المحفظة",
-      "topUpBack": "رجوع"
+      "topUpBack": "رجوع",
+      "billedMonthlyAutoRenew": "{total} شهريًا، يتجدد تلقائيًا من محفظتك"
     },
     "profileForm": {
       "profilePictureTitle": "صورة الملف الشخصي",

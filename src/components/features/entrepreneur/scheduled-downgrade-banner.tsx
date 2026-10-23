@@ -1,6 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from '@/i18n/routing';
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function ScheduledDowngradeBanner({ targetName, scheduledDate, locale }: Props) {
+  const t = useTranslations('membership.scheduledCancel');
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -37,10 +39,10 @@ export function ScheduledDowngradeBanner({ targetName, scheduledDate, locale }: 
         <CalendarClock className="mt-0.5 size-5 shrink-0 text-amber-700" />
         <div>
           <p className="font-medium text-amber-900">
-            Scheduled downgrade to {targetName}
+            {t('title', { plan: targetName })}
           </p>
           <p className="text-xs text-amber-800">
-            Takes effect on {formatted}. You&apos;ll keep your current benefits until then.
+            {t('body', { date: formatted })}
           </p>
         </div>
       </div>
@@ -51,7 +53,7 @@ export function ScheduledDowngradeBanner({ targetName, scheduledDate, locale }: 
         loading={isPending}
         className="shrink-0 border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
       >
-        {isPending ? 'Cancelling…' : 'Keep current plan'}
+        {isPending ? t('restoring') : t('keep')}
       </Button>
     </div>
   );

@@ -20,6 +20,7 @@ import type {
   ApprovalStatus,
   BusinessSubType,
   IncubatorBusinessType,
+  LegalVerificationStatus,
 } from '@/types/auth';
 import type { LandingContent } from '@/types/cms';
 import type { WeeklyAvailabilityDay } from '@/types/mentor';
@@ -85,6 +86,13 @@ export interface UserRecord {
    */
   membershipSpaceDiscountRate?: number;
   membershipConsultationDiscountRate?: number;
+
+  /**
+   * Review state of the business document (auto-entrepreneur card or RC),
+   * Metwork 2.0. Only the document review writes it (phase 2); the freelancer
+   * verified badge requires APPROVED. Absent ⇒ never submitted.
+   */
+  legalVerificationStatus?: LegalVerificationStatus | null;
 
   /** Network pass credits remaining this billing cycle. */
   networkCredits?: number;
@@ -895,7 +903,7 @@ export interface IncubatorRecord {
 export interface UserMembershipRecord {
   id: string;
   userId: string;
-  /** Matches a membershipTier code: 'FREE' | 'ENTREPRENEUR' | 'STARTUP' */
+  /** Plan code: 'FREE' | 'ENTREPRENEUR' | 'STARTUP' | 'FREELANCER_PREMIUM' */
   plan: string;
   startsAt: string;
   /** Null = perpetual (used for FREE tier) */
@@ -911,8 +919,8 @@ export interface UserMembershipRecord {
   // only to the NEXT purchase — an active member keeps the terms they bought.
   // All fields are optional: records created before the snapshot existed have
   // none, and readers fall back to live config (see resolveMemberBenefits).
-  /** Billing cycle purchased. */
-  billingPeriod?: 'semesterly' | 'yearly';
+  /** Billing cycle purchased. 'semesterly' is retired for new purchases. */
+  billingPeriod?: 'monthly' | 'semesterly' | 'yearly';
   /** Pre-promo price for the purchased cycle, in integer DZD. */
   basePrice?: number;
   /** Integer DZD actually debited after any promo code. */
@@ -933,6 +941,16 @@ export interface UserMembershipRecord {
    * again. Optional — absent on records created before idempotency existed.
    */
   clientReference?: string;
+
+  // ─── Auto-renewal (monthly plans, Metwork 2.0) ──────────────────────────
+  // NOT part of the frozen snapshot: these are lifecycle flags the renewal
+  // cron flips. Annual and legacy records leave them unset (= no renewal).
+  /** Renew from the wallet at `expiresAt`. Turned off when the member cancels. */
+  autoRenew?: boolean;
+  /** Set once the "renews in 3 days" notice went out for THIS period. */
+  renewalReminderSentAt?: string;
+  /** The membership this record renewed, when it was created by the cron. */
+  renewedFromId?: string;
 }
 
 /* ──────────────────── Membership plan configuration ──────────────────── */
@@ -950,7 +968,7 @@ export interface UserMembershipRecord {
  * exclusively through `setAdminCreditConfig`, so there is one writer per value.
  */
 export interface MembershipPlanConfigRecord {
-  /** Canonical plan code — 'ENTREPRENEUR' (Builder) | 'STARTUP' (Founder). */
+  /** Canonical plan code — 'ENTREPRENEUR' (retired) | 'STARTUP' (Founder) | 'FREELANCER_PREMIUM'. */
   planCode: string;
   /** Display/reference monthly rate in DZD. Never charged directly. */
   monthlyPrice: number;
@@ -3785,6 +3803,8 @@ interface DbShape {
      * were already seeded. Active members are untouched — they hold snapshots.
      */
     membershipStartupRepricedAt?: string;
+    /** Set once the Metwork 2.0 plan terms (Founder 1 900, Premium 2 500) were applied. */
+    membershipMetwork2TermsAt?: string;
   };
 }
 

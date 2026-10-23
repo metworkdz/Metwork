@@ -109,7 +109,12 @@ function MembershipPricingCard({
   const [space, setSpace] = useState((initial.config.spaceDiscountRate * 100).toFixed(0));
   const [passes, setPasses] = useState(String(initial.monthlyPassCount));
 
-  const planLabel = plan.config.planCode === 'STARTUP' ? t('planStartup') : t('planEntrepreneur');
+  const planLabel =
+    plan.config.planCode === 'STARTUP' ? t('planStartup')
+    : plan.config.planCode === 'FREELANCER_PREMIUM' ? t('planFreelancerPremium')
+    : t('planEntrepreneur');
+  // Network Pass is an entrepreneur benefit; the API refuses a pass count for Premium.
+  const hasPasses = plan.config.planCode !== 'FREELANCER_PREMIUM';
 
   function startEdit() {
     setPrice(String(plan.config.monthlyPrice));
@@ -158,7 +163,7 @@ function MembershipPricingCard({
         annualDiscountPercent: annualNum,
         consultationDiscountRate: consultNum / 100,
         spaceDiscountRate: spaceNum / 100,
-        monthlyPassCount: passNum,
+        ...(hasPasses && { monthlyPassCount: passNum }),
       });
       setPlan({ config: updated.plan, monthlyPassCount: updated.monthlyPassCount });
       setEditing(false);
@@ -190,7 +195,7 @@ function MembershipPricingCard({
           <div>
             <p className="font-medium">{planLabel}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {formatCurrency(shownPrices.semesterly, locale)} · {t('semesterlyTotal')}
+              {formatCurrency(shownPrices.monthly, locale)} · {t('monthlyTotal')}
               {' — '}
               {formatCurrency(shownPrices.annual, locale)} · {t('annualTotal')}
             </p>
@@ -224,11 +229,13 @@ function MembershipPricingCard({
                   onChange={(e) => { setSpace(e.target.value); setErr(null); }} className="pe-7"
                   aria-label={t('spaceDiscount')} />
               </Field>
-              <Field label={t('passCount')}>
-                <Input type="number" min="0" max="100" step="1" value={passes}
-                  onChange={(e) => { setPasses(e.target.value); setErr(null); }}
-                  aria-label={t('passCount')} />
-              </Field>
+              {hasPasses && (
+                <Field label={t('passCount')}>
+                  <Input type="number" min="0" max="100" step="1" value={passes}
+                    onChange={(e) => { setPasses(e.target.value); setErr(null); }}
+                    aria-label={t('passCount')} />
+                </Field>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Button size="sm" loading={busy} onClick={save}>
@@ -254,7 +261,7 @@ function MembershipPricingCard({
               <ReadRow label={t('annualDiscount')} value={`${plan.config.annualDiscountPercent}%`} />
               <ReadRow label={t('consultationDiscount')} value={`${Math.round(plan.config.consultationDiscountRate * 100)}%`} />
               <ReadRow label={t('spaceDiscount')} value={`${Math.round(plan.config.spaceDiscountRate * 100)}%`} />
-              <ReadRow label={t('passCount')} value={String(plan.monthlyPassCount)} />
+              {hasPasses && <ReadRow label={t('passCount')} value={String(plan.monthlyPassCount)} />}
             </dl>
             {!plan.config.recommended && (
               <Button variant="outline" size="sm" loading={busy} onClick={makeRecommended}>

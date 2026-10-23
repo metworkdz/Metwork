@@ -159,8 +159,9 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.settings',  href: '/dashboard/incubator/settings',     icon: Settings },
   ],
   FREELANCER: [
-    { labelKey: 'dashboard.overview',  href: '/dashboard/freelancer',           icon: LayoutDashboard },
-    { labelKey: 'dashboard.settings',  href: '/dashboard/freelancer/settings',  icon: Settings },
+    { labelKey: 'dashboard.overview',   href: '/dashboard/freelancer',             icon: LayoutDashboard },
+    { labelKey: 'dashboard.membership', href: '/dashboard/freelancer/membership',  icon: CreditCard },
+    { labelKey: 'dashboard.settings',   href: '/dashboard/freelancer/settings',    icon: Settings },
   ],
   ADMIN: [
     // ── Platform management ──────────────────────────────────────────────────
