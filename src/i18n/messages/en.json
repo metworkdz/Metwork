@@ -2299,7 +2299,9 @@
     "feedback": "Feedback",
     "profile": "Profile",
     "legalReviews": "Document reviews",
-    "venture": "My business"
+    "venture": "My business",
+    "projects": "Projects",
+    "gigs": "Gigs"
   },
   "pages": {
     "consultationPay": {
@@ -3158,7 +3160,27 @@
           "subtitle": "Your plan, its renewal and what it includes."
         },
         "completeTitle": "Complete your profile",
-        "completeBody": "Reach 100 % to get verified and unlock a free month of Premium."
+        "completeBody": "Reach 100 % to get verified and unlock a free month of Premium.",
+        "newInvoice": "Invoice",
+        "newLink": "Payment link",
+        "statReceived": "Received this month",
+        "statWallet": "Wallet: {amount}",
+        "statInvoiced": "Invoiced this month",
+        "statInvoicedCount": "{count, plural, =0 {No facture} one {# facture} other {# factures}}",
+        "statProjects": "Open projects",
+        "statDueSoon": "{count} due within 7 days",
+        "statTurnover": "Turnover {year}",
+        "statTurnoverHint": "Factures issued, before tax",
+        "statCeiling": "{percent} % of the auto-entrepreneur ceiling",
+        "ceilingTitle": "Auto-entrepreneur annual ceiling",
+        "ceilingAlert": "You have passed {percent} % of the ceiling. Talk to your accountant about what happens if you exceed it.",
+        "ifuEstimate": "Estimated IFU at 0.5 %: {amount}. Indicative only — confirm the rate and ceiling with your accountant.",
+        "dueTitle": "Due soon",
+        "seeAll": "All projects",
+        "dueEmpty": "Nothing due in the next 7 days.",
+        "upcomingCopilot": "AI copilot for tax and business law",
+        "upcomingHiring": "Clients from the entrepreneurs' hiring tab",
+        "addGig": "Add a gig"
       }
     },
     "payment": {
@@ -6505,6 +6527,61 @@
     "wallet": {
       "title": "Wallet",
       "subtitle": "Your payment-link earnings, and withdrawals to your bank or CCP."
+    },
+    "projects": {
+      "pageTitle": "Projects",
+      "subtitle": "Every job from start to payment, in one board.",
+      "count": "{count, plural, =0 {No open project} one {# open project} other {# open projects}}",
+      "new": "New project",
+      "create": "Create",
+      "title": "Title",
+      "client": "Client (optional)",
+      "due": "Due date",
+      "amount": "Amount (DZD)",
+      "moveTo": "Move to",
+      "delete": "Delete",
+      "empty": "Nothing here.",
+      "saveError": "Could not save. Please try again.",
+      "status": {
+        "TODO": "To do",
+        "IN_PROGRESS": "In progress",
+        "DELIVERED": "Delivered",
+        "PAID": "Paid"
+      }
+    },
+    "gigs": {
+      "pageTitle": "Gigs",
+      "subtitle": "Fixed-price packages entrepreneurs can order. They will appear on your public profile and in the hiring tab.",
+      "new": "New gig",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "empty": "No gig yet. Create your first package.",
+      "active": "Live",
+      "draft": "Draft",
+      "title": "Title",
+      "titlePlaceholder": "Logo + brand guide",
+      "description": "What's included",
+      "price": "Price (DZD)",
+      "deliveryDays": "Days",
+      "revisionsLabel": "Revisions",
+      "activeToggle": "Live (visible to clients)",
+      "days": "{count, plural, one {# day} other {# days}}",
+      "revisions": "{count, plural, =0 {No revision} one {# revision} other {# revisions}}",
+      "activeLimited": "{count} of {limit} live gigs on the Free plan",
+      "activeUnlimited": "{count} live gigs",
+      "upgrade": "Premium: unlimited",
+      "limitReached": "Free plan: put another gig in draft first, or go Premium.",
+      "saveError": "Could not save. Check the fields and try again."
+    },
+    "bookings": {
+      "title": "Space bookings",
+      "subtitle": "Desks, offices and rooms you have booked.",
+      "book": "Book a space"
+    },
+    "consultations": {
+      "title": "Mentor sessions",
+      "subtitle": "Book accountants, lawyers and coaches. Premium members get 10 % off."
     }
   },
   "venture": {

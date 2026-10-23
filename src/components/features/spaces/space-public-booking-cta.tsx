@@ -28,8 +28,8 @@ export function SpacePublicBookingCTA({ space }: Props) {
   const t = useTranslations('spaces.detail');
   const [success, setSuccess] = useState<{ booking: BookingDto; newBalance: number } | null>(null);
 
-  // Spaces are bookable by entrepreneurs; other authed roles get a note.
-  if (user && user.role !== 'ENTREPRENEUR') {
+  // Spaces are bookable by entrepreneurs and freelancers; other authed roles get a note.
+  if (user && user.role !== 'ENTREPRENEUR' && user.role !== 'FREELANCER') {
     return (
       <p className="text-sm text-muted-foreground text-center">
         {t('entrepreneurOnly')}

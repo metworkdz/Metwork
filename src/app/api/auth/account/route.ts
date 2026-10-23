@@ -113,6 +113,8 @@ export async function DELETE(req: NextRequest) {
     // are personal data with no accounting value — removed outright.
     d.freelancerProfiles = (d.freelancerProfiles ?? []).filter((p) => p.userId !== userId);
     d.ventures           = (d.ventures ?? []).filter((v) => v.ownerId !== userId);
+    d.freelancerProjects = (d.freelancerProjects ?? []).filter((p) => p.freelancerId !== userId);
+    d.gigs               = (d.gigs ?? []).filter((g) => g.freelancerId !== userId);
 
     // Notifications and user memberships have no post-deletion value.
     d.notifications   = (d.notifications   ?? []).filter((n)  => n.userId  !== userId);

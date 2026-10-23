@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { MyBookingsTable } from '@/components/features/entrepreneur/my-bookings-table';
 import { requireRole } from '@/lib/auth-guards';
+import { redirect } from '@/i18n/routing';
 import { listBookingsForUser } from '@/server/bookings/service';
 import type { Locale } from '@/i18n/config';
 
@@ -17,7 +18,9 @@ export default async function EntrepreneurBookingsPage({ params }: PageProps) {
   setRequestLocale(locale);
   const t = await getTranslations('pages.dashboard');
   const lang = (await getLocale()) as Locale;
-  const user = await requireRole(['ENTREPRENEUR']);
+  const user = await requireRole(['ENTREPRENEUR', 'FREELANCER']);
+  // Emails and payment returns link here; freelancers have their own page.
+  if (user.role === 'FREELANCER') redirect({ href: '/dashboard/freelancer/bookings', locale });
 
   const bookings = await listBookingsForUser(user.id);
 

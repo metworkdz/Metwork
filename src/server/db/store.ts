@@ -1047,6 +1047,42 @@ export interface FreelancerInvoiceSettings {
   invoiceStampUrl?: string | null;
 }
 
+export const FREELANCER_PROJECT_STATUSES = ['TODO', 'IN_PROGRESS', 'DELIVERED', 'PAID'] as const;
+export type FreelancerProjectStatus = (typeof FREELANCER_PROJECT_STATUSES)[number];
+
+/** A card on the freelancer's project board. Private to its owner. */
+export interface FreelancerProjectRecord {
+  id: string;
+  freelancerId: string;
+  title: string;
+  /** Free text, or the client book entry it was picked from. */
+  clientName: string | null;
+  clientId: string | null;
+  status: FreelancerProjectStatus;
+  /** YYYY-MM-DD. */
+  dueDate: string | null;
+  /** Agreed amount in DZD. */
+  amount: number | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A fixed-price package ("Logo + charte, 45 000 DA, 7 days, 2 revisions"). */
+export interface GigRecord {
+  id: string;
+  freelancerId: string;
+  title: string;
+  description: string;
+  /** DZD. */
+  price: number;
+  deliveryDays: number;
+  revisions: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /* ──────────────────────── Metwork 2.0 — ventures ──────────────────────── */
 
 export interface VentureRecord {
@@ -3811,6 +3847,10 @@ interface DbShape {
   freelancerProfiles?: FreelancerProfileRecord[];
   /** Metwork 2.0 — entrepreneur businesses (startup, company, activity, project). */
   ventures?: VentureRecord[];
+  /** Metwork 2.0 — a freelancer's own project board. */
+  freelancerProjects?: FreelancerProjectRecord[];
+  /** Metwork 2.0 — fixed-price service packages a freelancer offers. */
+  gigs?: GigRecord[];
   /** Audit log entries for admin actions. */
   auditLogs: AuditLogRecord[];
   /** In-app notifications per user. */

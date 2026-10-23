@@ -2299,7 +2299,9 @@
     "feedback": "Avis",
     "profile": "Profil",
     "legalReviews": "Vérification des documents",
-    "venture": "Mon entreprise"
+    "venture": "Mon entreprise",
+    "projects": "Projets",
+    "gigs": "Gigs"
   },
   "pages": {
     "consultationPay": {
@@ -3158,7 +3160,27 @@
           "subtitle": "Votre offre, son renouvellement et ce qu'elle inclut."
         },
         "completeTitle": "Complétez votre profil",
-        "completeBody": "Atteignez 100 % pour être vérifié et débloquer un mois de Premium offert."
+        "completeBody": "Atteignez 100 % pour être vérifié et débloquer un mois de Premium offert.",
+        "newInvoice": "Facture",
+        "newLink": "Lien de paiement",
+        "statReceived": "Encaissé ce mois",
+        "statWallet": "Portefeuille : {amount}",
+        "statInvoiced": "Facturé ce mois",
+        "statInvoicedCount": "{count, plural, =0 {Aucune facture} one {# facture} other {# factures}}",
+        "statProjects": "Projets en cours",
+        "statDueSoon": "{count} à rendre sous 7 jours",
+        "statTurnover": "CA {year}",
+        "statTurnoverHint": "Factures émises, hors taxes",
+        "statCeiling": "{percent} % du plafond auto-entrepreneur",
+        "ceilingTitle": "Plafond annuel auto-entrepreneur",
+        "ceilingAlert": "Vous avez dépassé {percent} % du plafond. Voyez avec votre comptable ce qui se passe en cas de dépassement.",
+        "ifuEstimate": "IFU estimé à 0,5 % : {amount}. Indicatif — confirmez le taux et le plafond avec votre comptable.",
+        "dueTitle": "À rendre bientôt",
+        "seeAll": "Tous les projets",
+        "dueEmpty": "Rien à rendre dans les 7 prochains jours.",
+        "upcomingCopilot": "Copilote IA fiscalité et droit des affaires",
+        "upcomingHiring": "Des clients depuis l'onglet Recrutement des entrepreneurs",
+        "addGig": "Ajouter un gig"
       }
     },
     "payment": {
@@ -6505,6 +6527,61 @@
     "wallet": {
       "title": "Portefeuille",
       "subtitle": "Vos encaissements par lien de paiement et vos retraits vers votre banque ou CCP."
+    },
+    "projects": {
+      "pageTitle": "Projets",
+      "subtitle": "Chaque mission, du lancement au paiement, sur un seul tableau.",
+      "count": "{count, plural, =0 {Aucun projet en cours} one {# projet en cours} other {# projets en cours}}",
+      "new": "Nouveau projet",
+      "create": "Créer",
+      "title": "Titre",
+      "client": "Client (facultatif)",
+      "due": "Échéance",
+      "amount": "Montant (DZD)",
+      "moveTo": "Déplacer vers",
+      "delete": "Supprimer",
+      "empty": "Rien ici.",
+      "saveError": "Enregistrement impossible. Réessayez.",
+      "status": {
+        "TODO": "À faire",
+        "IN_PROGRESS": "En cours",
+        "DELIVERED": "Livré",
+        "PAID": "Payé"
+      }
+    },
+    "gigs": {
+      "pageTitle": "Gigs",
+      "subtitle": "Des offres à prix fixe que les entrepreneurs peuvent commander. Elles apparaîtront sur votre profil public et dans l'onglet Recrutement.",
+      "new": "Nouveau gig",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "save": "Enregistrer",
+      "empty": "Aucun gig pour l'instant. Créez votre première offre.",
+      "active": "En ligne",
+      "draft": "Brouillon",
+      "title": "Titre",
+      "titlePlaceholder": "Logo + charte graphique",
+      "description": "Ce qui est inclus",
+      "price": "Prix (DZD)",
+      "deliveryDays": "Jours",
+      "revisionsLabel": "Révisions",
+      "activeToggle": "En ligne (visible par les clients)",
+      "days": "{count, plural, one {# jour} other {# jours}}",
+      "revisions": "{count, plural, =0 {Aucune révision} one {# révision} other {# révisions}}",
+      "activeLimited": "{count} gigs en ligne sur {limit} avec l'offre gratuite",
+      "activeUnlimited": "{count} gigs en ligne",
+      "upgrade": "Premium : illimité",
+      "limitReached": "Offre gratuite : passez un autre gig en brouillon, ou passez Premium.",
+      "saveError": "Enregistrement impossible. Vérifiez les champs et réessayez."
+    },
+    "bookings": {
+      "title": "Réservations d'espaces",
+      "subtitle": "Les postes, bureaux et salles que vous avez réservés.",
+      "book": "Réserver un espace"
+    },
+    "consultations": {
+      "title": "Séances avec des mentors",
+      "subtitle": "Réservez comptables, juristes et coachs. -10 % pour les membres Premium."
     }
   },
   "venture": {

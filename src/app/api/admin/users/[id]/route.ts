@@ -139,6 +139,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     // Metwork 2.0: profile (incl. the identity-document reference) and ventures.
     store.freelancerProfiles   = (store.freelancerProfiles ?? []).filter((p) => p.userId !== id);
     store.ventures             = (store.ventures ?? []).filter((v) => v.ownerId !== id);
+    store.freelancerProjects   = (store.freelancerProjects ?? []).filter((p) => p.freelancerId !== id);
+    store.gigs                 = (store.gigs ?? []).filter((g) => g.freelancerId !== id);
     // Certificates follow their registration out: they carry the member's name.
     const goneRegistrationIds = new Set(
       (store.registrations ?? []).filter((r) => r.userId === id).map((r) => r.id),
