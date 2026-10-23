@@ -59,13 +59,17 @@ create table if not exists public.messages (
   id              uuid primary key default gen_random_uuid(),
   conversation_id uuid not null references public.conversations (id) on delete cascade,
   sender_id       text not null,
-  body            text not null check (char_length(body) between 1 and 4000),
-  -- Structured card (devis, payment link, contract) — ids only, never amounts
+  -- Empty only for a card message (the attachment is the content).
+  body            text not null check (char_length(body) <= 4000),
+  -- Structured card (devis, payment link, order) — ids only, never amounts
   -- copied from the store, so a card always renders the live record.
   attachment      jsonb,
   created_at      timestamptz not null default now(),
   deleted_at      timestamptz
 );
+alter table public.messages drop constraint if exists messages_body_or_card;
+alter table public.messages add constraint messages_body_or_card
+  check (char_length(body) >= 1 or attachment is not null);
 create index if not exists messages_conversation_created_idx
   on public.messages (conversation_id, created_at desc);
 
