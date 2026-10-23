@@ -2309,7 +2309,8 @@
     "messages": "Messages",
     "messageReports": "Reported chats",
     "hire": "Hire",
-    "orders": "Orders"
+    "orders": "Orders",
+    "cofounder": "Cofounder"
   },
   "pages": {
     "consultationPay": {
@@ -7103,6 +7104,124 @@
       "RATE_LIMITED": "Too many attempts. Try again later.",
       "MESSAGING_UNAVAILABLE": "Messaging is temporarily unavailable.",
       "GENERIC": "Something went wrong. Try again."
+    }
+  },
+  "cofounder": {
+    "pageTitle": "Find my cofounder",
+    "subtitle": "A new deck every day. Like the profiles that fit; when it’s mutual, it’s a match.",
+    "onTitle": "Matching is on",
+    "onBody": "Your profile appears in decks and you are told every time someone likes you.",
+    "offTitle": "Matching is off",
+    "offBody": "Your profile is in no deck and you receive no likes. Switch it on at any time.",
+    "toggle": "Cofounder matching",
+    "phoneRequired": "Verify your phone number to appear in decks: it keeps fake profiles out.",
+    "tabs": {
+      "deck": "Today",
+      "matches": "Matches",
+      "profile": "My profile"
+    },
+    "loading": "Loading…",
+    "unavailable": "Cofounder matching is temporarily unavailable.",
+    "state": {
+      "NEEDS_PROFILE": "Fill in your cofounder profile to see today’s deck.",
+      "DISABLED": "Switch matching on to see today’s deck.",
+      "PHONE_UNVERIFIED": "Verify your phone number to see today’s deck."
+    },
+    "completeProfile": "Complete my profile",
+    "likesWaiting": "{count, plural, one {Someone liked your profile} other {# people liked your profile}}",
+    "today": "{used} / {total} today",
+    "pass": "Pass",
+    "like": "Like",
+    "likeNote": "They will only know you liked them if it’s mutual.",
+    "doneTitle": "That’s all for today",
+    "doneBody": "A new deck arrives tomorrow.",
+    "moreCards": "30 profiles a day with Founder",
+    "why": "Why you match",
+    "remote": "Remote OK",
+    "brings": "Brings",
+    "seeks": "Looking for",
+    "roleLabel": {
+      "ENTREPRENEUR": "Founder",
+      "FREELANCER": "Freelancer"
+    },
+    "matchTitle": "It’s a match!",
+    "matchBody": "You and {name} liked each other.",
+    "seeMatches": "See my matches",
+    "startChat": "Start the conversation",
+    "upgradeToChat": "Neither of you has a paid plan yet: Founder or Premium opens the chat.",
+    "upgrade": "Upgrade",
+    "noMatches": "No match yet. Keep swiping!",
+    "bringsHint": "What you are good at.",
+    "seeksHint": "What you need next to you.",
+    "commitment": "Commitment",
+    "sectorsLabel": "Sectors",
+    "pitch": "Your pitch",
+    "pitchHint": "You, your idea (or the kind of project you want), and why now. At least {min} characters.",
+    "pitchPlaceholder": "E.g. Developer for 6 years, I want to build a logistics app for wholesalers in the east…",
+    "quizTitle": "How you like to work",
+    "quizHint": "No right answers: the closer your answers, the better you’ll get along.",
+    "remoteOk": "I’m open to working remotely",
+    "visibleTo": "Who sees my profile",
+    "visibleEveryone": "Founders and freelancers",
+    "visibleEntrepreneurs": "Founders only",
+    "save": "Save my profile",
+    "saveHint": "Fill in what you bring, what you seek, your commitment, a pitch and the 5 questions.",
+    "saveError": "Could not save. Try again.",
+    "roles": {
+      "TECH": "Tech / dev",
+      "PRODUCT": "Product",
+      "DESIGN": "Design",
+      "BUSINESS": "Business",
+      "SALES": "Sales",
+      "MARKETING": "Marketing",
+      "OPERATIONS": "Operations",
+      "FINANCE": "Finance"
+    },
+    "commitments": {
+      "FULL_TIME": "Full time",
+      "PART_TIME": "Part time",
+      "EVENINGS": "Evenings & weekends"
+    },
+    "sectors": {
+      "AGRITECH": "AgriTech",
+      "FINTECH": "FinTech",
+      "EDTECH": "EdTech",
+      "HEALTHTECH": "HealthTech",
+      "ECOMMERCE": "E-commerce",
+      "LOGISTICS": "Logistics",
+      "SAAS": "SaaS",
+      "TOURISM": "Tourism",
+      "ENERGY": "Energy",
+      "INDUSTRY": "Industry",
+      "MEDIA": "Media",
+      "OTHER": "Other"
+    },
+    "quiz": {
+      "pace": {
+        "question": "Steady and sustainable ↔ Fast, whatever it takes",
+        "low": "Steady and sustainable",
+        "high": "Fast, whatever it takes"
+      },
+      "risk": {
+        "question": "Keep my job while we test ↔ All-in from day one",
+        "low": "Keep my job while we test",
+        "high": "All-in from day one"
+      },
+      "decisions": {
+        "question": "We decide everything together ↔ Each owns their area and decides",
+        "low": "We decide everything together",
+        "high": "Each owns their area and decides"
+      },
+      "equity": {
+        "question": "Equal split ↔ Split by contribution",
+        "low": "Equal split",
+        "high": "Split by contribution"
+      },
+      "workplace": {
+        "question": "Fully remote ↔ Same office every day",
+        "low": "Fully remote",
+        "high": "Same office every day"
+      }
     }
   }
 }

@@ -66,7 +66,7 @@ describe('registry shape', () => {
       'programs',
       'events',
     ]);
-    expect(sourceKeysForRole('ENTREPRENEUR')).toEqual(['bookings', 'consultations', 'wallet', 'messages', 'orders']);
+    expect(sourceKeysForRole('ENTREPRENEUR')).toEqual(['bookings', 'consultations', 'wallet', 'messages', 'cofounder', 'orders']);
     expect(sourceKeysForRole('INVESTOR')).toEqual([]);
     expect(sourceKeysForRole('BUSINESS')).toEqual([]);
   });
@@ -235,14 +235,14 @@ describe('getNotificationCounts — ENTREPRENEUR', () => {
 
   it('counts status changes and new wallet entries only', async () => {
     const counts = await getNotificationCounts('ent-1');
-    expect(counts).toEqual({ bookings: 1, consultations: 1, wallet: 1, messages: 0, orders: 0 });
+    expect(counts).toEqual({ bookings: 1, consultations: 1, wallet: 1, messages: 0, cofounder: 0, orders: 0 });
   });
 
   it("markSeen zeroes a 'view' source on the next fetch (DoD flow)", async () => {
     await markSeen('ent-1', 'bookings');
     await markSeen('ent-1', 'wallet');
     const counts = await getNotificationCounts('ent-1');
-    expect(counts).toEqual({ bookings: 0, consultations: 1, wallet: 0, messages: 0, orders: 0 });
+    expect(counts).toEqual({ bookings: 0, consultations: 1, wallet: 0, messages: 0, cofounder: 0, orders: 0 });
   });
 });
 

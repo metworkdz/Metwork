@@ -2,6 +2,9 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { ProfileForm } from '@/components/features/entrepreneur/profile-form';
+import { CofounderSwitch } from '@/components/features/cofounder/cofounder-switch';
+import { db } from '@/server/db/store';
+import { profileOf } from '@/server/cofounder/service';
 import { DeleteAccountSection } from '@/components/features/settings/delete-account-section';
 
 interface PageProps {
@@ -15,6 +18,7 @@ export default async function FreelancerSettingsPage({ params }: PageProps) {
   setRequestLocale(locale);
   const t = await getTranslations('pages.dashboard');
   const user = await requireRole(['FREELANCER']);
+  const cofounderEnabled = profileOf(await db.read(), user).enabled;
 
   return (
     <div className="space-y-6">
@@ -31,6 +35,7 @@ export default async function FreelancerSettingsPage({ params }: PageProps) {
           avatarUrl: user.avatarUrl,
         }}
       />
+      <CofounderSwitch initial={cofounderEnabled} />
       <DeleteAccountSection />
     </div>
   );

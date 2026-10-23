@@ -2309,7 +2309,8 @@
     "messages": "Messages",
     "messageReports": "Signalements",
     "hire": "Recrutement",
-    "orders": "Commandes"
+    "orders": "Commandes",
+    "cofounder": "Cofondateurs"
   },
   "pages": {
     "consultationPay": {
@@ -7103,6 +7104,124 @@
       "RATE_LIMITED": "Trop de tentatives. Réessayez plus tard.",
       "MESSAGING_UNAVAILABLE": "La messagerie est momentanément indisponible.",
       "GENERIC": "Une erreur est survenue. Réessayez."
+    }
+  },
+  "cofounder": {
+    "pageTitle": "Trouver mon cofondateur",
+    "subtitle": "Un nouveau deck chaque jour. Likez les profils qui vous correspondent ; si c’est réciproque, c’est un match.",
+    "onTitle": "Le matching est activé",
+    "onBody": "Votre profil apparaît dans les decks et vous êtes prévenu à chaque fois que quelqu’un vous like.",
+    "offTitle": "Le matching est désactivé",
+    "offBody": "Votre profil n’apparaît dans aucun deck et vous ne recevez aucun like. Réactivez-le quand vous voulez.",
+    "toggle": "Matching cofondateur",
+    "phoneRequired": "Vérifiez votre numéro de téléphone pour apparaître dans les decks : cela écarte les faux profils.",
+    "tabs": {
+      "deck": "Aujourd’hui",
+      "matches": "Matchs",
+      "profile": "Mon profil"
+    },
+    "loading": "Chargement…",
+    "unavailable": "Le matching cofondateur est momentanément indisponible.",
+    "state": {
+      "NEEDS_PROFILE": "Remplissez votre profil cofondateur pour voir le deck du jour.",
+      "DISABLED": "Activez le matching pour voir le deck du jour.",
+      "PHONE_UNVERIFIED": "Vérifiez votre numéro de téléphone pour voir le deck du jour."
+    },
+    "completeProfile": "Compléter mon profil",
+    "likesWaiting": "{count, plural, one {Quelqu’un a aimé votre profil} other {# personnes ont aimé votre profil}}",
+    "today": "{used} / {total} aujourd’hui",
+    "pass": "Passer",
+    "like": "J’aime",
+    "likeNote": "La personne ne saura que vous l’avez likée que si c’est réciproque.",
+    "doneTitle": "C’est tout pour aujourd’hui",
+    "doneBody": "Un nouveau deck arrive demain.",
+    "moreCards": "30 profils par jour avec Founder",
+    "why": "Pourquoi vous",
+    "remote": "À distance OK",
+    "brings": "Apporte",
+    "seeks": "Cherche",
+    "roleLabel": {
+      "ENTREPRENEUR": "Fondateur",
+      "FREELANCER": "Freelancer"
+    },
+    "matchTitle": "C’est un match !",
+    "matchBody": "{name} et vous vous êtes likés mutuellement.",
+    "seeMatches": "Voir mes matchs",
+    "startChat": "Démarrer la conversation",
+    "upgradeToChat": "Aucun de vous deux n’a encore d’abonnement payant : Founder ou Premium ouvre le chat.",
+    "upgrade": "Passer à l’offre payante",
+    "noMatches": "Pas encore de match. Continuez à swiper !",
+    "bringsHint": "Ce que vous faites bien.",
+    "seeksHint": "Ce qu’il vous faut à vos côtés.",
+    "commitment": "Disponibilité",
+    "sectorsLabel": "Secteurs",
+    "pitch": "Votre pitch",
+    "pitchHint": "Vous, votre idée (ou le type de projet que vous voulez), et pourquoi maintenant. Au moins {min} caractères.",
+    "pitchPlaceholder": "Ex. : Développeur depuis 6 ans, je veux créer une app logistique pour les grossistes de l’Est…",
+    "quizTitle": "Votre façon de travailler",
+    "quizHint": "Pas de bonne réponse : plus vos réponses sont proches, mieux vous vous entendrez.",
+    "remoteOk": "Je suis ouvert au travail à distance",
+    "visibleTo": "Qui voit mon profil",
+    "visibleEveryone": "Fondateurs et freelancers",
+    "visibleEntrepreneurs": "Fondateurs uniquement",
+    "save": "Enregistrer mon profil",
+    "saveHint": "Renseignez ce que vous apportez, ce que vous cherchez, votre disponibilité, un pitch et les 5 questions.",
+    "saveError": "Enregistrement impossible. Réessayez.",
+    "roles": {
+      "TECH": "Tech / dev",
+      "PRODUCT": "Produit",
+      "DESIGN": "Design",
+      "BUSINESS": "Business",
+      "SALES": "Ventes",
+      "MARKETING": "Marketing",
+      "OPERATIONS": "Opérations",
+      "FINANCE": "Finance"
+    },
+    "commitments": {
+      "FULL_TIME": "Temps plein",
+      "PART_TIME": "Temps partiel",
+      "EVENINGS": "Soirs et week-ends"
+    },
+    "sectors": {
+      "AGRITECH": "AgriTech",
+      "FINTECH": "FinTech",
+      "EDTECH": "EdTech",
+      "HEALTHTECH": "Santé",
+      "ECOMMERCE": "E-commerce",
+      "LOGISTICS": "Logistique",
+      "SAAS": "SaaS",
+      "TOURISM": "Tourisme",
+      "ENERGY": "Énergie",
+      "INDUSTRY": "Industrie",
+      "MEDIA": "Médias",
+      "OTHER": "Autre"
+    },
+    "quiz": {
+      "pace": {
+        "question": "Rythme régulier et durable ↔ Vite, quoi qu’il en coûte",
+        "low": "Rythme régulier et durable",
+        "high": "Vite, quoi qu’il en coûte"
+      },
+      "risk": {
+        "question": "Je garde mon emploi le temps de tester ↔ À fond dès le premier jour",
+        "low": "Je garde mon emploi le temps de tester",
+        "high": "À fond dès le premier jour"
+      },
+      "decisions": {
+        "question": "On décide tout ensemble ↔ Chacun décide dans son domaine",
+        "low": "On décide tout ensemble",
+        "high": "Chacun décide dans son domaine"
+      },
+      "equity": {
+        "question": "Parts égales ↔ Parts selon la contribution",
+        "low": "Parts égales",
+        "high": "Parts selon la contribution"
+      },
+      "workplace": {
+        "question": "100 % à distance ↔ Même bureau tous les jours",
+        "low": "100 % à distance",
+        "high": "Même bureau tous les jours"
+      }
     }
   }
 }

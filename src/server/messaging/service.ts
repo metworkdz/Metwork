@@ -1,8 +1,8 @@
 /**
  * Messaging — THE service behind /api/messages and the inbox (Metwork 2.0
  * phase 6). Threads are attached to the work they are about: a venture, a
- * gig, a quote request; cofounder matches plug in through `validateContext`
- * in phase 8.
+ * gig, a quote request, a cofounder match (opened by `cofounder/service`
+ * on a match, never through `startConversation`).
  *
  * Rules, all enforced here:
  *   - only active freelancers and entrepreneurs message each other;
@@ -108,6 +108,8 @@ function contextView(data: Store, type: ContextType, id: string | null): Context
   if (type === 'GIG_ORDER' && id) {
     return { type, id, title: (data.gigs ?? []).find((g) => g.id === id)?.title ?? null };
   }
+  // The label alone says it ("Cofounder match"); the title only switches it on.
+  if (type === 'COFOUNDER_MATCH') return { type, id, title: 'match' };
   return { type, id, title: null };
 }
 

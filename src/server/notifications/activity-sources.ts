@@ -29,6 +29,7 @@ import type { UserRole } from '@/types/auth';
 import { getApprovalStatus, isApprovalGatedRole } from '@/lib/approval-guard';
 import { getMentorApprovalStatus } from '@/lib/mentor-approval';
 import { unreadThreads } from '@/server/messaging/service';
+import { cofounderBadge } from '@/server/cofounder/service';
 
 /** The whole store document, as returned by `db.read()`. */
 export type StoreDoc = Awaited<ReturnType<typeof db.read>>;
@@ -297,6 +298,9 @@ export const NOTIFICATION_SOURCES: readonly NotificationSource[] = [
   // Threads with an unread message (Metwork 2.0). Pending: clears when read, not on visit.
   { key: 'messages', roles: ['ENTREPRENEUR'], mode: 'pending', href: '/dashboard/entrepreneur/messages', count: ({ user }) => unreadThreads(user.id) },
   { key: 'messages', roles: ['FREELANCER'], mode: 'pending', href: '/dashboard/freelancer/messages', count: ({ user }) => unreadThreads(user.id) },
+  // New anonymous likes and new matches since the cofounder tab was last opened.
+  { key: 'cofounder', roles: ['ENTREPRENEUR'], mode: 'view', href: '/dashboard/entrepreneur/cofounder', count: ({ user, seenOf }) => cofounderBadge(user.id, seenOf('cofounder')) },
+  { key: 'cofounder', roles: ['FREELANCER'], mode: 'view', href: '/dashboard/freelancer/cofounder', count: ({ user, seenOf }) => cofounderBadge(user.id, seenOf('cofounder')) },
   // Hiring orders waiting on this member (pay, deliver, review).
   {
     key: 'orders',

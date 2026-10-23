@@ -1145,6 +1145,43 @@ export interface QuoteRequestRecord {
   updatedAt: string;
 }
 
+/** A member's cofounder-matching profile. Options in `lib/cofounder`. */
+export interface CofounderProfileRecord {
+  userId: string;
+  /**
+   * In the decks and receiving likes. Entrepreneurs: on by default (owner
+   * decision); freelancers: off until they opt in. Switching off removes the
+   * profile from every deck at once.
+   */
+  enabled: boolean;
+  /** What I bring (roles). */
+  brings: string[];
+  /** What I am looking for in a cofounder (roles). */
+  lookingFor: string[];
+  commitment: string | null;
+  /** Sectors I care about. */
+  sectors: string[];
+  /** Short pitch: me, the idea, why now. */
+  pitch: string;
+  remoteOk: boolean;
+  /** Values quiz: answer per question key, 1–5. */
+  values: Record<string, number>;
+  /** Who can see me in their deck. */
+  visibleTo: 'EVERYONE' | 'ENTREPRENEURS';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CofounderDeckRecord {
+  userId: string;
+  /** Algiers calendar day, YYYY-MM-DD. */
+  date: string;
+  /** Today's cards, best first. */
+  ids: string[];
+  /** "Why you match" lines per card. */
+  reasons: Record<string, string[]>;
+}
+
 export type ServiceOrderStatus = 'AWAITING_DEPOSIT' | 'IN_PROGRESS' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
 
 /**
@@ -3992,6 +4029,10 @@ interface DbShape {
   quoteRequests?: QuoteRequestRecord[];
   /** Metwork 2.0 — work ordered through Metwork (a gig, or an accepted devis). */
   serviceOrders?: ServiceOrderRecord[];
+  /** Metwork 2.0 — "find my cofounder" profiles. Swipes and matches live in Postgres. */
+  cofounderProfiles?: CofounderProfileRecord[];
+  /** Metwork 2.0 — each member's deck for the day (so the AI runs once a day at most). */
+  cofounderDecks?: CofounderDeckRecord[];
   /** Audit log entries for admin actions. */
   auditLogs: AuditLogRecord[];
   /** In-app notifications per user. */
