@@ -1,6 +1,6 @@
 /**
- * Direct payment links — an incubator invoices a client who does NOT need a
- * Metwork account. The incubator shares a public `/pay/<slug>` URL; the payer
+ * Direct payment links — an incubator or (Metwork 2.0) a freelancer invoices
+ * a client who does NOT need a Metwork account. Amounts are DZD only. The incubator shares a public `/pay/<slug>` URL; the payer
  * enters their name + email and pays by card via the hosted SlickPay checkout.
  *
  * This is the money-critical sibling of the card-booking flow in
@@ -28,6 +28,12 @@
  *   their receiver commission is 0 — but their payers still pay the payer fee.
  *   Net credited = amount − receiverCommission, always ≥ 0 (commission ≤ base).
  *   The payer fee is platform revenue and is never credited to the incubator.
+ *
+ * Freelancer links (`freelancerId`) run through the SAME settlement, claim and
+ * notifications; only the receiver differs (see `receiverOf`): the base lands
+ * in the freelancer's own wallet, and the receiver commission is their plan's
+ * payment-link fee from the entitlements table (Free 3 %, Premium 0 %),
+ * resolved at settlement like an incubator's plan. The payer fee is the same.
  */
 import { randomBytes } from 'node:crypto';
 import {
@@ -48,7 +54,10 @@ import { ProviderNotConfiguredError } from '@/server/payments/errors';
 import {
   sendPaymentLinkReceiptEmail,
   sendPaymentLinkPaidIncubatorEmail,
+  type PaymentLinkIssuer,
 } from '@/server/notifications/mock';
+import { entitlementsForUser } from '@/lib/entitlements';
+import type { CommissionQuote } from '@/server/payments/commission';
 
 type StoreDraft = Parameters<Parameters<typeof db.update>[0]>[0];
 
@@ -98,10 +107,85 @@ function planFor(inc: IncubatorRecord | null | undefined): ProviderPlan {
   return inc ? getEffectiveSubscriptionCode(inc) : 'COMMISSION';
 }
 
+type StoreRead = Awaited<ReturnType<typeof db.read>>;
+
+/** Who a link pays — THE one place that knows a link can belong to either. */
+interface LinkReceiver {
+  kind: 'INCUBATOR' | 'FREELANCER';
+  /** The wallet that receives the base (incubator manager, or the freelancer). */
+  walletUserId: string | null;
+  /** Letterhead for the pay page, the receipt and the "paid" notice. */
+  issuer: PaymentLinkIssuer;
+  incubator: IncubatorRecord | null;
+  /** Freelancers only: the receiver rate from their plan (0–1). */
+  receiverRate?: number;
+  walletPath: string;
+}
+
+function receiverOf(d: StoreDraft | StoreRead, link: PaymentLinkRecord): LinkReceiver | null {
+  if (link.freelancerId) {
+    const user = d.users.find((u) => u.id === link.freelancerId && u.role === 'FREELANCER');
+    if (!user) return null;
+    const settings = (d.freelancerProfiles ?? []).find((p) => p.userId === user.id)?.invoiceSettings ?? {};
+    const ent = entitlementsForUser(user);
+    return {
+      kind: 'FREELANCER',
+      walletUserId: user.id,
+      incubator: null,
+      receiverRate: (ent?.paymentLinkFeePercent ?? 3) / 100,
+      walletPath: '/dashboard/freelancer/wallet',
+      issuer: {
+        id: user.id,
+        name: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        city: user.city,
+        logoUrl: settings.invoiceLogoUrl ?? null,
+        stampUrl: settings.invoiceStampUrl ?? null,
+        address: settings.address ?? null,
+        registrationNumber: settings.invoiceRegNumber ?? null,
+        commercialRegNumber: null,
+        nif: settings.nif ?? null,
+      },
+    };
+  }
+  const inc = (d.incubators ?? []).find((i) => i.id === link.incubatorId) ?? null;
+  if (!inc) return null;
+  return { kind: 'INCUBATOR', walletUserId: inc.managerId ?? null, incubator: inc, issuer: inc, walletPath: '/dashboard/incubator/wallet' };
+}
+
+/**
+ * The commission quote for a link. Incubators: their plan through the central
+ * engine. Freelancers: the engine's payer fee, with the receiver cut replaced
+ * by their plan's link fee — the same rounding, the same derived totals.
+ */
+function quoteFor(d: StoreDraft | StoreRead, link: PaymentLinkRecord): CommissionQuote {
+  const receiver = receiverOf(d, link);
+  const quote = quoteCommission({
+    transactionType: 'PAYMENT',
+    providerPlan: planFor(receiver?.incubator),
+    baseAmount: link.amount,
+    config: d.meta?.platformConfig,
+  });
+  if (receiver?.kind !== 'FREELANCER') return quote;
+  const base = Math.max(0, Math.round(link.amount));
+  const receiverRate = Math.min(1, Math.max(0, receiver.receiverRate ?? 0));
+  const receiverCommission = Math.round(base * receiverRate);
+  return {
+    ...quote,
+    receiverRate,
+    receiverCommission,
+    netToProviderWallet: base - receiverCommission,
+    platformTake: receiverCommission + quote.payerFee,
+  };
+}
+
 /* ──────────────────────────── Incubator-facing CRUD ──────────────────────────── */
 
 export interface CreatePaymentLinkInput {
-  incubatorId: string;
+  /** Exactly one of incubatorId / freelancerId. */
+  incubatorId?: string;
+  freelancerId?: string;
   serviceName: string;
   amount: number;
   description?: string | null;
@@ -123,7 +207,7 @@ export async function createPaymentLink(
     const now = new Date().toISOString();
     const link: PaymentLinkRecord = {
       id: newSlug(),
-      incubatorId: input.incubatorId,
+      ...(input.freelancerId ? { freelancerId: input.freelancerId } : { incubatorId: input.incubatorId }),
       serviceName: input.serviceName,
       amount: input.amount,
       description: input.description ?? null,
@@ -151,11 +235,21 @@ export async function createPaymentLink(
   });
 }
 
-/** All of an incubator's links, newest first. */
-export async function listPaymentLinks(incubatorId: string): Promise<PaymentLinkRecord[]> {
+/** Whose links: an incubator (by id) or a freelancer (by user id). */
+export type PaymentLinkOwner = { incubatorId: string } | { freelancerId: string };
+
+function ownsLink(link: PaymentLinkRecord, owner: PaymentLinkOwner): boolean {
+  return 'freelancerId' in owner
+    ? !link.incubatorId && link.freelancerId === owner.freelancerId
+    : !link.freelancerId && link.incubatorId === owner.incubatorId;
+}
+
+/** All of an owner's links, newest first. A bare string is an incubator id. */
+export async function listPaymentLinks(owner: string | PaymentLinkOwner): Promise<PaymentLinkRecord[]> {
+  const o: PaymentLinkOwner = typeof owner === 'string' ? { incubatorId: owner } : owner;
   const data = await db.read();
   return (data.paymentLinks ?? [])
-    .filter((l) => l.incubatorId === incubatorId)
+    .filter((l) => ownsLink(l, o))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
@@ -170,12 +264,11 @@ export type CancelPaymentLinkResult =
  */
 export async function cancelPaymentLink(
   id: string,
-  incubatorId: string,
+  owner: string | PaymentLinkOwner,
 ): Promise<CancelPaymentLinkResult> {
+  const o: PaymentLinkOwner = typeof owner === 'string' ? { incubatorId: owner } : owner;
   return db.update<CancelPaymentLinkResult>((d) => {
-    const link = (d.paymentLinks ?? []).find(
-      (l) => l.id === id && l.incubatorId === incubatorId,
-    );
+    const link = (d.paymentLinks ?? []).find((l) => l.id === id && ownsLink(l, o));
     if (!link) return { ok: false, reason: 'NOT_FOUND' };
     if (link.status === 'PAID') return { ok: false, reason: 'ALREADY_PAID' };
     if (link.status === 'CANCELLED') return { ok: true, link };
@@ -224,26 +317,22 @@ function buildView(
   link: PaymentLinkRecord,
   state: PaymentLinkPayState,
 ): PaymentLinkPayView {
-  const inc = (data.incubators ?? []).find((i) => i.id === link.incubatorId) ?? null;
+  const receiver = receiverOf(data, link);
   // Fee preview/frozen. Once frozen at init we show the locked values; before
-  // that we preview against the incubator's current effective plan + config.
+  // that we preview against the receiver's current plan + config.
   let payerFee = link.payerFeeAmount ?? 0;
   let grossCharge = link.grossChargedToPayer ?? 0;
   if (link.grossChargedToPayer == null) {
-    const quote = quoteCommission({
-      transactionType: 'PAYMENT',
-      providerPlan: planFor(inc),
-      baseAmount: link.amount,
-      config: data.meta?.platformConfig,
-    });
+    const quote = quoteFor(data, link);
     payerFee = quote.payerFee;
     grossCharge = quote.grossChargedToPayer;
   }
   return {
     state,
     link,
-    incubator: inc
-      ? { name: inc.name, logoUrl: inc.logoUrl ?? null, city: inc.city ?? null }
+    // Named `incubator` for the pay page's existing contract: it is the receiver.
+    incubator: receiver
+      ? { name: receiver.issuer.name, logoUrl: receiver.issuer.logoUrl ?? null, city: receiver.issuer.city ?? null }
       : undefined,
     amount: link.amount,
     payerFee,
@@ -293,14 +382,10 @@ async function applyPaymentLinkSettlement(
     link.updatedAt = now;
 
     // ── Commission (central engine) on the base amount ────────────────────
-    const incubator = (d.incubators ?? []).find((i) => i.id === link.incubatorId) ?? null;
+    const receiver = receiverOf(d, link);
+    const walletUserId = receiver?.walletUserId ?? null;
     const base = link.amount;
-    const quote = quoteCommission({
-      transactionType: 'PAYMENT',
-      providerPlan: planFor(incubator),
-      baseAmount: base,
-      config: d.meta?.platformConfig,
-    });
+    const quote = quoteFor(d, link);
     const commission = quote.receiverCommission;
     link.commissionRate = quote.receiverRate;
     link.commissionAmount = commission;
@@ -311,16 +396,16 @@ async function applyPaymentLinkSettlement(
       link.grossChargedToPayer = quote.grossChargedToPayer;
     }
 
-    // ── Incubator wallet: +base (PAYOUT), −commission (COMMISSION) ─────────
-    if (incubator?.managerId) {
-      const wallet = ensureWallet(d, incubator.managerId);
+    // ── Receiver wallet: +base (PAYOUT), −commission (COMMISSION) ──────────
+    if (walletUserId) {
+      const wallet = ensureWallet(d, walletUserId);
       if (base > 0 && wallet.status !== 'FROZEN') {
         wallet.balance += base;
         wallet.updatedAt = now;
         const payoutTx: TransactionRecord = {
           id: newSlug(),
           walletId: wallet.id,
-          userId: incubator.managerId,
+          userId: walletUserId,
           type: 'PAYOUT',
           amount: base,
           balanceAfter: wallet.balance,
@@ -346,7 +431,7 @@ async function applyPaymentLinkSettlement(
         const commissionTx: TransactionRecord = {
           id: newSlug(),
           walletId: wallet.id,
-          userId: incubator.managerId,
+          userId: walletUserId,
           type: 'COMMISSION',
           amount: -commission,
           balanceAfter: wallet.balance,
@@ -378,7 +463,8 @@ async function applyPaymentLinkSettlement(
 
 interface NotifyClaim {
   link: PaymentLinkRecord;
-  incubator: IncubatorRecord;
+  incubator: PaymentLinkIssuer;
+  walletPath: string;
   sendReceipt: boolean;
   notifyIncubator: boolean;
 }
@@ -396,8 +482,8 @@ export async function dispatchPaymentLinkNotificationsIfDue(id: string): Promise
     await db.update((d) => {
       const link = (d.paymentLinks ?? []).find((l) => l.id === id);
       if (!link || link.status !== 'PAID') return;
-      const incubator = (d.incubators ?? []).find((i) => i.id === link.incubatorId);
-      if (!incubator) return;
+      const receiver = receiverOf(d, link);
+      if (!receiver) return;
 
       const now = new Date().toISOString();
       const sendReceipt = !link.paidReceiptSentAt && !!link.payerEmail;
@@ -405,7 +491,7 @@ export async function dispatchPaymentLinkNotificationsIfDue(id: string): Promise
       if (sendReceipt) link.paidReceiptSentAt = now;
       if (notifyIncubator) link.incubatorNotifiedAt = now;
       if (sendReceipt || notifyIncubator) {
-        claim = { link: { ...link }, incubator, sendReceipt, notifyIncubator };
+        claim = { link: { ...link }, incubator: receiver.issuer, walletPath: receiver.walletPath, sendReceipt, notifyIncubator };
       }
     });
 
@@ -417,7 +503,7 @@ export async function dispatchPaymentLinkNotificationsIfDue(id: string): Promise
       await sendPaymentLinkReceiptEmail({ link: c.link, incubator: c.incubator, lang });
     }
     if (c.notifyIncubator) {
-      await sendPaymentLinkPaidIncubatorEmail({ link: c.link, incubator: c.incubator, lang });
+      await sendPaymentLinkPaidIncubatorEmail({ link: c.link, incubator: c.incubator, lang, walletPath: c.walletPath });
     }
   } catch {
     // Notifications are non-critical — swallow so settlement is unaffected.
@@ -518,13 +604,7 @@ export async function initPaymentLinkPayment(
   const base = link.amount;
   if (base <= 0) return { ok: false, reason: 'PROVIDER_FAILED', message: 'Nothing to charge' };
 
-  const incubator = (data.incubators ?? []).find((i) => i.id === link.incubatorId) ?? null;
-  const quote = quoteCommission({
-    transactionType: 'PAYMENT',
-    providerPlan: planFor(incubator),
-    baseAmount: base,
-    config: data.meta?.platformConfig,
-  });
+  const quote = quoteFor(data, link);
   const grossCharge = quote.grossChargedToPayer;
 
   const root = appBaseUrl.replace(/\/$/, '');

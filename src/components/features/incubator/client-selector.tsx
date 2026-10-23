@@ -4,6 +4,7 @@
  * Autocomplete input that searches clients via GET /api/incubator/clients/search?q=
  * Returns a selected client or clears when the user wipes the input.
  */
+import { useInvoicingPaths } from './invoicing-paths';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Loader2, UserCircle, X } from 'lucide-react';
@@ -43,6 +44,7 @@ export function ClientSelector({
   disabled,
   id,
 }: ClientSelectorProps) {
+  const paths = useInvoicingPaths();
   const t = useTranslations('incubator.clientSelector');
   const resolvedPlaceholder = placeholder ?? t('searchPlaceholder');
   const [query, setQuery] = useState(value?.fullName ?? '');
@@ -81,7 +83,7 @@ export function ClientSelector({
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/incubator/clients/search?q=${encodeURIComponent(q.trim())}`);
+        const res = await fetch(`${paths.api}/clients/search?q=${encodeURIComponent(q.trim())}`);
         if (!res.ok) return;
         const data = await res.json() as { items: ClientHit[] };
         setHits(data.items);

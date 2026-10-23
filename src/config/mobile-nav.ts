@@ -51,9 +51,9 @@ const primaryTabHrefsByRole: Record<UserRole, string[]> = {
   ],
   FREELANCER: [
     '/dashboard/freelancer',
-    '/dashboard/freelancer/profile',
-    '/dashboard/freelancer/membership',
-    '/dashboard/freelancer/settings',
+    '/dashboard/freelancer/invoices',
+    '/dashboard/freelancer/payment-links',
+    '/dashboard/freelancer/wallet',
   ],
   ADMIN: [
     '/dashboard/admin',
@@ -122,9 +122,11 @@ export const mobileQuickActionsByRole: Record<UserRole, MobileQuickAction[]> = {
     { labelKey: 'dashboard.bookings',     href: '/dashboard/incubator/bookings',        icon: Calendar },
     { labelKey: 'dashboard.clients',      href: '/dashboard/incubator/clients',         icon: UsersRound },
   ],
-  // Empty until the freelancer workspace ships (phase 3) — every quick action
-  // must deep-link to an existing destination.
-  FREELANCER: [],
+  FREELANCER: [
+    { labelKey: 'dashboard.invoices',     href: '/dashboard/freelancer/invoices/new',   icon: Briefcase },
+    { labelKey: 'dashboard.paymentLinks', href: '/dashboard/freelancer/payment-links',  icon: Wallet },
+    { labelKey: 'dashboard.clients',      href: '/dashboard/freelancer/clients',        icon: UsersRound },
+  ],
   ADMIN: [
     { labelKey: 'dashboard.users',        href: '/dashboard/admin/users',               icon: Users },
     { labelKey: 'dashboard.bookings',     href: '/dashboard/admin/bookings',            icon: Calendar },

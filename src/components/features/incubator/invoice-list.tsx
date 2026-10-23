@@ -9,6 +9,7 @@
  * validity column, because a proforma and a devis expire and a facture does
  * not. Everything else is identical, and keeping it identical is the point.
  */
+import { useInvoicingPaths } from './invoicing-paths';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AlertTriangle, Ban, Download, FileCheck2, FilePlus2, FileText, Pencil, Plus, Search, Stamp } from 'lucide-react';
@@ -79,9 +80,10 @@ function formatDay(day: string): string {
 }
 
 export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged, hasStamp, nextFactureNumber }: Props) {
+  const paths = useInvoicingPaths();
   const t = useTranslations('incubator.invoicesPage');
   const copy = COPY[kind];
-  const newHref = `/dashboard/incubator/invoices/new?kind=${kind}` as const;
+  const newHref = `${paths.dashboard}/invoices/new?kind=${kind}` as const;
   // A facture never expires; the other two do, and that date is the first
   // thing you look for when the client calls back three weeks later.
   const showValidity = kind !== 'FACTURE';
@@ -94,7 +96,7 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged,
   async function toggleStamp(invoice: InvoiceListItem) {
     setStampingId(invoice.id);
     try {
-      const res = await fetch(`/api/incubator/invoices/${invoice.id}`, {
+      const res = await fetch(`${paths.api}/invoices/${invoice.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ withStamp: !invoice.withStamp }),
@@ -119,7 +121,7 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged,
     if (!confirm(t(copy.confirmCancel, { number: invoice.number }))) return;
     setCancellingId(invoice.id);
     try {
-      const res = await fetch(`/api/incubator/invoices/${invoice.id}`, {
+      const res = await fetch(`${paths.api}/invoices/${invoice.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'CANCELLED' }),
@@ -137,7 +139,7 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged,
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <p>
             {t('legalIncomplete')}{' '}
-            <Link href="/dashboard/incubator/settings" className="font-medium underline underline-offset-2">
+            <Link href={paths.settings} className="font-medium underline underline-offset-2">
               {t('legalIncompleteLink')}
             </Link>
           </p>
@@ -249,13 +251,13 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged,
                               title={t('actionDownload')}
                               asChild
                             >
-                              <a href={`/api/incubator/invoices/${invoice.id}/pdf`} download>
+                              <a href={`${paths.api}/invoices/${invoice.id}/pdf`} download>
                                 <Download className="size-4" />
                               </a>
                             </Button>
                             {editable && (
                               <Button variant="ghost" size="icon" title={t('actionEdit')} asChild>
-                                <Link href={`/dashboard/incubator/invoices/${invoice.id}/edit`}>
+                                <Link href={`${paths.dashboard}/invoices/${invoice.id}/edit`}>
                                   <Pencil className="size-4" />
                                 </Link>
                               </Button>

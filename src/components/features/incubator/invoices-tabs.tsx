@@ -33,9 +33,11 @@ interface Props {
   factureYear: number;
   /** The facture counter's next value when the page loaded. */
   nextFactureSeq: number;
+  /** Booking receipts are an incubator thing; other issuers hide the tab. */
+  showReceipts?: boolean;
 }
 
-export function InvoicesTabs({ invoices, receipts, legalComplete, hasStamp, factureYear, nextFactureSeq }: Props) {
+export function InvoicesTabs({ invoices, receipts, legalComplete, hasStamp, factureYear, nextFactureSeq, showReceipts = true }: Props) {
   const t = useTranslations('incubator.invoicesPage');
   const [tab, setTab] = useState<InvoiceKind | 'receipts'>('FACTURE');
   /**
@@ -64,7 +66,7 @@ export function InvoicesTabs({ invoices, receipts, legalComplete, hasStamp, fact
     { id: 'FACTURE' as const, label: t('tabInvoices'), icon: FileText, count: factures.length },
     { id: 'PROFORMA' as const, label: t('tabProformas'), icon: ScrollText, count: proformas.length },
     { id: 'DEVIS' as const, label: t('tabQuotes'), icon: FileSignature, count: devis.length },
-    { id: 'receipts' as const, label: t('tabReceipts'), icon: ReceiptText, count: receipts.length },
+    ...(showReceipts ? [{ id: 'receipts' as const, label: t('tabReceipts'), icon: ReceiptText, count: receipts.length }] : []),
   ];
 
   const visible = tab === 'PROFORMA' ? proformas : tab === 'DEVIS' ? devis : factures;

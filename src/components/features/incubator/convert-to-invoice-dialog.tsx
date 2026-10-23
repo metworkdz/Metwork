@@ -8,6 +8,7 @@
  * today's date, how it is actually paid, and the stamp. A client with an
  * empty legal block is flagged here, while it can still be fixed.
  */
+import { useInvoicingPaths } from './invoicing-paths';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AlertTriangle, CheckCircle2, Download } from 'lucide-react';
@@ -39,6 +40,7 @@ const METHODS: Array<{ id: InvoicePaymentMethod; key: 'methodEspece' | 'methodCh
 ];
 
 export function ConvertToInvoiceDialog({ source, nextNumber, hasStamp, onOpenChange, onConverted }: Props) {
+  const paths = useInvoicingPaths();
   const t = useTranslations('incubator.invoicesPage');
   const [paymentMethod, setPaymentMethod] = useState<InvoicePaymentMethod>('ESPECE');
   const [withStamp, setWithStamp] = useState(false);
@@ -64,7 +66,7 @@ export function ConvertToInvoiceDialog({ source, nextNumber, hasStamp, onOpenCha
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(`/api/incubator/invoices/${source.id}/convert`, {
+      const res = await fetch(`${paths.api}/invoices/${source.id}/convert`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paymentMethod, withStamp: hasStamp && withStamp }),
@@ -94,7 +96,7 @@ export function ConvertToInvoiceDialog({ source, nextNumber, hasStamp, onOpenCha
             <p className="text-sm text-muted-foreground">{t('convertDoneHint')}</p>
             <div className="flex flex-wrap justify-center gap-2">
               <Button asChild>
-                <a href={`/api/incubator/invoices/${done.id}/pdf`} download>
+                <a href={`${paths.api}/invoices/${done.id}/pdf`} download>
                   <Download className="size-4" /> {t('convertDownload')}
                 </a>
               </Button>

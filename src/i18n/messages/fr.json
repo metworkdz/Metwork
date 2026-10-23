@@ -1480,7 +1480,8 @@
         "PAID": "Payé",
         "EXPIRED": "Expiré",
         "CANCELLED": "Annulé"
-      }
+      },
+      "shareWhatsApp": "WhatsApp"
     },
     "services": {
       "addService": "Ajouter un service",
@@ -6441,6 +6442,69 @@
         "add": "Ajouter un compte",
         "edit": "Modifier"
       }
+    },
+    "invoices": {
+      "title": "Factures et devis",
+      "subtitle": "Factures, proformas et devis avec vos mentions légales — le même moteur que les incubateurs.",
+      "new": "Nouveau document",
+      "settingsLink": "Informations légales",
+      "settings": {
+        "title": "Informations légales",
+        "subtitle": "Ce qui rend vos documents valides. Enregistré une fois, imprimé sur chaque document.",
+        "loading": "Chargement…",
+        "loadError": "Impossible de charger vos informations.",
+        "complete": "Vos informations sont complètes : vous pouvez émettre des documents.",
+        "incomplete": "Ajoutez votre statut, votre numéro d'immatriculation et votre NIF pour émettre des documents.",
+        "legalTitle": "Identité légale",
+        "status": "Statut",
+        "statusOption": {
+          "AUTO_ENTREPRENEUR": "Auto-entrepreneur (carte)",
+          "REGISTRE_COMMERCE": "Registre de commerce (RC)"
+        },
+        "rcType": "Type",
+        "rcOption": {
+          "PERSONNE_PHYSIQUE": "Personne physique (IFU)",
+          "PERSONNE_MORALE": "Personne morale (société)"
+        },
+        "regAe": "Numéro de carte d'auto-entrepreneur",
+        "regRc": "Numéro de RC",
+        "ai": "Article d'imposition (AI)",
+        "address": "Adresse",
+        "bankTitle": "Coordonnées bancaires",
+        "bankName": "Banque",
+        "rib": "RIB (20 chiffres)",
+        "lookTitle": "Apparence",
+        "template": "Modèle",
+        "templateOption": {
+          "CLASSIC": "Classique",
+          "GREEN_BAND": "Bandeau vert",
+          "MINIMAL": "Minimal"
+        },
+        "vat": "TVA par défaut (%)",
+        "vatHint": "0 sous le régime IFU : la ligne TVA n'apparaît alors pas.",
+        "logo": "Logo",
+        "stamp": "Cachet",
+        "addImage": "Ajouter",
+        "replaceImage": "Remplacer",
+        "removeImage": "Retirer",
+        "save": "Enregistrer",
+        "saved": "Enregistré",
+        "saveError": "Enregistrement impossible. Vérifiez les champs et réessayez."
+      }
+    },
+    "clients": {
+      "title": "Clients",
+      "subtitle": "Toutes les personnes que vous facturez, avec leurs informations légales."
+    },
+    "paymentLinks": {
+      "title": "Liens de paiement",
+      "subtitle": "Encaissez en DZD par CIB ou Edahabia. Envoyez le lien sur WhatsApp ; l'argent arrive dans votre portefeuille.",
+      "feeFree": "Offre gratuite : Metwork conserve {fee} % de chaque paiement et vous pouvez avoir {limit} liens actifs. Premium : sans frais ni limite.",
+      "feePremium": "Premium : aucun frais Metwork et aucune limite de liens."
+    },
+    "wallet": {
+      "title": "Portefeuille",
+      "subtitle": "Vos encaissements par lien de paiement et vos retraits vers votre banque ou CCP."
     }
   },
   "venture": {

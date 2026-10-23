@@ -1,5 +1,6 @@
 'use client';
 
+import { useInvoicingPaths } from './invoicing-paths';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Loader2, Pencil, Trash2, UsersRound } from 'lucide-react';
@@ -26,6 +27,7 @@ interface ClientRow {
 }
 
 export function ClientsManager() {
+  const paths = useInvoicingPaths();
   const t = useTranslations('incubator.clients');
   const [rows, setRows]             = useState<ClientRow[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -40,7 +42,7 @@ export function ClientsManager() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await fetch('/api/incubator/clients', { cache: 'no-store' });
+      const res = await fetch(`${paths.api}/clients`, { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to load clients');
       const data = await res.json() as { items: ClientRow[] };
       setRows(data.items);
@@ -51,7 +53,9 @@ export function ClientsManager() {
     }
   }
 
-  useEffect(() => { void fetchClients(); }, []);
+  // Paths are fixed for the provider's lifetime; load once per issuer.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { void fetchClients(); }, [paths.api]);
 
   function openEdit(row: ClientRow) {
     setEditing(row);
@@ -60,7 +64,7 @@ export function ClientsManager() {
 
   async function handleDelete(row: ClientRow) {
     if (!confirm(`Delete client "${row.fullName}"? This cannot be undone.`)) return;
-    await fetch(`/api/incubator/clients/${row.id}`, { method: 'DELETE' });
+    await fetch(`${paths.api}/clients/${row.id}`, { method: 'DELETE' });
     void fetchClients();
   }
 

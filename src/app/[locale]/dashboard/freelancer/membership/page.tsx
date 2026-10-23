@@ -22,12 +22,11 @@ export default async function FreelancerMembershipPage({ params }: PageProps) {
         title={t('freelancer.membership.title')}
         subtitle={t('freelancer.membership.subtitle')}
       />
-      {/* No freelancer wallet page until phase 3; top-up lands on the overview. */}
       <MembershipPageContent
         audience="FREELANCER"
         user={user}
         locale={locale as Locale}
-        walletHref="/dashboard/freelancer"
+        walletHref="/dashboard/freelancer/wallet"
       />
     </div>
   );

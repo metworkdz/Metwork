@@ -423,8 +423,14 @@ export type PaymentLinkStatus = 'ACTIVE' | 'PAID' | 'EXPIRED' | 'CANCELLED';
 
 export interface PaymentLinkRecord {
   id: string;
-  /** Owning incubator (IncubatorRecord.id). */
-  incubatorId: string;
+  /**
+   * Who is paid — exactly one of these is set. Incubator links credit the
+   * manager's wallet; freelancer links (Metwork 2.0) credit the freelancer's.
+   * Resolved only through `receiverOf` in `@/server/payments/payment-links`.
+   */
+  incubatorId?: string | null;
+  /** Owning freelancer (UserRecord.id). */
+  freelancerId?: string | null;
   /** What the client is paying for — shown on the public page + receipt. */
   serviceName: string;
   /** Integer DZD — the base amount the incubator invoices (fee added on top). */
@@ -1014,8 +1020,31 @@ export interface FreelancerProfileRecord {
   legal: FreelancerLegalDocument | null;
   /** The Premium trial earned at 100 % completion. Once started, never again. */
   trial?: { unlockedAt: string; startedAt?: string; membershipId?: string };
+  /**
+   * The invoicing letterhead. Same keys as the consultant's (on MentorRecord),
+   * so one settings schema and one patch function serve both.
+   */
+  invoiceSettings?: FreelancerInvoiceSettings;
+  /** Document counters — the record numbers are drawn from (`invoices/engine`). */
+  invoiceCounters?: Record<string, number> | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface FreelancerInvoiceSettings {
+  invoiceLegalStatus?: 'AUTO_ENTREPRENEUR' | 'REGISTRE_COMMERCE' | null;
+  invoiceRcType?: 'PERSONNE_PHYSIQUE' | 'PERSONNE_MORALE' | null;
+  invoiceRegNumber?: string | null;
+  nif?: string | null;
+  nis?: string | null;
+  ai?: string | null;
+  address?: string | null;
+  bankName?: string | null;
+  bankRib?: string | null;
+  invoiceTemplate?: InvoiceTemplate | null;
+  defaultVatRate?: number | null;
+  invoiceLogoUrl?: string | null;
+  invoiceStampUrl?: string | null;
 }
 
 /* ──────────────────────── Metwork 2.0 — ventures ──────────────────────── */
@@ -2748,6 +2777,8 @@ export interface ClientRecord {
   incubatorId?: string;
   /** Owning consultant (MentorRecord.id), for a client added from the portal. */
   mentorId?: string | null;
+  /** Owning freelancer (UserRecord.id), for a client added from the freelancer dashboard. */
+  freelancerId?: string | null;
   fullName: string;
   email: string;
   phone: string;
@@ -2884,6 +2915,8 @@ export interface InvoiceRecord {
   incubatorId?: string;
   /** Owning consultant (MentorRecord.id), for documents issued from the portal. */
   mentorId?: string | null;
+  /** Owning freelancer (UserRecord.id, role FREELANCER) — Metwork 2.0. */
+  freelancerId?: string | null;
   /**
    * Which document this is. Additive and optional: every record issued before
    * proforma/devis existed is a facture, so an absent value reads as FACTURE

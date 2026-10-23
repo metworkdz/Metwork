@@ -1,8 +1,9 @@
 'use client';
 
+import { useInvoicingPaths } from './invoicing-paths';
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Check, Copy, Link2, Loader2, PlusCircle, XCircle } from 'lucide-react';
+import { Check, Copy, Link2, Loader2, MessageCircle, PlusCircle, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +52,7 @@ const STATUS_VARIANT: Record<PaymentLinkStatus, 'success' | 'primary' | 'warning
 
 /* ── Create dialog ── */
 function CreateLinkDialog({ onCreated }: { onCreated: () => void }) {
+  const paths = useInvoicingPaths();
   const t = useTranslations('incubator.paymentLinks');
   const [open, setOpen] = useState(false);
   const [submitting, setSub] = useState(false);
@@ -75,7 +77,7 @@ function CreateLinkDialog({ onCreated }: { onCreated: () => void }) {
 
     setSub(true);
     try {
-      const res = await fetch('/api/incubator/payment-links', {
+      const res = await fetch(`${paths.api}/payment-links`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -212,6 +214,7 @@ function CopyLinkButton({ url, label }: { url: string; label: string }) {
 }
 
 export function PaymentLinksManager() {
+  const paths = useInvoicingPaths();
   const t = useTranslations('incubator.paymentLinks');
   const locale = useLocale();
   const [rows, setRows] = useState<PaymentLinkRow[]>([]);
@@ -225,7 +228,7 @@ export function PaymentLinksManager() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await fetch('/api/incubator/payment-links', { cache: 'no-store' });
+      const res = await fetch(`${paths.api}/payment-links`, { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to load payment links');
       const data = (await res.json()) as { items: PaymentLinkRow[] };
       setRows(data.items);
@@ -236,11 +239,13 @@ export function PaymentLinksManager() {
     }
   }
 
-  useEffect(() => { void fetchLinks(); }, []);
+  // Paths are fixed for the provider's lifetime; load once per issuer.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { void fetchLinks(); }, [paths.api]);
 
   async function handleCancel(row: PaymentLinkRow) {
     if (!confirm(t('confirmCancel', { service: row.serviceName }))) return;
-    await fetch(`/api/incubator/payment-links/${row.id}`, {
+    await fetch(`${paths.api}/payment-links/${row.id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'cancel' }),
@@ -283,7 +288,38 @@ export function PaymentLinksManager() {
             action={<CreateLinkDialog onCreated={() => void fetchLinks()} />}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Phones: one card per link, actions in reach (sharing is the point). */}
+          <ul className="divide-y divide-border/60 md:hidden">
+            {rows.map((row) => (
+              <li key={row.id} className="space-y-3 px-4 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium">{row.serviceName}</p>
+                    {row.description && <p className="line-clamp-1 text-xs text-muted-foreground">{row.description}</p>}
+                  </div>
+                  <Badge variant={STATUS_VARIANT[row.status]}>{t(`status.${row.status}`)}</Badge>
+                </div>
+                <p className="text-lg font-semibold tabular-nums">{fmtAmount(row.amount)}</p>
+                {row.status === 'ACTIVE' && (
+                  <div className="flex flex-wrap gap-2">
+                    <CopyLinkButton url={payUrl(row.slug)} label={t('copy')} />
+                    <Button asChild variant="outline" size="sm" className="gap-1.5">
+                      <a href={`https://wa.me/?text=${encodeURIComponent(`${row.serviceName} — ${payUrl(row.slug)}`)}`} target="_blank" rel="noopener noreferrer">
+                        <MessageCircle className="size-3.5" />
+                        {t('shareWhatsApp')}
+                      </a>
+                    </Button>
+                    <Button variant="ghost" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => void handleCancel(row)}>
+                      <XCircle className="size-3.5" />
+                      {t('cancel')}
+                    </Button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -311,6 +347,17 @@ export function PaymentLinksManager() {
                         {row.status === 'ACTIVE' && (
                           <>
                             <CopyLinkButton url={payUrl(row.slug)} label={t('copy')} />
+                            {/* WhatsApp is how links actually reach Algerian clients. */}
+                            <Button asChild variant="outline" size="sm" className="gap-1.5">
+                              <a
+                                href={`https://wa.me/?text=${encodeURIComponent(`${row.serviceName} — ${payUrl(row.slug)}`)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <MessageCircle className="size-3.5" />
+                                {t('shareWhatsApp')}
+                              </a>
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -329,6 +376,7 @@ export function PaymentLinksManager() {
               </TableBody>
             </Table>
           </div>
+          </>
         )}
       </CardContent>
     </Card>

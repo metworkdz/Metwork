@@ -39,6 +39,42 @@ export type ConsultantInvoiceSettings = z.infer<typeof consultantInvoiceSettings
 
 const trimmed = (v: string | null | undefined): string | null => (v ?? '').trim() || null;
 
+/** The letterhead keys, wherever they are stored (MentorRecord, freelancer profile). */
+export type InvoiceSettingsTarget = { [K in keyof ConsultantInvoiceSettings]?: ConsultantInvoiceSettings[K] | null };
+
+/**
+ * Apply only the keys present in the patch to a letterhead — THE one
+ * implementation, shared by consultants and freelancers (Metwork 2.0), so the
+ * regime reset and the RIB normalisation can't differ between them.
+ */
+export function applyInvoiceSettingsPatch(m: InvoiceSettingsTarget, patch: ConsultantInvoiceSettings): void {
+  // Changing the regime invalidates a rate that was derived from the old
+  // one: a consultant who moves from personne morale to personne physique
+  // must not keep defaulting to 19 %. An explicit rate on a document is
+  // unaffected — this is only the default the form starts from.
+  const regimeChanged =
+    (patch.invoiceLegalStatus !== undefined && patch.invoiceLegalStatus !== m.invoiceLegalStatus) ||
+    (patch.invoiceRcType !== undefined && patch.invoiceRcType !== m.invoiceRcType);
+  if (regimeChanged && patch.defaultVatRate === undefined) m.defaultVatRate = null;
+
+  if (patch.invoiceLegalStatus !== undefined) m.invoiceLegalStatus = patch.invoiceLegalStatus;
+  if (patch.invoiceRcType !== undefined) m.invoiceRcType = patch.invoiceRcType;
+  if (patch.invoiceRegNumber !== undefined) m.invoiceRegNumber = trimmed(patch.invoiceRegNumber);
+  if (patch.nif !== undefined) m.nif = trimmed(patch.nif);
+  if (patch.nis !== undefined) m.nis = trimmed(patch.nis);
+  if (patch.ai !== undefined) m.ai = trimmed(patch.ai);
+  if (patch.address !== undefined) m.address = trimmed(patch.address);
+  if (patch.bankName !== undefined) m.bankName = trimmed(patch.bankName);
+  // Stored without its grouping spaces, like every other RIB in the store.
+  if (patch.bankRib !== undefined) {
+    m.bankRib = (patch.bankRib ?? '').replace(/\s+/g, '') || null;
+  }
+  if (patch.invoiceTemplate !== undefined) m.invoiceTemplate = patch.invoiceTemplate;
+  if (patch.defaultVatRate !== undefined) m.defaultVatRate = patch.defaultVatRate;
+  if (patch.invoiceLogoUrl !== undefined) m.invoiceLogoUrl = trimmed(patch.invoiceLogoUrl);
+  if (patch.invoiceStampUrl !== undefined) m.invoiceStampUrl = trimmed(patch.invoiceStampUrl);
+}
+
 /**
  * Apply only the keys present in the patch, so saving one card never clears
  * another. Returns the updated record, or null when the consultant is gone.
@@ -51,32 +87,7 @@ export async function updateConsultantInvoiceSettings(
     const m = (d.mentors ?? []).find((x) => x.id === mentorId);
     if (!m) return null;
 
-    // Changing the regime invalidates a rate that was derived from the old
-    // one: a consultant who moves from personne morale to personne physique
-    // must not keep defaulting to 19 %. An explicit rate on a document is
-    // unaffected — this is only the default the form starts from.
-    const regimeChanged =
-      (patch.invoiceLegalStatus !== undefined && patch.invoiceLegalStatus !== m.invoiceLegalStatus) ||
-      (patch.invoiceRcType !== undefined && patch.invoiceRcType !== m.invoiceRcType);
-    if (regimeChanged && patch.defaultVatRate === undefined) m.defaultVatRate = null;
-
-    if (patch.invoiceLegalStatus !== undefined) m.invoiceLegalStatus = patch.invoiceLegalStatus;
-    if (patch.invoiceRcType !== undefined) m.invoiceRcType = patch.invoiceRcType;
-    if (patch.invoiceRegNumber !== undefined) m.invoiceRegNumber = trimmed(patch.invoiceRegNumber);
-    if (patch.nif !== undefined) m.nif = trimmed(patch.nif);
-    if (patch.nis !== undefined) m.nis = trimmed(patch.nis);
-    if (patch.ai !== undefined) m.ai = trimmed(patch.ai);
-    if (patch.address !== undefined) m.address = trimmed(patch.address);
-    if (patch.bankName !== undefined) m.bankName = trimmed(patch.bankName);
-    // Stored without its grouping spaces, like every other RIB in the store.
-    if (patch.bankRib !== undefined) {
-      m.bankRib = (patch.bankRib ?? '').replace(/\s+/g, '') || null;
-    }
-    if (patch.invoiceTemplate !== undefined) m.invoiceTemplate = patch.invoiceTemplate;
-    if (patch.defaultVatRate !== undefined) m.defaultVatRate = patch.defaultVatRate;
-    if (patch.invoiceLogoUrl !== undefined) m.invoiceLogoUrl = trimmed(patch.invoiceLogoUrl);
-    if (patch.invoiceStampUrl !== undefined) m.invoiceStampUrl = trimmed(patch.invoiceStampUrl);
-
+    applyInvoiceSettingsPatch(m, patch);
     m.updatedAt = new Date().toISOString();
     return m;
   });

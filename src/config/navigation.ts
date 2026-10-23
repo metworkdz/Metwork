@@ -164,6 +164,10 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
   FREELANCER: [
     { labelKey: 'dashboard.overview',   href: '/dashboard/freelancer',             icon: LayoutDashboard },
     { labelKey: 'dashboard.profile',    href: '/dashboard/freelancer/profile',     icon: UserCheck },
+    { labelKey: 'dashboard.invoices',   href: '/dashboard/freelancer/invoices',    icon: FileText },
+    { labelKey: 'dashboard.clients',    href: '/dashboard/freelancer/clients',     icon: UsersRound },
+    { labelKey: 'dashboard.paymentLinks', href: '/dashboard/freelancer/payment-links', icon: Link2 },
+    { labelKey: 'dashboard.wallet',     href: '/dashboard/freelancer/wallet',      icon: Wallet },
     { labelKey: 'dashboard.membership', href: '/dashboard/freelancer/membership',  icon: CreditCard },
     { labelKey: 'dashboard.settings',   href: '/dashboard/freelancer/settings',    icon: Settings },
   ],

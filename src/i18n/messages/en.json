@@ -1480,7 +1480,8 @@
         "PAID": "Paid",
         "EXPIRED": "Expired",
         "CANCELLED": "Cancelled"
-      }
+      },
+      "shareWhatsApp": "WhatsApp"
     },
     "services": {
       "addService": "Add service",
@@ -6441,6 +6442,69 @@
         "add": "Add an account",
         "edit": "Change"
       }
+    },
+    "invoices": {
+      "title": "Invoices & quotes",
+      "subtitle": "Factures, proformas and devis with your legal details — the same engine incubators use.",
+      "new": "New document",
+      "settingsLink": "Legal details",
+      "settings": {
+        "title": "Legal details",
+        "subtitle": "What makes your documents legally valid. Saved once, printed on every document.",
+        "loading": "Loading…",
+        "loadError": "Could not load your details.",
+        "complete": "Your details are complete — you can issue documents.",
+        "incomplete": "Add your status, registration number and NIF to issue documents.",
+        "legalTitle": "Legal identity",
+        "status": "Status",
+        "statusOption": {
+          "AUTO_ENTREPRENEUR": "Auto-entrepreneur (card)",
+          "REGISTRE_COMMERCE": "Commercial register (RC)"
+        },
+        "rcType": "Type",
+        "rcOption": {
+          "PERSONNE_PHYSIQUE": "Natural person (IFU)",
+          "PERSONNE_MORALE": "Legal person (company)"
+        },
+        "regAe": "Auto-entrepreneur card number",
+        "regRc": "RC number",
+        "ai": "Article d'imposition (AI)",
+        "address": "Address",
+        "bankTitle": "Bank details",
+        "bankName": "Bank",
+        "rib": "RIB (20 digits)",
+        "lookTitle": "Appearance",
+        "template": "Template",
+        "templateOption": {
+          "CLASSIC": "Classic",
+          "GREEN_BAND": "Green band",
+          "MINIMAL": "Minimal"
+        },
+        "vat": "Default VAT (%)",
+        "vatHint": "0 under the IFU regime: the VAT line is then left off.",
+        "logo": "Logo",
+        "stamp": "Stamp (cachet)",
+        "addImage": "Add",
+        "replaceImage": "Replace",
+        "removeImage": "Remove",
+        "save": "Save",
+        "saved": "Saved",
+        "saveError": "Could not save. Check the fields and try again."
+      }
+    },
+    "clients": {
+      "title": "Clients",
+      "subtitle": "Everyone you invoice, with their legal details."
+    },
+    "paymentLinks": {
+      "title": "Payment links",
+      "subtitle": "Get paid in DZD by CIB or Edahabia. Send the link on WhatsApp; the money lands in your wallet.",
+      "feeFree": "Free plan: Metwork keeps {fee} % of each payment and you can have {limit} active links. Premium: no fee, no limit.",
+      "feePremium": "Premium: no Metwork fee and no limit on links."
+    },
+    "wallet": {
+      "title": "Wallet",
+      "subtitle": "Your payment-link earnings, and withdrawals to your bank or CCP."
     }
   },
   "venture": {

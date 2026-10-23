@@ -62,6 +62,7 @@ import {
   generatePaymentLinkReceiptPdf,
   type BookingReceiptInput,
   type MentorConfirmationInput,
+  type ReceiptIncubator,
 } from './receipt';
 import type { IncubatorRecord, OtpChannel, PaymentLinkRecord } from '@/server/db/store';
 
@@ -1282,9 +1283,15 @@ export async function sendBookingProviderCancelledEmail(
  * link settlement. Fire-and-forget — errors are logged, never surfaced to the
  * settlement flow.
  */
+/**
+ * Who a payment link pays, as receipts and notices need it. An IncubatorRecord
+ * satisfies it; a freelancer link builds one from the user (Metwork 2.0).
+ */
+export type PaymentLinkIssuer = ReceiptIncubator & Pick<IncubatorRecord, 'id'>;
+
 export async function sendPaymentLinkReceiptEmail(input: {
   link: PaymentLinkRecord;
-  incubator: IncubatorRecord;
+  incubator: PaymentLinkIssuer;
   lang: 'en' | 'fr';
 }): Promise<void> {
   const { link, incubator, lang } = input;
@@ -1340,8 +1347,10 @@ export async function sendPaymentLinkReceiptEmail(input: {
  */
 export async function sendPaymentLinkPaidIncubatorEmail(input: {
   link: PaymentLinkRecord;
-  incubator: IncubatorRecord;
+  incubator: PaymentLinkIssuer;
   lang: 'en' | 'fr';
+  /** The receiver's wallet page. Defaults to the incubator's. */
+  walletPath?: string;
 }): Promise<void> {
   const { link, incubator, lang } = input;
   const isFr = lang === 'fr';
@@ -1356,7 +1365,7 @@ export async function sendPaymentLinkPaidIncubatorEmail(input: {
   const commission = link.commissionAmount ?? 0;
   const netAmount = amount - commission;
   const reference = link.id.slice(0, 8).toUpperCase();
-  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}/dashboard/incubator/wallet`;
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz'}${input.walletPath ?? '/dashboard/incubator/wallet'}`;
 
   await sendResendEmail({
     to,

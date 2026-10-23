@@ -12,6 +12,7 @@
  *   /api/incubator/clients POST the clients page uses (no second code path).
  * - Fully keyboard accessible (↑/↓/Enter/Esc); full-width + tappable on mobile.
  */
+import { useInvoicingPaths } from './invoicing-paths';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, ChevronsUpDown, Loader2, Plus, UserCircle, X } from 'lucide-react';
@@ -36,6 +37,7 @@ interface ClientPickerProps {
 }
 
 export function ClientPicker({ value, onSelect, id, disabled }: ClientPickerProps) {
+  const paths = useInvoicingPaths();
   const t = useTranslations('incubator.clientPicker');
 
   const [open, setOpen] = useState(false);
@@ -61,7 +63,7 @@ export function ClientPicker({ value, onSelect, id, disabled }: ClientPickerProp
     setLoading(true);
     void (async () => {
       try {
-        const res = await fetch('/api/incubator/clients', { cache: 'no-store' });
+        const res = await fetch(`${paths.api}/clients`, { cache: 'no-store' });
         if (!res.ok || cancelled) return;
         const data = await res.json() as { items: PickedClient[] };
         if (!cancelled) { setClients(data.items ?? []); setLoaded(true); }
@@ -70,7 +72,7 @@ export function ClientPicker({ value, onSelect, id, disabled }: ClientPickerProp
       }
     })();
     return () => { cancelled = true; };
-  }, [open, loaded]);
+  }, [open, loaded, paths.api]);
 
   // Reset the search + focus when (re)opening.
   useEffect(() => {

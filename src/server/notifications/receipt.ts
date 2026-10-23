@@ -41,7 +41,7 @@ export type ReceiptLang = 'en' | 'fr';
 export type ReceiptVariant = 'standard' | 'deposit' | 'final';
 
 /** Incubator fields printed on the letterhead + stamp. */
-type ReceiptIncubator = Pick<
+export type ReceiptIncubator = Pick<
   IncubatorRecord,
   'name' | 'email' | 'phone' | 'city' | 'logoUrl' | 'stampUrl' | 'address'
   | 'registrationNumber' | 'commercialRegNumber' | 'nif'

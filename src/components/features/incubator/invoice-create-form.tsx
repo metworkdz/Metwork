@@ -10,6 +10,7 @@
  * into those same functions, so the timbre disappears from the preview for the
  * same reason it disappears from the PDF, not through a second rule here.
  */
+import { useInvoicingPaths } from './invoicing-paths';
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
@@ -102,6 +103,7 @@ export function InvoiceCreateForm({
   hasStamp,
   editing,
 }: Props) {
+  const paths = useInvoicingPaths();
   const t = useTranslations('incubator.invoiceForm');
   const router = useRouter();
 
@@ -205,7 +207,7 @@ export function InvoiceCreateForm({
     if (!client) return;
     setLoadingClient(true);
     try {
-      const res = await fetch(`/api/incubator/clients/${client.id}`, { credentials: 'include' });
+      const res = await fetch(`${paths.api}/clients/${client.id}`, { credentials: 'include' });
       if (!res.ok) { setError(t('errorNetwork')); return; }
       const full = await res.json() as ClientValues & { clientType?: 'COMPANY' | 'INDIVIDUAL' };
       const looksCompany = clientLegalGap(full) === 'LOOKS_LIKE_COMPANY';
@@ -245,7 +247,7 @@ export function InvoiceCreateForm({
     setError(null);
     setSubmitting(true);
     try {
-      const res = await fetch(editing ? `/api/incubator/invoices/${editing.id}` : '/api/incubator/invoices', {
+      const res = await fetch(editing ? `${paths.api}/invoices/${editing.id}` : `${paths.api}/invoices`, {
         method: editing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editing ? {
@@ -304,12 +306,12 @@ export function InvoiceCreateForm({
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Button asChild>
-              <a href={`/api/incubator/invoices/${created.id}/pdf`} download>
+              <a href={`${paths.api}/invoices/${created.id}/pdf`} download>
                 <Download className="size-4" />
                 {t('downloadPdf')}
               </a>
             </Button>
-            <Button variant="outline" onClick={() => router.push('/dashboard/incubator/invoices')}>
+            <Button variant="outline" onClick={() => router.push(`${paths.dashboard}/invoices`)}>
               {t('backToList')}
             </Button>
           </div>
@@ -339,7 +341,7 @@ export function InvoiceCreateForm({
 
       <div className="mb-4">
         <Button variant="ghost" size="sm" asChild className="-ms-2 text-muted-foreground">
-          <Link href="/dashboard/incubator/invoices">
+          <Link href={`${paths.dashboard}/invoices`}>
             <ArrowLeft className="size-4" />
             {t('backToList')}
           </Link>
@@ -351,7 +353,7 @@ export function InvoiceCreateForm({
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <p>
             {t('legalIncomplete')}{' '}
-            <Link href="/dashboard/incubator/settings" className="font-medium underline underline-offset-2">
+            <Link href={paths.settings} className="font-medium underline underline-offset-2">
               {t('goToSettings')}
             </Link>
           </p>
@@ -630,7 +632,7 @@ export function InvoiceCreateForm({
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                   <p>
                     {t('bankMissing')}{' '}
-                    <Link href="/dashboard/incubator/settings" className="font-medium underline underline-offset-2">
+                    <Link href={paths.settings} className="font-medium underline underline-offset-2">
                       {t('goToSettings')}
                     </Link>
                   </p>

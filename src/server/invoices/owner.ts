@@ -1,8 +1,8 @@
 /**
  * Who issued a document — the ONE place that knows an invoice can belong to an
- * incubator or to a consultant.
+ * incubator, a consultant or (Metwork 2.0) a freelancer.
  *
- * `InvoiceRecord` and `ClientRecord` each carry two optional owner ids and
+ * `InvoiceRecord` and `ClientRecord` each carry three optional owner ids and
  * exactly one of them is ever set. Spreading `i.incubatorId === x` across
  * routes is how that invariant rots, so every ownership question goes through
  * this module: who owns this document, which clients may it be addressed to,
@@ -16,19 +16,21 @@
 import { peekNextSeq } from '@/server/invoices/engine';
 import type {
   ClientRecord,
+  FreelancerProfileRecord,
   IncubatorRecord,
   InvoiceKind,
   InvoiceRecord,
   InvoiceTemplate,
   InvoicePaymentMethod,
   MentorRecord,
+  UserRecord,
 } from '@/server/db/store';
 
-export type InvoiceOwnerType = 'INCUBATOR' | 'CONSULTANT';
+export type InvoiceOwnerType = 'INCUBATOR' | 'CONSULTANT' | 'FREELANCER';
 
 export interface InvoiceOwner {
   type: InvoiceOwnerType;
-  /** IncubatorRecord.id or MentorRecord.id. */
+  /** IncubatorRecord.id, MentorRecord.id, or the freelancer's UserRecord.id. */
   id: string;
 }
 
@@ -38,13 +40,17 @@ export interface InvoiceStoreSlice {
   mentors?: MentorRecord[];
   invoices?: InvoiceRecord[];
   clients?: ClientRecord[];
+  users?: UserRecord[];
+  freelancerProfiles?: FreelancerProfileRecord[];
 }
 
 /* ─────────────────── Ownership ─────────────────── */
 
 /** The owner fields to WRITE on a new invoice or client. Exactly one is set. */
-export function ownerFields(owner: InvoiceOwner): { incubatorId?: string; mentorId?: string } {
-  return owner.type === 'INCUBATOR' ? { incubatorId: owner.id } : { mentorId: owner.id };
+export function ownerFields(owner: InvoiceOwner): { incubatorId?: string; mentorId?: string; freelancerId?: string } {
+  if (owner.type === 'INCUBATOR') return { incubatorId: owner.id };
+  if (owner.type === 'CONSULTANT') return { mentorId: owner.id };
+  return { freelancerId: owner.id };
 }
 
 /**
@@ -56,10 +62,13 @@ export function ownerFields(owner: InvoiceOwner): { incubatorId?: string; mentor
  * same way for the same reason — a stale sibling id lingering on a row must
  * not quietly widen someone's scope.
  */
-function ownedBy(rec: { incubatorId?: string | null; mentorId?: string | null }, owner: InvoiceOwner): boolean {
-  return owner.type === 'INCUBATOR'
-    ? !rec.mentorId && rec.incubatorId === owner.id
-    : !rec.incubatorId && rec.mentorId === owner.id;
+function ownedBy(
+  rec: { incubatorId?: string | null; mentorId?: string | null; freelancerId?: string | null },
+  owner: InvoiceOwner,
+): boolean {
+  if (owner.type === 'INCUBATOR') return !rec.mentorId && !rec.freelancerId && rec.incubatorId === owner.id;
+  if (owner.type === 'CONSULTANT') return !rec.incubatorId && !rec.freelancerId && rec.mentorId === owner.id;
+  return !rec.incubatorId && !rec.mentorId && rec.freelancerId === owner.id;
 }
 
 export function ownsInvoice(invoice: InvoiceRecord, owner: InvoiceOwner): boolean {
@@ -184,15 +193,31 @@ export function findIssuer(
     };
   }
 
-  const m = (d.mentors ?? []).find((x) => x.id === owner.id);
-  if (!m) return null;
+  // A consultant's settings live on the MentorRecord; a freelancer's on their
+  // profile, under the same keys. The letterhead logic below is shared.
+  let m: MentorInvoiceFields & { fullName: string; email?: string | null; phone?: string | null };
+  let counterHolder: CounterHolder;
+  if (owner.type === 'FREELANCER') {
+    const user = (d.users ?? []).find((u) => u.id === owner.id && u.role === 'FREELANCER');
+    const profile = (d.freelancerProfiles ?? []).find((p) => p.userId === owner.id);
+    if (!user || !profile) return null;
+    m = { ...(profile.invoiceSettings ?? {}), fullName: user.fullName, email: user.email, phone: user.phone };
+    // Fall back to the profile address: the same person, the same domicile.
+    m.address = profile.invoiceSettings?.address ?? profile.address;
+    counterHolder = profile;
+  } else {
+    const mentor = (d.mentors ?? []).find((x) => x.id === owner.id);
+    if (!mentor) return null;
+    m = mentor;
+    counterHolder = mentor;
+  }
   const autoEntrepreneur = m.invoiceLegalStatus === 'AUTO_ENTREPRENEUR';
   // Who is under the IFU: an auto-entrepreneur, and a personne physique on a
   // registre de commerce. Both charge no VAT. Only a personne morale is au
   // réel by default — which is why the RC type has to be asked for.
   const underIfu = autoEntrepreneur || m.invoiceRcType === 'PERSONNE_PHYSIQUE';
   return {
-    counterHolder: m,
+    counterHolder,
     profile: {
       name: m.fullName,
       // The consultant's full legal domicile — the same field the contract
@@ -220,6 +245,13 @@ export function findIssuer(
   };
 }
 
+/** The invoicing keys a consultant (MentorRecord) and a freelancer profile share. */
+type MentorInvoiceFields = Pick<
+  MentorRecord,
+  | 'invoiceLegalStatus' | 'invoiceRcType' | 'invoiceRegNumber' | 'nif' | 'nis' | 'ai' | 'address'
+  | 'bankName' | 'bankRib' | 'invoiceTemplate' | 'defaultVatRate' | 'invoiceLogoUrl' | 'invoiceStampUrl'
+>;
+
 /* ─────────────────── Legal gate ─────────────────── */
 
 export type IssuerGateResult =
@@ -242,7 +274,9 @@ export function issuerLegalGate(
   const settingsHint =
     owner.type === 'CONSULTANT'
       ? 'Facturation → Informations légales'
-      : 'Paramètres';
+      : owner.type === 'FREELANCER'
+        ? 'Factures → Informations légales'
+        : 'Paramètres';
 
   if (!profile.name?.trim() || !profile.reg || !profile.nif) {
     return {
@@ -258,7 +292,7 @@ export function issuerLegalGate(
   // document cannot know what rate it should have offered. And the article
   // d'imposition, which an RC document carries and a carte d'auto-entrepreneur
   // does not.
-  if (owner.type === 'CONSULTANT' && profile.regLabel === REG_LABEL_REGISTRE_COMMERCE) {
+  if (owner.type !== 'INCUBATOR' && profile.regLabel === REG_LABEL_REGISTRE_COMMERCE) {
     if (!profile.rcType) {
       return {
         ok: false,
@@ -279,9 +313,9 @@ export function issuerLegalGate(
       ok: false,
       code: 'ISSUER_BANK_INCOMPLETE',
       message:
-        owner.type === 'CONSULTANT'
-          ? 'Ajoutez votre RIB dans Facturation → Informations légales pour facturer par virement'
-          : 'Ajoutez vos coordonnées bancaires (RIB) dans Paramètres pour facturer par virement',
+        owner.type === 'INCUBATOR'
+          ? 'Ajoutez vos coordonnées bancaires (RIB) dans Paramètres pour facturer par virement'
+          : `Ajoutez votre RIB dans ${settingsHint} pour facturer par virement`,
     };
   }
   return { ok: true };

@@ -10,6 +10,7 @@
  * (INDIVIDUAL). The toggle drives which billing fields are shown; both keep
  * the base contact fields used across the CRM, manual bookings and invoices.
  */
+import { useInvoicingPaths } from './invoicing-paths';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Building2, PlusCircle, UserRound } from 'lucide-react';
@@ -98,6 +99,7 @@ export function ClientFormDialog({
   open: controlledOpen,
   onOpenChange,
 }: ClientFormDialogProps) {
+  const paths = useInvoicingPaths();
   const t = useTranslations('incubator.clientForm');
   const isEdit = Boolean(client);
   const isControlled = controlledOpen !== undefined;
@@ -157,7 +159,7 @@ export function ClientFormDialog({
     setError(null);
     setSubmitting(true);
     try {
-      const url    = isEdit ? `/api/incubator/clients/${client!.id}` : '/api/incubator/clients';
+      const url    = isEdit ? `${paths.api}/clients/${client!.id}` : `${paths.api}/clients`;
       const method = isEdit ? 'PATCH' : 'POST';
       // For a COMPANY, keep companyName in sync with the legal name so every
       // legacy surface (manual bookings, CRM list) keeps displaying it.
