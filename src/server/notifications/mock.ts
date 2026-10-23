@@ -2371,3 +2371,89 @@ export async function sendMembershipRenewalNotice(n: MembershipRenewalNotice): P
     : Promise.resolve();
   await Promise.allSettled([emailSend, phoneSend]);
 }
+
+/* ─────────────────── Tax calendar reminders (Metwork 2.0) ─────────────────── */
+
+export interface TaxReminderNotice {
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  locale: string | null;
+  /** `lib/tax-calendar` obligation id. */
+  obligation: string;
+  /** "2027" or "2026-10". */
+  period: string;
+  /** YYYY-MM-DD. */
+  dueDate: string;
+  daysLeft: number;
+  /** Absolute link to the tax center. */
+  url: string;
+}
+
+const TAX_OBLIGATION_NAME: Record<EmailLang, Record<string, string>> = {
+  fr: {
+    G12: 'Déclaration prévisionnelle IFU (G n°12)', G12_BIS: 'Déclaration définitive IFU (G n°12 bis)',
+    IFU_INSTALMENT_SEPT: '2e versement IFU', IFU_INSTALMENT_DEC: '3e versement IFU',
+    CASNOS_DECLARATION: 'Déclaration CASNOS', CASNOS_PAYMENT: 'Paiement des cotisations CASNOS',
+    G50: 'Déclaration mensuelle G n°50', G4: 'Déclaration annuelle IBS (G n°4)',
+    G11: 'Déclaration annuelle IRG BIC (G n°11)', G13: 'Déclaration annuelle IRG BNC (G n°13)',
+  },
+  en: {
+    G12: 'IFU forecast return (G no.12)', G12_BIS: 'IFU final return (G no.12 bis)',
+    IFU_INSTALMENT_SEPT: '2nd IFU instalment', IFU_INSTALMENT_DEC: '3rd IFU instalment',
+    CASNOS_DECLARATION: 'CASNOS declaration', CASNOS_PAYMENT: 'CASNOS contribution payment',
+    G50: 'Monthly G no.50 return', G4: 'Annual IBS return (G no.4)',
+    G11: 'Annual IRG BIC return (G no.11)', G13: 'Annual IRG BNC return (G no.13)',
+  },
+  ar: {
+    G12: 'التصريح التقديري للضريبة الجزافية الوحيدة (ج رقم 12)', G12_BIS: 'التصريح النهائي للضريبة الجزافية الوحيدة (ج رقم 12 مكرر)',
+    IFU_INSTALMENT_SEPT: 'الدفعة الثانية من الضريبة الجزافية الوحيدة', IFU_INSTALMENT_DEC: 'الدفعة الثالثة من الضريبة الجزافية الوحيدة',
+    CASNOS_DECLARATION: 'التصريح لدى CASNOS', CASNOS_PAYMENT: 'دفع اشتراكات CASNOS',
+    G50: 'التصريح الشهري ج رقم 50', G4: 'التصريح السنوي بالضريبة على أرباح الشركات (ج رقم 4)',
+    G11: 'التصريح السنوي IRG BIC (ج رقم 11)', G13: 'التصريح السنوي IRG BNC (ج رقم 13)',
+  },
+};
+
+function taxReminderCopy(n: TaxReminderNotice, lang: EmailLang): { subject: string; lines: string[] } {
+  const name = TAX_OBLIGATION_NAME[lang][n.obligation] ?? n.obligation;
+  const date = new Date(`${n.dueDate}T12:00:00Z`).toLocaleDateString(RENEWAL_DATE_LOCALE[lang], {
+    day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Algiers',
+  });
+  const first = n.fullName.split(' ')[0] ?? n.fullName;
+  if (lang === 'ar') return {
+    subject: `${name} (${n.period}) — آخر أجل ${date}`,
+    lines: [`مرحبًا ${first}،`, `آخر أجل لـ ${name} الخاص بـ ${n.period} هو ${date} (بعد ${n.daysLeft} يوم).`,
+      `ستجد الخطوات في مركز الضرائب على Metwork. عند الانتهاء، اضغط «تم» حتى تتوقف التذكيرات.`],
+  };
+  if (lang === 'en') return {
+    subject: `${name} (${n.period}) — due ${date}`,
+    lines: [`Hello ${first},`, `The deadline for your ${name} for ${n.period} is ${date} (${n.daysLeft} days left).`,
+      `The steps are in your Metwork tax center. Once it is done, mark it done there and the reminders stop.`],
+  };
+  return {
+    subject: `${name} (${n.period}) — échéance le ${date}`,
+    lines: [`Bonjour ${first},`, `L'échéance de votre ${name} pour ${n.period} est le ${date} (dans ${n.daysLeft} jours).`,
+      `Les étapes sont dans votre centre fiscal Metwork. Une fois fait, marquez-le comme fait : les rappels s'arrêtent.`],
+  };
+}
+
+/** Email + WhatsApp for a tax-calendar reminder. Localized en/fr/ar. Self-catching — never throws. */
+export async function sendTaxReminderNotice(n: TaxReminderNotice): Promise<void> {
+  const lang = normalizeEmailLang(n.locale);
+  const { subject, lines } = taxReminderCopy(n, lang);
+  const html = simpleNoticeHtml(
+    escapeRenewalHtml(subject),
+    [...lines.map(escapeRenewalHtml), `<a href="${n.url}">${n.url}</a>`],
+    lang === 'ar' ? 'rtl' : 'ltr',
+  );
+  const emailSend = n.email
+    ? sendResendEmail({ to: n.email, subject, html }).catch((err: Error) =>
+        // eslint-disable-next-line no-console
+        console.error(`${banner} tax reminder email failed →`, err.message),
+      )
+    : Promise.resolve();
+  const phoneSend = n.phone
+    ? deliverClientText(n.phone, [subject, ...lines.slice(1), n.url].join('\n'), 'tax-reminder')
+    : Promise.resolve();
+  await Promise.allSettled([emailSend, phoneSend]);
+}

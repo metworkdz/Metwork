@@ -22,7 +22,7 @@ import type {
   IncubatorBusinessType,
   LegalVerificationStatus,
 } from '@/types/auth';
-import type { LegalDocumentKind, LegalIdentity, LegalStatus } from '@/types/legal-status';
+import type { LegalDocumentKind, LegalIdentity, LegalStatus, TaxRegime } from '@/types/legal-status';
 import type { LandingContent } from '@/types/cms';
 import type { WeeklyAvailabilityDay } from '@/types/mentor';
 
@@ -1018,6 +1018,11 @@ export interface FreelancerProfileRecord {
   address: string | null;
   portfolio: FreelancerPortfolioItem[];
   legal: FreelancerLegalDocument | null;
+  /**
+   * Tax regime chosen in the tax center. Unset = the status default
+   * (`defaultTaxRegimeFor`); a liberal profession must pick one.
+   */
+  taxRegime?: TaxRegime | null;
   /** The Premium trial earned at 100 % completion. Once started, never again. */
   trial?: { unlockedAt: string; startedAt?: string; membershipId?: string };
   /**
@@ -1080,6 +1085,22 @@ export interface GigRecord {
   revisions: number;
   isActive: boolean;
   createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * A user's state on one generated tax task (`lib/tax-calendar` key, e.g.
+ * "G12:2027"). Tasks themselves are computed, never stored; only what the
+ * user did about them is.
+ */
+export interface TaxTaskStateRecord {
+  userId: string;
+  key: string;
+  doneAt: string | null;
+  /** Private Cloudinary asset of the filing / payment receipt, when uploaded. */
+  receiptPublicId: string | null;
+  /** Reminder offsets (days before the deadline) already sent. */
+  remindersSent: number[];
   updatedAt: string;
 }
 
@@ -3851,6 +3872,8 @@ interface DbShape {
   freelancerProjects?: FreelancerProjectRecord[];
   /** Metwork 2.0 — fixed-price service packages a freelancer offers. */
   gigs?: GigRecord[];
+  /** Metwork 2.0 — per-user state of tax-calendar tasks (done, receipt, reminders). */
+  taxTaskStates?: TaxTaskStateRecord[];
   /** Audit log entries for admin actions. */
   auditLogs: AuditLogRecord[];
   /** In-app notifications per user. */

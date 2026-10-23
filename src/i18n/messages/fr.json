@@ -1102,7 +1102,8 @@
       "paymentLinksUnlimited": "Liens de paiement en DZD illimités, sans frais Metwork",
       "taxCalendar": "Calendrier fiscal avec rappels (CASNOS, G12, G12 bis)",
       "verifiedBadge": "Badge vérifié dès l'approbation de votre document",
-      "searchPriority": "Mis en avant auprès des entrepreneurs qui recrutent"
+      "searchPriority": "Mis en avant auprès des entrepreneurs qui recrutent",
+      "taxPrefill": "Montants fiscaux pré-remplis depuis vos factures"
     },
     "billingMonthly": "Mensuel",
     "billingYearly": "Annuel",
@@ -2301,7 +2302,8 @@
     "legalReviews": "Vérification des documents",
     "venture": "Mon entreprise",
     "projects": "Projets",
-    "gigs": "Gigs"
+    "gigs": "Gigs",
+    "taxes": "Impôts"
   },
   "pages": {
     "consultationPay": {
@@ -3150,7 +3152,6 @@
         "upcomingInvoices": "Factures, devis et proformas",
         "upcomingPaymentLinks": "Liens de paiement en DZD (CIB, Edahabia)",
         "upcomingClients": "Clients et projets",
-        "upcomingTaxCalendar": "Calendrier fiscal avec rappels",
         "settings": {
           "title": "Paramètres",
           "subtitle": "Gérez vos préférences de compte."
@@ -3174,13 +3175,15 @@
         "statCeiling": "{percent} % du plafond auto-entrepreneur",
         "ceilingTitle": "Plafond annuel auto-entrepreneur",
         "ceilingAlert": "Vous avez dépassé {percent} % du plafond. Voyez avec votre comptable ce qui se passe en cas de dépassement.",
-        "ifuEstimate": "IFU estimé à 0,5 % : {amount}. Indicatif — confirmez le taux et le plafond avec votre comptable.",
+        "ifuEstimate": "IFU à 0,5 % (CIDTA art. 282 sexies), minimum 10 000 DA : {amount}. Estimation d'après vos factures émises.",
         "dueTitle": "À rendre bientôt",
         "seeAll": "Tous les projets",
         "dueEmpty": "Rien à rendre dans les 7 prochains jours.",
         "upcomingCopilot": "Copilote IA fiscalité et droit des affaires",
         "upcomingHiring": "Des clients depuis l'onglet Recrutement des entrepreneurs",
-        "addGig": "Ajouter un gig"
+        "addGig": "Ajouter un gig",
+        "taxNextTitle": "Prochaine échéance fiscale",
+        "taxNextNone": "Renseignez votre statut juridique pour voir vos échéances."
       }
     },
     "payment": {
@@ -6656,5 +6659,126 @@
     "publicLookingFor": "Recherche",
     "publicFounder": "Fondateur",
     "publicWebsite": "Site web"
+  },
+  "taxCenter": {
+    "pageTitle": "Centre fiscal",
+    "subtitle": "Vos échéances fiscales et sociales, comment les faire, et la preuve qu’elles sont faites.",
+    "disclaimer": "Ce calendrier est établi à partir des textes officiels (formulaires série G 2025, codes fiscaux 2026, lois de finances) et est en cours de validation par un expert-comptable. C’est un rappel, pas un conseil fiscal : en cas de doute, vérifiez auprès de votre inspection ou de votre comptable.",
+    "noProfileTitle": "Indiquez d’abord votre statut juridique",
+    "noProfileBody": "Vos échéances en dépendent : auto-entrepreneur, IFU, profession libérale ou société.",
+    "noProfileCta": "Renseigner mon statut",
+    "yourStatus": "Votre statut",
+    "change": "Modifier",
+    "chooseRegime": "Les professions libérales choisissent leur régime fiscal. Lequel est le vôtre ?",
+    "prefillUpsell": "Avec un abonnement payant, les montants sont pré-remplis depuis vos factures.",
+    "upgrade": "Passer à l’offre payante",
+    "noTasks": "Aucune échéance fiscale pour votre statut dans l’année à venir.",
+    "toDo": "À faire",
+    "doneTitle": "Fait",
+    "period": "Période {period}",
+    "dueOn": "Échéance : {date}",
+    "daysLeft": "{count, plural, =0 {aujourd’hui} one {# jour restant} other {# jours restants}}",
+    "prefillTurnover": "Chiffre d’affaires HT",
+    "prefillLastYear": "Chiffre d’affaires de l’an dernier",
+    "prefillVat": "TVA facturée",
+    "prefillIfu": "IFU estimé",
+    "prefillNote": "D’après les factures émises sur Metwork. Ajoutez les ventes facturées ailleurs.",
+    "howTo": "Comment faire",
+    "source": "Source",
+    "markDone": "Marquer comme fait",
+    "reopen": "Rouvrir",
+    "uploadReceipt": "Ajouter le reçu",
+    "replaceReceipt": "Remplacer le reçu",
+    "viewReceipt": "Voir le reçu",
+    "saveError": "Enregistrement impossible. Réessayez.",
+    "uploadError": "Envoi impossible. Réessayez.",
+    "fileTooLarge": "Le fichier doit faire 4 Mo au maximum.",
+    "fileUnsupported": "Envoyez un PDF, JPG, PNG ou WebP.",
+    "state": {
+      "DONE": "Fait",
+      "LATE": "En retard",
+      "DUE_SOON": "Bientôt",
+      "UPCOMING": "À venir"
+    },
+    "status": {
+      "UNREGISTERED": "Non immatriculé",
+      "AUTO_ENTREPRENEUR": "Auto-entrepreneur",
+      "INDIVIDUAL_IFU": "Entreprise individuelle (IFU)",
+      "LIBERAL_PROFESSION": "Profession libérale",
+      "COMPANY": "Société",
+      "ASSOCIATION": "Association"
+    },
+    "regime": {
+      "IFU": "IFU (impôt forfaitaire)",
+      "REEL": "Régime du réel"
+    },
+    "obligation": {
+      "G12": "Déclaration prévisionnelle IFU (G n°12)",
+      "G12_BIS": "Déclaration définitive IFU (G n°12 bis)",
+      "IFU_INSTALMENT_SEPT": "2e versement IFU",
+      "IFU_INSTALMENT_DEC": "3e versement IFU",
+      "CASNOS_DECLARATION": "Déclaration CASNOS",
+      "CASNOS_PAYMENT": "Paiement des cotisations CASNOS",
+      "G50": "Déclaration mensuelle (G n°50)",
+      "G4": "Déclaration annuelle IBS (G n°4)",
+      "G11": "Déclaration annuelle IRG BIC (G n°11)",
+      "G13": "Déclaration annuelle IRG BNC (G n°13)"
+    },
+    "guides": {
+      "G12": {
+        "s1": "Connectez-vous à Jibayatic (ou rendez-vous à votre inspection si vous n’y êtes pas encore inscrit).",
+        "s2": "Ouvrez la déclaration prévisionnelle G n°12 de l’année.",
+        "s3": "Saisissez le chiffre d’affaires prévu pour l’année, par activité.",
+        "s4": "Validez et payez au moins le premier versement indiqué. Gardez le reçu et ajoutez-le ici."
+      },
+      "G12_BIS": {
+        "s1": "Connectez-vous à Jibayatic (ou rendez-vous à votre inspection).",
+        "s2": "Ouvrez la déclaration définitive G n°12 bis de l’année écoulée.",
+        "s3": "Saisissez le chiffre d’affaires réellement réalisé. S’il dépasse la prévision, la différence est due maintenant.",
+        "s4": "Validez, payez le reliquat et ajoutez le reçu ici."
+      },
+      "IFU_INSTALMENT_SEPT": {
+        "s1": "Entre le 1er et le 15 septembre, payez le versement IFU suivant.",
+        "s2": "Utilisez la référence de votre déclaration G n°12.",
+        "s3": "Ajoutez le reçu de paiement ici."
+      },
+      "IFU_INSTALMENT_DEC": {
+        "s1": "Entre le 1er et le 15 décembre, payez le dernier versement IFU.",
+        "s2": "Utilisez la référence de votre déclaration G n°12.",
+        "s3": "Ajoutez le reçu de paiement ici."
+      },
+      "CASNOS_DECLARATION": {
+        "s1": "Sur l’espace en ligne de la CASNOS ou à votre agence, déclarez vos revenus de l’année.",
+        "s2": "Faites-le avant le 1er mars.",
+        "s3": "Gardez l’accusé de déclaration et ajoutez-le ici."
+      },
+      "CASNOS_PAYMENT": {
+        "s1": "Payez votre cotisation annuelle CASNOS en ligne ou à votre agence.",
+        "s2": "Avant le 30 juin — déclarer n’est pas payer : les deux sont obligatoires.",
+        "s3": "Ajoutez le reçu de paiement ici."
+      },
+      "G50": {
+        "s1": "Connectez-vous à Jibayatic.",
+        "s2": "Ouvrez la G n°50 du mois écoulé.",
+        "s3": "Saisissez le chiffre d’affaires et la TVA facturée, ainsi que les autres impôts demandés par le formulaire.",
+        "s4": "Validez et payez dans les 20 premiers jours du mois. Ajoutez le reçu ici."
+      },
+      "G4": {
+        "s1": "Préparez les états financiers de l’année avec votre comptable.",
+        "s2": "Déposez la déclaration G n°4 (IBS) sur Jibayatic avant le 30 avril.",
+        "s3": "Ajoutez l’accusé de dépôt ici."
+      },
+      "G11": {
+        "s1": "Préparez vos comptes de l’année (revenus BIC).",
+        "s2": "Déposez la déclaration G n°11 sur Jibayatic ou à votre inspection avant le 30 avril.",
+        "s3": "Ajoutez l’accusé de dépôt ici."
+      },
+      "G13": {
+        "s1": "Totalisez vos recettes et dépenses professionnelles de l’année (BNC).",
+        "s2": "Déposez la déclaration G n°13 sur Jibayatic ou à votre inspection avant le 30 avril.",
+        "s3": "Ajoutez l’accusé de dépôt ici."
+      }
+    },
+    "sourceMetwork": "Calendrier CASNOS fixé par Metwork, en attente de validation comptable (aucun texte CASNOS dans nos documents de référence pour l’instant)."
   }
 }

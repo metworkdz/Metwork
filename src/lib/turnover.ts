@@ -5,13 +5,14 @@
  * Proformas and devis are offers, not sales; cancelled factures don't count;
  * the droit de timbre is a tax, not turnover.
  *
- * ⚠ The auto-entrepreneur figures below (annual ceiling and IFU rate) come from
- * the plan, not from a text in `tax documents/` — that folder has no copy of
- * Loi 22-23. They are shown as an estimate with that caveat, and must be
- * confirmed by an accountant before the tax center (phase 4) relies on them.
+ * The auto-entrepreneur figures come from the tax calendar's sourced table
+ * (`TAX_FIGURES`): ceiling LF 2023 art. 51, rate CIDTA 2026 art. 282 sexies,
+ * minimum from the GN°12 bis notice.
  */
-export const AE_ANNUAL_CEILING_DZD = 5_000_000;
-export const AE_IFU_RATE = 0.005;
+import { TAX_FIGURES } from '@/lib/tax-calendar';
+
+export const AE_ANNUAL_CEILING_DZD = TAX_FIGURES.aeCeiling;
+export const AE_IFU_RATE = TAX_FIGURES.aeIfuRate;
 /** Ceiling alerts, as fractions of the ceiling. */
 export const CEILING_ALERTS = [0.8, 0.95] as const;
 
@@ -19,13 +20,25 @@ export interface TurnoverInvoice {
   kind?: string | null;
   status: string;
   issuedAt: string;
-  totals: { ht: number };
+  totals: { ht: number; tva?: number };
 }
+
+const isSale = (i: TurnoverInvoice) => (i.kind ?? 'FACTURE') === 'FACTURE' && i.status !== 'CANCELLED';
 
 export function turnoverForYear(invoices: readonly TurnoverInvoice[], year: number): number {
   return invoices
-    .filter((i) => (i.kind ?? 'FACTURE') === 'FACTURE' && i.status !== 'CANCELLED' && new Date(i.issuedAt).getUTCFullYear() === year)
+    .filter((i) => isSale(i) && new Date(i.issuedAt).getUTCFullYear() === year)
     .reduce((sum, i) => sum + Math.max(0, Math.round(i.totals.ht)), 0);
+}
+
+/** Sales of one month ("YYYY-MM"): turnover before tax and the VAT invoiced — the G50 figures. */
+export function salesForMonth(invoices: readonly TurnoverInvoice[], month: string): { ht: number; tva: number } {
+  return invoices
+    .filter((i) => isSale(i) && new Date(i.issuedAt).toISOString().slice(0, 7) === month)
+    .reduce(
+      (acc, i) => ({ ht: acc.ht + Math.max(0, Math.round(i.totals.ht)), tva: acc.tva + Math.max(0, Math.round(i.totals.tva ?? 0)) }),
+      { ht: 0, tva: 0 },
+    );
 }
 
 export interface CeilingView {
@@ -46,6 +59,7 @@ export function aeCeilingView(turnover: number): CeilingView {
     ceiling: AE_ANNUAL_CEILING_DZD,
     share,
     alert: crossed.length ? crossed[crossed.length - 1]! : null,
-    estimatedIfu: Math.round(turnover * AE_IFU_RATE),
+    // The IFU can't be lower than the auto-entrepreneur minimum.
+    estimatedIfu: Math.max(Math.round(turnover * AE_IFU_RATE), TAX_FIGURES.aeMinimumIfu),
   };
 }

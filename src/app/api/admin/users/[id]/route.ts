@@ -104,7 +104,9 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   }
 
   // Captured before the cascade removes the profile that references it.
-  const legalDocumentId = (await db.read()).freelancerProfiles?.find((p) => p.userId === id)?.legal?.documentPublicId;
+  const before = await db.read();
+  const legalDocumentId = before.freelancerProfiles?.find((p) => p.userId === id)?.legal?.documentPublicId;
+  const taxReceiptIds = (before.taxTaskStates ?? []).filter((s) => s.userId === id && s.receiptPublicId).map((s) => s.receiptPublicId!);
   const result = await db.update((store) => {
     const idx = store.users.findIndex((u) => u.id === id);
     if (idx === -1) return null;
@@ -141,6 +143,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     store.ventures             = (store.ventures ?? []).filter((v) => v.ownerId !== id);
     store.freelancerProjects   = (store.freelancerProjects ?? []).filter((p) => p.freelancerId !== id);
     store.gigs                 = (store.gigs ?? []).filter((g) => g.freelancerId !== id);
+    store.taxTaskStates        = (store.taxTaskStates ?? []).filter((s) => s.userId !== id);
     // Certificates follow their registration out: they carry the member's name.
     const goneRegistrationIds = new Set(
       (store.registrations ?? []).filter((r) => r.userId === id).map((r) => r.id),
@@ -173,6 +176,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
 
   if (!result) return jsonError(404, 'NOT_FOUND', 'User not found');
   await deleteLegalDocumentFile(legalDocumentId);
+  for (const receiptId of taxReceiptIds) await deleteLegalDocumentFile(receiptId);
 
   await appendAuditLog({
     adminId: guard.user.id,

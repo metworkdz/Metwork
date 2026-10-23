@@ -1,5 +1,5 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import { CalendarClock, FileText, Link2, Plus, Sparkles } from 'lucide-react';
+import { CalendarClock, FileText, Landmark, Link2, Plus, Sparkles } from 'lucide-react';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,8 @@ import { computeCompletion } from '@/lib/freelancer-completion';
 import { listProjects } from '@/server/freelancers/workspace';
 import { invoicesFor } from '@/server/invoices/owner';
 import { aeCeilingView, turnoverForYear } from '@/lib/turnover';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatDate } from '@/lib/format';
+import { taxCenterFor } from '@/server/taxes/service';
 import { cn } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 
@@ -68,6 +69,9 @@ export default async function FreelancerOverviewPage({ params }: PageProps) {
   const ceiling = isAe ? aeCeilingView(turnover) : null;
   const firstName = user.fullName.split(' ')[0] ?? user.fullName;
   const money = (n: number) => formatCurrency(n, lang);
+  const tCenter = await getTranslations('taxCenter');
+  const userRecord = data.users.find((u) => u.id === session.id);
+  const nextTax = userRecord ? taxCenterFor(data, userRecord, today).tasks.find((x) => x.state !== 'DONE') ?? null : null;
 
   return (
     <div className="space-y-6">
@@ -119,6 +123,24 @@ export default async function FreelancerOverviewPage({ params }: PageProps) {
         </section>
       )}
 
+      <Link
+        href="/dashboard/freelancer/taxes"
+        className={cn(
+          'flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50',
+          nextTax?.state === 'LATE' && 'border-destructive/60',
+        )}
+      >
+        <Landmark className="size-5 shrink-0 text-primary" />
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold">{t('taxNextTitle')}</span>
+          <span className="block truncate text-xs text-muted-foreground">
+            {nextTax
+              ? `${tCenter(`obligation.${nextTax.obligation}`)} · ${formatDate(`${nextTax.dueDate}T12:00:00Z`, lang, { day: 'numeric', month: 'long' })}`
+              : t('taxNextNone')}
+          </span>
+        </span>
+      </Link>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-lg border p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between gap-2">
@@ -148,7 +170,6 @@ export default async function FreelancerOverviewPage({ params }: PageProps) {
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold"><Sparkles className="size-4" />{t('comingTitle')}</h2>
           <p className="text-sm text-muted-foreground">{t('comingBody')}</p>
           <ul className="mt-3 space-y-2 text-sm">
-            <li>• {t('upcomingTaxCalendar')}</li>
             <li>• {t('upcomingCopilot')}</li>
             <li>• {t('upcomingHiring')}</li>
           </ul>

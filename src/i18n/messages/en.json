@@ -1102,7 +1102,8 @@
       "paymentLinksUnlimited": "Unlimited payment links in DZD, no Metwork fee",
       "taxCalendar": "Tax calendar with reminders (CASNOS, G12, G12 bis)",
       "verifiedBadge": "Verified badge once your business document is approved",
-      "searchPriority": "Shown first to entrepreneurs looking to hire"
+      "searchPriority": "Shown first to entrepreneurs looking to hire",
+      "taxPrefill": "Tax amounts prefilled from your invoices"
     },
     "billingMonthly": "Monthly",
     "billingYearly": "Yearly",
@@ -2301,7 +2302,8 @@
     "legalReviews": "Document reviews",
     "venture": "My business",
     "projects": "Projects",
-    "gigs": "Gigs"
+    "gigs": "Gigs",
+    "taxes": "Taxes"
   },
   "pages": {
     "consultationPay": {
@@ -3150,7 +3152,6 @@
         "upcomingInvoices": "Invoices, quotes and proformas",
         "upcomingPaymentLinks": "Payment links in DZD (CIB, Edahabia)",
         "upcomingClients": "Clients and projects",
-        "upcomingTaxCalendar": "Tax calendar with reminders",
         "settings": {
           "title": "Settings",
           "subtitle": "Manage your account preferences."
@@ -3174,13 +3175,15 @@
         "statCeiling": "{percent} % of the auto-entrepreneur ceiling",
         "ceilingTitle": "Auto-entrepreneur annual ceiling",
         "ceilingAlert": "You have passed {percent} % of the ceiling. Talk to your accountant about what happens if you exceed it.",
-        "ifuEstimate": "Estimated IFU at 0.5 %: {amount}. Indicative only — confirm the rate and ceiling with your accountant.",
+        "ifuEstimate": "IFU at 0.5 % (CIDTA art. 282 sexies), minimum 10 000 DA: {amount}. Estimate from your issued factures.",
         "dueTitle": "Due soon",
         "seeAll": "All projects",
         "dueEmpty": "Nothing due in the next 7 days.",
         "upcomingCopilot": "AI copilot for tax and business law",
         "upcomingHiring": "Clients from the entrepreneurs' hiring tab",
-        "addGig": "Add a gig"
+        "addGig": "Add a gig",
+        "taxNextTitle": "Next tax deadline",
+        "taxNextNone": "Set your legal status to see your tax deadlines."
       }
     },
     "payment": {
@@ -6656,5 +6659,126 @@
     "publicLookingFor": "Looking for",
     "publicFounder": "Founder",
     "publicWebsite": "Website"
+  },
+  "taxCenter": {
+    "pageTitle": "Tax center",
+    "subtitle": "Your tax and social deadlines, how to file them, and proof they are done.",
+    "disclaimer": "This calendar is built from the official texts (2025 G-series forms, 2026 tax codes, finance laws) and is being validated by an accountant. It is a reminder, not tax advice: check with your tax office or accountant when in doubt.",
+    "noProfileTitle": "Tell us your legal status first",
+    "noProfileBody": "Your deadlines depend on it: auto-entrepreneur, IFU, liberal profession or company.",
+    "noProfileCta": "Set my legal status",
+    "yourStatus": "Your status",
+    "change": "Change",
+    "chooseRegime": "Liberal professions choose their tax regime. Which one are you under?",
+    "prefillUpsell": "On a paid plan, amounts are prefilled from your invoices.",
+    "upgrade": "Upgrade",
+    "noTasks": "No tax deadline for your status in the coming year.",
+    "toDo": "To do",
+    "doneTitle": "Done",
+    "period": "Period {period}",
+    "dueOn": "Deadline: {date}",
+    "daysLeft": "{count, plural, =0 {today} one {# day left} other {# days left}}",
+    "prefillTurnover": "Turnover (excl. tax)",
+    "prefillLastYear": "Last year’s turnover",
+    "prefillVat": "VAT invoiced",
+    "prefillIfu": "Estimated IFU",
+    "prefillNote": "From the factures you issued on Metwork. Add any sales invoiced elsewhere.",
+    "howTo": "How to do it",
+    "source": "Source",
+    "markDone": "Mark as done",
+    "reopen": "Reopen",
+    "uploadReceipt": "Add receipt",
+    "replaceReceipt": "Replace receipt",
+    "viewReceipt": "View receipt",
+    "saveError": "Could not save. Try again.",
+    "uploadError": "Upload failed. Try again.",
+    "fileTooLarge": "The file must be 4 MB or smaller.",
+    "fileUnsupported": "Upload a PDF, JPG, PNG or WebP.",
+    "state": {
+      "DONE": "Done",
+      "LATE": "Late",
+      "DUE_SOON": "Due soon",
+      "UPCOMING": "Upcoming"
+    },
+    "status": {
+      "UNREGISTERED": "Not registered",
+      "AUTO_ENTREPRENEUR": "Auto-entrepreneur",
+      "INDIVIDUAL_IFU": "Individual business (IFU)",
+      "LIBERAL_PROFESSION": "Liberal profession",
+      "COMPANY": "Company",
+      "ASSOCIATION": "Association"
+    },
+    "regime": {
+      "IFU": "IFU (flat tax)",
+      "REEL": "Real regime"
+    },
+    "obligation": {
+      "G12": "IFU forecast return (G no.12)",
+      "G12_BIS": "IFU final return (G no.12 bis)",
+      "IFU_INSTALMENT_SEPT": "2nd IFU instalment",
+      "IFU_INSTALMENT_DEC": "3rd IFU instalment",
+      "CASNOS_DECLARATION": "CASNOS declaration",
+      "CASNOS_PAYMENT": "CASNOS contribution payment",
+      "G50": "Monthly return (G no.50)",
+      "G4": "Annual IBS return (G no.4)",
+      "G11": "Annual IRG BIC return (G no.11)",
+      "G13": "Annual IRG BNC return (G no.13)"
+    },
+    "guides": {
+      "G12": {
+        "s1": "Log in to Jibayatic (or go to your tax inspection if you are not on it yet).",
+        "s2": "Open the G no.12 forecast return for the year.",
+        "s3": "Enter your expected turnover for the year, by activity.",
+        "s4": "Submit and pay at least the first instalment shown. Keep the receipt and add it here."
+      },
+      "G12_BIS": {
+        "s1": "Log in to Jibayatic (or go to your tax inspection).",
+        "s2": "Open the G no.12 bis final return for the year just ended.",
+        "s3": "Enter the turnover you actually made. If it is higher than your forecast, the difference is due now.",
+        "s4": "Submit, pay what remains, and add the receipt here."
+      },
+      "IFU_INSTALMENT_SEPT": {
+        "s1": "Between 1 and 15 September, pay the next IFU instalment.",
+        "s2": "Use the reference of your G no.12 forecast return.",
+        "s3": "Add the payment receipt here."
+      },
+      "IFU_INSTALMENT_DEC": {
+        "s1": "Between 1 and 15 December, pay the last IFU instalment.",
+        "s2": "Use the reference of your G no.12 forecast return.",
+        "s3": "Add the payment receipt here."
+      },
+      "CASNOS_DECLARATION": {
+        "s1": "On the CASNOS online space or at your CASNOS agency, declare your income for the year.",
+        "s2": "Do it before 1 March.",
+        "s3": "Keep the declaration receipt and add it here."
+      },
+      "CASNOS_PAYMENT": {
+        "s1": "Pay your annual CASNOS contribution online or at your agency.",
+        "s2": "Do it before 30 June — declaring is not paying: both must be done.",
+        "s3": "Add the payment receipt here."
+      },
+      "G50": {
+        "s1": "Log in to Jibayatic.",
+        "s2": "Open the G no.50 for the month just ended.",
+        "s3": "Enter your turnover and the VAT you invoiced, plus any other tax the form asks for.",
+        "s4": "Submit and pay within the first 20 days of the month. Add the receipt here."
+      },
+      "G4": {
+        "s1": "Prepare the financial statements for the year with your accountant.",
+        "s2": "File the G no.4 (IBS) return on Jibayatic by 30 April.",
+        "s3": "Add the filing receipt here."
+      },
+      "G11": {
+        "s1": "Prepare your accounts for the year (BIC income).",
+        "s2": "File the G no.11 return on Jibayatic or at your inspection by 30 April.",
+        "s3": "Add the filing receipt here."
+      },
+      "G13": {
+        "s1": "Total your professional income and expenses for the year (BNC).",
+        "s2": "File the G no.13 return on Jibayatic or at your inspection by 30 April.",
+        "s3": "Add the filing receipt here."
+      }
+    },
+    "sourceMetwork": "CASNOS calendar set by Metwork, pending accountant validation (no CASNOS text in our reference documents yet)."
   }
 }

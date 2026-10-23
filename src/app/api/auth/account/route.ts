@@ -48,7 +48,9 @@ export async function DELETE(req: NextRequest) {
 
   // Delete the user and all their data; anonymize bookings for accounting
   // Captured before the cascade removes the profile that references it.
-  const legalDocumentId = (await db.read()).freelancerProfiles?.find((p) => p.userId === userId)?.legal?.documentPublicId;
+  const before = await db.read();
+  const legalDocumentId = before.freelancerProfiles?.find((p) => p.userId === userId)?.legal?.documentPublicId;
+  const taxReceiptIds = (before.taxTaskStates ?? []).filter((s) => s.userId === userId && s.receiptPublicId).map((s) => s.receiptPublicId!);
   const deletionResult = await db.update<{ deleted: boolean }>((d) => {
     const stillExists = (d.users ?? []).some((u) => u.id === userId);
     if (!stillExists) return { deleted: false };
@@ -115,6 +117,7 @@ export async function DELETE(req: NextRequest) {
     d.ventures           = (d.ventures ?? []).filter((v) => v.ownerId !== userId);
     d.freelancerProjects = (d.freelancerProjects ?? []).filter((p) => p.freelancerId !== userId);
     d.gigs               = (d.gigs ?? []).filter((g) => g.freelancerId !== userId);
+    d.taxTaskStates      = (d.taxTaskStates ?? []).filter((s) => s.userId !== userId);
 
     // Notifications and user memberships have no post-deletion value.
     d.notifications   = (d.notifications   ?? []).filter((n)  => n.userId  !== userId);
@@ -153,6 +156,7 @@ export async function DELETE(req: NextRequest) {
     return jsonError(404, 'USER_NOT_FOUND', 'User not found');
   }
   await deleteLegalDocumentFile(legalDocumentId);
+  for (const receiptId of taxReceiptIds) await deleteLegalDocumentFile(receiptId);
 
   // Clear the session cookie in the response
   const cookieName = process.env.AUTH_COOKIE_NAME ?? 'metwork_session';

@@ -11,6 +11,7 @@ import { requireApiRole } from '@/server/auth/api-guards';
 import { json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { submitLegalDocument } from '@/server/freelancers/service';
+import { MAX_PRIVATE_DOCUMENT_BYTES, sniffDocumentMime } from '@/server/uploads/sniff';
 import { isLegalStatus, LEGAL_DOCUMENT_KINDS, type LegalDocumentKind } from '@/types/legal-status';
 
 export const runtime = 'nodejs';
@@ -18,18 +19,6 @@ export const dynamic = 'force-dynamic';
 // Upload + a vision read.
 export const maxDuration = 60;
 
-/** Under Vercel's 4.5 MB request cap, with room for the multipart envelope. */
-const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024;
-const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
-
-/** Magic bytes, so a renamed file can't pass as an image or PDF. */
-function sniffMime(buf: Buffer): string | null {
-  if (buf.length >= 4 && buf.subarray(0, 4).toString('latin1') === '%PDF') return 'application/pdf';
-  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
-  if (buf.length >= 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
-  if (buf.length >= 12 && buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP') return 'image/webp';
-  return null;
-}
 
 export async function POST(req: NextRequest) {
   const guard = await requireApiRole(['FREELANCER']);
@@ -51,11 +40,11 @@ export async function POST(req: NextRequest) {
     return jsonError(422, 'INVALID_KIND', 'Unknown document type');
   }
   if (!(file instanceof File)) return jsonError(422, 'FILE_REQUIRED', 'Attach the document');
-  if (file.size > MAX_DOCUMENT_BYTES) return jsonError(413, 'FILE_TOO_LARGE', 'The file must be 4 MB or smaller');
+  if (file.size > MAX_PRIVATE_DOCUMENT_BYTES) return jsonError(413, 'FILE_TOO_LARGE', 'The file must be 4 MB or smaller');
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const mime = sniffMime(buffer);
-  if (!mime || !ALLOWED_MIME.has(mime)) {
+  const mime = sniffDocumentMime(buffer);
+  if (!mime) {
     return jsonError(415, 'UNSUPPORTED_FILE', 'Upload a JPG, PNG, WebP or PDF');
   }
 

@@ -93,7 +93,9 @@ describe('turnover', () => {
   });
 
   it('raises the 80 % and 95 % alerts against the ceiling', () => {
-    expect(aeCeilingView(1_000_000)).toMatchObject({ alert: null, estimatedIfu: 5_000 });
+    // 0.5 % of 1 M is 5 000, below the 10 000 DA minimum.
+    expect(aeCeilingView(1_000_000)).toMatchObject({ alert: null, estimatedIfu: 10_000 });
+    expect(aeCeilingView(4_000_000).estimatedIfu).toBe(20_000);
     expect(aeCeilingView(AE_ANNUAL_CEILING_DZD * 0.8).alert).toBe(0.8);
     expect(aeCeilingView(AE_ANNUAL_CEILING_DZD * 0.96).alert).toBe(0.95);
     expect(aeCeilingView(AE_ANNUAL_CEILING_DZD * 2).share).toBe(1);
