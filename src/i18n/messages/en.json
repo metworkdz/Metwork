@@ -7222,6 +7222,121 @@
         "low": "Fully remote",
         "high": "Same office every day"
       }
+    },
+    "backToMatches": "Back to my matches",
+    "sprintAndAgreement": "Trial sprint & agreement"
+  },
+  "cofounderSprint": {
+    "title": "14-day trial sprint",
+    "intro": "Before committing, work together for two weeks on these steps. Either of you can tick them.",
+    "start": "Start the sprint",
+    "day": "Day {day} of {total}",
+    "over": "Sprint over",
+    "doneBy": "Done by {name}",
+    "you": "you",
+    "loading": "Loading…",
+    "items": {
+      "meet": {
+        "title": "Meet in person",
+        "hint": "At least one half-day together, ideally where you would work."
+      },
+      "problem": {
+        "title": "Define the problem together",
+        "hint": "Write down the problem, for whom, and why now — in one page."
+      },
+      "customers": {
+        "title": "Talk to 10 potential customers",
+        "hint": "Split the calls; share notes the same day."
+      },
+      "prototype": {
+        "title": "Build something small together",
+        "hint": "A mock-up, a landing page or a first version: see how you work."
+      },
+      "roles": {
+        "title": "Agree on roles",
+        "hint": "Who decides what, who does what."
+      },
+      "time": {
+        "title": "Agree on time commitment",
+        "hint": "Full time, part time, from when."
+      },
+      "money": {
+        "title": "Talk money",
+        "hint": "Savings, salaries, how long each can go without income."
+      },
+      "decision": {
+        "title": "Decide: go or no go",
+        "hint": "Honestly, together. If it’s a go, prepare the agreement."
+      }
+    }
+  },
+  "cofounderAgreement": {
+    "title": "Cofounder agreement",
+    "disclaimer": "A pre-incorporation agreement between founders, under Algerian law, generated from your answers. It does not replace the company statutes, which are drawn up before a notary. Have it reviewed by a lawyer before signing.",
+    "intro": "Agree in writing on roles, shares and what happens if one of you leaves. Both of you sign electronically.",
+    "start": "Prepare our agreement",
+    "confirmCancel": "Cancel this agreement? Any signature already given is discarded.",
+    "termsTitle": "The terms (either of you can edit)",
+    "projectName": "Project name",
+    "projectDescription": "What the project does",
+    "role": "Role",
+    "rolePlaceholder": "E.g. CEO, CTO",
+    "equity": "Shares",
+    "reserve": "Reserve for future team",
+    "vesting": "Vesting",
+    "cliff": "Initial period (cliff)",
+    "months": "months",
+    "jurisdiction": "Courts of",
+    "sum": "Total: {sum} % (must be 100 %)",
+    "vestingHint": "Shares are earned over the vesting period; nothing is earned before the cliff. Standard: 48 months with a 12-month cliff.",
+    "saveTerms": "Save the terms",
+    "identityTitle": "My identity",
+    "identityHint": "In Latin letters, exactly as on your ID card. Only you can fill this in; it appears in the agreement.",
+    "legalName": "Full name",
+    "idNumber": "ID card number",
+    "birthDate": "Date of birth",
+    "address": "Address",
+    "saveIdentity": "Save my identity",
+    "otherIdentityDone": "{name} has filled in their identity.",
+    "otherIdentityMissing": "{name} has not filled in their identity yet.",
+    "send": "Send to signature",
+    "sendHint": "Both identities are needed to send the agreement to signature.",
+    "cancel": "Cancel the agreement",
+    "you": "You",
+    "hasSigned": "signed",
+    "toSign": "to sign",
+    "readText": "Read the full text",
+    "signTitle": "Sign",
+    "signNote": "Your drawn signature, confirmed by a code sent to your phone, has the value of your handwritten signature on this agreement.",
+    "codeWhatsapp": "Get the code on WhatsApp",
+    "codeSms": "by SMS instead",
+    "code": "Code",
+    "sign": "Sign the agreement",
+    "waitOther": "You signed. Waiting for {name}.",
+    "reopen": "Edit again",
+    "signedTitle": "Signed by both of you",
+    "signedBody": "The agreement is stored with its SHA-256 fingerprint. Keep a copy, and use it when drawing up the company statutes.",
+    "download": "Download the PDF",
+    "errors": {
+      "EXISTS": "This match already has an agreement. Reload the page.",
+      "NOT_DRAFT": "Only a draft can be edited.",
+      "NOT_PENDING": "This agreement is not awaiting signatures. Reload the page.",
+      "INCOMPLETE": "Both of you must fill in your identity first.",
+      "INVALID_TERMS": "Check the terms: shares must add up to 100%, vesting 12–60 months, cliff 0–24 months and shorter than vesting, roles filled in.",
+      "ALREADY_SIGNED": "Already signed.",
+      "SIGNED_BY_OTHER": "Someone has already signed: the text can no longer change. You can cancel it.",
+      "BAD_SIGNATURE": "Draw your signature.",
+      "LOCKED": "Too many wrong codes. Try again in 30 minutes.",
+      "INVALID": "Wrong code.",
+      "EXPIRED": "The code has expired: ask for a new one.",
+      "TOO_MANY_ATTEMPTS": "Too many wrong codes. Try again in 30 minutes.",
+      "NO_PHONE": "Add a phone number to your account first.",
+      "STORAGE_FAILED": "The signed document could not be stored. Reload the page in a moment.",
+      "OTP_THROTTLED": "Wait a moment before asking for another code.",
+      "OTP_LOCKED": "Too many wrong codes. Try again in 30 minutes.",
+      "DELIVERY_FAILED": "Could not send the code. Try the other channel.",
+      "VALIDATION_ERROR": "Check the fields: names and address in Latin letters, as on your ID card.",
+      "GENERIC": "Something went wrong. Try again."
     }
   }
 }

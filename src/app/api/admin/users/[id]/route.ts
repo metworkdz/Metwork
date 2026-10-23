@@ -151,6 +151,9 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     store.quoteRequests        = (store.quoteRequests ?? []).filter((q) => q.entrepreneurId !== id && q.freelancerId !== id);
     store.cofounderProfiles    = (store.cofounderProfiles ?? []).filter((p) => p.userId !== id);
     store.cofounderDecks       = (store.cofounderDecks ?? []).filter((x) => x.userId !== id);
+    store.cofounderSprints     = (store.cofounderSprints ?? []).filter((s) => !s.parties.includes(id));
+    // A SIGNED cofounder agreement is the other founder's evidence: it stays.
+    store.cofounderAgreements  = (store.cofounderAgreements ?? []).filter((a) => a.status === 'SIGNED' || !a.parties.includes(id));
     // Certificates follow their registration out: they carry the member's name.
     const goneRegistrationIds = new Set(
       (store.registrations ?? []).filter((r) => r.userId === id).map((r) => r.id),

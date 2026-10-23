@@ -7222,6 +7222,121 @@
         "low": "100 % à distance",
         "high": "Même bureau tous les jours"
       }
+    },
+    "backToMatches": "Retour à mes matchs",
+    "sprintAndAgreement": "Sprint d’essai et accord"
+  },
+  "cofounderSprint": {
+    "title": "Sprint d’essai de 14 jours",
+    "intro": "Avant de vous engager, travaillez ensemble deux semaines sur ces étapes. Chacun peut les cocher.",
+    "start": "Lancer le sprint",
+    "day": "Jour {day} sur {total}",
+    "over": "Sprint terminé",
+    "doneBy": "Fait par {name}",
+    "you": "vous",
+    "loading": "Chargement…",
+    "items": {
+      "meet": {
+        "title": "Se rencontrer en personne",
+        "hint": "Au moins une demi-journée ensemble, idéalement là où vous travailleriez."
+      },
+      "problem": {
+        "title": "Définir le problème ensemble",
+        "hint": "Le problème, pour qui, et pourquoi maintenant — sur une page."
+      },
+      "customers": {
+        "title": "Parler à 10 clients potentiels",
+        "hint": "Répartissez les appels ; partagez vos notes le jour même."
+      },
+      "prototype": {
+        "title": "Construire quelque chose de petit ensemble",
+        "hint": "Une maquette, une page d’atterrissage ou une première version : voyez comment vous travaillez."
+      },
+      "roles": {
+        "title": "Se mettre d’accord sur les rôles",
+        "hint": "Qui décide quoi, qui fait quoi."
+      },
+      "time": {
+        "title": "Se mettre d’accord sur le temps consacré",
+        "hint": "Temps plein, temps partiel, à partir de quand."
+      },
+      "money": {
+        "title": "Parler d’argent",
+        "hint": "Économies, salaires, combien de temps chacun peut tenir sans revenu."
+      },
+      "decision": {
+        "title": "Décider : on y va ou pas",
+        "hint": "Honnêtement, ensemble. Si c’est oui, préparez l’accord."
+      }
+    }
+  },
+  "cofounderAgreement": {
+    "title": "Accord entre cofondateurs",
+    "disclaimer": "Un accord entre fondateurs préalable à la constitution de la société, de droit algérien, généré à partir de vos réponses. Il ne remplace pas les statuts, établis devant notaire. Faites-le relire par un avocat avant de signer.",
+    "intro": "Mettez par écrit les rôles, les parts et ce qui se passe si l’un de vous part. Vous signez tous les deux électroniquement.",
+    "start": "Préparer notre accord",
+    "confirmCancel": "Annuler cet accord ? Les signatures déjà apposées sont supprimées.",
+    "termsTitle": "Les termes (modifiables par chacun)",
+    "projectName": "Nom du projet",
+    "projectDescription": "Ce que fait le projet",
+    "role": "Rôle",
+    "rolePlaceholder": "Ex. : CEO, CTO",
+    "equity": "Parts",
+    "reserve": "Réserve future équipe",
+    "vesting": "Acquisition",
+    "cliff": "Période initiale (cliff)",
+    "months": "mois",
+    "jurisdiction": "Tribunaux de",
+    "sum": "Total : {sum} % (doit faire 100 %)",
+    "vestingHint": "Les parts s’acquièrent sur la durée d’acquisition ; rien n’est acquis avant la période initiale. Standard : 48 mois avec 12 mois initiaux.",
+    "saveTerms": "Enregistrer les termes",
+    "identityTitle": "Mon identité",
+    "identityHint": "En lettres latines, exactement comme sur votre pièce d’identité. Vous seul pouvez la renseigner ; elle figure dans l’accord.",
+    "legalName": "Nom complet",
+    "idNumber": "Numéro de la pièce d’identité",
+    "birthDate": "Date de naissance",
+    "address": "Adresse",
+    "saveIdentity": "Enregistrer mon identité",
+    "otherIdentityDone": "{name} a renseigné son identité.",
+    "otherIdentityMissing": "{name} n’a pas encore renseigné son identité.",
+    "send": "Envoyer en signature",
+    "sendHint": "Les deux identités sont nécessaires pour envoyer l’accord en signature.",
+    "cancel": "Annuler l’accord",
+    "you": "Vous",
+    "hasSigned": "a signé",
+    "toSign": "doit signer",
+    "readText": "Lire le texte complet",
+    "signTitle": "Signer",
+    "signNote": "Votre signature dessinée, confirmée par un code envoyé sur votre téléphone, vaut signature manuscrite de cet accord.",
+    "codeWhatsapp": "Recevoir le code sur WhatsApp",
+    "codeSms": "par SMS plutôt",
+    "code": "Code",
+    "sign": "Signer l’accord",
+    "waitOther": "Vous avez signé. En attente de {name}.",
+    "reopen": "Modifier à nouveau",
+    "signedTitle": "Signé par vous deux",
+    "signedBody": "L’accord est enregistré avec son empreinte SHA-256. Gardez-en une copie et servez-vous-en pour rédiger les statuts.",
+    "download": "Télécharger le PDF",
+    "errors": {
+      "EXISTS": "Ce match a déjà un accord. Actualisez la page.",
+      "NOT_DRAFT": "Seul un brouillon peut être modifié.",
+      "NOT_PENDING": "Cet accord n’attend pas de signature. Actualisez la page.",
+      "INCOMPLETE": "Vous devez d’abord renseigner tous les deux votre identité.",
+      "INVALID_TERMS": "Vérifiez les termes : parts à 100 % au total, acquisition de 12 à 60 mois, période initiale de 0 à 24 mois et plus courte, rôles renseignés.",
+      "ALREADY_SIGNED": "Déjà signé.",
+      "SIGNED_BY_OTHER": "Quelqu’un a déjà signé : le texte ne peut plus changer. Vous pouvez l’annuler.",
+      "BAD_SIGNATURE": "Dessinez votre signature.",
+      "LOCKED": "Trop de codes erronés. Réessayez dans 30 minutes.",
+      "INVALID": "Code erroné.",
+      "EXPIRED": "Le code a expiré : demandez-en un nouveau.",
+      "TOO_MANY_ATTEMPTS": "Trop de codes erronés. Réessayez dans 30 minutes.",
+      "NO_PHONE": "Ajoutez d’abord un numéro de téléphone à votre compte.",
+      "STORAGE_FAILED": "Le document signé n’a pas pu être enregistré. Actualisez la page dans un instant.",
+      "OTP_THROTTLED": "Patientez un peu avant de demander un nouveau code.",
+      "OTP_LOCKED": "Trop de codes erronés. Réessayez dans 30 minutes.",
+      "DELIVERY_FAILED": "Impossible d’envoyer le code. Essayez l’autre canal.",
+      "VALIDATION_ERROR": "Vérifiez les champs : nom et adresse en lettres latines, comme sur votre pièce d’identité.",
+      "GENERIC": "Une erreur est survenue. Réessayez."
     }
   }
 }

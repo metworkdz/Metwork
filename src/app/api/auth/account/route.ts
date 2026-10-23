@@ -125,6 +125,9 @@ export async function DELETE(req: NextRequest) {
     d.quoteRequests      = (d.quoteRequests ?? []).filter((q) => q.entrepreneurId !== userId && q.freelancerId !== userId);
     d.cofounderProfiles  = (d.cofounderProfiles ?? []).filter((p) => p.userId !== userId);
     d.cofounderDecks     = (d.cofounderDecks ?? []).filter((x) => x.userId !== userId);
+    d.cofounderSprints   = (d.cofounderSprints ?? []).filter((s) => !s.parties.includes(userId));
+    // A SIGNED cofounder agreement is the other founder's evidence: it stays.
+    d.cofounderAgreements = (d.cofounderAgreements ?? []).filter((a) => a.status === 'SIGNED' || !a.parties.includes(userId));
 
     // Notifications and user memberships have no post-deletion value.
     d.notifications   = (d.notifications   ?? []).filter((n)  => n.userId  !== userId);

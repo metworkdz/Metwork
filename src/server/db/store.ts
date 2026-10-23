@@ -1182,6 +1182,69 @@ export interface CofounderDeckRecord {
   reasons: Record<string, string[]>;
 }
 
+/** A match's 14-day trial sprint: shared checklist, ticked by either founder. */
+export interface CofounderSprintRecord {
+  matchId: string;
+  parties: [string, string];
+  startedAt: string;
+  /** Item key (`lib/cofounder-sprint`) → who ticked it and when. */
+  done: Record<string, { by: string; at: string }>;
+  updatedAt: string;
+}
+
+export interface CofounderAgreementIdentity {
+  legalName: string;
+  idNumber: string;
+  birthDate: string;
+  address: string;
+}
+
+export interface CofounderAgreementTerms {
+  projectName: string;
+  projectDescription: string;
+  /** userId → role/title in the company. */
+  roles: Record<string, string>;
+  /** userId → commitment (`lib/cofounder` COMMITMENTS). */
+  commitments: Record<string, string>;
+  /** userId → % of the capital. Founders + reserve = 100. */
+  equity: Record<string, number>;
+  /** % kept aside for future team members. */
+  reservePercent: number;
+  vestingMonths: number;
+  cliffMonths: number;
+  /** Wilaya code whose courts are competent. */
+  jurisdiction: string;
+}
+
+/**
+ * A cofounder agreement. Same evidence rules as consultant contracts:
+ * the text is frozen when it goes to signature, each signature is a drawn
+ * image plus a one-time code to the signer's phone, and once SIGNED the
+ * record and its stored PDF (SHA-256) never change.
+ */
+export interface CofounderAgreementRecord {
+  id: string;
+  matchId: string;
+  parties: [string, string];
+  status: 'DRAFT' | 'PENDING_SIGNATURES' | 'SIGNED' | 'CANCELLED';
+  terms: CofounderAgreementTerms;
+  /** Each founder fills in their own; never editable by the other. */
+  identities: Record<string, CofounderAgreementIdentity | null>;
+  /** Bumped on every draft edit. */
+  version: number;
+  /** The full text, frozen when sent to signature. */
+  contentSnapshot: string | null;
+  signatures: Record<string, { imagePng: string; signedAt: string; phoneSnapshot: string }>;
+  /** Per-signer code throttle (same policy as consultant contracts). */
+  otp: Record<string, ConsultantContractOtpState | null>;
+  finalPdfPublicId: string | null;
+  finalPdfHash: string | null;
+  signedAt: string | null;
+  auditTrail: { event: string; actorId: string; at: string }[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type ServiceOrderStatus = 'AWAITING_DEPOSIT' | 'IN_PROGRESS' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
 
 /**
@@ -4033,6 +4096,10 @@ interface DbShape {
   cofounderProfiles?: CofounderProfileRecord[];
   /** Metwork 2.0 — each member's deck for the day (so the AI runs once a day at most). */
   cofounderDecks?: CofounderDeckRecord[];
+  /** Metwork 2.0 — the 14-day trial sprint of a cofounder match. */
+  cofounderSprints?: CofounderSprintRecord[];
+  /** Metwork 2.0 — cofounder agreements (pre-incorporation), e-signed by both. */
+  cofounderAgreements?: CofounderAgreementRecord[];
   /** Audit log entries for admin actions. */
   auditLogs: AuditLogRecord[];
   /** In-app notifications per user. */

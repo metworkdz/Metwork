@@ -257,6 +257,7 @@ function Matches({ basePath, membershipPath }: { basePath: string; membershipPat
             </div>
           </div>
           <MatchActions m={m} basePath={basePath} membershipPath={membershipPath} />
+          <Button asChild variant="outline" className="w-full"><Link href={`${basePath}/match/${m.id}`}>{t('sprintAndAgreement')}</Link></Button>
         </li>
       ))}
     </ul>
