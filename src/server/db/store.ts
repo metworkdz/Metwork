@@ -1116,6 +1116,28 @@ export interface CopilotKbPointer {
   bytes: number;
 }
 
+/**
+ * A founder asking a freelancer for a quote. The conversation carries the
+ * talk; the freelancer answers with a devis card from the invoice engine.
+ */
+export interface QuoteRequestRecord {
+  id: string;
+  entrepreneurId: string;
+  freelancerId: string;
+  /** The gig it started from, if any. */
+  gigId: string | null;
+  title: string;
+  details: string;
+  /** DZD, as the founder wrote it. */
+  budget: number | null;
+  /** YYYY-MM-DD. */
+  deadline: string | null;
+  status: 'OPEN' | 'ANSWERED' | 'CLOSED';
+  conversationId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const MESSAGE_REPORT_REASONS = ['SPAM', 'HARASSMENT', 'SCAM', 'INAPPROPRIATE', 'OTHER'] as const;
 export type MessageReportReason = (typeof MESSAGE_REPORT_REASONS)[number];
 
@@ -3922,6 +3944,8 @@ interface DbShape {
    * an admin reviews what was reported, never browses private threads.
    */
   messageReports?: MessageReportRecord[];
+  /** Metwork 2.0 — quote requests from the hiring tab (founder → freelancer). */
+  quoteRequests?: QuoteRequestRecord[];
   /** Audit log entries for admin actions. */
   auditLogs: AuditLogRecord[];
   /** In-app notifications per user. */

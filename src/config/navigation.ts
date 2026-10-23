@@ -126,6 +126,7 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.overview',       href: '/dashboard/entrepreneur',                icon: LayoutDashboard },
     { labelKey: 'dashboard.bookings',       href: '/dashboard/entrepreneur/bookings',       icon: CalendarIcon    },
     { labelKey: 'dashboard.venture',        href: '/dashboard/entrepreneur/venture',        icon: Building2       },
+    { labelKey: 'dashboard.hire',           href: '/dashboard/entrepreneur/hire',           icon: UsersRound      },
     { labelKey: 'dashboard.taxes',          href: '/dashboard/entrepreneur/taxes',          icon: Landmark        },
     { labelKey: 'dashboard.copilot',        href: '/dashboard/entrepreneur/copilot',        icon: Sparkles        },
     { labelKey: 'dashboard.messages',       href: '/dashboard/entrepreneur/messages',       icon: MessageSquare   },

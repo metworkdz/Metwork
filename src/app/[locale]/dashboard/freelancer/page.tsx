@@ -11,6 +11,7 @@ import { invoicesFor } from '@/server/invoices/owner';
 import { aeCeilingView, turnoverForYear } from '@/lib/turnover';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { taxCenterFor } from '@/server/taxes/service';
+import { isListed } from '@/server/hiring/directory';
 import { cn } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 
@@ -70,6 +71,7 @@ export default async function FreelancerOverviewPage({ params }: PageProps) {
   const firstName = user.fullName.split(' ')[0] ?? user.fullName;
   const money = (n: number) => formatCurrency(n, lang);
   const tCenter = await getTranslations('taxCenter');
+  const listed = isListed(data, session.id);
   const userRecord = data.users.find((u) => u.id === session.id);
   const nextTax = userRecord ? taxCenterFor(data, userRecord, today).tasks.find((x) => x.state !== 'DONE') ?? null : null;
 
@@ -166,15 +168,13 @@ export default async function FreelancerOverviewPage({ params }: PageProps) {
           )}
         </section>
 
-        <section className="rounded-lg border p-4 sm:p-5">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold"><Sparkles className="size-4" />{t('comingTitle')}</h2>
-          <p className="text-sm text-muted-foreground">{t('comingBody')}</p>
-          <ul className="mt-3 space-y-2 text-sm">
-            <li>• {t('upcomingHiring')}</li>
-          </ul>
-          <Button asChild variant="outline" size="sm" className="mt-4">
-            <Link href="/dashboard/freelancer/gigs"><Plus className="size-4" />{t('addGig')}</Link>
-          </Button>
+        <section className={cn('rounded-lg border p-4 sm:p-5', !listed && 'border-amber-300')}>
+          <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Sparkles className="size-4" />{listed ? t('listedTitle') : t('unlistedTitle')}</h2>
+          <p className="text-sm text-muted-foreground">{listed ? t('listedBody') : t('unlistedBody')}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {!listed && <Button asChild size="sm"><Link href="/dashboard/freelancer/profile">{t('completeTitle')}</Link></Button>}
+            <Button asChild variant="outline" size="sm"><Link href="/dashboard/freelancer/gigs"><Plus className="size-4" />{t('addGig')}</Link></Button>
+          </div>
         </section>
       </div>
     </div>

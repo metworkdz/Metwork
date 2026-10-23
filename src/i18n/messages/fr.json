@@ -2307,7 +2307,8 @@
     "copilot": "Copilote",
     "copilotKb": "Documents du copilote",
     "messages": "Messages",
-    "messageReports": "Signalements"
+    "messageReports": "Signalements",
+    "hire": "Recrutement"
   },
   "pages": {
     "consultationPay": {
@@ -3151,8 +3152,6 @@
         "title": "Espace freelancer",
         "greeting": "Bonjour {name}",
         "subtitle": "Votre espace freelancer sur Metwork.",
-        "comingTitle": "Votre espace arrive",
-        "comingBody": "Ces outils sont en cours de création et apparaîtront ici dès leur lancement.",
         "upcomingInvoices": "Factures, devis et proformas",
         "upcomingPaymentLinks": "Liens de paiement en DZD (CIB, Edahabia)",
         "upcomingClients": "Clients et projets",
@@ -3183,10 +3182,13 @@
         "dueTitle": "À rendre bientôt",
         "seeAll": "Tous les projets",
         "dueEmpty": "Rien à rendre dans les 7 prochains jours.",
-        "upcomingHiring": "Des clients depuis l'onglet Recrutement des entrepreneurs",
         "addGig": "Ajouter un gig",
         "taxNextTitle": "Prochaine échéance fiscale",
-        "taxNextNone": "Renseignez votre statut juridique pour voir vos échéances."
+        "taxNextNone": "Renseignez votre statut juridique pour voir vos échéances.",
+        "listedTitle": "Les fondateurs peuvent vous trouver",
+        "listedBody": "Votre profil apparaît dans l’onglet Recrutement et dans les recommandations de l’IA.",
+        "unlistedTitle": "Les fondateurs ne vous trouvent pas encore",
+        "unlistedBody": "Ajoutez un titre et au moins 3 compétences pour apparaître dans l’onglet Recrutement."
       }
     },
     "payment": {
@@ -6956,5 +6958,68 @@
       "MESSAGING_UNAVAILABLE": "La messagerie est momentanément indisponible.",
       "GENERIC": "Une erreur est survenue. Réessayez."
     }
+  },
+  "hiring": {
+    "pageTitle": "Recruter un freelancer",
+    "subtitle": "Décrivez votre besoin et l’IA vous propose les bons freelancers, ou parcourez-les tous.",
+    "aiTitle": "Décrivez votre besoin",
+    "aiPlaceholder": "Ex. : J’ai besoin d’un site vitrine bilingue français-arabe pour mon app AgriTech, avec un formulaire d’inscription pour les agriculteurs. Budget autour de 120 000 DA, livraison avant mi-décembre.",
+    "aiHint": "Dans la langue de votre choix. L’IA lit votre besoin ; le classement se fait sur les profils publics.",
+    "aiFind": "Trouver",
+    "aiResults": "{count, plural, one {# recommandation} other {# recommandations}} pour vous",
+    "matchError": "L’IA ne peut pas chercher pour le moment. Réessayez, ou parcourez la liste ci-dessous.",
+    "matchRate": "Trop de recherches cette heure. Parcourez la liste en attendant.",
+    "matchNotANeed": "Décrivez le travail à faire : compétences, livrable, budget, délai.",
+    "matchNone": "Aucun freelancer ne correspond pour l’instant. Essayez avec moins de contraintes, ou parcourez la liste.",
+    "why": "Pourquoi ce profil",
+    "browseTitle": "Tous les freelancers",
+    "count": "{count, plural, one {# freelancer} other {# freelancers}}",
+    "search": "Compétence, métier, mot-clé…",
+    "city": "Wilaya",
+    "allCities": "Toutes les wilayas",
+    "maxPrice": "Prix max (DA)",
+    "apply": "Rechercher",
+    "remoteOnly": "Travail à distance",
+    "verifiedOnly": "Entreprise vérifiée uniquement",
+    "empty": "Aucun freelancer ne correspond à ces filtres.",
+    "more": "Voir plus",
+    "verified": "Entreprise vérifiée",
+    "verifiedLong": "Entreprise vérifiée",
+    "remote": "À distance OK",
+    "fromPrice": "Dès {price}",
+    "dayRate": "{price} / jour",
+    "priceOnRequest": "Prix sur devis",
+    "back": "Retour à tous les freelancers",
+    "memberSince": "Sur Metwork depuis {date}",
+    "about": "À propos",
+    "skills": "Compétences",
+    "languages": "Langues",
+    "portfolio": "Portfolio",
+    "gigs": "{count, plural, =0 {Gigs} one {# gig} other {# gigs}}",
+    "noGigs": "Pas encore de gig : demandez un devis sur mesure.",
+    "days": "{count, plural, one {# jour} other {# jours}}",
+    "revisions": "{count, plural, one {# révision} other {# révisions}}",
+    "askQuestion": "Poser une question",
+    "requestQuote": "Demander un devis",
+    "quoteTitle": "Demander un devis à {name}",
+    "quoteSubject": "Pour quoi ?",
+    "quoteDetails": "Détails",
+    "quoteDetailsPlaceholder": "Décrivez le travail, les livrables et ce que le freelancer doit savoir.",
+    "budget": "Budget (DA)",
+    "deadline": "Délai",
+    "sendQuote": "Envoyer la demande",
+    "quotesLeft": "{count, plural, =0 {Plus de demande de devis ce mois-ci} one {# demande de devis restante ce mois-ci} other {# demandes de devis restantes ce mois-ci}}",
+    "upgrade": "Passer à Founder",
+    "errors": {
+      "QUOTE_LIMIT": "Vous avez utilisé les demandes de devis du mois avec l’offre gratuite. Les membres Founder n’ont pas de limite.",
+      "CONTACT_LIMIT": "Vous avez atteint les nouveaux contacts de la semaine avec l’offre gratuite.",
+      "BLOCKED": "Vous ne pouvez pas contacter ce freelancer.",
+      "NOT_ALLOWED": "Indisponible pour ce compte.",
+      "RATE_LIMITED": "Trop de demandes. Réessayez plus tard.",
+      "MESSAGING_UNAVAILABLE": "La messagerie est momentanément indisponible.",
+      "GENERIC": "Une erreur est survenue. Réessayez."
+    },
+    "msgBudget": "Budget",
+    "msgDeadline": "Délai"
   }
 }

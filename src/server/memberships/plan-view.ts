@@ -142,7 +142,7 @@ export async function getMembershipPlanViews(
           { key: 'paymentLinksUnlimited' },
           { key: 'taxPrefill' },
           { key: 'perks', soon: true },
-          { key: 'searchPriority', soon: true },
+          { key: 'searchPriority' },
           { key: 'copilotUnlimited' },
         ],
       },

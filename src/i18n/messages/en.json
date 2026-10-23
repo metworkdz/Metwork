@@ -2307,7 +2307,8 @@
     "copilot": "Copilot",
     "copilotKb": "Copilot documents",
     "messages": "Messages",
-    "messageReports": "Reported chats"
+    "messageReports": "Reported chats",
+    "hire": "Hire"
   },
   "pages": {
     "consultationPay": {
@@ -3151,8 +3152,6 @@
         "title": "Freelancer workspace",
         "greeting": "Hello {name}",
         "subtitle": "Your freelancer workspace on Metwork.",
-        "comingTitle": "Your workspace is on its way",
-        "comingBody": "These tools are being built for you and will appear here as they launch.",
         "upcomingInvoices": "Invoices, quotes and proformas",
         "upcomingPaymentLinks": "Payment links in DZD (CIB, Edahabia)",
         "upcomingClients": "Clients and projects",
@@ -3183,10 +3182,13 @@
         "dueTitle": "Due soon",
         "seeAll": "All projects",
         "dueEmpty": "Nothing due in the next 7 days.",
-        "upcomingHiring": "Clients from the entrepreneurs' hiring tab",
         "addGig": "Add a gig",
         "taxNextTitle": "Next tax deadline",
-        "taxNextNone": "Set your legal status to see your tax deadlines."
+        "taxNextNone": "Set your legal status to see your tax deadlines.",
+        "listedTitle": "Founders can find you",
+        "listedBody": "Your profile appears in the hiring tab and in AI recommendations.",
+        "unlistedTitle": "Founders can’t find you yet",
+        "unlistedBody": "Add a headline and at least 3 skills to appear in the hiring tab."
       }
     },
     "payment": {
@@ -6956,5 +6958,68 @@
       "MESSAGING_UNAVAILABLE": "Messaging is temporarily unavailable.",
       "GENERIC": "Something went wrong. Try again."
     }
+  },
+  "hiring": {
+    "pageTitle": "Hire a freelancer",
+    "subtitle": "Describe what you need and the AI suggests the right freelancers, or browse everyone.",
+    "aiTitle": "Describe what you need",
+    "aiPlaceholder": "E.g. I need a bilingual French–Arabic website for my AgriTech app, with a sign-up form for farmers. Budget around 120,000 DA, delivery before mid-December.",
+    "aiHint": "Any language. The AI reads your need; the ranking is done on the freelancers’ public profiles.",
+    "aiFind": "Find freelancers",
+    "aiResults": "{count, plural, one {# recommendation} other {# recommendations}} for you",
+    "matchError": "The AI could not search right now. Try again, or browse below.",
+    "matchRate": "Too many searches this hour. Browse below in the meantime.",
+    "matchNotANeed": "Describe the work you need done: skills, deliverable, budget, deadline.",
+    "matchNone": "No freelancer matches this yet. Try fewer constraints, or browse below.",
+    "why": "Why them",
+    "browseTitle": "All freelancers",
+    "count": "{count, plural, one {# freelancer} other {# freelancers}}",
+    "search": "Skill, job, keyword…",
+    "city": "Wilaya",
+    "allCities": "All wilayas",
+    "maxPrice": "Max price (DA)",
+    "apply": "Search",
+    "remoteOnly": "Remote work",
+    "verifiedOnly": "Verified business only",
+    "empty": "No freelancer matches these filters.",
+    "more": "Show more",
+    "verified": "Verified business",
+    "verifiedLong": "Verified business",
+    "remote": "Remote OK",
+    "fromPrice": "From {price}",
+    "dayRate": "{price} / day",
+    "priceOnRequest": "Price on request",
+    "back": "Back to all freelancers",
+    "memberSince": "On Metwork since {date}",
+    "about": "About",
+    "skills": "Skills",
+    "languages": "Languages",
+    "portfolio": "Portfolio",
+    "gigs": "{count, plural, =0 {Gigs} one {# gig} other {# gigs}}",
+    "noGigs": "No gig yet: ask for a custom quote.",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "revisions": "{count, plural, one {# revision} other {# revisions}}",
+    "askQuestion": "Ask a question",
+    "requestQuote": "Request a quote",
+    "quoteTitle": "Request a quote from {name}",
+    "quoteSubject": "What is it for?",
+    "quoteDetails": "Details",
+    "quoteDetailsPlaceholder": "Describe the work, the deliverables and anything the freelancer should know.",
+    "budget": "Budget (DA)",
+    "deadline": "Deadline",
+    "sendQuote": "Send the request",
+    "quotesLeft": "{count, plural, =0 {No quote requests left this month} one {# quote request left this month} other {# quote requests left this month}}",
+    "upgrade": "Upgrade to Founder",
+    "errors": {
+      "QUOTE_LIMIT": "You have used this month’s quote requests on the Free plan. Founder members have no limit.",
+      "CONTACT_LIMIT": "You’ve reached this week’s new contacts on the Free plan.",
+      "BLOCKED": "You can’t contact this freelancer.",
+      "NOT_ALLOWED": "Not available for this account.",
+      "RATE_LIMITED": "Too many requests. Try again later.",
+      "MESSAGING_UNAVAILABLE": "Messaging is temporarily unavailable.",
+      "GENERIC": "Something went wrong. Try again."
+    },
+    "msgBudget": "Budget",
+    "msgDeadline": "Deadline"
   }
 }

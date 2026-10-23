@@ -1,8 +1,8 @@
 /**
  * Messaging — THE service behind /api/messages and the inbox (Metwork 2.0
- * phase 6). Threads are attached to the work they are about (a venture now;
- * gig orders, quote requests and cofounder matches plug in through
- * `validateContext` in later phases).
+ * phase 6). Threads are attached to the work they are about: a venture, a
+ * gig, a quote request; cofounder matches plug in through `validateContext`
+ * in phase 8.
  *
  * Rules, all enforced here:
  *   - only active freelancers and entrepreneurs message each other;
@@ -101,6 +101,12 @@ function contextView(data: Store, type: ContextType, id: string | null): Context
   if (type === 'VENTURE' && id) {
     return { type, id, title: (data.ventures ?? []).find((v) => v.id === id)?.name ?? null };
   }
+  if (type === 'QUOTE_REQUEST' && id) {
+    return { type, id, title: (data.quoteRequests ?? []).find((q) => q.id === id)?.title ?? null };
+  }
+  if (type === 'GIG_ORDER' && id) {
+    return { type, id, title: (data.gigs ?? []).find((g) => g.id === id)?.title ?? null };
+  }
   return { type, id, title: null };
 }
 
@@ -131,6 +137,16 @@ function validateContext(data: Store, fromId: string, toId: string, type: Contex
       // Write to the founder about their public venture page.
       const v = id ? (data.ventures ?? []).find((x) => x.id === id) : undefined;
       return Boolean(v && v.ownerId === toId && v.ownerId !== fromId && publicVenture(data, v));
+    }
+    case 'QUOTE_REQUEST': {
+      // Opened by `hiring/quotes` for the request it just recorded.
+      const q = id ? (data.quoteRequests ?? []).find((x) => x.id === id) : undefined;
+      return Boolean(q && q.entrepreneurId === fromId && q.freelancerId === toId);
+    }
+    case 'GIG_ORDER': {
+      // A question about a live gig, to the freelancer who sells it.
+      const g = id ? (data.gigs ?? []).find((x) => x.id === id) : undefined;
+      return Boolean(g && g.isActive && g.freelancerId === toId && g.freelancerId !== fromId);
     }
     default:
       return false;
@@ -221,7 +237,15 @@ export async function sendMessage(input: {
   if (!canMessage(data.users.find((u) => u.id === other.userId))) return { ok: false, reason: 'NOT_ALLOWED' };
   if (await repo.isBlockedEitherWay(input.userId, other.userId)) return { ok: false, reason: 'BLOCKED' };
   if (!checkAttachment(data, input.userId, input.attachment)) return { ok: false, reason: 'INVALID_ATTACHMENT' };
-  return deliver(data, conv.id, input.userId, other.userId, body, input.attachment, conv);
+  const sent = await deliver(data, conv.id, input.userId, other.userId, body, input.attachment, conv);
+  // A devis sent in a quote thread answers the request.
+  if (sent.ok && conv.contextType === 'QUOTE_REQUEST' && input.attachment?.kind === 'INVOICE') {
+    await db.update((d) => {
+      const q = d.quoteRequests?.find((x) => x.id === conv.contextId && x.freelancerId === input.userId);
+      if (q && q.status === 'OPEN') { q.status = 'ANSWERED'; q.updatedAt = new Date().toISOString(); }
+    });
+  }
+  return sent;
 }
 
 async function deliver(

@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
  */
 const FEATURES = [
   { key: 'f1', icon: BadgeCheck, live: true },
-  { key: 'f2', icon: Users, live: false },
+  { key: 'f2', icon: Users, live: true },
   { key: 'f3', icon: FileText, live: true },
   { key: 'f4', icon: Link2, live: true },
   { key: 'f5', icon: CalendarClock, live: true },

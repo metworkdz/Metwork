@@ -12,8 +12,12 @@ import { SHEET_CONTENT_CLASS } from '@/components/features/wallet/payout-account
 interface Props {
   toId: string;
   toName: string;
-  contextType: 'VENTURE';
+  contextType: 'VENTURE' | 'GIG_ORDER';
   contextId: string;
+  /** Button text; defaults to "Write to {name}". */
+  label?: string;
+  variant?: 'outline' | 'default' | 'ghost';
+  size?: 'sm' | 'default';
   /** Logged-in viewer's role, or null for a visitor. */
   viewerRole: string | null;
   /** Where to come back after login. */
@@ -21,7 +25,7 @@ interface Props {
 }
 
 /** "Write to X" — opens a thread about an object, then goes to the inbox. */
-export function ContactButton({ toId, toName, contextType, contextId, viewerRole, returnPath }: Props) {
+export function ContactButton({ toId, toName, contextType, contextId, viewerRole, returnPath, label, variant = 'outline', size = 'default' }: Props) {
   const t = useTranslations('inbox');
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -31,7 +35,7 @@ export function ContactButton({ toId, toName, contextType, contextId, viewerRole
 
   if (!viewerRole) {
     return (
-      <Button asChild variant="outline"><Link href={`/login?next=${encodeURIComponent(returnPath)}`}><MessageSquare className="size-4" />{t('contact', { name: toName })}</Link></Button>
+      <Button asChild variant={variant} size={size}><Link href={`/login?next=${encodeURIComponent(returnPath)}`}><MessageSquare className="size-4" />{label ?? t('contact', { name: toName })}</Link></Button>
     );
   }
   if (viewerRole !== 'FREELANCER' && viewerRole !== 'ENTREPRENEUR') return null;
@@ -57,11 +61,11 @@ export function ContactButton({ toId, toName, contextType, contextId, viewerRole
 
   return (
     <>
-      <Button type="button" variant="outline" onClick={() => setOpen(true)}><MessageSquare className="size-4" />{t('contact', { name: toName })}</Button>
+      <Button type="button" variant={variant} size={size} onClick={() => setOpen(true)}><MessageSquare className="size-4" />{label ?? t('contact', { name: toName })}</Button>
       {open && (
         <Dialog open onOpenChange={(o) => { if (!o) setOpen(false); }}>
           <DialogContent className={SHEET_CONTENT_CLASS}>
-            <DialogHeader><DialogTitle>{t('contact', { name: toName })}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{label ?? t('contact', { name: toName })}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <label htmlFor="first-message" className="sr-only">{t('placeholder')}</label>
               <Textarea id="first-message" rows={5} maxLength={4000} value={body} placeholder={t('firstPlaceholder')} className="text-base sm:text-sm" onChange={(e) => setBody(e.target.value)} />

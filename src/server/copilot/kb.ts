@@ -12,6 +12,9 @@
  * Pure, no I/O: safe to unit-test and to run in the sync script.
  */
 import { createHash } from 'node:crypto';
+import { tokenize } from '@/lib/text-search';
+
+export { tokenize };
 
 export interface KbDocument {
   /** Stable id derived from the path ("2026/code-des-impots-directs…"). */
@@ -61,10 +64,10 @@ export const MIN_TEXT_PER_DOCUMENT = 200;
 export function slugify(s: string): string {
   return s
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/\.pdf$/, '')
-    .replace(/[^a-z0-9؀-ۿ]+/g, '-')
+    .replace(/[^a-z0-9\u0600-\u06ff]+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 120);
 }
@@ -211,30 +214,6 @@ export function removeDocument(index: KbIndex, docId: string): KbIndex {
 }
 
 /* ─────────────────────────── Search (BM25) ─────────────────────────── */
-
-const STOPWORDS = new Set(
-  ('au aux avec ce ces dans de des du elle en et eux il je la le les leur lui ma mais me meme mes moi mon ne nos notre nous on ou par pas pour qu que qui sa se ses son sur ta te tes toi ton tu un une vos votre vous est sont ete etre avoir a ont cette cet celui celle ceux dont lorsque si sous tout tous toute toutes plus moins entre leurs y d l s n c j m t qu').split(' '),
-);
-
-/** Lowercase, strip accents and apostrophes, cut words to a crude French stem. */
-export function tokenize(text: string): string[] {
-  const out: string[] = [];
-  const folded = text
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    // "282sexies" (as printed in the codes) must match "282 sexies".
-    .replace(/(\d)([a-z])/g, '$1 $2')
-    .replace(/([a-z])(\d)/g, '$1 $2');
-  for (const raw of folded.split(/[^a-z0-9؀-ۿ]+/)) {
-    if (!raw || STOPWORDS.has(raw)) continue;
-    if (/^\d+$/.test(raw)) { out.push(raw); continue; }
-    if (raw.length < 2) continue;
-    // Prefix stemming: "declarations" / "declaration" / "declarer" → "declar".
-    out.push(raw.length > 6 ? raw.slice(0, 6) : raw.replace(/s$/, ''));
-  }
-  return out;
-}
 
 export interface SearchIndex {
   chunks: KbChunk[];
