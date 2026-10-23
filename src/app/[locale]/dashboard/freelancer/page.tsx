@@ -170,7 +170,6 @@ export default async function FreelancerOverviewPage({ params }: PageProps) {
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold"><Sparkles className="size-4" />{t('comingTitle')}</h2>
           <p className="text-sm text-muted-foreground">{t('comingBody')}</p>
           <ul className="mt-3 space-y-2 text-sm">
-            <li>• {t('upcomingCopilot')}</li>
             <li>• {t('upcomingHiring')}</li>
           </ul>
           <Button asChild variant="outline" size="sm" className="mt-4">

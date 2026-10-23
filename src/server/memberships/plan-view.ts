@@ -122,7 +122,7 @@ export async function getMembershipPlanViews(
           { key: 'invoicingLimited' },
           { key: 'paymentLinksLimited' },
           { key: 'taxCalendar' },
-          { key: 'copilotLimited', soon: true },
+          { key: 'copilotLimited' },
         ],
       },
       {
@@ -143,7 +143,7 @@ export async function getMembershipPlanViews(
           { key: 'taxPrefill' },
           { key: 'perks', soon: true },
           { key: 'searchPriority', soon: true },
-          { key: 'copilotUnlimited', soon: true },
+          { key: 'copilotUnlimited' },
         ],
       },
     ];
@@ -166,7 +166,7 @@ export async function getMembershipPlanViews(
         { key: 'taxCalendar' },
         { key: 'invoicingLimited', soon: true },
         { key: 'cofounderPreview', soon: true },
-        { key: 'copilotLimited', soon: true },
+        { key: 'copilotLimited' },
       ],
     },
     {
@@ -192,7 +192,7 @@ export async function getMembershipPlanViews(
         { key: 'marketplaceFeature' },
         { key: 'cofounderMatching', soon: true },
         { key: 'invoicingUnlimited', soon: true },
-        { key: 'copilotUnlimited', soon: true },
+        { key: 'copilotUnlimited' },
       ],
     },
   ];

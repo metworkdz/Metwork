@@ -31,7 +31,7 @@ export default async function EntrepreneurTaxesPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <DashboardPageHeader title={t('pageTitle')} subtitle={t('subtitle')} />
-      <TaxCenter view={view} legalHref="/dashboard/entrepreneur/venture" membershipHref="/dashboard/entrepreneur/membership" offerPrefill={false} />
+      <TaxCenter view={view} legalHref="/dashboard/entrepreneur/venture" membershipHref="/dashboard/entrepreneur/membership" copilotHref="/dashboard/entrepreneur/copilot" offerPrefill={false} />
     </div>
   );
 }

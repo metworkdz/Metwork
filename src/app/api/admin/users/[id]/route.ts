@@ -144,6 +144,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     store.freelancerProjects   = (store.freelancerProjects ?? []).filter((p) => p.freelancerId !== id);
     store.gigs                 = (store.gigs ?? []).filter((g) => g.freelancerId !== id);
     store.taxTaskStates        = (store.taxTaskStates ?? []).filter((s) => s.userId !== id);
+    store.copilotUsage         = (store.copilotUsage ?? []).filter((u) => u.userId !== id);
     // Certificates follow their registration out: they carry the member's name.
     const goneRegistrationIds = new Set(
       (store.registrations ?? []).filter((r) => r.userId === id).map((r) => r.id),

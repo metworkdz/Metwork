@@ -88,3 +88,6 @@ scripts/campaigns/.preview*.html
 
 # Campaign send log — holds real recipient addresses. Never commit a mailing list.
 /campaign-send-log.csv
+
+# Copilot knowledge base built by `npm run kb:sync` (local copy)
+/.kb/

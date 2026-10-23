@@ -2303,7 +2303,9 @@
     "venture": "My business",
     "projects": "Projects",
     "gigs": "Gigs",
-    "taxes": "Taxes"
+    "taxes": "Taxes",
+    "copilot": "Copilot",
+    "copilotKb": "Copilot documents"
   },
   "pages": {
     "consultationPay": {
@@ -3179,7 +3181,6 @@
         "dueTitle": "Due soon",
         "seeAll": "All projects",
         "dueEmpty": "Nothing due in the next 7 days.",
-        "upcomingCopilot": "AI copilot for tax and business law",
         "upcomingHiring": "Clients from the entrepreneurs' hiring tab",
         "addGig": "Add a gig",
         "taxNextTitle": "Next tax deadline",
@@ -5146,6 +5147,39 @@
       "approve": "Approve",
       "reject": "Reject",
       "decideError": "Could not save the decision."
+    },
+    "copilotKb": {
+      "title": "Copilot documents",
+      "subtitle": "The texts the tax copilot answers from.",
+      "howTo": "Upload a new or updated PDF (finance law, code, form — 4 MB max, with a text layer): it is indexed and used by the copilot right away. A file with the same name replaces the previous version. For the whole folder, run npm run kb:sync -- --upload.",
+      "upload": "Upload a PDF",
+      "uploaded": "“{title}” added — {chunks} passages indexed.",
+      "confirmDelete": "Remove “{title}” from the copilot?",
+      "delete": "Remove",
+      "live": "Live since {date} · {documents} documents · {chunks} passages",
+      "notPublished": "No index published yet — the copilot uses the local build, if any.",
+      "loading": "Loading…",
+      "empty": "No documents yet.",
+      "pagesChunks": "{pages} p. · {chunks} passages",
+      "originAdmin": "uploaded here",
+      "originSync": "from the folder",
+      "category": {
+        "CODE": "Code",
+        "FINANCE_LAW": "Finance law",
+        "FORM": "Form",
+        "COMMERCE": "Commerce",
+        "ACCOUNTING": "Accounting",
+        "OTHER": "Other"
+      },
+      "errors": {
+        "FILE_TOO_LARGE": "The file must be 4 MB or smaller.",
+        "UNSUPPORTED_FILE": "Upload a PDF.",
+        "NO_TEXT": "This PDF is a scan with no text layer: it cannot be indexed without OCR.",
+        "UNREADABLE_PDF": "This PDF could not be read.",
+        "CONFLICT": "The documents changed meanwhile. Reload the page and try again.",
+        "STORAGE_UNAVAILABLE": "Storage is not configured.",
+        "GENERIC": "Something went wrong. Try again."
+      }
     }
   },
   "bookings": {
@@ -6779,6 +6813,42 @@
         "s3": "Add the filing receipt here."
       }
     },
-    "sourceMetwork": "CASNOS calendar set by Metwork, pending accountant validation (no CASNOS text in our reference documents yet)."
+    "sourceMetwork": "CASNOS calendar set by Metwork, pending accountant validation (no CASNOS text in our reference documents yet).",
+    "askCopilot": "Ask the copilot",
+    "copilotQuestion": "{name} ({period}): how do I do it, and what do I need?"
+  },
+  "copilot": {
+    "pageTitle": "Tax copilot",
+    "subtitle": "Ask about taxes, CASNOS, invoicing or your status. Answers come from the official texts, with sources.",
+    "disclaimer": "The copilot answers from the 2026 tax codes, the finance laws, the Code de commerce and the DGI forms, and shows its sources. It can be wrong or miss a recent text: check the source, and confirm with an accountant before any decision with money at stake.",
+    "kbNotReady": "The copilot’s documents are being prepared. Come back soon.",
+    "suggestionsTitle": "Try a question",
+    "placeholder": "Ask a question about taxes, CASNOS, invoicing…",
+    "send": "Send",
+    "searching": "Searching the texts…",
+    "quotaLeft": "{count} of {limit} questions left this month",
+    "quotaUnlimited": "Unlimited questions on your plan",
+    "upgrade": "Upgrade",
+    "sources": "Sources",
+    "sourceN": "Source {n}",
+    "page": "page {page}",
+    "errorQuota": "You have used this month’s questions. Upgrade for unlimited questions.",
+    "errorKb": "The documents are not available right now. Try again later.",
+    "errorAi": "The copilot could not answer. Try again in a moment.",
+    "errorOffTopic": "I can only help with taxes, social contributions, accounting and running a business in Algeria — and I found nothing on that in the texts.",
+    "errorRefused": "The copilot cannot answer this question.",
+    "errorRate": "Too many questions in a row. Wait a minute.",
+    "freelancer": {
+      "s1": "As an auto-entrepreneur, what IFU rate do I pay and what is the minimum?",
+      "s2": "What is the turnover ceiling for the auto-entrepreneur status?",
+      "s3": "How do I fill in the G no.12 bis final return?",
+      "s4": "Do I have to add the stamp duty to my invoices paid in cash?"
+    },
+    "entrepreneur": {
+      "s1": "What are the advantages for a company with the startup label?",
+      "s2": "When is the monthly G no.50 return due and what does it contain?",
+      "s3": "What is the IBS rate for a service company?",
+      "s4": "What mentions must appear on an invoice?"
+    }
   }
 }

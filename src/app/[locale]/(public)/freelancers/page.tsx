@@ -49,7 +49,7 @@ const FEATURES = [
   { key: 'f3', icon: FileText, live: true },
   { key: 'f4', icon: Link2, live: true },
   { key: 'f5', icon: CalendarClock, live: true },
-  { key: 'f6', icon: Sparkles, live: false },
+  { key: 'f6', icon: Sparkles, live: true },
   { key: 'f7', icon: FileSignature, live: false },
   { key: 'f8', icon: Building2, live: true },
 ] as const;

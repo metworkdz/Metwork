@@ -118,6 +118,7 @@ export async function DELETE(req: NextRequest) {
     d.freelancerProjects = (d.freelancerProjects ?? []).filter((p) => p.freelancerId !== userId);
     d.gigs               = (d.gigs ?? []).filter((g) => g.freelancerId !== userId);
     d.taxTaskStates      = (d.taxTaskStates ?? []).filter((s) => s.userId !== userId);
+    d.copilotUsage       = (d.copilotUsage ?? []).filter((u) => u.userId !== userId);
 
     // Notifications and user memberships have no post-deletion value.
     d.notifications   = (d.notifications   ?? []).filter((n)  => n.userId  !== userId);

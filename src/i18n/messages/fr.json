@@ -2303,7 +2303,9 @@
     "venture": "Mon entreprise",
     "projects": "Projets",
     "gigs": "Gigs",
-    "taxes": "Impôts"
+    "taxes": "Impôts",
+    "copilot": "Copilote",
+    "copilotKb": "Documents du copilote"
   },
   "pages": {
     "consultationPay": {
@@ -3179,7 +3181,6 @@
         "dueTitle": "À rendre bientôt",
         "seeAll": "Tous les projets",
         "dueEmpty": "Rien à rendre dans les 7 prochains jours.",
-        "upcomingCopilot": "Copilote IA fiscalité et droit des affaires",
         "upcomingHiring": "Des clients depuis l'onglet Recrutement des entrepreneurs",
         "addGig": "Ajouter un gig",
         "taxNextTitle": "Prochaine échéance fiscale",
@@ -5146,6 +5147,39 @@
       "approve": "Approuver",
       "reject": "Refuser",
       "decideError": "Impossible d'enregistrer la décision."
+    },
+    "copilotKb": {
+      "title": "Documents du copilote",
+      "subtitle": "Les textes à partir desquels répond le copilote fiscal.",
+      "howTo": "Envoyez un PDF nouveau ou mis à jour (loi de finances, code, formulaire — 4 Mo max, avec une couche texte) : il est indexé et utilisé par le copilote immédiatement. Un fichier du même nom remplace la version précédente. Pour tout le dossier, lancez npm run kb:sync -- --upload.",
+      "upload": "Envoyer un PDF",
+      "uploaded": "« {title} » ajouté — {chunks} passages indexés.",
+      "confirmDelete": "Retirer « {title} » du copilote ?",
+      "delete": "Retirer",
+      "live": "En ligne depuis le {date} · {documents} documents · {chunks} passages",
+      "notPublished": "Aucun index publié — le copilote utilise la version locale, s’il y en a une.",
+      "loading": "Chargement…",
+      "empty": "Aucun document pour l’instant.",
+      "pagesChunks": "{pages} p. · {chunks} passages",
+      "originAdmin": "envoyé ici",
+      "originSync": "depuis le dossier",
+      "category": {
+        "CODE": "Code",
+        "FINANCE_LAW": "Loi de finances",
+        "FORM": "Formulaire",
+        "COMMERCE": "Commerce",
+        "ACCOUNTING": "Comptabilité",
+        "OTHER": "Autre"
+      },
+      "errors": {
+        "FILE_TOO_LARGE": "Le fichier doit faire 4 Mo au maximum.",
+        "UNSUPPORTED_FILE": "Envoyez un PDF.",
+        "NO_TEXT": "Ce PDF est un scan sans couche texte : il ne peut pas être indexé sans OCR.",
+        "UNREADABLE_PDF": "Ce PDF est illisible.",
+        "CONFLICT": "Les documents ont changé entre-temps. Rechargez la page et réessayez.",
+        "STORAGE_UNAVAILABLE": "Le stockage n’est pas configuré.",
+        "GENERIC": "Une erreur est survenue. Réessayez."
+      }
     }
   },
   "bookings": {
@@ -6779,6 +6813,42 @@
         "s3": "Ajoutez l’accusé de dépôt ici."
       }
     },
-    "sourceMetwork": "Calendrier CASNOS fixé par Metwork, en attente de validation comptable (aucun texte CASNOS dans nos documents de référence pour l’instant)."
+    "sourceMetwork": "Calendrier CASNOS fixé par Metwork, en attente de validation comptable (aucun texte CASNOS dans nos documents de référence pour l’instant).",
+    "askCopilot": "Demander au copilote",
+    "copilotQuestion": "{name} ({period}) : comment faire, et de quoi ai-je besoin ?"
+  },
+  "copilot": {
+    "pageTitle": "Copilote fiscal",
+    "subtitle": "Posez vos questions sur les impôts, la CASNOS, la facturation ou votre statut. Les réponses viennent des textes officiels, avec leurs sources.",
+    "disclaimer": "Le copilote répond à partir des codes fiscaux 2026, des lois de finances, du Code de commerce et des formulaires DGI, et affiche ses sources. Il peut se tromper ou ignorer un texte récent : vérifiez la source et confirmez avec un comptable avant toute décision qui engage de l’argent.",
+    "kbNotReady": "Les documents du copilote sont en préparation. Revenez bientôt.",
+    "suggestionsTitle": "Essayez une question",
+    "placeholder": "Posez une question sur les impôts, la CASNOS, la facturation…",
+    "send": "Envoyer",
+    "searching": "Recherche dans les textes…",
+    "quotaLeft": "{count} questions sur {limit} restantes ce mois-ci",
+    "quotaUnlimited": "Questions illimitées avec votre abonnement",
+    "upgrade": "Passer à l’offre payante",
+    "sources": "Sources",
+    "sourceN": "Source {n}",
+    "page": "page {page}",
+    "errorQuota": "Vous avez utilisé les questions de ce mois. Passez à l’offre payante pour des questions illimitées.",
+    "errorKb": "Les documents ne sont pas disponibles pour le moment. Réessayez plus tard.",
+    "errorAi": "Le copilote n’a pas pu répondre. Réessayez dans un instant.",
+    "errorOffTopic": "Je ne peux aider que sur les impôts, les cotisations sociales, la comptabilité et la gestion d’une activité en Algérie — et je n’ai rien trouvé à ce sujet dans les textes.",
+    "errorRefused": "Le copilote ne peut pas répondre à cette question.",
+    "errorRate": "Trop de questions d’affilée. Patientez une minute.",
+    "freelancer": {
+      "s1": "En tant qu’auto-entrepreneur, quel taux d’IFU je paie et quel est le minimum ?",
+      "s2": "Quel est le plafond de chiffre d’affaires du statut auto-entrepreneur ?",
+      "s3": "Comment remplir la déclaration définitive G n°12 bis ?",
+      "s4": "Dois-je ajouter le droit de timbre sur mes factures payées en espèces ?"
+    },
+    "entrepreneur": {
+      "s1": "Quels avantages pour une société titulaire du label startup ?",
+      "s2": "Quand déposer la G n°50 et que contient-elle ?",
+      "s3": "Quel est le taux de l’IBS pour une société de services ?",
+      "s4": "Quelles mentions doivent figurer sur une facture ?"
+    }
   }
 }

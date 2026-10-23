@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { AlertTriangle, CheckCircle2, ChevronDown, FileUp, Paperclip, RotateCcw, Scale } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronDown, FileUp, Paperclip, RotateCcw, Scale, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from '@/i18n/routing';
@@ -22,12 +22,14 @@ interface Props {
   /** Where the legal status is set: the freelancer profile or the venture page. */
   legalHref: string;
   membershipHref: string;
+  /** The audience's copilot page; each task links to it with a prefilled question. */
+  copilotHref: string;
   /** Prefill reads factures, so it is offered only where Metwork issues them (freelancers). */
   offerPrefill: boolean;
 }
 
 /** The tax & social calendar: what is due, when, how to do it, and proof it was done. */
-export function TaxCenter({ view, legalHref, membershipHref, offerPrefill }: Props) {
+export function TaxCenter({ view, legalHref, membershipHref, copilotHref, offerPrefill }: Props) {
   const t = useTranslations('taxCenter');
   const [tasks, setTasks] = useState(view.tasks);
   const [regime, setRegime] = useState(view.regime);
@@ -98,13 +100,13 @@ export function TaxCenter({ view, legalHref, membershipHref, offerPrefill }: Pro
           {open.length > 0 && (
             <section className="space-y-3">
               <h2 className="text-sm font-semibold">{t('toDo')}</h2>
-              {open.map((task) => <TaskCard key={task.key} task={task} onChange={(p) => update(task.key, p)} />)}
+              {open.map((task) => <TaskCard key={task.key} task={task} copilotHref={copilotHref} onChange={(p) => update(task.key, p)} />)}
             </section>
           )}
           {done.length > 0 && (
             <section className="space-y-3">
               <h2 className="text-sm font-semibold">{t('doneTitle')}</h2>
-              {done.map((task) => <TaskCard key={task.key} task={task} onChange={(p) => update(task.key, p)} />)}
+              {done.map((task) => <TaskCard key={task.key} task={task} copilotHref={copilotHref} onChange={(p) => update(task.key, p)} />)}
             </section>
           )}
         </>
@@ -113,7 +115,7 @@ export function TaxCenter({ view, legalHref, membershipHref, offerPrefill }: Pro
   );
 }
 
-function TaskCard({ task, onChange }: { task: TaxTaskView; onChange: (p: Partial<TaxTaskView>) => void }) {
+function TaskCard({ task, copilotHref, onChange }: { task: TaxTaskView; copilotHref: string; onChange: (p: Partial<TaxTaskView>) => void }) {
   const t = useTranslations('taxCenter');
   const locale = useLocale() as Locale;
   const [openGuide, setOpenGuide] = useState(false);
@@ -205,6 +207,12 @@ function TaskCard({ task, onChange }: { task: TaxTaskView; onChange: (p: Partial
           <p className="text-xs text-muted-foreground">
             {t('source')}: {task.source.document ? `${task.source.document.split('/').pop()} — ${task.source.reference}` : t('sourceMetwork')}
           </p>
+          <Link
+            href={{ pathname: copilotHref, query: { q: t('copilotQuestion', { name: t(`obligation.${task.obligation}`), period: task.period }) } }}
+            className="inline-flex min-h-[40px] items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+          >
+            <Sparkles className="size-4" />{t('askCopilot')}
+          </Link>
         </div>
       )}
 

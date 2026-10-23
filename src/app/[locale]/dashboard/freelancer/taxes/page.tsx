@@ -31,7 +31,7 @@ export default async function FreelancerTaxesPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <DashboardPageHeader title={t('pageTitle')} subtitle={t('subtitle')} />
-      <TaxCenter view={view} legalHref="/dashboard/freelancer/profile" membershipHref="/dashboard/freelancer/membership" offerPrefill={true} />
+      <TaxCenter view={view} legalHref="/dashboard/freelancer/profile" membershipHref="/dashboard/freelancer/membership" copilotHref="/dashboard/freelancer/copilot" offerPrefill={true} />
     </div>
   );
 }

@@ -1104,6 +1104,26 @@ export interface TaxTaskStateRecord {
   updatedAt: string;
 }
 
+/**
+ * The live copilot index: a gzipped `KbIndex` stored as a private Cloudinary
+ * asset (too big for this document). Swapped atomically on each rebuild.
+ */
+export interface CopilotKbPointer {
+  publicId: string;
+  builtAt: string;
+  documents: number;
+  chunks: number;
+  bytes: number;
+}
+
+export interface CopilotUsageRecord {
+  userId: string;
+  /** "YYYY-MM". */
+  month: string;
+  questions: number;
+  updatedAt: string;
+}
+
 /* ──────────────────────── Metwork 2.0 — ventures ──────────────────────── */
 
 export interface VentureRecord {
@@ -3874,6 +3894,10 @@ interface DbShape {
   gigs?: GigRecord[];
   /** Metwork 2.0 — per-user state of tax-calendar tasks (done, receipt, reminders). */
   taxTaskStates?: TaxTaskStateRecord[];
+  /** Metwork 2.0 — where the live copilot knowledge-base index is stored. */
+  copilotKb?: CopilotKbPointer | null;
+  /** Metwork 2.0 — copilot questions asked, per user per month (quota). */
+  copilotUsage?: CopilotUsageRecord[];
   /** Audit log entries for admin actions. */
   auditLogs: AuditLogRecord[];
   /** In-app notifications per user. */
