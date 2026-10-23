@@ -2310,7 +2310,15 @@
     "messageReports": "Reported chats",
     "hire": "Hire",
     "orders": "Orders",
-    "cofounder": "Cofounder"
+    "cofounder": "Cofounder",
+    "navGroup": {
+      "money": "Money",
+      "work": "Work",
+      "compliance": "Compliance",
+      "account": "Account",
+      "allTools": "All your tools",
+      "home": "Home"
+    }
   },
   "pages": {
     "consultationPay": {
@@ -2686,7 +2694,21 @@
           "statConsultationHintUpgrade": "Upgrade to save on consultations",
           "statConsultationHintDiscount": "Your consultation discount",
           "addVentureTitle": "Add your business",
-          "addVentureBody": "Startup, company, activity or idea: tell us about it and we'll show you who can help."
+          "addVentureBody": "Startup, company, activity or idea: tell us about it and we'll show you who can help.",
+          "hireEyebrow": "What do you need?",
+          "hireTitle": "Find the right freelancer in one sentence",
+          "hirePlaceholder": "A bilingual website for my app…",
+          "toPay": "To pay",
+          "toPayHint": "{count, plural, one {# order waiting} other {# orders waiting}}",
+          "toPayNone": "Nothing to pay",
+          "cofounderTitle": "Cofounders",
+          "cofounderValue": "Today's deck",
+          "cofounderHint": "New profiles every day",
+          "ordersTitle": "My orders",
+          "ordersAll": "See all",
+          "ordersEmpty": "No order yet. Hire a freelancer from the Hire tab.",
+          "upcomingTitle": "Coming up",
+          "upcomingEmpty": "Nothing booked for the coming days."
         },
         "bookings": {
           "title": "Bookings",
@@ -3190,7 +3212,15 @@
         "listedTitle": "Founders can find you",
         "listedBody": "Your profile appears in the hiring tab and in AI recommendations.",
         "unlistedTitle": "Founders can’t find you yet",
-        "unlistedBody": "Add a headline and at least 3 skills to appear in the hiring tab."
+        "unlistedBody": "Add a headline and at least 3 skills to appear in the hiring tab.",
+        "walletEyebrow": "Wallet balance",
+        "heroMonth": "This month",
+        "heroToCollect": "To collect",
+        "withdraw": "Withdraw",
+        "ordersTitle": "Orders in progress",
+        "ordersAll": "See all",
+        "ordersEmpty": "No order in progress. Publish a gig to get some.",
+        "daysLeft": "D-{days}"
       }
     },
     "payment": {

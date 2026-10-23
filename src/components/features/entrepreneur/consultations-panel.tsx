@@ -463,7 +463,8 @@ export function ConsultationsPanel({
               icon={<UserCheck className="size-5 text-muted-foreground" />}
             />
           ) : (
-            <div className="overflow-x-auto">
+            <div className="relative overflow-x-auto">
+              {/* relative: keeps the action buttons' sr-only labels inside the scroller, so they can't widen the page on phones. */}
               <Table>
                 <TableHeader>
                   <TableRow>

@@ -2310,7 +2310,15 @@
     "messageReports": "البلاغات",
     "hire": "التوظيف",
     "orders": "الطلبات",
-    "cofounder": "الشركاء"
+    "cofounder": "الشركاء",
+    "navGroup": {
+      "money": "المال",
+      "work": "العمل",
+      "compliance": "الامتثال",
+      "account": "الحساب",
+      "allTools": "كل أدواتك",
+      "home": "الرئيسية"
+    }
   },
   "pages": {
     "consultationPay": {
@@ -2686,7 +2694,21 @@
           "statConsultationHintUpgrade": "قم بالترقية للتوفير على الاستشارات",
           "statConsultationHintDiscount": "خصمك على الاستشارات",
           "addVentureTitle": "أضف مؤسستك",
-          "addVentureBody": "شركة ناشئة أو مؤسسة أو نشاط أو فكرة: عرّفنا بها وسنريك من يمكنه مساعدتك."
+          "addVentureBody": "شركة ناشئة أو مؤسسة أو نشاط أو فكرة: عرّفنا بها وسنريك من يمكنه مساعدتك.",
+          "hireEyebrow": "ماذا تحتاج؟",
+          "hireTitle": "اعثر على المستقل المناسب بجملة واحدة",
+          "hirePlaceholder": "موقع بلغتين لتطبيقي…",
+          "toPay": "للدفع",
+          "toPayHint": "{count, plural, one {طلب واحد في الانتظار} other {# طلبات في الانتظار}}",
+          "toPayNone": "لا شيء للدفع",
+          "cofounderTitle": "الشركاء المؤسسون",
+          "cofounderValue": "مجموعة اليوم",
+          "cofounderHint": "ملفات جديدة كل يوم",
+          "ordersTitle": "طلباتي",
+          "ordersAll": "عرض الكل",
+          "ordersEmpty": "لا توجد طلبات بعد. وظّف مستقلاً من تبويب التوظيف.",
+          "upcomingTitle": "القادم",
+          "upcomingEmpty": "لا حجوزات في الأيام القادمة."
         },
         "bookings": {
           "title": "الحجوزات",
@@ -3190,7 +3212,15 @@
         "listedTitle": "يمكن للمؤسسين إيجادك",
         "listedBody": "يظهر ملفك في تبويب التوظيف وفي توصيات الذكاء الاصطناعي.",
         "unlistedTitle": "لا يستطيع المؤسسون إيجادك بعد",
-        "unlistedBody": "أضف عنوانًا مهنيًا و3 مهارات على الأقل لتظهر في تبويب التوظيف."
+        "unlistedBody": "أضف عنوانًا مهنيًا و3 مهارات على الأقل لتظهر في تبويب التوظيف.",
+        "walletEyebrow": "رصيد المحفظة",
+        "heroMonth": "هذا الشهر",
+        "heroToCollect": "للتحصيل",
+        "withdraw": "سحب",
+        "ordersTitle": "الطلبات الجارية",
+        "ordersAll": "عرض الكل",
+        "ordersEmpty": "لا توجد طلبات جارية. انشر خدمة لتلقي الطلبات.",
+        "daysLeft": "ي-{days}"
       }
     },
     "payment": {

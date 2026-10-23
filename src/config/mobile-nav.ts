@@ -64,6 +64,68 @@ const primaryTabHrefsByRole: Record<UserRole, string[]> = {
   ],
 };
 
+/**
+ * Premium shell (freelancer + founder): a floating bar of Home · tab ·
+ * Copilot (green centre circle) · Messages · More, and a More sheet grouped
+ * by job. `tabs` are 4 hrefs in bar order (the 3rd renders as the centre
+ * circle); every other nav item lands in a group — anything not listed in a
+ * group falls into the last one, so no destination is ever unreachable.
+ */
+export interface PremiumNavGroup {
+  titleKey: string;
+  hrefs: string[];
+}
+
+export interface PremiumNav {
+  tabs: [string, string, string, string];
+  groups: PremiumNavGroup[];
+}
+
+const F = '/dashboard/freelancer';
+const E = '/dashboard/entrepreneur';
+
+export const premiumNavByRole: Partial<Record<UserRole, PremiumNav>> = {
+  FREELANCER: {
+    tabs: [F, `${F}/orders`, `${F}/copilot`, `${F}/messages`],
+    groups: [
+      { titleKey: 'dashboard.navGroup.money', hrefs: [`${F}/wallet`, `${F}/invoices`, `${F}/payment-links`, `${F}/clients`] },
+      { titleKey: 'dashboard.navGroup.work', hrefs: [`${F}/gigs`, `${F}/projects`, `${F}/cofounder`, `${F}/bookings`, `${F}/consultations`] },
+      { titleKey: 'dashboard.navGroup.compliance', hrefs: [`${F}/taxes`, `${F}/membership`] },
+      { titleKey: 'dashboard.navGroup.account', hrefs: [`${F}/profile`, `${F}/settings`] },
+    ],
+  },
+  ENTREPRENEUR: {
+    tabs: [E, `${E}/hire`, `${E}/copilot`, `${E}/messages`],
+    groups: [
+      { titleKey: 'dashboard.navGroup.money', hrefs: [`${E}/wallet`, `${E}/orders`, `${E}/membership`, `${E}/perks`] },
+      { titleKey: 'dashboard.navGroup.work', hrefs: [`${E}/venture`, `${E}/cofounder`, `${E}/startup`, `${E}/marketplace`, `${E}/bookings`, `${E}/consultations`] },
+      { titleKey: 'dashboard.navGroup.compliance', hrefs: [`${E}/taxes`, `${E}/network-pass`] },
+      { titleKey: 'dashboard.navGroup.account', hrefs: [`${E}/settings`] },
+    ],
+  },
+};
+
+/** Resolve a premium shell's tabs and grouped sheet against the role's nav. */
+export function getPremiumNav(role: UserRole): { tabs: NavItem[]; groups: { titleKey: string; items: NavItem[] }[] } | null {
+  const cfg = premiumNavByRole[role];
+  if (!cfg) return null;
+  const all = dashboardNavByRole[role].filter((i) => !i.sectionHeader);
+  const byHref = (h: string) => all.find((i) => i.href === h);
+  const tabs = cfg.tabs.map(byHref).filter((i): i is NavItem => Boolean(i));
+  if (tabs.length !== 4) return null;
+  // "Overview" wraps in a fifth of a phone; the bar says Home.
+  tabs[0] = { ...tabs[0]!, labelKey: 'dashboard.navGroup.home' };
+  const used = new Set(cfg.tabs);
+  const groups = cfg.groups.map((g) => {
+    const items = g.hrefs.map(byHref).filter((i): i is NavItem => Boolean(i));
+    items.forEach((i) => used.add(i.href));
+    return { titleKey: g.titleKey, items };
+  });
+  const rest = all.filter((i) => !used.has(i.href));
+  if (rest.length) groups[groups.length - 1]!.items.push(...rest);
+  return { tabs, groups: groups.filter((g) => g.items.length > 0) };
+}
+
 /** Sentinel used by the bottom bar / sheet for the "More" affordance. */
 export const MORE_NAV: NavItem = {
   labelKey: 'dashboard.more',

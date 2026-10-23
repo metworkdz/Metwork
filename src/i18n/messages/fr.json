@@ -2310,7 +2310,15 @@
     "messageReports": "Signalements",
     "hire": "Recrutement",
     "orders": "Commandes",
-    "cofounder": "Cofondateurs"
+    "cofounder": "Cofondateurs",
+    "navGroup": {
+      "money": "Argent",
+      "work": "Travail",
+      "compliance": "Conformité",
+      "account": "Compte",
+      "allTools": "Tous vos outils",
+      "home": "Accueil"
+    }
   },
   "pages": {
     "consultationPay": {
@@ -2686,7 +2694,21 @@
           "statConsultationHintUpgrade": "Passez à une offre pour économiser sur les consultations",
           "statConsultationHintDiscount": "Votre remise sur les consultations",
           "addVentureTitle": "Ajoutez votre entreprise",
-          "addVentureBody": "Startup, société, activité ou idée : présentez-la et nous vous montrerons qui peut vous aider."
+          "addVentureBody": "Startup, société, activité ou idée : présentez-la et nous vous montrerons qui peut vous aider.",
+          "hireEyebrow": "De quoi avez-vous besoin ?",
+          "hireTitle": "Trouvez le bon freelancer en une phrase",
+          "hirePlaceholder": "Un site bilingue pour mon app…",
+          "toPay": "À payer",
+          "toPayHint": "{count, plural, one {# commande en attente} other {# commandes en attente}}",
+          "toPayNone": "Rien à payer",
+          "cofounderTitle": "Cofondateurs",
+          "cofounderValue": "Deck du jour",
+          "cofounderHint": "De nouveaux profils chaque jour",
+          "ordersTitle": "Mes commandes",
+          "ordersAll": "Tout voir",
+          "ordersEmpty": "Aucune commande pour l’instant. Recrutez un freelancer depuis l’onglet Recruter.",
+          "upcomingTitle": "À venir",
+          "upcomingEmpty": "Rien de réservé pour les prochains jours."
         },
         "bookings": {
           "title": "Réservations",
@@ -3190,7 +3212,15 @@
         "listedTitle": "Les fondateurs peuvent vous trouver",
         "listedBody": "Votre profil apparaît dans l’onglet Recrutement et dans les recommandations de l’IA.",
         "unlistedTitle": "Les fondateurs ne vous trouvent pas encore",
-        "unlistedBody": "Ajoutez un titre et au moins 3 compétences pour apparaître dans l’onglet Recrutement."
+        "unlistedBody": "Ajoutez un titre et au moins 3 compétences pour apparaître dans l’onglet Recrutement.",
+        "walletEyebrow": "Solde du portefeuille",
+        "heroMonth": "Ce mois",
+        "heroToCollect": "À encaisser",
+        "withdraw": "Retirer",
+        "ordersTitle": "Commandes en cours",
+        "ordersAll": "Tout voir",
+        "ordersEmpty": "Aucune commande en cours. Publiez un gig pour en recevoir.",
+        "daysLeft": "J-{days}"
       }
     },
     "payment": {

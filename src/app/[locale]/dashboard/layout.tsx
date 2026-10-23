@@ -36,7 +36,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {/* Scroll clearance so the last card never hides behind the fixed
               mobile tab bar (nav content height + its safe-area inset).
               display:none at lg → desktop layout is byte-for-byte unchanged. */}
-          <div aria-hidden className="h-[calc(4.5rem+env(safe-area-inset-bottom))] lg:hidden" />
+          <div aria-hidden className="h-[calc(6rem+env(safe-area-inset-bottom))] lg:hidden" />
         </main>
         <MobileTabBar role={user.role} />
         {/* Only reached past the auth redirect above, so `signedIn` is a fact

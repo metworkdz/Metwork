@@ -1849,126 +1849,6 @@
       "updatedAt": "2026-08-20T21:31:55.414Z"
     },
     {
-      "id": "qa-admin-id",
-      "email": "test.admin@metwork.test",
-      "passwordHash": "scrypt$0a564ed07658b53cc8c47a887bfd7a57$7da7ac7a77d088aaea539544f8c1d5dab6550ea4162027af91a98a66ba361379bd395abf5bc9f3afeaa698d229afc9ccd7552115e34e7a0eb23db0e823386dce",
-      "fullName": "QA Admin",
-      "phone": "+2130700000000",
-      "city": "Alger",
-      "role": "ADMIN",
-      "status": "ACTIVE",
-      "phoneVerified": true,
-      "emailVerified": true,
-      "membershipCode": null,
-      "membershipTier": "EXPLORER",
-      "networkCredits": 0,
-      "networkCreditsMax": 0,
-      "avatarUrl": null,
-      "locale": "fr",
-      "createdAt": "2026-08-22T00:12:22.265Z",
-      "updatedAt": "2026-08-22T00:12:22.265Z"
-    },
-    {
-      "id": "qa-incubator-user-id",
-      "email": "test.incubator@metwork.test",
-      "passwordHash": "scrypt$651b76d2a6b4f0f813b28f80ba1aefb5$e3e9c8c79af3f33d7a4ae7a8c20d793d1840f98b4cb5409d26f9507d0d816e44b11b44cfc2d4f0ec779785d850c4403fbcc5fb32e2985fcd9d1bfbfe238e0b5a",
-      "fullName": "QA Incubator Hub",
-      "phone": "+2130700000001",
-      "city": "Alger",
-      "role": "INCUBATOR",
-      "status": "ACTIVE",
-      "phoneVerified": true,
-      "emailVerified": true,
-      "membershipCode": null,
-      "membershipTier": "EXPLORER",
-      "networkCredits": 0,
-      "networkCreditsMax": 0,
-      "avatarUrl": null,
-      "locale": "fr",
-      "createdAt": "2026-08-22T00:12:22.265Z",
-      "updatedAt": "2026-08-22T00:12:22.265Z"
-    },
-    {
-      "id": "qa-builder-id",
-      "email": "test.builder@metwork.test",
-      "passwordHash": "scrypt$de2f1c8da78c2d85d873405093b54129$5bbc64003907b1620f1c1d4397908f2e55924d6e6f21fe8a0da3ae0b1f656c9d5a75ee69f3f9095dbac9f9f50e355d7d50104b5557922100e0b75719b8bcfe85",
-      "fullName": "QA Builder Entrepreneur",
-      "phone": "+2130700000002",
-      "city": "Alger",
-      "role": "ENTREPRENEUR",
-      "status": "ACTIVE",
-      "phoneVerified": true,
-      "emailVerified": true,
-      "membershipCode": "BUILDER",
-      "membershipTier": "BUILDER",
-      "networkCredits": 3,
-      "networkCreditsMax": 3,
-      "avatarUrl": null,
-      "locale": "fr",
-      "createdAt": "2026-08-22T00:12:22.265Z",
-      "updatedAt": "2026-08-22T00:12:22.265Z"
-    },
-    {
-      "id": "qa-founder-id",
-      "email": "test.founder@metwork.test",
-      "passwordHash": "scrypt$ec253c637a9fd5c6cc061a8f96279a5b$63c3f86a1531b840324c11682173fe2c947c45c7d8cd8a876e95729712be7bc2f6f169d8d9e11ed4cd21f5bca181a58e5701249f899486d3a41a1060b3d731ae",
-      "fullName": "QA Founder Entrepreneur",
-      "phone": "+2130700000003",
-      "city": "Alger",
-      "role": "ENTREPRENEUR",
-      "status": "ACTIVE",
-      "phoneVerified": true,
-      "emailVerified": true,
-      "membershipCode": "FOUNDER",
-      "membershipTier": "FOUNDER",
-      "networkCredits": 10,
-      "networkCreditsMax": 10,
-      "avatarUrl": null,
-      "locale": "fr",
-      "createdAt": "2026-08-22T00:12:22.265Z",
-      "updatedAt": "2026-08-22T00:12:22.265Z"
-    },
-    {
-      "id": "qa-explorer-id",
-      "email": "test.explorer@metwork.test",
-      "passwordHash": "scrypt$c58097eaa962b3c1fd8e56aa73cbed5f$e36a800b3a94d27012e26c0f3e373e59737d821cee9ab2a994128f61a4b0503a85ca55ff2a9599ab5b42ff379189c53e8d3f77ef9c806b157fbdfea3a170b8af",
-      "fullName": "QA Explorer Entrepreneur",
-      "phone": "+2130700000004",
-      "city": "Alger",
-      "role": "ENTREPRENEUR",
-      "status": "ACTIVE",
-      "phoneVerified": true,
-      "emailVerified": true,
-      "membershipCode": null,
-      "membershipTier": "EXPLORER",
-      "networkCredits": 0,
-      "networkCreditsMax": 0,
-      "avatarUrl": null,
-      "locale": "fr",
-      "createdAt": "2026-08-22T00:12:22.265Z",
-      "updatedAt": "2026-08-22T00:12:22.265Z"
-    },
-    {
-      "id": "qa-investor-id",
-      "email": "test.investor@metwork.test",
-      "passwordHash": "scrypt$8022b86e8212e5dc5f4cde635b8f1ea8$66945c705662f8f28bcb918599ea7f3e5dcc0673db683234e558e2e6f9dd56f25d06600fb0c0dc5f7f66ffb593b898fb6ff9e1ef7240a1e8c05bdf5346d1cab4",
-      "fullName": "QA Investor",
-      "phone": "+2130700000005",
-      "city": "Alger",
-      "role": "INVESTOR",
-      "status": "ACTIVE",
-      "phoneVerified": true,
-      "emailVerified": true,
-      "membershipCode": null,
-      "membershipTier": "EXPLORER",
-      "networkCredits": 0,
-      "networkCreditsMax": 0,
-      "avatarUrl": null,
-      "locale": "fr",
-      "createdAt": "2026-08-22T00:12:22.265Z",
-      "updatedAt": "2026-08-22T00:12:22.265Z"
-    },
-    {
       "id": "d35d44ee-96d2-4480-97de-69be7f88d186",
       "email": "qa.member.mt3nr97v-zmhtg@metwork.test",
       "passwordHash": "scrypt$b166811f441e391deb7c37c8bca3f746$fd26ca26844ff1715c53c528a3e202a664eee53eb9692bbed29365e2b36472172789ac58c15d14e14d30db9f4107a41737fcf0348c82dc32c08a970de59313a9",
@@ -2500,6 +2380,159 @@
       "sex": null,
       "createdAt": "2026-08-22T00:49:58.508Z",
       "updatedAt": "2026-08-22T00:49:58.508Z"
+    },
+    {
+      "id": "qa-admin-id",
+      "email": "test.admin@metwork.test",
+      "passwordHash": "scrypt$0d45e531aa3c9338e0f9bb0776d08089$202df85afd13d0afac376aadab3511fdc8b578befe3578447f2e8b39e6253a0c1433645b6b525fe79999ccb182ccb0fa49b251ce25fa8243aeb69004f8bc18c6",
+      "fullName": "QA Admin",
+      "phone": "+2130700000000",
+      "city": "Alger",
+      "role": "ADMIN",
+      "status": "ACTIVE",
+      "phoneVerified": true,
+      "emailVerified": true,
+      "membershipCode": null,
+      "membershipTier": "EXPLORER",
+      "networkCredits": 0,
+      "networkCreditsMax": 0,
+      "avatarUrl": null,
+      "locale": "fr",
+      "createdAt": "2026-10-23T23:12:39.792Z",
+      "updatedAt": "2026-10-23T23:12:39.792Z"
+    },
+    {
+      "id": "qa-incubator-user-id",
+      "email": "test.incubator@metwork.test",
+      "passwordHash": "scrypt$dfeba8290119fcd5e62f475f772e9408$f1b0a2b7823c856cd2662b8fbc699073a694f66a8f7e4bd06a4ea5b56a71736ee87f20822c58ec8320b0a1b8e88d243295de9396be5558cc0f48bbb0c19bad45",
+      "fullName": "QA Incubator Hub",
+      "phone": "+2130700000001",
+      "city": "Alger",
+      "role": "INCUBATOR",
+      "status": "ACTIVE",
+      "phoneVerified": true,
+      "emailVerified": true,
+      "membershipCode": null,
+      "membershipTier": "EXPLORER",
+      "networkCredits": 0,
+      "networkCreditsMax": 0,
+      "avatarUrl": null,
+      "locale": "fr",
+      "createdAt": "2026-10-23T23:12:39.792Z",
+      "updatedAt": "2026-10-23T23:12:39.792Z"
+    },
+    {
+      "id": "qa-builder-id",
+      "email": "test.builder@metwork.test",
+      "passwordHash": "scrypt$acb7ef1e509d1d3b26a6ee474b23424e$8603a868b61adda33ba1ad341ccd9667a48ea3b4b3fffb3d642bfeea57035bc09969c4e07f32a82488db81a231b9c3e75dd8ee1b55c1bf8b82d8fad8618d12fe",
+      "fullName": "QA Builder Entrepreneur",
+      "phone": "+2130700000002",
+      "city": "Alger",
+      "role": "ENTREPRENEUR",
+      "status": "ACTIVE",
+      "phoneVerified": true,
+      "emailVerified": true,
+      "membershipCode": "BUILDER",
+      "membershipTier": "BUILDER",
+      "networkCredits": 3,
+      "networkCreditsMax": 3,
+      "avatarUrl": null,
+      "locale": "fr",
+      "createdAt": "2026-10-23T23:12:39.792Z",
+      "updatedAt": "2026-10-23T23:12:39.792Z"
+    },
+    {
+      "id": "qa-founder-id",
+      "email": "test.founder@metwork.test",
+      "passwordHash": "scrypt$0c473bfffc3639b50e281fa429c5dccf$4225ffc3249d65cde7042cb99f053baa73b6f7f5b5db75e31faf92979ea97fbc8a014c5525ed0a0a19f82c458f45b620404a9a98a5812cd406a7c5beed8952a8",
+      "fullName": "QA Founder Entrepreneur",
+      "phone": "+2130700000003",
+      "city": "Alger",
+      "role": "ENTREPRENEUR",
+      "status": "ACTIVE",
+      "phoneVerified": true,
+      "emailVerified": true,
+      "membershipCode": "FOUNDER",
+      "membershipTier": "FOUNDER",
+      "networkCredits": 10,
+      "networkCreditsMax": 10,
+      "avatarUrl": null,
+      "locale": "fr",
+      "createdAt": "2026-10-23T23:12:39.792Z",
+      "updatedAt": "2026-10-23T23:12:39.792Z",
+      "notificationsSeen": {
+        "bookings": "2026-10-24T09:09:23.863Z",
+        "cofounder": "2026-10-24T09:09:25.092Z",
+        "consultations": "2026-10-24T09:17:48.053Z",
+        "messages": "2026-10-24T09:09:49.755Z",
+        "orders": "2026-10-24T09:10:19.245Z",
+        "wallet": "2026-10-24T09:10:47.610Z"
+      }
+    },
+    {
+      "id": "qa-explorer-id",
+      "email": "test.explorer@metwork.test",
+      "passwordHash": "scrypt$4118eedb7c318d550ebb285845085dbb$58b1207b2d0f308f720b65d1a733074cfa1197eb9dab7c8b6ccba9eea94479e73de84fe6322d66c613f7c03dfc7048034c70f7deefaeea722b64e5145de81699",
+      "fullName": "QA Explorer Entrepreneur",
+      "phone": "+2130700000004",
+      "city": "Alger",
+      "role": "ENTREPRENEUR",
+      "status": "ACTIVE",
+      "phoneVerified": true,
+      "emailVerified": true,
+      "membershipCode": null,
+      "membershipTier": "EXPLORER",
+      "networkCredits": 0,
+      "networkCreditsMax": 0,
+      "avatarUrl": null,
+      "locale": "fr",
+      "createdAt": "2026-10-23T23:12:39.792Z",
+      "updatedAt": "2026-10-23T23:12:39.792Z"
+    },
+    {
+      "id": "qa-investor-id",
+      "email": "test.investor@metwork.test",
+      "passwordHash": "scrypt$fc5edeb290632843b391e32acb62e405$7ed50182999b0693b5f01689accc5142662e9102db92d2a6821039e4937b7e68663ff3a06db519215ffd6b08c8e5f08921e23e96a44b51a34f8f4d8fdfcf6269",
+      "fullName": "QA Investor",
+      "phone": "+2130700000005",
+      "city": "Alger",
+      "role": "INVESTOR",
+      "status": "ACTIVE",
+      "phoneVerified": true,
+      "emailVerified": true,
+      "membershipCode": null,
+      "membershipTier": "EXPLORER",
+      "networkCredits": 0,
+      "networkCreditsMax": 0,
+      "avatarUrl": null,
+      "locale": "fr",
+      "createdAt": "2026-10-23T23:12:39.792Z",
+      "updatedAt": "2026-10-23T23:12:39.792Z"
+    },
+    {
+      "id": "qa-freelancer-id",
+      "email": "test.freelancer@metwork.test",
+      "passwordHash": "scrypt$5f06b03a9954a41e7ca9490f698d48de$d32da2f76cb2d95e3654cef75084d7ebc84f0ad9df1178579ef5529719696f57dffe8f1aa8eb48e97ff365dabd72d729ebb6320f6536d21c5e8b6a5a8e95a5e8",
+      "fullName": "QA Freelancer",
+      "phone": "+2130700000006",
+      "city": "Alger",
+      "role": "FREELANCER",
+      "status": "ACTIVE",
+      "phoneVerified": true,
+      "emailVerified": true,
+      "membershipCode": null,
+      "membershipTier": "EXPLORER",
+      "networkCredits": 0,
+      "networkCreditsMax": 0,
+      "avatarUrl": null,
+      "locale": "fr",
+      "createdAt": "2026-10-23T23:12:39.792Z",
+      "updatedAt": "2026-10-23T23:12:39.792Z",
+      "notificationsSeen": {
+        "messages": "2026-10-24T09:14:00.667Z",
+        "cofounder": "2026-10-24T09:13:16.507Z",
+        "orders": "2026-10-24T09:14:05.210Z"
+      }
     }
   ],
   "sessions": [
@@ -5052,6 +5085,36 @@
       "userId": "qa-investor-id",
       "expiresAt": "2026-10-09T21:31:09.194Z",
       "createdAt": "2026-10-02T21:31:09.194Z"
+    },
+    {
+      "idHash": "1161951f3f34205dfd0f1b6e954b59cdbe77dd14dead7ef5ba84345a26ed1852",
+      "userId": "qa-freelancer-id",
+      "expiresAt": "2026-10-30T23:13:00.917Z",
+      "createdAt": "2026-10-23T23:13:00.917Z"
+    },
+    {
+      "idHash": "84b638fe59d884102cc445954ac48728d2e6844e8e5eb567e9ec222a0eeb8cb5",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-10-31T09:08:44.019Z",
+      "createdAt": "2026-10-24T09:08:44.019Z"
+    },
+    {
+      "idHash": "af8846933fb6d469bb76cc9701235915f7b54577aff03be8ca8a86c736bc64de",
+      "userId": "qa-freelancer-id",
+      "expiresAt": "2026-10-31T09:12:39.951Z",
+      "createdAt": "2026-10-24T09:12:39.951Z"
+    },
+    {
+      "idHash": "a9092f35dd82fd9a3b2b6a6adb2b2b5dec16cb08a83267b496000f88bc9c4dd3",
+      "userId": "qa-founder-id",
+      "expiresAt": "2026-10-31T09:17:29.411Z",
+      "createdAt": "2026-10-24T09:17:29.411Z"
+    },
+    {
+      "idHash": "a00fee03980fe11b552586ba907d344cf3f14e8741a8237721a0e350c3ee5cc6",
+      "userId": "qa-freelancer-id",
+      "expiresAt": "2026-10-31T09:18:05.008Z",
+      "createdAt": "2026-10-24T09:18:05.008Z"
     }
   ],
   "otps": [
@@ -6299,6 +6362,15 @@
       "status": "ACTIVE",
       "createdAt": "2026-08-22T00:49:58.008Z",
       "updatedAt": "2026-08-22T00:49:58.173Z"
+    },
+    {
+      "id": "0f86847e-6f72-4b8a-b3c5-e168925d3494",
+      "userId": "qa-freelancer-id",
+      "balance": 0,
+      "currency": "DZD",
+      "status": "ACTIVE",
+      "createdAt": "2026-10-24T09:15:00.273Z",
+      "updatedAt": "2026-10-24T09:15:00.273Z"
     }
   ],
   "transactions": [
@@ -22035,8 +22107,8 @@
       "subscriptionTier": "COMMISSION",
       "subscriptionStatus": "ACTIVE",
       "status": "ACTIVE",
-      "createdAt": "2026-08-22T00:12:22.265Z",
-      "updatedAt": "2026-08-22T00:12:22.265Z"
+      "createdAt": "2026-10-23T23:12:39.792Z",
+      "updatedAt": "2026-10-23T23:12:39.792Z"
     }
   ],
   "promoCodes": [
@@ -27202,40 +27274,6 @@
       "updatedAt": "2026-08-20T21:31:55.793Z"
     },
     {
-      "id": "qa-space-id-001",
-      "incubatorId": "qa-incubator-profile-id",
-      "incubatorName": "QA Incubator Hub",
-      "name": "QA Coworking Space",
-      "description": "Espace de coworking pour tests automatisés",
-      "category": "COWORKING",
-      "capacity": 20,
-      "pricePerHour": 500,
-      "pricePerDay": 3000,
-      "pricePerMonth": null,
-      "imageUrl": null,
-      "city": "Alger",
-      "amenities": [
-        "wifi",
-        "parking"
-      ],
-      "acceptedPaymentMethods": [
-        "ONLINE",
-        "CASH"
-      ],
-      "workingDays": [
-        1,
-        2,
-        3,
-        4,
-        5
-      ],
-      "openingTime": "09:00",
-      "closingTime": "18:00",
-      "isActive": true,
-      "createdAt": "2026-08-22T00:12:22.265Z",
-      "updatedAt": "2026-08-22T00:12:22.265Z"
-    },
-    {
       "id": "64ee6f17-c792-4cc3-b1c2-72cd00c8ba18",
       "incubatorId": "qa-incubator-profile-id",
       "incubatorName": "QA Incubator Hub",
@@ -27369,6 +27407,40 @@
       "isActive": true,
       "createdAt": "2026-08-22T00:47:27.866Z",
       "updatedAt": "2026-08-22T00:47:27.866Z"
+    },
+    {
+      "id": "qa-space-id-001",
+      "incubatorId": "qa-incubator-profile-id",
+      "incubatorName": "QA Incubator Hub",
+      "name": "QA Coworking Space",
+      "description": "Espace de coworking pour tests automatisés",
+      "category": "COWORKING",
+      "capacity": 20,
+      "pricePerHour": 500,
+      "pricePerDay": 3000,
+      "pricePerMonth": null,
+      "imageUrl": null,
+      "city": "Alger",
+      "amenities": [
+        "wifi",
+        "parking"
+      ],
+      "acceptedPaymentMethods": [
+        "ONLINE",
+        "CASH"
+      ],
+      "workingDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "openingTime": "09:00",
+      "closingTime": "18:00",
+      "isActive": true,
+      "createdAt": "2026-10-23T23:12:39.792Z",
+      "updatedAt": "2026-10-23T23:12:39.792Z"
     }
   ],
   "programs": [
@@ -36599,6 +36671,30 @@
       "createdAt": "2026-05-21T21:55:59.726Z",
       "updatedAt": "2026-05-21T21:55:59.726Z",
       "isPartnerInNetwork": true
+    }
+  ],
+  "copilotUsage": [
+    {
+      "userId": "qa-freelancer-id",
+      "month": "2026-10",
+      "questions": 1,
+      "updatedAt": "2026-10-23T23:17:08.661Z"
+    }
+  ],
+  "freelancerProfiles": [
+    {
+      "userId": "qa-freelancer-id",
+      "headline": null,
+      "bio": null,
+      "skills": [],
+      "languages": [],
+      "remote": true,
+      "dayRate": null,
+      "address": null,
+      "portfolio": [],
+      "legal": null,
+      "createdAt": "2026-10-24T09:13:15.053Z",
+      "updatedAt": "2026-10-24T09:13:15.053Z"
     }
   ]
 }
