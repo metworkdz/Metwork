@@ -53,6 +53,8 @@ interface NotificationCountsContextValue {
    * not zeroed (visiting the page doesn't resolve their actionable items).
    */
   markSeen: (key: string) => void;
+  /** Re-fetch the counts now (e.g. after reading a message thread). */
+  refresh: () => Promise<void>;
 }
 
 /** Safe default — components outside the provider simply show no badges. */
@@ -60,6 +62,7 @@ const NotificationCountsContext = createContext<NotificationCountsContextValue>(
   counts: {},
   badges: {},
   markSeen: () => {},
+  refresh: async () => {},
 });
 
 interface NotificationCountsProviderProps {
@@ -141,8 +144,8 @@ export function NotificationCountsProvider({
   }, [counts]);
 
   const value = useMemo(
-    () => ({ counts, badges, markSeen }),
-    [counts, badges, markSeen],
+    () => ({ counts, badges, markSeen, refresh }),
+    [counts, badges, markSeen, refresh],
   );
 
   return (

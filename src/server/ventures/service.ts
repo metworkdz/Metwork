@@ -117,7 +117,12 @@ export async function saveVenture(ownerId: string, input: VentureInput): Promise
 export async function publicVentureBySlug(slug: string) {
   const data = await db.read();
   const venture = (data.ventures ?? []).find((v) => v.slug === slug);
-  if (!venture?.isPublic) return null;
+  return venture ? publicVenture(data, venture) : null;
+}
+
+/** The venture and its owner when its public page is live, else null. */
+export function publicVenture(data: Awaited<ReturnType<typeof db.read>>, venture: VentureRecord) {
+  if (!venture.isPublic) return null;
   const owner = data.users.find((u) => u.id === venture.ownerId);
   if (!owner || owner.status !== 'ACTIVE') return null;
   const ent = entitlementsForUser(owner);

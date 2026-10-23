@@ -91,3 +91,4 @@ scripts/campaigns/.preview*.html
 
 # Copilot knowledge base built by `npm run kb:sync` (local copy)
 /.kb/
+/.local-messaging.json

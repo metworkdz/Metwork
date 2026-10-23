@@ -2457,3 +2457,43 @@ export async function sendTaxReminderNotice(n: TaxReminderNotice): Promise<void>
     : Promise.resolve();
   await Promise.allSettled([emailSend, phoneSend]);
 }
+
+/* ─────────────────────────── New message alert (Metwork 2.0) ─────────────────────────── */
+
+export interface NewMessageAlert {
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  locale: string | null;
+  senderName: string;
+  /** Absolute link to the thread. */
+  url: string;
+}
+
+/**
+ * Email + WhatsApp: "X sent you a message". Never the message text — the
+ * alert may be read on a shared phone. Localized en/fr/ar. Never throws.
+ */
+export async function sendNewMessageAlert(n: NewMessageAlert): Promise<void> {
+  const lang = normalizeEmailLang(n.locale);
+  const first = n.fullName.split(' ')[0] ?? n.fullName;
+  const copy = lang === 'ar'
+    ? { subject: `رسالة جديدة من ${n.senderName}`, lines: [`مرحبًا ${first}،`, `أرسل لك ${n.senderName} رسالة على Metwork.`, 'اقرأها وأجب من رسائلك:'] }
+    : lang === 'en'
+      ? { subject: `New message from ${n.senderName}`, lines: [`Hello ${first},`, `${n.senderName} sent you a message on Metwork.`, 'Read it and reply from your messages:'] }
+      : { subject: `Nouveau message de ${n.senderName}`, lines: [`Bonjour ${first},`, `${n.senderName} vous a envoyé un message sur Metwork.`, 'Lisez-le et répondez depuis vos messages :'] };
+  const html = simpleNoticeHtml(
+    escapeRenewalHtml(copy.subject),
+    [...copy.lines.map(escapeRenewalHtml), `<a href="${n.url}">${n.url}</a>`],
+    lang === 'ar' ? 'rtl' : 'ltr',
+  );
+  await Promise.allSettled([
+    n.email
+      ? sendResendEmail({ to: n.email, subject: copy.subject, html }).catch((err: Error) =>
+          // eslint-disable-next-line no-console
+          console.error(`${banner} new-message email failed →`, err.message),
+        )
+      : Promise.resolve(),
+    n.phone ? deliverClientText(n.phone, [copy.subject, copy.lines[2], n.url].join('\n'), 'new-message') : Promise.resolve(),
+  ]);
+}

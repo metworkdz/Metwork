@@ -2305,7 +2305,9 @@
     "gigs": "Gigs",
     "taxes": "Impôts",
     "copilot": "Copilote",
-    "copilotKb": "Documents du copilote"
+    "copilotKb": "Documents du copilote",
+    "messages": "Messages",
+    "messageReports": "Signalements"
   },
   "pages": {
     "consultationPay": {
@@ -5180,6 +5182,27 @@
         "STORAGE_UNAVAILABLE": "Le stockage n’est pas configuré.",
         "GENERIC": "Une erreur est survenue. Réessayez."
       }
+    },
+    "messageReports": {
+      "title": "Conversations signalées",
+      "subtitle": "Signalements des membres, avec les derniers messages figés au moment du signalement.",
+      "loading": "Chargement…",
+      "empty": "Aucun signalement.",
+      "reported": "Signalé",
+      "by": "Signalé par",
+      "resolve": "Marquer comme traité",
+      "messages": "{count} messages",
+      "status": {
+        "OPEN": "Ouvert",
+        "RESOLVED": "Traité"
+      },
+      "reasons": {
+        "SPAM": "Spam ou publicité",
+        "HARASSMENT": "Harcèlement ou insultes",
+        "SCAM": "Arnaque ou tentative de fraude",
+        "INAPPROPRIATE": "Contenu inapproprié",
+        "OTHER": "Autre chose"
+      }
     }
   },
   "bookings": {
@@ -6849,6 +6872,89 @@
       "s2": "Quand déposer la G n°50 et que contient-elle ?",
       "s3": "Quel est le taux de l’IBS pour une société de services ?",
       "s4": "Quelles mentions doivent figurer sur une facture ?"
+    }
+  },
+  "inbox": {
+    "pageTitle": "Messages",
+    "subtitle": "Vos conversations avec des fondateurs et des freelancers.",
+    "threads": "Conversations",
+    "loading": "Chargement…",
+    "emptyTitle": "Aucune conversation pour l’instant",
+    "emptyBody": "Écrivez à un fondateur depuis la page de son projet. Les conversations sur les gigs, les devis et les matchs cofondateur arriveront aussi ici.",
+    "pick": "Choisissez une conversation.",
+    "you": "Vous :",
+    "unread": "Non lu",
+    "muted": "Alertes coupées",
+    "back": "Retour",
+    "menu": "Options",
+    "mute": "Couper les alertes",
+    "unmute": "Réactiver les alertes",
+    "block": "Bloquer",
+    "unblock": "Débloquer",
+    "report": "Signaler",
+    "older": "Voir les messages précédents",
+    "placeholder": "Écrire un message…",
+    "firstPlaceholder": "Présentez-vous et dites pourquoi vous écrivez…",
+    "send": "Envoyer",
+    "attach": "Partager un document ou un lien de paiement",
+    "youBlocked": "Vous avez bloqué {name}. Cette personne ne peut plus vous écrire.",
+    "notFound": "Cette conversation n’est pas disponible.",
+    "unavailable": "La messagerie est momentanément indisponible. Réessayez dans un instant.",
+    "contact": "Écrire à {name}",
+    "context": {
+      "VENTURE": "À propos de {title}",
+      "GIG_ORDER": "Gig : {title}",
+      "QUOTE_REQUEST": "Devis : {title}",
+      "COFOUNDER_MATCH": "Match cofondateur",
+      "BOOKING": "Réservation : {title}",
+      "DIRECT": "{title}"
+    },
+    "role": {
+      "FREELANCER": "Freelancer",
+      "ENTREPRENEUR": "Fondateur",
+      "UNKNOWN": ""
+    },
+    "doc": {
+      "FACTURE": "Facture",
+      "PROFORMA": "Proforma",
+      "DEVIS": "Devis"
+    },
+    "viewPdf": "Voir le PDF",
+    "paymentLink": "Lien de paiement",
+    "pay": "Payer",
+    "cardUnavailable": "Ce document n’est plus disponible.",
+    "linkStatus": {
+      "PAID": "Payé",
+      "EXPIRED": "Expiré",
+      "CANCELLED": "Annulé",
+      "ACTIVE": "Actif"
+    },
+    "attachTitle": "Partager dans la conversation",
+    "attachEmpty": "Rien à partager pour l’instant : créez d’abord une facture, un devis ou un lien de paiement.",
+    "paymentLinks": "Liens de paiement",
+    "documents": "Factures et devis",
+    "reportTitle": "Signaler cette conversation",
+    "reportBody": "Un administrateur examinera les derniers messages de cette conversation. L’autre personne ne saura pas qui l’a signalée.",
+    "reportReason": "Motif",
+    "reportNote": "Quelque chose à ajouter ? (facultatif)",
+    "reportSend": "Envoyer le signalement",
+    "reportDone": "Merci. Un administrateur va l’examiner. Vous pouvez aussi bloquer cette personne.",
+    "close": "Fermer",
+    "reasons": {
+      "SPAM": "Spam ou publicité",
+      "HARASSMENT": "Harcèlement ou insultes",
+      "SCAM": "Arnaque ou tentative de fraude",
+      "INAPPROPRIATE": "Contenu inapproprié",
+      "OTHER": "Autre chose"
+    },
+    "errors": {
+      "BLOCKED": "Vous ne pouvez pas écrire à cette personne.",
+      "NOT_ALLOWED": "La messagerie n’est pas disponible pour ce compte.",
+      "CONTACT_LIMIT": "Vous avez atteint les nouveaux contacts de la semaine avec l’offre gratuite. Passez à l’offre payante pour une messagerie illimitée.",
+      "RATE_LIMITED": "Trop de messages. Ralentissez un peu.",
+      "INVALID_ATTACHMENT": "Ce document ne peut pas être partagé.",
+      "MESSAGING_UNAVAILABLE": "La messagerie est momentanément indisponible.",
+      "GENERIC": "Une erreur est survenue. Réessayez."
     }
   }
 }

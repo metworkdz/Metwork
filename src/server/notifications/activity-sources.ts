@@ -28,6 +28,7 @@ import type { db, UserRecord } from '@/server/db/store';
 import type { UserRole } from '@/types/auth';
 import { getApprovalStatus, isApprovalGatedRole } from '@/lib/approval-guard';
 import { getMentorApprovalStatus } from '@/lib/mentor-approval';
+import { unreadThreads } from '@/server/messaging/service';
 
 /** The whole store document, as returned by `db.read()`. */
 export type StoreDoc = Awaited<ReturnType<typeof db.read>>;
@@ -58,7 +59,8 @@ export interface NotificationSource {
   /** Dashboard nav href this source's badge attaches to. */
   href: string;
   /** Pure count of "new / actionable" records for this surface. */
-  count: (ctx: BadgeContext) => number;
+  /** May be async for counts that live outside the store (messaging). */
+  count: (ctx: BadgeContext) => number | Promise<number>;
 }
 
 /* ────────────────────────────── Registry ────────────────────────────── */
@@ -292,6 +294,9 @@ export const NOTIFICATION_SOURCES: readonly NotificationSource[] = [
       ).length;
     },
   },
+  // Threads with an unread message (Metwork 2.0). Pending: clears when read, not on visit.
+  { key: 'messages', roles: ['ENTREPRENEUR'], mode: 'pending', href: '/dashboard/entrepreneur/messages', count: ({ user }) => unreadThreads(user.id) },
+  { key: 'messages', roles: ['FREELANCER'], mode: 'pending', href: '/dashboard/freelancer/messages', count: ({ user }) => unreadThreads(user.id) },
 ];
 
 /* ────────────────────────────── Lookups ────────────────────────────── */

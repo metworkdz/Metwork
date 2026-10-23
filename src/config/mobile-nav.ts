@@ -35,7 +35,8 @@ const primaryTabHrefsByRole: Record<UserRole, string[]> = {
     // Center tab — consultations promoted from the "More" sheet so booking a
     // session is one tap away (marketplace moved to the overflow sheet).
     '/dashboard/entrepreneur/consultations',
-    '/dashboard/entrepreneur/wallet',
+    // Messages over wallet: replies are daily; the wallet badge still shows on "More".
+    '/dashboard/entrepreneur/messages',
   ],
   INVESTOR: [
     '/dashboard/investor',
@@ -53,7 +54,7 @@ const primaryTabHrefsByRole: Record<UserRole, string[]> = {
     '/dashboard/freelancer',
     '/dashboard/freelancer/invoices',
     '/dashboard/freelancer/payment-links',
-    '/dashboard/freelancer/wallet',
+    '/dashboard/freelancer/messages',
   ],
   ADMIN: [
     '/dashboard/admin',

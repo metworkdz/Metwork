@@ -8,6 +8,8 @@ import { memberBadgeFor } from '@/lib/member-badge';
 import { publicVentureBySlug } from '@/server/ventures/service';
 import { getCityName } from '@/config/cities';
 import { assertLandingVisible } from '@/lib/landing-visibility';
+import { getServerSession } from '@/lib/session';
+import { ContactButton } from '@/components/features/messaging/contact-button';
 import type { Locale } from '@/i18n/config';
 
 // Live: the page disappears the moment the owner's Founder plan lapses.
@@ -35,6 +37,7 @@ export default async function PublicVenturePage({ params }: PageProps) {
   if (!found) notFound();
   const { venture, owner } = found;
   const t = await getTranslations('venture');
+  const viewer = await getServerSession().catch(() => null);
 
   return (
     <Container size="md" className="py-10 sm:py-16">
@@ -69,6 +72,16 @@ export default async function PublicVenturePage({ params }: PageProps) {
             <span className="font-medium">{owner.fullName}</span>
             <MemberBadge badge={memberBadgeFor(owner)} />
           </p>
+          {viewer?.id !== owner.id && (
+            <ContactButton
+              toId={owner.id}
+              toName={owner.fullName.split(' ')[0] ?? owner.fullName}
+              contextType="VENTURE"
+              contextId={venture.id}
+              viewerRole={viewer?.role ?? null}
+              returnPath={`/ventures/${venture.slug}`}
+            />
+          )}
           {venture.website && (
             <a href={venture.website} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
               <ExternalLink className="size-4" /> {t('publicWebsite')}

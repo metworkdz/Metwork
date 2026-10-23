@@ -1116,6 +1116,24 @@ export interface CopilotKbPointer {
   bytes: number;
 }
 
+export const MESSAGE_REPORT_REASONS = ['SPAM', 'HARASSMENT', 'SCAM', 'INAPPROPRIATE', 'OTHER'] as const;
+export type MessageReportReason = (typeof MESSAGE_REPORT_REASONS)[number];
+
+export interface MessageReportRecord {
+  id: string;
+  conversationId: string;
+  reporterId: string;
+  reportedId: string;
+  reason: MessageReportReason;
+  note: string | null;
+  /** The last messages at report time, frozen. */
+  snapshot: { senderId: string; body: string; createdAt: string }[];
+  status: 'OPEN' | 'RESOLVED';
+  resolvedBy: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+}
+
 export interface CopilotUsageRecord {
   userId: string;
   /** "YYYY-MM". */
@@ -3898,6 +3916,12 @@ interface DbShape {
   copilotKb?: CopilotKbPointer | null;
   /** Metwork 2.0 — copilot questions asked, per user per month (quota). */
   copilotUsage?: CopilotUsageRecord[];
+  /**
+   * Metwork 2.0 — reported conversations. Messages themselves live in
+   * Postgres (`server/messaging/repo`); a report freezes the last messages so
+   * an admin reviews what was reported, never browses private threads.
+   */
+  messageReports?: MessageReportRecord[];
   /** Audit log entries for admin actions. */
   auditLogs: AuditLogRecord[];
   /** In-app notifications per user. */

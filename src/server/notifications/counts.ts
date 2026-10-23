@@ -62,7 +62,7 @@ export async function getNotificationCounts(userId: string): Promise<Notificatio
     const counts: NotificationCounts = {};
     for (const source of sources) {
       try {
-        counts[source.key] = source.count(ctx);
+        counts[source.key] = await source.count(ctx);
       } catch (err) {
         // One broken source must not take down the rest — report 0, log.
         counts[source.key] = 0;

@@ -2305,7 +2305,9 @@
     "gigs": "Gigs",
     "taxes": "Taxes",
     "copilot": "Copilot",
-    "copilotKb": "Copilot documents"
+    "copilotKb": "Copilot documents",
+    "messages": "Messages",
+    "messageReports": "Reported chats"
   },
   "pages": {
     "consultationPay": {
@@ -5180,6 +5182,27 @@
         "STORAGE_UNAVAILABLE": "Storage is not configured.",
         "GENERIC": "Something went wrong. Try again."
       }
+    },
+    "messageReports": {
+      "title": "Reported conversations",
+      "subtitle": "Reports from members, with the last messages frozen at report time.",
+      "loading": "Loading…",
+      "empty": "No reports.",
+      "reported": "Reported",
+      "by": "Reported by",
+      "resolve": "Mark resolved",
+      "messages": "{count} messages",
+      "status": {
+        "OPEN": "Open",
+        "RESOLVED": "Resolved"
+      },
+      "reasons": {
+        "SPAM": "Spam or advertising",
+        "HARASSMENT": "Harassment or insults",
+        "SCAM": "Scam or fraud attempt",
+        "INAPPROPRIATE": "Inappropriate content",
+        "OTHER": "Something else"
+      }
     }
   },
   "bookings": {
@@ -6849,6 +6872,89 @@
       "s2": "When is the monthly G no.50 return due and what does it contain?",
       "s3": "What is the IBS rate for a service company?",
       "s4": "What mentions must appear on an invoice?"
+    }
+  },
+  "inbox": {
+    "pageTitle": "Messages",
+    "subtitle": "Your conversations with founders and freelancers.",
+    "threads": "Conversations",
+    "loading": "Loading…",
+    "emptyTitle": "No conversations yet",
+    "emptyBody": "Write to a founder from their venture page. Conversations about gigs, quotes and cofounder matches will appear here too.",
+    "pick": "Pick a conversation.",
+    "you": "You:",
+    "unread": "Unread",
+    "muted": "Muted",
+    "back": "Back",
+    "menu": "Options",
+    "mute": "Mute alerts",
+    "unmute": "Turn alerts back on",
+    "block": "Block",
+    "unblock": "Unblock",
+    "report": "Report",
+    "older": "Show earlier messages",
+    "placeholder": "Write a message…",
+    "firstPlaceholder": "Introduce yourself and say why you are writing…",
+    "send": "Send",
+    "attach": "Share a document or payment link",
+    "youBlocked": "You blocked {name}. They can’t write to you.",
+    "notFound": "This conversation is not available.",
+    "unavailable": "Messaging is temporarily unavailable. Try again in a moment.",
+    "contact": "Write to {name}",
+    "context": {
+      "VENTURE": "About {title}",
+      "GIG_ORDER": "Gig: {title}",
+      "QUOTE_REQUEST": "Quote: {title}",
+      "COFOUNDER_MATCH": "Cofounder match",
+      "BOOKING": "Booking: {title}",
+      "DIRECT": "{title}"
+    },
+    "role": {
+      "FREELANCER": "Freelancer",
+      "ENTREPRENEUR": "Founder",
+      "UNKNOWN": ""
+    },
+    "doc": {
+      "FACTURE": "Invoice",
+      "PROFORMA": "Proforma",
+      "DEVIS": "Quote"
+    },
+    "viewPdf": "View the PDF",
+    "paymentLink": "Payment link",
+    "pay": "Pay",
+    "cardUnavailable": "This document is no longer available.",
+    "linkStatus": {
+      "PAID": "Paid",
+      "EXPIRED": "Expired",
+      "CANCELLED": "Cancelled",
+      "ACTIVE": "Active"
+    },
+    "attachTitle": "Share in the conversation",
+    "attachEmpty": "Nothing to share yet: create an invoice, a quote or a payment link first.",
+    "paymentLinks": "Payment links",
+    "documents": "Invoices and quotes",
+    "reportTitle": "Report this conversation",
+    "reportBody": "An admin will review the last messages of this conversation. The other person is not told who reported them.",
+    "reportReason": "Reason",
+    "reportNote": "Anything to add? (optional)",
+    "reportSend": "Send the report",
+    "reportDone": "Thank you. An admin will review it. You can also block this person.",
+    "close": "Close",
+    "reasons": {
+      "SPAM": "Spam or advertising",
+      "HARASSMENT": "Harassment or insults",
+      "SCAM": "Scam or fraud attempt",
+      "INAPPROPRIATE": "Inappropriate content",
+      "OTHER": "Something else"
+    },
+    "errors": {
+      "BLOCKED": "You can’t message this person.",
+      "NOT_ALLOWED": "Messaging isn’t available for this account.",
+      "CONTACT_LIMIT": "You’ve reached this week’s new contacts on the Free plan. Upgrade for unlimited messaging.",
+      "RATE_LIMITED": "Too many messages. Slow down a little.",
+      "INVALID_ATTACHMENT": "This document can’t be shared.",
+      "MESSAGING_UNAVAILABLE": "Messaging is temporarily unavailable.",
+      "GENERIC": "Something went wrong. Try again."
     }
   }
 }
