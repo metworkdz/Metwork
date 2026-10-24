@@ -48,6 +48,8 @@ const schema = z.object({
    * refused until a new one is saved).
    */
   consultantContractTemplate: z.string().max(100_000).nullable().optional(),
+  // Read only when a freelancer contract is CREATED; existing contracts keep their frozen text.
+  freelancerContractTemplate: z.string().max(100_000).nullable().optional(),
 });
 
 export async function GET() {

@@ -24,7 +24,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { CONSULTANT_CONTRACT_VARIABLES } from '@/server/consultant-contracts/variables';
 
-export function ConsultantContractTemplateForm({ initial }: { initial: string | null }) {
+/**
+ * Also the freelancer contract's editor (`field="freelancerContractTemplate"`):
+ * same form, its own tokens, title and description.
+ */
+export function ConsultantContractTemplateForm({
+  initial,
+  field = 'consultantContractTemplate',
+  variables = CONSULTANT_CONTRACT_VARIABLES,
+  title,
+  description,
+}: {
+  initial: string | null;
+  field?: 'consultantContractTemplate' | 'freelancerContractTemplate';
+  variables?: readonly string[];
+  title?: string;
+  description?: string;
+}) {
   const t = useTranslations('admin.platformSettings');
   const [body, setBody] = useState(initial ?? '');
   const [saving, setSaving] = useState(false);
@@ -38,7 +54,7 @@ export function ConsultantContractTemplateForm({ initial }: { initial: string | 
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ consultantContractTemplate: body.trim() || null }),
+        body: JSON.stringify({ [field]: body.trim() || null }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { error?: { message?: string } };
@@ -56,9 +72,9 @@ export function ConsultantContractTemplateForm({ initial }: { initial: string | 
     <Card>
       <CardHeader>
         <p className="flex items-center gap-2 font-medium">
-          <FileSignature className="size-4" /> {t('sectionContractTemplate')}
+          <FileSignature className="size-4" /> {title ?? t('sectionContractTemplate')}
         </p>
-        <p className="text-xs text-muted-foreground">{t('sectionContractTemplateDescription')}</p>
+        <p className="text-xs text-muted-foreground">{description ?? t('sectionContractTemplateDescription')}</p>
       </CardHeader>
       <CardContent className="space-y-4">
         {!body.trim() && (
@@ -66,9 +82,9 @@ export function ConsultantContractTemplateForm({ initial }: { initial: string | 
         )}
 
         <div className="space-y-1.5">
-          <Label htmlFor="contract-template">{t('contractTemplateLabel')}</Label>
+          <Label htmlFor={`contract-template-${field}`}>{t('contractTemplateLabel')}</Label>
           <Textarea
-            id="contract-template"
+            id={`contract-template-${field}`}
             value={body}
             onChange={(e) => { setBody(e.target.value); setSaved(false); }}
             rows={16}
@@ -82,7 +98,7 @@ export function ConsultantContractTemplateForm({ initial }: { initial: string | 
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-muted-foreground">{t('contractTemplateVariablesLabel')}</p>
           <div className="flex flex-wrap gap-1.5">
-            {CONSULTANT_CONTRACT_VARIABLES.map((token) => (
+            {variables.map((token) => (
               <code
                 key={token}
                 className="rounded border border-border bg-muted/50 px-1.5 py-0.5 text-[11px]"

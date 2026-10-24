@@ -43,6 +43,7 @@ import {
 import { getPlatformConfig, isMonthlyFlatActive } from '@/server/incubator/service';
 import { createNotification } from '@/server/notifications/create-notification';
 import { pushToMentor } from '@/server/notifications/push';
+import { withdrawalBlock, type WithdrawBlock } from '@/server/freelancer-contracts/service';
 
 /** Smallest withdrawal, server-enforced (mirrors the mentor-ledger floor). */
 export const MIN_WITHDRAWAL = 500;
@@ -118,7 +119,9 @@ export type CreateWithdrawalResult =
   | { ok: false; reason: 'WALLET_FROZEN' }
   | { ok: false; reason: 'BELOW_MINIMUM'; minimum: number }
   | { ok: false; reason: 'INSUFFICIENT_FUNDS'; available: number; required: number }
-  | { ok: false; reason: 'MIN_BALANCE'; balance: number; minBalance: number };
+  | { ok: false; reason: 'MIN_BALANCE'; balance: number; minBalance: number }
+  /** Freelancers: profile not at 100 % or Metwork contract not signed yet. */
+  | { ok: false; reason: 'FREELANCER_NOT_ELIGIBLE'; block: WithdrawBlock };
 
 /**
  * Create a withdrawal request and place the escrow hold atomically.
@@ -202,6 +205,10 @@ export async function createWithdrawalRequest(input: {
   const monthlyFee = (await getPlatformConfig()).flatMonthlyPrice;
 
   return db.update<CreateWithdrawalResult>((d) => {
+    // Checked inside the lock, on the same document the hold is written to.
+    const owner = d.users.find((u) => u.id === input.targetId);
+    const block = owner ? withdrawalBlock(d, owner) : null;
+    if (block) return { ok: false, reason: 'FREELANCER_NOT_ELIGIBLE', block };
     const wallet = d.wallets.find((w) => w.userId === input.targetId);
     if (!wallet) {
       return { ok: false, reason: 'INSUFFICIENT_FUNDS', available: 0, required: amount };

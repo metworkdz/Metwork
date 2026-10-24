@@ -80,6 +80,10 @@ export interface ContractPdfInput {
   metworkName?: string | null;
   /** Metwork's signatory, printed under its column. Defaults to the gérant. */
   metworkManager?: string | null;
+  /** Who signs on the right: 'Consultant' (default) or 'Freelancer'. */
+  signerLabel?: string;
+  /** Second title line; defaults to the consultant contract's. */
+  titleSubtitle?: string;
   /**
    * DRAFT mode — the copy a consultant reads BEFORE signing.
    *
@@ -156,13 +160,13 @@ export function decodeDataUriPng(dataUri: string): Buffer | null {
  * an underlined two-line title; reproducing it here is what makes a generated
  * contract look like the document the company already sends.
  */
-function drawLetterhead(doc: Doc, logo: Buffer | null): void {
+function drawLetterhead(doc: Doc, logo: Buffer | null, subtitle = 'ENTRE METWORK ET LE CONSULTANT / FORMATEUR'): void {
   drawContractLogo(doc, logo);
   setFont(doc, true).fillColor(DARK).fontSize(SIZE.title)
     .text('CONTRAT DE PARTENARIAT', MARGIN, doc.y, { width: CONTENT_W, align: 'center', underline: true });
   doc.moveDown(0.35);
   setFont(doc, true).fillColor(DARK).fontSize(SIZE.subtitle)
-    .text('ENTRE METWORK ET LE CONSULTANT / FORMATEUR', MARGIN, doc.y, {
+    .text(subtitle, MARGIN, doc.y, {
       width: CONTENT_W, align: 'center', underline: true,
     });
   doc.moveDown(1.6);
@@ -276,7 +280,7 @@ function drawSignatures(doc: Doc, signature: Buffer | null, stamp: Buffer | null
   const manager = input.metworkManager?.trim() || DEFAULT_METWORK_MANAGER;
 
   setFont(doc, true).fillColor(DARK).fontSize(10).text(`Pour ${metworkLegalName(input.metworkName)}`, MARGIN, top, { width: colW });
-  setFont(doc, true).fillColor(DARK).fontSize(10).text('Pour le Consultant', rightX, top, { width: colW });
+  setFont(doc, true).fillColor(DARK).fontSize(10).text(`Pour le ${input.signerLabel ?? 'Consultant'}`, rightX, top, { width: colW });
 
   const imgTop = top + SIG_HEADING_H;
   // The band is as tall as the taller image box; the shorter one hangs from its
@@ -316,8 +320,8 @@ function drawSignatures(doc: Doc, signature: Buffer | null, stamp: Buffer | null
   doc.text(`Gérant\nSignature et cachet :`, MARGIN, roleY, { width: colW, lineGap: 1 });
   doc.text(
     input.draft
-      ? 'Consultant\nSignature :'
-      : `Consultant\nSigné le ${formatContractDateTime(input.signedAt)} (UTC)`,
+      ? `${input.signerLabel ?? 'Consultant'}\nSignature :`
+      : `${input.signerLabel ?? 'Consultant'}\nSigné le ${formatContractDateTime(input.signedAt)} (UTC)`,
     rightX,
     roleY,
     { width: colW, lineGap: 1 },
@@ -370,7 +374,7 @@ export async function generateConsultantContractPdf(input: ContractPdfInput): Pr
   const doc = makeDoc({ bufferPages: true });
   const [before, after] = splitAtSignatureMarker(input.body || '');
 
-  drawLetterhead(doc, logo);
+  drawLetterhead(doc, logo, input.titleSubtitle);
   const bodyTop = doc.y;
 
   const typo = typographyFor(false);

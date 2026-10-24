@@ -26,6 +26,7 @@ import {
   extractLegalDocument,
   type ReviewDecision,
 } from '@/server/freelancers/legal-review';
+import { offerContractIfEligible } from '@/server/freelancer-contracts/service';
 
 type Draft = Parameters<Parameters<typeof db.update>[0]>[0];
 
@@ -105,6 +106,8 @@ export async function updateFreelancerProfile(userId: string, input: ProfileInpu
 
 /** Re-check the unlock after a change made elsewhere (photo, payout account, phone). */
 export async function refreshTrialUnlock(userId: string): Promise<void> {
+  // 100 % also offers the Metwork contract (idempotent, never throws into here).
+  await offerContractIfEligible(userId).catch((err) => console.error('[freelancer] contract offer failed', err));
   const data = await db.read();
   const user = data.users.find((u) => u.id === userId);
   const p = data.freelancerProfiles?.find((x) => x.userId === userId);
@@ -185,6 +188,9 @@ export async function submitLegalDocument(input: {
     stampTrialUnlock(d, input.userId, now);
     return result;
   });
+  if (decision.state === 'APPROVED') {
+    await offerContractIfEligible(input.userId).catch((err) => console.error('[freelancer] contract offer failed', err));
+  }
   return { ok: true, decision };
 }
 
@@ -196,7 +202,7 @@ export async function decideLegalDocumentByAdmin(input: {
   note: string | null;
 }): Promise<{ ok: true } | { ok: false; reason: 'NOT_FOUND' }> {
   const now = new Date().toISOString();
-  return db.update((d) => {
+  const result = await db.update((d) => {
     const p = d.freelancerProfiles?.find((x) => x.userId === input.userId);
     const u = d.users.find((x) => x.id === input.userId);
     if (!p?.legal || !u) return { ok: false, reason: 'NOT_FOUND' } as const;
@@ -212,6 +218,12 @@ export async function decideLegalDocumentByAdmin(input: {
     stampTrialUnlock(d, input.userId, now);
     return { ok: true } as const;
   });
+  // An approval can be what brings the profile to 100 %: offer the contract now,
+  // so the freelancer is notified without having to open the app first.
+  if (result.ok && input.decision === 'APPROVED') {
+    await offerContractIfEligible(input.userId).catch((err) => console.error('[freelancer] contract offer failed', err));
+  }
+  return result;
 }
 
 /**

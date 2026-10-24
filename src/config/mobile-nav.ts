@@ -90,7 +90,7 @@ export const premiumNavByRole: Partial<Record<UserRole, PremiumNav>> = {
     groups: [
       { titleKey: 'dashboard.navGroup.money', hrefs: [`${F}/wallet`, `${F}/invoices`, `${F}/payment-links`, `${F}/clients`] },
       { titleKey: 'dashboard.navGroup.work', hrefs: [`${F}/gigs`, `${F}/projects`, `${F}/cofounder`, `${F}/bookings`, `${F}/consultations`] },
-      { titleKey: 'dashboard.navGroup.compliance', hrefs: [`${F}/taxes`, `${F}/membership`] },
+      { titleKey: 'dashboard.navGroup.compliance', hrefs: [`${F}/taxes`, `${F}/contract`, `${F}/membership`] },
       { titleKey: 'dashboard.navGroup.account', hrefs: [`${F}/profile`, `${F}/settings`] },
     ],
   },

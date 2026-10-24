@@ -2318,7 +2318,8 @@
       "account": "Account",
       "allTools": "All your tools",
       "home": "Home"
-    }
+    },
+    "contract": "Contract"
   },
   "pages": {
     "consultationPay": {
@@ -5031,7 +5032,9 @@
       "sectionContractTemplateDescription": "Your own consultant contract, written once. Creating a new contract is then just picking a consultant — this text merges with their live data into that contract's own editable body.",
       "contractTemplateLabel": "Template body (French)",
       "contractTemplateVariablesLabel": "Available variables — click none, just type them into the text above:",
-      "contractTemplateUnsetWarning": "No template set. A contract cannot be created until one is saved here."
+      "contractTemplateUnsetWarning": "No template set. A contract cannot be created until one is saved here.",
+      "freelancerContractTitle": "Freelancer contract template",
+      "freelancerContractDescription": "Offered automatically to every freelancer whose profile reaches 100%. A change never alters a contract already created. The ID card number is filled in by the freelancer at signing."
     },
     "payments": {
       "cancel": "Cancel",
@@ -7534,5 +7537,59 @@
     "promptBody": "Get orders, messages and payments on this phone.",
     "enable": "Turn on",
     "dismiss": "Later"
+  },
+  "freelancerContract": {
+    "title": "Metwork contract",
+    "subtitle": "Your freelancer contract: collection mandate and commissions.",
+    "lockedTitle": "Complete your profile to get your contract",
+    "lockedBody": "Your profile is {percent}% complete. At 100%, your Metwork contract appears here and you're notified.",
+    "completeProfile": "Complete my profile",
+    "signedTitle": "Contract signed",
+    "signedBody": "Signed on {date}. You can withdraw your money.",
+    "download": "Download the signed PDF",
+    "stepsLabel": "Signing steps",
+    "step": {
+      "read": "Read",
+      "sign": "ID and signature",
+      "code": "Code"
+    },
+    "ratesTitle": "Metwork commissions",
+    "rateMissions": "Work through Metwork: {free}% (free plan) · {premium}% (Premium)",
+    "rateLinks": "Payment links: {free}% (free plan) · {premium}% (Premium)",
+    "textLabel": "Contract text",
+    "readDone": "I've read the contract",
+    "cinLabel": "National ID card number",
+    "cinHint": "9 to 18 digits, as printed on your card. It is written into the contract.",
+    "signatureLabel": "Your signature",
+    "back": "Back",
+    "continue": "Continue",
+    "codeIntro": "We're sending a code to your WhatsApp number. Enter it to sign.",
+    "codeLabel": "Signing code",
+    "codeSentWhatsapp": "Code sent on WhatsApp.",
+    "codeSentSms": "Code sent by SMS.",
+    "sign": "Sign the contract",
+    "signing": "Signing…",
+    "resendWhatsapp": "Resend on WhatsApp",
+    "resendSms": "Get it by SMS",
+    "errors": {
+      "invalidCode": "Wrong code.",
+      "expiredCode": "The code has expired: ask for a new one.",
+      "locked": "Too many attempts. Try again later.",
+      "throttled": "Wait before asking for a new code.",
+      "deliveryFailed": "The code couldn't be sent. Try the other channel.",
+      "badSignature": "Draw your signature.",
+      "badIdNumber": "Enter your ID card number (9 to 18 digits).",
+      "noPhone": "Add a phone number to your account.",
+      "notPending": "This contract is no longer awaiting signature. Reload the page.",
+      "storageFailed": "The signed contract couldn't be saved. Try again.",
+      "generic": "Something went wrong. Try again."
+    },
+    "gate": {
+      "title": "Withdrawals locked for now",
+      "profile": "Complete your profile to 100%, then sign your Metwork contract to withdraw.",
+      "contract": "Sign your Metwork contract to withdraw your money.",
+      "profileCta": "Profile",
+      "contractCta": "Sign"
+    }
   }
 }

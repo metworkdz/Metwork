@@ -2524,14 +2524,20 @@
       "membershipTier": "EXPLORER",
       "networkCredits": 0,
       "networkCreditsMax": 0,
-      "avatarUrl": null,
+      "avatarUrl": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
       "locale": "fr",
       "createdAt": "2026-10-23T23:12:39.792Z",
       "updatedAt": "2026-10-23T23:12:39.792Z",
       "notificationsSeen": {
-        "messages": "2026-10-24T09:14:00.667Z",
+        "messages": "2026-10-24T11:40:44.066Z",
         "cofounder": "2026-10-24T09:13:16.507Z",
         "orders": "2026-10-24T09:14:05.210Z"
+      },
+      "legalVerificationStatus": "APPROVED",
+      "payoutAccount": {
+        "accountType": "bank",
+        "accountNumber": "00799999000123456789",
+        "holderName": "QA Freelancer"
       }
     }
   ],
@@ -5144,6 +5150,14 @@
       "attempts": 1,
       "consumed": true,
       "channel": "email"
+    },
+    {
+      "id": "1feb8f600426edde131bd857",
+      "userId": "freelancer-contract:3b2ebb9b-7f4e-46c1-867e-2bf38be21d02",
+      "codeHash": "255ddb5e7621af026ca2041a3bb1b09e67624a4849fc5469c1b68e02c0667163",
+      "expiresAt": "2026-10-24T12:01:35.699Z",
+      "attempts": 1,
+      "consumed": true
     }
   ],
   "emailTokens": [
@@ -31209,6 +31223,16 @@
       "href": "/dashboard/incubator/bookings",
       "read": false,
       "createdAt": "2026-07-09T21:22:10.011Z"
+    },
+    {
+      "id": "79d8e528-8c85-4217-9f61-fd201f23f205",
+      "userId": "qa-freelancer-id",
+      "type": "GENERAL",
+      "title": "Signez votre contrat freelancer Metwork",
+      "body": "Votre profil est complet. Signez le contrat pour pouvoir retirer votre argent.",
+      "href": "/dashboard/freelancer/contract",
+      "read": false,
+      "createdAt": "2026-10-24T11:55:45.540Z"
     }
   ],
   "investorContacts": [
@@ -36684,14 +36708,29 @@
   "freelancerProfiles": [
     {
       "userId": "qa-freelancer-id",
-      "headline": null,
-      "bio": null,
-      "skills": [],
+      "headline": "Développeur web (test)",
+      "bio": "Profil de test local pour vérifier le contrat freelancer Metwork : développement web, design et intégration.",
+      "skills": [
+        "react",
+        "node",
+        "figma"
+      ],
       "languages": [],
       "remote": true,
       "dayRate": null,
-      "address": null,
-      "portfolio": [],
+      "address": "12 rue Didouche Mourad",
+      "portfolio": [
+        {
+          "id": "p1",
+          "title": "Site A",
+          "url": "https://example.com/a"
+        },
+        {
+          "id": "p2",
+          "title": "Site B",
+          "url": "https://example.com/b"
+        }
+      ],
       "legal": null,
       "createdAt": "2026-10-24T09:13:15.053Z",
       "updatedAt": "2026-10-24T09:13:15.053Z"
@@ -36707,6 +36746,49 @@
         "quittance"
       ],
       "updatedAt": "2026-10-24T11:23:00.743Z"
+    }
+  ],
+  "freelancerContracts": [
+    {
+      "id": "3b2ebb9b-7f4e-46c1-867e-2bf38be21d02",
+      "userId": "qa-freelancer-id",
+      "status": "SIGNED",
+      "contentSnapshot": "ENTRE LES SOUSSIGNÉS :\n\nEURL METWORK, société à responsabilité unipersonnelle de droit algérien, au capital de 200.000 DA inscrite au registre de commerce sous le numéro 24B1125194-31/00, NIF :  002431112519476, dont le siège est situé à Boulevard de la Soumam N 02, Bloc 02, Apt 01, Hai el Amir 1, Oran , représentée par son gérant Mohammed Benhamada, ci-après dénommée « METWORK » ou « la Plateforme »,\n\nD'UNE PART,\n\nET :\nM./Mme QA Freelancer, exerçant une activité de freelancer indépendant, demeurant à 12 rue Didouche Mourad, Alger, titulaire de la carte d'identité nationale n° 109990001234567890, numéro de téléphone : +2130700000006, ci-après désigné(e) « le Freelancer » ou « le Prestataire »,\n\n\nD'AUTRE PART,\n\nCi-après collectivement désignés « les Parties » et individuellement « une Partie ».\nIL A ÉTÉ CONVENU ET ARRÊTÉ CE QUI SUIT :\n\nArticle 1 — Objet du contrat\nLe présent contrat a pour objet de définir les conditions dans lesquelles le Freelancer utilise la plateforme METWORK (metwork.dz) pour proposer et réaliser, à titre onéreux, des prestations de services (missions commandées via la Plateforme, à partir de ses offres ou de ses devis) aux utilisateurs de la Plateforme (entrepreneurs, porteurs de projets et autres membres inscrits), et pour encaisser, au moyen des liens de paiement de la Plateforme, les sommes dues par ses propres clients.\nLe Freelancer reconnaît avoir pris connaissance du fonctionnement de la Plateforme et accepte d'y proposer ses prestations dans le respect des conditions définies ci-après.\n\nArticle 2 — Rôle de METWORK et mandat d'encaissement\nMETWORK agit en qualité d'intermédiaire technique et de mandataire d'encaissement pour le compte du Freelancer. Les sommes versées par les clients au titre des missions commandées via la Plateforme et des liens de paiement émis par le Freelancer sont perçues par METWORK pour le compte du Freelancer.\nMETWORK reverse au Freelancer la part lui revenant, déduction faite de la commission prévue à l'Article 3. Il est expressément convenu que METWORK n'est pas le bénéficiaire économique des revenus générés par les prestations du Freelancer : elle perçoit uniquement, au titre du présent contrat, la commission décrite ci-après, en contrepartie de la mise à disposition de la Plateforme et des services associés (visibilité, mise en relation, commandes, encaissement, support technique).\n\nArticle 3 — Commission\nEn contrepartie de l'utilisation de la Plateforme et des services rendus, le Freelancer accepte que METWORK prélève une commission calculée comme suit, sur le montant hors taxes de chaque paiement encaissé via la Plateforme, selon l'offre à laquelle le Freelancer est abonné à la date de la commande ou de l'émission du lien de paiement :\n●\tMissions commandées via la Plateforme : 10 % avec l'offre gratuite, 7 % avec l'offre Premium ;\n●\tLiens de paiement émis par le Freelancer pour ses propres clients : 3 % avec l'offre gratuite, 0 % avec l'offre Premium.\nLe taux applicable à une mission est celui de l'offre active à la date de la commande et reste fixe jusqu'à son paiement complet. Le passage d'une offre à l'autre s'applique aux commandes et liens de paiement suivants, sans avenant. Toute autre modification des taux de commission fera l'objet d'un avenant écrit et ne pourra s'appliquer rétroactivement aux commandes déjà passées ou aux liens déjà émis à la date de sa notification.\n\nArticle 4 — Modalités de reversement\nLe solde revenant au Freelancer (montant perçu des clients, déduction faite de la commission visée à l'Article 3) est crédité sur son portefeuille Metwork et reversé, sur demande de retrait, selon le mode de paiement choisi par le Freelancer parmi les options suivantes :\n●\tVirement bancaire/ccp , sur la base des coordonnées bancaires communiquées par le Freelancer et confirmées par lui au moment de la signature du présent contrat ;\n●\tChèque, établi à l'ordre du Freelancer.\nLe reversement intervient dans un délai de Sept (7) journées ouvrables à compter de la date de demande de retrait effectuée par le Freelancer depuis la plateforme, sous réserve que les coordonnées de paiement communiquées par le Freelancer soient exactes et à jour. Le Freelancer est seul responsable de toute erreur ou retard résultant d'informations bancaires inexactes ou incomplètes.\n\nArticle 5 — Obligations du Freelancer\n●\tFournir des prestations conformes aux descriptions publiées sur la Plateforme et aux devis acceptés, et respecter les délais convenus avec les clients, ou prévenir dans un délai raisonnable en cas d'empêchement ;\n●\tS'abstenir de solliciter, directement ou indirectement, les clients mis en relation via la Plateforme afin de conclure ou de facturer une prestation en dehors de la Plateforme, dans le but de contourner la commission prévue à l'Article 3 ;\n●\tCommuniquer à METWORK des informations exactes (identité, coordonnées de paiement, numéro de téléphone) et les tenir à jour ;\n●\tExercer son activité dans le respect de la réglementation algérienne applicable, notamment en matière fiscale et d'exercice professionnel.\n\nArticle 6 — Obligations de METWORK\n●\tMettre à disposition du Freelancer l'accès à la Plateforme et en assurer le fonctionnement ;\n●\tAssurer la visibilité du profil du Freelancer auprès des utilisateurs de la Plateforme ;\n●\tAssurer la gestion des commandes et l'encaissement des paiements des clients ;\n●\tReverser au Freelancer les sommes lui revenant dans les délais convenus à l'Article 4.\n\nArticle 7 — Protection des données à caractère personnel (Loi n° 18-07)\nConformément à la loi n° 18-07 du 10 juin 2018 relative à la protection des personnes physiques dans le traitement des données à caractère personnel, les Parties s'engagent à traiter toute donnée à caractère personnel échangée dans le cadre du présent contrat (données d'identification et de contact du Freelancer, coordonnées bancaires, données des clients mis en relation via la Plateforme) dans le strict respect de la législation applicable.\nLe Freelancer reconnaît avoir été informé que METWORK collecte et traite ses données personnelles (identité, numéro de téléphone vérifié, coordonnées de paiement, signature) aux seules fins de gestion de la relation contractuelle, de l'encaissement et du reversement des sommes dues, ainsi que de la génération et de la conservation du présent contrat et de ses annexes. Le Freelancer consent à ce traitement dans les limites ainsi définies et dispose, dans les conditions prévues par la loi n° 18-07, d'un droit d'accès, de rectification et, le cas échéant, d'opposition sur ces données.\n\nArticle 8 — Signature électronique et valeur probante\nLe présent contrat peut être signé électroniquement par le Freelancer directement depuis son espace personnel sur la Plateforme, la signature étant précédée d'une vérification par code à usage unique (OTP) envoyé au numéro de téléphone du Freelancer.\nLes Parties reconnaissent que cette signature électronique, associée à la vérification OTP, à l'horodatage et à l'empreinte numérique (hash) du document signé, vaut preuve de l'engagement du Freelancer dans leurs relations contractuelles. Il est toutefois précisé, conformément à la loi n° 15-04 du 10 février 2015 fixant les règles relatives à la signature et à la certification électroniques, qu'un exemplaire papier contresigné par les deux Parties constitue, le cas échéant, le document faisant foi vis-à-vis des administrations fiscales et autorités compétentes, la version électronique conservée par METWORK faisant office de preuve d'engagement et de piste d'audit entre les Parties.\n\nArticle 9 — Durée et résiliation\nLe présent contrat est conclu pour une durée indéterminée à compter de sa signature.\nChacune des Parties peut y mettre fin à tout moment, moyennant un préavis écrit de Trente (30) jours, notifié à l'autre Partie par tout moyen laissant trace écrite (e-mail, notification sur la Plateforme). La résiliation est sans effet sur les sommes dues au titre des prestations déjà réalisées à la date de résiliation, lesquelles demeurent exigibles et reversées selon les modalités de l'Article 4.\nMETWORK se réserve le droit de suspendre ou de résilier de plein droit le présent contrat, sans préavis, en cas de manquement grave du Freelancer à ses obligations, notamment en cas de contournement avéré de la commission visée à l'Article 3 ou de manquement à la réglementation applicable.\n\nArticle 10 — Confidentialité\nChaque Partie s'engage à conserver confidentielles les informations non publiques dont elle aurait connaissance à l'occasion de l'exécution du présent contrat, et à ne les utiliser qu'aux fins de son exécution.\n\nArticle 11 — Responsabilité\nMETWORK intervient en qualité d'intermédiaire technique et de mandataire d'encaissement. Le Freelancer demeure seul responsable de la qualité, du contenu et de la conformité réglementaire des prestations qu'il réalise, ainsi que de ses obligations fiscales et sociales personnelles au titre des revenus perçus dans le cadre du présent contrat.\n\nArticle 12 — Réserve des droits\nLe fait, pour l'une ou l'autre des Parties, de ne pas se prévaloir à un moment donné d'un manquement de l'autre Partie à l'une quelconque des obligations visées au présent contrat ne saurait être interprété comme une renonciation à s'en prévaloir ultérieurement. Le présent contrat ne emporte, pour aucune des Parties, renonciation à l'un quelconque de ses droits, lesquels demeurent expressément réservés.\n\nArticle 13 — Droit applicable et juridiction compétente\nLe présent contrat est soumis au droit algérien. Tout différend relatif à sa validité, son interprétation ou son exécution, à défaut de règlement amiable entre les Parties, sera soumis aux tribunaux compétents d'Oran.\n\nArticle 14 — Dispositions générales\nLe présent contrat, ainsi que ses éventuelles annexes, constitue l'intégralité de l'accord entre les Parties relatif à son objet et annule et remplace tout accord antérieur, écrit ou verbal, portant sur le même objet. Toute modification devra faire l'objet d'un avenant écrit signé par les deux Parties.\nSi l'une quelconque des stipulations du présent contrat était déclarée nulle ou inapplicable, les autres stipulations conserveraient leur plein effet.\n\nFait à Oran, le 24 octobre 2026, en deux exemplaires originaux, sous réserve du recours à la signature électronique conformément à l'Article 8.",
+      "rates": {
+        "sourcedFree": 10,
+        "sourcedPremium": 7,
+        "linkFree": 3,
+        "linkPremium": 0
+      },
+      "idNumber": "109990001234567890",
+      "signature": {
+        "imagePng": "data:image/png;base64,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",
+        "signedAt": "2026-10-24T11:57:02.279Z",
+        "phoneSnapshot": "+2130700000006"
+      },
+      "otp": null,
+      "finalPdfPublicId": "metwork/consultant-contracts/contract-freelancer-3b2ebb9b-7f4e-46c1-867e-2bf38be21d02-510cc945-b42c-4790-abfb-b6ac52645e1a",
+      "finalPdfHash": "e4f862284352a62b24b40646dc70cf9d2a08e54e1ad54fb9a59ed1dff66e136e",
+      "signedAt": "2026-10-24T11:57:02.279Z",
+      "voidedAt": null,
+      "auditTrail": [
+        {
+          "event": "CREATED",
+          "actorId": "system",
+          "at": "2026-10-24T11:55:45.528Z"
+        },
+        {
+          "event": "OTP_SENT",
+          "actorId": "qa-freelancer-id",
+          "at": "2026-10-24T11:56:35.690Z"
+        },
+        {
+          "event": "SIGNED",
+          "actorId": "qa-freelancer-id",
+          "at": "2026-10-24T11:57:02.279Z"
+        }
+      ],
+      "createdAt": "2026-10-24T11:55:45.528Z"
     }
   ]
 }

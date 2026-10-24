@@ -1245,6 +1245,33 @@ export interface CofounderAgreementRecord {
   updatedAt: string;
 }
 
+/**
+ * Metwork 2.0 — a freelancer's contract with Metwork (collection mandate +
+ * commission), offered automatically once the profile reaches 100 %. Same
+ * evidence rules as consultant contracts: the text is frozen at creation, the
+ * CIN typed at signing is frozen into it, the signature needs a code sent to
+ * the freelancer's own phone, and the signed PDF's SHA-256 never changes.
+ * Withdrawals are refused until one is SIGNED (server/withdrawals).
+ */
+export interface FreelancerContractRecord {
+  id: string;
+  userId: string;
+  status: 'PENDING_SIGNATURE' | 'SIGNED' | 'VOIDED';
+  /** Full text at creation; `{{freelancer_id_number}}` is filled at signing. */
+  contentSnapshot: string;
+  /** Rates quoted in Article 3 at creation (percent). */
+  rates: { sourcedFree: number; sourcedPremium: number; linkFree: number; linkPremium: number };
+  idNumber: string | null;
+  signature: { imagePng: string; signedAt: string; phoneSnapshot: string } | null;
+  otp: ConsultantContractOtpState | null;
+  finalPdfPublicId: string | null;
+  finalPdfHash: string | null;
+  signedAt: string | null;
+  voidedAt: string | null;
+  auditTrail: { event: string; actorId: string; at: string }[];
+  createdAt: string;
+}
+
 export type ServiceOrderStatus = 'AWAITING_DEPOSIT' | 'IN_PROGRESS' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
 
 /**
@@ -1580,6 +1607,8 @@ export interface PlatformSettingsRecord {
    * never read again for a contract that already exists, so replacing the
    * template never rewrites a contract already drafted from an older one.
    */
+  /** Metwork 2.0 — freelancer contract text; empty = the built-in default (lib/freelancer-contract-text). */
+  freelancerContractTemplate?: string | null;
   consultantContractTemplate?: string | null;
   /** ISO datetime the template was last saved. */
   consultantContractTemplateUpdatedAt?: string | null;
@@ -4110,6 +4139,8 @@ interface DbShape {
   copilotKb?: CopilotKbPointer | null;
   /** Metwork 2.0 — copilot questions asked, per user per month (quota). */
   copilotUsage?: CopilotUsageRecord[];
+  /** Metwork 2.0 — freelancers' contracts with Metwork. */
+  freelancerContracts?: FreelancerContractRecord[];
   /** Metwork 2.0 — web push subscriptions (members and consultants). */
   pushSubscriptions?: PushSubscriptionRecord[];
   /** Metwork 2.0 — business-creation guide progress, one row per user. */

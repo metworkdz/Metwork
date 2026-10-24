@@ -2318,7 +2318,8 @@
       "account": "الحساب",
       "allTools": "كل أدواتك",
       "home": "الرئيسية"
-    }
+    },
+    "contract": "العقد"
   },
   "pages": {
     "consultationPay": {
@@ -5031,7 +5032,9 @@
       "sectionContractTemplateDescription": "عقد الاستشاري الخاص بك، يُكتب مرة واحدة. إنشاء عقد جديد يصبح بعدها مجرد اختيار مستشار — يُدمج هذا النص مع بياناته الحقيقية في المتن القابل للتعديل لذلك العقد.",
       "contractTemplateLabel": "نص النموذج (بالفرنسية)",
       "contractTemplateVariablesLabel": "المتغيرات المتاحة — اكتبها مباشرة داخل النص أعلاه:",
-      "contractTemplateUnsetWarning": "لم يُحدَّد أي نموذج. لا يمكن إنشاء عقد إلى أن يُحفظ نموذج هنا."
+      "contractTemplateUnsetWarning": "لم يُحدَّد أي نموذج. لا يمكن إنشاء عقد إلى أن يُحفظ نموذج هنا.",
+      "freelancerContractTitle": "نموذج عقد المستقل",
+      "freelancerContractDescription": "يُعرض تلقائيًا على كل مستقل يبلغ ملفه 100٪. أي تعديل لا يغيّر عقدًا أُنشئ سابقًا. يملأ المستقل رقم بطاقة التعريف عند التوقيع."
     },
     "payments": {
       "cancel": "إلغاء",
@@ -7534,5 +7537,59 @@
     "promptBody": "استقبل الطلبات والرسائل والمدفوعات على هذا الهاتف.",
     "enable": "تفعيل",
     "dismiss": "لاحقًا"
+  },
+  "freelancerContract": {
+    "title": "عقد Metwork",
+    "subtitle": "عقد المستقل: وكالة التحصيل والعمولات.",
+    "lockedTitle": "أكمل ملفك لتتلقى عقدك",
+    "lockedBody": "ملفك مكتمل بنسبة {percent}٪. عند 100٪ يظهر عقدك هنا وتتلقى إشعارًا.",
+    "completeProfile": "إكمال ملفي",
+    "signedTitle": "تم توقيع العقد",
+    "signedBody": "وُقّع في {date}. يمكنك سحب أموالك.",
+    "download": "تحميل ملف PDF الموقّع",
+    "stepsLabel": "خطوات التوقيع",
+    "step": {
+      "read": "القراءة",
+      "sign": "البطاقة والتوقيع",
+      "code": "الرمز"
+    },
+    "ratesTitle": "عمولات Metwork",
+    "rateMissions": "المهام عبر Metwork: {free}٪ (العرض المجاني) · {premium}٪ (Premium)",
+    "rateLinks": "روابط الدفع: {free}٪ (العرض المجاني) · {premium}٪ (Premium)",
+    "textLabel": "نص العقد",
+    "readDone": "قرأت العقد",
+    "cinLabel": "رقم بطاقة التعريف الوطنية",
+    "cinHint": "من 9 إلى 18 رقمًا كما هو مطبوع على بطاقتك. يُدرج في العقد.",
+    "signatureLabel": "توقيعك",
+    "back": "رجوع",
+    "continue": "متابعة",
+    "codeIntro": "نرسل رمزًا إلى رقم WhatsApp الخاص بك. أدخله للتوقيع.",
+    "codeLabel": "رمز التوقيع",
+    "codeSentWhatsapp": "تم إرسال الرمز عبر WhatsApp.",
+    "codeSentSms": "تم إرسال الرمز عبر SMS.",
+    "sign": "توقيع العقد",
+    "signing": "جارٍ التوقيع…",
+    "resendWhatsapp": "إعادة الإرسال عبر WhatsApp",
+    "resendSms": "الاستلام عبر SMS",
+    "errors": {
+      "invalidCode": "رمز خاطئ.",
+      "expiredCode": "انتهت صلاحية الرمز: اطلب رمزًا جديدًا.",
+      "locked": "محاولات كثيرة. حاول لاحقًا.",
+      "throttled": "انتظر قبل طلب رمز جديد.",
+      "deliveryFailed": "تعذّر إرسال الرمز. جرّب القناة الأخرى.",
+      "badSignature": "ارسم توقيعك.",
+      "badIdNumber": "أدخل رقم بطاقة التعريف (9 إلى 18 رقمًا).",
+      "noPhone": "أضف رقم هاتف إلى حسابك.",
+      "notPending": "لم يعد هذا العقد بانتظار التوقيع. أعد تحميل الصفحة.",
+      "storageFailed": "تعذّر حفظ العقد الموقّع. حاول مرة أخرى.",
+      "generic": "حدث خطأ. حاول مرة أخرى."
+    },
+    "gate": {
+      "title": "السحب مغلق حاليًا",
+      "profile": "أكمل ملفك إلى 100٪ ثم وقّع عقد Metwork للسحب.",
+      "contract": "وقّع عقد Metwork لسحب أموالك.",
+      "profileCta": "الملف",
+      "contractCta": "توقيع"
+    }
   }
 }

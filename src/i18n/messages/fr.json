@@ -2318,7 +2318,8 @@
       "account": "Compte",
       "allTools": "Tous vos outils",
       "home": "Accueil"
-    }
+    },
+    "contract": "Contrat"
   },
   "pages": {
     "consultationPay": {
@@ -5031,7 +5032,9 @@
       "sectionContractTemplateDescription": "Votre propre contrat consultant, rédigé une seule fois. Créer un nouveau contrat revient ensuite à choisir un consultant — ce texte est fusionné avec ses données réelles dans le corps modifiable de ce contrat.",
       "contractTemplateLabel": "Corps du modèle (français)",
       "contractTemplateVariablesLabel": "Variables disponibles — tapez-les directement dans le texte ci-dessus :",
-      "contractTemplateUnsetWarning": "Aucun modèle défini. Impossible de créer un contrat tant qu'un modèle n'a pas été enregistré ici."
+      "contractTemplateUnsetWarning": "Aucun modèle défini. Impossible de créer un contrat tant qu'un modèle n'a pas été enregistré ici.",
+      "freelancerContractTitle": "Modèle du contrat freelancer",
+      "freelancerContractDescription": "Proposé automatiquement à chaque freelancer dont le profil atteint 100 %. Un changement ne modifie jamais un contrat déjà créé. Le numéro de CIN est rempli par le freelancer à la signature."
     },
     "payments": {
       "cancel": "Annuler",
@@ -7534,5 +7537,59 @@
     "promptBody": "Recevez commandes, messages et paiements sur ce téléphone.",
     "enable": "Activer",
     "dismiss": "Plus tard"
+  },
+  "freelancerContract": {
+    "title": "Contrat Metwork",
+    "subtitle": "Votre contrat freelancer : mandat d’encaissement et commissions.",
+    "lockedTitle": "Complétez votre profil pour recevoir votre contrat",
+    "lockedBody": "Votre profil est complet à {percent} %. À 100 %, votre contrat Metwork apparaît ici et vous êtes notifié.",
+    "completeProfile": "Compléter mon profil",
+    "signedTitle": "Contrat signé",
+    "signedBody": "Signé le {date}. Vous pouvez retirer votre argent.",
+    "download": "Télécharger le PDF signé",
+    "stepsLabel": "Étapes de signature",
+    "step": {
+      "read": "Lire",
+      "sign": "CIN et signature",
+      "code": "Code"
+    },
+    "ratesTitle": "Commissions Metwork",
+    "rateMissions": "Missions via Metwork : {free} % (offre gratuite) · {premium} % (Premium)",
+    "rateLinks": "Liens de paiement : {free} % (offre gratuite) · {premium} % (Premium)",
+    "textLabel": "Texte du contrat",
+    "readDone": "J’ai lu le contrat",
+    "cinLabel": "Numéro de carte d’identité nationale",
+    "cinHint": "9 à 18 chiffres, tels qu’imprimés sur votre carte. Il est inscrit dans le contrat.",
+    "signatureLabel": "Votre signature",
+    "back": "Retour",
+    "continue": "Continuer",
+    "codeIntro": "Nous envoyons un code sur votre numéro WhatsApp. Saisissez-le pour signer.",
+    "codeLabel": "Code de signature",
+    "codeSentWhatsapp": "Code envoyé sur WhatsApp.",
+    "codeSentSms": "Code envoyé par SMS.",
+    "sign": "Signer le contrat",
+    "signing": "Signature en cours…",
+    "resendWhatsapp": "Renvoyer sur WhatsApp",
+    "resendSms": "Recevoir par SMS",
+    "errors": {
+      "invalidCode": "Code incorrect.",
+      "expiredCode": "Le code a expiré : demandez-en un nouveau.",
+      "locked": "Trop d’essais. Réessayez plus tard.",
+      "throttled": "Patientez avant de demander un nouveau code.",
+      "deliveryFailed": "Le code n’a pas pu être envoyé. Essayez l’autre canal.",
+      "badSignature": "Dessinez votre signature.",
+      "badIdNumber": "Saisissez votre numéro de CIN (9 à 18 chiffres).",
+      "noPhone": "Ajoutez un numéro de téléphone à votre compte.",
+      "notPending": "Ce contrat n’attend plus de signature. Rechargez la page.",
+      "storageFailed": "Le contrat signé n’a pas pu être enregistré. Réessayez.",
+      "generic": "Une erreur est survenue. Réessayez."
+    },
+    "gate": {
+      "title": "Retraits bloqués pour l’instant",
+      "profile": "Complétez votre profil à 100 % puis signez votre contrat Metwork pour retirer.",
+      "contract": "Signez votre contrat Metwork pour retirer votre argent.",
+      "profileCta": "Profil",
+      "contractCta": "Signer"
+    }
   }
 }

@@ -97,6 +97,15 @@ export async function POST(req: NextRequest) {
         });
       case 'BELOW_MINIMUM':
         return jsonError(422, 'BELOW_MINIMUM', `Minimum withdrawal is ${result.minimum} DZD.`);
+      case 'FREELANCER_NOT_ELIGIBLE':
+        return jsonError(
+          403,
+          result.block,
+          result.block === 'PROFILE_INCOMPLETE'
+            ? 'Complete your profile to 100 % before withdrawing.'
+            : 'Sign your Metwork freelancer contract before withdrawing.',
+          { href: result.block === 'PROFILE_INCOMPLETE' ? '/dashboard/freelancer/profile' : '/dashboard/freelancer/contract' },
+        );
       default:
         // INVALID_AMOUNT / INVALID_ACCOUNT_DETAILS / TARGET_NOT_FOUND — all
         // pre-validated above (zod + session), kept as a defensive fallback.

@@ -9,6 +9,7 @@ import { db } from '@/server/db/store';
 import { DEFAULT_PLATFORM_SETTINGS } from '@/server/admin/settings-defaults';
 import { getOrCreateAdminIncubator } from '@/lib/admin-incubator';
 import { PushToggle } from '@/components/pwa/push-toggle';
+import { FREELANCER_CONTRACT_DEFAULT, FREELANCER_CONTRACT_VARIABLES } from '@/lib/freelancer-contract-text';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -20,6 +21,7 @@ export default async function AdminSettingsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.dashboard');
+  const tSettings = await getTranslations('admin.platformSettings');
   const user = await requireRole(['ADMIN']);
 
   const data = await db.read();
@@ -37,6 +39,13 @@ export default async function AdminSettingsPage({ params }: PageProps) {
       />
       <PlatformSettingsForm initial={settings} />
       <ConsultantContractTemplateForm initial={settings.consultantContractTemplate ?? null} />
+      <ConsultantContractTemplateForm
+        field="freelancerContractTemplate"
+        initial={settings.freelancerContractTemplate?.trim() || FREELANCER_CONTRACT_DEFAULT}
+        variables={FREELANCER_CONTRACT_VARIABLES}
+        title={tSettings('freelancerContractTitle')}
+        description={tSettings('freelancerContractDescription')}
+      />
       <MetworkLegalForm
         initial={{
           address: metworkIncubator.address ?? null,
