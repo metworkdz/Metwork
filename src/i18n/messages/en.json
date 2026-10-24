@@ -6876,17 +6876,13 @@
   },
   "copilot": {
     "pageTitle": "Tax copilot",
-    "subtitle": "Ask about taxes, CASNOS, invoicing or your status. Answers come from the official texts, with sources.",
-    "disclaimer": "The copilot answers from the 2026 tax codes, the finance laws, the Code de commerce and the DGI forms, and shows its sources. It can be wrong or miss a recent text: check the source, and confirm with an accountant before any decision with money at stake.",
+    "subtitle": "Taxes, CASNOS, invoicing, your status, banks and paperwork: ask in your own words.",
     "kbNotReady": "The copilot’s documents are being prepared. Come back soon.",
-    "suggestionsTitle": "Try a question",
-    "placeholder": "Ask a question about taxes, CASNOS, invoicing…",
+    "placeholder": "Ask anything…",
     "send": "Send",
     "searching": "Searching the texts…",
     "quotaLeft": "{count} of {limit} questions left this month",
-    "quotaUnlimited": "Unlimited questions on your plan",
     "upgrade": "Upgrade",
-    "sources": "Sources",
     "sourceN": "Source {n}",
     "page": "page {page}",
     "errorQuota": "You have used this month’s questions. Upgrade for unlimited questions.",
@@ -6906,7 +6902,17 @@
       "s2": "When is the monthly G no.50 return due and what does it contain?",
       "s3": "What is the IBS rate for a service company?",
       "s4": "What mentions must appear on an invoice?"
-    }
+    },
+    "chatTitle": "Copilot",
+    "badgeUnlimited": "Unlimited",
+    "badgeLeft": "{count} left",
+    "newChat": "New chat",
+    "emptyTitle": "How can I help?",
+    "searchingWeb": "Not in the official texts, searching the web…",
+    "fromWeb": "Found on the web",
+    "webSource": "Web",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "inbox": {
     "pageTitle": "Messages",

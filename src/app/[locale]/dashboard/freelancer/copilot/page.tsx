@@ -1,6 +1,5 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { requireRole } from '@/lib/auth-guards';
-import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { CopilotChat } from '@/components/features/copilot/copilot-chat';
 import { db } from '@/server/db/store';
 import { quotaFor } from '@/server/copilot/service';
@@ -30,15 +29,12 @@ export default async function FreelancerCopilotPage({ params, searchParams }: Pa
   const kb = await loadKb().catch(() => null);
   const { q } = await searchParams;
   return (
-    <div className="space-y-6">
-      <DashboardPageHeader title={t('pageTitle')} subtitle={t('subtitle')} />
-      <CopilotChat
-        initialQuota={user ? quotaFor(data, user) : { limit: 0, used: 0, remaining: 0 }}
-        kbReady={Boolean(kb && kb.index.chunks.length > 0)}
-        suggestions={[t('freelancer.s1'), t('freelancer.s2'), t('freelancer.s3'), t('freelancer.s4')]}
-        membershipHref="/dashboard/freelancer/membership"
-        initialQuestion={typeof q === 'string' ? q.slice(0, 1000) : undefined}
-      />
-    </div>
+    <CopilotChat
+      initialQuota={user ? quotaFor(data, user) : { limit: 0, used: 0, remaining: 0 }}
+      kbReady={Boolean(kb && kb.index.chunks.length > 0)}
+      suggestions={[t('freelancer.s1'), t('freelancer.s2'), t('freelancer.s3'), t('freelancer.s4')]}
+      membershipHref="/dashboard/freelancer/membership"
+      initialQuestion={typeof q === 'string' ? q.slice(0, 1000) : undefined}
+    />
   );
 }

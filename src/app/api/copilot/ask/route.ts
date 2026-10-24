@@ -1,6 +1,7 @@
 /**
  * POST /api/copilot/ask — `{ question, history?, lang }` → NDJSON stream:
  *   {"type":"text","text":"…"}*            the answer as it is written
+ *   {"type":"status","stage":"web"}        the texts didn't cover it: searching the web
  *   {"type":"done","answer":{…},"quota":{…}} segments + numbered sources
  *   {"type":"error","code":"…"}            instead of done, on failure
  * Errors found before anything is generated (quota, validation) are plain
@@ -16,8 +17,8 @@ import { askCopilot, MAX_QUESTION_CHARS, quotaFor } from '@/server/copilot/servi
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-// Search planning + a cited answer.
-export const maxDuration = 90;
+// Search planning + a cited answer, and the web fallback when the texts don't cover it.
+export const maxDuration = 120;
 
 const bodySchema = z.object({
   question: z.string().trim().min(3).max(MAX_QUESTION_CHARS),
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
         history: input.history,
         lang: input.lang,
         onText: (text) => send({ type: 'text', text }),
+        onWeb: () => send({ type: 'status', stage: 'web' }),
       });
       send(result.ok ? { type: 'done', answer: result.answer, quota: result.quota } : { type: 'error', code: result.reason });
       controller.close();

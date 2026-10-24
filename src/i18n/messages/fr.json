@@ -6876,17 +6876,13 @@
   },
   "copilot": {
     "pageTitle": "Copilote fiscal",
-    "subtitle": "Posez vos questions sur les impôts, la CASNOS, la facturation ou votre statut. Les réponses viennent des textes officiels, avec leurs sources.",
-    "disclaimer": "Le copilote répond à partir des codes fiscaux 2026, des lois de finances, du Code de commerce et des formulaires DGI, et affiche ses sources. Il peut se tromper ou ignorer un texte récent : vérifiez la source et confirmez avec un comptable avant toute décision qui engage de l’argent.",
+    "subtitle": "Impôts, CASNOS, facturation, statut, banques et démarches : posez votre question avec vos mots.",
     "kbNotReady": "Les documents du copilote sont en préparation. Revenez bientôt.",
-    "suggestionsTitle": "Essayez une question",
-    "placeholder": "Posez une question sur les impôts, la CASNOS, la facturation…",
+    "placeholder": "Posez votre question…",
     "send": "Envoyer",
     "searching": "Recherche dans les textes…",
     "quotaLeft": "{count} questions sur {limit} restantes ce mois-ci",
-    "quotaUnlimited": "Questions illimitées avec votre abonnement",
     "upgrade": "Passer à l’offre payante",
-    "sources": "Sources",
     "sourceN": "Source {n}",
     "page": "page {page}",
     "errorQuota": "Vous avez utilisé les questions de ce mois. Passez à l’offre payante pour des questions illimitées.",
@@ -6906,7 +6902,17 @@
       "s2": "Quand déposer la G n°50 et que contient-elle ?",
       "s3": "Quel est le taux de l’IBS pour une société de services ?",
       "s4": "Quelles mentions doivent figurer sur une facture ?"
-    }
+    },
+    "chatTitle": "Copilote",
+    "badgeUnlimited": "Illimité",
+    "badgeLeft": "{count} restantes",
+    "newChat": "Nouvelle conversation",
+    "emptyTitle": "Comment puis-je vous aider ?",
+    "searchingWeb": "Pas dans les textes officiels, recherche sur le web…",
+    "fromWeb": "Trouvé sur le web",
+    "webSource": "Web",
+    "copy": "Copier",
+    "copied": "Copié"
   },
   "inbox": {
     "pageTitle": "Messages",

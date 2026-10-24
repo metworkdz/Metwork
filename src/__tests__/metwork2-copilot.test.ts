@@ -8,7 +8,7 @@ import { db } from '@/server/db/store';
 import { buildSearchIndex, chunkPages, describeDocument, search, tokenize, upsertDocument, type KbIndex } from '@/server/copilot/kb';
 import { resetKbCacheForTests } from '@/server/copilot/kb-store';
 
-const sdk = vi.hoisted(() => ({ create: vi.fn(), finalMessage: vi.fn() }));
+const sdk = vi.hoisted(() => ({ create: vi.fn(), finalMessage: vi.fn(), webStream: vi.fn(), webFinal: vi.fn() }));
 
 vi.mock('@/lib/env', () => ({ serverEnvVars: { ANTHROPIC_API_KEY: 'test-key' } }));
 vi.mock('@anthropic-ai/sdk', () => {
@@ -21,11 +21,14 @@ vi.mock('@anthropic-ai/sdk', () => {
         stream: () => ({ on: () => undefined, finalMessage: sdk.finalMessage }),
       },
     };
+    messages = {
+      stream: (params: unknown) => { sdk.webStream(params); return { on: () => undefined, finalMessage: sdk.webFinal }; },
+    };
   }
   return { default: Anthropic };
 });
 
-const { askCopilot, foldCitations, quotaFor } = await import('@/server/copilot/service');
+const { askCopilot, foldCitations, quotaFor, safeUrl, sentinelGate, NOT_IN_DOCUMENTS } = await import('@/server/copilot/service');
 
 const T0 = '2026-01-01T10:00:00.000Z';
 
@@ -56,6 +59,8 @@ function kbIndex(): KbIndex {
 beforeEach(async () => {
   sdk.create.mockReset();
   sdk.finalMessage.mockReset();
+  sdk.webStream.mockReset();
+  sdk.webFinal.mockReset();
   resetKbCacheForTests(kbIndex());
   await db.update((d) => {
     d.users = [user('fl-1')];
@@ -146,5 +151,69 @@ describe('ask', () => {
     });
     const d = await db.read();
     expect(quotaFor(d, d.users[0]!)).toEqual({ limit: null, used: 15, remaining: null });
+  });
+});
+
+describe('web fallback', () => {
+  const webCite = (url: string) => ({ type: 'web_search_result_location', url, title: 'BNA', cited_text: 'pièces à fournir', encrypted_index: 'x' });
+
+  it('answers from the web with Haiku 4.5 when the texts do not cover it, and counts once', async () => {
+    sdk.create.mockResolvedValue({ stop_reason: 'end_turn', content: [{ type: 'text', text: '{"queries":["ouverture compte bancaire professionnel"]}' }] });
+    sdk.finalMessage.mockResolvedValue({ stop_reason: 'end_turn', content: [{ type: 'text', text: NOT_IN_DOCUMENTS }] });
+    sdk.webFinal.mockResolvedValue({
+      stop_reason: 'end_turn',
+      content: [
+        { type: 'text', text: 'Je vais chercher…', citations: null },
+        { type: 'server_tool_use', id: 'st', name: 'web_search', input: { query: 'BNA compte pro' } },
+        { type: 'web_search_tool_result', tool_use_id: 'st', content: [] },
+        { type: 'text', text: 'Il faut la carte AE', citations: [webCite('https://www.bna.dz/compte'), webCite('javascript:alert(1)')] },
+      ],
+    });
+    const r = await askCopilot({ userId: 'fl-1', question: 'Ouvrir un compte pro à la BNA ?', history: [], lang: 'fr' });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.answer.origin).toBe('WEB');
+    expect(r.answer.segments.map((x) => x.text).join('')).toBe('Il faut la carte AE');
+    expect(r.answer.sources).toEqual([expect.objectContaining({ n: 1, kind: 'WEB', url: 'https://www.bna.dz/compte' })]);
+    expect(r.quota.used).toBe(1);
+    const params = sdk.webStream.mock.calls[0]![0] as { model: string; tools: { type: string; max_uses: number }[] };
+    expect(params.model).toBe('claude-haiku-4-5');
+    expect(params.tools[0]).toMatchObject({ type: 'web_search_20250305', max_uses: 3 });
+    // The API rejects user_location country DZ (400).
+    expect(params.tools[0]).not.toHaveProperty('user_location');
+  });
+
+  it('keeps document answers on the documents path', async () => {
+    sdk.create.mockResolvedValue({ stop_reason: 'end_turn', content: [{ type: 'text', text: '{"queries":["taux impôt forfaitaire unique"]}' }] });
+    sdk.finalMessage.mockResolvedValue({ stop_reason: 'end_turn', content: [{ type: 'text', text: '0,5 %', citations: null }] });
+    const r = await askCopilot({ userId: 'fl-1', question: 'Taux IFU ?', history: [], lang: 'fr' });
+    expect(r.ok && r.answer.origin).toBe('DOCUMENTS');
+    expect(sdk.webStream).not.toHaveBeenCalled();
+  });
+
+  it('resumes a paused web turn once, then stops', async () => {
+    sdk.create.mockResolvedValue({ stop_reason: 'end_turn', content: [{ type: 'text', text: '{"queries":["x"]}' }] });
+    sdk.finalMessage.mockResolvedValue({ stop_reason: 'end_turn', content: [{ type: 'text', text: NOT_IN_DOCUMENTS }] });
+    sdk.webFinal.mockResolvedValue({ stop_reason: 'pause_turn', content: [{ type: 'text', text: 'partiel', citations: null }] });
+    await askCopilot({ userId: 'fl-1', question: 'Question longue ?', history: [], lang: 'fr' });
+    expect(sdk.webStream).toHaveBeenCalledTimes(2);
+  });
+
+  it('never shows the sentinel while streaming', () => {
+    const out: string[] = [];
+    const g = sentinelGate((t) => out.push(t));
+    for (const d of ['NOT_', 'IN_DOC', 'UMENTS']) g.push(d);
+    expect(out).toEqual([]);
+    const out2: string[] = [];
+    const g2 = sentinelGate((t) => out2.push(t));
+    for (const d of ['Le ', 'taux', ' est']) g2.push(d);
+    expect(out2.join('')).toBe('Le taux est');
+  });
+
+  it('lets only http(s) links through', () => {
+    expect(safeUrl('https://mfdgi.gov.dz/x')).toBe('https://mfdgi.gov.dz/x');
+    expect(safeUrl('javascript:alert(1)')).toBeNull();
+    expect(safeUrl('data:text/html,x')).toBeNull();
+    expect(safeUrl('not a url')).toBeNull();
   });
 });
