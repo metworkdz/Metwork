@@ -7523,5 +7523,16 @@
         "body": "Inscrivez-vous à la CASNOS et payez la cotisation forfaitaire de l’auto-entrepreneur : 24 000 DA par an."
       }
     }
+  },
+  "push": {
+    "title": "Notifications sur ce téléphone",
+    "hint": "Commandes, messages, paiements, retraits, rappels…",
+    "needsInstall": "Sur iPhone, ajoutez d’abord Metwork à l’écran d’accueil, puis ouvrez-le depuis l’icône.",
+    "denied": "Les notifications sont bloquées pour Metwork dans les réglages du navigateur.",
+    "error": "Impossible d’activer les notifications. Réessayez.",
+    "promptTitle": "Ne ratez plus rien",
+    "promptBody": "Recevez commandes, messages et paiements sur ce téléphone.",
+    "enable": "Activer",
+    "dismiss": "Plus tard"
   }
 }

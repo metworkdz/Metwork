@@ -7523,5 +7523,16 @@
         "body": "Register with CASNOS and pay the auto-entrepreneur flat contribution: 24,000 DA a year."
       }
     }
+  },
+  "push": {
+    "title": "Notifications on this phone",
+    "hint": "Orders, messages, payments, withdrawals, reminders…",
+    "needsInstall": "On iPhone, first add Metwork to your home screen, then open it from the icon.",
+    "denied": "Notifications are blocked for Metwork in your browser settings.",
+    "error": "Couldn't turn notifications on. Try again.",
+    "promptTitle": "Never miss a thing",
+    "promptBody": "Get orders, messages and payments on this phone.",
+    "enable": "Turn on",
+    "dismiss": "Later"
   }
 }

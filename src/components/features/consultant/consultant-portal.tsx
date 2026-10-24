@@ -34,6 +34,8 @@ import { ContractSection } from './portal/contract-section';
 import { InvoicesSection } from './portal/invoices-section';
 import { LanguageSwitcher } from './portal/language-switcher';
 import { AppLogo, Avatar, FlowSheet, fmtDZD } from './portal/shared';
+import { PushToggle } from '@/components/pwa/push-toggle';
+import { disablePush } from '@/lib/push-client';
 
 type Tab = 'consultations' | 'programs' | 'spaces' | 'availability' | 'profile' | 'earnings' | 'wallet' | 'invoices' | 'contract';
 
@@ -180,6 +182,8 @@ function Dashboard({
 
   async function signOut(forgetDevice: boolean) {
     setMenuOpen(false);
+    // A shared phone must not keep getting this consultant's notifications.
+    await disablePush('/api/consultant/push').catch(() => undefined);
     try { await consultantService.logout(forgetDevice); } catch { /* ignore */ }
     onSignedOut();
   }
@@ -430,7 +434,12 @@ function Dashboard({
           {tab === 'programs' && <ProgramsSection />}
           {tab === 'spaces' && <SpacesSection />}
           {tab === 'availability' && <AvailabilityEditor mentor={me.mentor} onSaved={onMentor} />}
-          {tab === 'profile' && <ProfileSection mentor={me.mentor} onSaved={onMentor} />}
+          {tab === 'profile' && (
+            <div className="space-y-4">
+              <PushToggle api="/api/consultant/push" />
+              <ProfileSection mentor={me.mentor} onSaved={onMentor} />
+            </div>
+          )}
           {tab === 'earnings' && <EarningsSection />}
           {tab === 'wallet' && <WalletSection wallet={me.wallet} onChange={reload} />}
           {tab === 'invoices' && <InvoicesSection />}

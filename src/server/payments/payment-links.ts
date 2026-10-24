@@ -57,6 +57,7 @@ import {
   type PaymentLinkIssuer,
 } from '@/server/notifications/mock';
 import { entitlementsForUser } from '@/lib/entitlements';
+import { createNotification } from '@/server/notifications/create-notification';
 import type { CommissionQuote } from '@/server/payments/commission';
 import { applyOrderPaymentInDraft, orderCommissionRate, type OrderPaymentEvent } from '@/server/orders/state';
 
@@ -502,9 +503,18 @@ interface NotifyClaim {
   link: PaymentLinkRecord;
   incubator: PaymentLinkIssuer;
   walletPath: string;
+  /** In-app + push "payment received" to the wallet owner (not for order links: orders notify themselves). */
+  notifyUser: { id: string; locale: string | null } | null;
   sendReceipt: boolean;
   notifyIncubator: boolean;
 }
+
+const dzd = (n: number) => `${Math.round(n).toLocaleString('fr-FR').replace(/\u202f|\u00a0/g, ' ')} DA`;
+const PAID_TITLE: Record<'fr' | 'en' | 'ar', (amount: number) => string> = {
+  fr: (a) => `Paiement reçu · ${dzd(a)}`,
+  en: (a) => `Payment received · ${dzd(a)}`,
+  ar: (a) => `تم استلام دفعة · ${dzd(a)}`,
+};
 
 /**
  * Issue the payer receipt + the incubator "new payment received" email, each
@@ -528,7 +538,15 @@ export async function dispatchPaymentLinkNotificationsIfDue(id: string): Promise
       if (sendReceipt) link.paidReceiptSentAt = now;
       if (notifyIncubator) link.incubatorNotifiedAt = now;
       if (sendReceipt || notifyIncubator) {
-        claim = { link: { ...link }, incubator: receiver.issuer, walletPath: receiver.walletPath, sendReceipt, notifyIncubator };
+        const owner = notifyIncubator && !link.orderId && receiver.walletUserId ? d.users.find((u) => u.id === receiver.walletUserId) : undefined;
+        claim = {
+          link: { ...link },
+          incubator: receiver.issuer,
+          walletPath: receiver.walletPath,
+          sendReceipt,
+          notifyIncubator,
+          notifyUser: owner ? { id: owner.id, locale: owner.locale ?? null } : null,
+        };
       }
     });
 
@@ -541,6 +559,16 @@ export async function dispatchPaymentLinkNotificationsIfDue(id: string): Promise
     }
     if (c.notifyIncubator) {
       await sendPaymentLinkPaidIncubatorEmail({ link: c.link, incubator: c.incubator, lang, walletPath: c.walletPath });
+    }
+    if (c.notifyUser) {
+      const l = c.notifyUser.locale === 'en' || c.notifyUser.locale === 'ar' ? c.notifyUser.locale : 'fr';
+      await createNotification({
+        userId: c.notifyUser.id,
+        type: 'WALLET_CREDITED',
+        title: PAID_TITLE[l](c.link.amount),
+        body: [c.link.payerName, c.link.description].filter(Boolean).join(' · ').slice(0, 200),
+        href: c.walletPath,
+      });
     }
   } catch {
     // Notifications are non-critical — swallow so settlement is unaffected.

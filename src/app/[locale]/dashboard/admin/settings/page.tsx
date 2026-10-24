@@ -8,6 +8,7 @@ import { DeleteAccountSection } from '@/components/features/settings/delete-acco
 import { db } from '@/server/db/store';
 import { DEFAULT_PLATFORM_SETTINGS } from '@/server/admin/settings-defaults';
 import { getOrCreateAdminIncubator } from '@/lib/admin-incubator';
+import { PushToggle } from '@/components/pwa/push-toggle';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -43,6 +44,7 @@ export default async function AdminSettingsPage({ params }: PageProps) {
           nif: metworkIncubator.nif ?? null,
         }}
       />
+      <PushToggle />
       <DeleteAccountSection />
     </div>
   );

@@ -41,6 +41,8 @@ import {
   sendWithdrawalProcessedEmail,
 } from '@/server/notifications/mock';
 import { getPlatformConfig, isMonthlyFlatActive } from '@/server/incubator/service';
+import { createNotification } from '@/server/notifications/create-notification';
+import { pushToMentor } from '@/server/notifications/push';
 
 /** Smallest withdrawal, server-enforced (mirrors the mentor-ledger floor). */
 export const MIN_WITHDRAWAL = 500;
@@ -328,8 +330,12 @@ export async function approveWithdrawal(input: {
     request = claim.request;
   }
 
-  // Money is settled — notify (fire-and-forget, never blocks the approval).
-  void notifyWithdrawalApproved(input.targetType, request);
+  // Money is settled — notify. Both never throw, so the approval stands either
+  // way; awaited because an unawaited send is dropped when the lambda freezes.
+  await Promise.allSettled([
+    notifyWithdrawalApproved(input.targetType, request),
+    notifyWithdrawalInApp(input.targetType, request, 'APPROVED'),
+  ]);
 
   return { ok: true, request, replayed: false };
 }
@@ -475,7 +481,10 @@ export async function rejectWithdrawal(input: {
     request = claim.request;
   }
 
-  void notifyWithdrawalRejected(input.targetType, request);
+  await Promise.allSettled([
+    notifyWithdrawalRejected(input.targetType, request),
+    notifyWithdrawalInApp(input.targetType, request, 'REJECTED'),
+  ]);
 
   return { ok: true, request, replayed: false };
 }
@@ -508,6 +517,52 @@ async function notifyWithdrawalRejected(
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('[withdrawals] rejection email failed (rejection unaffected):', err);
+  }
+}
+
+const WITHDRAWAL_TITLE: Record<'APPROVED' | 'REJECTED', Record<'fr' | 'en' | 'ar', (amount: string) => string>> = {
+  APPROVED: { fr: (a) => `Retrait effectué · ${a}`, en: (a) => `Withdrawal completed · ${a}`, ar: (a) => `تم السحب · ${a}` },
+  REJECTED: { fr: (a) => `Retrait refusé · ${a}`, en: (a) => `Withdrawal declined · ${a}`, ar: (a) => `تم رفض السحب · ${a}` },
+};
+const WITHDRAWAL_BODY: Record<'APPROVED' | 'REJECTED', Record<'fr' | 'en' | 'ar', string>> = {
+  APPROVED: { fr: 'Le virement est parti vers votre compte.', en: 'The transfer to your account is on its way.', ar: 'تم إرسال التحويل إلى حسابك.' },
+  REJECTED: { fr: 'Le montant est revenu dans votre solde.', en: 'The amount is back in your balance.', ar: 'عاد المبلغ إلى رصيدك.' },
+};
+
+/** In-app notification + push: members through createNotification, consultants by push only. */
+async function notifyWithdrawalInApp(
+  targetType: WithdrawalTargetType,
+  request: AnyWithdrawalRequest,
+  status: 'APPROVED' | 'REJECTED',
+): Promise<void> {
+  try {
+    const amount = `${Math.round(request.amount).toLocaleString('fr-FR').replace(/\u202f|\u00a0/g, ' ')} DA`;
+    const note = request.adminNote ? ` ${request.adminNote}`.slice(0, 160) : '';
+    if (targetType === 'user') {
+      const r = request as WithdrawalRequestRecord;
+      const user = (await db.read()).users.find((u) => u.id === r.userId);
+      if (!user) return;
+      const l = user.locale === 'en' || user.locale === 'ar' ? user.locale : 'fr';
+      const walletPath = `/dashboard/${user.role.toLowerCase()}/wallet`;
+      await createNotification({
+        userId: user.id,
+        type: status === 'APPROVED' ? 'WALLET_DEBITED' : 'GENERAL',
+        title: WITHDRAWAL_TITLE[status][l](amount),
+        body: `${WITHDRAWAL_BODY[status][l]}${note}`,
+        href: walletPath,
+      });
+    } else {
+      const r = request as MentorWithdrawalRecord;
+      // Consultants have no stored locale: French, like their emails.
+      await pushToMentor(r.mentorId, {
+        title: WITHDRAWAL_TITLE[status].fr(amount),
+        body: `${WITHDRAWAL_BODY[status].fr}${note}`,
+        url: '/mentordashboard',
+      });
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[withdrawals] in-app notice failed (unaffected):', err);
   }
 }
 

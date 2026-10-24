@@ -12,6 +12,8 @@
 import { db, type MentorBookingRecord } from '@/server/db/store';
 import { findMentorById } from '@/server/mentors/service';
 import { sendConsultantNewBookingEmail } from '@/server/notifications/mock';
+import { pushToMentor } from '@/server/notifications/push';
+import { sessionWhenFr } from '@/server/notifications/consultation-reminder';
 
 export async function sendBookingNotificationOnce(bookingId: string): Promise<void> {
   // Claim the send: only a settled (paid) instant-book booking, not yet notified.
@@ -38,4 +40,6 @@ export async function sendBookingNotificationOnce(bookingId: string): Promise<vo
   const portalUrl = `${base}/mentordashboard`;
   // Awaited — unawaited sends die when the serverless response returns.
   await sendConsultantNewBookingEmail({ booking: claim.booking, mentor, portalUrl, lang: 'fr' });
+  // No client details on the lock screen: they stay in the PIN-gated portal.
+  await pushToMentor(mentor.id, { title: 'Nouvelle consultation réservée', body: sessionWhenFr(claim.booking), url: '/mentordashboard' });
 }

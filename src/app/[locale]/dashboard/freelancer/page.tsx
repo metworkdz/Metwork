@@ -4,6 +4,7 @@ import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
+import { PushPrompt } from '@/components/pwa/push-toggle';
 import { db } from '@/server/db/store';
 import { computeCompletion } from '@/lib/freelancer-completion';
 import { listProjects } from '@/server/freelancers/workspace';
@@ -98,6 +99,8 @@ export default async function FreelancerOverviewPage({ params }: PageProps) {
         <DashboardPageHeader title={t('greeting', { name: firstName })} subtitle={t('subtitle')} />
       </div>
       <p className="font-display text-xl font-bold tracking-tight lg:hidden">{t('greeting', { name: firstName })}</p>
+
+      <PushPrompt />
 
       {percent < 100 && (
         <PremiumRowCard

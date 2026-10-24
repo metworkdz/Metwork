@@ -6,6 +6,7 @@ import { CofounderSwitch } from '@/components/features/cofounder/cofounder-switc
 import { db } from '@/server/db/store';
 import { profileOf } from '@/server/cofounder/service';
 import { DeleteAccountSection } from '@/components/features/settings/delete-account-section';
+import { PushToggle } from '@/components/pwa/push-toggle';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -36,6 +37,7 @@ export default async function FreelancerSettingsPage({ params }: PageProps) {
         }}
       />
       <CofounderSwitch initial={cofounderEnabled} />
+      <PushToggle />
       <DeleteAccountSection />
     </div>
   );

@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { authService } from '@/services/auth.service';
 import type { SessionUser } from '@/types/auth';
+import { disablePush } from '@/lib/push-client';
 
 interface AuthContextValue {
   user: SessionUser | null;
@@ -37,6 +38,8 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
   const logout = useCallback(async () => {
     setIsLoading(true);
     try {
+      // A shared phone must not keep getting this account's notifications.
+      await disablePush('/api/push/subscription').catch(() => undefined);
       await authService.logout();
       setUser(null);
     } finally {

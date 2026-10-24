@@ -1308,6 +1308,25 @@ export interface CopilotUsageRecord {
   updatedAt: string;
 }
 
+/**
+ * Metwork 2.0 — a browser/device that accepted web push. Owner is a member
+ * (USER) or a consultant of the portal (MENTOR, no user account). The
+ * endpoint is unique: re-subscribing the same device moves it to its owner.
+ */
+export interface PushSubscriptionRecord {
+  id: string;
+  ownerType: 'USER' | 'MENTOR';
+  ownerId: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  /** Locale of the device's UI when it subscribed, for future copy. */
+  locale: 'fr' | 'en' | 'ar';
+  createdAt: string;
+  lastSuccessAt: string | null;
+  failures: number;
+}
+
 /** Metwork 2.0 — where a user is in a business-creation guide (lib/creation-guides). */
 export interface GuideProgressRecord {
   userId: string;
@@ -4091,6 +4110,8 @@ interface DbShape {
   copilotKb?: CopilotKbPointer | null;
   /** Metwork 2.0 — copilot questions asked, per user per month (quota). */
   copilotUsage?: CopilotUsageRecord[];
+  /** Metwork 2.0 — web push subscriptions (members and consultants). */
+  pushSubscriptions?: PushSubscriptionRecord[];
   /** Metwork 2.0 — business-creation guide progress, one row per user. */
   guideProgress?: GuideProgressRecord[];
   /**

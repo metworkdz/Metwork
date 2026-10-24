@@ -20,6 +20,8 @@ import {
   sendConsultantSessionReminderEmail,
   sendClientSessionReminderEmail,
 } from '@/server/notifications/mock';
+import { pushToMentor } from '@/server/notifications/push';
+import { createNotification } from '@/server/notifications/create-notification';
 
 /** Remind the CONSULTANT when the session starts within this many hours. */
 export const REMINDER_WINDOW_HOURS = 24;
@@ -33,6 +35,16 @@ const REMINDABLE = new Set(['READY', 'AWAITING_LINK']);
  * Resolve a booking's session start as epoch ms, or null when no schedule is
  * recorded (nothing to remind about). Exported for tests.
  */
+/** "Le 12 nov. à 10:00" (Algeria time) for push copy; '' when unscheduled. */
+export function sessionWhenFr(booking: Pick<MentorBookingRecord, 'scheduledAt' | 'consultationDate' | 'consultationTime'>): string {
+  const ms = bookingStartMs(booking);
+  if (ms === null) return '';
+  const d = new Date(ms);
+  const day = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'Africa/Algiers' }).format(d);
+  const time = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Algiers' }).format(d);
+  return `Le ${day} à ${time}`;
+}
+
 export function bookingStartMs(
   booking: Pick<MentorBookingRecord, 'scheduledAt' | 'consultationDate' | 'consultationTime'>,
 ): number | null {
@@ -101,6 +113,7 @@ export async function sendConsultationRemindersDue(now = new Date()): Promise<Re
     const mentor = await findMentorById(booking.mentorId);
     if (!mentor) { skippedNoMentor++; continue; }
     await sendConsultantSessionReminderEmail({ booking, mentor, portalUrl });
+    await pushToMentor(mentor.id, { title: 'Rappel : consultation demain', body: sessionWhenFr(booking), url: '/mentordashboard' });
     sent++;
   }
   for (const booking of due.client) {
@@ -108,6 +121,16 @@ export async function sendConsultationRemindersDue(now = new Date()): Promise<Re
     if (!mentor) { skippedNoMentor++; continue; }
     const lang: 'en' | 'fr' = booking.guestLocale === 'en' ? 'en' : 'fr';
     await sendClientSessionReminderEmail({ booking, mentor, lang });
+    // Members also get it in-app and on their phone.
+    if (booking.userId) {
+      await createNotification({
+        userId: booking.userId,
+        type: 'GENERAL',
+        title: lang === 'en' ? `Your session with ${mentor.fullName} starts soon` : `Votre consultation avec ${mentor.fullName} commence bientôt`,
+        body: sessionWhenFr(booking),
+        href: '/dashboard',
+      });
+    }
     clientSent++;
   }
 

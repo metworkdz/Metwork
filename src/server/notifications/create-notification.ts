@@ -1,9 +1,11 @@
 /**
- * Server-side helper — create an in-app notification for a user.
+ * Server-side helper — create an in-app notification for a user, and send it
+ * as a web push to the user's devices that opted in.
  * Fire-and-forget: errors are caught and logged so they never crash the caller.
  */
 import { randomUUID } from 'node:crypto';
 import { db, type NotificationType } from '@/server/db/store';
+import { pushToUser } from '@/server/notifications/push';
 
 export interface CreateNotificationInput {
   userId: string;
@@ -38,5 +40,8 @@ export async function createNotification(input: CreateNotificationInput): Promis
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('[notify] createNotification failed:', err);
+    return;
   }
+  // Same title/body/link on the phone. Never throws.
+  await pushToUser(input.userId, { title: input.title, body: input.body, url: input.href ?? null });
 }

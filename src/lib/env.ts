@@ -15,6 +15,8 @@ const clientSchema = z.object({
    * no-op when absent so previews and dev builds aren't blocked.
    */
   NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
+  /** Web push: the VAPID public key the browser subscribes with. Push is off when unset. */
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
   /**
    * PostHog API host. EU = https://eu.i.posthog.com (default, GDPR-friendly),
    * US = https://us.i.posthog.com.
@@ -107,6 +109,9 @@ const serverSchema = z.object({
    * unset. Never exposed to the client.
    */
   ANTHROPIC_API_KEY: z.string().optional(),
+  /** Web push signing key (pairs with NEXT_PUBLIC_VAPID_PUBLIC_KEY) and contact. */
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().optional(),
 });
 
 const clientEnv = {
@@ -116,6 +121,7 @@ const clientEnv = {
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
   NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
   NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
 };
 

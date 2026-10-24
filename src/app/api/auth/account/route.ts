@@ -122,6 +122,7 @@ export async function DELETE(req: NextRequest) {
     d.taxTaskStates      = (d.taxTaskStates ?? []).filter((s) => s.userId !== userId);
     d.copilotUsage       = (d.copilotUsage ?? []).filter((u) => u.userId !== userId);
     d.guideProgress = (d.guideProgress ?? []).filter((g) => g.userId !== userId);
+    d.pushSubscriptions = (d.pushSubscriptions ?? []).filter((s) => !(s.ownerType === 'USER' && s.ownerId === userId));
     d.messageReports     = (d.messageReports ?? []).filter((r) => r.reporterId !== userId && r.reportedId !== userId);
     d.quoteRequests      = (d.quoteRequests ?? []).filter((q) => q.entrepreneurId !== userId && q.freelancerId !== userId);
     d.cofounderProfiles  = (d.cofounderProfiles ?? []).filter((p) => p.userId !== userId);

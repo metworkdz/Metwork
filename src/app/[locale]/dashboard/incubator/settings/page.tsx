@@ -5,6 +5,7 @@ import { IncubatorProfileForm } from '@/components/features/incubator/incubator-
 import { SubscriptionManager } from '@/components/features/incubator/subscription-manager';
 import { DeleteAccountSection } from '@/components/features/settings/delete-account-section';
 import { db } from '@/server/db/store';
+import { PushToggle } from '@/components/pwa/push-toggle';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -31,7 +32,8 @@ export default async function IncubatorSettingsPage({ params }: PageProps) {
         <p className="text-sm text-muted-foreground">
           Your incubator profile is being set up. Please contact support if this persists.
         </p>
-        <DeleteAccountSection />
+        <PushToggle />
+      <DeleteAccountSection />
       </div>
     );
   }

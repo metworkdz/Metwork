@@ -3,6 +3,7 @@ import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { ProfileForm } from '@/components/features/entrepreneur/profile-form';
 import { DeleteAccountSection } from '@/components/features/settings/delete-account-section';
+import { PushToggle } from '@/components/pwa/push-toggle';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -31,6 +32,7 @@ export default async function InvestorSettingsPage({ params }: PageProps) {
           avatarUrl: user.avatarUrl,
         }}
       />
+      <PushToggle />
       <DeleteAccountSection />
     </div>
   );

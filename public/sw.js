@@ -84,3 +84,39 @@ self.addEventListener('fetch', (event) => {
     );
   }
 });
+
+/* ── Web push ──────────────────────────────────────────────────────────────
+ * Payload from src/server/notifications/push.ts: { title, body, url, tag }.
+ * `url` is a same-origin path (the server only sends paths); it is resolved
+ * against this origin again here, so a foreign URL can never be opened.
+ */
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data ? event.data.text() : '' }; }
+  const title = typeof data.title === 'string' && data.title ? data.title : 'Metwork';
+  const options = {
+    body: typeof data.body === 'string' ? data.body : '',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    data: { url: typeof data.url === 'string' ? data.url : '/' },
+  };
+  if (typeof data.tag === 'string' && data.tag) options.tag = data.tag;
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data && event.notification.data.url ? event.notification.data.url : '/', self.location.origin);
+  const url = target.origin === self.location.origin ? target.href : self.location.origin + '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      // Reuse an open app window when there is one.
+      for (const w of wins) {
+        if (new URL(w.url).origin === self.location.origin && 'focus' in w) {
+          return w.focus().then((f) => (f && 'navigate' in f ? f.navigate(url) : undefined));
+        }
+      }
+      return self.clients.openWindow(url);
+    }),
+  );
+});

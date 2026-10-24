@@ -2,6 +2,7 @@ import { setRequestLocale, getLocale, getTranslations } from 'next-intl/server';
 import { Calendar, Landmark, Rocket, Sparkles, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
+import { PushPrompt } from '@/components/pwa/push-toggle';
 import { requireRole } from '@/lib/auth-guards';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import {
@@ -86,6 +87,8 @@ export default async function EntrepreneurDashboard({ params }: PageProps) {
         <DashboardPageHeader title={o('greeting', { name: firstName })} subtitle={o('subtitle')} />
       </div>
       <p className="font-display text-xl font-bold tracking-tight lg:hidden">{o('greeting', { name: firstName })}</p>
+
+      <PushPrompt />
 
       {!hasVenture && (
         <PremiumRowCard
