@@ -8,7 +8,7 @@ import { db } from '@/server/db/store';
 import { buildSearchIndex, chunkPages, describeDocument, search, tokenize, upsertDocument, type KbIndex } from '@/server/copilot/kb';
 import { resetKbCacheForTests } from '@/server/copilot/kb-store';
 
-const sdk = vi.hoisted(() => ({ create: vi.fn(), finalMessage: vi.fn(), webStream: vi.fn(), webFinal: vi.fn() }));
+const sdk = vi.hoisted(() => ({ create: vi.fn(), finalMessage: vi.fn(), answerStream: vi.fn(), webStream: vi.fn(), webFinal: vi.fn() }));
 
 vi.mock('@/lib/env', () => ({ serverEnvVars: { ANTHROPIC_API_KEY: 'test-key' } }));
 vi.mock('@anthropic-ai/sdk', () => {
@@ -18,7 +18,7 @@ vi.mock('@anthropic-ai/sdk', () => {
     beta = {
       messages: {
         create: sdk.create,
-        stream: () => ({ on: () => undefined, finalMessage: sdk.finalMessage }),
+        stream: (params: unknown) => { sdk.answerStream(params); return { on: () => undefined, finalMessage: sdk.finalMessage }; },
       },
     };
     messages = {
@@ -60,6 +60,7 @@ beforeEach(async () => {
   sdk.create.mockReset();
   sdk.finalMessage.mockReset();
   sdk.webStream.mockReset();
+  sdk.answerStream.mockReset();
   sdk.webFinal.mockReset();
   resetKbCacheForTests(kbIndex());
   await db.update((d) => {
@@ -215,5 +216,25 @@ describe('web fallback', () => {
     expect(safeUrl('javascript:alert(1)')).toBeNull();
     expect(safeUrl('data:text/html,x')).toBeNull();
     expect(safeUrl('not a url')).toBeNull();
+  });
+});
+
+describe('models', () => {
+  it('never uses Opus: Haiku plans, Sonnet 5.5 at low effort answers, Haiku searches the web', async () => {
+    sdk.create.mockResolvedValue({ stop_reason: 'end_turn', content: [{ type: 'text', text: '{"queries":["taux impôt forfaitaire unique"]}' }] });
+    sdk.finalMessage.mockResolvedValue({ stop_reason: 'end_turn', content: [{ type: 'text', text: NOT_IN_DOCUMENTS }] });
+    sdk.webFinal.mockResolvedValue({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'ok', citations: null }] });
+    await askCopilot({ userId: 'fl-1', question: 'Question test ?', history: [], lang: 'fr' });
+    const plan = sdk.create.mock.calls[0]![0] as { model: string; fallbacks?: unknown };
+    const answer = sdk.answerStream.mock.calls[0]![0] as { model: string; output_config: { effort: string }; fallbacks?: unknown };
+    const web = sdk.webStream.mock.calls[0]![0] as { model: string };
+    expect(plan.model).toBe('claude-haiku-4-5');
+    expect(answer.model).toBe('claude-sonnet-5-5');
+    expect(answer.output_config.effort).toBe('low');
+    expect(web.model).toBe('claude-haiku-4-5');
+    // No server-side fallback that could reroute to another model.
+    expect(plan.fallbacks).toBeUndefined();
+    expect(answer.fallbacks).toBeUndefined();
+    for (const m of [plan.model, answer.model, web.model]) expect(m).not.toMatch(/opus/);
   });
 });

@@ -29,14 +29,15 @@ import { effectiveRegime } from '@/lib/tax-calendar';
 import { guideIndex } from '@/server/copilot/guide-kb';
 import { guideProgressLine } from '@/server/copilot/guides';
 
-const MODEL = 'claude-opus-5-5';
+// Never Opus on the copilot (product rule): Haiku plans the searches,
+// Sonnet at low effort writes the cited answer, Haiku answers from the web.
+const PLAN_MODEL = 'claude-haiku-4-5';
+const ANSWER_MODEL = 'claude-sonnet-5-5';
 /** Web fallback: cheap, fast, and the model the product asked for. */
 const WEB_MODEL = 'claude-haiku-4-5';
 const WEB_MAX_SEARCHES = 3;
 /** What the document answer writes, alone, when the passages don't cover the question. */
 export const NOT_IN_DOCUMENTS = 'NOT_IN_DOCUMENTS';
-/** Refusal fallback routed by the API (server-side), no model list to maintain. */
-const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
 const PASSAGES = 10;
 export const MAX_QUESTION_CHARS = 1000;
 const MAX_HISTORY_TURNS = 3;
@@ -171,13 +172,11 @@ function historyMessages(history: CopilotTurn[]): Anthropic.Beta.BetaMessagePara
 
 async function planQueries(ai: Anthropic, question: string, history: CopilotTurn[]): Promise<string[]> {
   const res = await ai.beta.messages.create({
-    model: MODEL,
-    max_tokens: 4000,
-    betas: [FALLBACK_BETA],
-    fallbacks: 'default',
+    model: PLAN_MODEL,
+    max_tokens: 1000,
     system: PLAN_SYSTEM,
+    // No server-side fallback: it could reroute to another model (Opus).
     output_config: {
-      effort: 'low',
       format: {
         type: 'json_schema',
         schema: {
@@ -389,12 +388,10 @@ export async function askCopilot(input: {
     if (passages.length > 0) {
       const gate = sentinelGate((t) => input.onText?.(t));
       const stream = ai.beta.messages.stream({
-        model: MODEL,
-        max_tokens: 16000,
-        betas: [FALLBACK_BETA],
-        fallbacks: 'default',
+        model: ANSWER_MODEL,
+        max_tokens: 8000,
         system: ANSWER_SYSTEM,
-        output_config: { effort: 'medium' },
+        output_config: { effort: 'low' },
         messages: [
           ...historyMessages(input.history),
           {
