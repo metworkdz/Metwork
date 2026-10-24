@@ -17,8 +17,8 @@ import { db } from '@/server/db/store';
 import { freelancerProfile, rankFreelancers, type FreelancerCard, type HiringNeed } from '@/server/hiring/directory';
 import { findCityCode } from '@/config/cities';
 
-const MODEL = 'claude-opus-5-5';
-const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
+// Cost rule: never Opus here — Sonnet 5.5 at low effort.
+const MODEL = 'claude-sonnet-5-5';
 export const MAX_NEED_CHARS = 1500;
 const TOP = 3;
 
@@ -74,8 +74,6 @@ async function extractNeed(ai: Anthropic, text: string): Promise<HiringNeed | nu
   const res = await ai.beta.messages.create({
     model: MODEL,
     max_tokens: 4000,
-    betas: [FALLBACK_BETA],
-    fallbacks: 'default',
     system: NEED_SYSTEM,
     output_config: {
       effort: 'low',
@@ -107,8 +105,6 @@ async function explain(ai: Anthropic, need: string, ids: string[], lang: MatchLa
   const res = await ai.beta.messages.create({
     model: MODEL,
     max_tokens: 4000,
-    betas: [FALLBACK_BETA],
-    fallbacks: 'default',
     system: WHY_SYSTEM,
     output_config: {
       effort: 'low',

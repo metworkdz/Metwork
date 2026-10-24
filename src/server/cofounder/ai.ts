@@ -11,8 +11,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { serverEnvVars } from '@/lib/env';
 import type { CofounderProfileRecord } from '@/server/db/store';
 
-const MODEL = 'claude-opus-5-5';
-const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
+// Cost rule: never Opus here — Sonnet 5.5 at low effort.
+const MODEL = 'claude-sonnet-5-5';
 const LANG: Record<string, string> = { fr: 'French', en: 'English', ar: 'Arabic' };
 
 const SYSTEM = [
@@ -41,8 +41,6 @@ export async function rerankDeck(
   const res = await ai.beta.messages.create({
     model: MODEL,
     max_tokens: 8000,
-    betas: [FALLBACK_BETA],
-    fallbacks: 'default',
     system: SYSTEM,
     output_config: {
       effort: 'low',
