@@ -323,6 +323,7 @@ function ConvertSheet({ source, nextNumber, hasStamp, canTransfer, onClose, onCo
   const t = useTranslations('consultantPortal.invoices');
   const [paymentMethod, setPaymentMethod] = useState(source.paymentMethod);
   const [withStamp, setWithStamp] = useState(hasStamp && Boolean(source.withStamp));
+  const [note, setNote] = useState(source.note ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<ConsultantInvoice | null>(null);
@@ -331,7 +332,7 @@ function ConvertSheet({ source, nextNumber, hasStamp, canTransfer, onClose, onCo
     setSaving(true);
     setError(null);
     try {
-      const { invoice } = await consultantService.convertInvoice(source.id, { paymentMethod, withStamp: hasStamp && withStamp });
+      const { invoice } = await consultantService.convertInvoice(source.id, { paymentMethod, withStamp: hasStamp && withStamp, note: note.trim() || null });
       setDone(invoice);
       await onConverted();
     } catch (e) {
@@ -381,6 +382,12 @@ function ConvertSheet({ source, nextNumber, hasStamp, canTransfer, onClose, onCo
                 {t('stampLabel')}
               </label>
             )}
+            <Field label={t('note')} hint={t('convertNoteHint')}>
+              <textarea
+                className={cn(cpInputClassLight, 'h-20 py-2')} maxLength={600} value={note}
+                onChange={(e) => setNote(e.target.value)} placeholder={t('notePlaceholder')}
+              />
+            </Field>
             <p className="text-xs text-muted-foreground">{t('convertKeeps', { number: source.number })}</p>
           </>
         )}

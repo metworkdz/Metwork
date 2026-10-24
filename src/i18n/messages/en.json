@@ -333,7 +333,11 @@
       "labelSplitPricing": "Different price for cash?",
       "splitPricingHint": "Leave blank to charge the same price on both. Useful when card payments carry a fee.",
       "labelOnlinePrice": "Price by card (DZD)",
-      "labelCashPrice": "Price in cash (DZD)"
+      "labelCashPrice": "Price in cash (DZD)",
+      "reviewPending": "Awaiting review",
+      "reviewPendingHint": "Metwork is reviewing your program. It will appear on the Programs page once approved.",
+      "reviewRejected": "Rejected",
+      "reviewRejectedHint": "Rejected by Metwork: {reason} Edit the program to submit it again."
     },
     "earnings": {
       "pending": "Pending",
@@ -644,7 +648,8 @@
       "convertConfirm": "Create invoice {number}",
       "convertDone": "Invoice {number} created",
       "convertKeeps": "{number} stays in the list, marked “Converted” and locked.",
-      "actionFailed": "The action failed. Try again."
+      "actionFailed": "The action failed. Try again.",
+      "convertNoteHint": "Carried over from the proforma: edit or clear it for the invoice."
     }
   },
   "common": {
@@ -1795,7 +1800,10 @@
       "convertDone": "Invoice {number} created",
       "convertDoneHint": "It appears in the Invoices tab.",
       "convertDownload": "Download the invoice",
-      "convertClose": "Close"
+      "convertClose": "Close",
+      "convertNote": "Invoice note",
+      "convertNotePlaceholder": "e.g. Paid by transfer on…",
+      "convertNoteHint": "Carried over from the proforma: edit or clear it for the invoice."
     },
     "invoiceForm": {
       "sectionClient": "Client",
@@ -2319,7 +2327,8 @@
       "allTools": "All your tools",
       "home": "Home"
     },
-    "contract": "Contract"
+    "contract": "Contract",
+    "programApprovals": "Programs to review"
   },
   "pages": {
     "consultationPay": {
@@ -4166,7 +4175,8 @@
       "programs": "programs",
       "in": "in",
       "emptyTitle": "No programs match",
-      "emptyDescription": "Try widening the type, switching city, or clearing the search."
+      "emptyDescription": "Try widening the type, switching city, or clearing the search.",
+      "sortNewest": "Newest"
     },
     "detail": {
       "cohortDates": "Cohort dates",
@@ -5240,6 +5250,34 @@
         "INAPPROPRIATE": "Inappropriate content",
         "OTHER": "Something else"
       }
+    },
+    "programApprovals": {
+      "title": "Programs to review",
+      "subtitle": "Programs added by consultants. Approved, a program appears on the Programs page; rejected, the consultant sees the reason and can fix it.",
+      "statPending": "Pending",
+      "statApproved": "Approved",
+      "statRejected": "Rejected",
+      "tabPENDING": "Pending",
+      "tabAPPROVED": "Approved",
+      "tabREJECTED": "Rejected",
+      "emptyPENDING": "No program waiting.",
+      "emptyAPPROVED": "No approved program.",
+      "emptyREJECTED": "No rejected program.",
+      "by": "By {name}",
+      "public": "Public",
+      "unlisted": "Unlisted",
+      "free": "Free",
+      "datesTbc": "Dates to be confirmed",
+      "seats": "{count} seats",
+      "submitted": "Submitted {date}",
+      "approve": "Approve",
+      "reject": "Reject",
+      "reasonLabel": "Reason for rejection",
+      "reasonPlaceholder": "Explain what to fix: the consultant will see this message.",
+      "confirmReject": "Reject the program",
+      "cancel": "Cancel",
+      "reasonShown": "Reason: {reason}",
+      "failed": "The action failed. Try again."
     }
   },
   "bookings": {

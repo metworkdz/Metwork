@@ -188,3 +188,32 @@ describe('GET /api/consultant/registrations', () => {
     expect(await q('q=nobody')).toHaveLength(0);
   });
 });
+
+describe('admin review, from the consultant side', () => {
+  it('a new program is created awaiting review', async () => {
+    const { POST } = await import('@/app/api/consultant/programs/route');
+    const res = await POST(new NextRequest('http://localhost/api/consultant/programs', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Flutter de zéro', description: 'Une formation complète.', type: 'TRAINING', city: 'Oran',
+        price: 26_000, seatsTotal: 10, acceptedPaymentMethods: ['CASH'],
+        deadline: '2030-01-01T12:00:00.000Z', startDate: '2030-02-01T12:00:00.000Z', endDate: '2030-02-02T12:00:00.000Z',
+      }),
+    }));
+    expect(res.status).toBeLessThan(300);
+    const created = (await db.read()).programs.find((p) => p.title === 'Flutter de zéro')!;
+    expect(created.reviewStatus).toBe('PENDING');
+  });
+
+  it('correcting a refused program sends it back for review', async () => {
+    await db.update((d) => { Object.assign(d.programs[0]!, { reviewStatus: 'REJECTED', reviewRejectionReason: 'Prix ?' }); });
+    expect((await patch({ price: 15_000 })).status).toBe(200);
+    expect(await program()).toMatchObject({ reviewStatus: 'PENDING', reviewRejectionReason: null });
+  });
+
+  it('editing an approved program keeps it approved', async () => {
+    await db.update((d) => { Object.assign(d.programs[0]!, { reviewStatus: 'APPROVED' }); });
+    await patch({ price: 15_000 });
+    expect((await program()).reviewStatus).toBe('APPROVED');
+  });
+});

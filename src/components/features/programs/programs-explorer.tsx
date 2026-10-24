@@ -26,7 +26,7 @@ import type { Locale } from '@/i18n/config';
 import type { Program, ProgramType } from '@/types/domain';
 import { programDateSortKey, programDeadlinePassed } from '@/lib/program-dates';
 
-type SortKey = 'recommended' | 'deadlineAsc' | 'priceAsc' | 'startAsc';
+type SortKey = 'newest' | 'deadlineAsc' | 'priceAsc' | 'startAsc';
 type StatusFilter = 'all' | 'open' | 'closed';
 const ALL = 'all';
 
@@ -49,7 +49,7 @@ export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplo
   const [city, setCity] = useState<string>(ALL);
   const [type, setType] = useState<ProgramType | typeof ALL>(ALL);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [sort, setSort] = useState<SortKey>('recommended');
+  const [sort, setSort] = useState<SortKey>('newest');
   const [selected, setSelected] = useState<Program | null>(null);
 
   const counts = useMemo(() => {
@@ -83,6 +83,9 @@ export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplo
       );
     });
 
+    // « Plus récents »: newest published first (the server's order, made explicit).
+    if (sort === 'newest')
+      arr = [...arr].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
     if (sort === 'deadlineAsc')
       arr = [...arr].sort((a, b) => programDateSortKey(a, 'deadline') - programDateSortKey(b, 'deadline'));
     if (sort === 'priceAsc') arr = [...arr].sort((a, b) => a.price - b.price);
@@ -92,8 +95,11 @@ export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplo
     return arr;
   }, [programs, attendance, type, city, statusFilter, query, sort]);
 
-  const featured = filtered[0] ?? null;
-  const rest = featured ? filtered.slice(1) : [];
+  // The big card goes to the newest program still taking registrations —
+  // a closed one up there reads as an invitation to apply.
+  const featured =
+    filtered.find((p) => isOpen(p, attendance[p.id] ?? p.seatsTaken)) ?? filtered[0] ?? null;
+  const rest = featured ? filtered.filter((p) => p.id !== featured.id) : [];
 
   return (
     <div className="space-y-6">
@@ -157,7 +163,7 @@ export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplo
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="recommended">{t('sortRecommended')}</SelectItem>
+            <SelectItem value="newest">{t('sortNewest')}</SelectItem>
             <SelectItem value="deadlineAsc">{t('sortClosingSoonest')}</SelectItem>
             <SelectItem value="startAsc">{t('sortStartingSoonest')}</SelectItem>
             <SelectItem value="priceAsc">{t('sortPriceLow')}</SelectItem>

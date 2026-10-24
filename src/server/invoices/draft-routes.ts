@@ -33,6 +33,8 @@ export async function handleDraftStamp(owner: InvoiceOwner, id: string, withStam
 const convertSchema = z.object({
   paymentMethod: z.enum(['ESPECE', 'CHEQUE', 'VIREMENT']),
   withStamp: z.boolean(),
+  /** The facture's note — prefilled from the proforma, editable, may be cleared. */
+  note: z.string().max(600).optional().nullable(),
 });
 
 /** POST …/invoices/[id]/convert — returns the new facture and the locked source. */

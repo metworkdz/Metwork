@@ -125,6 +125,8 @@ export interface Program {
   startTime?: string | null;
   /** Local wall-clock end time "HH:MM". Independent of `startTime`. */
   endTime?: string | null;
+  /** When it was published — the public list shows newest first. */
+  createdAt?: string;
   endDate: string | null;
   acceptedPaymentMethods: PaymentMethod[];
   /** Cash deposit config — present only when CASH is accepted. */

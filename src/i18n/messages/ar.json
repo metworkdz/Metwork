@@ -333,7 +333,11 @@
       "labelSplitPricing": "سعر مختلف نقداً؟",
       "splitPricingHint": "اتركه فارغاً لتطبيق نفس السعر على الطريقتين. مفيد عندما يحمل الدفع بالبطاقة رسوماً.",
       "labelOnlinePrice": "السعر بالبطاقة (دج)",
-      "labelCashPrice": "السعر نقداً (دج)"
+      "labelCashPrice": "السعر نقداً (دج)",
+      "reviewPending": "في انتظار المراجعة",
+      "reviewPendingHint": "تراجع Metwork برنامجك. سيظهر في صفحة البرامج فور الموافقة عليه.",
+      "reviewRejected": "مرفوض",
+      "reviewRejectedHint": "رفضته Metwork: {reason} عدّل البرنامج لإعادة إرساله."
     },
     "earnings": {
       "pending": "معلّق",
@@ -644,7 +648,8 @@
       "convertConfirm": "إنشاء الفاتورة {number}",
       "convertDone": "تم إنشاء الفاتورة {number}",
       "convertKeeps": "يبقى {number} في القائمة، موسوماً «محوَّل» ومقفلاً.",
-      "actionFailed": "فشل الإجراء. أعد المحاولة."
+      "actionFailed": "فشل الإجراء. أعد المحاولة.",
+      "convertNoteHint": "منقولة من الفاتورة المبدئية: عدّلها أو امسحها للفاتورة."
     }
   },
   "common": {
@@ -1795,7 +1800,10 @@
       "convertDone": "تم إنشاء الفاتورة {number}",
       "convertDoneHint": "تظهر في تبويب الفواتير.",
       "convertDownload": "تحميل الفاتورة",
-      "convertClose": "إغلاق"
+      "convertClose": "إغلاق",
+      "convertNote": "ملاحظة الفاتورة",
+      "convertNotePlaceholder": "مثال: سُدِّدت الفاتورة بتحويل بتاريخ…",
+      "convertNoteHint": "منقولة من الفاتورة المبدئية: عدّلها أو امسحها للفاتورة."
     },
     "invoiceForm": {
       "sectionClient": "العميل",
@@ -2319,7 +2327,8 @@
       "allTools": "كل أدواتك",
       "home": "الرئيسية"
     },
-    "contract": "العقد"
+    "contract": "العقد",
+    "programApprovals": "برامج للمراجعة"
   },
   "pages": {
     "consultationPay": {
@@ -4166,7 +4175,8 @@
       "programs": "برامج",
       "in": "في",
       "emptyTitle": "لا توجد برامج مطابقة",
-      "emptyDescription": "جرّب توسيع النوع أو تغيير المدينة أو مسح البحث."
+      "emptyDescription": "جرّب توسيع النوع أو تغيير المدينة أو مسح البحث.",
+      "sortNewest": "الأحدث"
     },
     "detail": {
       "cohortDates": "تواريخ الدفعة",
@@ -5240,6 +5250,34 @@
         "INAPPROPRIATE": "محتوى غير لائق",
         "OTHER": "شيء آخر"
       }
+    },
+    "programApprovals": {
+      "title": "برامج للمراجعة",
+      "subtitle": "البرامج التي يضيفها المستشارون. عند الموافقة يظهر البرنامج في صفحة البرامج؛ وعند الرفض يرى المستشار السبب ويمكنه التصحيح.",
+      "statPending": "قيد الانتظار",
+      "statApproved": "مقبولة",
+      "statRejected": "مرفوضة",
+      "tabPENDING": "قيد الانتظار",
+      "tabAPPROVED": "مقبولة",
+      "tabREJECTED": "مرفوضة",
+      "emptyPENDING": "لا توجد برامج في الانتظار.",
+      "emptyAPPROVED": "لا توجد برامج مقبولة.",
+      "emptyREJECTED": "لا توجد برامج مرفوضة.",
+      "by": "من {name}",
+      "public": "عام",
+      "unlisted": "غير مُدرج",
+      "free": "مجاني",
+      "datesTbc": "التواريخ ستُحدَّد",
+      "seats": "{count} مقاعد",
+      "submitted": "أُرسل في {date}",
+      "approve": "قبول",
+      "reject": "رفض",
+      "reasonLabel": "سبب الرفض",
+      "reasonPlaceholder": "اشرح ما يجب تصحيحه: سيرى المستشار هذه الرسالة.",
+      "confirmReject": "رفض البرنامج",
+      "cancel": "إلغاء",
+      "reasonShown": "السبب: {reason}",
+      "failed": "فشل الإجراء. أعد المحاولة."
     }
   },
   "bookings": {

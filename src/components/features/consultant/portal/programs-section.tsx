@@ -233,7 +233,17 @@ export function ProgramsSection() {
                     {p.isActive && p.visibility === 'UNLISTED' && (
                       <Badge variant="info">{tVis('unlistedBadge')}</Badge>
                     )}
+                    {p.reviewStatus === 'PENDING' && <Badge variant="warning">{t('reviewPending')}</Badge>}
+                    {p.reviewStatus === 'REJECTED' && <Badge variant="danger">{t('reviewRejected')}</Badge>}
                   </div>
+                  {p.reviewStatus === 'PENDING' && (
+                    <p className="mt-1 text-xs text-muted-foreground">{t('reviewPendingHint')}</p>
+                  )}
+                  {p.reviewStatus === 'REJECTED' && (
+                    <p className="mt-1 text-xs text-red-700">
+                      {t('reviewRejectedHint', { reason: p.reviewRejectionReason ?? '' })}
+                    </p>
+                  )}
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {p.city} · {p.startDate && p.endDate
                       ? `${fmtDate(p.startDate, locale)} → ${fmtDate(p.endDate, locale)}`
@@ -263,7 +273,7 @@ export function ProgramsSection() {
                   </button>
                 </div>
               </div>
-              {p.slug && p.isActive && <ShareLink slug={p.slug} label={t('copyLink')} copied={t('copied')} />}
+              {p.slug && p.isActive && p.reviewStatus !== 'PENDING' && p.reviewStatus !== 'REJECTED' && <ShareLink slug={p.slug} label={t('copyLink')} copied={t('copied')} />}
             </li>
           ))}
         </ul>

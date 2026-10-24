@@ -88,6 +88,14 @@ export const NOTIFICATION_SOURCES: readonly NotificationSource[] = [
     count: ({ data }) => (data.incubators ?? []).filter((i) => i.status === 'PENDING').length,
   },
   {
+    // Consultant programs awaiting an admin decision before going public.
+    key: 'programApprovals',
+    roles: ['ADMIN'],
+    mode: 'pending',
+    href: '/dashboard/admin/program-approvals',
+    count: ({ data }) => (data.programs ?? []).filter((p) => p.mentorId && p.reviewStatus === 'PENDING').length,
+  },
+  {
     // Self-signed-up consultants awaiting approval.
     key: 'consultants',
     roles: ['ADMIN'],

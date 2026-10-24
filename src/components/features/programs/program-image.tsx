@@ -38,7 +38,7 @@ export function ProgramImage({ type, imageUrl, alt, className, variant = 'defaul
       role="img"
       aria-label={alt}
       className={cn(
-        'relative isolate flex items-center justify-center overflow-hidden bg-gradient-to-br',
+        'relative isolate flex size-full items-center justify-center overflow-hidden bg-gradient-to-br',
         tint.gradient,
         className,
       )}

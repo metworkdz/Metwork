@@ -75,12 +75,22 @@ export function ProgramCard({ program, taken, locale, onSelect, featured }: Prog
           featured ? 'aspect-[16/10] w-full lg:aspect-auto lg:w-2/5' : 'aspect-[16/10] w-full',
         )}
       >
-        <ProgramImage type={program.type} imageUrl={program.imageUrl} alt={program.title} />
+        <ProgramImage
+          type={program.type} imageUrl={program.imageUrl} alt={program.title}
+          className={closed ? 'opacity-60 grayscale' : undefined}
+        />
+        {/* A passed deadline or a full room must read at a glance, not as one
+            more small chip beside the open programs. */}
+        {closed && (
+          <div className="absolute inset-x-0 bottom-0 bg-black/75 py-1.5 text-center text-xs font-bold uppercase tracking-wider text-white">
+            {days < 0 ? t('closed') : t('full')}
+          </div>
+        )}
         <div className="absolute start-3 top-3 inline-flex items-center gap-1 rounded-full bg-foreground/90 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-background">
           {programTypeLabel[program.type]}
         </div>
         {photoCount > 1 && (
-          <div className="absolute end-3 bottom-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
+          <div className={cn('absolute end-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm', closed ? 'bottom-10' : 'bottom-3')}>
             <Images className="size-3" />
             {tc('photosCount', { count: photoCount })}
           </div>

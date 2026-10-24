@@ -125,6 +125,8 @@ export async function POST(req: NextRequest) {
       incubatorName:          '',
       mentorId:               guard.mentorId,
       mentorName:             mentor.fullName,
+      // Every consultant program is reviewed by an admin before it is public.
+      reviewStatus:           'PENDING',
       title:                  input.title.trim(),
       description:            input.description.trim(),
       type:                   input.type,
