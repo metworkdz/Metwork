@@ -578,7 +578,7 @@ export const consultantService = {
   setInvoiceStamp: (id: string, withStamp: boolean) =>
     apiClient.patch<{ invoice: ConsultantInvoice }>(`/consultant/invoices/${encodeURIComponent(id)}`, { withStamp }),
   /** Turn a proforma / devis into a facture (next facture number, today). */
-  convertInvoice: (id: string, body: { paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT'; withStamp: boolean }) =>
+  convertInvoice: (id: string, body: { paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT'; withStamp: boolean; note?: string | null }) =>
     apiClient.post<{ invoice: ConsultantInvoice; source: ConsultantInvoice }>(
       `/consultant/invoices/${encodeURIComponent(id)}/convert`, body,
     ),

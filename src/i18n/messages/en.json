@@ -648,7 +648,8 @@
       "convertConfirm": "Create invoice {number}",
       "convertDone": "Invoice {number} created",
       "convertKeeps": "{number} stays in the list, marked “Converted” and locked.",
-      "actionFailed": "The action failed. Try again."
+      "actionFailed": "The action failed. Try again.",
+      "convertNoteHint": "Carried over from the proforma: edit or clear it for the invoice."
     }
   },
   "common": {
@@ -1741,7 +1742,10 @@
       "convertDone": "Invoice {number} created",
       "convertDoneHint": "It appears in the Invoices tab.",
       "convertDownload": "Download the invoice",
-      "convertClose": "Close"
+      "convertClose": "Close",
+      "convertNote": "Invoice note",
+      "convertNotePlaceholder": "e.g. Paid by transfer on…",
+      "convertNoteHint": "Carried over from the proforma: edit or clear it for the invoice."
     },
     "invoiceForm": {
       "sectionClient": "Client",
@@ -3971,7 +3975,8 @@
       "programs": "programs",
       "in": "in",
       "emptyTitle": "No programs match",
-      "emptyDescription": "Try widening the type, switching city, or clearing the search."
+      "emptyDescription": "Try widening the type, switching city, or clearing the search.",
+      "sortNewest": "Newest"
     },
     "detail": {
       "cohortDates": "Cohort dates",

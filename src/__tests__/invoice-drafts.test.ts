@@ -200,3 +200,24 @@ describe('converting to a facture', () => {
     expect((await convert(fp.id, { paymentMethod: 'BITCOIN', withStamp: false })).status).toBe(422);
   });
 });
+
+describe('the note on conversion', () => {
+  const convert = async (id: string, body: Record<string, unknown>) => {
+    const { POST } = await import('@/app/api/incubator/invoices/[id]/convert/route');
+    return (await (await POST(new NextRequest('http://localhost/x', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+    }), ctx(id))).json()).invoice as InvoiceRecord;
+  };
+
+  it('keeps the proforma note when none is sent, replaces it when edited, drops it when cleared', async () => {
+    const a = await issue('PROFORMA', { note: 'Avance de 50 %' });
+    expect((await convert(a.id, { paymentMethod: 'CHEQUE', withStamp: false })).note).toBe('Avance de 50 %');
+    const b = await issue('PROFORMA', { note: 'Avance de 50 %' });
+    expect((await convert(b.id, { paymentMethod: 'CHEQUE', withStamp: false, note: ' Réglée par chèque n° 123 ' })).note)
+      .toBe('Réglée par chèque n° 123');
+    const c = await issue('PROFORMA', { note: 'Avance de 50 %' });
+    expect((await convert(c.id, { paymentMethod: 'CHEQUE', withStamp: false, note: '' })).note).toBeNull();
+    // The proforma's own note is untouched.
+    expect((await db.read()).invoices!.find((i) => i.id === b.id)!.note).toBe('Avance de 50 %');
+  });
+});

@@ -648,7 +648,8 @@
       "convertConfirm": "Créer la facture {number}",
       "convertDone": "Facture {number} créée",
       "convertKeeps": "{number} reste dans la liste, marquée « Convertie » et verrouillée.",
-      "actionFailed": "L’action a échoué. Réessayez."
+      "actionFailed": "L’action a échoué. Réessayez.",
+      "convertNoteHint": "Reprise de la proforma : modifiez-la ou videz-la pour la facture."
     }
   },
   "common": {
@@ -1741,7 +1742,10 @@
       "convertDone": "Facture {number} créée",
       "convertDoneHint": "Elle apparaît dans l’onglet Factures.",
       "convertDownload": "Télécharger la facture",
-      "convertClose": "Fermer"
+      "convertClose": "Fermer",
+      "convertNote": "Note de la facture",
+      "convertNotePlaceholder": "ex. Facture réglée par virement le…",
+      "convertNoteHint": "Reprise de la proforma : modifiez-la ou videz-la pour la facture."
     },
     "invoiceForm": {
       "sectionClient": "Client",
@@ -3891,7 +3895,7 @@
   },
   "programs": {
     "card": {
-      "closed": "Fermé",
+      "closed": "Clôturé",
       "closesToday": "Ferme aujourd'hui",
       "closesIn": "Ferme dans {count} jours",
       "applicationFee": "Frais d'inscription",
@@ -3971,7 +3975,8 @@
       "programs": "programmes",
       "in": "dans",
       "emptyTitle": "Aucun programme ne correspond",
-      "emptyDescription": "Essayez d'élargir le type, changer de ville ou effacer la recherche."
+      "emptyDescription": "Essayez d'élargir le type, changer de ville ou effacer la recherche.",
+      "sortNewest": "Plus récents"
     },
     "detail": {
       "cohortDates": "Dates de la cohorte",

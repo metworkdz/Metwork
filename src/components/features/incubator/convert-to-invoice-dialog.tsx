@@ -42,6 +42,7 @@ export function ConvertToInvoiceDialog({ source, nextNumber, hasStamp, onOpenCha
   const t = useTranslations('incubator.invoicesPage');
   const [paymentMethod, setPaymentMethod] = useState<InvoicePaymentMethod>('ESPECE');
   const [withStamp, setWithStamp] = useState(false);
+  const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<InvoiceRecord | null>(null);
@@ -52,6 +53,7 @@ export function ConvertToInvoiceDialog({ source, nextNumber, hasStamp, onOpenCha
     setLoadedFor(source.id);
     setPaymentMethod(source.paymentMethod);
     setWithStamp(hasStamp && Boolean(source.withStamp));
+    setNote(source.note ?? '');
     setError(null);
     setDone(null);
   }
@@ -67,7 +69,7 @@ export function ConvertToInvoiceDialog({ source, nextNumber, hasStamp, onOpenCha
       const res = await fetch(`/api/incubator/invoices/${source.id}/convert`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentMethod, withStamp: hasStamp && withStamp }),
+        body: JSON.stringify({ paymentMethod, withStamp: hasStamp && withStamp, note: note.trim() || null }),
       });
       const body = await res.json().catch(() => null) as
         { invoice?: InvoiceRecord; source?: InvoiceRecord; error?: { message?: string } } | null;
@@ -146,6 +148,16 @@ export function ConvertToInvoiceDialog({ source, nextNumber, hasStamp, onOpenCha
                 {t('convertStamp')}
               </label>
             )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="convert-note">{t('convertNote')}</Label>
+              <textarea
+                id="convert-note" rows={3} maxLength={600} value={note} dir="auto"
+                onChange={(e) => setNote(e.target.value)} placeholder={t('convertNotePlaceholder')}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              <p className="text-xs text-muted-foreground">{t('convertNoteHint')}</p>
+            </div>
 
             <p className="text-xs text-muted-foreground">{t('convertKeeps', { number: source?.number ?? '' })}</p>
             {error && <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}

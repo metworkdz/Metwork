@@ -91,3 +91,18 @@ describe('the admin review', () => {
     expect((await getNotificationCounts('admin-1')).programApprovals).toBe(1);
   });
 });
+
+describe('the public list order', () => {
+  it('shows the newest program first', async () => {
+    const { listPrograms } = await import('@/server/bookings/program-catalog');
+    await db.update((d) => {
+      d.incubators = [{ id: 'inc', status: 'ACTIVE', archivedAt: null } as never];
+      d.mentors = [];
+      d.programs = ['2026-01-01', '2026-03-01', '2026-02-01'].map((day, i) => ({
+        id: `p${i}`, incubatorId: 'inc', mentorId: null, title: day, isActive: true, seatsTotal: 10,
+        createdAt: `${day}T00:00:00.000Z`, updatedAt: NOW,
+      }) as never);
+    });
+    expect((await listPrograms()).map((p) => p.title)).toEqual(['2026-03-01', '2026-02-01', '2026-01-01']);
+  });
+});

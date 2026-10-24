@@ -648,7 +648,8 @@
       "convertConfirm": "إنشاء الفاتورة {number}",
       "convertDone": "تم إنشاء الفاتورة {number}",
       "convertKeeps": "يبقى {number} في القائمة، موسوماً «محوَّل» ومقفلاً.",
-      "actionFailed": "فشل الإجراء. أعد المحاولة."
+      "actionFailed": "فشل الإجراء. أعد المحاولة.",
+      "convertNoteHint": "منقولة من الفاتورة المبدئية: عدّلها أو امسحها للفاتورة."
     }
   },
   "common": {
@@ -1741,7 +1742,10 @@
       "convertDone": "تم إنشاء الفاتورة {number}",
       "convertDoneHint": "تظهر في تبويب الفواتير.",
       "convertDownload": "تحميل الفاتورة",
-      "convertClose": "إغلاق"
+      "convertClose": "إغلاق",
+      "convertNote": "ملاحظة الفاتورة",
+      "convertNotePlaceholder": "مثال: سُدِّدت الفاتورة بتحويل بتاريخ…",
+      "convertNoteHint": "منقولة من الفاتورة المبدئية: عدّلها أو امسحها للفاتورة."
     },
     "invoiceForm": {
       "sectionClient": "العميل",
@@ -3971,7 +3975,8 @@
       "programs": "برامج",
       "in": "في",
       "emptyTitle": "لا توجد برامج مطابقة",
-      "emptyDescription": "جرّب توسيع النوع أو تغيير المدينة أو مسح البحث."
+      "emptyDescription": "جرّب توسيع النوع أو تغيير المدينة أو مسح البحث.",
+      "sortNewest": "الأحدث"
     },
     "detail": {
       "cohortDates": "تواريخ الدفعة",

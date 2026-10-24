@@ -130,7 +130,8 @@ export type ConvertResult =
  * never happen twice: the facture takes the next number of the FACTURE
  * sequence (no hole, no reuse), today's date, the client as they are NOW
  * (a client completed since the proforma shows up), and the services, VAT,
- * note and template of the source. The payment method and the stamp are
+ * note and template of the source. The payment method, the stamp and the
+ * note (a proforma's « avance de 50 % » rarely fits the facture) are
  * confirmed by the host, since « paiement prévu » is not always how it was
  * paid. The timbre follows the engine (cash factures only). The source stays,
  * marked converted and locked.
@@ -138,7 +139,12 @@ export type ConvertResult =
 export async function convertDraftToInvoice(
   owner: InvoiceOwner,
   id: string,
-  input: { paymentMethod: InvoicePaymentMethod; withStamp: boolean },
+  input: {
+    paymentMethod: InvoicePaymentMethod;
+    withStamp: boolean;
+    /** The facture's note. Omitted → the source's; empty → none. */
+    note?: string | null;
+  },
 ): Promise<ConvertResult> {
   const pre = findIssuer(await db.read(), owner);
   if (!pre) return { ok: false, status: 404, code: 'ISSUER_NOT_FOUND', message: 'Issuer not found' };
@@ -184,7 +190,7 @@ export async function convertDraftToInvoice(
       issuerSnapshot: issuerSnapshotFrom(issuer.profile),
       lines: source.lines,
       withStamp: input.withStamp,
-      note: source.note ?? null,
+      note: input.note === undefined ? (source.note ?? null) : (input.note?.trim() || null),
       vatRate: source.vatRate,
       paymentMethod: input.paymentMethod,
       template: source.template,

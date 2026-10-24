@@ -46,6 +46,7 @@ function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
     isActive:               r.isActive,
     visibility:             programVisibility(r),
     datesTbc:               programDatesTbc(r),
+    createdAt:              r.createdAt,
   };
 }
 
@@ -60,6 +61,8 @@ export async function listPrograms(): Promise<Program[]> {
   const lookups = { incubators: data.incubators ?? [], mentors: data.mentors ?? [] };
   return (data.programs ?? [])
     .filter((p) => isProgramPubliclyListed(p, lookups))
+    // Newest first: the store keeps insertion order, which put the oldest on top.
+    .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
     .map((p) => fromRecord(p, countAttendance(data, 'PROGRAM', p.id)));
 }
 
