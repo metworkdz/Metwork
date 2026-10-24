@@ -7374,5 +7374,154 @@
       "VALIDATION_ERROR": "Check the fields: names and address in Latin letters, as on your ID card.",
       "GENERIC": "Something went wrong. Try again."
     }
+  },
+  "guides": {
+    "homeTitle": "Step-by-step guides",
+    "faqTitle": "Frequent questions",
+    "resumeEyebrow": "Your business · {guide}",
+    "resumeNext": "Next step: {step}",
+    "resumeDone": "All steps are done",
+    "resumeCta": "Continue",
+    "progress": "{done} / {total} steps",
+    "progressLong": "{done} of {total} steps done",
+    "stepsCount": "{count} steps",
+    "back": "Back",
+    "markDone": "Done",
+    "undo": "Undo",
+    "ask": "Ask a question",
+    "askAbout": "I'm at the step \"{step}\" of creating my {guide}. What should I know?",
+    "duration": "Takes · {value}",
+    "download": "Download the {label} form",
+    "documents": "Documents to bring",
+    "startGuide": "Start the steps",
+    "compareWith": "Compare with {guide}",
+    "switchGuide": "Change status",
+    "finishedTitle": "Well done, your business is created!",
+    "finishedBody": "Now keep an eye on your tax deadlines: the tax center reminds you of them.",
+    "saveError": "Couldn't save. Try again.",
+    "faq": {
+      "q1": "What is the difference between a personne physique and a personne morale?",
+      "q2": "How do I get the commercial register?",
+      "q3": "How do I get the auto-entrepreneur card?",
+      "q4": "How do I get my NIF?",
+      "q5": "What do I need for the déclaration d'existence?"
+    },
+    "kinds": {
+      "SARL": {
+        "title": "SARL",
+        "name": "SARL (company)",
+        "card": "Create a SARL",
+        "sub": "With one or more partners",
+        "summary": "Limited liability company: several partners, shares set in the statutes, and your personal assets kept apart from the company's."
+      },
+      "EURL": {
+        "title": "EURL",
+        "name": "EURL (company)",
+        "card": "Create an EURL",
+        "sub": "A company, on your own",
+        "summary": "Single-member company: a real company with one partner, to keep your assets apart and grow without a partner."
+      },
+      "PP": {
+        "title": "personne physique",
+        "name": "Personne physique (sole trader)",
+        "card": "Personne physique",
+        "sub": "Retail, e-commerce",
+        "summary": "You trade in your own name: no statutes and no NIS, fewer steps, simpler tax returns and payments."
+      },
+      "AE": {
+        "title": "auto-entrepreneur card",
+        "name": "Auto-entrepreneur card",
+        "card": "Auto-entrepreneur card",
+        "sub": "Services, freelance",
+        "summary": "The status for service providers and freelancers: online registration with ANAE, tax at 0.5% of turnover and a flat CASNOS fee."
+      }
+    },
+    "chooser": {
+      "title": "Which status is right for me?",
+      "sub": "3 questions · 1 min",
+      "offer": "What do you offer?",
+      "offerPRODUCTS": "Products (retail, e-commerce)",
+      "offerSERVICES": "A service (freelance, consulting)",
+      "partners": "Are you starting alone or with a partner?",
+      "partnersALONE": "Alone",
+      "partnersPARTNERS": "With one or more partners",
+      "capital": "What capital or starting budget?",
+      "capitalSMALL": "Under 500,000 DA",
+      "capitalMEDIUM": "500,000 to 2M DA",
+      "capitalLARGE": "Over 2M DA",
+      "recommended": "Recommended for you",
+      "restart": "Start over"
+    },
+    "why": {
+      "partners": "You're starting with partners: a SARL sets each partner's shares in the statutes and protects your personal assets.",
+      "bigAlone": "With this capital, a single-member company (EURL) keeps your assets apart from the business and makes funding easier.",
+      "services": "You sell a service: the auto-entrepreneur card is the simplest status, online, with tax at 0.5% of turnover.",
+      "products": "For a small shop or an online store, the personne physique needs fewer steps and simpler tax returns."
+    },
+    "steps": {
+      "statuts": {
+        "title": "Statutes at the notary",
+        "body": "Have a notary draft the company statutes: form (SARL or EURL), partners, capital, registered office and manager."
+      },
+      "local": {
+        "title": "Lease or domiciliation",
+        "body": "Sign a lease for your premises, or a domiciliation contract if you are domiciled at an incubator."
+      },
+      "quittance": {
+        "title": "CNRC receipt · 4,000 DA",
+        "body": "Pay the commercial register fee (stamp duty, 4,000 DA) at the tax office (recette des impôts) or online on tabioucom. Keep the receipt (quittance)."
+      },
+      "cnrcMorale": {
+        "title": "Commercial register (CNRC)",
+        "body": "Go to the CNRC office with: birth certificate (extrait de naissance), lease or domiciliation contract, statutes, receipt and the CNRC registration form.",
+        "duration": "24 h"
+      },
+      "cnrcPhysique": {
+        "title": "Commercial register (CNRC)",
+        "body": "Go to the CNRC office with: birth certificate (extrait de naissance), lease or domiciliation contract, receipt and the CNRC registration form.",
+        "duration": "24 h"
+      },
+      "cachet": {
+        "title": "Company stamp (cachet)",
+        "body": "Have your stamp made with the name and commercial register details: you'll use it on all your official documents."
+      },
+      "nif": {
+        "title": "NIF online",
+        "body": "Request your tax identification number (NIF) on the NIF en ligne website, with your commercial register.",
+        "duration": "24 h"
+      },
+      "existence": {
+        "title": "Déclaration d'existence (G08)",
+        "body": "At the tax inspection (inspection des impôts), bring: your NIF in two copies, a photocopy of the commercial register, the G08 form filled in twice, your birth certificate and a residence certificate. They stamp both copies and give you one back. Ask for your Jibayatic login and password: your tax registration is then done."
+      },
+      "casnos": {
+        "title": "CASNOS",
+        "body": "Bring a photocopy of all the company documents, create your CASNOS account and pay this year's contribution."
+      },
+      "nis": {
+        "title": "NIS",
+        "body": "At the national statistics office (ONS), bring a photocopy of the company documents to get your statistical identification number (NIS)."
+      },
+      "banque": {
+        "title": "Bank account",
+        "body": "Open the business bank account at the bank of your choice, with your creation documents."
+      },
+      "anaeAccount": {
+        "title": "Account on anae.dz",
+        "body": "Create your account on the website of ANAE (national auto-entrepreneur agency) and choose your activity."
+      },
+      "aeCard": {
+        "title": "Auto-entrepreneur card",
+        "body": "Complete your registration in your ANAE account to get your auto-entrepreneur card. More information on anae.dz."
+      },
+      "aeNif": {
+        "title": "NIF",
+        "body": "Request your NIF. An auto-entrepreneur doesn't need a NIS."
+      },
+      "aeCasnos": {
+        "title": "CASNOS · 24,000 DA a year",
+        "body": "Register with CASNOS and pay the auto-entrepreneur flat contribution: 24,000 DA a year."
+      }
+    }
   }
 }

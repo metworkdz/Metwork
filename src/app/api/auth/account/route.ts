@@ -121,6 +121,7 @@ export async function DELETE(req: NextRequest) {
     d.gigs               = (d.gigs ?? []).filter((g) => g.freelancerId !== userId);
     d.taxTaskStates      = (d.taxTaskStates ?? []).filter((s) => s.userId !== userId);
     d.copilotUsage       = (d.copilotUsage ?? []).filter((u) => u.userId !== userId);
+    d.guideProgress = (d.guideProgress ?? []).filter((g) => g.userId !== userId);
     d.messageReports     = (d.messageReports ?? []).filter((r) => r.reporterId !== userId && r.reportedId !== userId);
     d.quoteRequests      = (d.quoteRequests ?? []).filter((q) => q.entrepreneurId !== userId && q.freelancerId !== userId);
     d.cofounderProfiles  = (d.cofounderProfiles ?? []).filter((p) => p.userId !== userId);

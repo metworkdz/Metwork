@@ -36677,8 +36677,8 @@
     {
       "userId": "qa-freelancer-id",
       "month": "2026-10",
-      "questions": 3,
-      "updatedAt": "2026-10-24T09:43:20.157Z"
+      "questions": 4,
+      "updatedAt": "2026-10-24T11:23:33.312Z"
     }
   ],
   "freelancerProfiles": [
@@ -36695,6 +36695,18 @@
       "legal": null,
       "createdAt": "2026-10-24T09:13:15.053Z",
       "updatedAt": "2026-10-24T09:13:15.053Z"
+    }
+  ],
+  "guideProgress": [
+    {
+      "userId": "qa-freelancer-id",
+      "guide": "SARL",
+      "done": [
+        "statuts",
+        "local",
+        "quittance"
+      ],
+      "updatedAt": "2026-10-24T11:23:00.743Z"
     }
   ]
 }

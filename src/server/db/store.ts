@@ -1308,6 +1308,15 @@ export interface CopilotUsageRecord {
   updatedAt: string;
 }
 
+/** Metwork 2.0 — where a user is in a business-creation guide (lib/creation-guides). */
+export interface GuideProgressRecord {
+  userId: string;
+  guide: 'SARL' | 'EURL' | 'PP' | 'AE';
+  /** Step ids done, in guide order. */
+  done: string[];
+  updatedAt: string;
+}
+
 /* ──────────────────────── Metwork 2.0 — ventures ──────────────────────── */
 
 export interface VentureRecord {
@@ -4082,6 +4091,8 @@ interface DbShape {
   copilotKb?: CopilotKbPointer | null;
   /** Metwork 2.0 — copilot questions asked, per user per month (quota). */
   copilotUsage?: CopilotUsageRecord[];
+  /** Metwork 2.0 — business-creation guide progress, one row per user. */
+  guideProgress?: GuideProgressRecord[];
   /**
    * Metwork 2.0 — reported conversations. Messages themselves live in
    * Postgres (`server/messaging/repo`); a report freezes the last messages so

@@ -6,6 +6,8 @@ import { ArrowUp, Check, Copy, Globe, SquarePen, Sparkles } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 import type { CopilotAnswer, CopilotQuota, CopilotSource } from '@/server/copilot/service';
+import type { GuideId, GuideProgressView } from '@/lib/creation-guides';
+import { GuideChooser, GuideSteps, GuidesHome, putProgress } from '@/components/features/copilot/creation-guides';
 
 interface Exchange {
   question: string;
@@ -24,7 +26,11 @@ interface Props {
   membershipHref: string;
   /** Question passed in the URL (e.g. from a tax task). */
   initialQuestion?: string;
+  /** Where the user is in a business-creation guide. */
+  initialGuideProgress: GuideProgressView | null;
 }
+
+type View = { kind: 'chat' } | { kind: 'chooser' } | { kind: 'guide'; guide: GuideId };
 
 const ERROR_KEYS: Record<string, string> = {
   QUOTA_EXCEEDED: 'errorQuota',
@@ -39,13 +45,15 @@ const ERROR_KEYS: Record<string, string> = {
  * The copilot, as a chat: answers from the legal texts with their sources,
  * and from the web (flagged, with links) when the texts don't cover it.
  */
-export function CopilotChat({ initialQuota, kbReady, suggestions, membershipHref, initialQuestion }: Props) {
+export function CopilotChat({ initialQuota, kbReady, suggestions, membershipHref, initialQuestion, initialGuideProgress }: Props) {
   const t = useTranslations('copilot');
   const locale = useLocale() as 'fr' | 'en' | 'ar';
   const [quota, setQuota] = useState(initialQuota);
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
   const [question, setQuestion] = useState(initialQuestion ?? '');
   const [busy, setBusy] = useState(false);
+  const [view, setView] = useState<View>({ kind: 'chat' });
+  const [guideProgress, setGuideProgress] = useState(initialGuideProgress);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const outOfQuestions = quota.remaining === 0;
@@ -115,8 +123,26 @@ export function CopilotChat({ initialQuota, kbReady, suggestions, membershipHref
     }
   }
 
+  function openGuide(target: 'CHOOSER' | GuideId) {
+    setView(target === 'CHOOSER' ? { kind: 'chooser' } : { kind: 'guide', guide: target });
+    window.scrollTo({ top: 0 });
+  }
+
+  /** Chooser picked a guide: make it the user's guide (shared steps carry over). */
+  async function startGuide(guide: GuideId) {
+    const saved = await putProgress(guide, guideProgress?.done ?? []).catch(() => null);
+    if (saved) setGuideProgress(saved);
+    openGuide(guide);
+  }
+
+  function askFromGuide(q: string) {
+    setView({ kind: 'chat' });
+    void ask(q);
+  }
+
   function newChat() {
     if (busy) return;
+    setView({ kind: 'chat' });
     setExchanges([]);
     setQuestion('');
     inputRef.current?.focus();
@@ -137,7 +163,7 @@ export function CopilotChat({ initialQuota, kbReady, suggestions, membershipHref
         <button
           type="button"
           onClick={newChat}
-          disabled={busy || empty}
+          disabled={busy || (empty && view.kind === 'chat')}
           aria-label={t('newChat')}
           title={t('newChat')}
           className="flex size-11 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted disabled:opacity-40"
@@ -146,7 +172,18 @@ export function CopilotChat({ initialQuota, kbReady, suggestions, membershipHref
         </button>
       </header>
 
-      {!kbReady ? (
+      {view.kind === 'chooser' ? (
+        <GuideChooser progress={guideProgress} onBack={() => setView({ kind: 'chat' })} onStart={(g) => void startGuide(g)} />
+      ) : view.kind === 'guide' ? (
+        <GuideSteps
+          guide={view.guide}
+          progress={guideProgress}
+          onBack={() => setView({ kind: 'chat' })}
+          onChange={setGuideProgress}
+          onSwitch={() => setView({ kind: 'chooser' })}
+          onAsk={askFromGuide}
+        />
+      ) : !kbReady ? (
         <p className="mt-6 rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">{t('kbNotReady')}</p>
       ) : (
         <>
@@ -157,7 +194,10 @@ export function CopilotChat({ initialQuota, kbReady, suggestions, membershipHref
               </span>
               <h2 className="mt-4 font-display text-2xl font-extrabold tracking-tight">{t('emptyTitle')}</h2>
               <p className="mt-1.5 max-w-md text-sm text-muted-foreground">{t('subtitle')}</p>
-              <div className="mt-6 grid w-full gap-2 sm:grid-cols-2">
+              <div className="mt-6 w-full">
+                <GuidesHome progress={guideProgress} onOpen={openGuide} onAsk={(q) => void ask(q)} />
+              </div>
+              <div className="mt-5 grid w-full gap-2 sm:grid-cols-2">
                 {suggestions.map((s) => (
                   <button
                     key={s}

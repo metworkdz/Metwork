@@ -7374,5 +7374,154 @@
       "VALIDATION_ERROR": "Vérifiez les champs : nom et adresse en lettres latines, comme sur votre pièce d’identité.",
       "GENERIC": "Une erreur est survenue. Réessayez."
     }
+  },
+  "guides": {
+    "homeTitle": "Guides pas à pas",
+    "faqTitle": "Questions fréquentes",
+    "resumeEyebrow": "Votre création · {guide}",
+    "resumeNext": "Prochaine étape : {step}",
+    "resumeDone": "Toutes les étapes sont faites",
+    "resumeCta": "Continuer",
+    "progress": "{done} / {total} étapes",
+    "progressLong": "{done} étapes faites sur {total}",
+    "stepsCount": "{count} étapes",
+    "back": "Retour",
+    "markDone": "C’est fait",
+    "undo": "Annuler",
+    "ask": "Poser une question",
+    "askAbout": "J’en suis à l’étape « {step} » pour créer ma {guide}. Que dois-je savoir ?",
+    "duration": "Durée · {value}",
+    "download": "Télécharger le formulaire {label}",
+    "documents": "Documents à apporter",
+    "startGuide": "Commencer les étapes",
+    "compareWith": "Comparer avec {guide}",
+    "switchGuide": "Changer de statut",
+    "finishedTitle": "Bravo, votre activité est créée !",
+    "finishedBody": "Pensez maintenant à vos échéances fiscales : le centre fiscal vous les rappelle.",
+    "saveError": "Impossible d’enregistrer. Réessayez.",
+    "faq": {
+      "q1": "Quelle est la différence entre personne physique et personne morale ?",
+      "q2": "Comment obtenir le registre de commerce ?",
+      "q3": "Comment avoir la carte auto-entrepreneur ?",
+      "q4": "Comment obtenir mon NIF ?",
+      "q5": "Que faut-il pour la déclaration d’existence ?"
+    },
+    "kinds": {
+      "SARL": {
+        "title": "SARL",
+        "name": "SARL (personne morale)",
+        "card": "Créer une SARL",
+        "sub": "Avec un ou plusieurs associés",
+        "summary": "Société à responsabilité limitée : plusieurs associés, des parts fixées dans les statuts, et vos biens personnels séparés de ceux de la société."
+      },
+      "EURL": {
+        "title": "EURL",
+        "name": "EURL (personne morale)",
+        "card": "Créer une EURL",
+        "sub": "Une société, seul",
+        "summary": "Entreprise unipersonnelle : une vraie société avec un seul associé, pour séparer vos biens et grandir sans associé."
+      },
+      "PP": {
+        "title": "personne physique",
+        "name": "Personne physique",
+        "card": "Personne physique",
+        "sub": "Commerce, e-commerce",
+        "summary": "Vous exercez en votre nom : pas de statuts ni de NIS, moins de démarches, des déclarations et des paiements d’impôts plus simples."
+      },
+      "AE": {
+        "title": "carte auto-entrepreneur",
+        "name": "Carte auto-entrepreneur",
+        "card": "Carte auto-entrepreneur",
+        "sub": "Services, freelance",
+        "summary": "Le statut des prestataires de services et freelancers : inscription en ligne sur l’ANAE, impôt à 0,5 % du chiffre d’affaires et CASNOS forfaitaire."
+      }
+    },
+    "chooser": {
+      "title": "Quel statut pour moi ?",
+      "sub": "3 questions · 1 min",
+      "offer": "Que proposez-vous ?",
+      "offerPRODUCTS": "Des produits (commerce, e-commerce)",
+      "offerSERVICES": "Un service (freelance, prestation)",
+      "partners": "Lancez-vous seul ou avec un associé ?",
+      "partnersALONE": "Seul",
+      "partnersPARTNERS": "Avec un ou plusieurs associés",
+      "capital": "Quel capital ou budget de départ ?",
+      "capitalSMALL": "Moins de 500 000 DA",
+      "capitalMEDIUM": "500 000 à 2 M DA",
+      "capitalLARGE": "Plus de 2 M DA",
+      "recommended": "Recommandé pour vous",
+      "restart": "Recommencer"
+    },
+    "why": {
+      "partners": "Vous lancez l’activité à plusieurs : la SARL fixe les parts de chacun dans les statuts et protège vos biens personnels.",
+      "bigAlone": "Avec ce capital, une société à associé unique (EURL) sépare vos biens de ceux de l’entreprise et facilite les financements.",
+      "services": "Vous vendez un service : la carte auto-entrepreneur est le statut le plus simple, en ligne, avec un impôt à 0,5 % du chiffre d’affaires.",
+      "products": "Pour un petit commerce ou une boutique en ligne, la personne physique demande moins de démarches et des déclarations plus simples."
+    },
+    "steps": {
+      "statuts": {
+        "title": "Statuts chez le notaire",
+        "body": "Faites rédiger les statuts de la société par un notaire : forme (SARL ou EURL), associés, capital, siège et gérant."
+      },
+      "local": {
+        "title": "Bail ou domiciliation",
+        "body": "Signez un contrat de location pour votre local, ou un contrat de domiciliation si vous êtes domicilié dans un incubateur."
+      },
+      "quittance": {
+        "title": "Quittance CNRC · 4 000 DA",
+        "body": "Payez les frais du registre de commerce (droit de timbre, 4 000 DA) à la recette des impôts ou en ligne sur tabioucom. Gardez la quittance."
+      },
+      "cnrcMorale": {
+        "title": "Registre de commerce (CNRC)",
+        "body": "Allez au bureau du CNRC avec : extrait de naissance, contrat de location ou de domiciliation, statuts, quittance et formulaire d’inscription CNRC.",
+        "duration": "24 h"
+      },
+      "cnrcPhysique": {
+        "title": "Registre de commerce (CNRC)",
+        "body": "Allez au bureau du CNRC avec : extrait de naissance, contrat de location ou de domiciliation, quittance et formulaire d’inscription CNRC.",
+        "duration": "24 h"
+      },
+      "cachet": {
+        "title": "Cachet",
+        "body": "Faites fabriquer votre cachet avec le nom et les références du registre de commerce : il servira sur tous vos documents officiels."
+      },
+      "nif": {
+        "title": "NIF en ligne",
+        "body": "Demandez votre numéro d’identification fiscale (NIF) sur le site NIF en ligne, avec votre registre de commerce.",
+        "duration": "24 h"
+      },
+      "existence": {
+        "title": "Déclaration d’existence (G08)",
+        "body": "À l’inspection des impôts, apportez : le NIF en deux exemplaires, une photocopie du registre de commerce, la déclaration G08 remplie en deux exemplaires, l’extrait de naissance et un certificat de résidence. Ils cachettent les deux exemplaires et vous en rendent un. Demandez vos identifiant et mot de passe Jibayatic : votre déclaration fiscale est alors faite."
+      },
+      "casnos": {
+        "title": "CASNOS",
+        "body": "Apportez une photocopie de tous les documents de l’entreprise, créez votre compte CASNOS et payez votre cotisation de l’année."
+      },
+      "nis": {
+        "title": "NIS",
+        "body": "Au centre national des statistiques (ONS), apportez une photocopie des documents de la société pour obtenir votre numéro d’identification statistique (NIS)."
+      },
+      "banque": {
+        "title": "Compte bancaire",
+        "body": "Ouvrez le compte bancaire de l’entreprise dans la banque de votre choix, avec les documents de création."
+      },
+      "anaeAccount": {
+        "title": "Compte sur anae.dz",
+        "body": "Créez votre compte sur le site de l’ANAE (Agence nationale de l’auto-entrepreneur) et choisissez votre activité."
+      },
+      "aeCard": {
+        "title": "Carte auto-entrepreneur",
+        "body": "Complétez votre inscription dans votre espace ANAE pour obtenir votre carte d’auto-entrepreneur. Plus d’informations sur anae.dz."
+      },
+      "aeNif": {
+        "title": "NIF",
+        "body": "Demandez votre NIF. Pas besoin de NIS pour un auto-entrepreneur."
+      },
+      "aeCasnos": {
+        "title": "CASNOS · 24 000 DA par an",
+        "body": "Inscrivez-vous à la CASNOS et payez la cotisation forfaitaire de l’auto-entrepreneur : 24 000 DA par an."
+      }
+    }
   }
 }

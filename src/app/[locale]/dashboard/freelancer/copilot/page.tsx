@@ -4,6 +4,7 @@ import { CopilotChat } from '@/components/features/copilot/copilot-chat';
 import { db } from '@/server/db/store';
 import { quotaFor } from '@/server/copilot/service';
 import { loadKb } from '@/server/copilot/kb-store';
+import { guideProgressOf } from '@/server/copilot/guides';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +36,7 @@ export default async function FreelancerCopilotPage({ params, searchParams }: Pa
       suggestions={[t('freelancer.s1'), t('freelancer.s2'), t('freelancer.s3'), t('freelancer.s4')]}
       membershipHref="/dashboard/freelancer/membership"
       initialQuestion={typeof q === 'string' ? q.slice(0, 1000) : undefined}
+      initialGuideProgress={guideProgressOf(data, session.id)}
     />
   );
 }

@@ -26,6 +26,8 @@ import { loadKb } from '@/server/copilot/kb-store';
 import { search, type KbChunk, type KbDocument, type SearchIndex } from '@/server/copilot/kb';
 import { taxProfileOf } from '@/server/taxes/service';
 import { effectiveRegime } from '@/lib/tax-calendar';
+import { guideIndex } from '@/server/copilot/guide-kb';
+import { guideProgressLine } from '@/server/copilot/guides';
 
 const MODEL = 'claude-opus-5-5';
 /** Web fallback: cheap, fast, and the model the product asked for. */
@@ -104,16 +106,18 @@ async function countQuestion(userId: string): Promise<void> {
 /* ─────────────────────────── Prompts ─────────────────────────── */
 
 const PLAN_SYSTEM = [
-  'You prepare searches over Algerian tax and business law: the 2026 tax codes (CIDTA, TCA, procédures fiscales, timbre, enregistrement, impôts indirects), finance laws 2018–2026, the Code de commerce, the SCF accounting plan, and the DGI G-series forms and their notices. All texts are in French.',
+  'You prepare searches over Algerian tax and business law and Metwork\'s business-creation guides (personne physique or morale, SARL, EURL, auto-entrepreneur card, CNRC commercial register, NIF, déclaration d\'existence G08, CASNOS, NIS, ANAE): the 2026 tax codes (CIDTA, TCA, procédures fiscales, timbre, enregistrement, impôts indirects), finance laws 2018–2026, the Code de commerce, the SCF accounting plan, and the DGI G-series forms and their notices. All texts are in French.',
   'Given a user question (in French, Arabic, English or Darija) and the conversation so far, write 1 to 3 short FRENCH keyword queries that would find the passages answering it.',
   'Use the vocabulary of the texts: "impôt forfaitaire unique", "auto-entrepreneur", "chiffre d\'affaires", "taxe sur la valeur ajoutée", "droit de timbre", "déclaration G n° 12 bis", article numbers when the user names one.',
-  'If the question has nothing to do with taxes, social contributions, accounting or running a business in Algeria, return an empty list.',
+  'For creating a business, use words like "créer société SARL étapes", "registre de commerce CNRC", "carte auto-entrepreneur ANAE", "personne physique morale".',
+  'If the question has nothing to do with taxes, social contributions, accounting, creating or running a business in Algeria, return an empty list.',
 ].join('\n');
 
 const ANSWER_SYSTEM = [
   'You are the Metwork tax copilot for Algerian freelancers, auto-entrepreneurs and founders.',
   'Answer ONLY from the search results provided with the question. Cite them. Never rely on memory for a rate, a threshold, a deadline or an article number.',
   `If the search results do not contain what is needed to answer, write exactly ${NOT_IN_DOCUMENTS} and nothing else: another step will look elsewhere. Do not apologise or explain.`,
+  'The "Guide Metwork" results are Metwork\'s own step-by-step guides for creating a business: use them for procedures (which legal form, steps, documents, fees, links), give the steps in order, say which step comes next when the user\'s progress is known, and mention that the guide with a checklist is in the copilot\'s "Guides" section. When the user hesitates between legal forms, ask the questions the guide lists (products or services, alone or with a partner, capital) before recommending.',
   'When two texts disagree, the most recent one is in force: the 2026 codes and the latest finance law prevail over older finance laws. Say which text you rely on.',
   'Be concrete and short, like a good assistant in a chat: the answer first, then the conditions or exceptions that matter, then what to do (form, deadline, where). Use the amounts in DZD as written in the texts. Use **bold** for the key figure and short lines; no headings.',
   'Reply in the language named in the request (French, English or Arabic), whatever the language of the sources; keep legal terms and form names in French where translating would confuse (e.g. "G n° 12 bis", "IFU").',
@@ -203,8 +207,8 @@ async function planQueries(ai: Anthropic, question: string, history: CopilotTurn
 
 function profileLine(data: Awaited<ReturnType<typeof db.read>>, user: UserRecord): string {
   const p = taxProfileOf(data, user);
-  if (!p) return 'Legal status: not set.';
-  return `Legal status: ${p.status}; tax regime: ${effectiveRegime(p) ?? 'not chosen'}.`;
+  if (!p) return `Legal status: not set.${guideProgressLine(data, user.id)}`;
+  return `Legal status: ${p.status}; tax regime: ${effectiveRegime(p) ?? 'not chosen'}.${guideProgressLine(data, user.id)}`;
 }
 
 /** Fold Claude's cited text blocks into segments + a numbered source list. */
@@ -376,7 +380,9 @@ export async function askCopilot(input: {
     const queries = await planQueries(ai, input.question, input.history);
     // No query at all = nothing to do with work, taxes or business here.
     if (queries.length === 0) return { ok: false, reason: 'OFF_TOPIC' };
-    const passages = retrieve(kb.search, queries);
+    // The legal texts, then at most 2 passages of Metwork's creation guides.
+    const fromGuides = retrieve(guideIndex(), queries, 2);
+    const passages = [...retrieve(kb.search, queries, PASSAGES - fromGuides.length), ...fromGuides];
     const profile = profileLine(data, user);
 
     let answer: CopilotAnswer | null = null;
