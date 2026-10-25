@@ -166,3 +166,128 @@ Both logic fixes are mutation-tested: reverting each turns its test red.
 - **Flake, unresolved:** one full-suite run showed 1 failure out of 1173 and
   could not be reproduced in four subsequent runs. The failing test was not
   identified.
+
+## 2026-10-23 → 2026-10-25 — Metwork 2.0 phases A–E, AI cost rules, marketing plan
+
+Continues the Metwork 2.0 build (phases 0–8b: tax center, copilot, messaging,
+hiring tab and orders, cofounder matching and agreement — all on main, Supabase
+migration for the messaging/cofounder tables already applied in production).
+This stretch: a second round of product work (A–E), approved phase by phase
+after mockups, each with tsc + full test suite + browser check (phone width,
+fr/ar) + a security pass. All pushed to main; **the production deploy is done by
+the owner** (`vercel --prod`), not from here.
+
+Design mockups for A–E live in the private design artifact
+https://claude.ai/artifact/YFcSzNgcAVNe6LqBqEGMkP (boards: freelancer home,
+copilot, more, founder home, contract + push, guides home, chooser, steps).
+
+### Phase A — premium mobile shell (`fdeb230`)
+- Freelancer and founder dashboards get a floating bottom nav: Accueil · second
+  tab (Commandes for freelancers, Recrutement for founders) · **Copilote as a
+  raised green circle** · Messages · Plus. Config: `premiumNavByRole` /
+  `getPremiumNav` in `src/config/mobile-nav.ts`; other roles keep the classic bar.
+- "Plus" opens « Tous vos outils », grouped Argent / Travail / Conformité /
+  Compte; any nav item not placed in a group lands in the last one.
+- New homes built from `src/components/dashboard/premium/premium-cards.tsx`
+  (deep-green hero `#0E3B1E` like the wallet card, row cards, stat tiles, order
+  progress cards).
+- Fix: the consultations table's sr-only button labels escaped the scroll box and
+  widened the page on phones (`relative` on the scroller).
+
+### Phase B — for-freelancers header (`0a23969`)
+`pages.freelancers.heroTitleHighlight` no longer mentions G12: « enfin simple et
+en règle » (fr/en/ar).
+
+### Phase C — copilot as a chat + web fallback (`e05c1f5`)
+- Disclaimer removed; ChatGPT-style UI (`copilot-chat.tsx`): header with quota
+  badge and new chat, empty state with suggestions, streaming with cursor, copy
+  button, composer pinned above the nav.
+- When the documents don't cover a question, the answer call writes only the
+  sentinel `NOT_IN_DOCUMENTS` (held back from the stream by `sentinelGate`); then
+  **Claude Haiku 4.5 with `web_search_20250305` (max 3 searches)** answers.
+  Web sources are http(s)-only (`safeUrl`), shown as blue « Web · domain » chips;
+  narration before the last search is dropped; `pause_turn` resumed once.
+- Landmine: `user_location` with country **DZ is rejected (400)** by web search.
+
+### Phase C2 — business-creation guides (`60246ee`)
+- `src/lib/creation-guides.ts` is the single source: guides SARL, EURL,
+  personne physique (PP), auto-entrepreneur (AE); steps, official links,
+  G08 download (`public/forms/g08.pdf`), chooser `recommend()`:
+  partners → SARL; alone + capital > 2 M DA → EURL; alone + service → AE;
+  alone + products/e-commerce → PP. Text in `guides.*` (fr/en/ar).
+- Owner-confirmed facts: PP pays the 4 000 DA CNRC fee and needs a cachet (not
+  "tampon"); AE pays CASNOS forfaitaire **24 000 DA/an**; PP = société steps
+  without statuts and without NIS.
+- Progress per user in `d.guideProgress` (`/api/copilot/guide`, deleted with the
+  account); the copilot is told the user's step.
+- The guide text is also a copilot source (`server/copilot/guide-kb.ts`): legal
+  passages first, then at most 2 guide passages; SARL and EURL are ONE passage
+  so a SARL user is never cited "EURL".
+
+### Phase D — web push (`c978add`)
+- `web-push` + VAPID keys. `src/server/notifications/push.ts` is THE sender;
+  `createNotification` pushes every in-app notification. Owners: USER or MENTOR
+  (consultants, portal auth). Endpoints allow-listed to browser push services
+  (no SSRF), click targets same-origin paths only, 404/410 devices deleted,
+  5 failures dropped, max 10 devices per owner.
+- New notices: payment link paid (not order links — orders notify themselves),
+  withdrawal approved/rejected, consultant new booking + reminders, member
+  consultation reminder.
+- UI: settings switch (all member settings pages + consultant portal profile),
+  home prompt (14-day quiet after "Plus tard"); unsubscribe on logout.
+  iPhone needs the home-screen install first.
+- Env: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
+  `VAPID_SUBJECT=mailto:contact@metwork.dz` — set on Vercel **Production** only
+  (not Preview) and in `.env.local`. **Never regenerate the keys**: every
+  subscribed phone would have to opt in again.
+
+### Phase E — freelancer contract with Metwork (`71e7681`)
+- Text: the consultant contract with consultant → freelancer, Articles 1–2 about
+  orders and payment links, Article 3 quoting **both plans** (missions 10 % free
+  / 7 % Premium; payment links 3 % / 0 %), CIN and **auto-entrepreneur card
+  number** in the party block. Default in `src/lib/freelancer-contract-text.ts`;
+  admin-editable (Settings, `platformSettings.freelancerContractTemplate`).
+  PDF title: « CONTRAT DE PARTENARIAT / ENTRE METWORK ET LE FREELANCER ».
+- `src/server/freelancer-contracts/service.ts`: offered automatically at 100 %
+  profile (notification + push), signed with CIN (typed at signing) + drawn
+  signature + WhatsApp code; frozen text, hashed private PDF. Withdrawals are
+  refused (`FREELANCER_NOT_ELIGIBLE`, inside the withdrawal lock) until profile
+  100 % AND contract signed — applies immediately to existing freelancers.
+- Landmine: Next renders layout and page **in parallel**; the contract page
+  makes the offer itself before reading, or it shows "locked" at 100 %.
+- `.claude/launch.json` `metwork-localdb` now sets `SMS_PROVIDER=mock`: local
+  OTP codes print in the dev log instead of going through Infobip.
+
+### AI cost rules (`9e0c12d`, `5c8b74b`) — owner decision
+**Never use Opus.** Copilot: Haiku 4.5 plans queries and answers from the web,
+Sonnet 5.5 at **low effort** writes the cited answer. Hiring matcher and
+cofounder matching: Sonnet 5.5 low effort. Server-side fallback removed
+everywhere (it could reroute to Opus). `src/__tests__/no-opus-models.test.ts`
+fails if any server/app code names an Opus model. Legal document review stays on
+Sonnet 5.5 default effort; mentor matching on Haiku 4.5.
+
+### Marketing plan
+`docs/Metwork-Marketing-Plan.pdf` (11 pages, Metwork design system: logo green
+`#00A550`, deep green, mint, Montserrat, white logo on the cover), regenerated by
+`docs/marketing-plan-pdf.py`. Strategy: **freelancers first** (value on day one,
+every link/invoice shows Metwork to a client), founders from month 3 through
+their clients, the creation guides and incubator cohorts; conversion from
+in-product moments (fees saved, quotas, commission 10→7 %). Phases 0–4 over
+12 months; target ~600 paying ≈ 1.4 M DA MRR. Offers in the plan that are NOT
+built yet: « Les 500 fondateurs » (badge + 2 Premium months), referral Premium
+months, client banner on payment pages, fee-savings calculator, upgrade prompts,
+public guide articles.
+
+### Verification
+`tsc` 0 errors · lint 0 errors (17 pre-existing warnings) · vitest
+**2166 / 2166, 172 files**. Live checks: copilot documents path (IFU, cited
+art. 282 sexies, 9 s on Haiku+Sonnet) and web path (BNA account); a freelancer
+contract signed end to end locally (test freelancer at 100 %, test CIN).
+
+### Still open
+- Production deploy of A–E by the owner; then test push on a real phone
+  (iPhone: home screen first), the copilot web path, and the contract offer.
+- Not built: freelancer "project due" reminders; consultants' program/space
+  booking pushes; the marketing offers listed above.
+- Earlier carry-overs: `kb:sync --upload` in prod, membership repricing
+  `--confirm`, accountant and lawyer reviews of the tax texts and contracts.
