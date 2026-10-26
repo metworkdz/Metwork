@@ -291,3 +291,41 @@ contract signed end to end locally (test freelancer at 100 %, test CIN).
   booking pushes; the marketing offers listed above.
 - Earlier carry-overs: `kb:sync --upload` in prod, membership repricing
   `--confirm`, accountant and lawyer reviews of the tax texts and contracts.
+
+## 2026-10-26 — Startup Academy: plan, decisions, phase 0
+
+Plan + mockups (private artifact, rev 2): https://claude.ai/artifact/1aRxaVHPcSCCVhU8ymmSuq
+(source `docs/startup-academy-blueprint.html`). Owner decisions: VdoCipher; Pass
+3 500 DA/month, yearly −20 %, admin-editable; course price set by the author,
+≥ 2 900 DA; mentors 30 % / Metwork 70 % by default, per-mentor override; Pass split
+per subscriber by watch time; 7-day refund under 25 % watched; admin review before
+publishing; −20 % for Founder and Freelancer Premium only (incubators hand out 20 %
+Founder promo codes instead); admin-uploaded stamp on certificates; buyers keep
+access if a mentor leaves; Module 1 mentor = Yacine Kheddaoui, courses grow module by
+module. Academy has its own light/dark switch (default = device) and translated
+course/module/lesson titles.
+
+### Phase 0 (branch `feat/academy-phase0`, uncommitted at report)
+- `src/lib/academy.ts`: prices, shares, watch-time caps (35 s per heartbeat, 2× lesson
+  length per day). `src/lib/localized-text.ts`: fr/en/ar titles with source language
+  and reviewed/drafted state.
+- Store: `academySettings`, `academyFields`, `academyCourses`, `academyEnrollments`,
+  `MentorRecord.academyShareRate`. Enrollments stay in JSONB (granted in the same
+  update as the payment). `server/academy/settings.ts` (validated, audited).
+- Postgres `supabase/migrations/20261026000000_academy_foundation.sql` (**apply before
+  deploying the Academy**): `academy_progress`, `academy_watch_ledger`, atomic
+  `academy_add_watch` and `academy_watch_totals`; RLS on, no policies. Repo
+  `server/academy/repo.ts` (memory / file / Supabase), erased on account deletion.
+- Video: `server/academy/video/` (VdoCipher adapter + mock; production refuses the
+  mock). Env `ACADEMY_VIDEO_PROVIDER`, `VDOCIPHER_API_SECRET`. VdoCipher webhooks are
+  unsigned → re-read the video by id, never trust the body. Watermark
+  `server/academy/watermark.ts` (HMAC account code, masked phone).
+- Routes: `/academy` moved out of `(public)` into `app/[locale]/academy`. Flag
+  `isAcademyEnabled()` OFF in production → the unchanged coming-soon page;
+  `NEXT_PUBLIC_ACADEMY_PREVIEW=true` (launch config `metwork-academy`, port 3998)
+  shows the new landing. Theme scoped to the Academy wrapper (`.dark` on the div,
+  inline bootstrap script, `metwork-academy-theme` in localStorage). Known gap:
+  Radix portals render outside the wrapper, so menus stay light in dark mode.
+- Landing CTAs link to `/academy/pass` and `/academy/courses`, built in phases 1–2.
+- Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2204/2204 (25 new),
+  browser fr/ar, light/dark/auto, 375 px, flag off = coming-soon page.

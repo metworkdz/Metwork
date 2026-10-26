@@ -63,3 +63,20 @@ const FREELANCER_PREMIUM_ON_SALE = true;
 export function isFreelancerPremiumOnSale(): boolean {
   return FREELANCER_PREMIUM_ON_SALE;
 }
+
+/**
+ * Startup Academy (the e-learning platform at /academy).
+ *
+ * OFF until launch: /academy keeps showing the "coming soon" page with its
+ * waitlist form. `NEXT_PUBLIC_ACADEMY_PREVIEW=true` shows the new Academy on a
+ * local or preview deployment without flipping this for everyone. Inlined at
+ * build time, so a Vercel env change needs a redeploy.
+ *
+ * What it controls: the /academy layout and every page under it, and (from
+ * phase 2) the Academy API routes, each of which refuses on its own.
+ */
+const ACADEMY_LIVE = false;
+
+export function isAcademyEnabled(): boolean {
+  return ACADEMY_LIVE || process.env.NEXT_PUBLIC_ACADEMY_PREVIEW === 'true';
+}

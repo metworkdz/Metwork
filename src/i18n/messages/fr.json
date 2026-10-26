@@ -7629,5 +7629,108 @@
       "profileCta": "Profil",
       "contractCta": "Signer"
     }
+  },
+  "academy": {
+    "meta": {
+      "title": "Startup Academy · Cours vidéo pour entrepreneurs",
+      "description": "Des cours vidéo courts, en darija et en français, par des mentors algériens : idée, création de société, fiscalité, financement, marketing."
+    },
+    "header": {
+      "home": "Startup Academy, accueil",
+      "wordmark": "Startup Academy",
+      "login": "Se connecter",
+      "signup": "Créer un compte"
+    },
+    "theme": {
+      "label": "Thème",
+      "light": "Clair",
+      "system": "Auto (appareil)",
+      "dark": "Sombre"
+    },
+    "fields": {
+      "ideation": {
+        "name": "Idéation",
+        "desc": "Trouver une idée et la tester avec de vrais clients avant d’y mettre un dinar."
+      },
+      "legal": {
+        "name": "Juridique et création",
+        "desc": "SARL, EURL, auto-entrepreneur : choisir sa forme et passer le CNRC pas à pas."
+      },
+      "tax": {
+        "name": "Fiscalité",
+        "desc": "IFU, G12, CASNOS : ce que vous devez payer, et quand."
+      },
+      "funding": {
+        "name": "Financement",
+        "desc": "Pitch deck, Label Startup, ASF et business angels."
+      },
+      "marketing": {
+        "name": "Marketing",
+        "desc": "Trouver vos premiers clients avec un petit budget."
+      },
+      "sales": {
+        "name": "Ventes",
+        "desc": "Vendre en B2B, négocier, fidéliser."
+      },
+      "finance": {
+        "name": "Finance",
+        "desc": "Business model, prévisionnel et trésorerie."
+      },
+      "product": {
+        "name": "Produit et tech",
+        "desc": "Construire un premier produit simple et l’améliorer avec vos clients."
+      },
+      "leadership": {
+        "name": "Leadership",
+        "desc": "Recruter, déléguer et tenir sur la durée."
+      }
+    },
+    "landing": {
+      "eyebrow": "Metwork Startup Academy",
+      "titleStart": "Construisez votre startup avec ceux qui",
+      "titleHighlight": "l’ont déjà fait.",
+      "subtitle": "Des cours vidéo courts, en darija et en français, par des mentors algériens : trouver une idée, créer sa société, payer ses impôts, vendre et lever des fonds.",
+      "ctaSubscribe": "S’abonner · {price} DA / mois",
+      "ctaCourses": "Voir les cours",
+      "orBuy": "Ou achetez un cours dès {price} DA, accessible à vie. Membres Founder et Premium : −{percent} %.",
+      "tile1": "Trouver et valider son idée",
+      "tile2": "Créer sa société en Algérie",
+      "cardTitle": "Trouver et valider son idée startup",
+      "cardMeta": "Module 1 · 7 épisodes · Yacine Kheddaoui",
+      "promise": {
+        "short": {
+          "title": "Des épisodes courts",
+          "desc": "Une idée par vidéo, de 1 à 10 minutes."
+        },
+        "language": {
+          "title": "En darija et en français",
+          "desc": "Comme on parle vraiment du business ici."
+        },
+        "mentors": {
+          "title": "Des mentors algériens",
+          "desc": "Des praticiens qui connaissent le terrain."
+        },
+        "certificate": {
+          "title": "Un certificat à la fin",
+          "desc": "Vérifiable en ligne par n’importe qui."
+        }
+      },
+      "learnTitle": "Ce que vous allez apprendre",
+      "learnSubtitle": "Tout ce qu’il faut pour passer de l’idée à une entreprise qui tourne, rangé par domaine.",
+      "howTitle": "Comment ça marche",
+      "step1Title": "Connectez-vous avec votre compte Metwork",
+      "step1Desc": "Le même compte que pour les espaces, les consultations et vos factures.",
+      "step2Title": "Choisissez votre accès",
+      "step2Desc": "L’Academy Pass pour tout regarder, ou un cours acheté une fois et gardé à vie.",
+      "step3Title": "Apprenez à votre rythme",
+      "step3Desc": "Sur téléphone ou ordinateur, reprenez où vous étiez, et recevez votre certificat à la fin.",
+      "passEyebrow": "Academy Pass",
+      "passTitle": "Tous les cours. Un seul abonnement.",
+      "passDesc": "Sans engagement · −{annual} % en payant à l’année · membres Founder et Premium : −{premium} % en plus.",
+      "perMonth": "{price} DA / mois",
+      "perYear": "ou {price} DA / an",
+      "passCta": "S’abonner",
+      "protected": "Les vidéos se regardent en streaming sur Metwork uniquement : elles sont protégées et ne peuvent pas être téléchargées."
+    }
   }
 }

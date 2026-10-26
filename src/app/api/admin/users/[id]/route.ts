@@ -9,6 +9,7 @@ import { z, ZodError } from 'zod';
 import { requireApiRole } from '@/server/auth/api-guards';
 import { messagingRepo } from '@/server/messaging/repo';
 import { cofounderRepo } from '@/server/cofounder/repo';
+import { academyRepo } from '@/server/academy/repo';
 import { db } from '@/server/db/store';
 import { pruneFeedbackForRegistrationsSync } from '@/server/feedback/prune';
 import { fromZod, json, jsonError, noContent } from '@/server/http/json';
@@ -192,6 +193,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   // Conversations live outside the store (Postgres): erase them too.
   await Promise.resolve().then(() => messagingRepo().deleteUser(id)).catch((err) => console.error('[messaging] erase on account deletion failed', String(err)));
   await Promise.resolve().then(() => cofounderRepo().deleteUser(id)).catch((err) => console.error('[cofounder] erase on account deletion failed', String(err)));
+  await Promise.resolve().then(() => academyRepo().deleteUser(id)).catch((err) => console.error('[academy] erase on account deletion failed', String(err)));
 
   await appendAuditLog({
     adminId: guard.user.id,

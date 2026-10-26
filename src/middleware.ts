@@ -18,7 +18,13 @@ const CONSULTANT_LOCALE_COOKIE = 'metwork_consultant_locale';
 const PORTAL_DEFAULT_LOCALE = 'fr';
 
 /** Pages that require authentication */
-const PROTECTED_PREFIXES = ['/dashboard'];
+const PROTECTED_PREFIXES = [
+  '/dashboard',
+  // Startup Academy: watching lessons and "my learning" need an account.
+  // The catalogue, course pages and the Pass page stay public.
+  '/academy/learn',
+  '/academy/my',
+];
 
 /** Pages that should redirect away if user is already authenticated */
 const GUEST_ONLY_PREFIXES = ['/login', '/signup', '/join', '/forgot-password'];

@@ -117,6 +117,18 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
 .sec-h h5{font-size:21px;font-weight:800}
 .sec-h span{color:var(--a-acc);font-weight:600;font-size:13px}
 
+.ac.light{--a-bg:#F6F8F7;--a-s1:#FFFFFF;--a-s2:#EEF3F0;--a-line:#DDE7E1;--a-fg:#0B1F14;--a-mut:#56695E;--a-acc:#057A41;--a-gold:#A8740F}
+.ac.light .anav{background:rgba(255,255,255,.92)}
+.ac.light .btn.s{background:#fff;color:var(--a-fg);border:1px solid var(--a-line)}
+.ac.light .pill{background:#E3F3EA}.ac.light .pill.n{background:#EEF3F0;color:var(--a-mut)}
+.ac.light .bar-p{background:#E2EAE5}
+.tsw{display:inline-flex;border:1px solid var(--a-line);border-radius:10px;padding:3px;gap:2px;font-size:12px;font-weight:700;color:var(--a-mut)}
+.tsw span{padding:4px 9px;border-radius:7px}.tsw span.on{background:var(--a-acc);color:#fff}
+.lrn{background:var(--a-s1);border:1px solid var(--a-line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.lrn b{font:800 15px var(--display)}.lrn span{font-size:13.5px;color:var(--a-mut)}
+.step{background:var(--a-s1);border:1px solid var(--a-line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:6px}
+.step i{font-style:normal;width:30px;height:30px;border-radius:50%;background:var(--a-grad);color:#fff;display:grid;place-items:center;font:800 14px var(--display)}
+.step b{font:800 15px var(--display)}.step span{font-size:13.5px;color:var(--a-mut)}
 /* thumbnails */
 .th{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;padding:14px;display:flex;flex-direction:column;justify-content:flex-end;color:#fff;isolation:isolate}
 .th::before{content:"";position:absolute;inset:0;z-index:-2;background:var(--tg)}
@@ -240,9 +252,10 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
   <a href="#hosting">Video hosting</a>
   <a href="#security">Content security</a>
   <a href="#features">Feature map</a>
+  <a href="#i18n">Languages and theme</a>
   <a href="#architecture">Architecture</a>
   <a href="#roadmap">Roadmap</a>
-  <a href="#decisions">Your decisions</a>
+  <a href="#decisions">Locked decisions</a>
   <b>Mockups</b>
   <a href="#m-home">Academy home</a>
   <a href="#m-catalog">Catalogue</a>
@@ -263,7 +276,7 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
 
 <main>
 <header class="top">
-  <div class="eyebrow">Metwork · Integration plan · rev 1 · 26 Oct 2026</div>
+  <div class="eyebrow">Metwork · Integration plan · rev 2 · decisions locked 26 Oct 2026</div>
   <h1>Metwork Startup Academy</h1>
   <p class="lead">A premium video-course platform at <b>metwork.dz/academy</b>, on the same Metwork account. People buy a course for life or subscribe to the Academy Pass for everything. Mentors earn a share of every sale and of the subscription time spent on their courses, paid into the wallet they already use in the consultant portal. Video is DRM-protected and watermarked per viewer.</p>
   <div class="meta"><span class="chip">DZD only</span><span class="chip">Wallet · CIB · Edahabia</span><span class="chip g">Premium −20%</span><span class="chip">FR · AR (RTL) · EN</span><span class="chip">DRM + per-viewer watermark</span></div>
@@ -287,14 +300,14 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
 <p style="margin-top:14px">Module 1 already exists (<i>Trouver et valider son idée startup</i>, 7 episodes, about 14 minutes, edited with the <code>_studio</code> pipeline). I used its real episode list in the player mockup.</p>
 
 <h2 id="model">Business model</h2>
-<p>All prices are in dinars, paid with the wallet or by CIB / Edahabia through the existing SlickPay checkout. The prices below are my proposal; the final figures are yours (decision 2).</p>
+<p>All prices are in dinars, paid with the wallet or by CIB / Edahabia through the existing SlickPay checkout. The Pass price is a platform setting the admin can change at any time; a course price is set by its author when posting it, never below 2 900 DA.</p>
 <div class="tw"><table>
   <thead><tr><th>Offer</th><th>What the learner gets</th><th class="num">Proposed price</th><th class="num">Premium (−20%)</th></tr></thead>
   <tbody>
-  <tr><td><b>Single course</b></td><td>Lifetime access for that account, certificate on completion, future updates to the course included</td><td class="num">2 900 – 7 900 DA</td><td class="num">2 320 – 6 320 DA</td></tr>
-  <tr><td><b>Academy Pass, monthly</b></td><td>Every course marked “Inclus dans le Pass” while the subscription is active. Auto-renews from the wallet, like Founder plans</td><td class="num">2 900 DA / mois</td><td class="num">2 320 DA / mois</td></tr>
-  <tr><td><b>Academy Pass, annual</b></td><td>Same, 12 months, paid once (2 months free). Not auto-charged, matching how annual memberships work today</td><td class="num">29 000 DA / an</td><td class="num">23 200 DA / an</td></tr>
-  <tr><td><b>Incubator seats</b> <span class="chip">later</span></td><td>An incubator buys Pass seats for a cohort and assigns them to its founders from the incubator dashboard</td><td class="num">quote per cohort</td><td class="num">n/a</td></tr>
+  <tr><td><b>Single course</b></td><td>Lifetime access for that account, certificate on completion, future updates to the course included</td><td class="num">from 2 900 DA, set by the author</td><td class="num">from 2 320 DA</td></tr>
+  <tr><td><b>Academy Pass, monthly</b></td><td>Every course marked “Inclus dans le Pass” while the subscription is active. Auto-renews from the wallet, like Founder plans</td><td class="num">3 500 DA / mois</td><td class="num">2 800 DA / mois</td></tr>
+  <tr><td><b>Academy Pass, annual</b></td><td>Same, 12 months, paid once at −20%. Not auto-charged, matching how annual memberships work today</td><td class="num">33 600 DA / an</td><td class="num">26 880 DA / an</td></tr>
+  <tr><td><b>Incubator members</b></td><td>Incubators receive 20% promo codes on the Founder membership to give their members (the partner promo-code engine already does membership codes). A member who subscribes becomes Founder and gets −20% in the Academy too</td><td class="num">n/a</td><td class="num">n/a</td></tr>
   </tbody></table></div>
 <ul class="tight">
   <li><b>Premium discount</b> comes from one price resolver (<code>src/lib/academy-price.ts</code>) and is listed as a perk in the member dashboard. It does not stack with promo codes: the learner gets whichever is better.</li>
@@ -304,25 +317,25 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
 </ul>
 
 <h2 id="revenue">Mentor revenue</h2>
-<p>The admin sets one percentage per mentor (default proposal 50%). It is copied onto each sale and each monthly statement when they are created, so a later change never rewrites past money. Credits go through the one existing function, <code>applyMentorEarningToDraft</code> in <code>src/server/mentors/ledger.ts</code>. No second credit path gets written.</p>
+<p>The admin sets one percentage per mentor (default <b>30% mentor / 70% Metwork</b>). It is copied onto each sale and each monthly statement when they are created, so a later change never rewrites past money. Credits go through the one existing function, <code>applyMentorEarningToDraft</code> in <code>src/server/mentors/ledger.ts</code>. No second credit path gets written.</p>
 <div class="grid2">
   <div class="box"><h3>Course sales</h3>
     <p>Mentor earning = amount the learner actually paid × the mentor’s share.</p>
-    <p class="mono" style="display:block;padding:10px 12px;line-height:1.7">Course 4 900 DA, Premium buyer pays 3 920 DA<br>Mentor share 50% → <b>1 960 DA</b> to the mentor</p>
+    <p class="mono" style="display:block;padding:10px 12px;line-height:1.7">Course 2 900 DA, Premium buyer pays 2 320 DA<br>Mentor share 30% → <b>696 DA</b> to the mentor</p>
     <p>It is credited as <b>pending</b> and becomes withdrawable after the refund window (proposal: 7 days). A refund voids the pending credit with the existing <code>voidPendingEarning</code>.</p>
   </div>
   <div class="box"><h3>Academy Pass, by watch time</h3>
     <p>I recommend splitting <b>each subscriber’s own payment</b> across the mentors that subscriber watched that month, rather than one global pool.</p>
-    <p>A global pool lets a mentor drain everyone’s money by inflating views. With a per-subscriber split, fake viewing can at most redistribute the cheater’s own 2 900 DA, so the fraud does not pay.</p>
+    <p>A global pool lets a mentor drain everyone’s money by inflating views. With a per-subscriber split, fake viewing can at most redistribute the cheater’s own 3 500 DA, so the fraud does not pay.</p>
   </div>
 </div>
 <div class="formula">earning(mentor, month) = Σ over subscribers ( net paid × mentor share × minutes on mentor’s courses ÷ subscriber’s total minutes )</div>
 <div class="tw"><table>
-  <thead><tr><th>Worked example: Amina, Pass 2 900 DA, watched 300 min in October</th><th class="num">Minutes</th><th class="num">Share of her time</th><th class="num">Mentor %</th><th class="num">Mentor earns</th></tr></thead>
+  <thead><tr><th>Worked example: Amina, Pass 3 500 DA, watched 300 min in October</th><th class="num">Minutes</th><th class="num">Share of her time</th><th class="num">Mentor %</th><th class="num">Mentor earns</th></tr></thead>
   <tbody>
-  <tr><td>Karim Bensalah (Idéation)</td><td class="num">180</td><td class="num">60%</td><td class="num">40%</td><td class="num">696 DA</td></tr>
-  <tr><td>Nadia Merabet (Juridique)</td><td class="num">120</td><td class="num">40%</td><td class="num">50%</td><td class="num">580 DA</td></tr>
-  <tr><td>Metwork keeps</td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num">1 624 DA</td></tr>
+  <tr><td>Yacine Kheddaoui (Idéation)</td><td class="num">180</td><td class="num">60%</td><td class="num">30%</td><td class="num">630 DA</td></tr>
+  <tr><td>Nadia Merabet (Juridique, override)</td><td class="num">120</td><td class="num">40%</td><td class="num">40%</td><td class="num">560 DA</td></tr>
+  <tr><td>Metwork keeps</td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num">2 310 DA</td></tr>
   </tbody></table></div>
 <ul class="tight">
   <li><b>What counts as watching:</b> the player sends a heartbeat every 30 s while the video is actually playing. The server counts wall-clock seconds, at most 35 s per heartbeat, one active stream per account, and caps any lesson at 2× its length per day, so leaving a video looping does not earn anything.</li>
@@ -331,7 +344,7 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
 </ul>
 
 <h2 id="hosting">Video hosting</h2>
-<p>VdoCipher is a good choice and I would launch on it. The code will talk to video through one <code>VideoProvider</code> interface, the same way payments go through <code>PaymentProvider</code>, so moving to another host later means writing one adapter and re-uploading the videos, without touching pages or entitlements.</p>
+<p><b>Chosen: VdoCipher.</b> The code will talk to video through one <code>VideoProvider</code> interface, the same way payments go through <code>PaymentProvider</code>, so moving to another host later means writing one adapter and re-uploading the videos, without touching pages or entitlements.</p>
 <div class="tw"><table>
   <thead><tr><th>Host</th><th>Real DRM (Widevine + FairPlay)</th><th>Per-viewer watermark</th><th>How you pay</th><th>Fit</th></tr></thead>
   <tbody>
@@ -381,13 +394,19 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
   <div class="box"><h3>Admin</h3><ul class="tight">
     <li>Create a course and attach a mentor from the mentors list (co-mentors allowed)</li>
     <li>Review queue: approve, request changes with a note, or reject mentor submissions</li>
-    <li>Fields (categories), featured courses, homepage order</li>
+    <li>Fields (categories), featured courses, homepage order, Pass price</li>
     <li>Revenue share per mentor, with history</li>
     <li>Monthly Pass settlement: preview, then run</li>
     <li>Refunds, grant a course manually, revoke access</li>
     <li>Security: paused accounts, devices, token activity</li>
-    <li>Academy analytics: revenue, Pass MRR, churn, top courses</li>
+    <li>Academy analytics (revenue, Pass MRR, churn, top courses, watch time) inside the existing admin Analytics page</li><li>Certificate settings: upload the Metwork stamp printed on every certificate</li>
   </ul></div>
+</div>
+
+<h2 id="i18n">Languages and theme</h2>
+<div class="grid2">
+  <div class="box"><h3>Translated course content</h3><p>Course titles, subtitles, outcomes, module titles and lesson titles are stored in French, English and Arabic, with the language they were written in. A visitor sees their language; if a translation is missing they see the original. When an author saves, the missing languages are drafted automatically (Haiku 4.5, within the AI cost rule) and the author or admin can correct them. The videos themselves stay in their recorded language, shown as a label (e.g. “Darija + français”).</p></div>
+  <div class="box"><h3>Light and dark</h3><p>The Academy follows the phone or computer setting by default, and a sun / auto / moon switch in its bar changes it at any time (remembered on that device). The rest of Metwork stays light as today. The light home is the first mockup; the other learner mockups show the dark palette.</p></div>
 </div>
 
 <h2 id="architecture">Architecture</h2>
@@ -399,7 +418,7 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
   <tr><td>Signed-in pages</td><td><code>academy/learn/[course]/[lesson]</code>, <code>academy/my</code>, <code>academy/checkout</code></td><td>Middleware adds <code>/academy/learn</code> and <code>/academy/my</code> to the protected paths.</td></tr>
   <tr><td>Mentor Studio</td><td>Consultant portal, new “Academy” tab</td><td>Same consultant auth (token + PIN), same wallet page.</td></tr>
   <tr><td>Admin</td><td><code>/dashboard/admin/academy/*</code></td><td>Courses, review queue, fields, mentor shares, settlements, security.</td></tr>
-  <tr><td>Catalogue data</td><td>JSONB store: <code>academyCourses</code>, <code>academyFields</code>; <code>MentorRecord.academySharePercent</code></td><td>Small and read-heavy, so it fits the store.</td></tr>
+  <tr><td>Catalogue data</td><td>JSONB store: <code>academyCourses</code>, <code>academyFields</code>, <code>academySettings</code> (Pass price, default share, stamp); <code>MentorRecord.academySharePercent</code></td><td>Small and read-heavy, so it fits the store. Every title is a <code>LocalizedText</code> (fr / en / ar + source language).</td></tr>
   <tr><td>High-volume data</td><td>Postgres tables (as messaging and cofounder did)</td><td><code>academy_enrollments</code>, <code>academy_progress</code>, <code>academy_watch_ledger</code>, <code>academy_pass_statements</code>, <code>academy_reviews</code>, <code>academy_notes</code>, <code>academy_questions</code>. Migration applied before deploy.</td></tr>
   <tr><td>Access rule</td><td><code>server/academy/entitlements.ts</code></td><td>One function, <code>canWatchLesson(user, lesson)</code>: preview, owned course, active Pass, incubator seat, admin grant. Every route calls it.</td></tr>
   <tr><td>Video</td><td><code>server/academy/video/{provider,vdocipher,mock}.ts</code></td><td>Mock provider for local work and tests. Webhook <code>/api/webhooks/vdocipher</code> marks lessons ready and stores their duration.</td></tr>
@@ -418,19 +437,19 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
 <div class="phase"><div class="n">5</div><div><h3>Learning experience</h3><p>Reviews, Q&amp;A, notes, module quizzes, certificates and verification page, wishlist, notifications and push, reminder emails.</p></div></div>
 <div class="phase"><div class="n">6</div><div><h3>Growth</h3><p>Incubator seats, gifts, learning paths and bundles, referral offer, subtitles from the whisper pipeline, academy analytics for admin.</p></div></div>
 
-<h2 id="decisions">Your decisions</h2>
-<p>I need these before phase 0. My recommendation is first in each.</p>
+<h2 id="decisions">Locked decisions</h2>
+<p>Your answers of 26 October. Phase 0 is built on these.</p>
 <ol class="dec">
-  <li><b>Video host</b><span>VdoCipher with the provider interface (recommended), Gumlet + DRM add-on, or Bunny Enterprise DRM.</span></li>
-  <li><b>Prices</b><span>Pass 2 900 DA / month and 29 000 DA / year; courses between 2 900 and 7 900 DA. Or your figures.</span></li>
-  <li><b>Default mentor share</b><span>50% on sales and on Pass time, adjustable per mentor. The share applies to what the learner actually paid, so mentors also absorb part of the Premium discount. The alternative is Metwork absorbing the full discount.</span></li>
-  <li><b>Pass split</b><span>Per-subscriber by watch time (recommended) or one global monthly pool.</span></li>
-  <li><b>Refunds</b><span>Within 7 days if less than 25% of the course was watched and no certificate issued. Pass: no refund, cancel stops the next renewal.</span></li>
-  <li><b>Review before publishing</b><span>Yes: a mentor’s course goes live only after admin approval, to keep the premium standard.</span></li>
-  <li><b>Who gets −20%</b><span>Founder and Freelancer Premium members. Should incubator Pro accounts get it too?</span></li>
-  <li><b>Certificates for Pass learners</b><span>Yes, issued when they finish a course while subscribed, and kept afterwards.</span></li>
-  <li><b>If a mentor leaves</b><span>Buyers keep lifetime access; the course leaves the Pass and the catalogue. Written into the Academy addendum.</span></li>
-  <li><b>Metwork’s own courses</b><span>Module 1 was filmed by Metwork. Should its trainer be set up as a mentor with a share, or is it 100% Metwork?</span></li>
+  <li><b>Video host: VdoCipher</b><span>Behind the provider interface, with a mock for local work and tests.</span></li>
+  <li><b>Prices</b><span>Pass 3 500 DA / month; yearly −20% (33 600 DA). The admin can change the Pass price at any time. Course prices are set by the author when posting, minimum 2 900 DA.</span></li>
+  <li><b>Mentor share: 30% mentor / 70% Metwork by default</b><span>Adjustable per mentor. All Academy analytics live in the existing admin Analytics page.</span></li>
+  <li><b>Pass split by watch time</b><span>Per subscriber, as described above.</span></li>
+  <li><b>Refunds</b><span>7 days, under 25% watched, no certificate issued. The Pass is not refundable; cancelling stops the next renewal.</span></li>
+  <li><b>Admin review before publishing</b><span>Mentor courses go live only after approval.</span></li>
+  <li><b>−20% for Founder and Freelancer Premium only</b><span>Incubators instead get 20% promo codes on the Founder membership for their members, who then get the Academy discount as Founders.</span></li>
+  <li><b>Certificates for Pass learners</b><span>Yes. The admin uploads the Metwork stamp printed on every certificate.</span></li>
+  <li><b>If a mentor leaves</b><span>Buyers keep lifetime access; the course leaves the catalogue and the Pass.</span></li>
+  <li><b>Module 1</b><span>Mentor: Yacine Kheddaoui. It is the first module of a course that grows: a course can be published with one module and get new modules later, which buyers receive at no extra cost.</span></li>
 </ol>
 
 <!-- ===================================================== MOCKUPS ===================================================== -->
@@ -439,59 +458,77 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
 
 <!-- 1. HOME -->
 <section class="mock" id="m-home">
-<div class="mock-h"><h3>Academy home</h3><span class="route">metwork.dz/fr/academy</span></div>
-<p class="mock-note">Dark, cinematic shell. Featured course with its trailer, “Reprendre” for signed-in learners, rows by field, top mentors and the Pass offer. Courses included in the Pass carry a green badge.</p>
+<div class="mock-h"><h3>Academy home (light, the default on a light-mode phone)</h3><span class="route">metwork.dz/fr/academy</span></div>
+<p class="mock-note">A first-time visitor learns what Startup Academy is before seeing any course: a header that hooks, what they will learn, how it works, then <b>S’abonner</b> or <b>Voir les cours</b>. The sun / moon / auto switch in the bar follows the phone or computer by default and can be changed at any time; the dark version is the same page in the dark palette used by the other mockups. Course titles appear in the visitor’s language.</p>
 <div class="fit"><div class="stage" data-w="1280"><div class="win">
 <div class="bar"><i></i><i></i><i></i><div class="url">metwork.dz/<b>fr/academy</b></div></div>
-<div class="ac">
-  <div class="anav"><div class="logo"><span class="mk">M</span><div>Metwork<small>ACADEMY</small></div></div>
-    <div class="links"><span class="on">Accueil</span><span>Catalogue</span><span>Mentors</span><span>Academy Pass</span></div>
-    <div class="search">Rechercher un cours, un mentor…</div>
-    <div class="right"><span class="pbadge">★ FOUNDER</span><span style="color:var(--a-mut);font-weight:600">Mon apprentissage</span><i class="av" style="--h:160">AB</i></div></div>
-  <div style="position:relative;padding:56px 40px 48px;display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center;background:radial-gradient(ellipse at 80% 30%,rgba(4,165,79,.28),transparent 55%)">
+<div class="ac light">
+  <div class="anav"><div class="logo"><span class="mk">M</span><div>Metwork<small>STARTUP ACADEMY</small></div></div>
+    <div class="links"><span class="on">L’Academy</span><span>Cours</span><span>Mentors</span><span>Academy Pass</span></div>
+    <div class="right">
+      <span class="tsw" title="Thème"><span>☀</span><span class="on">Auto</span><span>☾</span></span>
+      <span style="font-weight:700;font-size:13px;color:var(--a-mut)">FR · EN · ع</span>
+      <span class="btn s">Se connecter</span><span class="btn p">Créer un compte</span></div></div>
+
+  <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:center;padding:64px 40px 56px;background:radial-gradient(ellipse at 85% 20%,rgba(4,165,79,.14),transparent 55%)">
     <div>
-      <span class="pill">Nouveau · Idéation</span>
-      <h4 style="font-size:52px;font-weight:800;line-height:1.02;letter-spacing:-.035em;margin:18px 0 16px">Trouver et valider<br>son <span style="color:var(--a-acc)">idée startup</span></h4>
-      <p style="color:var(--a-mut);font-size:16px;max-width:46ch;margin:0 0 22px">État d’esprit, introspection et Design Thinking : sachez si votre idée tient la route avant d’y mettre un dinar.</p>
-      <div style="display:flex;gap:16px;align-items:center;margin-bottom:26px;font-size:13px;color:var(--a-mut)"><i class="av s" style="--h:150">KB</i> Karim Bensalah · <span class="stars">★★★★★</span> 4,9 (212) · 4 modules · 2 h 10 · Darija + français</div>
-      <div style="display:flex;gap:12px"><span class="btn p lg">▶ Regarder la bande-annonce</span><span class="btn s lg">Voir le programme</span></div>
+      <span class="pill">Metwork Startup Academy</span>
+      <h4 style="font-size:54px;font-weight:800;line-height:1.02;letter-spacing:-.035em;margin:18px 0 18px">Construisez votre startup avec ceux qui <span style="color:var(--a-acc)">l’ont déjà fait.</span></h4>
+      <p style="color:var(--a-mut);font-size:17px;max-width:48ch;margin:0 0 26px">Des cours vidéo courts, en darija et en français, par des mentors algériens : trouver une idée, créer sa société, payer ses impôts, vendre et lever des fonds.</p>
+      <div style="display:flex;gap:12px;align-items:center"><span class="btn p lg">S’abonner · 3 500 DA / mois</span><span class="btn s lg">Voir les cours</span></div>
+      <div style="font-size:13px;color:var(--a-mut);margin-top:12px">Ou achetez un cours à l’unité dès 2 900 DA, accessible à vie. Membres Founder et Premium : −20%.</div>
+      <div style="display:flex;gap:28px;margin-top:30px">
+        <div><b style="font:800 26px var(--display)">24</b><div style="font-size:12.5px;color:var(--a-mut)">cours</div></div>
+        <div><b style="font:800 26px var(--display)">9</b><div style="font-size:12.5px;color:var(--a-mut)">domaines</div></div>
+        <div><b style="font:800 26px var(--display)">12</b><div style="font-size:12.5px;color:var(--a-mut)">mentors</div></div>
+        <div><b style="font:800 26px var(--display)">✓</b><div style="font-size:12.5px;color:var(--a-mut)">certificat à la fin</div></div>
+      </div>
     </div>
-    <div class="th t1" style="border-radius:20px;box-shadow:0 40px 90px -30px rgba(0,0,0,.8)"><span class="pass">INCLUS DANS LE PASS</span><span class="tf">MODULE 1 · 7 ÉPISODES</span><b style="font-size:34px">Trouver et valider son <em>idée</em></b>
-      <span style="position:absolute;inset:0;display:grid;place-items:center"><span style="width:74px;height:74px;border-radius:50%;background:rgba(255,255,255,.95);display:grid;place-items:center"><i class="ico play" style="border-left-color:#04150C;margin-left:6px"></i></span></span></div>
-  </div>
-  <div class="sec" style="padding-top:8px">
-    <div class="sec-h"><h5>Reprendre là où vous en étiez</h5><span>Mon apprentissage →</span></div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
-      <div class="card" style="flex-direction:row;gap:14px;background:var(--a-s1);border:1px solid var(--a-line);border-radius:14px;padding:12px"><div class="th t2" style="width:150px;flex:none;padding:8px"><b style="font-size:11px">Créer sa SARL</b></div><div style="min-width:0;flex:1"><h6>Créer sa SARL en Algérie de A à Z</h6><div class="row" style="margin:4px 0 10px">Leçon 9 · Le CNRC</div><div class="bar-p"><i style="width:64%"></i></div><div class="row" style="margin-top:6px">64% · 22 min restantes</div></div></div>
-      <div class="card" style="flex-direction:row;gap:14px;background:var(--a-s1);border:1px solid var(--a-line);border-radius:14px;padding:12px"><div class="th t4" style="width:150px;flex:none;padding:8px"><b style="font-size:11px">Lever des fonds</b></div><div style="min-width:0;flex:1"><h6>Lever des fonds : pitch et investisseurs</h6><div class="row" style="margin:4px 0 10px">Leçon 3 · Le deck en 10 slides</div><div class="bar-p"><i style="width:18%"></i></div><div class="row" style="margin-top:6px">18% · 1 h 40 restantes</div></div></div>
-      <div class="card" style="flex-direction:row;gap:14px;background:var(--a-s1);border:1px solid var(--a-line);border-radius:14px;padding:12px"><div class="th t5" style="width:150px;flex:none;padding:8px"><b style="font-size:11px">Fiscalité AE</b></div><div style="min-width:0;flex:1"><h6>Fiscalité de l’auto-entrepreneur</h6><div class="row" style="margin:4px 0 10px">Terminé · certificat prêt</div><div class="bar-p"><i style="width:100%"></i></div><div class="row" style="margin-top:6px;color:var(--a-acc)">Télécharger le certificat</div></div></div>
-    </div>
-  </div>
-  <div class="sec" style="padding-top:6px">
-    <div style="display:flex;gap:10px;margin-bottom:18px"><span class="pill">Tous</span><span class="pill n">Idéation</span><span class="pill n">Juridique &amp; création</span><span class="pill n">Financement</span><span class="pill n">Fiscalité</span><span class="pill n">Marketing</span><span class="pill n">Finance</span><span class="pill n">Ventes</span><span class="pill n">Produit &amp; Tech</span></div>
-    <div class="sec-h"><h5>Les plus suivis ce mois-ci</h5><span>Tout voir →</span></div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
-      <div class="card"><div class="th t3"><span class="pass">PASS</span><span class="dur">3 h 05</span><span class="tf">FINANCEMENT</span><b>Lever des fonds : <em>pitch</em> et investisseurs</b></div><h6>Lever des fonds : pitch et investisseurs</h6><div class="by"><i class="av s" style="--h:200">SK</i>Sofiane Kaci</div><div class="row"><span class="stars">★★★★★</span>4,8 (156) · Intermédiaire</div><div><span class="price">6 900 DA</span> <span class="prem">· 5 520 DA Premium</span></div></div>
-      <div class="card"><div class="th t2"><span class="pass">PASS</span><span class="dur">2 h 40</span><span class="tf">JURIDIQUE</span><b>Créer sa <em>SARL</em> en Algérie de A à Z</b></div><h6>Créer sa SARL en Algérie de A à Z</h6><div class="by"><i class="av s" style="--h:110">NM</i>Nadia Merabet</div><div class="row"><span class="stars">★★★★★</span>4,9 (301) · Débutant</div><div><span class="price">3 900 DA</span> <span class="prem">· 3 120 DA Premium</span></div></div>
-      <div class="card"><div class="th t6"><span class="pass">PASS</span><span class="dur">3 h 30</span><span class="tf">FINANCE</span><b>Business model et <em>prévisionnel</em></b></div><h6>Business model et prévisionnel financier</h6><div class="by"><i class="av s" style="--h:40">AR</i>Amine Rahmani</div><div class="row"><span class="stars">★★★★☆</span>4,6 (88) · Intermédiaire</div><div><span class="price">5 900 DA</span> <span class="prem">· 4 720 DA Premium</span></div></div>
-      <div class="card"><div class="th t7"><span class="dur">2 h 15</span><span class="tf">MARKETING</span><b>Marketing digital à <em>petit budget</em></b></div><h6>Marketing digital à petit budget</h6><div class="by"><i class="av s" style="--h:320">LB</i>Lina Bouzid</div><div class="row"><span class="stars">★★★★★</span>4,7 (190) · Débutant</div><div><span class="price">4 500 DA</span> <span class="prem">· 3 600 DA Premium</span></div></div>
+    <div style="position:relative;height:430px">
+      <div class="th t3" style="position:absolute;right:0;top:0;width:78%;border-radius:18px;box-shadow:0 40px 80px -30px rgba(4,40,20,.45)"><span class="tf">FINANCEMENT</span><b>Lever des fonds : <em>pitch</em> et investisseurs</b></div>
+      <div class="th t2" style="position:absolute;left:0;top:120px;width:62%;border-radius:18px;box-shadow:0 40px 80px -30px rgba(4,40,20,.45)"><span class="tf">JURIDIQUE</span><b>Créer sa <em>SARL</em> de A à Z</b></div>
+      <div style="position:absolute;right:6%;bottom:0;width:62%;background:var(--a-s1);border:1px solid var(--a-line);border-radius:18px;padding:16px;box-shadow:0 40px 80px -30px rgba(4,40,20,.35)">
+        <div style="display:flex;gap:12px;align-items:center"><i class="av" style="--h:150">YK</i><div style="min-width:0"><b style="font-size:14px">Trouver et valider son idée startup</b><div style="font-size:12px;color:var(--a-mut)">Yacine Kheddaoui · Module 1 · 7 épisodes</div></div></div>
+        <div class="bar-p" style="margin:14px 0 6px"><i style="width:57%"></i></div><div style="font-size:12px;color:var(--a-mut)">Leçon 5 · Les 3 questions pour valider une idée</div></div>
     </div>
   </div>
+
+  <div class="sec" style="padding-top:20px">
+    <div class="sec-h"><h5>Ce que vous allez apprendre</h5></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <div class="lrn"><b>Idéation</b><span>Tester une idée avec de vrais clients avant d’y mettre un dinar.</span></div>
+      <div class="lrn"><b>Juridique et création</b><span>Choisir entre SARL, EURL, auto-entrepreneur ; le CNRC pas à pas.</span></div>
+      <div class="lrn"><b>Fiscalité</b><span>IFU, G12, CASNOS : ce que vous devez payer et quand.</span></div>
+      <div class="lrn"><b>Financement</b><span>Pitch deck, Label Startup, ASF, business angels.</span></div>
+      <div class="lrn"><b>Marketing et ventes</b><span>Vos premiers clients avec un petit budget, la vente B2B.</span></div>
+      <div class="lrn"><b>Finance</b><span>Business model, prévisionnel, trésorerie.</span></div>
+    </div>
+  </div>
+
   <div class="sec">
-    <div style="border-radius:20px;padding:34px 40px;display:flex;align-items:center;gap:36px;background:var(--a-grad);position:relative;overflow:hidden">
-      <div style="flex:1"><div style="font:800 12px var(--display);letter-spacing:.2em;opacity:.85">ACADEMY PASS</div><h4 style="font-size:32px;font-weight:800;margin:8px 0 6px">Tous les cours. Un seul abonnement.</h4><p style="margin:0;opacity:.9">24 cours, 9 domaines, de nouveaux épisodes chaque mois. Sans engagement.</p></div>
-      <div style="text-align:right"><div style="font:800 34px var(--display)">2 320 DA<small style="font-size:14px;font-weight:600"> / mois</small></div><div style="font-size:13px;opacity:.85"><s>2 900 DA</s> · votre remise Founder −20%</div></div>
-      <span class="btn w lg">S’abonner</span>
+    <div class="sec-h"><h5>Comment ça marche</h5></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <div class="step"><i>1</i><b>Connectez-vous avec votre compte Metwork</b><span>Le même compte que pour les espaces, les consultations et vos factures.</span></div>
+      <div class="step"><i>2</i><b>Choisissez votre accès</b><span>L’Academy Pass pour tout regarder, ou un cours acheté une fois et gardé à vie.</span></div>
+      <div class="step"><i>3</i><b>Apprenez à votre rythme</b><span>Sur téléphone ou ordinateur, reprenez où vous étiez, et recevez votre certificat à la fin.</span></div>
     </div>
   </div>
-  <div class="sec" style="padding-bottom:44px">
-    <div class="sec-h"><h5>Apprenez avec les meilleurs</h5><span>Tous les mentors →</span></div>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:18px">
-      <div style="text-align:center;background:var(--a-s1);border:1px solid var(--a-line);border-radius:16px;padding:20px 12px"><i class="av l" style="--h:150">KB</i><h6 style="margin-top:10px;font-size:15px">Karim Bensalah</h6><div style="color:var(--a-mut);font-size:12px">Coach startup · 3 cours</div></div>
-      <div style="text-align:center;background:var(--a-s1);border:1px solid var(--a-line);border-radius:16px;padding:20px 12px"><i class="av l" style="--h:110">NM</i><h6 style="margin-top:10px;font-size:15px">Nadia Merabet</h6><div style="color:var(--a-mut);font-size:12px">Juriste d’affaires · 2 cours</div></div>
-      <div style="text-align:center;background:var(--a-s1);border:1px solid var(--a-line);border-radius:16px;padding:20px 12px"><i class="av l" style="--h:200">SK</i><h6 style="margin-top:10px;font-size:15px">Sofiane Kaci</h6><div style="color:var(--a-mut);font-size:12px">Investisseur · 2 cours</div></div>
-      <div style="text-align:center;background:var(--a-s1);border:1px solid var(--a-line);border-radius:16px;padding:20px 12px"><i class="av l" style="--h:20">YH</i><h6 style="margin-top:10px;font-size:15px">Yasmine Haddad</h6><div style="color:var(--a-mut);font-size:12px">Expert-comptable · 2 cours</div></div>
-      <div style="text-align:center;background:var(--a-s1);border:1px solid var(--a-line);border-radius:16px;padding:20px 12px"><i class="av l" style="--h:320">LB</i><h6 style="margin-top:10px;font-size:15px">Lina Bouzid</h6><div style="color:var(--a-mut);font-size:12px">Growth marketer · 1 cours</div></div>
+
+  <div class="sec" style="padding-top:6px">
+    <div class="sec-h"><h5>Quelques cours</h5><span>Voir tous les cours →</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
+      <div class="card"><div class="th t1"><span class="pass">PASS</span><span class="dur">14 min</span><span class="tf">IDÉATION</span><b>Trouver et valider son <em>idée</em></b></div><h6>Trouver et valider son idée startup</h6><div class="by"><i class="av s" style="--h:150">YK</i>Yacine Kheddaoui</div><div><span class="price">2 900 DA</span></div></div>
+      <div class="card"><div class="th t2"><span class="pass">PASS</span><span class="dur">2 h 40</span><span class="tf">JURIDIQUE</span><b>Créer sa <em>SARL</em> en Algérie de A à Z</b></div><h6>Créer sa SARL en Algérie de A à Z</h6><div class="by"><i class="av s" style="--h:110">NM</i>Nadia Merabet</div><div><span class="price">3 900 DA</span></div></div>
+      <div class="card"><div class="th t3"><span class="pass">PASS</span><span class="dur">3 h 05</span><span class="tf">FINANCEMENT</span><b>Lever des fonds : <em>pitch</em> et investisseurs</b></div><h6>Lever des fonds : pitch et investisseurs</h6><div class="by"><i class="av s" style="--h:200">SK</i>Sofiane Kaci</div><div><span class="price">6 900 DA</span></div></div>
+      <div class="card"><div class="th t7"><span class="dur">2 h 15</span><span class="tf">MARKETING</span><b>Marketing digital à <em>petit budget</em></b></div><h6>Marketing digital à petit budget</h6><div class="by"><i class="av s" style="--h:320">LB</i>Lina Bouzid</div><div><span class="price">4 500 DA</span></div></div>
+    </div>
+  </div>
+
+  <div class="sec" style="padding-bottom:48px">
+    <div style="border-radius:20px;padding:34px 40px;display:flex;align-items:center;gap:36px;background:var(--a-grad);color:#fff">
+      <div style="flex:1"><div style="font:800 12px var(--display);letter-spacing:.2em;opacity:.85">ACADEMY PASS</div><h4 style="font-size:30px;font-weight:800;margin:8px 0 6px;color:#fff">Tous les cours. Un seul abonnement.</h4><p style="margin:0;opacity:.9">Sans engagement · annuel −20% · Founder et Premium −20% en plus.</p></div>
+      <div style="text-align:right"><div style="font:800 34px var(--display)">3 500 DA<small style="font-size:14px;font-weight:600"> / mois</small></div><div style="font-size:13px;opacity:.85">ou 33 600 DA / an</div></div>
+      <span class="btn w lg">S’abonner</span>
     </div>
   </div>
 </div></div></div></div>
@@ -555,7 +592,7 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
         <h4 style="font-size:40px;font-weight:800;line-height:1.06;letter-spacing:-.03em">Trouver et valider son idée startup</h4>
         <p style="color:var(--a-mut);font-size:16px;margin:12px 0 16px;max-width:58ch">Adoptez le bon état d’esprit, posez-vous les bonnes questions et évaluez votre idée avec la méthode du Design Thinking.</p>
         <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--a-mut)"><span class="pill" style="background:rgba(233,196,106,.16);color:var(--a-gold)">Meilleure vente</span><span><b style="color:var(--a-gold)">4,9</b> <span class="stars">★★★★★</span> (212 avis)</span><span>1 480 apprenants</span><span>Mis à jour en octobre 2026</span></div>
-        <div style="display:flex;gap:10px;align-items:center;margin-top:16px;font-size:13.5px"><i class="av s" style="--h:150">KB</i>Par <b style="color:var(--a-acc)">Karim Bensalah</b> · Darija + français · Débutant</div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:16px;font-size:13.5px"><i class="av s" style="--h:150">YK</i>Par <b style="color:var(--a-acc)">Yacine Kheddaoui</b> · Darija + français · Débutant</div>
       </div>
     </div>
   </div>
@@ -566,7 +603,7 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
           <span>✓ Reconnaître les croyances qui bloquent un projet</span><span>✓ Passer d’un fixed mindset à un growth mindset</span>
           <span>✓ Tester une idée : désirable, faisable, viable</span><span>✓ Appliquer les 5 phases du Design Thinking</span>
           <span>✓ Mener des entretiens avec de vrais clients</span><span>✓ Décider : continuer, pivoter ou abandonner</span></div></div>
-      <div><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><h5 style="font-size:19px">Programme</h5><span style="font-size:13px;color:var(--a-mut)">4 modules · 26 leçons · 2 h 10 · 4 quiz</span></div>
+      <div><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><h5 style="font-size:19px">Programme</h5><span style="font-size:13px;color:var(--a-mut)">Module 1 disponible · 7 leçons · 14 min · 3 modules à venir</span></div>
         <div style="border:1px solid var(--a-line);border-radius:16px;overflow:hidden">
           <div style="padding:14px 18px;background:var(--a-s1);display:flex;justify-content:space-between;font-weight:700"><span>▾ Module 1 · Trouver et valider son idée startup</span><span style="color:var(--a-mut);font-weight:500;font-size:13px">7 leçons · 14 min</span></div>
           <div style="padding:6px 8px;font-size:13.5px">
@@ -577,9 +614,9 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
             <div style="display:flex;justify-content:space-between;padding:9px 12px;color:var(--a-mut)"><span>🔒 Les 3 questions pour valider une idée</span><span>1:56</span></div>
             <div style="display:flex;justify-content:space-between;padding:9px 12px;color:var(--a-mut)"><span>🔒 Les 5 phases du Design Thinking</span><span>2:22</span></div>
             <div style="display:flex;justify-content:space-between;padding:9px 12px;color:var(--a-mut)"><span>🔒 Évaluer la pertinence d’une idée</span><span>1:47</span></div></div>
-          <div style="padding:14px 18px;border-top:1px solid var(--a-line);display:flex;justify-content:space-between"><span>▸ Module 2 · Étudier son marché</span><span style="color:var(--a-mut);font-size:13px">7 leçons · 38 min</span></div>
-          <div style="padding:14px 18px;border-top:1px solid var(--a-line);display:flex;justify-content:space-between"><span>▸ Module 3 · Construire un premier MVP</span><span style="color:var(--a-mut);font-size:13px">6 leçons · 41 min</span></div>
-          <div style="padding:14px 18px;border-top:1px solid var(--a-line);display:flex;justify-content:space-between"><span>▸ Module 4 · Le Business Model Canvas</span><span style="color:var(--a-mut);font-size:13px">6 leçons · 37 min</span></div>
+          <div style="padding:14px 18px;border-top:1px solid var(--a-line);display:flex;justify-content:space-between"><span>▸ Module 2 · Étudier son marché</span><span class="pill n" style="font-size:11px">Bientôt</span></div>
+          <div style="padding:14px 18px;border-top:1px solid var(--a-line);display:flex;justify-content:space-between"><span>▸ Module 3 · Construire un premier MVP</span><span class="pill n" style="font-size:11px">Bientôt</span></div>
+          <div style="padding:14px 18px;border-top:1px solid var(--a-line);display:flex;justify-content:space-between"><span>▸ Module 4 · Le Business Model Canvas</span><span class="pill n" style="font-size:11px">Bientôt</span></div>
         </div></div>
       <div style="display:grid;grid-template-columns:200px 1fr;gap:28px;align-items:start"><div><div style="font:800 54px var(--display);color:var(--a-gold);line-height:1">4,9</div><div class="stars">★★★★★</div><div style="font-size:12.5px;color:var(--a-mut);margin-top:4px">212 avis vérifiés</div>
         <div style="display:flex;flex-direction:column;gap:5px;margin-top:12px;font-size:11.5px;color:var(--a-mut)"><div style="display:flex;gap:8px;align-items:center">5★<div class="bar-p" style="flex:1"><i style="width:88%;background:var(--a-gold)"></i></div></div><div style="display:flex;gap:8px;align-items:center">4★<div class="bar-p" style="flex:1"><i style="width:9%;background:var(--a-gold)"></i></div></div><div style="display:flex;gap:8px;align-items:center">3★<div class="bar-p" style="flex:1"><i style="width:2%;background:var(--a-gold)"></i></div></div></div></div>
@@ -590,15 +627,15 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
       <div style="background:var(--a-s1);border:1px solid var(--a-line);border-radius:18px;overflow:hidden;box-shadow:0 40px 90px -30px rgba(0,0,0,.8);position:relative">
         <div class="th t1" style="border-radius:0"><span class="tf">BANDE-ANNONCE · 1:30</span><b>Trouver et valider son <em>idée</em></b><span style="position:absolute;inset:0;display:grid;place-items:center"><span style="width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.95);display:grid;place-items:center"><i class="ico play" style="border-left-color:#04150C;margin-left:5px"></i></span></span></div>
         <div style="padding:20px 22px;display:flex;flex-direction:column;gap:12px">
-          <div style="display:flex;align-items:baseline;gap:10px"><span style="font:800 32px var(--display)">3 920 DA</span><s style="color:var(--a-mut)">4 900 DA</s><span class="pbadge">−20% FOUNDER</span></div>
+          <div style="display:flex;align-items:baseline;gap:10px"><span style="font:800 32px var(--display)">2 320 DA</span><s style="color:var(--a-mut)">2 900 DA</s><span class="pbadge">−20% FOUNDER</span></div>
           <span class="btn p lg" style="width:100%">Acheter le cours</span>
           <span class="btn s lg" style="width:100%">♡ Ajouter à ma liste</span>
           <div style="display:flex;align-items:center;gap:10px;color:var(--a-mut);font-size:12px"><span style="flex:1;height:1px;background:var(--a-line)"></span>ou<span style="flex:1;height:1px;background:var(--a-line)"></span></div>
-          <div style="border:1px solid rgba(46,204,113,.4);border-radius:12px;padding:12px 14px;font-size:13px"><b style="color:var(--a-acc)">Inclus dans l’Academy Pass</b><br><span style="color:var(--a-mut)">Ce cours et 23 autres pour 2 320 DA / mois.</span> <b>S’abonner →</b></div>
-          <ul style="margin:4px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px;font-size:13px;color:var(--a-mut)"><li>▸ Accès à vie sur votre compte Metwork</li><li>▸ 26 leçons vidéo · 2 h 10</li><li>▸ 6 fiches pratiques à télécharger</li><li>▸ 4 quiz · certificat de réussite</li><li>▸ Questions au mentor</li><li>▸ Remboursable 7 jours (moins de 25% vu)</li></ul>
+          <div style="border:1px solid rgba(46,204,113,.4);border-radius:12px;padding:12px 14px;font-size:13px"><b style="color:var(--a-acc)">Inclus dans l’Academy Pass</b><br><span style="color:var(--a-mut)">Ce cours et 23 autres pour 2 800 DA / mois (Founder).</span> <b>S’abonner →</b></div>
+          <ul style="margin:4px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px;font-size:13px;color:var(--a-mut)"><li>▸ Accès à vie sur votre compte Metwork</li><li>▸ 7 leçons vidéo · 14 min · les prochains modules inclus</li><li>▸ 6 fiches pratiques à télécharger</li><li>▸ Quiz · certificat de réussite</li><li>▸ Questions au mentor</li><li>▸ Remboursable 7 jours (moins de 25% vu)</li></ul>
           <div style="font-size:12px;color:var(--a-mut);text-align:center">Wallet · CIB · Edahabia</div>
         </div></div>
-      <div style="margin-top:20px;border:1px solid var(--a-line);border-radius:16px;padding:18px"><div style="display:flex;gap:12px;align-items:center"><i class="av l" style="--h:150">KB</i><div><h6 style="font-size:16px">Karim Bensalah</h6><div style="font-size:12.5px;color:var(--a-mut)">Coach startup · 8 ans d’incubation</div></div></div><div style="display:flex;gap:16px;font-size:12.5px;color:var(--a-mut);margin:12px 0"><span>★ 4,9</span><span>3 cours</span><span>3 900 apprenants</span></div><span class="btn s" style="width:100%">Voir le profil</span></div>
+      <div style="margin-top:20px;border:1px solid var(--a-line);border-radius:16px;padding:18px"><div style="display:flex;gap:12px;align-items:center"><i class="av l" style="--h:150">YK</i><div><h6 style="font-size:16px">Yacine Kheddaoui</h6><div style="font-size:12.5px;color:var(--a-mut)">Mentor Metwork · Startup Academy</div></div></div><div style="display:flex;gap:16px;font-size:12.5px;color:var(--a-mut);margin:12px 0"><span>★ 4,9</span><span>3 cours</span><span>3 900 apprenants</span></div><span class="btn s" style="width:100%">Voir le profil</span></div>
     </div>
   </div>
 </div></div></div></div>
@@ -616,18 +653,18 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
     <span class="pill">Academy Pass</span>
     <h4 style="font-size:50px;font-weight:800;letter-spacing:-.035em;margin:16px 0 10px">Apprenez tout. Payez une fois par mois.</h4>
     <p style="color:var(--a-mut);font-size:16px;margin:0 auto;max-width:56ch">Accès à tous les cours inclus, aux nouveaux épisodes dès leur sortie et aux certificats. Annulez quand vous voulez depuis votre compte.</p>
-    <div style="display:inline-flex;margin-top:26px;background:var(--a-s1);border:1px solid var(--a-line);border-radius:12px;padding:4px"><span class="btn" style="height:36px;background:#fff;color:#04150C">Mensuel</span><span class="btn" style="height:36px;color:var(--a-mut)">Annuel · 2 mois offerts</span></div>
+    <div style="display:inline-flex;margin-top:26px;background:var(--a-s1);border:1px solid var(--a-line);border-radius:12px;padding:4px"><span class="btn" style="height:36px;background:#fff;color:#04150C">Mensuel</span><span class="btn" style="height:36px;color:var(--a-mut)">Annuel · −20%</span></div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;padding:10px 120px 30px">
     <div style="border:1px solid var(--a-line);border-radius:20px;padding:26px;background:var(--a-s1)"><h6 style="font-size:16px">Cours à l’unité</h6><div style="font:800 30px var(--display);margin:12px 0 2px">dès 2 900 DA</div><div style="color:var(--a-mut);font-size:13px;margin-bottom:18px">par cours, accès à vie</div><ul style="list-style:none;padding:0;margin:0 0 22px;display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:var(--a-mut)"><li>✓ Un cours, pour toujours</li><li>✓ Certificat de réussite</li><li>✓ Mises à jour du cours</li></ul><span class="btn s" style="width:100%">Parcourir le catalogue</span></div>
-    <div style="border-radius:20px;padding:26px;background:linear-gradient(170deg,#0D4A29,#071A10 70%);border:1px solid var(--a-acc);position:relative;box-shadow:0 40px 90px -30px rgba(4,165,79,.55)"><span class="pbadge" style="position:absolute;top:-12px;left:26px">VOTRE PRIX FOUNDER</span><h6 style="font-size:16px">Academy Pass · mensuel</h6><div style="display:flex;align-items:baseline;gap:10px;margin:12px 0 2px"><span style="font:800 40px var(--display)">2 320 DA</span><s style="color:var(--a-mut)">2 900</s></div><div style="color:var(--a-mut);font-size:13px;margin-bottom:18px">par mois · renouvelé depuis votre wallet</div><ul style="list-style:none;padding:0;margin:0 0 22px;display:flex;flex-direction:column;gap:9px;font-size:13.5px"><li>✓ 24 cours inclus, 9 domaines</li><li>✓ Nouveaux cours chaque mois</li><li>✓ Certificats inclus</li><li>✓ Questions aux mentors</li><li>✓ Sans engagement</li></ul><span class="btn p lg" style="width:100%">Commencer le Pass</span></div>
-    <div style="border:1px solid var(--a-line);border-radius:20px;padding:26px;background:var(--a-s1)"><h6 style="font-size:16px">Academy Pass · annuel</h6><div style="display:flex;align-items:baseline;gap:10px;margin:12px 0 2px"><span style="font:800 30px var(--display)">23 200 DA</span><s style="color:var(--a-mut)">29 000</s></div><div style="color:var(--a-mut);font-size:13px;margin-bottom:18px">par an · soit 1 933 DA / mois</div><ul style="list-style:none;padding:0;margin:0 0 22px;display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:var(--a-mut)"><li>✓ Tout le Pass mensuel</li><li>✓ 2 mois offerts</li><li>✓ Payé une fois, pas de prélèvement</li></ul><span class="btn s" style="width:100%">Choisir l’annuel</span></div>
+    <div style="border-radius:20px;padding:26px;background:linear-gradient(170deg,#0D4A29,#071A10 70%);border:1px solid var(--a-acc);position:relative;box-shadow:0 40px 90px -30px rgba(4,165,79,.55)"><span class="pbadge" style="position:absolute;top:-12px;left:26px">VOTRE PRIX FOUNDER</span><h6 style="font-size:16px">Academy Pass · mensuel</h6><div style="display:flex;align-items:baseline;gap:10px;margin:12px 0 2px"><span style="font:800 40px var(--display)">2 800 DA</span><s style="color:var(--a-mut)">3 500</s></div><div style="color:var(--a-mut);font-size:13px;margin-bottom:18px">par mois · renouvelé depuis votre wallet</div><ul style="list-style:none;padding:0;margin:0 0 22px;display:flex;flex-direction:column;gap:9px;font-size:13.5px"><li>✓ 24 cours inclus, 9 domaines</li><li>✓ Nouveaux cours chaque mois</li><li>✓ Certificats inclus</li><li>✓ Questions aux mentors</li><li>✓ Sans engagement</li></ul><span class="btn p lg" style="width:100%">Commencer le Pass</span></div>
+    <div style="border:1px solid var(--a-line);border-radius:20px;padding:26px;background:var(--a-s1)"><h6 style="font-size:16px">Academy Pass · annuel</h6><div style="display:flex;align-items:baseline;gap:10px;margin:12px 0 2px"><span style="font:800 30px var(--display)">26 880 DA</span><s style="color:var(--a-mut)">33 600</s></div><div style="color:var(--a-mut);font-size:13px;margin-bottom:18px">par an · soit 2 240 DA / mois</div><ul style="list-style:none;padding:0;margin:0 0 22px;display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:var(--a-mut)"><li>✓ Tout le Pass mensuel</li><li>✓ −20% sur 12 mois</li><li>✓ Payé une fois, pas de prélèvement</li></ul><span class="btn s" style="width:100%">Choisir l’annuel</span></div>
   </div>
   <div style="padding:10px 120px 50px;display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13.5px">
     <div style="border-top:1px solid var(--a-line);padding-top:14px"><b>Que se passe-t-il si j’annule ?</b><p style="margin:6px 0 0;color:var(--a-mut)">Vous gardez l’accès jusqu’à la fin du mois payé. Les certificats obtenus restent à vous.</p></div>
     <div style="border-top:1px solid var(--a-line);padding-top:14px"><b>Puis-je télécharger les vidéos ?</b><p style="margin:6px 0 0;color:var(--a-mut)">Non. Les cours se regardent en streaming sur Metwork, sur ordinateur et téléphone.</p></div>
     <div style="border-top:1px solid var(--a-line);padding-top:14px"><b>Le renouvellement est automatique ?</b><p style="margin:6px 0 0;color:var(--a-mut)">Oui pour le mensuel, depuis votre wallet. Rappel par email et WhatsApp 3 jours avant.</p></div>
-    <div style="border-top:1px solid var(--a-line);padding-top:14px"><b>Je ne suis pas Founder ?</b><p style="margin:6px 0 0;color:var(--a-mut)">Le Pass est à 2 900 DA. Passez Founder pour −20% sur le Pass, les cours, les espaces et les consultations.</p></div>
+    <div style="border-top:1px solid var(--a-line);padding-top:14px"><b>Je ne suis pas Founder ?</b><p style="margin:6px 0 0;color:var(--a-mut)">Le Pass est à 3 500 DA / mois. Passez Founder pour −20% sur le Pass, les cours, les espaces et les consultations.</p></div>
   </div>
 </div></div></div></div>
 </section>
@@ -652,12 +689,12 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
     </div>
     <div style="background:var(--a-s1);border:1px solid var(--a-line);border-radius:18px;padding:22px;align-self:start;display:flex;flex-direction:column;gap:14px">
       <h6 style="font-size:15px">Récapitulatif</h6>
-      <div style="display:flex;gap:14px"><div class="th t1" style="width:120px;flex:none;padding:8px"><b style="font-size:10px">Trouver et valider son idée</b></div><div><b style="font-size:14px">Trouver et valider son idée startup</b><div style="font-size:12.5px;color:var(--a-mut);margin-top:3px">Karim Bensalah · accès à vie</div></div></div>
+      <div style="display:flex;gap:14px"><div class="th t1" style="width:120px;flex:none;padding:8px"><b style="font-size:10px">Trouver et valider son idée</b></div><div><b style="font-size:14px">Trouver et valider son idée startup</b><div style="font-size:12.5px;color:var(--a-mut);margin-top:3px">Yacine Kheddaoui · accès à vie</div></div></div>
       <div style="border-top:1px solid var(--a-line);padding-top:12px;display:flex;flex-direction:column;gap:8px;font-size:13.5px">
-        <div style="display:flex;justify-content:space-between"><span style="color:var(--a-mut)">Prix du cours</span><span>4 900 DA</span></div>
-        <div style="display:flex;justify-content:space-between"><span style="color:var(--a-gold)">Remise Founder −20%</span><span style="color:var(--a-gold)">−980 DA</span></div>
-        <div style="display:flex;justify-content:space-between;border-top:1px solid var(--a-line);padding-top:10px;font:800 20px var(--display)"><span>Total</span><span>3 920 DA</span></div></div>
-      <span class="btn p lg" style="width:100%">Payer 3 920 DA avec le wallet</span>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--a-mut)">Prix du cours</span><span>2 900 DA</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--a-gold)">Remise Founder −20%</span><span style="color:var(--a-gold)">−580 DA</span></div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid var(--a-line);padding-top:10px;font:800 20px var(--display)"><span>Total</span><span>2 320 DA</span></div></div>
+      <span class="btn p lg" style="width:100%">Payer 2 320 DA avec le wallet</span>
       <div style="font-size:12px;color:var(--a-mut);text-align:center">Reçu envoyé par email · facture disponible dans votre compte</div>
     </div>
   </div>
@@ -694,7 +731,7 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
       </div>
     </div>
     <aside style="border-left:1px solid var(--a-line);background:var(--a-s1);padding:16px 12px;min-height:760px">
-      <div style="padding:4px 12px 12px;display:flex;justify-content:space-between;align-items:center"><b style="font-family:var(--display)">Contenu du cours</b><span style="font-size:12px;color:var(--a-mut)">2 h 10</span></div>
+      <div style="padding:4px 12px 12px;display:flex;justify-content:space-between;align-items:center"><b style="font-family:var(--display)">Contenu du cours</b><span style="font-size:12px;color:var(--a-mut)">14 min</span></div>
       <div style="padding:8px 12px;font-size:12px;font-weight:700;color:var(--a-mut);letter-spacing:.06em">MODULE 1 · 4/7</div>
       <div class="lesson"><span class="ck d"></span><div>Introduction : ce que vous allez apprendre<small>1:12</small></div></div>
       <div class="lesson"><span class="ck d"></span><div>L’état d’esprit entrepreneurial<small>2:34</small></div></div>
@@ -705,8 +742,7 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
       <div class="lesson"><span class="ck"></span><div>Évaluer la pertinence d’une idée<small>1:47</small></div></div>
       <div class="lesson"><span class="ck"></span><div>Quiz · Module 1<small>5 questions</small></div></div>
       <div style="padding:14px 12px 8px;font-size:12px;font-weight:700;color:var(--a-mut);letter-spacing:.06em;border-top:1px solid var(--a-line);margin-top:8px">MODULE 2 · ÉTUDIER SON MARCHÉ</div>
-      <div class="lesson"><span class="ck"></span><div>Qui est vraiment votre client ?<small>5:40</small></div></div>
-      <div class="lesson"><span class="ck"></span><div>Mener 10 entretiens en une semaine<small>6:15</small></div></div>
+      <div style="padding:4px 12px;font-size:12.5px;color:var(--a-mut)">Bientôt · vous serez notifié à la sortie</div>
       <div style="padding:14px 12px 8px;font-size:12px;font-weight:700;color:var(--a-mut);letter-spacing:.06em">MODULE 3 · MVP <span style="float:right">6 leçons</span></div>
       <div style="padding:8px 12px;font-size:12px;font-weight:700;color:var(--a-mut);letter-spacing:.06em">MODULE 4 · BUSINESS MODEL <span style="float:right">6 leçons</span></div>
     </aside>
@@ -726,7 +762,7 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
     <div style="background:var(--a-s1);border:1px solid var(--a-line);border-radius:16px;padding:18px;display:flex;gap:16px;align-items:center"><span class="ring" style="--p:70" data-v="70%"></span><div><b style="font-family:var(--display)">Objectif de la semaine</b><div style="font-size:12.5px;color:var(--a-mut)">42 / 60 min</div></div></div>
     <div style="background:var(--a-s1);border:1px solid var(--a-line);border-radius:16px;padding:18px"><div style="font-size:12.5px;color:var(--a-mut)">Temps d’apprentissage</div><div style="font:800 28px var(--display)">11 h 20</div><div style="font-size:12px;color:var(--a-acc)">+2 h 05 ce mois-ci</div></div>
     <div style="background:var(--a-s1);border:1px solid var(--a-line);border-radius:16px;padding:18px"><div style="font-size:12.5px;color:var(--a-mut)">Certificats</div><div style="font:800 28px var(--display)">2</div><div style="font-size:12px;color:var(--a-mut)">Fiscalité AE · Pitch deck</div></div>
-    <div style="border-radius:16px;padding:18px;background:var(--a-grad)"><div style="font:800 11px var(--display);letter-spacing:.18em;opacity:.85">ACADEMY PASS · ACTIF</div><div style="font:800 20px var(--display);margin:6px 0 2px">Renouvelé le 14 nov.</div><div style="font-size:12.5px;opacity:.9">2 320 DA depuis le wallet · <u>Gérer</u></div></div>
+    <div style="border-radius:16px;padding:18px;background:var(--a-grad)"><div style="font:800 11px var(--display);letter-spacing:.18em;opacity:.85">ACADEMY PASS · ACTIF</div><div style="font:800 20px var(--display);margin:6px 0 2px">Renouvelé le 14 nov.</div><div style="font-size:12.5px;opacity:.9">2 800 DA depuis le wallet · <u>Gérer</u></div></div>
   </div>
   <div style="padding:20px 40px 0"><div class="tabs"><span class="on">En cours · 3</span><span>Terminés · 2</span><span>Ma liste · 4</span><span>Certificats</span></div></div>
   <div style="padding:22px 40px 48px;display:flex;flex-direction:column;gap:14px">
@@ -771,20 +807,20 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
 
 <!-- 9. MENTOR PROFILE -->
 <section class="mock" id="m-mentor">
-<div class="mock-h"><h3>Mentor public profile</h3><span class="route">/academy/mentors/karim-bensalah</span></div>
+<div class="mock-h"><h3>Mentor public profile</h3><span class="route">/academy/mentors/yacine-kheddaoui</span></div>
 <p class="mock-note">Built from the existing mentor record (photo, bio, expertise), so there is no second profile to maintain. Lists every course of the mentor, rating across courses, and a link to book a paid consultation with them, which feeds the consultation business.</p>
 <div class="fit"><div class="stage" data-w="1280"><div class="win">
-<div class="bar"><i></i><i></i><i></i><div class="url">metwork.dz/<b>fr/academy/mentors/karim-bensalah</b></div></div>
+<div class="bar"><i></i><i></i><i></i><div class="url">metwork.dz/<b>fr/academy/mentors/yacine-kheddaoui</b></div></div>
 <div class="ac">
   <div class="anav"><div class="logo"><span class="mk">M</span><div>Metwork<small>ACADEMY</small></div></div><div class="links"><span>Accueil</span><span>Catalogue</span><span class="on">Mentors</span><span>Academy Pass</span></div><div class="search">Rechercher…</div><div class="right"><i class="av" style="--h:160">AB</i></div></div>
   <div style="height:150px;background:linear-gradient(120deg,#057A41,#04150C 70%),repeating-linear-gradient(115deg,rgba(255,255,255,.04) 0 2px,transparent 2px 16px)"></div>
   <div style="padding:0 60px 48px;display:grid;grid-template-columns:320px 1fr;gap:48px">
     <div style="margin-top:-64px;display:flex;flex-direction:column;gap:14px">
-      <i class="av xl" style="--h:150;border:5px solid var(--a-bg)">KB</i>
-      <h4 style="font-size:28px;font-weight:800">Karim Bensalah</h4>
-      <div style="color:var(--a-mut);font-size:14px;margin-top:-8px">Coach startup · ancien chargé d’incubation</div>
+      <i class="av xl" style="--h:150;border:5px solid var(--a-bg)">YK</i>
+      <h4 style="font-size:28px;font-weight:800">Yacine Kheddaoui</h4>
+      <div style="color:var(--a-mut);font-size:14px;margin-top:-8px">Mentor Metwork · Startup Academy</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center"><div style="background:var(--a-s1);border-radius:12px;padding:10px"><b style="font:800 18px var(--display)">4,9</b><div style="font-size:11px;color:var(--a-mut)">note</div></div><div style="background:var(--a-s1);border-radius:12px;padding:10px"><b style="font:800 18px var(--display)">3 900</b><div style="font-size:11px;color:var(--a-mut)">apprenants</div></div><div style="background:var(--a-s1);border-radius:12px;padding:10px"><b style="font:800 18px var(--display)">3</b><div style="font-size:11px;color:var(--a-mut)">cours</div></div></div>
-      <p style="font-size:13.5px;color:var(--a-mut);margin:0">8 ans à accompagner des porteurs de projet à Alger et Oran. Plus de 120 startups passées par ses ateliers de Design Thinking, dont 14 labellisées.</p>
+      <p style="font-size:13.5px;color:var(--a-mut);margin:0">La bio vient du profil mentor Metwork, rédigée par le mentor lui-même.</p>
       <div style="display:flex;flex-wrap:wrap;gap:6px"><span class="pill n">Design Thinking</span><span class="pill n">Idéation</span><span class="pill n">Ventes B2B</span><span class="pill n">Pitch</span></div>
       <span class="btn s">+ Suivre</span>
       <div style="border:1px solid var(--a-line);border-radius:14px;padding:14px;font-size:13px"><b>Consultation 1:1</b><div style="color:var(--a-mut);margin:4px 0 10px">60 min · 6 000 DA · Founder −10%</div><span class="btn p" style="width:100%;height:36px">Réserver une consultation</span></div>
@@ -792,7 +828,7 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
     <div style="padding-top:28px">
       <div class="tabs"><span class="on">Cours · 3</span><span>Avis · 412</span><span>À propos</span></div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:22px">
-        <div class="card"><div class="th t1"><span class="pass">PASS</span><span class="dur">2 h 10</span><span class="tf">IDÉATION</span><b>Trouver et valider son <em>idée</em></b></div><h6>Trouver et valider son idée startup</h6><div class="row"><span class="stars">★★★★★</span>4,9 (212)</div><div><span class="price">4 900 DA</span></div></div>
+        <div class="card"><div class="th t1"><span class="pass">PASS</span><span class="dur">14 min</span><span class="tf">IDÉATION</span><b>Trouver et valider son <em>idée</em></b></div><h6>Trouver et valider son idée startup</h6><div class="row"><span class="stars">★★★★★</span>4,9 (212)</div><div><span class="price">2 900 DA</span></div></div>
         <div class="card"><div class="th t4"><span class="pass">PASS</span><span class="dur">2 h 35</span><span class="tf">VENTES</span><b>Vendre en <em>B2B</em> en Algérie</b></div><h6>Vendre en B2B en Algérie</h6><div class="row"><span class="stars">★★★★★</span>4,8 (143)</div><div><span class="price">5 500 DA</span></div></div>
         <div class="card"><div class="th t8"><span class="dur">1 h 05</span><span class="tf">IDÉATION</span><b>Atelier <em>Design Thinking</em></b></div><h6>Atelier Design Thinking en pratique</h6><div class="row"><span class="stars">★★★★★</span>4,9 (57)</div><div><span class="price">2 900 DA</span></div></div>
       </div>
@@ -854,18 +890,18 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
     <div class="grp">Academy</div><a class="on"><span class="ic"></span>Studio</a><a><span class="ic"></span>Questions <b style="margin-left:auto;background:#2ECC71;color:#04150C;border-radius:9px;padding:0 7px;font-size:11px">5</b></a><a><span class="ic"></span>Statistiques</a>
     <div class="grp">Argent</div><a><span class="ic"></span>Wallet</a><a><span class="ic"></span>Factures</a></nav>
   <div class="lmain">
-    <div class="lhead"><div><h4>Studio Academy</h4><p>Votre part : <b>40%</b> des ventes et du temps de visionnage Pass · fixée par Metwork</p></div><span class="lbtn">+ Nouveau cours</span></div>
+    <div class="lhead"><div><h4>Studio Academy</h4><p>Votre part : <b>30%</b> des ventes et du temps de visionnage Pass · fixée par Metwork</p></div><span class="lbtn">+ Nouveau cours</span></div>
     <div class="kpis">
-      <div class="kpi hero"><span>Gains d’octobre (estimation)</span><b>48 640 DA</b><small>Pass calculé le 1er novembre</small></div>
-      <div class="kpi"><span>Ventes de cours</span><b>31 360 DA</b><small>+12 ventes ce mois</small></div>
-      <div class="kpi"><span>Minutes vues via le Pass</span><b>6 410 min</b><small>≈ 17 280 DA</small></div>
+      <div class="kpi hero"><span>Gains d’octobre (estimation)</span><b>21 920 DA</b><small>Pass calculé le 1er novembre</small></div>
+      <div class="kpi"><span>Ventes de cours</span><b>8 960 DA</b><small>+12 ventes ce mois</small></div>
+      <div class="kpi"><span>Minutes vues via le Pass</span><b>6 410 min</b><small>≈ 12 960 DA</small></div>
       <div class="kpi"><span>Taux de complétion</span><b>62%</b><small>moyenne Academy 48%</small></div>
     </div>
     <div class="lcard" style="padding:6px 8px"><table class="ltab">
       <thead><tr><th>Cours</th><th>Statut</th><th class="num">Apprenants</th><th class="num">Note</th><th class="num">Ventes · oct.</th><th class="num">Min. Pass · oct.</th><th></th></tr></thead>
       <tbody>
-      <tr><td><div style="display:flex;gap:12px;align-items:center"><div class="th t1 mini-th"><b>Trouver et valider</b></div><b>Trouver et valider son idée startup</b></div></td><td><span class="st ok">Publié</span></td><td class="num">1 480</td><td class="num">4,9</td><td class="num">8 · 23 520 DA</td><td class="num">4 120</td><td><span class="lbtn o" style="height:32px">Modifier</span></td></tr>
-      <tr><td><div style="display:flex;gap:12px;align-items:center"><div class="th t4 mini-th"><b>Vendre en B2B</b></div><b>Vendre en B2B en Algérie</b></div></td><td><span class="st ok">Publié</span></td><td class="num">1 120</td><td class="num">4,8</td><td class="num">4 · 7 840 DA</td><td class="num">2 290</td><td><span class="lbtn o" style="height:32px">Modifier</span></td></tr>
+      <tr><td><div style="display:flex;gap:12px;align-items:center"><div class="th t1 mini-th"><b>Trouver et valider</b></div><b>Trouver et valider son idée startup</b></div></td><td><span class="st ok">Publié</span></td><td class="num">1 480</td><td class="num">4,9</td><td class="num">8 · 6 960 DA</td><td class="num">4 120</td><td><span class="lbtn o" style="height:32px">Modifier</span></td></tr>
+      <tr><td><div style="display:flex;gap:12px;align-items:center"><div class="th t4 mini-th"><b>Vendre en B2B</b></div><b>Vendre en B2B en Algérie</b></div></td><td><span class="st ok">Publié</span></td><td class="num">1 120</td><td class="num">4,8</td><td class="num">4 · 2 000 DA</td><td class="num">2 290</td><td><span class="lbtn o" style="height:32px">Modifier</span></td></tr>
       <tr><td><div style="display:flex;gap:12px;align-items:center"><div class="th t8 mini-th"><b>Design Thinking</b></div><b>Atelier Design Thinking en pratique</b></div></td><td><span class="st rv">En revue</span></td><td class="num">n/a</td><td class="num">n/a</td><td class="num">n/a</td><td class="num">n/a</td><td><span class="lbtn o" style="height:32px">Voir</span></td></tr>
       <tr><td><div style="display:flex;gap:12px;align-items:center"><div class="th t6 mini-th"><b>Négociation</b></div><b>Négocier ses premiers contrats</b></div></td><td><span class="st dr">Brouillon · 60%</span></td><td class="num">n/a</td><td class="num">n/a</td><td class="num">n/a</td><td class="num">n/a</td><td><span class="lbtn o" style="height:32px">Continuer</span></td></tr>
       </tbody></table></div>
@@ -941,18 +977,18 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
     <div class="lhead"><div><h4>Cours Academy</h4><p>24 publiés · 2 en revue · 5 brouillons</p></div><div style="display:flex;gap:10px"><span class="lbtn o">Ordre de la page d’accueil</span><span class="lbtn">+ Créer un cours</span></div></div>
     <div class="kpis">
       <div class="kpi hero"><span>Revenus Academy · octobre</span><b>1 284 300 DA</b><small>+18% vs septembre</small></div>
-      <div class="kpi"><span>Abonnés Pass actifs</span><b>312</b><small>MRR 812 640 DA</small></div>
+      <div class="kpi"><span>Abonnés Pass actifs</span><b>312</b><small>MRR 961 800 DA</small></div>
       <div class="kpi"><span>Cours vendus · octobre</span><b>118</b><small>dont 41% Premium</small></div>
       <div class="kpi"><span>Désabonnement Pass</span><b>6,1%</b><small>objectif &lt; 8%</small></div>
     </div>
     <div class="lcard" style="border-color:#EBD9AE"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h6 style="font-size:15px">À examiner · 2</h6><span style="font-size:12.5px;color:var(--l-mut)">Délai moyen de revue : 2 jours</span></div>
-      <div style="display:grid;grid-template-columns:110px 1fr auto;gap:16px;align-items:center;padding:12px 0;border-top:1px solid var(--l-line)"><div class="th t8" style="padding:8px"><b style="font-size:9px">Design Thinking</b></div><div><b>Atelier Design Thinking en pratique</b><div style="font-size:12.5px;color:var(--l-mut)">Karim Bensalah · 3 modules · 1 h 05 · envoyé il y a 1 jour · 2 900 DA proposé</div></div><div style="display:flex;gap:8px"><span class="lbtn o" style="height:34px">Regarder</span><span class="lbtn r" style="height:34px">Demander des modifications</span><span class="lbtn" style="height:34px">Publier</span></div></div>
+      <div style="display:grid;grid-template-columns:110px 1fr auto;gap:16px;align-items:center;padding:12px 0;border-top:1px solid var(--l-line)"><div class="th t8" style="padding:8px"><b style="font-size:9px">Design Thinking</b></div><div><b>Atelier Design Thinking en pratique</b><div style="font-size:12.5px;color:var(--l-mut)">Yacine Kheddaoui · 3 modules · 1 h 05 · envoyé il y a 1 jour · 2 900 DA proposé</div></div><div style="display:flex;gap:8px"><span class="lbtn o" style="height:34px">Regarder</span><span class="lbtn r" style="height:34px">Demander des modifications</span><span class="lbtn" style="height:34px">Publier</span></div></div>
       <div style="display:grid;grid-template-columns:110px 1fr auto;gap:16px;align-items:center;padding:12px 0;border-top:1px solid var(--l-line)"><div class="th t5" style="padding:8px"><b style="font-size:9px">Export</b></div><div><b>Exporter depuis l’Algérie : les bases</b><div style="font-size:12.5px;color:var(--l-mut)">Mehdi Belkacem · 4 modules · 2 h 30 · envoyé il y a 3 jours · 5 500 DA proposé</div></div><div style="display:flex;gap:8px"><span class="lbtn o" style="height:34px">Regarder</span><span class="lbtn r" style="height:34px">Demander des modifications</span><span class="lbtn" style="height:34px">Publier</span></div></div></div>
     <div class="lcard" style="padding:6px 8px"><table class="ltab">
       <thead><tr><th>Cours</th><th>Mentor</th><th>Domaine</th><th>Statut</th><th class="num">Prix</th><th>Pass</th><th class="num">Ventes</th><th class="num">Note</th></tr></thead>
       <tbody>
       <tr><td><b>Créer sa SARL en Algérie de A à Z</b></td><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:110">NM</i>Nadia Merabet</div></td><td>Juridique</td><td><span class="st ok">Publié</span></td><td class="num">3 900 DA</td><td>✓</td><td class="num">402</td><td class="num">4,9</td></tr>
-      <tr><td><b>Trouver et valider son idée startup</b></td><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:150">KB</i>Karim Bensalah</div></td><td>Idéation</td><td><span class="st ok">Publié · à la une</span></td><td class="num">4 900 DA</td><td>✓</td><td class="num">318</td><td class="num">4,9</td></tr>
+      <tr><td><b>Trouver et valider son idée startup</b></td><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:150">YK</i>Yacine Kheddaoui</div></td><td>Idéation</td><td><span class="st ok">Publié · à la une</span></td><td class="num">2 900 DA</td><td>✓</td><td class="num">318</td><td class="num">4,9</td></tr>
       <tr><td><b>Lever des fonds : pitch et investisseurs</b></td><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:200">SK</i>Sofiane Kaci</div></td><td>Financement</td><td><span class="st ok">Publié</span></td><td class="num">6 900 DA</td><td>✓</td><td class="num">156</td><td class="num">4,8</td></tr>
       <tr><td><b>Négocier avec un business angel</b></td><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:270">MB</i>Mehdi Belkacem</div></td><td>Financement</td><td><span class="st ok">Publié</span></td><td class="num">5 500 DA</td><td style="color:var(--l-mut)">non</td><td class="num">41</td><td class="num">4,7</td></tr>
       </tbody></table></div>
@@ -973,22 +1009,22 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
   <div class="lmain">
     <div class="lhead"><div><h4>Règlement Pass · octobre 2026</h4><p>Période close le 31/10 à 23:59 · aperçu calculé le 01/11 à 02:00</p></div><div style="display:flex;gap:10px"><span class="lbtn o">Exporter CSV</span><span class="lbtn">Créditer les wallets · 5 mentors</span></div></div>
     <div class="kpis">
-      <div class="kpi"><span>Encaissé via le Pass (net)</span><b>812 640 DA</b><small>312 abonnés</small></div>
+      <div class="kpi"><span>Encaissé via le Pass (net)</span><b>961 800 DA</b><small>312 abonnés</small></div>
       <div class="kpi"><span>Minutes comptées</span><b>41 870</b><small>après plafonds anti-boucle</small></div>
-      <div class="kpi hero"><span>À verser aux mentors</span><b>334 210 DA</b><small>41% du Pass</small></div>
-      <div class="kpi"><span>Abonnés sans visionnage</span><b>38</b><small>98 040 DA restent à Metwork</small></div>
+      <div class="kpi hero"><span>À verser aux mentors</span><b>207 900 DA</b><small>22% du Pass</small></div>
+      <div class="kpi"><span>Abonnés sans visionnage</span><b>38</b><small>112 000 DA restent à Metwork</small></div>
     </div>
     <div class="lcard" style="padding:6px 8px"><table class="ltab">
       <thead><tr><th>Mentor</th><th class="num">Part</th><th class="num">Minutes</th><th class="num">Abonnés touchés</th><th class="num">Pass</th><th class="num">Ventes de cours</th><th class="num">Total octobre</th><th></th></tr></thead>
       <tbody>
-      <tr><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:110">NM</i><b>Nadia Merabet</b></div></td><td class="num"><span style="border:1px solid var(--l-line);border-radius:7px;padding:3px 8px">50%</span></td><td class="num">12 940</td><td class="num">171</td><td class="num">118 400 DA</td><td class="num">62 400 DA</td><td class="num"><b>180 800 DA</b></td><td><span style="color:var(--l-acc);font-size:12.5px;font-weight:700">Détail</span></td></tr>
-      <tr><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:150">KB</i><b>Karim Bensalah</b></div></td><td class="num"><span style="border:1px solid var(--l-line);border-radius:7px;padding:3px 8px">40%</span></td><td class="num">6 410</td><td class="num">134</td><td class="num">17 280 DA</td><td class="num">31 360 DA</td><td class="num"><b>48 640 DA</b></td><td><span style="color:var(--l-acc);font-size:12.5px;font-weight:700">Détail</span></td></tr>
-      <tr><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:200">SK</i><b>Sofiane Kaci</b></div></td><td class="num"><span style="border:1px solid var(--l-line);border-radius:7px;padding:3px 8px">50%</span></td><td class="num">9 880</td><td class="num">142</td><td class="num">96 300 DA</td><td class="num">53 820 DA</td><td class="num"><b>150 120 DA</b></td><td><span style="color:var(--l-acc);font-size:12.5px;font-weight:700">Détail</span></td></tr>
-      <tr><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:20">YH</i><b>Yasmine Haddad</b></div></td><td class="num"><span style="border:1px solid var(--l-line);border-radius:7px;padding:3px 8px">45%</span></td><td class="num">8 120</td><td class="num">119</td><td class="num">71 650 DA</td><td class="num">24 300 DA</td><td class="num"><b>95 950 DA</b></td><td><span style="color:var(--l-acc);font-size:12.5px;font-weight:700">Détail</span></td></tr>
-      <tr><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:320">LB</i><b>Lina Bouzid</b></div></td><td class="num"><span style="border:1px solid var(--l-line);border-radius:7px;padding:3px 8px">50%</span></td><td class="num">4 520</td><td class="num">88</td><td class="num">30 580 DA</td><td class="num">18 000 DA</td><td class="num"><b>48 580 DA</b></td><td><span style="color:var(--l-acc);font-size:12.5px;font-weight:700">Détail</span></td></tr>
+      <tr><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:110">NM</i><b>Nadia Merabet</b></div></td><td class="num"><span style="border:1px solid var(--l-line);border-radius:7px;padding:3px 8px">30%</span></td><td class="num">12 940</td><td class="num">171</td><td class="num">71 040 DA</td><td class="num">37 440 DA</td><td class="num"><b>108 480 DA</b></td><td><span style="color:var(--l-acc);font-size:12.5px;font-weight:700">Détail</span></td></tr>
+      <tr><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:150">YK</i><b>Yacine Kheddaoui</b></div></td><td class="num"><span style="border:1px solid var(--l-line);border-radius:7px;padding:3px 8px">30%</span></td><td class="num">6 410</td><td class="num">134</td><td class="num">12 960 DA</td><td class="num">8 960 DA</td><td class="num"><b>21 920 DA</b></td><td><span style="color:var(--l-acc);font-size:12.5px;font-weight:700">Détail</span></td></tr>
+      <tr><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:200">SK</i><b>Sofiane Kaci</b></div></td><td class="num"><span style="border:1px solid var(--l-line);border-radius:7px;padding:3px 8px">30%</span></td><td class="num">9 880</td><td class="num">142</td><td class="num">57 780 DA</td><td class="num">32 290 DA</td><td class="num"><b>90 070 DA</b></td><td><span style="color:var(--l-acc);font-size:12.5px;font-weight:700">Détail</span></td></tr>
+      <tr><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:20">YH</i><b>Yasmine Haddad</b></div></td><td class="num"><span style="border:1px solid var(--l-line);border-radius:7px;padding:3px 8px">30%</span></td><td class="num">8 120</td><td class="num">119</td><td class="num">47 770 DA</td><td class="num">16 200 DA</td><td class="num"><b>63 970 DA</b></td><td><span style="color:var(--l-acc);font-size:12.5px;font-weight:700">Détail</span></td></tr>
+      <tr><td><div style="display:flex;gap:8px;align-items:center"><i class="av lav" style="--h:320">LB</i><b>Lina Bouzid</b></div></td><td class="num"><span style="border:1px solid var(--l-line);border-radius:7px;padding:3px 8px">30%</span></td><td class="num">4 520</td><td class="num">88</td><td class="num">18 350 DA</td><td class="num">10 800 DA</td><td class="num"><b>29 150 DA</b></td><td><span style="color:var(--l-acc);font-size:12.5px;font-weight:700">Détail</span></td></tr>
       </tbody></table></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div class="lcard"><h6 style="font-size:15px;margin-bottom:8px">Modifier une part · Karim Bensalah</h6><div style="display:flex;gap:10px;align-items:center;font-size:13px"><span style="border:1px solid var(--l-line);border-radius:8px;padding:8px 12px;font-weight:700">40%</span><span style="color:var(--l-mut)">→</span><span style="border:2px solid var(--l-acc);border-radius:8px;padding:7px 12px;font-weight:700">45%</span><span class="lbtn" style="height:34px;margin-left:auto">Enregistrer</span></div><p style="font-size:12px;color:var(--l-mut);margin:10px 0 0">S’applique aux ventes et au visionnage à partir du 01/11/2026. Les ventes passées gardent leur part.</p></div>
+      <div class="lcard"><h6 style="font-size:15px;margin-bottom:8px">Modifier une part · Sofiane Kaci</h6><div style="display:flex;gap:10px;align-items:center;font-size:13px"><span style="border:1px solid var(--l-line);border-radius:8px;padding:8px 12px;font-weight:700">30%</span><span style="color:var(--l-mut)">→</span><span style="border:2px solid var(--l-acc);border-radius:8px;padding:7px 12px;font-weight:700">35%</span><span class="lbtn" style="height:34px;margin-left:auto">Enregistrer</span></div><p style="font-size:12px;color:var(--l-mut);margin:10px 0 0">S’applique aux ventes et au visionnage à partir du 01/11/2026. Les ventes passées gardent leur part.</p></div>
       <div class="lcard"><h6 style="font-size:15px;margin-bottom:8px">Historique</h6><div style="font-size:12.5px;display:flex;flex-direction:column;gap:6px;color:var(--l-mut)"><span><b style="color:var(--l-fg)">Septembre 2026</b> · 296 812 DA versés · 5 mentors · réglé le 01/10</span><span><b style="color:var(--l-fg)">Août 2026</b> · 241 090 DA versés · 4 mentors · réglé le 01/09</span><span><b style="color:var(--l-fg)">Juillet 2026</b> · 198 450 DA versés · 4 mentors · réglé le 01/08</span></div></div>
     </div>
   </div>
@@ -1004,7 +1040,7 @@ code,.mono{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft
 <div class="lt" style="padding:30px 40px 40px;display:flex;flex-direction:column;gap:18px">
   <div class="lhead"><div><h4>Vos avantages Founder</h4><p>Économisé depuis votre adhésion : <b style="color:var(--l-acc)">14 260 DA</b></p></div><span class="pbadge">★ FOUNDER</span></div>
   <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:16px">
-    <div style="border-radius:18px;padding:24px;background:linear-gradient(140deg,#0E3B1E,#04150C);color:#fff;position:relative;overflow:hidden"><span style="font:800 11px var(--display);letter-spacing:.2em;color:#2ECC71">NOUVEAU · STARTUP ACADEMY</span><div style="font:800 46px var(--display);margin:8px 0 2px;letter-spacing:-.03em">−20%</div><div style="font-size:15px;font-weight:600">sur tous les cours et l’Academy Pass</div><p style="font-size:13px;color:#BFD8C8;margin:10px 0 16px">Appliqué automatiquement au paiement. Vous avez économisé 980 DA sur « Trouver et valider son idée ».</p><span class="btn w" style="height:38px">Explorer l’Academy</span></div>
+    <div style="border-radius:18px;padding:24px;background:linear-gradient(140deg,#0E3B1E,#04150C);color:#fff;position:relative;overflow:hidden"><span style="font:800 11px var(--display);letter-spacing:.2em;color:#2ECC71">NOUVEAU · STARTUP ACADEMY</span><div style="font:800 46px var(--display);margin:8px 0 2px;letter-spacing:-.03em">−20%</div><div style="font-size:15px;font-weight:600">sur tous les cours et l’Academy Pass</div><p style="font-size:13px;color:#BFD8C8;margin:10px 0 16px">Appliqué automatiquement au paiement. Vous avez économisé 580 DA sur « Trouver et valider son idée ».</p><span class="btn w" style="height:38px">Explorer l’Academy</span></div>
     <div class="lcard"><span class="st ok">Actif</span><h6 style="font-size:16px;margin:10px 0 4px">−10% espaces et consultations</h6><p style="font-size:13px;color:var(--l-mut);margin:0">Coworking, salles et consultations avec les mentors.</p></div>
     <div class="lcard"><span class="st ok">Actif</span><h6 style="font-size:16px;margin:10px 0 4px">Offres partenaires</h6><p style="font-size:13px;color:var(--l-mut);margin:0">6 bons disponibles : hébergement web, comptabilité, téléphonie.</p></div>
   </div>

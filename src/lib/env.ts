@@ -112,6 +112,10 @@ const serverSchema = z.object({
   /** Web push signing key (pairs with NEXT_PUBLIC_VAPID_PUBLIC_KEY) and contact. */
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().optional(),
+  /** Startup Academy video host. 'mock' locally; production requires 'vdocipher'. */
+  ACADEMY_VIDEO_PROVIDER: z.enum(['mock', 'vdocipher']).default('mock'),
+  /** VdoCipher API secret (Dashboard → Config → API keys). Server-only. */
+  VDOCIPHER_API_SECRET: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined), z.string().optional()),
 });
 
 const clientEnv = {

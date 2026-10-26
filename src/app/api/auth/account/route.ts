@@ -8,6 +8,7 @@ import { z, ZodError } from 'zod';
 import { requireApiSession } from '@/server/auth/api-guards';
 import { messagingRepo } from '@/server/messaging/repo';
 import { cofounderRepo } from '@/server/cofounder/repo';
+import { academyRepo } from '@/server/academy/repo';
 import { db, type AuditLogRecord } from '@/server/db/store';
 import { verifyPassword } from '@/server/auth/password';
 import { json, jsonError, fromZod } from '@/server/http/json';
@@ -172,6 +173,7 @@ export async function DELETE(req: NextRequest) {
   // Conversations live outside the store (Postgres): erase them too.
   await Promise.resolve().then(() => messagingRepo().deleteUser(userId)).catch((err) => console.error('[messaging] erase on account deletion failed', String(err)));
   await Promise.resolve().then(() => cofounderRepo().deleteUser(userId)).catch((err) => console.error('[cofounder] erase on account deletion failed', String(err)));
+  await Promise.resolve().then(() => academyRepo().deleteUser(userId)).catch((err) => console.error('[academy] erase on account deletion failed', String(err)));
 
   // Clear the session cookie in the response
   const cookieName = process.env.AUTH_COOKIE_NAME ?? 'metwork_session';

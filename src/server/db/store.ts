@@ -25,6 +25,8 @@ import type {
 import type { LegalDocumentKind, LegalIdentity, LegalStatus, TaxRegime } from '@/types/legal-status';
 import type { LandingContent } from '@/types/cms';
 import type { WeeklyAvailabilityDay } from '@/types/mentor';
+import type { LocalizedText } from '@/lib/localized-text';
+import type { AcademyAudioLanguage, AcademyLevel } from '@/lib/academy';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1398,6 +1400,120 @@ export type VentureNeed =
   | 'ACCOUNTANT'
   | 'INCUBATOR';
 
+/* ──────────────────────── Startup Academy ──────────────────────── */
+/*
+ * Catalogue, settings and course access live here (small, money-adjacent:
+ * an enrollment is created in the same update as the payment that grants it).
+ * Progress and watch time are many small writes, so they live in Postgres
+ * (`server/academy/repo.ts`). Shared rules: `@/lib/academy`.
+ */
+
+/** Admin-editable Academy settings. Absent ⇒ ACADEMY_DEFAULTS. */
+export interface AcademySettingsRecord {
+  passMonthlyPriceDzd: number;
+  passAnnualDiscountRate: number;
+  premiumDiscountRate: number;
+  defaultMentorShareRate: number;
+  /** Metwork stamp printed on every Academy certificate. Null ⇒ none. */
+  certificateStampUrl: string | null;
+  updatedAt: string;
+  /** UserRecord.id of the admin who last saved. */
+  updatedBy: string | null;
+}
+
+/** A field a course is filed under. `label` null ⇒ i18n `academy.fields.<id>`. */
+export interface AcademyFieldRecord {
+  id: string;
+  label: LocalizedText | null;
+  order: number;
+  hidden: boolean;
+}
+
+export type AcademyVideoStatus = 'NONE' | 'UPLOADING' | 'PROCESSING' | 'READY' | 'FAILED';
+
+export interface AcademyResourceRecord {
+  id: string;
+  name: string;
+  /** Private Cloudinary public id — served only through short signed links. */
+  publicId: string;
+  bytes: number;
+}
+
+export interface AcademyLessonRecord {
+  id: string;
+  title: LocalizedText;
+  description: LocalizedText | null;
+  kind: 'VIDEO' | 'QUIZ';
+  /** The video host's id. Never sent to a browser: playback goes through a token. */
+  videoId: string | null;
+  videoStatus: AcademyVideoStatus;
+  durationSec: number;
+  /** Watchable without buying (trailer-like). */
+  isPreview: boolean;
+  resources: AcademyResourceRecord[];
+}
+
+export interface AcademyModuleRecord {
+  id: string;
+  title: LocalizedText;
+  /** Announced but not released yet ("Bientôt"): shown in the programme, not playable. */
+  comingSoon: boolean;
+  lessons: AcademyLessonRecord[];
+}
+
+export type AcademyCourseStatus = 'DRAFT' | 'IN_REVIEW' | 'CHANGES_REQUESTED' | 'PUBLISHED' | 'ARCHIVED';
+
+export interface AcademyCourseRecord {
+  id: string;
+  /** Platform-unique, for /academy/courses/{slug}. */
+  slug: string;
+  fieldId: string;
+  /** MentorRecord ids; the first is the lead mentor shown on cards. */
+  mentorIds: string[];
+  title: LocalizedText;
+  subtitle: LocalizedText | null;
+  description: LocalizedText | null;
+  outcomes: LocalizedText[];
+  level: AcademyLevel;
+  audioLanguage: AcademyAudioLanguage;
+  /** Set by the author, ≥ ACADEMY_MIN_COURSE_PRICE_DZD. */
+  priceDzd: number;
+  includedInPass: boolean;
+  thumbnailUrl: string | null;
+  trailerVideoId: string | null;
+  modules: AcademyModuleRecord[];
+  status: AcademyCourseStatus;
+  /** Who opened the draft. A mentor's draft needs admin approval to publish. */
+  createdBy: { kind: 'ADMIN' | 'MENTOR'; id: string };
+  /** Admin note when changes are requested or the course is refused. */
+  reviewNote: string | null;
+  submittedAt: string | null;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Lifetime access to one course. Pass access is NOT an enrollment: it is read
+ * from the subscription, so it ends with the subscription.
+ */
+export interface AcademyEnrollmentRecord {
+  id: string;
+  userId: string;
+  courseId: string;
+  source: 'PURCHASE' | 'ADMIN_GRANT' | 'GIFT';
+  listPriceDzd: number;
+  pricePaidDzd: number;
+  discount: 'NONE' | 'PREMIUM' | 'PROMO';
+  /** Frozen at sale: changing the mentor's share never rewrites this. */
+  mentorShareRate: number;
+  /** Payment / booking id that granted it — one enrollment per payment. */
+  paymentRef: string | null;
+  createdAt: string;
+  refundedAt: string | null;
+  revokedAt: string | null;
+}
+
 /* ──────────────────── Membership plan configuration ──────────────────── */
 
 /**
@@ -1501,7 +1617,11 @@ export type AuditAction =
   | 'CONTRACT_VOIDED'
   | 'CONTRACT_OTP_RESENT'
   | 'CONTRACT_STAMP_UPDATED'
-  | 'CONTRACT_TEMPLATE_UPDATED';
+  | 'CONTRACT_TEMPLATE_UPDATED'
+  /** Startup Academy settings (Pass price, discounts, default share, stamp). */
+  | 'ACADEMY_SETTINGS_UPDATED'
+  /** A mentor's Academy share override was set or cleared. */
+  | 'ACADEMY_MENTOR_SHARE_UPDATED';
 
 export interface AuditLogRecord {
   id: string;
@@ -2802,6 +2922,12 @@ export interface MentorBookingRecord {
 export interface MentorRecord {
   id: string;
   fullName: string;
+  /**
+   * Startup Academy share of course sales and Pass watch time (0.3 = 30 %).
+   * Null/absent ⇒ the platform default (`academySettings.defaultMentorShareRate`).
+   * Copied onto each sale when it happens — see `mentorShareRate` in @/lib/academy.
+   */
+  academyShareRate?: number | null;
   position: string;
   imageUrl: string;
   /** SEO-friendly URL slug (kebab-case, deduped). Optional & additive — pre-slug mentors fall back to id in routes. */
@@ -4174,6 +4300,14 @@ interface DbShape {
   cofounderSprints?: CofounderSprintRecord[];
   /** Metwork 2.0 — cofounder agreements (pre-incorporation), e-signed by both. */
   cofounderAgreements?: CofounderAgreementRecord[];
+  /** Startup Academy — admin settings (Pass price, shares, certificate stamp). */
+  academySettings?: AcademySettingsRecord | null;
+  /** Startup Academy — fields courses are filed under. */
+  academyFields?: AcademyFieldRecord[];
+  /** Startup Academy — courses with their modules and lessons. */
+  academyCourses?: AcademyCourseRecord[];
+  /** Startup Academy — lifetime course access (purchases, grants, gifts). */
+  academyEnrollments?: AcademyEnrollmentRecord[];
   /** Audit log entries for admin actions. */
   auditLogs: AuditLogRecord[];
   /** In-app notifications per user. */

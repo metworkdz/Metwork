@@ -67,6 +67,25 @@
         "INFOBIP_SENDER": "",
         "INFOBIP_WHATSAPP_SENDER": ""
       }
+    },
+    {
+      "name": "metwork-academy",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "dev",
+        "-p",
+        "3998"
+      ],
+      "port": 3998,
+      "env": {
+        "USE_LOCAL_DB": "true",
+        "API_INTERNAL_URL": "http://localhost:3998/api",
+        "NEXT_PUBLIC_APP_URL": "http://localhost:3998",
+        "NEXT_PUBLIC_ACADEMY_PREVIEW": "true",
+        "ACADEMY_VIDEO_PROVIDER": "mock",
+        "SMS_PROVIDER": "mock"
+      }
     }
   ]
 }

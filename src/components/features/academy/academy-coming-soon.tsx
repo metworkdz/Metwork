@@ -1,5 +1,10 @@
-import type { Metadata } from 'next';
-import { setRequestLocale, getTranslations } from 'next-intl/server';
+/**
+ * The pre-launch Startup Academy page (waitlist form), shown at /academy while
+ * `isAcademyEnabled()` is off. Moved verbatim from the former
+ * (public)/academy/page.tsx when the Academy got its own route tree; the
+ * route (`app/[locale]/academy/page.tsx`) keeps the visibility gate and metadata.
+ */
+import { getTranslations } from 'next-intl/server';
 import {
   BookOpen,
   GraduationCap,
@@ -12,25 +17,6 @@ import {
 } from 'lucide-react';
 import { Container } from '@/components/ui/container';
 import { AcademyNotifyForm } from '@/components/features/academy/academy-notify-form';
-import { assertLandingVisible } from '@/lib/landing-visibility';
-
-// ISR so the admin landing-visibility toggle propagates without a redeploy
-// (page stays statically delivered; re-rendered at most once per minute).
-export const revalidate = 60;
-
-interface PageProps {
-  params: Promise<{ locale: string }>;
-}
-
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  // Gate here too: metadata resolves before the first byte, so a hidden section
-  // returns a real 404 status (the page-body gate alone streams 200 + 404 UI).
-  await assertLandingVisible('academy');
-  const { locale } = await params;
-  setRequestLocale(locale);
-  const t = await getTranslations('pages.academy');
-  return { title: t('metaTitle'), description: t('metaDescription') };
-}
 
 /* ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
    COURSE POSTERS DROP ZONE
@@ -52,11 +38,7 @@ const MIN_POSTER_SLOTS = 6;
 const TRACK_ICONS = [Rocket, TrendingUp, ShieldCheck, Megaphone] as const;
 const PILLAR_ICONS = [Users, BookOpen, Sparkles] as const;
 
-export default async function AcademyPage({ params }: PageProps) {
-  // Landing-visibility gate — 404s server-side when the admin hides this section.
-  await assertLandingVisible('academy');
-  const { locale } = await params;
-  setRequestLocale(locale);
+export async function AcademyComingSoon() {
   const t = await getTranslations('pages.academy');
 
   const tracks = TRACK_ICONS.map((icon, i) => ({

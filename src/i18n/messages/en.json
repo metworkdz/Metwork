@@ -7629,5 +7629,108 @@
       "profileCta": "Profile",
       "contractCta": "Sign"
     }
+  },
+  "academy": {
+    "meta": {
+      "title": "Startup Academy · Video courses for founders",
+      "description": "Short video courses in Darija and French by Algerian mentors: ideas, company setup, tax, funding, marketing."
+    },
+    "header": {
+      "home": "Startup Academy home",
+      "wordmark": "Startup Academy",
+      "login": "Log in",
+      "signup": "Create an account"
+    },
+    "theme": {
+      "label": "Theme",
+      "light": "Light",
+      "system": "Auto (device)",
+      "dark": "Dark"
+    },
+    "fields": {
+      "ideation": {
+        "name": "Ideation",
+        "desc": "Find an idea and test it with real customers before spending a dinar."
+      },
+      "legal": {
+        "name": "Legal and company setup",
+        "desc": "SARL, EURL, auto-entrepreneur: pick your structure and get through the CNRC step by step."
+      },
+      "tax": {
+        "name": "Tax",
+        "desc": "IFU, G12, CASNOS: what you owe and when."
+      },
+      "funding": {
+        "name": "Funding",
+        "desc": "Pitch decks, the Startup Label, ASF and business angels."
+      },
+      "marketing": {
+        "name": "Marketing",
+        "desc": "Win your first customers on a small budget."
+      },
+      "sales": {
+        "name": "Sales",
+        "desc": "B2B selling, negotiation and keeping customers."
+      },
+      "finance": {
+        "name": "Finance",
+        "desc": "Business model, forecasts and cash flow."
+      },
+      "product": {
+        "name": "Product and tech",
+        "desc": "Build a simple first product and improve it with your customers."
+      },
+      "leadership": {
+        "name": "Leadership",
+        "desc": "Hire, delegate and last the distance."
+      }
+    },
+    "landing": {
+      "eyebrow": "Metwork Startup Academy",
+      "titleStart": "Build your startup with people who",
+      "titleHighlight": "have already done it.",
+      "subtitle": "Short video courses in Darija and French by Algerian mentors: finding an idea, setting up your company, paying your taxes, selling and raising funds.",
+      "ctaSubscribe": "Subscribe · {price} DA / month",
+      "ctaCourses": "Browse courses",
+      "orBuy": "Or buy a single course from {price} DA, yours for life. Founder and Premium members: −{percent}%.",
+      "tile1": "Find and validate your idea",
+      "tile2": "Set up your company in Algeria",
+      "cardTitle": "Find and validate your startup idea",
+      "cardMeta": "Module 1 · 7 episodes · Yacine Kheddaoui",
+      "promise": {
+        "short": {
+          "title": "Short episodes",
+          "desc": "One idea per video, 1 to 10 minutes."
+        },
+        "language": {
+          "title": "In Darija and French",
+          "desc": "The way business is really discussed here."
+        },
+        "mentors": {
+          "title": "Algerian mentors",
+          "desc": "Practitioners who know the local market."
+        },
+        "certificate": {
+          "title": "A certificate at the end",
+          "desc": "Anyone can verify it online."
+        }
+      },
+      "learnTitle": "What you will learn",
+      "learnSubtitle": "Everything you need to go from an idea to a working business, organised by field.",
+      "howTitle": "How it works",
+      "step1Title": "Sign in with your Metwork account",
+      "step1Desc": "The same account you use for spaces, consultations and invoices.",
+      "step2Title": "Choose your access",
+      "step2Desc": "The Academy Pass to watch everything, or a course bought once and kept for life.",
+      "step3Title": "Learn at your own pace",
+      "step3Desc": "On your phone or computer, pick up where you left off, and get your certificate at the end.",
+      "passEyebrow": "Academy Pass",
+      "passTitle": "Every course. One subscription.",
+      "passDesc": "No commitment · −{annual}% when paid yearly · Founder and Premium members get −{premium}% on top.",
+      "perMonth": "{price} DA / month",
+      "perYear": "or {price} DA / year",
+      "passCta": "Subscribe",
+      "protected": "Videos stream on Metwork only: they are protected and cannot be downloaded."
+    }
   }
 }
