@@ -124,10 +124,11 @@ describe('Academy settings', () => {
     expect(await updateAcademySettings({ passMonthlyPriceDzd: 3500.5 }, ADMIN)).toEqual({ ok: false, code: 'INVALID_PRICE' });
     expect(await updateAcademySettings({ defaultMentorShareRate: 1 }, ADMIN)).toEqual({ ok: false, code: 'INVALID_RATE' });
     expect(await updateAcademySettings({ certificateStampUrl: 'http://evil.example/stamp.png' }, ADMIN)).toEqual({ ok: false, code: 'INVALID_STAMP_URL' });
+    expect(await updateAcademySettings({ certificateStampUrl: 'https://evil.example/stamp.png' }, ADMIN)).toEqual({ ok: false, code: 'INVALID_STAMP_URL' });
     expect((await db.read()).academySettings).toBeNull();
   });
 
-  it('stores the certificate stamp (https only) and lets the admin clear it', async () => {
+  it('stores the certificate stamp (Cloudinary only) and lets the admin clear it', async () => {
     await updateAcademySettings({ certificateStampUrl: 'https://res.cloudinary.com/metwork/image/upload/stamp.png' }, ADMIN);
     expect((await getAcademySettings()).certificateStampUrl).toContain('stamp.png');
     await updateAcademySettings({ certificateStampUrl: null }, ADMIN);

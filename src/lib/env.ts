@@ -116,6 +116,8 @@ const serverSchema = z.object({
   ACADEMY_VIDEO_PROVIDER: z.enum(['mock', 'vdocipher']).default('mock'),
   /** VdoCipher API secret (Dashboard → Config → API keys). Server-only. */
   VDOCIPHER_API_SECRET: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined), z.string().optional()),
+  /** Shared token in the VdoCipher webhook URL (?token=…). Required in production for the webhook to act. */
+  VDOCIPHER_WEBHOOK_TOKEN: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined), z.string().min(24).optional()),
 });
 
 const clientEnv = {

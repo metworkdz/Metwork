@@ -329,3 +329,40 @@ course/module/lesson titles.
 - Landing CTAs link to `/academy/pass` and `/academy/courses`, built in phases 1–2.
 - Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2204/2204 (25 new),
   browser fr/ar, light/dark/auto, 375 px, flag off = coming-soon page.
+
+### Phase 1 — catalogue and admin authoring (`feat/academy-phase0`, uncommitted at report)
+Phase 0 committed as `310a3f7` after owner approval.
+- `server/academy/catalog.ts` is THE catalogue: `createCourse` / `saveCourseDraft`
+  (whole builder state; each lesson's video fields are carried over from the
+  stored lesson with the same id, unknown ids get fresh ids, so a request can never
+  point a lesson at a video) / `setCourseStatus` (publish re-checks
+  `publishProblems`; archive keeps buyers) / `deleteCourse` (refused once bought).
+  Public reads return DTOs with titles resolved to the reader's language and NO
+  video ids (tested). Mentor Academy page only while approved + ≥1 published course.
+- Videos: `server/academy/videos.ts` (direct upload ticket → host; refresh re-reads
+  status and length; a newer upload wins a race). Webhook `/api/webhooks/vdocipher`
+  needs `?token=VDOCIPHER_WEBHOOK_TOKEN` in production and only re-reads by id.
+  Mock host is stateless (dev route bundles each have their own module copy).
+- Translation drafts: `server/academy/translate.ts`, Claude Haiku 4.5 + JSON schema
+  (no `effort`: Haiku 4.5 rejects it), fills only empty languages, marks them
+  `drafted`, re-reads inside the update; 30 runs/hour/admin.
+- Admin: `/dashboard/admin/academy` (list + new course), `/courses/[id]` (builder:
+  fr/en/ar editing tabs, programme with up/down ordering, per-lesson upload with
+  progress and processing poll, "coming soon" modules, free preview, publish
+  checklist), `/settings` (Pass price, annual and Premium discounts, default share,
+  Cloudinary stamp, per-mentor share). Authoring works while the public flag is off.
+- Public: `/academy/courses` (GET-form filters: field chips, search across all
+  languages with accents folded, level, video language, sort, in-Pass), course page
+  (Course JSON-LD, Premium price, Pass box, programme, mentors), `/academy/mentors/[slug]`;
+  landing shows 4 courses once published. All 404 while the flag is off.
+- Covers and the stamp must be Cloudinary URLs: the CSP `img-src` and the PDF image
+  fetcher only allow Cloudinary.
+- `scripts/academy-seed-module1.ts` (dry run; `--confirm`): DRAFT course for Module 1,
+  mentor Yacine Kheddaoui found by name, 7 lessons, intro = free preview, en/ar drafted.
+  Verified locally end to end (seed → upload ×7 → publish → public pages), then
+  `.local-db.json` restored.
+- Not built yet (phase 2+): checkout / buying, the player and playback tokens, the
+  Pass page (the landing and course CTAs point to `/academy/pass` and
+  `/academy/checkout`, which 404 in preview until then), trailer upload.
+- Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2220/2220 (16 new),
+  browser fr/en/ar, 375 px, no horizontal overflow.

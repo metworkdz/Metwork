@@ -2328,7 +2328,8 @@
       "home": "الرئيسية"
     },
     "contract": "العقد",
-    "programApprovals": "برامج للمراجعة"
+    "programApprovals": "برامج للمراجعة",
+    "academy": "أكاديمية الشركات الناشئة"
   },
   "pages": {
     "consultationPay": {
@@ -7639,7 +7640,12 @@
       "home": "الصفحة الرئيسية لأكاديمية الشركات الناشئة",
       "wordmark": "Startup Academy",
       "login": "تسجيل الدخول",
-      "signup": "إنشاء حساب"
+      "signup": "إنشاء حساب",
+      "nav": "تصفّح الأكاديمية",
+      "links": {
+        "home": "الأكاديمية",
+        "courses": "الدورات"
+      }
     },
     "theme": {
       "label": "المظهر",
@@ -7730,7 +7736,255 @@
       "perMonth": "{price} دج / شهريًا",
       "perYear": "أو {price} دج / سنويًا",
       "passCta": "اشترك",
-      "protected": "تُشاهَد الفيديوهات عبر البث على Metwork فقط: فهي محمية ولا يمكن تحميلها."
+      "protected": "تُشاهَد الفيديوهات عبر البث على Metwork فقط: فهي محمية ولا يمكن تحميلها.",
+      "coursesTitle": "بعض الدورات",
+      "coursesAll": "عرض كل الدورات ←"
+    },
+    "levels": {
+      "BEGINNER": "مبتدئ",
+      "INTERMEDIATE": "متوسط",
+      "ADVANCED": "متقدم"
+    },
+    "audio": {
+      "DARIJA_FR": "الدارجة + الفرنسية",
+      "FR": "الفرنسية",
+      "AR": "العربية",
+      "EN": "الإنجليزية"
+    },
+    "duration": {
+      "hm": "{h} سا {m} د",
+      "m": "{m} د",
+      "s": "{s} ثا"
+    },
+    "card": {
+      "inPass": "Pass",
+      "lessons": "{count, plural, one {درس واحد} two {درسان} few {# دروس} many {# درسًا} other {# درس}}",
+      "moreSoon": "البقية قريبًا",
+      "premium": "{price} دج لأعضاء Premium"
+    },
+    "catalog": {
+      "metaTitle": "دليل الدورات · أكاديمية الشركات الناشئة",
+      "metaDescription": "كل دورات الفيديو في أكاديمية الشركات الناشئة حسب المجال: الفكرة، إنشاء الشركة، الضرائب، التمويل، التسويق.",
+      "title": "كل الدورات",
+      "count": "{count, plural, =0 {لا توجد دورات} one {دورة واحدة} two {دورتان} few {# دورات} many {# دورة} other {# دورة}}",
+      "fields": "المجالات",
+      "all": "الكل",
+      "search": "بحث",
+      "searchPlaceholder": "موضوع أو كلمة…",
+      "level": "المستوى",
+      "audio": "لغة الفيديوهات",
+      "sort": "الترتيب",
+      "any": "الكل",
+      "inPass": "ضمن الاشتراك",
+      "apply": "تصفية",
+      "sorts": {
+        "newest": "الأحدث",
+        "price-asc": "السعر تصاعديًا",
+        "price-desc": "السعر تنازليًا",
+        "shortest": "الأقصر"
+      },
+      "noMatch": "لا توجد دورة مطابقة",
+      "noMatchHint": "جرّب مجالًا آخر أو أزل أحد عوامل التصفية.",
+      "reset": "عرض كل الدورات",
+      "empty": "الدورات الأولى في الطريق",
+      "emptyHint": "يُفتتح الدليل بالوحدة الأولى «إيجاد فكرة شركتك الناشئة والتحقق منها».",
+      "moreFilters": "مزيد من عوامل التصفية",
+      "fewerFilters": "عوامل تصفية أقل"
+    },
+    "course": {
+      "by": "تقديم",
+      "premiumLine": "أعضاء Founder و Premium: {price} دج (خصم {percent}٪)",
+      "buy": "شراء الدورة",
+      "inPassTitle": "ضمن اشتراك Academy Pass",
+      "inPassDesc": "هذه الدورة وكل الدورات الأخرى مقابل {price} دج شهريًا.",
+      "lifetime": "وصول مدى الحياة عبر حسابك في Metwork",
+      "certificate": "شهادة إتمام",
+      "futureModules": "الوحدات القادمة مشمولة دون تكلفة إضافية",
+      "streamOnly": "مشاهدة محمية عبر البث",
+      "outcomes": "ماذا ستتعلّم",
+      "programme": "البرنامج",
+      "programmeSummary": "{modules, plural, one {وحدة واحدة} two {وحدتان} few {# وحدات} many {# وحدة} other {# وحدة}} · {lessons, plural, one {درس متاح} two {درسان متاحان} few {# دروس متاحة} many {# درسًا متاحًا} other {# درس متاح}}",
+      "module": "الوحدة {n}",
+      "soon": "قريبًا",
+      "preview": "معاينة مجانية",
+      "about": "عن الدورة",
+      "mentor": "مرشدك",
+      "mentors": "مرشدوك"
+    },
+    "mentor": {
+      "metaTitle": "{name} · مرشد في أكاديمية الشركات الناشئة",
+      "consultTitle": "استشارة فردية",
+      "consultDesc": "احجز جلسة مدفوعة مع هذا المرشد على Metwork.",
+      "consultCta": "احجز استشارة",
+      "courses": "{count, plural, one {دورته} two {دورتاه} few {دوراته الـ #} many {دوراته الـ #} other {دوراته الـ #}}"
+    },
+    "money": "{price} دج"
+  },
+  "academyAdmin": {
+    "localized": {
+      "drafted": "ترجمة آلية: راجعها وصحّحها عند الحاجة.",
+      "missing": "لم تُترجم بعد: يظهر النص الأصلي مكانها."
+    },
+    "list": {
+      "title": "أكاديمية الشركات الناشئة",
+      "subtitle": "أنشئ الدورات، اربطها بالمرشدين، وانشرها.",
+      "new": "دورة جديدة",
+      "settings": "الإعدادات",
+      "empty": "لا توجد دورات بعد. أنشئ الأولى.",
+      "lessons": "{count, plural, one {درس واحد} two {درسان} few {# دروس} many {# درسًا} other {# درس}}",
+      "mentor": "المرشد",
+      "pickMentor": "اختر مرشدًا…",
+      "titleHint": "يُكتب بلغة واجهتك، وتُترجم اللغات الأخرى لاحقًا.",
+      "create": "إنشاء المسودة"
+    },
+    "builder": {
+      "back": "الدورات",
+      "untitled": "دون عنوان",
+      "view": "عرض الصفحة",
+      "editingLanguage": "اللغة التي تحرّرها",
+      "lang": {
+        "fr": "Français",
+        "en": "English",
+        "ar": "العربية"
+      },
+      "sourceIs": "اللغة الأصلية: {lang}",
+      "translate": "ترجمة النصوص الناقصة",
+      "sections": {
+        "texts": "النصوص",
+        "programme": "البرنامج",
+        "publish": "النشر",
+        "cover": "صورة الغلاف",
+        "classification": "التصنيف",
+        "price": "السعر"
+      },
+      "fields": {
+        "title": "عنوان الدورة",
+        "subtitle": "العنوان الفرعي",
+        "description": "الوصف",
+        "outcomes": "ما سيتعلّمه المتعلّم",
+        "outcome": "النقطة {n}",
+        "moduleTitle": "عنوان الوحدة",
+        "lessonTitle": "عنوان الدرس",
+        "field": "المجال",
+        "level": "المستوى",
+        "audio": "لغة الفيديوهات",
+        "mentors": "المرشدون (3 كحد أقصى)",
+        "slug": "عنوان الصفحة",
+        "price": "السعر (دج)",
+        "inPass": "ضمن اشتراك Academy Pass"
+      },
+      "addOutcome": "إضافة نقطة",
+      "newOutcome": "نقطة جديدة",
+      "addModule": "إضافة وحدة",
+      "newModule": "الوحدة {n}",
+      "addLesson": "إضافة درس",
+      "newLesson": "الدرس {n}",
+      "moduleN": "الوحدة {n}",
+      "comingSoon": "قريبًا (معلنة وغير متاحة بعد)",
+      "moveUp": "نقل لأعلى",
+      "moveDown": "نقل لأسفل",
+      "remove": "حذف",
+      "programmeSummary": "{modules, plural, one {وحدة واحدة} two {وحدتان} few {# وحدات} many {# وحدة} other {# وحدة}} · {duration} متاحة",
+      "uploadVideo": "رفع الفيديو",
+      "replaceVideo": "استبدال الفيديو",
+      "saveBeforeUpload": "احفظ أولًا لتتمكن من رفع الفيديو",
+      "checkVideo": "تحقّق",
+      "freePreview": "معاينة مجانية",
+      "video": {
+        "NONE": "دون فيديو",
+        "UPLOADING": "جارٍ الرفع…",
+        "PROCESSING": "جارٍ التشفير",
+        "READY": "جاهز",
+        "FAILED": "فشل"
+      },
+      "readyToPublish": "جاهزة للنشر.",
+      "publish": "نشر",
+      "unpublish": "إلغاء النشر",
+      "archive": "أرشفة",
+      "statusDone": {
+        "PUBLISH": "تم نشر الدورة.",
+        "UNPUBLISH": "سُحبت الدورة من الدليل.",
+        "ARCHIVE": "أُرشفت الدورة. يحتفظ المشترون بوصولهم."
+      },
+      "status": {
+        "DRAFT": "مسودة",
+        "IN_REVIEW": "قيد المراجعة",
+        "CHANGES_REQUESTED": "تعديلات مطلوبة",
+        "PUBLISHED": "منشورة",
+        "ARCHIVED": "مؤرشفة"
+      },
+      "problems": {
+        "NO_THUMBNAIL": "أضف صورة غلاف.",
+        "NO_DESCRIPTION": "اكتب وصفًا.",
+        "NO_RELEASED_LESSON": "يجب أن يكون هناك درس واحد على الأقل في وحدة متاحة.",
+        "VIDEO_NOT_READY": "كل درس متاح يحتاج فيديو جاهزًا.",
+        "MENTOR_NOT_APPROVED": "يجب أن يكون كل مرشد مقبولًا.",
+        "FIELD_NOT_FOUND": "اختر مجالًا.",
+        "PRICE_INVALID": "يجب ألا يقل السعر عن 2.900 دج."
+      },
+      "changeCover": "تغيير الغلاف",
+      "addCover": "إضافة غلاف",
+      "coverHint": "بنسبة 16:9، يُنصح بـ 1280 × 720، بحد أقصى 5 ميغابايت.",
+      "notApproved": "غير مقبول",
+      "mentorsHint": "يظهر أول من تختاره على البطاقات. ويتقاضى كل واحد حصته المحددة في الإعدادات.",
+      "priceMin": "أدنى سعر هو {min} دج.",
+      "premiumPrice": "سعر Founder / Premium: {price} دج",
+      "delete": "حذف الدورة",
+      "deleteConfirm": "حذف هذه الدورة نهائيًا؟ غير ممكن إذا سبق شراؤها: قم بأرشفتها بدلًا من ذلك.",
+      "deleteYes": "نعم، احذف",
+      "cancel": "إلغاء",
+      "save": "حفظ",
+      "saved": "تم الحفظ.",
+      "unsaved": "تعديلات غير محفوظة",
+      "allSaved": "كل شيء محفوظ",
+      "translated": "{count, plural, =0 {لا شيء للترجمة.} one {أُضيفت ترجمة واحدة، يرجى مراجعتها.} two {أُضيفت ترجمتان، يرجى مراجعتهما.} few {أُضيفت # ترجمات، يرجى مراجعتها.} many {أُضيفت # ترجمة، يرجى مراجعتها.} other {أُضيفت # ترجمة، يرجى مراجعتها.}}",
+      "errors": {
+        "PRICE_BELOW_MINIMUM": "أدنى سعر هو 2.900 دج.",
+        "PRICE_INVALID": "سعر غير صالح.",
+        "SLUG_TAKEN": "هذا العنوان مستعمل في دورة أخرى.",
+        "FIELD_NOT_FOUND": "المجال غير موجود.",
+        "MENTOR_NOT_FOUND": "أحد المرشدين المختارين لم يعد موجودًا.",
+        "VALIDATION_ERROR": "أحد الحقول غير صالح أو طويل جدًا.",
+        "HAS_ENROLLMENTS": "لهذه الدورة مشترون: قم بأرشفتها بدل حذفها.",
+        "UNAVAILABLE": "الترجمة الآلية غير مفعّلة.",
+        "FAILED": "فشلت الترجمة. حاول مجددًا.",
+        "RATE_LIMITED": "طلبات كثيرة. حاول لاحقًا.",
+        "NOT_READY": "الدورة غير جاهزة: راجع القائمة الجانبية.",
+        "MISSING_TITLE": "كل وحدة وكل درس يحتاج عنوانًا.",
+        "UPLOAD_FAILED": "فشل الرفع. حاول مجددًا.",
+        "generic": "حدث خطأ."
+      }
+    },
+    "settings": {
+      "title": "إعدادات الأكاديمية",
+      "subtitle": "سعر الاشتراك، الخصومات، حصة المرشدين والشهادة.",
+      "pass": "Academy Pass",
+      "monthlyPrice": "السعر الشهري",
+      "annualDiscount": "الخصم السنوي",
+      "premiumDiscount": "خصم Founder / Premium",
+      "preview": "شهريًا {monthly} دج · سنويًا {annual} دج · Premium {monthlyPremium} دج شهريًا، {annualPremium} دج سنويًا",
+      "appliesToNew": "تُطبّق الأسعار الجديدة على المشتريات والتجديدات القادمة؛ لا تتغيّر المبيعات السابقة.",
+      "mentorsTitle": "حصة المرشدين",
+      "defaultShare": "الحصة الافتراضية",
+      "shareHint": "حصة المرشد من مبيعات الدورات ومن وقت المشاهدة في الاشتراك. الباقي يعود إلى Metwork.",
+      "certificate": "الشهادة",
+      "stampUrl": "ختم Metwork (رابط الصورة)",
+      "stampHint": "صورة PNG بخلفية شفافة مرفوعة على Cloudinary، تُطبع على كل شهادة.",
+      "save": "حفظ الإعدادات",
+      "saved": "تم حفظ الإعدادات.",
+      "perMentor": "الحصة لكل مرشد",
+      "perMentorHint": "اتركه فارغًا لاعتماد الحصة الافتراضية ({rate}٪).",
+      "courses": "{count, plural, =0 {لا دورات} one {دورة واحدة} two {دورتان} few {# دورات} many {# دورة} other {# دورة}}",
+      "shareOf": "حصة {name}",
+      "saveShare": "حفظ",
+      "shareSaved": "تم حفظ الحصة.",
+      "errors": {
+        "INVALID_PRICE": "سعر غير صالح.",
+        "INVALID_RATE": "يجب أن تكون النسبة بين 0 و99.",
+        "INVALID_STAMP_URL": "يجب أن يكون الختم صورة مستضافة على Cloudinary ‏(https://res.cloudinary.com/…).",
+        "MENTOR_NOT_FOUND": "المرشد غير موجود.",
+        "generic": "حدث خطأ."
+      }
     }
   }
 }

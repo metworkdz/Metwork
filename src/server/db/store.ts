@@ -1621,7 +1621,11 @@ export type AuditAction =
   /** Startup Academy settings (Pass price, discounts, default share, stamp). */
   | 'ACADEMY_SETTINGS_UPDATED'
   /** A mentor's Academy share override was set or cleared. */
-  | 'ACADEMY_MENTOR_SHARE_UPDATED';
+  | 'ACADEMY_MENTOR_SHARE_UPDATED'
+  /** An Academy course was published, unpublished or archived. */
+  | 'ACADEMY_COURSE_STATUS_CHANGED'
+  /** An Academy course with no buyers was deleted. */
+  | 'ACADEMY_COURSE_DELETED';
 
 export interface AuditLogRecord {
   id: string;

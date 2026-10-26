@@ -2328,7 +2328,8 @@
       "home": "Accueil"
     },
     "contract": "Contrat",
-    "programApprovals": "Programmes à valider"
+    "programApprovals": "Programmes à valider",
+    "academy": "Startup Academy"
   },
   "pages": {
     "consultationPay": {
@@ -7639,7 +7640,12 @@
       "home": "Startup Academy, accueil",
       "wordmark": "Startup Academy",
       "login": "Se connecter",
-      "signup": "Créer un compte"
+      "signup": "Créer un compte",
+      "nav": "Navigation de l’Academy",
+      "links": {
+        "home": "L’Academy",
+        "courses": "Cours"
+      }
     },
     "theme": {
       "label": "Thème",
@@ -7730,7 +7736,255 @@
       "perMonth": "{price} DA / mois",
       "perYear": "ou {price} DA / an",
       "passCta": "S’abonner",
-      "protected": "Les vidéos se regardent en streaming sur Metwork uniquement : elles sont protégées et ne peuvent pas être téléchargées."
+      "protected": "Les vidéos se regardent en streaming sur Metwork uniquement : elles sont protégées et ne peuvent pas être téléchargées.",
+      "coursesTitle": "Quelques cours",
+      "coursesAll": "Voir tous les cours →"
+    },
+    "levels": {
+      "BEGINNER": "Débutant",
+      "INTERMEDIATE": "Intermédiaire",
+      "ADVANCED": "Avancé"
+    },
+    "audio": {
+      "DARIJA_FR": "Darija + français",
+      "FR": "Français",
+      "AR": "Arabe",
+      "EN": "Anglais"
+    },
+    "duration": {
+      "hm": "{h} h {m}",
+      "m": "{m} min",
+      "s": "{s} s"
+    },
+    "card": {
+      "inPass": "Pass",
+      "lessons": "{count, plural, one {# leçon} other {# leçons}}",
+      "moreSoon": "suite bientôt",
+      "premium": "{price} DA Premium"
+    },
+    "catalog": {
+      "metaTitle": "Catalogue des cours · Startup Academy",
+      "metaDescription": "Tous les cours vidéo de la Startup Academy, par domaine : idée, création de société, fiscalité, financement, marketing.",
+      "title": "Tous les cours",
+      "count": "{count, plural, =0 {Aucun cours} one {# cours} other {# cours}}",
+      "fields": "Domaines",
+      "all": "Tous",
+      "search": "Rechercher",
+      "searchPlaceholder": "Un sujet, un mot…",
+      "level": "Niveau",
+      "audio": "Langue des vidéos",
+      "sort": "Trier par",
+      "any": "Tous",
+      "inPass": "Inclus dans le Pass",
+      "apply": "Filtrer",
+      "sorts": {
+        "newest": "Les plus récents",
+        "price-asc": "Prix croissant",
+        "price-desc": "Prix décroissant",
+        "shortest": "Les plus courts"
+      },
+      "noMatch": "Aucun cours ne correspond",
+      "noMatchHint": "Essayez un autre domaine ou retirez un filtre.",
+      "reset": "Voir tous les cours",
+      "empty": "Les premiers cours arrivent",
+      "emptyHint": "Le catalogue s’ouvre avec le module 1 « Trouver et valider son idée startup ».",
+      "moreFilters": "Plus de filtres",
+      "fewerFilters": "Moins de filtres"
+    },
+    "course": {
+      "by": "Par",
+      "premiumLine": "Membres Founder et Premium : {price} DA (−{percent} %)",
+      "buy": "Acheter le cours",
+      "inPassTitle": "Inclus dans l’Academy Pass",
+      "inPassDesc": "Ce cours et tous les autres pour {price} DA / mois.",
+      "lifetime": "Accès à vie sur votre compte Metwork",
+      "certificate": "Certificat de réussite",
+      "futureModules": "Les prochains modules inclus, sans frais",
+      "streamOnly": "Lecture en streaming protégée",
+      "outcomes": "Ce que vous allez apprendre",
+      "programme": "Programme",
+      "programmeSummary": "{modules, plural, one {# module} other {# modules}} · {lessons, plural, one {# leçon disponible} other {# leçons disponibles}}",
+      "module": "Module {n}",
+      "soon": "Bientôt",
+      "preview": "Aperçu gratuit",
+      "about": "À propos du cours",
+      "mentor": "Votre mentor",
+      "mentors": "Vos mentors"
+    },
+    "mentor": {
+      "metaTitle": "{name} · Mentor Startup Academy",
+      "consultTitle": "Consultation individuelle",
+      "consultDesc": "Réservez une séance payante avec ce mentor sur Metwork.",
+      "consultCta": "Réserver une consultation",
+      "courses": "{count, plural, one {Son cours} other {Ses # cours}}"
+    },
+    "money": "{price} DA"
+  },
+  "academyAdmin": {
+    "localized": {
+      "drafted": "Traduction automatique : relisez-la, puis modifiez-la si besoin.",
+      "missing": "Pas encore traduit : le texte d’origine s’affiche à sa place."
+    },
+    "list": {
+      "title": "Startup Academy",
+      "subtitle": "Créez les cours, rattachez les mentors, publiez.",
+      "new": "Nouveau cours",
+      "settings": "Réglages",
+      "empty": "Aucun cours pour l’instant. Créez le premier.",
+      "lessons": "{count, plural, one {# leçon} other {# leçons}}",
+      "mentor": "Mentor",
+      "pickMentor": "Choisir un mentor…",
+      "titleHint": "Écrit dans la langue de votre interface ; les autres langues se traduisent ensuite.",
+      "create": "Créer le brouillon"
+    },
+    "builder": {
+      "back": "Cours",
+      "untitled": "Sans titre",
+      "view": "Voir la page",
+      "editingLanguage": "Langue en cours de saisie",
+      "lang": {
+        "fr": "Français",
+        "en": "English",
+        "ar": "العربية"
+      },
+      "sourceIs": "Langue d’origine : {lang}",
+      "translate": "Traduire les textes manquants",
+      "sections": {
+        "texts": "Textes",
+        "programme": "Programme",
+        "publish": "Publication",
+        "cover": "Image de couverture",
+        "classification": "Classement",
+        "price": "Prix"
+      },
+      "fields": {
+        "title": "Titre du cours",
+        "subtitle": "Sous-titre",
+        "description": "Description",
+        "outcomes": "Ce que l’on apprend",
+        "outcome": "Point {n}",
+        "moduleTitle": "Titre du module",
+        "lessonTitle": "Titre de la leçon",
+        "field": "Domaine",
+        "level": "Niveau",
+        "audio": "Langue des vidéos",
+        "mentors": "Mentors (3 au plus)",
+        "slug": "Adresse de la page",
+        "price": "Prix (DA)",
+        "inPass": "Inclus dans l’Academy Pass"
+      },
+      "addOutcome": "Ajouter un point",
+      "newOutcome": "Nouveau point",
+      "addModule": "Ajouter un module",
+      "newModule": "Module {n}",
+      "addLesson": "Ajouter une leçon",
+      "newLesson": "Leçon {n}",
+      "moduleN": "Module {n}",
+      "comingSoon": "Bientôt (annoncé, pas encore en ligne)",
+      "moveUp": "Monter",
+      "moveDown": "Descendre",
+      "remove": "Supprimer",
+      "programmeSummary": "{modules, plural, one {# module} other {# modules}} · {duration} en ligne",
+      "uploadVideo": "Envoyer la vidéo",
+      "replaceVideo": "Remplacer la vidéo",
+      "saveBeforeUpload": "Enregistrez pour pouvoir envoyer la vidéo",
+      "checkVideo": "Vérifier",
+      "freePreview": "Aperçu gratuit",
+      "video": {
+        "NONE": "Pas de vidéo",
+        "UPLOADING": "Envoi…",
+        "PROCESSING": "Chiffrement en cours",
+        "READY": "Prête",
+        "FAILED": "Échec"
+      },
+      "readyToPublish": "Prêt à être publié.",
+      "publish": "Publier",
+      "unpublish": "Dépublier",
+      "archive": "Archiver",
+      "statusDone": {
+        "PUBLISH": "Cours publié.",
+        "UNPUBLISH": "Cours retiré du catalogue.",
+        "ARCHIVE": "Cours archivé. Les acheteurs gardent leur accès."
+      },
+      "status": {
+        "DRAFT": "Brouillon",
+        "IN_REVIEW": "En revue",
+        "CHANGES_REQUESTED": "Modifications demandées",
+        "PUBLISHED": "Publié",
+        "ARCHIVED": "Archivé"
+      },
+      "problems": {
+        "NO_THUMBNAIL": "Ajoutez une image de couverture.",
+        "NO_DESCRIPTION": "Écrivez une description.",
+        "NO_RELEASED_LESSON": "Il faut au moins une leçon dans un module en ligne.",
+        "VIDEO_NOT_READY": "Chaque leçon en ligne doit avoir une vidéo prête.",
+        "MENTOR_NOT_APPROVED": "Chaque mentor doit être approuvé.",
+        "FIELD_NOT_FOUND": "Choisissez un domaine.",
+        "PRICE_INVALID": "Le prix doit être d’au moins 2 900 DA."
+      },
+      "changeCover": "Changer la couverture",
+      "addCover": "Ajouter une couverture",
+      "coverHint": "Format 16:9, 1280 × 720 conseillé, 5 Mo au plus.",
+      "notApproved": "Non approuvé",
+      "mentorsHint": "Le premier coché apparaît sur les cartes. Chacun touche sa part fixée dans les réglages.",
+      "priceMin": "Le prix minimum est de {min} DA.",
+      "premiumPrice": "Prix Founder / Premium : {price} DA",
+      "delete": "Supprimer le cours",
+      "deleteConfirm": "Supprimer définitivement ce cours ? Impossible s’il a déjà été acheté : archivez-le plutôt.",
+      "deleteYes": "Oui, supprimer",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "saved": "Enregistré.",
+      "unsaved": "Modifications non enregistrées",
+      "allSaved": "Tout est enregistré",
+      "translated": "{count, plural, =0 {Rien à traduire.} one {# traduction ajoutée, à relire.} other {# traductions ajoutées, à relire.}}",
+      "errors": {
+        "PRICE_BELOW_MINIMUM": "Le prix minimum est de 2 900 DA.",
+        "PRICE_INVALID": "Prix invalide.",
+        "SLUG_TAKEN": "Cette adresse est déjà prise par un autre cours.",
+        "FIELD_NOT_FOUND": "Domaine introuvable.",
+        "MENTOR_NOT_FOUND": "Un mentor choisi n’existe plus.",
+        "VALIDATION_ERROR": "Un champ est invalide ou trop long.",
+        "HAS_ENROLLMENTS": "Ce cours a des acheteurs : archivez-le au lieu de le supprimer.",
+        "UNAVAILABLE": "La traduction automatique n’est pas configurée.",
+        "FAILED": "La traduction a échoué. Réessayez.",
+        "RATE_LIMITED": "Trop de demandes. Réessayez plus tard.",
+        "NOT_READY": "Le cours n’est pas prêt : voir la liste à droite.",
+        "MISSING_TITLE": "Chaque module et chaque leçon doit avoir un titre.",
+        "UPLOAD_FAILED": "L’envoi a échoué. Réessayez.",
+        "generic": "Une erreur est survenue."
+      }
+    },
+    "settings": {
+      "title": "Réglages de l’Academy",
+      "subtitle": "Prix du Pass, remises, part des mentors et certificat.",
+      "pass": "Academy Pass",
+      "monthlyPrice": "Prix mensuel",
+      "annualDiscount": "Remise annuelle",
+      "premiumDiscount": "Remise Founder / Premium",
+      "preview": "Mensuel {monthly} DA · annuel {annual} DA · Premium {monthlyPremium} DA / mois, {annualPremium} DA / an",
+      "appliesToNew": "Les nouveaux prix s’appliquent aux prochains achats et renouvellements ; les ventes passées ne changent pas.",
+      "mentorsTitle": "Part des mentors",
+      "defaultShare": "Part par défaut",
+      "shareHint": "Part des ventes de cours et du temps de visionnage Pass versée au mentor. Le reste revient à Metwork.",
+      "certificate": "Certificat",
+      "stampUrl": "Cachet Metwork (lien de l’image)",
+      "stampHint": "Image PNG sur fond transparent, envoyée sur Cloudinary. Imprimée sur chaque certificat.",
+      "save": "Enregistrer les réglages",
+      "saved": "Réglages enregistrés.",
+      "perMentor": "Part par mentor",
+      "perMentorHint": "Laissez vide pour la part par défaut ({rate} %).",
+      "courses": "{count, plural, =0 {Aucun cours} one {# cours} other {# cours}}",
+      "shareOf": "Part de {name}",
+      "saveShare": "Enregistrer",
+      "shareSaved": "Part enregistrée.",
+      "errors": {
+        "INVALID_PRICE": "Prix invalide.",
+        "INVALID_RATE": "Un pourcentage doit être entre 0 et 99.",
+        "INVALID_STAMP_URL": "Le cachet doit être une image hébergée sur Cloudinary (https://res.cloudinary.com/…).",
+        "MENTOR_NOT_FOUND": "Mentor introuvable.",
+        "generic": "Une erreur est survenue."
+      }
     }
   }
 }

@@ -4,7 +4,10 @@ import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { passPrices, ACADEMY_MIN_COURSE_PRICE_DZD, type AcademyPricing } from '@/lib/academy';
 import { resolveText } from '@/lib/localized-text';
+import { formatDzd } from './format';
 import type { AcademyFieldRecord } from '@/server/db/store';
+import type { PublicCourseCard } from '@/server/academy/catalog';
+import { CourseCard } from './course-card';
 
 /** Brand gradients for decorative tiles (Startup Academy style guide: greens only). */
 const TILE_BACKGROUNDS = [
@@ -13,21 +16,20 @@ const TILE_BACKGROUNDS = [
   'radial-gradient(circle at 15% 20%,#18834A 0,transparent 45%),linear-gradient(140deg,#031009,#0A2E1B)',
 ];
 
-function formatDzd(n: number, locale: string): string {
-  return new Intl.NumberFormat(locale === 'ar' ? 'ar-DZ' : locale === 'fr' ? 'fr-DZ' : 'en-US').format(n);
-}
 
 interface AcademyLandingProps {
   locale: string;
   pricing: AcademyPricing;
   fields: AcademyFieldRecord[];
+  /** A few published courses, newest first. The row is hidden until there is one. */
+  courses: PublicCourseCard[];
 }
 
 /**
  * /academy for a visitor: what Startup Academy is, what they will learn and
  * how it works, before any course — then subscribe or browse.
  */
-export async function AcademyLanding({ locale, pricing, fields }: AcademyLandingProps) {
+export async function AcademyLanding({ locale, pricing, fields, courses }: AcademyLandingProps) {
   const t = await getTranslations('academy');
   const prices = passPrices(pricing);
   const premiumPercent = Math.round(pricing.premiumDiscountRate * 100);
@@ -149,6 +151,22 @@ export async function AcademyLanding({ locale, pricing, fields }: AcademyLanding
           </ol>
         </div>
       </section>
+
+      {/* ── A few courses (after the visitor knows what the Academy is) ── */}
+      {courses.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 pt-14 sm:px-6 sm:pt-20 lg:px-8">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">{t('landing.coursesTitle')}</h2>
+            <Link href="/academy/courses" className="shrink-0 text-sm font-semibold text-primary hover:underline">{t('landing.coursesAll')}</Link>
+          </div>
+          <div className="mt-8 grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+            {courses.map((c) => {
+              const f = fields.find((x) => x.id === c.fieldId);
+              return <CourseCard key={c.id} course={c} locale={locale} fieldLabel={f ? fieldLabel(f) : ''} />;
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ── The Pass ── */}
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">

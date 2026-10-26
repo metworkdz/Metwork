@@ -5,6 +5,7 @@ import { assertLandingVisible } from '@/lib/landing-visibility';
 import { AcademyComingSoon } from '@/components/features/academy/academy-coming-soon';
 import { AcademyLanding } from '@/components/features/academy/academy-landing';
 import { getAcademyPricing, listAcademyFields } from '@/server/academy/settings';
+import { listPublicCourses } from '@/server/academy/catalog';
 
 // ISR: the landing-visibility toggle and the admin's Pass price propagate
 // without a redeploy (re-rendered at most once per minute).
@@ -34,6 +35,6 @@ export default async function AcademyPage({ params }: PageProps) {
   setRequestLocale(locale);
   if (!isAcademyEnabled()) return <AcademyComingSoon />;
 
-  const [pricing, fields] = await Promise.all([getAcademyPricing(), listAcademyFields()]);
-  return <AcademyLanding locale={locale} pricing={pricing} fields={fields} />;
+  const [pricing, fields, courses] = await Promise.all([getAcademyPricing(), listAcademyFields(), listPublicCourses(locale)]);
+  return <AcademyLanding locale={locale} pricing={pricing} fields={fields} courses={courses.slice(0, 4)} />;
 }

@@ -60,8 +60,12 @@ export type UpdateSettingsResult =
   | { ok: true; settings: AcademySettingsRecord }
   | { ok: false; code: 'INVALID_PRICE' | 'INVALID_RATE' | 'INVALID_STAMP_URL' };
 
-function isHttpsUrl(v: string): boolean {
-  try { return new URL(v).protocol === 'https:'; } catch { return false; }
+/** The stamp is drawn into certificate PDFs, whose image fetcher only reads Cloudinary. */
+function isCloudinaryUrl(v: string): boolean {
+  try {
+    const u = new URL(v);
+    return u.protocol === 'https:' && u.hostname === 'res.cloudinary.com';
+  } catch { return false; }
 }
 
 /**
@@ -77,7 +81,7 @@ export async function updateAcademySettings(
   for (const k of ['passAnnualDiscountRate', 'premiumDiscountRate', 'defaultMentorShareRate'] as const) {
     if (patch[k] !== undefined && !isValidRate(patch[k])) return { ok: false, code: 'INVALID_RATE' };
   }
-  if (patch.certificateStampUrl !== undefined && patch.certificateStampUrl !== null && !isHttpsUrl(patch.certificateStampUrl)) {
+  if (patch.certificateStampUrl !== undefined && patch.certificateStampUrl !== null && !isCloudinaryUrl(patch.certificateStampUrl)) {
     return { ok: false, code: 'INVALID_STAMP_URL' };
   }
 

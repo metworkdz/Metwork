@@ -2328,7 +2328,8 @@
       "home": "Home"
     },
     "contract": "Contract",
-    "programApprovals": "Programs to review"
+    "programApprovals": "Programs to review",
+    "academy": "Startup Academy"
   },
   "pages": {
     "consultationPay": {
@@ -7639,7 +7640,12 @@
       "home": "Startup Academy home",
       "wordmark": "Startup Academy",
       "login": "Log in",
-      "signup": "Create an account"
+      "signup": "Create an account",
+      "nav": "Academy navigation",
+      "links": {
+        "home": "The Academy",
+        "courses": "Courses"
+      }
     },
     "theme": {
       "label": "Theme",
@@ -7730,7 +7736,255 @@
       "perMonth": "{price} DA / month",
       "perYear": "or {price} DA / year",
       "passCta": "Subscribe",
-      "protected": "Videos stream on Metwork only: they are protected and cannot be downloaded."
+      "protected": "Videos stream on Metwork only: they are protected and cannot be downloaded.",
+      "coursesTitle": "A few courses",
+      "coursesAll": "See all courses →"
+    },
+    "levels": {
+      "BEGINNER": "Beginner",
+      "INTERMEDIATE": "Intermediate",
+      "ADVANCED": "Advanced"
+    },
+    "audio": {
+      "DARIJA_FR": "Darija + French",
+      "FR": "French",
+      "AR": "Arabic",
+      "EN": "English"
+    },
+    "duration": {
+      "hm": "{h} h {m}",
+      "m": "{m} min",
+      "s": "{s} s"
+    },
+    "card": {
+      "inPass": "Pass",
+      "lessons": "{count, plural, one {# lesson} other {# lessons}}",
+      "moreSoon": "more coming",
+      "premium": "{price} DA Premium"
+    },
+    "catalog": {
+      "metaTitle": "Course catalogue · Startup Academy",
+      "metaDescription": "Every Startup Academy video course, by field: ideas, company setup, tax, funding, marketing.",
+      "title": "All courses",
+      "count": "{count, plural, =0 {No courses} one {# course} other {# courses}}",
+      "fields": "Fields",
+      "all": "All",
+      "search": "Search",
+      "searchPlaceholder": "A topic, a word…",
+      "level": "Level",
+      "audio": "Video language",
+      "sort": "Sort by",
+      "any": "Any",
+      "inPass": "Included in the Pass",
+      "apply": "Filter",
+      "sorts": {
+        "newest": "Newest",
+        "price-asc": "Price, low to high",
+        "price-desc": "Price, high to low",
+        "shortest": "Shortest"
+      },
+      "noMatch": "No course matches",
+      "noMatchHint": "Try another field or remove a filter.",
+      "reset": "See all courses",
+      "empty": "The first courses are on their way",
+      "emptyHint": "The catalogue opens with module 1, “Find and validate your startup idea”.",
+      "moreFilters": "More filters",
+      "fewerFilters": "Fewer filters"
+    },
+    "course": {
+      "by": "By",
+      "premiumLine": "Founder and Premium members: {price} DA (−{percent}%)",
+      "buy": "Buy the course",
+      "inPassTitle": "Included in the Academy Pass",
+      "inPassDesc": "This course and every other one for {price} DA / month.",
+      "lifetime": "Lifetime access on your Metwork account",
+      "certificate": "Certificate of completion",
+      "futureModules": "Upcoming modules included at no extra cost",
+      "streamOnly": "Protected streaming",
+      "outcomes": "What you will learn",
+      "programme": "Programme",
+      "programmeSummary": "{modules, plural, one {# module} other {# modules}} · {lessons, plural, one {# lesson available} other {# lessons available}}",
+      "module": "Module {n}",
+      "soon": "Coming soon",
+      "preview": "Free preview",
+      "about": "About the course",
+      "mentor": "Your mentor",
+      "mentors": "Your mentors"
+    },
+    "mentor": {
+      "metaTitle": "{name} · Startup Academy mentor",
+      "consultTitle": "One-to-one consultation",
+      "consultDesc": "Book a paid session with this mentor on Metwork.",
+      "consultCta": "Book a consultation",
+      "courses": "{count, plural, one {Their course} other {Their # courses}}"
+    },
+    "money": "{price} DA"
+  },
+  "academyAdmin": {
+    "localized": {
+      "drafted": "Machine translation: read it and correct it if needed.",
+      "missing": "Not translated yet: the original text shows instead."
+    },
+    "list": {
+      "title": "Startup Academy",
+      "subtitle": "Create courses, attach mentors, publish.",
+      "new": "New course",
+      "settings": "Settings",
+      "empty": "No courses yet. Create the first one.",
+      "lessons": "{count, plural, one {# lesson} other {# lessons}}",
+      "mentor": "Mentor",
+      "pickMentor": "Choose a mentor…",
+      "titleHint": "Written in your interface language; the other languages are translated afterwards.",
+      "create": "Create the draft"
+    },
+    "builder": {
+      "back": "Courses",
+      "untitled": "Untitled",
+      "view": "View page",
+      "editingLanguage": "Language you are editing",
+      "lang": {
+        "fr": "Français",
+        "en": "English",
+        "ar": "العربية"
+      },
+      "sourceIs": "Original language: {lang}",
+      "translate": "Translate missing texts",
+      "sections": {
+        "texts": "Texts",
+        "programme": "Programme",
+        "publish": "Publishing",
+        "cover": "Cover image",
+        "classification": "Classification",
+        "price": "Price"
+      },
+      "fields": {
+        "title": "Course title",
+        "subtitle": "Subtitle",
+        "description": "Description",
+        "outcomes": "What learners will learn",
+        "outcome": "Point {n}",
+        "moduleTitle": "Module title",
+        "lessonTitle": "Lesson title",
+        "field": "Field",
+        "level": "Level",
+        "audio": "Video language",
+        "mentors": "Mentors (up to 3)",
+        "slug": "Page address",
+        "price": "Price (DA)",
+        "inPass": "Included in the Academy Pass"
+      },
+      "addOutcome": "Add a point",
+      "newOutcome": "New point",
+      "addModule": "Add a module",
+      "newModule": "Module {n}",
+      "addLesson": "Add a lesson",
+      "newLesson": "Lesson {n}",
+      "moduleN": "Module {n}",
+      "comingSoon": "Coming soon (announced, not online yet)",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "remove": "Remove",
+      "programmeSummary": "{modules, plural, one {# module} other {# modules}} · {duration} online",
+      "uploadVideo": "Upload video",
+      "replaceVideo": "Replace video",
+      "saveBeforeUpload": "Save to be able to upload the video",
+      "checkVideo": "Check",
+      "freePreview": "Free preview",
+      "video": {
+        "NONE": "No video",
+        "UPLOADING": "Uploading…",
+        "PROCESSING": "Encrypting",
+        "READY": "Ready",
+        "FAILED": "Failed"
+      },
+      "readyToPublish": "Ready to publish.",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "archive": "Archive",
+      "statusDone": {
+        "PUBLISH": "Course published.",
+        "UNPUBLISH": "Course removed from the catalogue.",
+        "ARCHIVE": "Course archived. Buyers keep their access."
+      },
+      "status": {
+        "DRAFT": "Draft",
+        "IN_REVIEW": "In review",
+        "CHANGES_REQUESTED": "Changes requested",
+        "PUBLISHED": "Published",
+        "ARCHIVED": "Archived"
+      },
+      "problems": {
+        "NO_THUMBNAIL": "Add a cover image.",
+        "NO_DESCRIPTION": "Write a description.",
+        "NO_RELEASED_LESSON": "At least one lesson must be in an online module.",
+        "VIDEO_NOT_READY": "Every online lesson needs a ready video.",
+        "MENTOR_NOT_APPROVED": "Every mentor must be approved.",
+        "FIELD_NOT_FOUND": "Choose a field.",
+        "PRICE_INVALID": "The price must be at least 2,900 DA."
+      },
+      "changeCover": "Change the cover",
+      "addCover": "Add a cover",
+      "coverHint": "16:9, 1280 × 720 recommended, 5 MB max.",
+      "notApproved": "Not approved",
+      "mentorsHint": "The first one ticked appears on cards. Each earns the share set in the settings.",
+      "priceMin": "The minimum price is {min} DA.",
+      "premiumPrice": "Founder / Premium price: {price} DA",
+      "delete": "Delete the course",
+      "deleteConfirm": "Delete this course for good? Not possible once bought: archive it instead.",
+      "deleteYes": "Yes, delete",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saved": "Saved.",
+      "unsaved": "Unsaved changes",
+      "allSaved": "Everything is saved",
+      "translated": "{count, plural, =0 {Nothing to translate.} one {# translation added, please review.} other {# translations added, please review.}}",
+      "errors": {
+        "PRICE_BELOW_MINIMUM": "The minimum price is 2,900 DA.",
+        "PRICE_INVALID": "Invalid price.",
+        "SLUG_TAKEN": "Another course already uses this address.",
+        "FIELD_NOT_FOUND": "Field not found.",
+        "MENTOR_NOT_FOUND": "A chosen mentor no longer exists.",
+        "VALIDATION_ERROR": "A field is invalid or too long.",
+        "HAS_ENROLLMENTS": "This course has buyers: archive it instead of deleting it.",
+        "UNAVAILABLE": "Automatic translation is not configured.",
+        "FAILED": "Translation failed. Try again.",
+        "RATE_LIMITED": "Too many requests. Try again later.",
+        "NOT_READY": "The course is not ready: see the list on the right.",
+        "MISSING_TITLE": "Every module and lesson needs a title.",
+        "UPLOAD_FAILED": "Upload failed. Try again.",
+        "generic": "Something went wrong."
+      }
+    },
+    "settings": {
+      "title": "Academy settings",
+      "subtitle": "Pass price, discounts, mentor share and certificate.",
+      "pass": "Academy Pass",
+      "monthlyPrice": "Monthly price",
+      "annualDiscount": "Annual discount",
+      "premiumDiscount": "Founder / Premium discount",
+      "preview": "Monthly {monthly} DA · yearly {annual} DA · Premium {monthlyPremium} DA / month, {annualPremium} DA / year",
+      "appliesToNew": "New prices apply to the next purchases and renewals; past sales do not change.",
+      "mentorsTitle": "Mentor share",
+      "defaultShare": "Default share",
+      "shareHint": "Share of course sales and Pass watch time paid to the mentor. The rest goes to Metwork.",
+      "certificate": "Certificate",
+      "stampUrl": "Metwork stamp (image link)",
+      "stampHint": "PNG on a transparent background, uploaded to Cloudinary. Printed on every certificate.",
+      "save": "Save settings",
+      "saved": "Settings saved.",
+      "perMentor": "Share per mentor",
+      "perMentorHint": "Leave empty for the default share ({rate}%).",
+      "courses": "{count, plural, =0 {No courses} one {# course} other {# courses}}",
+      "shareOf": "Share of {name}",
+      "saveShare": "Save",
+      "shareSaved": "Share saved.",
+      "errors": {
+        "INVALID_PRICE": "Invalid price.",
+        "INVALID_RATE": "A percentage must be between 0 and 99.",
+        "INVALID_STAMP_URL": "The stamp must be an image hosted on Cloudinary (https://res.cloudinary.com/…).",
+        "MENTOR_NOT_FOUND": "Mentor not found.",
+        "generic": "Something went wrong."
+      }
     }
   }
 }
