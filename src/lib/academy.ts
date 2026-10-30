@@ -13,6 +13,8 @@
  * Amounts are whole dinars.
  */
 
+import { normalizePlanCode } from '@/lib/membership-benefits';
+
 export const ACADEMY_MIN_COURSE_PRICE_DZD = 2900;
 /** Upper bound on anything an admin or author types, to catch an extra zero. */
 export const ACADEMY_MAX_PRICE_DZD = 500_000;
@@ -79,6 +81,54 @@ export function isValidRate(rate: unknown): rate is number {
 export function mentorShareRate(mentor: { academyShareRate?: number | null } | null | undefined, p: AcademyPricing): number {
   const own = mentor?.academyShareRate;
   return isValidRate(own) ? own : p.defaultMentorShareRate;
+}
+
+/* ─────────────────────────── Buying ─────────────────────────── */
+
+/** Accounts that can buy courses and the Pass (owner: entrepreneurs and freelancers). */
+export const ACADEMY_BUYER_ROLES = ['ENTREPRENEUR', 'FREELANCER'] as const;
+
+export function canBuyAcademy(role: string | null | undefined): boolean {
+  return (ACADEMY_BUYER_ROLES as readonly string[]).includes(role ?? '');
+}
+
+/**
+ * Founder (entrepreneur) or Freelancer Premium, unexpired — the members who get
+ * the Academy discount. The retired Entrepreneur plan does not count.
+ */
+export function isAcademyPremium(
+  user: { role: string; membershipCode?: string | null; membershipTier?: string | null; membershipExpiresAt?: string | null } | null | undefined,
+  now = new Date(),
+): boolean {
+  if (!user) return false;
+  if (user.membershipExpiresAt && new Date(user.membershipExpiresAt) <= now) return false;
+  // The code wins over the tier (Freelancer Premium is stored with tier FOUNDER).
+  const plan = normalizePlanCode(user.membershipCode) ?? normalizePlanCode(user.membershipTier);
+  if (user.role === 'ENTREPRENEUR') return plan === 'STARTUP';
+  if (user.role === 'FREELANCER') return plan === 'FREELANCER_PREMIUM';
+  return false;
+}
+
+export interface CourseQuote {
+  listPriceDzd: number;
+  amountDzd: number;
+  discount: 'NONE' | 'PREMIUM';
+  discountDzd: number;
+}
+
+/** What this buyer pays for a course. The ONE place a course price is computed. */
+export function quoteCourse(listPriceDzd: number, pricing: AcademyPricing, premium: boolean): CourseQuote {
+  if (!premium) return { listPriceDzd, amountDzd: listPriceDzd, discount: 'NONE', discountDzd: 0 };
+  const amountDzd = discounted(listPriceDzd, pricing.premiumDiscountRate);
+  return { listPriceDzd, amountDzd, discount: 'PREMIUM', discountDzd: listPriceDzd - amountDzd };
+}
+
+/** Refund rule (owner): within 7 days, under 25 % of the course watched, no certificate. */
+export const ACADEMY_REFUND_DAYS = 7;
+export const ACADEMY_REFUND_MAX_WATCHED = 0.25;
+
+export function refundWindowEndsAt(purchasedAt: string): Date {
+  return new Date(new Date(purchasedAt).getTime() + ACADEMY_REFUND_DAYS * 24 * 3600 * 1000);
 }
 
 /* ─────────────────────────── Watch time ─────────────────────────── */

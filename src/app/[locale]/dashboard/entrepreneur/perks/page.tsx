@@ -10,6 +10,7 @@ import { getEffectiveMembershipCode } from '@/server/memberships/service';
 import { readSession } from '@/server/auth/session';
 import { listPerksForUser } from '@/server/perks/service';
 import { PartnerPerksGrid } from '@/components/features/entrepreneur/partner-perks-grid';
+import { AcademyPerkCard } from '@/components/features/academy/academy-perk-card';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -137,6 +138,8 @@ export default async function PerksPage({ params }: PageProps) {
         title={t('entrepreneur.perks.title')}
         subtitle={t('entrepreneur.perks.subtitle')}
       />
+
+      {session && <AcademyPerkCard user={session.user} locale={locale} />}
 
       {/* Partner perks — claimable partner offers (CODE_POOL / VOUCHER) */}
       <section className="space-y-3">

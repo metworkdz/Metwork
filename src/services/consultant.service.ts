@@ -142,7 +142,7 @@ export interface ConsultantBooking {
 
 export interface ConsultantLedgerTxn {
   id: string;
-  type: 'EARNING' | 'COMMISSION' | 'RELEASE' | 'REVERSAL' | 'PAYOUT';
+  type: 'EARNING' | 'COMMISSION' | 'RELEASE' | 'REVERSAL' | 'PAYOUT' | 'RECOVERY';
   amount: number;
   bucket: 'PENDING' | 'AVAILABLE';
   status: string;

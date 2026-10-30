@@ -24,6 +24,7 @@ const PROTECTED_PREFIXES = [
   // The catalogue, course pages and the Pass page stay public.
   '/academy/learn',
   '/academy/my',
+  '/academy/checkout',
 ];
 
 /** Pages that should redirect away if user is already authenticated */

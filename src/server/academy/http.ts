@@ -1,7 +1,8 @@
 /** Shared bits of the Academy API routes (admin guard + JSON body parsing). */
 import type { NextRequest } from 'next/server';
 import { ZodError, type ZodTypeAny, type z } from 'zod';
-import { requireApiRole } from '@/server/auth/api-guards';
+import { requireApiRole, requireApprovedApiSession } from '@/server/auth/api-guards';
+import { isAcademyEnabled } from '@/config/feature-flags';
 import { fromZod, jsonError } from '@/server/http/json';
 
 export type Parsed<T> = { ok: true; data: T } | { ok: false; response: Response };
@@ -24,4 +25,10 @@ export async function requireAcademyAdmin() {
   const guard = await requireApiRole(['ADMIN']);
   if (!guard.ok) return guard;
   return { ok: true as const, admin: { id: guard.user.id, email: guard.user.email } };
+}
+
+/** Signed-in, approved account on a live Academy (404 while the launch flag is off). */
+export async function requireAcademyLearner() {
+  if (!isAcademyEnabled()) return { ok: false as const, response: jsonError(404, 'NOT_FOUND', 'Not found') };
+  return requireApprovedApiSession();
 }

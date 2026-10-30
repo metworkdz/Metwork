@@ -17,6 +17,7 @@ import { confirmTopUp } from '@/server/wallet/service';
 import { settleCardBookingFromWebhook } from '@/server/bookings/card-payment';
 import { settleConsultationFromWebhook } from '@/server/consultations/direct-payment';
 import { settlePaymentLinkFromWebhook } from '@/server/payments/payment-links';
+import { settleAcademyOrderFromWebhook } from '@/server/academy/orders';
 import type { WebhookEvent } from './provider';
 
 export type SettleDispatchResult =
@@ -81,9 +82,15 @@ export async function dispatchWebhookSettlement(
     return { matched: true, kind: 'payment_link', payload: { id: event.topUpId, result: payLink } };
   }
 
+  // 4. Startup Academy course order (id = AcademyOrderRecord.id).
+  const academy = await settleAcademyOrderFromWebhook(event.topUpId, event.providerRef, event.status);
+  if (academy === 'SETTLED' || academy === 'ALREADY') {
+    return { matched: true, kind: 'academy_order', payload: { id: event.topUpId, result: academy } };
+  }
+
   // A FAILED event for a booking (status IGNORED) is acknowledged so the
   // provider stops retrying; only a genuinely unknown id is unmatched.
-  if (card === 'IGNORED' || consultation === 'IGNORED' || payLink === 'IGNORED') {
+  if (card === 'IGNORED' || consultation === 'IGNORED' || payLink === 'IGNORED' || academy === 'IGNORED') {
     return { matched: true, kind: 'ignored', payload: { id: event.topUpId } };
   }
 

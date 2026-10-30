@@ -184,11 +184,19 @@ export interface ApplyMentorEarningInput {
  * replay returns the ORIGINAL frozen split (read back off the prior row) and
  * moves no money.
  */
+function earningLabel(kind: MentorEarningKind): string {
+  return kind === 'PROGRAM' ? 'program' : kind === 'ACADEMY_COURSE' ? 'Academy course' : 'consultation';
+}
+
 export function applyMentorEarningToDraft(
   d: StoreDraft,
   input: ApplyMentorEarningInput,
 ): CreditPendingEarningResult {
   const { mentorId, bookingId, grossAmount } = input;
+  // Checked before anything is written: db.update has no rollback.
+  if ((input.kind ?? 'CONSULTATION') === 'ACADEMY_COURSE' && input.frozenPlatformRate == null) {
+    throw new Error('ACADEMY_COURSE earnings need the frozen Academy share');
+  }
   const basePrice =
     input.consultantShareBase != null && input.consultantShareBase > 0
       ? input.consultantShareBase
@@ -246,9 +254,18 @@ export function applyMentorEarningToDraft(
 
   const now = new Date().toISOString();
 
+  // A consultant who owes Metwork for a refunded sale (debtBalance) repays it
+  // out of the next money they earn, before any of it becomes withdrawable. The
+  // EARNING row below keeps the full net so a replay reads the same split back;
+  // the part used to repay sits in its own RECOVERY row.
+  const owed = Math.max(0, wallet.debtBalance ?? 0);
+  const netted = split.mentorNet > 0 ? Math.min(owed, split.mentorNet) : 0;
+  const credited = split.mentorNet - netted;
+
   if (split.mentorNet > 0) {
-    if (bucket === 'AVAILABLE') wallet.availableBalance += split.mentorNet;
-    else wallet.pendingBalance += split.mentorNet;
+    if (bucket === 'AVAILABLE') wallet.availableBalance += credited;
+    else wallet.pendingBalance += credited;
+    if (netted > 0) wallet.debtBalance = owed - netted;
     wallet.updatedAt = now;
   }
 
@@ -263,7 +280,9 @@ export function applyMentorEarningToDraft(
     reference: earningRef,
     description: isProgram
       ? 'Program earning'
-      : 'Consultation earning (held until completed)',
+      : kind === 'ACADEMY_COURSE'
+        ? 'Academy course sale (held during the 7-day refund window)'
+        : 'Consultation earning (held until completed)',
     metadata: {
       gross: split.gross,
       basePrice: promo.basePrice,
@@ -276,6 +295,23 @@ export function applyMentorEarningToDraft(
     createdAt: now,
     completedAt: now,
   });
+
+  if (netted > 0) {
+    pushTxn(d, {
+      id: randomUUID(),
+      mentorId,
+      bookingId,
+      type: 'RECOVERY',
+      amount: -netted,
+      bucket,
+      status: 'COMPLETED',
+      reference: `mentor-debt-netted-${bookingId}`,
+      description: 'Refund balance repaid from this earning',
+      metadata: { debtBefore: owed, debtAfter: owed - netted },
+      createdAt: now,
+      completedAt: now,
+    });
+  }
 
   // Audit-only: the platform's net + the discounts it absorbed. Recorded
   // against the booking, never added to the mentor wallet. Always written when
@@ -294,8 +330,8 @@ export function applyMentorEarningToDraft(
       reference: `mentor-commission-${bookingId}`,
       description:
         promo.platformShare >= 0
-          ? `Platform share on ${isProgram ? 'program' : 'consultation'}`
-          : `Platform subsidy on ${isProgram ? 'program' : 'consultation'} (discount absorbed)`,
+          ? `Platform share on ${earningLabel(kind)}`
+          : `Platform subsidy on ${earningLabel(kind)} (discount absorbed)`,
       metadata: {
         gross: promo.collectedAmount,
         basePrice: promo.basePrice,
@@ -341,46 +377,54 @@ export async function releaseToAvailable(input: {
   mentorId: string;
   bookingId: string;
 }): Promise<ReleaseEarningResult> {
+  return db.update<ReleaseEarningResult>((d) => releaseEarningInDraft(d, input));
+}
+
+/**
+ * {@link releaseToAvailable} inside an already-open `db.update`. `description`
+ * names the event for the ledger (default: a completed consultation).
+ */
+export function releaseEarningInDraft(
+  d: StoreDraft,
+  input: { mentorId: string; bookingId: string; description?: string },
+): ReleaseEarningResult {
   const { mentorId, bookingId } = input;
   const releaseRef = `mentor-release-${bookingId}`;
   const earningRef = `mentor-earning-${bookingId}`;
+  const wallet = ensureMentorWallet(d, mentorId);
 
-  return db.update<ReleaseEarningResult>((d) => {
-    const wallet = ensureMentorWallet(d, mentorId);
+  // Already released → replay.
+  const prior = findByReference(d, mentorId, releaseRef);
+  if (prior) return { ok: true, replayed: true, wallet, released: prior.amount };
 
-    // Already released → replay.
-    const prior = findByReference(d, mentorId, releaseRef);
-    if (prior) return { ok: true, replayed: true, wallet, released: prior.amount };
+  const earning = findByReference(d, mentorId, earningRef);
+  if (!earning || earning.type !== 'EARNING') return { ok: false, reason: 'NO_EARNING' };
+  if (earning.status === 'REVERSED') return { ok: false, reason: 'EARNING_REVERSED' };
 
-    const earning = findByReference(d, mentorId, earningRef);
-    if (!earning || earning.type !== 'EARNING') return { ok: false, reason: 'NO_EARNING' };
-    if (earning.status === 'REVERSED') return { ok: false, reason: 'EARNING_REVERSED' };
+  const amount = earning.amount;
+  const now = new Date().toISOString();
+  if (amount > 0) {
+    wallet.pendingBalance = Math.max(0, wallet.pendingBalance - amount);
+    wallet.availableBalance += amount;
+    wallet.updatedAt = now;
+  }
 
-    const amount = earning.amount;
-    const now = new Date().toISOString();
-    if (amount > 0) {
-      wallet.pendingBalance = Math.max(0, wallet.pendingBalance - amount);
-      wallet.availableBalance += amount;
-      wallet.updatedAt = now;
-    }
-
-    pushTxn(d, {
-      id: randomUUID(),
-      mentorId,
-      bookingId,
-      type: 'RELEASE',
-      amount,
-      bucket: 'AVAILABLE',
-      status: 'COMPLETED',
-      reference: releaseRef,
-      description: 'Consultation earning released after completion',
-      metadata: { earningTxnId: earning.id },
-      createdAt: now,
-      completedAt: now,
-    });
-
-    return { ok: true, replayed: false, wallet, released: amount };
+  pushTxn(d, {
+    id: randomUUID(),
+    mentorId,
+    bookingId,
+    type: 'RELEASE',
+    amount,
+    bucket: 'AVAILABLE',
+    status: 'COMPLETED',
+    reference: releaseRef,
+    description: input.description ?? 'Consultation earning released after completion',
+    metadata: { earningTxnId: earning.id },
+    createdAt: now,
+    completedAt: now,
   });
+
+  return { ok: true, replayed: false, wallet, released: amount };
 }
 
 export type VoidEarningResult =
@@ -396,49 +440,204 @@ export async function voidPendingEarning(input: {
   mentorId: string;
   bookingId: string;
 }): Promise<VoidEarningResult> {
+  return db.update<VoidEarningResult>((d) => voidPendingEarningInDraft(d, input));
+}
+
+/**
+ * {@link voidPendingEarning} inside an already-open `db.update` (a refund
+ * voids the earning in the same write that returns the money). `description`
+ * names the event for the ledger (default: a cancelled consultation).
+ */
+export function voidPendingEarningInDraft(
+  d: StoreDraft,
+  input: { mentorId: string; bookingId: string; description?: string },
+): VoidEarningResult {
   const { mentorId, bookingId } = input;
   const reversalRef = `mentor-reversal-${bookingId}`;
   const releaseRef = `mentor-release-${bookingId}`;
   const earningRef = `mentor-earning-${bookingId}`;
+  const wallet = ensureMentorWallet(d, mentorId);
 
-  return db.update<VoidEarningResult>((d) => {
-    const wallet = ensureMentorWallet(d, mentorId);
+  const prior = findByReference(d, mentorId, reversalRef);
+  if (prior) return { ok: true, replayed: true, wallet, voided: -prior.amount };
 
-    const prior = findByReference(d, mentorId, reversalRef);
-    if (prior) return { ok: true, replayed: true, wallet, voided: -prior.amount };
+  if (findByReference(d, mentorId, releaseRef)) {
+    return { ok: false, reason: 'ALREADY_RELEASED' };
+  }
 
-    if (findByReference(d, mentorId, releaseRef)) {
-      return { ok: false, reason: 'ALREADY_RELEASED' };
+  const earning = findByReference(d, mentorId, earningRef);
+  if (!earning || earning.type !== 'EARNING') return { ok: false, reason: 'NO_EARNING' };
+
+  const amount = earning.amount;
+  const now = new Date().toISOString();
+  if (amount > 0) {
+    wallet.pendingBalance = Math.max(0, wallet.pendingBalance - amount);
+    wallet.updatedAt = now;
+  }
+  earning.status = 'REVERSED';
+
+  pushTxn(d, {
+    id: randomUUID(),
+    mentorId,
+    bookingId,
+    type: 'REVERSAL',
+    amount: -amount,
+    bucket: 'PENDING',
+    status: 'COMPLETED',
+    reference: reversalRef,
+    description: input.description ?? 'Consultation earning voided (cancelled before completion)',
+    metadata: { earningTxnId: earning.id },
+    createdAt: now,
+    completedAt: now,
+  });
+
+  return { ok: true, replayed: false, wallet, voided: amount };
+}
+
+/* ───────────────────────────── Refunded sale ───────────────────────────── */
+
+export type ReverseSaleResult =
+  | {
+      ok: true;
+      replayed: boolean;
+      /** What the consultant was credited for this sale (0 when nothing was). */
+      reversed: number;
+      fromAvailable: number;
+      fromPending: number;
+      /** Amount the consultant now owes because they had already withdrawn it. */
+      debtAdded: number;
+      /** Amount settled outside the platform (consultant repaid Metwork directly). */
+      recoveredOffPlatform: number;
     }
+  | { ok: false; reason: 'NO_EARNING' };
 
-    const earning = findByReference(d, mentorId, earningRef);
-    if (!earning || earning.type !== 'EARNING') return { ok: false, reason: 'NO_EARNING' };
+/**
+ * Undo a refunded sale in the consultant ledger: the EARNING is marked REVERSED,
+ * the COMMISSION audit row is marked REVERSED (so the revenue summary stops
+ * counting the platform's cut), and the credited amount is taken back.
+ *
+ * Where the money comes from, in order: the bucket the earning sits in (PENDING
+ * until released, AVAILABLE for programs and released consultations), then the
+ * other bucket, then whatever is left becomes `debtBalance`. Consequently a debt
+ * only exists while both balances are 0, which is what makes "netted against the
+ * next earning" safe.
+ *
+ * `recoveredOffPlatform` is for a refund that was settled by hand before this
+ * existed: the consultant already sent Metwork the money, so the wallet is left
+ * untouched, no debt is recorded, and a RECOVERY row says why.
+ *
+ * Does NOT use `voidPendingEarningInDraft`: that only reduces PENDING, which is
+ * wrong for a program earning credited straight to AVAILABLE.
+ */
+export function reverseSaleInDraft(
+  d: StoreDraft,
+  input: {
+    mentorId: string;
+    bookingId: string;
+    refundRequestId?: string | null;
+    recoveredOffPlatform?: boolean;
+    description?: string;
+  },
+): ReverseSaleResult {
+  const { mentorId, bookingId } = input;
+  const reversalRef = `mentor-sale-reversal-${bookingId}`;
+  const wallet = ensureMentorWallet(d, mentorId);
 
-    const amount = earning.amount;
-    const now = new Date().toISOString();
-    if (amount > 0) {
-      wallet.pendingBalance = Math.max(0, wallet.pendingBalance - amount);
-      wallet.updatedAt = now;
-    }
-    earning.status = 'REVERSED';
+  const prior = findByReference(d, mentorId, reversalRef);
+  if (prior) {
+    const m = prior.metadata as {
+      fromAvailable?: number; fromPending?: number; debtAdded?: number; recoveredOffPlatform?: number;
+    };
+    return {
+      ok: true,
+      replayed: true,
+      reversed: -prior.amount,
+      fromAvailable: m.fromAvailable ?? 0,
+      fromPending: m.fromPending ?? 0,
+      debtAdded: m.debtAdded ?? 0,
+      recoveredOffPlatform: m.recoveredOffPlatform ?? 0,
+    };
+  }
 
+  const earning = findByReference(d, mentorId, `mentor-earning-${bookingId}`);
+  if (!earning || earning.type !== 'EARNING') return { ok: false, reason: 'NO_EARNING' };
+  // Already voided through the consultation-cancel path: nothing left to take.
+  if (earning.status === 'REVERSED') {
+    return { ok: true, replayed: true, reversed: 0, fromAvailable: 0, fromPending: 0, debtAdded: 0, recoveredOffPlatform: 0 };
+  }
+
+  const now = new Date().toISOString();
+  const net = Math.max(0, earning.amount);
+  const released = Boolean(findByReference(d, mentorId, `mentor-release-${bookingId}`));
+  const startsPending = earning.bucket === 'PENDING' && !released;
+
+  let fromAvailable = 0;
+  let fromPending = 0;
+  let debtAdded = 0;
+  let recovered = 0;
+
+  if (input.recoveredOffPlatform) {
+    recovered = net;
+  } else {
+    let left = net;
+    const takePending = () => {
+      const t = Math.min(wallet.pendingBalance, left);
+      wallet.pendingBalance -= t; fromPending += t; left -= t;
+    };
+    const takeAvailable = () => {
+      const t = Math.min(wallet.availableBalance, left);
+      wallet.availableBalance -= t; fromAvailable += t; left -= t;
+    };
+    if (startsPending) { takePending(); takeAvailable(); } else { takeAvailable(); takePending(); }
+    debtAdded = left;
+    if (debtAdded > 0) wallet.debtBalance = Math.max(0, wallet.debtBalance ?? 0) + debtAdded;
+  }
+  wallet.updatedAt = now;
+
+  earning.status = 'REVERSED';
+  const commission = findByReference(d, mentorId, `mentor-commission-${bookingId}`);
+  if (commission) {
+    commission.status = 'REVERSED';
+    commission.metadata = { ...commission.metadata, reversedAt: now, refundRequestId: input.refundRequestId ?? null };
+  }
+
+  pushTxn(d, {
+    id: randomUUID(),
+    mentorId,
+    bookingId,
+    type: 'REVERSAL',
+    amount: -net,
+    bucket: startsPending ? 'PENDING' : 'AVAILABLE',
+    status: 'COMPLETED',
+    reference: reversalRef,
+    description: input.description ?? 'Sale refunded to the client',
+    metadata: {
+      earningTxnId: earning.id,
+      refundRequestId: input.refundRequestId ?? null,
+      fromAvailable, fromPending, debtAdded, recoveredOffPlatform: recovered,
+    },
+    createdAt: now,
+    completedAt: now,
+  });
+
+  if (recovered > 0) {
     pushTxn(d, {
       id: randomUUID(),
       mentorId,
       bookingId,
-      type: 'REVERSAL',
-      amount: -amount,
-      bucket: 'PENDING',
+      type: 'RECOVERY',
+      amount: recovered,
+      bucket: 'AVAILABLE',
       status: 'COMPLETED',
-      reference: reversalRef,
-      description: 'Consultation earning voided (cancelled before completion)',
-      metadata: { earningTxnId: earning.id },
+      reference: `mentor-sale-recovery-${bookingId}`,
+      description: 'Refunded amount returned to Metwork outside the platform',
+      metadata: { refundRequestId: input.refundRequestId ?? null },
       createdAt: now,
       completedAt: now,
     });
+  }
 
-    return { ok: true, replayed: false, wallet, voided: amount };
-  });
+  return { ok: true, replayed: false, reversed: net, fromAvailable, fromPending, debtAdded, recoveredOffPlatform: recovered };
 }
 
 /* ───────────────────────────── Withdrawals ───────────────────────────── */

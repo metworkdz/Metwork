@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/tooltip';
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { BookingStatusBadge } from '@/components/features/booking/booking-status-badge';
+import { RequestRefundButton } from '@/components/features/refunds/request-refund-button';
 import { formatCurrency, formatDate } from '@/lib/format';
 import type { BookingRecord } from '@/server/db/store';
 import type { Locale } from '@/i18n/config';
@@ -201,6 +202,10 @@ export function MyBookingsTable({ initial, locale }: Props) {
                             >
                               Cancel
                             </Button>
+                          )}
+                          {(b.status === 'CONFIRMED' || b.status === 'COMPLETED') &&
+                            ((b.paymentMethod === 'card' && b.settledAt) || (b.paymentMethod === 'wallet' && b.transactionId)) && (
+                            <RequestRefundButton sourceKind="BOOKING" sourceId={b.id} />
                           )}
                         </div>
                       </TableCell>

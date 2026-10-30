@@ -39,6 +39,8 @@ import {
   TableHeader, TableRow,
 } from '@/components/ui/table';
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
+import { isConsultationRefundWindowOpen } from '@/lib/refund-window';
+import { RequestRefundButton } from '@/components/features/refunds/request-refund-button';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
 import { MentorScheduler } from '@/components/features/mentors/mentor-scheduler';
 import { CategoryFilterBar } from '@/components/features/mentors/category-filter-bar';
@@ -494,6 +496,11 @@ export function ConsultationsPanel({
                           {formatDate(b.createdAt, locale, { dateStyle: 'medium' })}
                         </TableCell>
                         <TableCell className="text-end">
+                          {(b.paymentStatus === 'PAID' || b.chargeType === 'PAID') && (b.amountCharged ?? 0) > 0 && !b.refundTransactionId &&
+                            ['CONFIRMED', 'READY', 'AWAITING_LINK', 'APPROVED'].includes(b.status) &&
+                            isConsultationRefundWindowOpen(b) && (
+                            <RequestRefundButton sourceKind="MENTOR_BOOKING" sourceId={b.id} />
+                          )}
                           {canReschedule && (
                             <Button
                               variant="ghost"

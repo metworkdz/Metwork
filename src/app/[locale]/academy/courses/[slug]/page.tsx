@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Award, CheckCircle2, Clock, Infinity as InfinityIcon, Languages, Lock, PlayCircle, Signal } from 'lucide-react';
 import { Link } from '@/i18n/routing';
-import { Button } from '@/components/ui/button';
 import { assertAcademyEnabled } from '@/server/academy/guard';
 import { getPublicCourse } from '@/server/academy/catalog';
 import { getAcademyPricing, listAcademyFields } from '@/server/academy/settings';
@@ -11,6 +10,7 @@ import { passPrices } from '@/lib/academy';
 import { resolveText } from '@/lib/localized-text';
 import { siteConfig } from '@/config/site';
 import { CourseCover } from '@/components/features/academy/course-cover';
+import { CourseCta } from '@/components/features/academy/course-cta';
 import { formatClock, formatDuration, formatDzd } from '@/components/features/academy/format';
 
 export const revalidate = 60;
@@ -92,9 +92,7 @@ export default async function AcademyCoursePage({ params }: PageProps) {
               <div className="space-y-3 p-5">
                 <p className="font-display text-3xl font-extrabold">{t('money', { price: formatDzd(course.priceDzd, locale) })}</p>
                 <p className="text-sm text-amber-700 dark:text-amber-400">{t('course.premiumLine', { price: formatDzd(course.premiumPriceDzd, locale), percent: premiumPercent })}</p>
-                <Button asChild size="lg" className="w-full font-bold">
-                  <Link href={{ pathname: '/academy/checkout', query: { course: course.slug } }}>{t('course.buy')}</Link>
-                </Button>
+                <CourseCta slug={course.slug} />
                 {course.includedInPass && (
                   <Link href="/academy/pass" className="block rounded-xl border border-primary/40 p-3 text-sm hover:bg-primary/5">
                     <span className="font-bold text-primary">{t('course.inPassTitle')}</span>

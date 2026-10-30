@@ -11,6 +11,8 @@ import {
 import { mobileQuickActionsByRole } from '@/config/mobile-nav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { db } from '@/server/db/store';
+import { buildIncomingView } from '@/server/payments/incoming';
+import { Link } from '@/i18n/routing';
 import type { UserRole } from '@/types/auth';
 
 interface PageProps {
@@ -22,6 +24,7 @@ export default async function AdminDashboard({ params }: PageProps) {
   setRequestLocale(locale);
   const t = await getTranslations('pages.dashboard');
   const tRoot = await getTranslations();
+  const tMoney = await getTranslations('refunds.overview');
   await requireRole(['ADMIN']);
 
   const data = await db.read();
@@ -44,12 +47,6 @@ export default async function AdminDashboard({ params }: PageProps) {
     .filter((w) => w.status === 'ACTIVE')
     .reduce((sum, w) => sum + w.balance, 0);
 
-  // Total booking revenue (all-time PAYMENT transactions completed)
-  const bookingRevenue = data.transactions
-    .filter((t) => t.type === 'PAYMENT' && t.status === 'COMPLETED')
-    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-
-  const totalBookings      = data.bookings.length;
   const pendingMentorReqs  = data.mentorBookings.filter((b) => b.status === 'PENDING').length;
   const unhandledContacts  = data.contactSubmissions.filter((s) => !s.handled).length;
 
@@ -99,6 +96,8 @@ export default async function AdminDashboard({ params }: PageProps) {
   const deletionTrend = trendParts.join(' · ');
 
   const activeMemberships = data.userMemberships.filter((m) => m.status === 'ACTIVE').length;
+  // Cards and wallets together, refunds excluded: the old tile counted wallet payments only.
+  const money = buildIncomingView(data).summary;
 
   return (
     <>
@@ -116,7 +115,9 @@ export default async function AdminDashboard({ params }: PageProps) {
           stats={[
             { label: t('admin.overview.statTotalUsers'), value: totalUsers, hint: t('admin.overview.statTotalUsersHint', { count: newUsersThisMonth }), icon: Users },
             { label: t('admin.overview.statActiveIncubators'), value: activeIncubators, icon: Building2 },
-            { label: t('admin.overview.statBookingRevenue'), value: `${bookingRevenue.toLocaleString()} DZD`, icon: TrendingUp },
+            { label: tMoney('collected'), value: `${money.collectedThisMonth.toLocaleString()} DZD`, icon: TrendingUp },
+            { label: tMoney('owedConsultants'), value: `${money.owedToConsultants.toLocaleString()} DZD`, icon: Wallet },
+            { label: tMoney('owedIncubators'), value: `${money.owedToIncubators.toLocaleString()} DZD`, icon: Building2 },
             { label: t('admin.overview.statWalletFloat'), value: `${walletFloat.toLocaleString()} DZD`, icon: Wallet },
             { label: 'Active memberships', value: activeMemberships, icon: UserCheck, tone: 'gold' },
             { label: t('admin.overview.statPendingMentorReqs'), value: pendingMentorReqs, icon: BookOpen, tone: 'amber' },
@@ -146,9 +147,9 @@ export default async function AdminDashboard({ params }: PageProps) {
           icon={Building2}
         />
         <StatCard
-          label={t('admin.overview.statBookingRevenue')}
-          value={`${bookingRevenue.toLocaleString()} DZD`}
-          hint={t('admin.overview.statBookingRevenueHint', { count: totalBookings })}
+          label={tMoney('collected')}
+          value={`${money.collectedThisMonth.toLocaleString()} DZD`}
+          hint={tMoney('collectedHint')}
           icon={TrendingUp}
         />
         <StatCard
@@ -157,6 +158,15 @@ export default async function AdminDashboard({ params }: PageProps) {
           hint={t('admin.overview.statWalletFloatHint')}
           icon={Wallet}
         />
+      </div>
+
+      {/* Money held for partners and refunds waiting on a decision */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label={tMoney('owedIncubators')} value={`${money.owedToIncubators.toLocaleString()} DZD`} hint={tMoney('owedIncubatorsHint')} icon={Building2} />
+        <StatCard label={tMoney('owedConsultants')} value={`${money.owedToConsultants.toLocaleString()} DZD`} hint={tMoney('owedConsultantsHint')} icon={Wallet} />
+        <Link href="/dashboard/admin/payments?tab=refunds" className="block">
+          <StatCard label={tMoney('refundsOpen')} value={money.openRefunds} hint={tMoney('refundsOpenHint')} icon={Wallet} />
+        </Link>
       </div>
 
       {/* Secondary KPIs */}

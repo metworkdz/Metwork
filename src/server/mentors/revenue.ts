@@ -73,6 +73,8 @@ export async function getConsultationRevenueSummary(): Promise<ConsultationReven
 
   for (const t of data.mentorLedgerTxns ?? []) {
     if (t.type !== 'COMMISSION') continue;
+    // A refunded sale keeps its audit row but no longer counts as platform revenue.
+    if (t.status === 'REVERSED') continue;
     if (!t.bookingId || cancelled.has(t.bookingId)) continue;
 
     const md = t.metadata ?? {};

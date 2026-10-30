@@ -9,6 +9,7 @@
  *   - memory, persisted to `.local-academy.json` under USE_LOCAL_DB=true,
  *     purely in memory under tests.
  */
+import { randomUUID } from 'node:crypto';
 import type * as NodeFs from 'node:fs';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { creditableWatchSeconds, watchCaps } from '@/lib/academy';
@@ -52,6 +53,19 @@ export interface AcademyRepo {
   addWatch(input: AddWatchInput): Promise<{ credited: number; totalToday: number }>;
   /** Seconds per user and mentor between two days (inclusive). */
   watchTotals(from: string, to: string, access: WatchAccess): Promise<WatchTotal[]>;
+  /** Everything this user watched of one course, all days (refund rule). */
+  courseWatchSeconds(userId: string, courseId: string): Promise<number>;
+  /**
+   * Open a stream for the user, replacing any other: one stream per account.
+   * Returns the new stream id.
+   */
+  startStream(userId: string, input: { courseId: string; lessonId: string }): Promise<string>;
+  /**
+   * A heartbeat from a stream. `elapsedSec` is measured on the server since the
+   * stream's previous heartbeat (the browser never says how long it watched).
+   * `TAKEN` = another device opened a stream since.
+   */
+  touchStream(userId: string, streamId: string): Promise<{ ok: true; elapsedSec: number } | { ok: false; reason: 'TAKEN' }>;
   /** Erase a user's rows (account deletion). */
   deleteUser(userId: string): Promise<void>;
 }
@@ -70,8 +84,9 @@ function assertDay(day: string): string {
 interface LedgerRow {
   userId: string; lessonId: string; day: string; courseId: string; mentorId: string; access: WatchAccess; seconds: number;
 }
-interface MemoryState { progress: LessonProgress[]; ledger: LedgerRow[] }
-const emptyState = (): MemoryState => ({ progress: [], ledger: [] });
+interface StreamRow { userId: string; streamId: string; courseId: string; lessonId: string; lastSeenAt: string }
+interface MemoryState { progress: LessonProgress[]; ledger: LedgerRow[]; streams: StreamRow[] }
+const emptyState = (): MemoryState => ({ progress: [], ledger: [], streams: [] });
 
 export function createMemoryAcademyRepo(persistPath?: string): AcademyRepo & { reset(): void } {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires -- dev-only file backend, kept out of client bundles
@@ -129,10 +144,33 @@ export function createMemoryAcademyRepo(persistPath?: string): AcademyRepo & { r
       }
       return [...totals.values()];
     },
+    async courseWatchSeconds(userId, courseId) {
+      load();
+      return s.ledger.filter((r) => r.userId === userId && r.courseId === courseId).reduce((n, r) => n + r.seconds, 0);
+    },
+    async startStream(userId, { courseId, lessonId }) {
+      load();
+      const streamId = randomUUID();
+      s.streams = s.streams.filter((x) => x.userId !== userId);
+      s.streams.push({ userId, streamId, courseId, lessonId, lastSeenAt: new Date().toISOString() });
+      save();
+      return streamId;
+    },
+    async touchStream(userId, streamId) {
+      load();
+      const row = s.streams.find((x) => x.userId === userId);
+      if (!row || row.streamId !== streamId) return { ok: false, reason: 'TAKEN' };
+      const now = Date.now();
+      const elapsedSec = Math.max(0, Math.floor((now - new Date(row.lastSeenAt).getTime()) / 1000));
+      row.lastSeenAt = new Date(now).toISOString();
+      save();
+      return { ok: true, elapsedSec };
+    },
     async deleteUser(userId) {
       load();
       s.progress = s.progress.filter((p) => p.userId !== userId);
       s.ledger = s.ledger.filter((r) => r.userId !== userId);
+      s.streams = s.streams.filter((r) => r.userId !== userId);
       save();
     },
   };
@@ -184,9 +222,28 @@ export function createSupabaseAcademyRepo(client: SupabaseClient): AcademyRepo {
       const rows = check(await client.rpc('academy_watch_totals', { p_from: assertDay(from), p_to: assertDay(to), p_access: access })) as Row[];
       return rows.map((r) => ({ userId: r.user_id as string, mentorId: r.mentor_id as string, seconds: Number(r.seconds ?? 0) }));
     },
+    async courseWatchSeconds(userId, courseId) {
+      const rows = check(await client.from('academy_watch_ledger').select('seconds').eq('user_id', userId).eq('course_id', courseId)) as Row[];
+      return rows.reduce((n, r) => n + Number(r.seconds ?? 0), 0);
+    },
+    async startStream(userId, { courseId, lessonId }) {
+      const streamId = randomUUID();
+      check(await client.from('academy_streams').upsert(
+        { user_id: userId, stream_id: streamId, course_id: courseId, lesson_id: lessonId, last_seen_at: new Date().toISOString() },
+        { onConflict: 'user_id' },
+      ));
+      return streamId;
+    },
+    async touchStream(userId, streamId) {
+      const rows = check(await client.rpc('academy_touch_stream', { p_user_id: userId, p_stream_id: streamId })) as Row[];
+      const r = rows[0];
+      if (!r || r.elapsed_sec === null || r.elapsed_sec === undefined) return { ok: false, reason: 'TAKEN' };
+      return { ok: true, elapsedSec: Math.max(0, Number(r.elapsed_sec)) };
+    },
     async deleteUser(userId) {
       check(await client.from('academy_progress').delete().eq('user_id', userId));
       check(await client.from('academy_watch_ledger').delete().eq('user_id', userId));
+      check(await client.from('academy_streams').delete().eq('user_id', userId));
     },
   };
 }

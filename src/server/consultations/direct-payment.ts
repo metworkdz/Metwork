@@ -26,6 +26,7 @@
  *  - The pay token is a single-use, 7-day random UUID. Once a booking is PAID,
  *    init refuses and the token can no longer trigger a charge.
  */
+import { alertAdminsOfConsultationPayment } from '@/server/notifications/admin-payment-alert';
 import { db, type MentorBookingRecord, type MentorRecord } from '@/server/db/store';
 import { findMentorById } from '@/server/mentors/service';
 import { getActiveProvider, getProviderByCode } from '@/server/payments/registry';
@@ -230,6 +231,7 @@ async function markPaidAndConfirm(
     if (claim.booking.instantBook === true) {
       await sendBookingNotificationOnce(claim.booking.id);
     }
+    await alertAdminsOfConsultationPayment(claim.booking.id);
     // Both-party confirmation emails + PDF receipt — sent exactly once.
     await sendGuestConfirmationOnce(claim.booking.id);
   }

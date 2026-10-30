@@ -44,7 +44,6 @@ import {
   type BookingPaymentMode,
   type BookingUnit,
   type IncubatorRecord,
-  type MentorRecord,
 } from '@/server/db/store';
 import { countAttendance } from '@/server/attendance';
 import { computeDeposit } from './pricing';
@@ -76,11 +75,12 @@ import {
   resolvePromoItem,
 } from '@/server/promo-codes/service';
 import { getActiveProvider } from '@/server/payments/registry';
-import { creditIncubatorPayoutDraft, findOwningIncubator } from './incubator-payout';
+import { creditIncubatorPayoutDraft, findOwningIncubator, findOwningMentor } from './incubator-payout';
 import { getSlickPayTransferStatus } from '@/server/payments/slickpay-provider';
 import { ProviderNotConfiguredError } from '@/server/payments/errors';
 import { sendBookingReceiptEmail } from '@/server/notifications/mock';
 import { createNotification } from '@/server/notifications/create-notification';
+import { alertAdminsOfBookingPayment } from '@/server/notifications/admin-payment-alert';
 import {
   insertRegistrationSync,
   dispatchRegistrationConfirmationIfDue,
@@ -176,14 +176,6 @@ export interface CardPayView {
 /* ──────────────────────────── Internal helpers ──────────────────────────── */
 
 type StoreDraft = Parameters<Parameters<typeof db.update>[0]>[0];
-
-/** Resolve the consultant record that owns a mentor-owned PROGRAM (null for any other kind/owner). */
-function findOwningMentor(d: StoreDraft, kind: BookingItemKind, itemId: string): MentorRecord | null {
-  if (kind !== 'PROGRAM') return null;
-  const mentorId = d.programs?.find((p) => p.id === itemId)?.mentorId;
-  if (!mentorId) return null;
-  return (d.mentors ?? []).find((m) => m.id === mentorId) ?? null;
-}
 
 interface ResolvedItem {
   itemId: string;
@@ -1015,6 +1007,9 @@ export async function verifyAndSettleCardBooking(token: string): Promise<CardPay
     void notifyVoidedAfterPayment(booking.id);
     return viewFor(after, 'SLOT_TAKEN');
   }
+  // Only the caller that claimed the settlement alerts; awaited so a serverless
+  // freeze cannot drop it.
+  if (outcome.kind === 'SETTLED' && outcome.claimed) await alertAdminsOfBookingPayment(booking.id);
   void dispatchReceiptIfDue(booking.id);
   void dispatchRegistrationConfirmationIfDue(booking.id);
   return viewFor(after, 'CONFIRMED');
@@ -1044,6 +1039,7 @@ export async function settleCardBookingFromWebhook(
     void notifyVoidedAfterPayment(bookingId);
     return 'VOIDED';
   }
+  if (outcome.claimed) await alertAdminsOfBookingPayment(bookingId);
   void dispatchReceiptIfDue(bookingId);
   void dispatchRegistrationConfirmationIfDue(bookingId);
   return 'SETTLED';
@@ -1119,6 +1115,7 @@ export async function initCardBookingPayment(
     const outcome = await applyCardSettlement(booking.id, result.providerRef);
     if (outcome.kind === 'SLOT_TAKEN') void notifyVoidedAfterPayment(booking.id);
     else {
+      if (outcome.kind === 'SETTLED' && outcome.claimed) await alertAdminsOfBookingPayment(booking.id);
       void dispatchReceiptIfDue(booking.id);
       void dispatchRegistrationConfirmationIfDue(booking.id);
     }

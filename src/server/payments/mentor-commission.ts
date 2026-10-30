@@ -35,7 +35,11 @@ export const DEFAULT_MENTOR_PROGRAM_PLATFORM_RATE =
   DEFAULT_COMMISSION_RULES.find((r) => r.transactionType === MENTOR_PROGRAM_RULE_TYPE)?.rate ?? 0.05;
 
 /** What the consultant is being paid for. Absent ⇒ CONSULTATION (back-compat). */
-export type MentorEarningKind = 'CONSULTATION' | 'PROGRAM';
+/**
+ * ACADEMY_COURSE always arrives with a frozen rate (the mentor's Academy share,
+ * see `mentorShareRate` in @/lib/academy); it never resolves a commission rule.
+ */
+export type MentorEarningKind = 'CONSULTATION' | 'PROGRAM' | 'ACADEMY_COURSE';
 
 /**
  * Which rate is being resolved. `kind` selects the rule; every existing caller

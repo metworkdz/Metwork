@@ -87,6 +87,8 @@ const nextConfig = {
       "script-src 'self' 'unsafe-inline'",
       isDev ? "'unsafe-eval'" : '',
       'https://browser.sentry-cdn.com https://js.sentry-cdn.com',
+      // VdoCipher player API (Startup Academy lessons).
+      'https://player.vdocipher.com',
     ]
       .filter(Boolean)
       .join(' ');
@@ -132,7 +134,8 @@ const nextConfig = {
               // blob: frames show the certificate editor's live PDF preview.
               // Only this origin's own scripts can mint a blob: URL, so this
               // opens no door to third-party content.
-              "frame-src 'self' blob:",
+              // player.vdocipher.com: the DRM video player of Startup Academy lessons.
+              "frame-src 'self' blob: https://player.vdocipher.com",
               "frame-ancestors 'none'",
               "object-src 'none'",
               "base-uri 'self'",

@@ -51,6 +51,10 @@
     {
       "path": "/api/cron/tax-reminders",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/academy-release-earnings",
+      "schedule": "15 3 * * *"
     }
   ]
 }

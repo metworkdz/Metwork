@@ -689,6 +689,9 @@ export interface BookingRecord {
   paymentStatus?: BookingPaymentStatus;
   /** Idempotency stamp — set once the wallet settlement has been applied. */
   settledAt?: string | null;
+  /** Set when an admin-accepted refund undid this booking (see RefundRequestRecord). */
+  refundRequestId?: string | null;
+  refundedAt?: string | null;
 
   /** Cash-collection audit — who/when the incubator marked the balance paid. */
   cashCollectedAt?: string | null;
@@ -1509,9 +1512,39 @@ export interface AcademyEnrollmentRecord {
   mentorShareRate: number;
   /** Payment / booking id that granted it — one enrollment per payment. */
   paymentRef: string | null;
+  /** When the mentors' held earnings were released (end of the refund window). */
+  earningsReleasedAt?: string | null;
   createdAt: string;
   refundedAt: string | null;
   revokedAt: string | null;
+}
+
+/**
+ * One attempt to buy a course. Wallet orders are PAID in the same write that
+ * creates them; card orders wait for the provider (return page or webhook).
+ * The order id is the provider's `external_id`.
+ */
+export interface AcademyOrderRecord {
+  id: string;
+  userId: string;
+  courseId: string;
+  /** Client idempotency key: a retried request never creates a second order. */
+  clientReference: string;
+  listPriceDzd: number;
+  amountDzd: number;
+  discount: 'NONE' | 'PREMIUM';
+  /** Frozen when the order is created; settlement credits exactly these. */
+  mentorShares: { mentorId: string; rate: number }[];
+  method: 'WALLET' | 'CARD';
+  providerRef: string | null;
+  /** Hosted checkout URL, kept so a retried click lands on the same checkout. */
+  redirectUrl: string | null;
+  status: 'PENDING' | 'PAID' | 'FAILED';
+  /** Paid while the buyer already owned the course: the amount went back to their wallet. */
+  duplicateRefunded?: boolean;
+  enrollmentId: string | null;
+  createdAt: string;
+  paidAt: string | null;
 }
 
 /* ──────────────────── Membership plan configuration ──────────────────── */
@@ -1594,6 +1627,9 @@ export type AuditAction =
   | 'PARTNER_PROMO_CODE_BULK_GENERATED'
   | 'WITHDRAWAL_APPROVED'
   | 'WITHDRAWAL_REJECTED'
+  | 'REFUND_ACCEPTED'
+  | 'REFUND_REJECTED'
+  | 'REFUND_PAID'
   | 'PAYOUT_BANK_ACCOUNT_SET'
   | 'PAYOUT_SENT'
   | 'ACCOUNT_DELETED'
@@ -3633,6 +3669,13 @@ export type NotificationType =
   | 'NETWORK_CREDIT_LOW'
   | 'NETWORK_CREDITS_RESET'
   | 'PARTNER_PROMO_RECEIVED'
+  /** Startup Academy: a course was unlocked or refunded. */
+  | 'ACADEMY_ENROLLED'
+  | 'ACADEMY_REFUNDED'
+  /** Refunds: a request was opened, accepted, paid or declined; or a payment arrived. */
+  | 'REFUND_REQUESTED'
+  | 'REFUND_UPDATE'
+  | 'PAYMENT_RECEIVED'
   | 'GENERAL';
 
 export interface NotificationRecord {
@@ -3761,6 +3804,85 @@ export interface WithdrawalRequestRecord extends PayoutFields {
   updatedAt: string;
 }
 
+/* ─────────────────────────── Refund requests ───────────────────────────
+ * ONE record per refunded payment, whatever was bought. The owner side of the
+ * sale (incubator wallet, consultant ledger, seat) is reversed when an admin
+ * ACCEPTS the request; the client is then paid either into their Metwork wallet
+ * (registered account, instant) or by manual bank/CCP transfer (guest). See
+ * `@/server/refunds/service`. */
+
+export type RefundSourceKind = 'BOOKING' | 'MENTOR_BOOKING';
+
+/**
+ * REQUESTED         — opened, waiting for an admin decision. Nothing has moved.
+ * AWAITING_ACCOUNT  — accepted; a guest was emailed a link to give their account.
+ * READY_TO_PAY      — account on file; the admin sends the transfer.
+ * REFUNDED          — client has been paid (wallet credit, or transfer confirmed).
+ * REJECTED          — declined by an admin. Nothing moved.
+ */
+export type RefundStatus =
+  | 'REQUESTED'
+  | 'AWAITING_ACCOUNT'
+  | 'READY_TO_PAY'
+  | 'REFUNDED'
+  | 'REJECTED';
+
+export interface RefundRequestRecord {
+  id: string;
+  sourceKind: RefundSourceKind;
+  /** BookingRecord.id or MentorBookingRecord.id, per `sourceKind`. */
+  sourceId: string;
+  /** Denormalised for the admin list. */
+  itemName: string;
+  /** Who was paid for the sale: an incubator, a consultant, or nobody. */
+  ownerKind: 'INCUBATOR' | 'MENTOR' | null;
+  ownerId: string | null;
+  /** Integer DZD paid back to the client (everything they were charged online). */
+  amount: number;
+  /** WALLET for a registered client, BANK for a guest. Frozen at acceptance. */
+  destination: 'WALLET' | 'BANK';
+  /** Null for a guest. */
+  userId: string | null;
+  clientName: string;
+  clientEmail: string | null;
+  locale: 'en' | 'fr' | 'ar';
+  reason: string;
+  requestedBy: 'CLIENT' | 'ADMIN' | 'OWNER' | 'SYSTEM';
+  requestedById: string | null;
+  status: RefundStatus;
+  /** How the owner side was undone at acceptance (audit). Null until then. */
+  reversal: {
+    at: string;
+    ownerKind: 'INCUBATOR' | 'MENTOR' | null;
+    /** What left the owner's balance. */
+    ownerDebit: number;
+    /** Platform commission given back. */
+    commissionReversed: number;
+    /** Consultant owes this after already withdrawing the sale. */
+    debtAdded: number;
+    /** Settled outside the platform before this record existed. */
+    recoveredOffPlatform: number;
+  } | null;
+  /** SHA-256 of the emailed account-link token. The token itself is never stored. */
+  tokenHash?: string | null;
+  tokenExpiresAt?: string | null;
+  /** Account the client gave for a BANK refund. */
+  payoutAccount?: PayoutAccount | null;
+  accountSubmittedAt?: string | null;
+  /** WALLET refunds: the REFUND transaction credited to the client. */
+  walletRefundTxnId?: string | null;
+  /** BANK refunds: proof and reference of the manual transfer. */
+  receiptUrl?: string | null;
+  transferReference?: string | null;
+  adminNote?: string | null;
+  processedByAdminId?: string | null;
+  /** True when the client was refunded by hand before this record existed. */
+  paidOffPlatform?: boolean;
+  createdAt: string;
+  updatedAt: string;
+  refundedAt?: string | null;
+}
+
 /* ─────────────────────────── Mentor (consultant) ledger ───────────────────────────
  * A PARALLEL, mentorId-keyed earnings ledger. Deliberately separate from the
  * user `WalletRecord`/`TransactionRecord` system: consultants are not platform
@@ -3785,6 +3907,13 @@ export interface MentorWalletRecord {
   pendingBalance: number;
   /** Released, withdrawable balance. Integer DZD. */
   availableBalance: number;
+  /**
+   * Money the consultant owes Metwork after a refunded sale whose earning they
+   * had already withdrawn. Integer DZD, absent/0 when nothing is owed. While it
+   * is above 0 both balances are 0, and every new earning is netted against it
+   * (see `applyMentorEarningToDraft`) before anything becomes withdrawable.
+   */
+  debtBalance?: number;
   currency: 'DZD';
   status: MentorWalletStatus;
   createdAt: string;
@@ -3798,6 +3927,8 @@ export interface MentorWalletRecord {
  *   RELEASE    — moves a prior EARNING from PENDING → AVAILABLE once COMPLETED.
  *   REVERSAL   — voids a prior entry: a not-yet-released EARNING (cancellation
  *                before completion) or a rejected withdrawal hold (refund to AVAILABLE).
+ *   RECOVERY   — settles refund debt: either netted against a later earning, or
+ *                recovered outside the platform (consultant paid Metwork back).
  *   PAYOUT     — escrow hold deducted from AVAILABLE on withdrawal request;
  *                PENDING until the admin marks the external transfer COMPLETED
  *                (or REVERSED on rejection). Mirrors the user-wallet PAYOUT.
@@ -3807,7 +3938,8 @@ export type MentorLedgerTxnType =
   | 'COMMISSION'
   | 'RELEASE'
   | 'REVERSAL'
-  | 'PAYOUT';
+  | 'PAYOUT'
+  | 'RECOVERY';
 
 export type MentorLedgerTxnStatus = 'PENDING' | 'COMPLETED' | 'REVERSED';
 
@@ -4208,7 +4340,7 @@ export interface CampaignSendRecord {
   sentAt: string;
 }
 
-interface DbShape {
+export interface DbShape {
   pendingUsers: PendingUserRecord[];
   users: UserRecord[];
   sessions: SessionRecord[];
@@ -4312,6 +4444,8 @@ interface DbShape {
   academyCourses?: AcademyCourseRecord[];
   /** Startup Academy — lifetime course access (purchases, grants, gifts). */
   academyEnrollments?: AcademyEnrollmentRecord[];
+  /** Startup Academy — course purchase attempts (wallet or card). */
+  academyOrders?: AcademyOrderRecord[];
   /** Audit log entries for admin actions. */
   auditLogs: AuditLogRecord[];
   /** In-app notifications per user. */
@@ -4326,6 +4460,8 @@ interface DbShape {
   withdrawalRequests: WithdrawalRequestRecord[];
   /** Mentor consultation bookings (separate from mentor inquiry requests). */
   mentorConsultations: MentorConsultationRecord[];
+  /** Refund requests across every payment kind. Optional — legacy blobs predate it; readers default to []. */
+  refundRequests?: RefundRequestRecord[];
   /** Parallel, mentorId-keyed consultant earnings wallets (pending/available). */
   mentorWallets: MentorWalletRecord[];
   /** Append-only ledger backing the mentor wallets. */

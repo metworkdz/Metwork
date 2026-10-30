@@ -15,7 +15,7 @@ import {
 
 const TYPE_KEY: Record<string, string> = {
   EARNING: 'typeEarning', COMMISSION: 'typeCommission', RELEASE: 'typeRelease',
-  REVERSAL: 'typeReversal', PAYOUT: 'typePayout',
+  REVERSAL: 'typeReversal', PAYOUT: 'typePayout', RECOVERY: 'typeRecovery',
 };
 
 export function EarningsSection() {

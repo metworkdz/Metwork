@@ -366,3 +366,50 @@ Phase 0 committed as `310a3f7` after owner approval.
   `/academy/checkout`, which 404 in preview until then), trailer upload.
 - Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2220/2220 (16 new),
   browser fr/en/ar, 375 px, no horizontal overflow.
+
+### Phase 2 — buy and watch (`feat/academy-phase0`, uncommitted at report)
+Phase 1 committed as `ec386f2` after owner approval. Owner payment decisions for
+phase 2: the mentor's share is computed on the FULL course price (Metwork absorbs
+the Premium discount, same as consultations since 2026-06-18); refunds go to the
+Metwork WALLET for wallet and card purchases alike.
+- `server/academy/orders.ts`: `quoteForBuyer` / `startCoursePurchase` (WALLET:
+  debit + enrollment + mentor credit in ONE `db.update`; CARD: order = provider
+  `external_id`, hosted SlickPay checkout, settled only by provider poll or the
+  verified webhook, idempotent `settleOrderInDraft`), duplicate payment for an
+  owned course → back to the wallet, `refundEnrollment` (7 days, <25 % of released
+  duration watched, re-checked inside the write; wallet credit + earnings voided in
+  the same write), `releaseAcademyEarnings` (cron `/api/cron/academy-release-earnings`,
+  GET+POST, daily 03:15).
+- Shared code made reusable instead of copied: `debitWalletInDraft` /
+  `creditRefundInDraft` (wallet), `releaseEarningInDraft` /
+  `voidPendingEarningInDraft` (mentor ledger; the async versions now wrap them),
+  `MentorEarningKind` gains `ACADEMY_COURSE` (requires a frozen rate, checked
+  before any write). Webhook dispatcher step 4 = Academy orders.
+- Premium = `isAcademyPremium` in `@/lib/academy`, via the canonical
+  `normalizePlanCode` (QA Founder stores code 'FOUNDER'; a hand-rolled check missed it).
+- Access: `server/academy/access.ts` `lessonAccess` (ADMIN / OWNED / PREVIEW;
+  archived courses stay open to buyers; coming-soon and not-READY never play).
+- Playback: `/api/academy/playback` (access check, 80 lessons/h/user, VdoCipher
+  OTP with the viewer's watermark, opens THE account stream), `/api/academy/heartbeat`
+  (30 s; watch time = server-measured elapsed since the stream's last beat; 409
+  STREAM_TAKEN on a second device; resume point; done at 90 %),
+  `/api/academy/progress` (mark done). Postgres migration
+  `20261027000000_academy_streams.sql` (**apply after the phase-0 one**).
+- Player: `components/features/academy/lesson-player.tsx` — VdoCipher iframe +
+  Player API v2 (`VdoPlayer.getInstance(iframe).video`), or a local mock with the
+  same events. CSP: `player.vdocipher.com` added to script-src and frame-src.
+  **Not yet tested against a live VdoCipher account** (no key yet).
+- Pages: `/academy/checkout` (wallet / CIB-Edahabia, Premium line, terms),
+  `/academy/checkout/return/[orderId]`, `/academy/learn/[slug]` (→ resume lesson),
+  `/academy/learn/[slug]/[lessonId]`, `/academy/my` (progress + refund);
+  course page buy card personalised by `/api/academy/courses/[slug]/me` (page
+  stays cacheable); Academy perk card on the entrepreneur perks page.
+- Verified locally: seed → publish → Founder buys 2 320 DA from wallet → mentor
+  870 held → watch + heartbeat counted → mark done → refund → wallet back, earning
+  REVERSED; fr/ar, 375 px. Dev-only artefacts seen: React StrictMode double
+  playback call; first-compile latency under-counts watch time (never over).
+- Not built: Pass (phase 3), Academy analytics in admin Analytics (with the Pass),
+  freelancer perk card (freelancers have no perks page yet), promo codes on courses,
+  receipt email.
+- Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2238/2238 (18 new);
+  two mutation checks (full-price share, concurrent refund) turn tests red.

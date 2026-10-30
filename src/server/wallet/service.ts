@@ -96,74 +96,111 @@ export interface ChargeInput {
   metadata?: Record<string, unknown>;
 }
 
+type StoreDraft = Parameters<Parameters<typeof db.update>[0]>[0];
+
+/**
+ * Debit inside an already-open `db.update`, so a purchase can debit the wallet
+ * and grant what was bought in ONE atomic write. Idempotent on `reference`.
+ * `chargeWallet` below is the stand-alone wrapper.
+ */
+export function debitWalletInDraft(d: StoreDraft, input: ChargeInput): ChargeResult {
+  if (!Number.isInteger(input.amount) || input.amount <= 0) {
+    return { ok: false, reason: 'INSUFFICIENT_FUNDS', balance: 0, required: input.amount };
+  }
+  let wallet = d.wallets.find((w) => w.userId === input.userId);
+  if (!wallet) {
+    wallet = newWallet(input.userId);
+    d.wallets.push(wallet);
+  }
+  if (wallet.status === 'FROZEN') {
+    return { ok: false, reason: 'WALLET_FROZEN' };
+  }
+
+  // Idempotency: if a non-failed transaction with this reference already
+  // exists for the wallet, return it instead of charging again.
+  const existing = d.transactions.find(
+    (t) => t.walletId === wallet!.id && t.reference === input.reference && t.status !== 'FAILED',
+  );
+  if (existing) {
+    return { ok: true, replayed: true, transaction: existing, wallet };
+  }
+
+  if (wallet.balance < input.amount) {
+    return { ok: false, reason: 'INSUFFICIENT_FUNDS', balance: wallet.balance, required: input.amount };
+  }
+
+  const now = new Date().toISOString();
+  wallet.balance -= input.amount;
+  wallet.updatedAt = now;
+
+  const tx: TransactionRecord = {
+    id: randomUUID(),
+    walletId: wallet.id,
+    userId: input.userId,
+    type: 'PAYMENT',
+    amount: -input.amount,
+    balanceAfter: wallet.balance,
+    status: 'COMPLETED',
+    description: input.description,
+    reference: input.reference,
+    provider: 'internal',
+    providerTxnId: null,
+    metadata: input.metadata ?? {},
+    createdAt: now,
+    completedAt: now,
+  };
+  d.transactions.push(tx);
+  return { ok: true, replayed: false, transaction: tx, wallet };
+}
+
 /**
  * Atomically debit the user's wallet. Idempotent on `reference` — replaying
  * the same charge returns the original transaction without double-spending.
  */
 export async function chargeWallet(input: ChargeInput): Promise<ChargeResult> {
   if (!Number.isInteger(input.amount) || input.amount <= 0) {
-    return {
-      ok: false,
-      reason: 'INSUFFICIENT_FUNDS',
-      balance: 0,
-      required: input.amount,
-    };
+    return { ok: false, reason: 'INSUFFICIENT_FUNDS', balance: 0, required: input.amount };
   }
+  return db.update<ChargeResult>((d) => debitWalletInDraft(d, input));
+}
 
-  return db.update<ChargeResult>((d) => {
-    let wallet = d.wallets.find((w) => w.userId === input.userId);
-    if (!wallet) {
-      wallet = newWallet(input.userId);
-      d.wallets.push(wallet);
-    }
-    if (wallet.status === 'FROZEN') {
-      return { ok: false, reason: 'WALLET_FROZEN' };
-    }
-
-    // Idempotency: if a non-failed transaction with this reference already
-    // exists for the wallet, return it instead of charging again.
-    const existing = d.transactions.find(
-      (t) =>
-        t.walletId === wallet!.id &&
-        t.reference === input.reference &&
-        t.status !== 'FAILED',
-    );
-    if (existing) {
-      return { ok: true, replayed: true, transaction: existing, wallet };
-    }
-
-    if (wallet.balance < input.amount) {
-      return {
-        ok: false,
-        reason: 'INSUFFICIENT_FUNDS',
-        balance: wallet.balance,
-        required: input.amount,
-      };
-    }
-
-    const now = new Date().toISOString();
-    wallet.balance -= input.amount;
-    wallet.updatedAt = now;
-
-    const tx: TransactionRecord = {
-      id: randomUUID(),
-      walletId: wallet.id,
-      userId: input.userId,
-      type: 'PAYMENT',
-      amount: -input.amount,
-      balanceAfter: wallet.balance,
-      status: 'COMPLETED',
-      description: input.description,
-      reference: input.reference,
-      provider: 'internal',
-      providerTxnId: null,
-      metadata: input.metadata ?? {},
-      createdAt: now,
-      completedAt: now,
-    };
-    d.transactions.push(tx);
-    return { ok: true, replayed: false, transaction: tx, wallet };
-  });
+/**
+ * Credit a refund inside an already-open `db.update`. Idempotent on
+ * `reference`: a replay returns the original transaction and moves nothing.
+ */
+export function creditRefundInDraft(
+  d: StoreDraft,
+  input: { userId: string; amount: number; description: string; reference: string; metadata?: Record<string, unknown> },
+): TransactionRecord | null {
+  if (!Number.isInteger(input.amount) || input.amount <= 0) return null;
+  let wallet = d.wallets.find((w) => w.userId === input.userId);
+  if (!wallet) {
+    wallet = newWallet(input.userId);
+    d.wallets.push(wallet);
+  }
+  const existing = d.transactions.find((t) => t.walletId === wallet!.id && t.reference === input.reference && t.status !== 'FAILED');
+  if (existing) return existing;
+  const now = new Date().toISOString();
+  wallet.balance += input.amount;
+  wallet.updatedAt = now;
+  const tx: TransactionRecord = {
+    id: randomUUID(),
+    walletId: wallet.id,
+    userId: input.userId,
+    type: 'REFUND',
+    amount: input.amount,
+    balanceAfter: wallet.balance,
+    status: 'COMPLETED',
+    description: input.description,
+    reference: input.reference,
+    provider: 'internal',
+    providerTxnId: null,
+    metadata: input.metadata ?? {},
+    createdAt: now,
+    completedAt: now,
+  };
+  d.transactions.push(tx);
+  return tx;
 }
 
 /* ─────────────────────────── Top-up flow ─────────────────────────── */

@@ -36,7 +36,7 @@ export function AcademyHeader() {
         </Link>
 
         <nav aria-label={t('nav')} className="me-auto ms-4 hidden items-center gap-1 md:flex">
-          {NAV.map((n) => {
+          {[...NAV, ...(isAuthenticated ? [{ href: '/academy/my', key: 'my' } as const] : [])].map((n) => {
             const active = n.href === '/academy' ? pathname === '/academy' : pathname.startsWith(n.href);
             return (
               <Link key={n.href} href={n.href} aria-current={active ? 'page' : undefined}

@@ -139,15 +139,15 @@ export function layout(content: string, opts: { lang?: 'en' | 'fr' } = {}): stri
 </html>`;
 }
 
-function button(href: string, label: string): string {
+export function button(href: string, label: string): string {
   return `<a href="${href}" style="display:inline-block;margin-top:8px;padding:14px 32px;background:#30a735;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">${label}</a>`;
 }
 
-function p(text: string): string {
+export function p(text: string): string {
   return `<p style="margin:0 0 16px;font-size:15px;color:#3f3f46;line-height:1.6;">${text}</p>`;
 }
 
-function h1(text: string): string {
+export function h1(text: string): string {
   return `<h1 style="margin:0 0 20px;font-size:22px;font-weight:700;color:#09090b;letter-spacing:-0.3px;">${text}</h1>`;
 }
 

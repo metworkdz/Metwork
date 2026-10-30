@@ -94,3 +94,6 @@ scripts/campaigns/.preview*.html
 /.local-messaging.json
 /.local-academy.json
 /.local-cofounder.json
+
+# Startup Academy video production (large media, local only)
+/Startup Academy/

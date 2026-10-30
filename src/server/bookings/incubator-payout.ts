@@ -24,6 +24,7 @@ import type {
   BookingItemKind,
   BookingRecord,
   IncubatorRecord,
+  MentorRecord,
   TransactionRecord,
   WalletRecord,
 } from '@/server/db/store';
@@ -66,6 +67,18 @@ export function findOwningIncubator(
   else incubatorId = d.events?.find((e) => e.id === itemId)?.incubatorId;
   if (!incubatorId) return null;
   return d.incubators.find((i) => i.id === incubatorId) ?? null;
+}
+
+/** Resolve the consultant record that owns a mentor-owned PROGRAM (null for any other kind/owner). */
+export function findOwningMentor(
+  d: StoreDraft,
+  kind: BookingItemKind,
+  itemId: string,
+): MentorRecord | null {
+  if (kind !== 'PROGRAM') return null;
+  const mentorId = d.programs?.find((p) => p.id === itemId)?.mentorId;
+  if (!mentorId) return null;
+  return (d.mentors ?? []).find((m) => m.id === mentorId) ?? null;
 }
 
 /**
