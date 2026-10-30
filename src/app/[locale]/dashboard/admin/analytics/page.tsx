@@ -11,10 +11,13 @@ import {
   TrendingUp, Ticket, Star, Calendar, Users,
 } from 'lucide-react';
 import { requireRole } from '@/lib/auth-guards';
+import { buildAdminAnalytics } from '@/server/analytics/admin-analytics';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { StatCard } from '@/components/shared/stat-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -91,42 +94,9 @@ export default async function AdminAnalyticsPage({ params }: PageProps) {
   setRequestLocale(locale);
   await requireRole(['ADMIN']);
 
-  // Fetch analytics data
-  const appUrl   = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-  let analytics: AnalyticsPayload | null = null;
-  try {
-    const res = await fetch(`${appUrl}/api/admin/analytics`, {
-      cache: 'no-store',
-      headers: { 'x-internal-call': '1' },
-    });
-    if (res.ok) analytics = (await res.json()) as AnalyticsPayload;
-  } catch {
-    // fall through — show skeleton with zeros
-  }
-
-  // Fallback empty data
-  const a = analytics ?? {
-    generatedAt: new Date().toISOString(),
-    demographics: {
-      totalUsers: 0, maleCount: 0, femaleCount: 0, unknownCount: 0,
-      malePct: 0, femalePct: 0, byRole: {},
-    },
-    memberships: {
-      activeBuilder: 0, activeFounder: 0, activeTotal: 0,
-      revenue: { total: 0, thisMonth: 0, discountTotal: 0, purchasesWithDiscount: 0, purchasesTotal: 0 },
-    },
-    consultations: {
-      freeQuota: { count: 0, countThisMonth: 0, estimatedValue: 0, estimatedValueThisMonth: 0, byMentor: [] },
-      paid: { count: 0, revenue: 0 },
-    },
-    networkPass: {
-      totalCheckIns: 0, checkInsThisMonth: 0,
-      creditsIssuedThisMonth: 0, creditsUsedThisMonth: 0, utilizationRatePct: 0, topSpaces: [],
-    },
-    spaceBookings: { membershipDiscountEstimate: 0 },
-    totals: { totalValueGiven: 0, membershipRevenue: 0, netBalance: 0 },
-    monthlyTrend: [],
-  };
+  // Read the store directly. Fetching our own API from here carried no session
+  // cookie, so it always 401'd and the page silently showed zeros.
+  const a: AnalyticsPayload = await buildAdminAnalytics();
 
   const isPositive = a.totals.netBalance >= 0;
 
