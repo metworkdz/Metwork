@@ -413,3 +413,46 @@ Metwork WALLET for wallet and card purchases alike.
   receipt email.
 - Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2238/2238 (18 new);
   two mutation checks (full-price share, concurrent refund) turn tests red.
+
+### Phase 3 — Academy Pass (worktree `.claude/worktrees/academy-pass`, branch `feat/academy-pass`)
+Phase 2 landed in `69f4089` together with the refund-engine session's work
+(owner's instruction: let that session commit first, then verify both together:
+tsc 0, 2258/2258). From here the Academy works in its own worktree.
+Owner decisions: mentors' share of the Pass is computed on the FULL Pass price
+(Metwork absorbs Premium); each subscriber month is settled when it ends and is
+withdrawable at once (the Pass is not refundable).
+- `server/academy/pass-core.ts` (no imports from orders/pass, to avoid an import
+  cycle): `activePass`, `latestPass`, `buildSlices` (annual = 12 monthly slices,
+  remainder on the last), `grantPassInDraft` (a new term starts at the end of the
+  current one; the queued term takes over renewal).
+- `server/academy/pass.ts`: `passStatusFor`, `startPassPurchase` (wallet or card,
+  through the same order flow as courses: orders gain `kind: 'PASS'`), cancel /
+  resume (`setPassAutoRenew`), `runPassRenewals` (3-day reminder, monthly renewal
+  from the wallet at the LIVE price and Premium status, lapse when short, yearly
+  never auto-charged), `splitSlice` + `settlePassMonths` (per subscriber:
+  full month price × mentor share × that subscriber's seconds on the mentor ÷ their
+  total; credited AVAILABLE via the one `applyMentorEarningToDraft`, kind
+  `ACADEMY_PASS`; claimed inside the write). Cron `/api/cron/academy-pass` 02:45.
+- `orders.ts` refactor: `openCardCheckout` and `payOrderFromWalletInDraft` shared by
+  course and Pass purchases; settlement branches on `order.kind`.
+- Access: `PASS` for PUBLISHED courses with `includedInPass` (archived leave the
+  Pass); an owned course is always OWNED, so its watch time never enters the Pass split.
+- Pages: `/academy/pass` (prices personalised by `/api/academy/pass/me`, FAQ),
+  checkout `?pass=MONTHLY|ANNUAL`, return page for Pass orders, Pass card in
+  `/academy/my` (cancel / resume), "Watch with my Pass" on course pages, Pass link
+  in the Academy header. Academy section at the top of admin Analytics
+  (`server/academy/analytics.ts`): net, subscribers / MRR, sales, Pass revenue,
+  mentor shares held / available, discounts absorbed, refunds, Pass hours, top courses.
+- Fixed from phase 2: an Academy refund now also marks the commission row REVERSED
+  (it was still counted as revenue), and `getConsultationRevenueSummary` skips
+  `academy-*` rows (they were counted as consultations).
+- Worktree landmines: the worktree is INSIDE the main repo, so Node finds the main
+  `node_modules` by walking up. Symlinking `node_modules` into it gave Next two
+  Reacts ("reading 'useContext' of null", lost sessions). The browser tool reads the
+  MAIN `.claude/launch.json`: add a config there only for the check and remove it
+  after. The auto-commit hook in the worktree also sweeps `.local-db.json`: restore
+  it before committing.
+- Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2270/2270 (12 new),
+  two mutation checks (full-price base, concurrent settlement). Browser: Founder
+  buys the monthly Pass (2 800 DA), course opens via Pass, cancel renewal, admin
+  Analytics numbers, Arabic Pass page at 375 px.

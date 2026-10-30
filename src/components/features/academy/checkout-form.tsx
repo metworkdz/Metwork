@@ -9,7 +9,8 @@ import { apiClient, ApiClientError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 
 interface Props {
-  courseSlug: string;
+  /** What is bought: a course (by slug) or a Pass term. */
+  target: { courseSlug: string } | { pass: 'MONTHLY' | 'ANNUAL' };
   amountDzd: number;
   walletBalance: number;
   locale: 'fr' | 'en' | 'ar';
@@ -17,7 +18,7 @@ interface Props {
 }
 
 /** Pick wallet or card, then pay. The amount shown is the server's quote; the server recomputes it anyway. */
-export function CheckoutForm({ courseSlug, amountDzd, walletBalance, locale, amountLabel }: Props) {
+export function CheckoutForm({ target, amountDzd, walletBalance, locale, amountLabel }: Props) {
   const t = useTranslations('academy.checkout');
   const router = useRouter();
   const enoughInWallet = walletBalance >= amountDzd;
@@ -26,20 +27,21 @@ export function CheckoutForm({ courseSlug, amountDzd, walletBalance, locale, amo
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // One key per page view: a double click or a retry never pays twice.
-  const clientReference = useMemo(() => `academy-${courseSlug}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`, [courseSlug]);
+  const targetKey = 'pass' in target ? `pass-${target.pass}` : target.courseSlug;
+  const clientReference = useMemo(() => `academy-${targetKey}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`, [targetKey]);
 
   async function pay() {
     setBusy(true);
     setError(null);
     try {
-      const res = await apiClient.post<{ state: 'PAID'; courseSlug: string } | { state: 'REDIRECT'; redirectUrl: string }>(
-        '/academy/checkout', { courseSlug, method, clientReference, locale },
+      const res = await apiClient.post<{ state: 'PAID'; courseSlug?: string } | { state: 'REDIRECT'; redirectUrl: string }>(
+        '/academy/checkout', { ...target, method, clientReference, locale },
       );
-      if (res.state === 'PAID') router.push(`/academy/learn/${res.courseSlug}`);
+      if (res.state === 'PAID') router.push(res.courseSlug ? `/academy/learn/${res.courseSlug}` : '/academy/courses?pass=1');
       else window.location.assign(res.redirectUrl);
     } catch (err) {
       const code = err instanceof ApiClientError ? err.code : '';
-      const known = ['INSUFFICIENT_FUNDS', 'ALREADY_OWNED', 'NOT_A_BUYER', 'WALLET_FROZEN', 'PROVIDER_FAILED', 'RATE_LIMITED'];
+      const known = ['INSUFFICIENT_FUNDS', 'ALREADY_OWNED', 'ALREADY_SUBSCRIBED', 'NOT_A_BUYER', 'WALLET_FROZEN', 'PROVIDER_FAILED', 'RATE_LIMITED'];
       setError(known.includes(code) ? t(`errors.${code}`) : t('errors.generic'));
       setBusy(false);
     }
@@ -74,7 +76,7 @@ export function CheckoutForm({ courseSlug, amountDzd, walletBalance, locale, amo
       </fieldset>
       <label className="flex items-start gap-2.5 text-sm text-muted-foreground">
         <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-0.5 size-4 shrink-0 accent-[hsl(var(--primary))]" />
-        {t('terms')}
+        {'pass' in target ? t('passTerms') : t('terms')}
       </label>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       <Button size="lg" className="w-full font-bold" disabled={busy || !accepted} onClick={pay}>

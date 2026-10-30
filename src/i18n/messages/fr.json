@@ -7646,7 +7646,8 @@
       "links": {
         "home": "L’Academy",
         "courses": "Cours",
-        "my": "Mon apprentissage"
+        "my": "Mon apprentissage",
+        "pass": "Academy Pass"
       }
     },
     "theme": {
@@ -7813,7 +7814,8 @@
       "mentor": "Votre mentor",
       "mentors": "Vos mentors",
       "continue": "Continuer le cours",
-      "yourPrice": "Votre prix membre : {price} DA"
+      "yourPrice": "Votre prix membre : {price} DA",
+      "watchWithPass": "Regarder avec mon Pass"
     },
     "mentor": {
       "metaTitle": "{name} · Mentor Startup Academy",
@@ -7850,7 +7852,8 @@
         "WALLET_FROZEN": "Votre wallet est bloqué. Contactez le support.",
         "PROVIDER_FAILED": "Le paiement par carte n’a pas pu démarrer. Réessayez dans un instant.",
         "RATE_LIMITED": "Trop de tentatives. Réessayez plus tard.",
-        "generic": "Une erreur est survenue. Réessayez."
+        "generic": "Une erreur est survenue. Réessayez.",
+        "ALREADY_SUBSCRIBED": "Votre Pass se renouvelle déjà automatiquement."
       },
       "result": {
         "paidTitle": "Cours débloqué",
@@ -7862,8 +7865,15 @@
         "pendingTitle": "Paiement en cours de confirmation",
         "pendingDesc": "Nous vérifions le paiement auprès de la banque. Cette page se met à jour toute seule.",
         "start": "Commencer le cours",
-        "retry": "Réessayer"
-      }
+        "retry": "Réessayer",
+        "passTitle": "Academy Pass activé",
+        "passDesc": "Tous les cours inclus dans le Pass sont ouverts.",
+        "browsePass": "Voir les cours du Pass"
+      },
+      "passTerms": "J’accepte les conditions de l’Academy Pass : accès personnel, lecture en streaming uniquement, renouvellement mensuel depuis le wallet (annulable à tout moment), abonnement non remboursable.",
+      "passPrice": "Prix du Pass",
+      "passNote": "Annulable à tout moment depuis « Mon apprentissage » : vous gardez l’accès jusqu’à la fin de la période payée.",
+      "passQueued": "Votre Pass actuel court jusqu’au {date} : la nouvelle période commencera à cette date."
     },
     "player": {
       "loading": "Chargement de la vidéo",
@@ -7908,6 +7918,75 @@
       "desc": "Appliqué automatiquement au paiement, sans code.",
       "saved": "Déjà économisé : {amount}",
       "cta": "Explorer l’Academy"
+    },
+    "passPage": {
+      "metaTitle": "Academy Pass · Startup Academy",
+      "metaDescription": "Tous les cours de la Startup Academy pour un abonnement mensuel ou annuel.",
+      "title": "Tous les cours. Un seul abonnement.",
+      "subtitle": "{count, plural, =0 {Les cours inclus dans le Pass} one {# cours inclus} other {# cours inclus}}, les nouveaux dès leur sortie, les certificats. −{percent} % en payant à l’année.",
+      "popular": "Le plus choisi",
+      "monthlyName": "Academy Pass mensuel",
+      "annualName": "Academy Pass annuel",
+      "perMonth": "par mois · renouvelé depuis votre wallet",
+      "perYear": "par an · soit {perMonth} par mois",
+      "yourPremiumPrice": "Votre prix membre Founder / Premium",
+      "monthlyRenew": "Renouvelé chaque mois depuis le wallet, annulable à tout moment",
+      "annualRenew": "Payé une fois pour 12 mois, sans prélèvement automatique",
+      "features": {
+        "all": "Tous les cours inclus dans le Pass",
+        "new": "Les nouveaux cours et modules dès leur sortie",
+        "certificates": "Certificats de réussite inclus",
+        "cancel": "Sans engagement : annulez quand vous voulez",
+        "oneYear": "12 mois d’accès, payés une seule fois"
+      },
+      "subscribe": "S’abonner",
+      "extend": "Prolonger mon Pass",
+      "manage": "Gérer mon Pass",
+      "activeRenewing": "Votre Pass est actif et se renouvelle le {date}.",
+      "activeEnding": "Votre Pass est actif jusqu’au {date}.",
+      "premiumNudge": "Membres Founder et Premium : −{percent} % sur le Pass.",
+      "premiumCta": "Voir les abonnements",
+      "faqTitle": "Questions fréquentes",
+      "faq": {
+        "cancel": {
+          "q": "Que se passe-t-il si j’annule ?",
+          "a": "Le Pass ne se renouvelle plus. Vous gardez l’accès jusqu’à la fin du mois payé, et vos certificats restent à vous."
+        },
+        "download": {
+          "q": "Puis-je télécharger les vidéos ?",
+          "a": "Non. Les cours se regardent en streaming sur Metwork, sur ordinateur et téléphone, un écran à la fois."
+        },
+        "renew": {
+          "q": "Comment se passe le renouvellement ?",
+          "a": "Le Pass mensuel est prélevé sur votre wallet à la date anniversaire. Vous recevez un rappel 3 jours avant. Sans solde suffisant, le Pass s’arrête."
+        },
+        "courses": {
+          "q": "Quels cours sont inclus ?",
+          "a": "Tous les cours marqués « Pass » dans le catalogue. Un cours retiré du catalogue sort du Pass."
+        },
+        "certificate": {
+          "q": "Ai-je un certificat avec le Pass ?",
+          "a": "Oui. Terminez un cours pendant votre abonnement et le certificat vous reste, même après."
+        },
+        "refund": {
+          "q": "Le Pass est-il remboursable ?",
+          "a": "Non, mais vous pouvez l’annuler à tout moment. Les cours achetés à l’unité restent remboursables sous 7 jours."
+        }
+      }
+    },
+    "passCard": {
+      "monthly": "Academy Pass mensuel",
+      "annual": "Academy Pass annuel",
+      "renewsOn": "Se renouvelle le {date}",
+      "endsOn": "Actif jusqu’au {date}",
+      "renewalAmount": "{amount} prélevés sur votre wallet",
+      "noRenewal": "Pas de renouvellement automatique",
+      "browse": "Cours du Pass",
+      "cancel": "Annuler le renouvellement",
+      "cancelConfirm": "Accès conservé jusqu’au {date}.",
+      "cancelYes": "Confirmer",
+      "keep": "Garder",
+      "resume": "Reprendre le renouvellement"
     }
   },
   "academyAdmin": {
@@ -8075,6 +8154,29 @@
         "MENTOR_NOT_FOUND": "Mentor introuvable.",
         "generic": "Une erreur est survenue."
       }
+    },
+    "analytics": {
+      "title": "Startup Academy",
+      "subtitle": "{published, plural, =0 {Aucun cours publié} one {# cours publié} other {# cours publiés}} · {drafts, plural, =0 {aucun brouillon} one {# brouillon} other {# brouillons}}",
+      "metworkNet": "Revenu net Metwork",
+      "metworkNetHint": "Ventes + Pass − parts des mentors",
+      "passActive": "Abonnés Pass actifs",
+      "passActiveHint": "{monthly} mensuels · {annual} annuels · MRR {mrr}",
+      "sales": "Ventes de cours",
+      "salesHint": "{count, plural, one {# vente} other {# ventes}} · ce mois {month}",
+      "passRevenue": "Revenus du Pass",
+      "passRevenueHint": "Ce mois : {month}",
+      "mentors": "Parts des mentors",
+      "mentorsHint": "En attente {held} · disponibles {paid}",
+      "discounts": "Remises absorbées",
+      "discountsHint": "Remises Founder / Premium prises en charge par Metwork",
+      "refunds": "Remboursements",
+      "refundsHint": "{count, plural, =0 {Aucun cours remboursé} one {# cours remboursé} other {# cours remboursés}}",
+      "passHours": "Heures vues (Pass, ce mois)",
+      "passHoursHint": "Base du partage entre mentors",
+      "topCourse": "Cours",
+      "topSales": "Ventes",
+      "topRevenue": "Revenu"
     }
   },
   "refunds": {

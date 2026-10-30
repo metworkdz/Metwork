@@ -7646,7 +7646,8 @@
       "links": {
         "home": "The Academy",
         "courses": "Courses",
-        "my": "My learning"
+        "my": "My learning",
+        "pass": "Academy Pass"
       }
     },
     "theme": {
@@ -7813,7 +7814,8 @@
       "mentor": "Your mentor",
       "mentors": "Your mentors",
       "continue": "Continue the course",
-      "yourPrice": "Your member price: {price} DA"
+      "yourPrice": "Your member price: {price} DA",
+      "watchWithPass": "Watch with my Pass"
     },
     "mentor": {
       "metaTitle": "{name} · Startup Academy mentor",
@@ -7850,7 +7852,8 @@
         "WALLET_FROZEN": "Your wallet is frozen. Contact support.",
         "PROVIDER_FAILED": "The card payment could not start. Try again in a moment.",
         "RATE_LIMITED": "Too many attempts. Try again later.",
-        "generic": "Something went wrong. Try again."
+        "generic": "Something went wrong. Try again.",
+        "ALREADY_SUBSCRIBED": "Your Pass already renews automatically."
       },
       "result": {
         "paidTitle": "Course unlocked",
@@ -7862,8 +7865,15 @@
         "pendingTitle": "Confirming your payment",
         "pendingDesc": "We are checking the payment with the bank. This page updates by itself.",
         "start": "Start the course",
-        "retry": "Try again"
-      }
+        "retry": "Try again",
+        "passTitle": "Academy Pass activated",
+        "passDesc": "Every course included in the Pass is open.",
+        "browsePass": "See Pass courses"
+      },
+      "passTerms": "I accept the Academy Pass terms: personal access, streaming only, monthly renewal from the wallet (cancel anytime), non-refundable subscription.",
+      "passPrice": "Pass price",
+      "passNote": "Cancel anytime from “My learning”: you keep access until the end of the paid period.",
+      "passQueued": "Your current Pass runs until {date}: the new period starts then."
     },
     "player": {
       "loading": "Loading the video",
@@ -7908,6 +7918,75 @@
       "desc": "Applied automatically at checkout, no code needed.",
       "saved": "Saved so far: {amount}",
       "cta": "Explore the Academy"
+    },
+    "passPage": {
+      "metaTitle": "Academy Pass · Startup Academy",
+      "metaDescription": "Every Startup Academy course for one monthly or yearly subscription.",
+      "title": "Every course. One subscription.",
+      "subtitle": "{count, plural, =0 {The courses included in the Pass} one {# course included} other {# courses included}}, new ones as soon as they launch, certificates. −{percent}% when paid yearly.",
+      "popular": "Most popular",
+      "monthlyName": "Monthly Academy Pass",
+      "annualName": "Yearly Academy Pass",
+      "perMonth": "per month · renewed from your wallet",
+      "perYear": "per year · {perMonth} a month",
+      "yourPremiumPrice": "Your Founder / Premium member price",
+      "monthlyRenew": "Renewed every month from the wallet, cancel anytime",
+      "annualRenew": "Paid once for 12 months, never auto-charged",
+      "features": {
+        "all": "Every course included in the Pass",
+        "new": "New courses and modules as they launch",
+        "certificates": "Certificates of completion included",
+        "cancel": "No commitment: cancel anytime",
+        "oneYear": "12 months of access, paid once"
+      },
+      "subscribe": "Subscribe",
+      "extend": "Extend my Pass",
+      "manage": "Manage my Pass",
+      "activeRenewing": "Your Pass is active and renews on {date}.",
+      "activeEnding": "Your Pass is active until {date}.",
+      "premiumNudge": "Founder and Premium members: −{percent}% on the Pass.",
+      "premiumCta": "See plans",
+      "faqTitle": "Frequently asked questions",
+      "faq": {
+        "cancel": {
+          "q": "What happens if I cancel?",
+          "a": "The Pass stops renewing. You keep access until the end of the paid month, and your certificates stay yours."
+        },
+        "download": {
+          "q": "Can I download the videos?",
+          "a": "No. Courses stream on Metwork, on computer and phone, one screen at a time."
+        },
+        "renew": {
+          "q": "How does renewal work?",
+          "a": "The monthly Pass is charged to your wallet on its renewal date. You get a reminder 3 days before. Without enough balance, the Pass ends."
+        },
+        "courses": {
+          "q": "Which courses are included?",
+          "a": "Every course marked “Pass” in the catalogue. A course removed from the catalogue leaves the Pass."
+        },
+        "certificate": {
+          "q": "Do I get certificates with the Pass?",
+          "a": "Yes. Finish a course while subscribed and the certificate stays yours, even afterwards."
+        },
+        "refund": {
+          "q": "Is the Pass refundable?",
+          "a": "No, but you can cancel anytime. Courses bought one by one stay refundable within 7 days."
+        }
+      }
+    },
+    "passCard": {
+      "monthly": "Monthly Academy Pass",
+      "annual": "Yearly Academy Pass",
+      "renewsOn": "Renews on {date}",
+      "endsOn": "Active until {date}",
+      "renewalAmount": "{amount} from your wallet",
+      "noRenewal": "No automatic renewal",
+      "browse": "Pass courses",
+      "cancel": "Cancel renewal",
+      "cancelConfirm": "Access kept until {date}.",
+      "cancelYes": "Confirm",
+      "keep": "Keep",
+      "resume": "Resume renewal"
     }
   },
   "academyAdmin": {
@@ -8075,6 +8154,29 @@
         "MENTOR_NOT_FOUND": "Mentor not found.",
         "generic": "Something went wrong."
       }
+    },
+    "analytics": {
+      "title": "Startup Academy",
+      "subtitle": "{published, plural, =0 {No published course} one {# published course} other {# published courses}} · {drafts, plural, =0 {no drafts} one {# draft} other {# drafts}}",
+      "metworkNet": "Metwork net revenue",
+      "metworkNetHint": "Sales + Pass − mentor shares",
+      "passActive": "Active Pass subscribers",
+      "passActiveHint": "{monthly} monthly · {annual} yearly · MRR {mrr}",
+      "sales": "Course sales",
+      "salesHint": "{count, plural, one {# sale} other {# sales}} · this month {month}",
+      "passRevenue": "Pass revenue",
+      "passRevenueHint": "This month: {month}",
+      "mentors": "Mentor shares",
+      "mentorsHint": "Held {held} · available {paid}",
+      "discounts": "Discounts absorbed",
+      "discountsHint": "Founder / Premium discounts paid by Metwork",
+      "refunds": "Refunds",
+      "refundsHint": "{count, plural, =0 {No refunded course} one {# refunded course} other {# refunded courses}}",
+      "passHours": "Hours watched (Pass, this month)",
+      "passHoursHint": "What mentor shares are split on",
+      "topCourse": "Course",
+      "topSales": "Sales",
+      "topRevenue": "Revenue"
     }
   },
   "refunds": {

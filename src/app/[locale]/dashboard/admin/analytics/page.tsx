@@ -15,6 +15,7 @@ import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { StatCard } from '@/components/shared/stat-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { AcademyAnalyticsSection } from '@/components/features/academy/admin/academy-analytics';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -136,6 +137,9 @@ export default async function AdminAnalyticsPage({ params }: PageProps) {
         title="Benefit & Pricing Analytics"
         subtitle={`Showing how discounts and free benefits compare to membership revenue. Last updated: ${new Date(a.generatedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}`}
       />
+
+      {/* ── Startup Academy ──────────────────────────────────────────── */}
+      <AcademyAnalyticsSection locale={locale} />
 
       {/* ── User Demographics ────────────────────────────────────────── */}
       <section>

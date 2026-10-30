@@ -47,10 +47,11 @@ import { getSlickPayTransferStatus } from '@/server/payments/slickpay-provider';
 import { ProviderNotConfiguredError } from '@/server/payments/errors';
 import { createNotification } from '@/server/notifications/create-notification';
 import { getAcademyPricing } from './settings';
+import { grantPassInDraft } from './pass-core';
 import { academyRepo } from './repo';
 
 type StoreDraft = Parameters<Parameters<typeof db.update>[0]>[0];
-type Buyer = Pick<UserRecord, 'id' | 'role' | 'fullName' | 'email' | 'phone' | 'membershipCode' | 'membershipTier' | 'membershipExpiresAt'>;
+export type Buyer = Pick<UserRecord, 'id' | 'role' | 'fullName' | 'email' | 'phone' | 'membershipCode' | 'membershipTier' | 'membershipExpiresAt'>;
 
 /** The enrollment that gives this user the course for life, if any. */
 export function activeEnrollment(
@@ -109,6 +110,20 @@ function settleOrderInDraft(d: StoreDraft, order: AcademyOrderRecord, providerRe
   order.paidAt = now;
   if (providerRef) order.providerRef = providerRef;
 
+  if (order.kind === 'PASS') {
+    // A second payment while subscribed is not wasted: it queues the next term.
+    grantPassInDraft(d, {
+      userId: order.userId,
+      plan: order.passPlan ?? 'MONTHLY',
+      listPriceDzd: order.listPriceDzd,
+      amountDzd: order.amountDzd,
+      discount: order.discount,
+      method: order.method,
+      paymentRef: order.id,
+    });
+    return { claimed: true, order, enrollment: null, duplicate: false };
+  }
+
   if (!Array.isArray(d.academyEnrollments)) d.academyEnrollments = [];
   if (activeEnrollment(d.academyEnrollments, order.userId, order.courseId)) {
     order.duplicateRefunded = true;
@@ -159,6 +174,16 @@ function settleOrderInDraft(d: StoreDraft, order: AcademyOrderRecord, providerRe
 
 async function afterClaim(outcome: SettleOutcome): Promise<void> {
   if (!outcome.claimed) return;
+  if (outcome.order.kind === 'PASS') {
+    await createNotification({
+      userId: outcome.order.userId,
+      type: 'ACADEMY_PASS',
+      title: 'Academy Pass activé',
+      body: 'Tous les cours inclus dans le Pass sont ouverts. Bon apprentissage !',
+      href: '/academy/courses',
+    });
+    return;
+  }
   const course = (await db.read()).academyCourses?.find((c) => c.id === outcome.order.courseId);
   const title = course ? resolveText(course.title, 'fr') : '';
   await createNotification({
@@ -231,19 +256,7 @@ export async function startCoursePurchase(input: StartPurchaseInput): Promise<St
   if (input.method === 'WALLET') {
     const result = await db.update((d) => {
       if (activeEnrollment(d.academyEnrollments, user.id, course.id)) return { ok: false as const, code: 'ALREADY_OWNED' as const };
-      const debit = debitWalletInDraft(d, {
-        userId: user.id,
-        amount: order.amountDzd,
-        description: `Startup Academy — ${resolveText(course.title, 'fr')}`,
-        reference: `academy-order-${order.id}`,
-        metadata: { orderId: order.id, courseId: course.id, listPriceDzd: order.listPriceDzd, discount: order.discount },
-      });
-      if (!debit.ok) return debit.reason === 'INSUFFICIENT_FUNDS'
-        ? { ok: false as const, code: 'INSUFFICIENT_FUNDS' as const, balance: debit.balance, required: debit.required }
-        : { ok: false as const, code: 'WALLET_FROZEN' as const };
-      if (!Array.isArray(d.academyOrders)) d.academyOrders = [];
-      d.academyOrders.push(order);
-      return { ok: true as const, outcome: settleOrderInDraft(d, order, null) };
+      return payOrderFromWalletInDraft(d, order, `Startup Academy — ${resolveText(course.title, 'fr')}`);
     });
     if (!result.ok) return result;
     await afterClaim(result.outcome);
@@ -251,12 +264,30 @@ export async function startCoursePurchase(input: StartPurchaseInput): Promise<St
   }
 
   // Card: record the order, then open the hosted checkout with the order id as external id.
+  const card = await openCardCheckout(order, user, input.appBaseUrl, input.locale, `Startup Academy — ${resolveText(course.title, input.locale)}`);
+  if (!card.ok) return card;
+  return card.state === 'PAID'
+    ? { ok: true, state: 'PAID', orderId: order.id, courseSlug: course.slug }
+    : { ok: true, state: 'REDIRECT', orderId: order.id, redirectUrl: card.redirectUrl };
+}
+
+/**
+ * Record a card order and open the hosted checkout (course or Pass). The order
+ * id is the provider's external id, which routes the webhook back here.
+ */
+export async function openCardCheckout(
+  order: AcademyOrderRecord,
+  user: Buyer,
+  appBaseUrl: string,
+  locale: string,
+  description: string,
+): Promise<{ ok: true; state: 'PAID' } | { ok: true; state: 'REDIRECT'; redirectUrl: string } | { ok: false; code: 'PROVIDER_FAILED' }> {
   await db.update((d) => {
     if (!Array.isArray(d.academyOrders)) d.academyOrders = [];
     d.academyOrders.push(order);
   });
-  const base = input.appBaseUrl.replace(/\/$/, '');
-  const returnUrl = `${base}/${input.locale}/academy/checkout/return/${order.id}`;
+  const base = appBaseUrl.replace(/\/$/, '');
+  const returnUrl = `${base}/${locale}/academy/checkout/return/${order.id}`;
   const provider = getActiveProvider();
   let res;
   try {
@@ -267,8 +298,8 @@ export async function startCoursePurchase(input: StartPurchaseInput): Promise<St
       returnUrl,
       webhookUrl: `${base}/api/webhooks/payments/${provider.code}`,
       customer: { fullName: user.fullName, email: user.email, phone: user.phone ?? '' },
-      description: `Startup Academy — ${resolveText(course.title, input.locale)}`.slice(0, 120),
-      locale: input.locale,
+      description: description.slice(0, 120),
+      locale,
     });
   } catch (err) {
     console.error('[academy] checkout init failed', String(err));
@@ -281,11 +312,31 @@ export async function startCoursePurchase(input: StartPurchaseInput): Promise<St
   });
   if (res.status === 'COMPLETED') {
     await settleAcademyOrder(order.id, res.providerRef);
-    return { ok: true, state: 'PAID', orderId: order.id, courseSlug: course.slug };
+    return { ok: true, state: 'PAID' };
   }
   if (res.status === 'FAILED' || !res.redirectUrl) return { ok: false, code: 'PROVIDER_FAILED' };
-  return { ok: true, state: 'REDIRECT', orderId: order.id, redirectUrl: res.redirectUrl };
+  return { ok: true, state: 'REDIRECT', redirectUrl: res.redirectUrl };
 }
+
+/** Wallet-pay an order inside an open update and settle it there (course or Pass). */
+export function payOrderFromWalletInDraft(d: StoreDraft, order: AcademyOrderRecord, description: string) {
+  const debit = debitWalletInDraft(d, {
+    userId: order.userId,
+    amount: order.amountDzd,
+    description,
+    reference: `academy-order-${order.id}`,
+    metadata: { orderId: order.id, kind: order.kind ?? 'COURSE', courseId: order.courseId || null, listPriceDzd: order.listPriceDzd, discount: order.discount },
+  });
+  if (!debit.ok) return debit.reason === 'INSUFFICIENT_FUNDS'
+    ? { ok: false as const, code: 'INSUFFICIENT_FUNDS' as const, balance: debit.balance, required: debit.required }
+    : { ok: false as const, code: 'WALLET_FROZEN' as const };
+  if (!Array.isArray(d.academyOrders)) d.academyOrders = [];
+  d.academyOrders.push(order);
+  return { ok: true as const, outcome: settleOrderInDraft(d, order, null) };
+}
+
+/** Run the post-settlement side effects (notification) for a claimed order. */
+export { afterClaim as afterOrderSettled };
 
 /** Settle a card order whose payment is confirmed. Idempotent. */
 export async function settleAcademyOrder(orderId: string, providerRef: string | null): Promise<SettleOutcome | null> {
@@ -321,6 +372,7 @@ export async function settleAcademyOrderFromWebhook(
 export type OrderView =
   | { state: 'NOT_FOUND' }
   | { state: 'PAID' | 'PENDING' | 'FAILED'; order: AcademyOrderRecord; courseSlug: string; duplicate: boolean };
+// For a PASS order `courseSlug` is ''; the return page sends the member to the catalogue.
 
 /**
  * The buyer came back from the hosted checkout: ask the provider (never trust
@@ -393,6 +445,9 @@ export async function refundEnrollment(userId: string, enrollmentId: string): Pr
     });
     for (const share of order?.mentorShares ?? []) {
       voidPendingEarningInDraft(d, { mentorId: share.mentorId, bookingId: earningKey(e.id), description: 'Academy course refunded within 7 days' });
+      // A refunded sale is no longer platform revenue either (same as the refund engine's reversal).
+      const commission = d.mentorLedgerTxns?.find((t) => t.mentorId === share.mentorId && t.reference === `mentor-commission-${earningKey(e.id)}`);
+      if (commission) commission.status = 'REVERSED';
     }
     return true;
   });

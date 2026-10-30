@@ -36,10 +36,10 @@ export const DEFAULT_MENTOR_PROGRAM_PLATFORM_RATE =
 
 /** What the consultant is being paid for. Absent ⇒ CONSULTATION (back-compat). */
 /**
- * ACADEMY_COURSE always arrives with a frozen rate (the mentor's Academy share,
+ * ACADEMY_COURSE and ACADEMY_PASS always arrive with a frozen rate (the mentor's Academy share,
  * see `mentorShareRate` in @/lib/academy); it never resolves a commission rule.
  */
-export type MentorEarningKind = 'CONSULTATION' | 'PROGRAM' | 'ACADEMY_COURSE';
+export type MentorEarningKind = 'CONSULTATION' | 'PROGRAM' | 'ACADEMY_COURSE' | 'ACADEMY_PASS';
 
 /**
  * Which rate is being resolved. `kind` selects the rule; every existing caller

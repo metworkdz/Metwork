@@ -123,6 +123,17 @@ export function quoteCourse(listPriceDzd: number, pricing: AcademyPricing, premi
   return { listPriceDzd, amountDzd, discount: 'PREMIUM', discountDzd: listPriceDzd - amountDzd };
 }
 
+export type PassPlan = 'MONTHLY' | 'ANNUAL';
+
+export interface PassQuote extends CourseQuote { plan: PassPlan }
+
+/** What this buyer pays for a Pass term. The ONE place a Pass price is computed. */
+export function quotePass(plan: PassPlan, pricing: AcademyPricing, premium: boolean): PassQuote {
+  const prices = passPrices(pricing);
+  const list = plan === 'ANNUAL' ? prices.annual : prices.monthly;
+  return { plan, ...quoteCourse(list, pricing, premium) };
+}
+
 /** Refund rule (owner): within 7 days, under 25 % of the course watched, no certificate. */
 export const ACADEMY_REFUND_DAYS = 7;
 export const ACADEMY_REFUND_MAX_WATCHED = 0.25;
@@ -132,6 +143,12 @@ export function refundWindowEndsAt(purchasedAt: string): Date {
 }
 
 /* ─────────────────────────── Watch time ─────────────────────────── */
+
+/** Africa/Algiers calendar day (UTC+1, no DST) of an instant — the watch ledger's day. */
+export function algiersDay(at: string | Date = new Date()): string {
+  const t = typeof at === 'string' ? new Date(at).getTime() : at.getTime();
+  return new Date(t + 3600_000).toISOString().slice(0, 10);
+}
 
 /** The player reports every 30 s; a report can never credit more than this. */
 export const WATCH_HEARTBEAT_MAX_SEC = 35;

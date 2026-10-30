@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 const NAV = [
   { href: '/academy', key: 'home' },
   { href: '/academy/courses', key: 'courses' },
+  { href: '/academy/pass', key: 'pass' },
 ] as const;
 
 /**
@@ -30,7 +31,7 @@ export function AcademyHeader() {
         <Link href="/academy" className="flex min-w-0 items-center gap-3" aria-label={t('home')}>
           <Image src="/assets/metworklogo.svg" alt="Metwork" width={147} height={24} priority className="h-6 w-auto dark:hidden" />
           <Image src="/assets/Metworkwhitelogo.png" alt="Metwork" width={113} height={24} priority className="hidden h-6 w-auto dark:block" />
-          <span className="hidden border-s border-border ps-3 font-display text-[11px] font-bold uppercase tracking-[0.18em] text-primary sm:inline">
+          <span className="hidden whitespace-nowrap border-s border-border ps-3 font-display text-[11px] font-bold uppercase tracking-[0.18em] text-primary xl:inline">
             {t('wordmark')}
           </span>
         </Link>
@@ -40,7 +41,7 @@ export function AcademyHeader() {
             const active = n.href === '/academy' ? pathname === '/academy' : pathname.startsWith(n.href);
             return (
               <Link key={n.href} href={n.href} aria-current={active ? 'page' : undefined}
-                className={cn('rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent', active ? 'text-foreground' : 'text-muted-foreground')}>
+                className={cn('whitespace-nowrap rounded-md px-2.5 py-2 text-sm font-medium transition-colors hover:bg-accent', active ? 'text-foreground' : 'text-muted-foreground')}>
                 {t(`links.${n.key}`)}
               </Link>
             );

@@ -29,9 +29,19 @@ export default async function AcademyCheckoutReturnPage({ params }: PageProps) {
     return (
       <div className={box}>
         <CheckCircle2 className="mx-auto size-14 text-primary" aria-hidden />
-        <h1 className="mt-4 font-display text-2xl font-extrabold">{view.duplicate ? t('duplicateTitle') : t('paidTitle')}</h1>
-        <p className="mt-2 text-muted-foreground">{view.duplicate ? t('duplicateDesc') : t('paidDesc')}</p>
-        <Button asChild size="lg" className="mt-6"><Link href={`/academy/learn/${view.courseSlug}`}>{t('start')}</Link></Button>
+        {view.order.kind === 'PASS' ? (
+          <>
+            <h1 className="mt-4 font-display text-2xl font-extrabold">{t('passTitle')}</h1>
+            <p className="mt-2 text-muted-foreground">{t('passDesc')}</p>
+            <Button asChild size="lg" className="mt-6"><Link href={{ pathname: '/academy/courses', query: { pass: '1' } }}>{t('browsePass')}</Link></Button>
+          </>
+        ) : (
+          <>
+            <h1 className="mt-4 font-display text-2xl font-extrabold">{view.duplicate ? t('duplicateTitle') : t('paidTitle')}</h1>
+            <p className="mt-2 text-muted-foreground">{view.duplicate ? t('duplicateDesc') : t('paidDesc')}</p>
+            <Button asChild size="lg" className="mt-6"><Link href={`/academy/learn/${view.courseSlug}`}>{t('start')}</Link></Button>
+          </>
+        )}
       </div>
     );
   }
@@ -41,7 +51,7 @@ export default async function AcademyCheckoutReturnPage({ params }: PageProps) {
         <XCircle className="mx-auto size-14 text-destructive" aria-hidden />
         <h1 className="mt-4 font-display text-2xl font-extrabold">{t('failedTitle')}</h1>
         <p className="mt-2 text-muted-foreground">{t('failedDesc')}</p>
-        <Button asChild size="lg" variant="outline" className="mt-6"><Link href={{ pathname: '/academy/checkout', query: { course: view.courseSlug } }}>{t('retry')}</Link></Button>
+        <Button asChild size="lg" variant="outline" className="mt-6"><Link href={view.order.kind === 'PASS' ? '/academy/pass' : { pathname: '/academy/checkout', query: { course: view.courseSlug } }}>{t('retry')}</Link></Button>
       </div>
     );
   }

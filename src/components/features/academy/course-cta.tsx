@@ -8,7 +8,7 @@ import { apiClient } from '@/lib/api-client';
 import type { CourseQuote } from '@/lib/academy';
 import { formatDzd } from './format';
 
-interface Me { signedIn: boolean; canBuy: boolean; owned: boolean; premium: boolean; quote: CourseQuote }
+interface Me { signedIn: boolean; canBuy: boolean; owned: boolean; viaPass: boolean; premium: boolean; quote: CourseQuote }
 
 /**
  * The buy button, personalised: "Continue" for an owner, the member's own price
@@ -23,10 +23,10 @@ export function CourseCta({ slug }: { slug: string }) {
     apiClient.get<Me>(`/academy/courses/${slug}/me`).then(setMe).catch(() => setMe(null));
   }, [slug]);
 
-  if (me?.owned) {
+  if (me?.owned || me?.viaPass) {
     return (
       <Button asChild size="lg" className="w-full font-bold">
-        <Link href={`/academy/learn/${slug}`}>{t('course.continue')}</Link>
+        <Link href={`/academy/learn/${slug}`}>{me.owned ? t('course.continue') : t('course.watchWithPass')}</Link>
       </Button>
     );
   }

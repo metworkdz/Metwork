@@ -12,6 +12,8 @@ import { resolveText } from '@/lib/localized-text';
 import { CourseCover } from '@/components/features/academy/course-cover';
 import { RefundButton } from '@/components/features/academy/refund-button';
 import { formatDzd } from '@/components/features/academy/format';
+import { PassCard } from '@/components/features/academy/pass-card';
+import { passStatusFor } from '@/server/academy/pass';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +36,8 @@ export default async function AcademyMyLearningPage({ params }: { params: Promis
     .filter((e) => e.userId === session.user.id && !e.revokedAt && !e.refundedAt)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
+  const pass = await passStatusFor(session.user);
+  const dateLocale = locale === 'ar' ? 'ar-DZ' : locale === 'fr' ? 'fr-DZ' : 'en-GB';
   const rows = await Promise.all(mine.map(async (e) => {
     const course = d.academyCourses?.find((c) => c.id === e.courseId);
     if (!course) return null;
@@ -51,7 +55,17 @@ export default async function AcademyMyLearningPage({ params }: { params: Promis
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <h1 className="font-display text-3xl font-extrabold tracking-tight">{t('my.title')}</h1>
-      {rows.filter(Boolean).length === 0 ? (
+      {pass.active && (
+        <div className="mt-6">
+          <PassCard
+            plan={pass.active.plan}
+            until={new Date(pass.active.periodEnd).toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' })}
+            autoRenew={pass.active.autoRenew}
+            renewalAmount={t('money', { price: formatDzd(pass.quotes.MONTHLY.amountDzd, locale) })}
+          />
+        </div>
+      )}
+      {rows.filter(Boolean).length === 0 && !pass.active ? (
         <div className="mt-8 rounded-2xl border border-dashed border-border p-10 text-center">
           <p className="font-display text-lg font-extrabold">{t('my.empty')}</p>
           <Button asChild className="mt-4"><Link href="/academy/courses">{t('my.browse')}</Link></Button>

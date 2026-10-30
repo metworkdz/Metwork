@@ -1526,7 +1526,12 @@ export interface AcademyEnrollmentRecord {
  */
 export interface AcademyOrderRecord {
   id: string;
+  /** What is bought. Absent ⇒ COURSE (every order before the Pass existed). */
+  kind?: 'COURSE' | 'PASS';
+  /** PASS orders only. */
+  passPlan?: 'MONTHLY' | 'ANNUAL';
   userId: string;
+  /** COURSE orders; '' for a PASS order. */
   courseId: string;
   /** Client idempotency key: a retried request never creates a second order. */
   clientReference: string;
@@ -1545,6 +1550,43 @@ export interface AcademyOrderRecord {
   enrollmentId: string | null;
   createdAt: string;
   paidAt: string | null;
+}
+
+/** One month of a Pass to settle between mentors (an annual Pass has 12). */
+export interface AcademyPassSliceRecord {
+  start: string;
+  end: string;
+  /** The FULL list price of this month: what the mentors' shares are computed on. */
+  baseDzd: number;
+  /** What the subscriber actually paid for this month (audit). */
+  paidDzd: number;
+  settledAt: string | null;
+  /** Frozen at settlement. Empty = nothing watched: the month stays with Metwork. */
+  lines: { mentorId: string; seconds: number; rate: number; amountDzd: number }[];
+}
+
+/**
+ * One paid term of the Academy Pass (a month, or a year). A renewal creates a
+ * new record and expires the old one, like `userMemberships`.
+ */
+export interface AcademyPassRecord {
+  id: string;
+  userId: string;
+  plan: 'MONTHLY' | 'ANNUAL';
+  status: 'ACTIVE' | 'EXPIRED';
+  /** Monthly terms renew from the wallet unless cancelled; annual never auto-charges. */
+  autoRenew: boolean;
+  periodStart: string;
+  periodEnd: string;
+  listPriceDzd: number;
+  amountDzd: number;
+  discount: 'NONE' | 'PREMIUM';
+  method: 'WALLET' | 'CARD' | 'RENEWAL';
+  /** Order id, or the wallet reference of a renewal. */
+  paymentRef: string;
+  renewalReminderSentAt: string | null;
+  slices: AcademyPassSliceRecord[];
+  createdAt: string;
 }
 
 /* ──────────────────── Membership plan configuration ──────────────────── */
@@ -3672,6 +3714,8 @@ export type NotificationType =
   /** Startup Academy: a course was unlocked or refunded. */
   | 'ACADEMY_ENROLLED'
   | 'ACADEMY_REFUNDED'
+  /** Startup Academy Pass: started, renewed, renewing soon or ended. */
+  | 'ACADEMY_PASS'
   /** Refunds: a request was opened, accepted, paid or declined; or a payment arrived. */
   | 'REFUND_REQUESTED'
   | 'REFUND_UPDATE'
@@ -4444,8 +4488,10 @@ export interface DbShape {
   academyCourses?: AcademyCourseRecord[];
   /** Startup Academy — lifetime course access (purchases, grants, gifts). */
   academyEnrollments?: AcademyEnrollmentRecord[];
-  /** Startup Academy — course purchase attempts (wallet or card). */
+  /** Startup Academy — course and Pass purchase attempts (wallet or card). */
   academyOrders?: AcademyOrderRecord[];
+  /** Startup Academy — Pass terms (one per paid month or year). */
+  academyPasses?: AcademyPassRecord[];
   /** Audit log entries for admin actions. */
   auditLogs: AuditLogRecord[];
   /** In-app notifications per user. */
