@@ -4342,6 +4342,11 @@ export interface CampaignSendRecord {
 }
 
 export interface DbShape {
+  /**
+   * Write revision, bumped by every `update`. A write only lands if the row
+   * still carries the revision it was computed from (see `persistIfUnchanged`).
+   */
+  _rev?: number;
   pendingUsers: PendingUserRecord[];
   users: UserRecord[];
   sessions: SessionRecord[];
@@ -4949,17 +4954,75 @@ export async function read(): Promise<DbShape> {
 }
 
 /**
+ * Write `next` only if the row is still at revision `rev` — the one the
+ * caller's copy was loaded at. False when another instance wrote first.
+ */
+async function persistIfUnchanged(next: DbShape, rev: number | undefined): Promise<boolean> {
+  if (isLocalMode()) {
+    localPersist(next);
+    return true;
+  }
+  const supabase = getSupabase();
+  const base = supabase.from('app_state').update({ data: next }).eq('id', 1);
+  const guarded = rev === undefined ? base.is('data->_rev', null) : base.eq('data->>_rev', String(rev));
+  const { data, error } = await guarded.select('id');
+  if (error) {
+    throw new Error(`Supabase persist failed: ${error.message} (code: ${error.code})`);
+  }
+  return Array.isArray(data) && data.length === 1;
+}
+
+/** A write that keeps losing the race this many times gives up loudly. */
+const MAX_WRITE_ATTEMPTS = 5;
+
+/**
  * Mutate the DB inside a serialized critical section, then persist to Supabase.
  * The mutator may return a value, which becomes the resolved value.
+ *
+ * The queue only serializes writes inside ONE instance. Vercel runs several,
+ * each with its own cached copy, and a plain upsert let an instance holding a
+ * copy from a few seconds earlier overwrite the whole document — silently
+ * erasing whatever another instance had just written (a program's feedback
+ * invites vanished this way, leaving every emailed link dead). So the write
+ * is conditional on the revision the copy was loaded at; when another
+ * instance got there first, the copy is dropped, reloaded, and the mutator
+ * runs again on the current data. Mutators must therefore only change the
+ * draft — the store's long-standing contract.
+ *
+ * A mutator that throws also drops the copy, so its half-made changes never
+ * reach a later read or write.
  */
 export async function update<T>(mutator: (db: DbShape) => T | Promise<T>): Promise<T> {
   const next = writeQueue.then(async () => {
-    const db = await load();
-    const result = await mutator(db);
-    await persist(db);
-    // Reset TTL so this instance's cache stays fresh after its own write.
-    cacheAt = Date.now();
-    return result;
+    for (let attempt = 1; ; attempt++) {
+      const db = await load();
+      const rev = db._rev;
+      let result: T;
+      try {
+        result = await mutator(db);
+      } catch (err) {
+        cache = null;
+        throw err;
+      }
+      db._rev = (rev ?? 0) + 1;
+      let written: boolean;
+      try {
+        written = await persistIfUnchanged(db, rev);
+      } catch (err) {
+        cache = null;
+        throw err;
+      }
+      if (written) {
+        // Reset TTL so this instance's cache stays fresh after its own write.
+        cacheAt = Date.now();
+        return result;
+      }
+      cache = null;
+      if (attempt >= MAX_WRITE_ATTEMPTS) {
+        throw new Error('Store write conflict: the document kept changing under this write');
+      }
+      console.warn(`[store] concurrent write detected, retrying on fresh data (attempt ${attempt})`);
+    }
   });
   // Keep the queue alive even if a mutator throws so subsequent writes still run.
   writeQueue = next.then(
