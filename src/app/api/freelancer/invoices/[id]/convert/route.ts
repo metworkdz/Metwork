@@ -1,5 +1,5 @@
 /**
- * POST /api/freelancer/invoices/[id]/convert — body { paymentMethod, withStamp }
+ * POST /api/freelancer/invoices/[id]/convert — body { paymentMethod, withStamp, note?, issuedOn? }
  * Turns a proforma or devis into a facture (see @/server/invoices/drafts).
  */
 import type { NextRequest } from 'next/server';

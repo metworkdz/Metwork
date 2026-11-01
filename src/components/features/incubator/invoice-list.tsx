@@ -38,8 +38,10 @@ interface Props {
   /** A row the server rewrote, or a new one (see InvoicesTabs). */
   onChanged: (invoice: InvoiceListItem) => void;
   hasStamp: boolean;
-  /** The facture number a conversion would take next (preview only). */
-  nextFactureNumber: string;
+  /** The facture number a conversion dated in `year` would take (preview only). */
+  factureNumberFor: (year: number) => string;
+  /** The latest day used by a live facture of `year`, if any. */
+  latestFactureDay: (year: number) => string | null;
 }
 
 const METHOD_LABEL_KEY = {
@@ -79,7 +81,7 @@ function formatDay(day: string): string {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : day;
 }
 
-export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged, hasStamp, nextFactureNumber }: Props) {
+export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged, hasStamp, factureNumberFor, latestFactureDay }: Props) {
   const paths = useInvoicingPaths();
   const t = useTranslations('incubator.invoicesPage');
   const copy = COPY[kind];
@@ -310,7 +312,8 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged,
       {kind !== 'FACTURE' && (
         <ConvertToInvoiceDialog
           source={converting}
-          nextNumber={nextFactureNumber}
+          numberFor={factureNumberFor}
+          latestFactureDay={latestFactureDay}
           hasStamp={hasStamp}
           onOpenChange={(o) => { if (!o) setConverting(null); }}
           onConverted={(invoice, source) => { onChanged(source); onChanged(invoice); }}

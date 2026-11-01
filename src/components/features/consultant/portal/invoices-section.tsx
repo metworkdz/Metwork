@@ -30,6 +30,7 @@ import {
   SectionCard, SectionHeading, Spinner, cpInputClassLight, uploadConsultantFile,
 } from './shared';
 import { cn } from '@/lib/utils';
+import { algiersToday, checkConversionDay, conversionDayBounds } from '@/lib/invoice-date';
 
 type View = 'documents' | 'clients' | 'settings';
 type KindFilter = 'ALL' | ConsultantInvoiceKind;
@@ -207,7 +208,15 @@ function DocumentsView({
       {converting && (
         <ConvertSheet
           source={converting}
-          nextNumber={data.nextSeq ? `${String(data.nextSeq.FACTURE).padStart(2, '0')}/${new Date().getUTCFullYear()}` : ''}
+          numberFor={(year) => {
+            // This year's counter is authoritative; an earlier year's next
+            // number follows the highest facture issued in it (numbers are
+            // never deleted — a cancelled facture keeps its number).
+            const seq = year === new Date().getUTCFullYear() && data.nextSeq
+              ? data.nextSeq.FACTURE
+              : Math.max(0, ...data.items.filter((i) => (i.kind ?? 'FACTURE') === 'FACTURE' && i.year === year).map((i) => i.seq)) + 1;
+            return `${String(seq).padStart(2, '0')}/${year}`;
+          }}
           hasStamp={Boolean(settings.issuer.stampUrl)}
           canTransfer={settings.canInvoiceByTransfer}
           onClose={() => setConverting(null)}
@@ -312,9 +321,10 @@ function DocumentRow({ invoice, onChanged, hasStamp, onEdit, onConvert }: {
 
 /* ═══════════════════ Convert ═══════════════════ */
 
-function ConvertSheet({ source, nextNumber, hasStamp, canTransfer, onClose, onConverted }: {
+function ConvertSheet({ source, numberFor, hasStamp, canTransfer, onClose, onConverted }: {
   source: ConsultantInvoice;
-  nextNumber: string;
+  /** The number a facture dated in `year` will take (preview; the server allocates). */
+  numberFor: (year: number) => string;
   hasStamp: boolean;
   canTransfer: boolean;
   onClose: () => void;
@@ -327,12 +337,19 @@ function ConvertSheet({ source, nextNumber, hasStamp, canTransfer, onClose, onCo
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<ConsultantInvoice | null>(null);
+  const [issuedOn, setIssuedOn] = useState(() => algiersToday());
+  // The server's own date rule (lib/invoice-date) — it re-checks anyway.
+  const bounds = conversionDayBounds(source.issuedAt);
+  const dayError = checkConversionDay(issuedOn, source.issuedAt);
+  const nextNumber = dayError ? '—' : numberFor(Number(issuedOn.slice(0, 4)));
+  const frDay = (day: string) => day.split('-').reverse().join('/');
 
   async function convert() {
+    if (dayError) return;
     setSaving(true);
     setError(null);
     try {
-      const { invoice } = await consultantService.convertInvoice(source.id, { paymentMethod, withStamp: hasStamp && withStamp, note: note.trim() || null });
+      const { invoice } = await consultantService.convertInvoice(source.id, { paymentMethod, withStamp: hasStamp && withStamp, note: note.trim() || null, issuedOn });
       setDone(invoice);
       await onConverted();
     } catch (e) {
@@ -353,7 +370,7 @@ function ConvertSheet({ source, nextNumber, hasStamp, canTransfer, onClose, onCo
           <Download className="size-4" /> {t('downloadPdf')}
         </BrandButton>
       ) : (
-        <BrandButton tone="light" className="w-full" loading={saving} onClick={convert}>
+        <BrandButton tone="light" className="w-full" loading={saving} disabled={dayError !== null} onClick={convert}>
           {t('convertConfirm', { number: nextNumber })}
         </BrandButton>
       )}
@@ -365,6 +382,22 @@ function ConvertSheet({ source, nextNumber, hasStamp, canTransfer, onClose, onCo
         ) : (
           <>
             <p className="text-sm text-muted-foreground">{t('convertHint')}</p>
+            <Field
+              label={t('convertDate')}
+              hint={dayError === 'BEFORE_SOURCE'
+                ? t('convertDateBefore', { min: frDay(bounds.min), number: source.number })
+                : dayError === 'IN_FUTURE'
+                  ? t('convertDateFuture')
+                  : dayError === 'INVALID_DATE'
+                    ? t('convertDateInvalid')
+                    : t('convertDateHint', { min: frDay(bounds.min), number: source.number })}
+            >
+              <input
+                type="date" required className={cpInputClassLight} value={issuedOn}
+                min={bounds.min} max={bounds.max} aria-invalid={dayError !== null}
+                onChange={(e) => setIssuedOn(e.target.value)}
+              />
+            </Field>
             <Field label={t('paymentMethod')}>
               <select className={cpInputClassLight} value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as 'ESPECE')}>

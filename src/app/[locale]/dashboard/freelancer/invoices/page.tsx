@@ -43,6 +43,7 @@ export default async function FreelancerInvoicesPage({ params }: PageProps) {
           hasStamp={ctx.hasStamp}
           factureYear={ctx.year}
           nextFactureSeq={ctx.nextSeq.FACTURE}
+          invoiceCounters={ctx.invoiceCounters}
         />
       </InvoicingPathsProvider>
     </div>

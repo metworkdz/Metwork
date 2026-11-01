@@ -35,6 +35,8 @@ const convertSchema = z.object({
   withStamp: z.boolean(),
   /** The facture's note — prefilled from the proforma, editable, may be cleared. */
   note: z.string().max(600).optional().nullable(),
+  /** The facture's date, "YYYY-MM-DD". Bounds are checked against the source in drafts.ts. */
+  issuedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 /** POST …/invoices/[id]/convert — returns the new facture and the locked source. */

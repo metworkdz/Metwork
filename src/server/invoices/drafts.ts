@@ -11,6 +11,7 @@
 import type { z } from 'zod';
 
 import { randomUUID } from 'node:crypto';
+import { checkConversionDay, conversionDayBounds, issuedAtForDay } from '@/lib/invoice-date';
 
 import { db, type InvoicePaymentMethod, type InvoiceRecord } from '@/server/db/store';
 import { allocateInvoiceNumber, amountToFrenchWords, computeInvoiceTotals } from '@/server/invoices/engine';
@@ -136,6 +137,12 @@ export type ConvertResult =
  * paid. The timbre follows the engine (cash factures only). The source stays,
  * marked converted and locked.
  */
+/** "2026-10-17" → "17/10/2026", as the PDF prints it. */
+function frenchDay(day: string): string {
+  const [y, m, d] = day.split('-');
+  return `${d}/${m}/${y}`;
+}
+
 export async function convertDraftToInvoice(
   owner: InvoiceOwner,
   id: string,
@@ -144,6 +151,12 @@ export async function convertDraftToInvoice(
     withStamp: boolean;
     /** The facture's note. Omitted → the source's; empty → none. */
     note?: string | null;
+    /**
+     * The facture's date, "YYYY-MM-DD" — chosen by the host, between the
+     * source's own date and today (see lib/invoice-date). Omitted → today.
+     * Its year picks the numbering series.
+     */
+    issuedOn?: string;
   },
 ): Promise<ConvertResult> {
   const pre = findIssuer(await db.read(), owner);
@@ -170,8 +183,29 @@ export async function convertDraftToInvoice(
       ({ clientId, clientSnapshot } = recipient);
     }
 
-    const now = new Date().toISOString();
-    const year = new Date().getUTCFullYear();
+    // The date is checked against the source BEFORE the counter moves — a
+    // refusal must not burn a facture number.
+    const clock = new Date();
+    const now = clock.toISOString();
+    let issuedAt = now;
+    if (input.issuedOn !== undefined) {
+      const bad = checkConversionDay(input.issuedOn, source.issuedAt, clock);
+      if (bad) {
+        const { min, max } = conversionDayBounds(source.issuedAt, clock);
+        return {
+          ok: false,
+          status: 422,
+          code: bad,
+          message: bad === 'INVALID_DATE'
+            ? 'Date de facture invalide.'
+            : bad === 'BEFORE_SOURCE'
+              ? `La facture ne peut pas être datée avant le ${frenchDay(min)}, date de ${source.number}.`
+              : `La facture ne peut pas être datée après aujourd’hui (${frenchDay(max)}).`,
+        };
+      }
+      issuedAt = issuedAtForDay(input.issuedOn, clock);
+    }
+    const year = new Date(issuedAt).getUTCFullYear();
     const { number, seq } = allocateInvoiceNumber(issuer.counterHolder, year, undefined, 'FACTURE');
     issuer.counterHolder.updatedAt = now;
     const totals = computeInvoiceTotals(source.lines, source.vatRate, input.paymentMethod, 'FACTURE');
@@ -184,7 +218,7 @@ export async function convertDraftToInvoice(
       year,
       seq,
       validUntil: null,
-      issuedAt: now,
+      issuedAt,
       clientId,
       clientSnapshot,
       issuerSnapshot: issuerSnapshotFrom(issuer.profile),
