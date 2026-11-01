@@ -3365,7 +3365,8 @@ export interface ContractTemplateRecord {
 export type InvoiceTemplate = 'CLASSIC' | 'GREEN_BAND' | 'MINIMAL';
 
 /** Accepted payment modes printed on the invoice. Timbre applies to ESPECE only. */
-export type InvoicePaymentMethod = 'ESPECE' | 'CHEQUE' | 'VIREMENT';
+/** CARTE = card paid online; TPE = card on a point-of-sale terminal. Neither carries a timbre: not cash. */
+export type InvoicePaymentMethod = 'ESPECE' | 'CHEQUE' | 'VIREMENT' | 'CARTE' | 'TPE';
 
 export interface InvoiceLine {
   designation: string;

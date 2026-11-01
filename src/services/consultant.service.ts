@@ -305,7 +305,7 @@ export interface ConsultantInvoice {
   clientSnapshot: { name: string; legalName?: string | null; clientType: 'COMPANY' | 'INDIVIDUAL' };
   lines: ConsultantInvoiceLine[];
   vatRate: number;
-  paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT';
+  paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT' | 'CARTE' | 'TPE';
   totals: { ht: number; tva: number; ttc: number; timbre: number; net: number };
   status: 'ISSUED' | 'CANCELLED';
   clientId?: string | null;
@@ -393,7 +393,7 @@ export interface ConsultantInvoiceInput {
   };
   lines: ConsultantInvoiceLine[];
   vatRate?: number;
-  paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT';
+  paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT' | 'CARTE' | 'TPE';
   kind?: ConsultantInvoiceKind;
   validUntil?: string | null;
   withStamp?: boolean;
@@ -578,7 +578,7 @@ export const consultantService = {
   setInvoiceStamp: (id: string, withStamp: boolean) =>
     apiClient.patch<{ invoice: ConsultantInvoice }>(`/consultant/invoices/${encodeURIComponent(id)}`, { withStamp }),
   /** Turn a proforma / devis into a facture (next facture number, today). */
-  convertInvoice: (id: string, body: { paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT'; withStamp: boolean; note?: string | null; issuedOn?: string }) =>
+  convertInvoice: (id: string, body: { paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT' | 'CARTE' | 'TPE'; withStamp: boolean; note?: string | null; issuedOn?: string }) =>
     apiClient.post<{ invoice: ConsultantInvoice; source: ConsultantInvoice }>(
       `/consultant/invoices/${encodeURIComponent(id)}/convert`, body,
     ),

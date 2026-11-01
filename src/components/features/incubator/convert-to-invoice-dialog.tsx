@@ -38,10 +38,12 @@ interface Props {
   onConverted: (invoice: InvoiceRecord, source: InvoiceRecord) => void;
 }
 
-const METHODS: Array<{ id: InvoicePaymentMethod; key: 'methodEspece' | 'methodCheque' | 'methodVirement' }> = [
+const METHODS: Array<{ id: InvoicePaymentMethod; key: 'methodEspece' | 'methodCheque' | 'methodVirement' | 'methodCarte' | 'methodTpe' }> = [
   { id: 'ESPECE', key: 'methodEspece' },
   { id: 'CHEQUE', key: 'methodCheque' },
   { id: 'VIREMENT', key: 'methodVirement' },
+  { id: 'CARTE', key: 'methodCarte' },
+  { id: 'TPE', key: 'methodTpe' },
 ];
 
 export function ConvertToInvoiceDialog({ source, numberFor, latestFactureDay, hasStamp, onOpenChange, onConverted }: Props) {

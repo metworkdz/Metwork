@@ -403,6 +403,8 @@ function ConvertSheet({ source, numberFor, hasStamp, canTransfer, onClose, onCon
                 onChange={(e) => setPaymentMethod(e.target.value as 'ESPECE')}>
                 <option value="ESPECE">{t('payEspece')}</option>
                 <option value="CHEQUE">{t('payCheque')}</option>
+                <option value="CARTE">{t('payCarte')}</option>
+                <option value="TPE">{t('payTpe')}</option>
                 <option value="VIREMENT" disabled={!canTransfer}>
                   {canTransfer ? t('payVirement') : t('payVirementNoRib')}
                 </option>
@@ -459,7 +461,7 @@ function CreateSheet({
     ? editing.lines.map((l) => ({ designation: l.designation, quantity: String(l.quantity), unitPriceHt: String(l.unitPriceHt) }))
     : [{ designation: '', quantity: '1', unitPriceHt: '' }]);
   const [vatRate, setVatRate] = useState(String(editing?.vatRate ?? defaultVatRate));
-  const [paymentMethod, setPaymentMethod] = useState<'ESPECE' | 'CHEQUE' | 'VIREMENT'>(editing?.paymentMethod ?? 'ESPECE');
+  const [paymentMethod, setPaymentMethod] = useState<'ESPECE' | 'CHEQUE' | 'VIREMENT' | 'CARTE' | 'TPE'>(editing?.paymentMethod ?? 'ESPECE');
   const [validUntil, setValidUntil] = useState(editing?.validUntil ?? defaultValidUntil());
   const [note, setNote] = useState(editing?.note ?? '');
   const [withStamp, setWithStamp] = useState(Boolean(editing?.withStamp));
@@ -627,6 +629,8 @@ function CreateSheet({
             >
               <option value="ESPECE">{t('payEspece')}</option>
               <option value="CHEQUE">{t('payCheque')}</option>
+              <option value="CARTE">{t('payCarte')}</option>
+              <option value="TPE">{t('payTpe')}</option>
               {/* A transfer invoice has to say where to pay. */}
               <option value="VIREMENT" disabled={!canTransfer}>
                 {canTransfer ? t('payVirement') : t('payVirementNoRib')}

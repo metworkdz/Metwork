@@ -611,6 +611,8 @@ export function InvoiceCreateForm({
                     <SelectItem value="ESPECE">{t('methodEspece')}</SelectItem>
                     <SelectItem value="CHEQUE">{t('methodCheque')}</SelectItem>
                     <SelectItem value="VIREMENT">{t('methodVirement')}</SelectItem>
+                    <SelectItem value="CARTE">{t('methodCarte')}</SelectItem>
+                    <SelectItem value="TPE">{t('methodTpe')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

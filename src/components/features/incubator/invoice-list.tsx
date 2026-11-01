@@ -48,6 +48,8 @@ const METHOD_LABEL_KEY = {
   ESPECE: 'methodEspece',
   CHEQUE: 'methodCheque',
   VIREMENT: 'methodVirement',
+  CARTE: 'methodCarte',
+  TPE: 'methodTpe',
 } as const;
 
 /**

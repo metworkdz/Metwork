@@ -155,6 +155,8 @@ describe('buildInvoiceViewModel', () => {
     expect(buildInvoiceViewModel(makeInvoice({ paymentMethod: 'ESPECE' })).paymentLabel).toBe('Espèce');
     expect(buildInvoiceViewModel(makeInvoice({ paymentMethod: 'CHEQUE' })).paymentLabel).toBe('Chèque');
     expect(buildInvoiceViewModel(makeInvoice({ paymentMethod: 'VIREMENT' })).paymentLabel).toBe('Virement bancaire');
+    expect(buildInvoiceViewModel(makeInvoice({ paymentMethod: 'CARTE' })).paymentLabel).toBe('Carte bancaire (paiement en ligne)');
+    expect(buildInvoiceViewModel(makeInvoice({ paymentMethod: 'TPE' })).paymentLabel).toBe('TPE (paiement par carte sur place)');
   });
 
   it('formats the date dd/mm/yyyy and keeps the number verbatim', () => {

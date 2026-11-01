@@ -59,7 +59,7 @@ export const invoiceFieldsSchema = z
     clientDraft: clientDraftSchema.optional(),
     lines: z.array(lineSchema).min(1).max(100),
     vatRate: z.number().min(0).max(100).optional(),
-    paymentMethod: z.enum(['ESPECE', 'CHEQUE', 'VIREMENT']),
+    paymentMethod: z.enum(['ESPECE', 'CHEQUE', 'VIREMENT', 'CARTE', 'TPE']),
     template: z.enum(['CLASSIC', 'GREEN_BAND', 'MINIMAL']).optional(),
     /** Which document to issue. Absent = FACTURE, as it always was. */
     kind: z.enum(['FACTURE', 'PROFORMA', 'DEVIS']).optional(),

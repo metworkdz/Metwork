@@ -31,7 +31,7 @@ export async function handleDraftStamp(owner: InvoiceOwner, id: string, withStam
 }
 
 const convertSchema = z.object({
-  paymentMethod: z.enum(['ESPECE', 'CHEQUE', 'VIREMENT']),
+  paymentMethod: z.enum(['ESPECE', 'CHEQUE', 'VIREMENT', 'CARTE', 'TPE']),
   withStamp: z.boolean(),
   /** The facture's note — prefilled from the proforma, editable, may be cleared. */
   note: z.string().max(600).optional().nullable(),
