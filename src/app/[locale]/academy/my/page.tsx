@@ -15,6 +15,12 @@ import { RefundButton } from '@/components/features/academy/refund-button';
 import { formatDzd } from '@/components/features/academy/format';
 import { PassCard } from '@/components/features/academy/pass-card';
 import { passStatusFor } from '@/server/academy/pass';
+import { listPublicCourses } from '@/server/academy/catalog';
+import { listAcademyFields } from '@/server/academy/settings';
+import { listMyCertificates } from '@/server/academy/certificates';
+import { CourseCard } from '@/components/features/academy/course-card';
+import { RemindersToggle } from '@/components/features/academy/reminders-toggle';
+import { Award, Download, ShieldCheck } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +44,12 @@ export default async function AcademyMyLearningPage({ params }: { params: Promis
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   const pass = await passStatusFor(session.user);
+  const me = d.users.find((u) => u.id === session.user.id);
+  const wishIds = me?.academyWishlist ?? [];
+  const [certificates, published] = await Promise.all([listMyCertificates(session.user.id), wishIds.length ? listPublicCourses(locale) : Promise.resolve([])]);
+  const fields = wishIds.length ? await listAcademyFields({ includeHidden: true }) : [];
+  const fieldLabel = (id: string) => { const f = fields.find((x) => x.id === id); return f?.label ? resolveText(f.label, locale) : t(`fields.${id}.name`); };
+  const wishlist = wishIds.map((id) => published.find((c) => c.id === id)).filter((c): c is NonNullable<typeof c> => Boolean(c));
   const dateLocale = locale === 'ar' ? 'ar-DZ' : locale === 'fr' ? 'fr-DZ' : 'en-GB';
   const rows = await Promise.all(mine.map(async (e) => {
     const course = d.academyCourses?.find((c) => c.id === e.courseId);
@@ -95,6 +107,40 @@ export default async function AcademyMyLearningPage({ params }: { params: Promis
           ))}
         </ul>
       )}
+
+      {certificates.length > 0 && (
+        <section className="mt-10">
+          <h2 className="font-display text-xl font-extrabold">{t('learning.my.certificates')}</h2>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            {certificates.map((c) => (
+              <li key={c.id} className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
+                <Award className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold leading-snug">{c.courseTitle}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground"><span dir="ltr">{c.number}</span> · {new Date(c.issuedAt).toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                    <a href={`/api/academy/certificates/${c.id}/pdf`} className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"><Download className="size-4" aria-hidden />{t('learning.certificate.download')}</a>
+                    <Link href={`/attestation/${c.verifyToken}`} className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"><ShieldCheck className="size-4" aria-hidden />{t('learning.certificate.verify')}</Link>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {wishlist.length > 0 && (
+        <section className="mt-10">
+          <h2 className="font-display text-xl font-extrabold">{t('learning.my.wishlist')}</h2>
+          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {wishlist.map((c) => <CourseCard key={c.id} course={c} locale={locale} fieldLabel={fieldLabel(c.fieldId)} />)}
+          </div>
+        </section>
+      )}
+
+      <section className="mt-10">
+        <RemindersToggle initialOff={Boolean(me?.academyRemindersOff)} />
+      </section>
     </div>
   );
 }

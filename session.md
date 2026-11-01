@@ -481,3 +481,36 @@ withdrawable at once (the Pass is not refundable).
   locked without addendum, save bar above the portal tab bar; admin prepare addendum
   (incomplete-profile error under the row, success → DRAFT, "Academy addendum" badge on
   Contracts). Not seen live: the review queue with a real submission (unit-tested).
+
+### Phase 5 — Learning experience (same worktree / branch)
+- Owner decisions (2026-11-01): certificate = every released lesson watched to 90 % AND
+  every module quiz passed at 70 % (retries allowed); reviews by buyers / Pass learners who
+  watched 25 %, live at once, admin can hide, mentor replies once; lesson Q&A public to the
+  course's learners; quizzes written by the author with a Haiku 4.5 draft button.
+- **Apply `supabase/migrations/20261101000000_academy_learning.sql` before deploying**
+  (`academy_notes`, `academy_posts`, `academy_inactive_learners`; RLS on, no policies).
+  Reviews, quiz results, certificates and reminder logs are bounded → JSONB store.
+- Quizzes: `module.quiz` (builder `quiz-editor.tsx`, ids kept across saves, included in the
+  translation drafts); learner view never carries `correctIndex` (`server/academy/quiz.ts`);
+  page `/academy/learn/{slug}/quiz/{moduleId}`. AI draft `server/academy/quiz-draft.ts`
+  (Haiku 4.5, nothing saved, output cleaned, rate-limited; mentors only for editable modules).
+- Certificates (`server/academy/certificates.ts`): "watched" = completion stamp AND
+  server-side watch time ≥ 90 % at up to 2× speed (`isLessonWatched`), so "mark as done" or
+  a seek is not enough. Claimed by the learner, `ACA-YYYY-NNNN`, frozen, emailed with the PDF
+  (participation-certificate renderer + Academy stamp), verified on the existing
+  `/attestation/{token}` page. Issued ⇒ refund refused (`CERTIFIED`). Admin revoke/restore.
+- Reviews `reviews.ts` (name shown "Amina B."), Q&A + notes `qa.ts` (notes pinned to the
+  video moment via `player-bus.ts`), wishlist + reminder opt-out on the user record,
+  `notify.ts`: new-module notices (buyers, wishlisters, Pass learners who started),
+  "keep going" emails (`/api/cron/academy-reminders`, daily 09:00 UTC, idle 7–14 days, once
+  per pause, max 3 per course, fr/en/ar). Admin moderation panel on the Academy page;
+  mentor inbox (questions unanswered first + reviews) in the portal Academy tab.
+- Fixed on the way: the admin builder's save bar was under the dashboard's phone tab bar
+  (tapping "Enregistrer" opened "Plus"); the mentor push link pointed to a non-existent path.
+- Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2305/2305 (20 new).
+  Browser at 375 px fr + ar: course page (rating, reviews, post a review, wishlist), lesson
+  page (Q&A, note at 0:04, sidebar quiz row, certificate card), quiz fail → retry → pass,
+  claim → ACA-2026-0001, PDF checked, Arabic verification page, My learning (certificates,
+  reminders switch), admin moderation hide, builder quiz edit + save, mentor inbox + reply.
+  Not exercised live: the AI quiz draft (cost rule; unit-tested with an injected drafter),
+  real email/push delivery, the reminder cron on Supabase.

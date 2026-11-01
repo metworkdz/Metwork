@@ -677,6 +677,30 @@
         "DRAFT": "Votre avenant Academy est en préparation chez Metwork.",
         "PENDING_SIGNATURE": "Votre avenant Academy attend votre signature.",
         "sign": "Signer l’avenant"
+      },
+      "inbox": {
+        "title": "Questions et avis",
+        "subtitle": "Répondez aux apprenants de vos cours.",
+        "loadError": "Chargement impossible.",
+        "questionsTab": "Questions",
+        "reviewsTab": "Avis",
+        "noQuestions": "Aucune question pour l’instant.",
+        "toAnswer": "À répondre",
+        "answers": "{count, plural, =0 {Aucune réponse} one {# réponse} other {# réponses}}",
+        "noReviews": "Aucun avis pour l’instant.",
+        "back": "Retour",
+        "you": "vous",
+        "answerPlaceholder": "Votre réponse, visible par les apprenants du cours…",
+        "rateLimited": "Trop de réponses en peu de temps. Réessayez plus tard.",
+        "sendError": "L’envoi a échoué. Réessayez.",
+        "send": "Publier la réponse",
+        "alreadyReplied": "Vous avez déjà répondu à cet avis.",
+        "stars": "{n, plural, one {# étoile} other {# étoiles}}",
+        "replyPlaceholder": "Votre réponse publique…",
+        "replyOnce": "Une seule réponse par avis, visible sur la page du cours.",
+        "publishReply": "Publier",
+        "cancel": "Annuler",
+        "reply": "Répondre"
       }
     }
   },
@@ -8014,6 +8038,107 @@
       "cancelYes": "Confirmer",
       "keep": "Garder",
       "resume": "Reprendre le renouvellement"
+    },
+    "learning": {
+      "loading": "Chargement",
+      "cancel": "Annuler",
+      "errors": {
+        "RATE_LIMITED": "Trop d’envois en peu de temps. Réessayez plus tard.",
+        "generic": "Une erreur est survenue. Réessayez."
+      },
+      "wishlist": {
+        "save": "Ajouter à ma liste",
+        "saved": "Dans ma liste"
+      },
+      "reviews": {
+        "title": "Avis des apprenants",
+        "average": "Note moyenne {average} sur 5",
+        "summary": "{average} / 5 · {count, plural, one {# avis} other {# avis}}",
+        "count": "({count, plural, one {# avis} other {# avis}})",
+        "yours": "Votre avis",
+        "stars": "{n, plural, one {# étoile} other {# étoiles}}",
+        "edit": "Modifier",
+        "formTitle": "Donnez votre avis sur ce cours",
+        "ratingLabel": "Votre note",
+        "placeholder": "Qu’avez-vous appris ? Qu’est-ce qui pourrait être amélioré ? (facultatif)",
+        "publish": "Publier",
+        "cancel": "Annuler",
+        "watchMore": "Vous pourrez donner votre avis après avoir suivi un quart du cours.",
+        "saved": "Merci, votre avis est publié.",
+        "error": "Votre avis n’a pas pu être enregistré.",
+        "loading": "Chargement des avis",
+        "empty": "Pas encore d’avis sur ce cours.",
+        "reply": "Réponse de {name}"
+      },
+      "qa": {
+        "tab": "Questions",
+        "askPlaceholder": "Posez une question sur cette leçon…",
+        "ask": "Publier la question",
+        "publicHint": "Visible par les apprenants du cours et le mentor.",
+        "empty": "Aucune question pour l’instant. Soyez le premier !",
+        "answerPlaceholder": "Votre réponse…",
+        "send": "Répondre",
+        "answer": "Répondre",
+        "mentor": "Mentor",
+        "team": "Équipe Metwork",
+        "hidden": "Masqué"
+      },
+      "notes": {
+        "tab": "Mes notes",
+        "placeholder": "Notez une idée à ce moment de la vidéo…",
+        "add": "Ajouter la note",
+        "privateHint": "Vos notes sont privées. Elles gardent le moment de la vidéo.",
+        "empty": "Aucune note sur cette leçon.",
+        "jump": "Aller à {time}",
+        "delete": "Supprimer la note"
+      },
+      "certificate": {
+        "title": "Certificat",
+        "issued": "Certificat n° {number}",
+        "download": "Télécharger le PDF",
+        "verify": "Page de vérification",
+        "lessons": "Leçons suivies : {done} / {total}",
+        "quizzes": "Quiz réussis : {done} / {total}",
+        "claim": "Obtenir mon certificat",
+        "rule": "Suivez chaque leçon jusqu’au bout et réussissez chaque quiz à 70 % pour l’obtenir.",
+        "errors": {
+          "NAME_MISSING": "Ajoutez votre nom complet à votre profil : il est imprimé sur le certificat.",
+          "NOT_ELIGIBLE": "Il reste des leçons ou des quiz à terminer.",
+          "RATE_LIMITED": "Trop d’essais. Réessayez plus tard.",
+          "generic": "Le certificat n’a pas pu être créé. Réessayez."
+        }
+      },
+      "quiz": {
+        "eyebrow": "Quiz · Module {n}",
+        "sidebar": "Quiz du module",
+        "passedShort": "Réussi",
+        "questions": "{count, plural, one {# question} other {# questions}}",
+        "programme": "Quiz de fin de module · {count, plural, one {# question} other {# questions}}",
+        "locked": "Le quiz fait partie du cours complet.",
+        "rule": "Répondez à toutes les questions. {percent} % de bonnes réponses pour réussir ; vous pouvez réessayer.",
+        "alreadyPassed": "Quiz déjà réussi ({percent} %).",
+        "passed": "Réussi : {percent} % de bonnes réponses.",
+        "failed": "{percent} % de bonnes réponses, pas encore assez.",
+        "retryHint": "Revoyez les questions signalées et réessayez.",
+        "wrong": "À revoir",
+        "retry": "Réessayer",
+        "submit": "Valider mes réponses",
+        "best": "Meilleur score : {percent} % · {attempts, plural, one {# essai} other {# essais}}",
+        "errors": {
+          "RATE_LIMITED": "Trop d’essais en une heure. Faites une pause et revenez plus tard.",
+          "INVALID_ANSWERS": "Le quiz a changé. Rechargez la page.",
+          "generic": "Vos réponses n’ont pas pu être envoyées. Réessayez."
+        },
+        "backToCourse": "Retour au cours"
+      },
+      "reminders": {
+        "label": "Rappels pour continuer mes cours",
+        "hint": "Un email quand un cours commencé est en pause depuis une semaine (3 au plus par cours)."
+      },
+      "my": {
+        "certificates": "Mes certificats",
+        "wishlist": "Ma liste"
+      }
     }
   },
   "academyAdmin": {
@@ -8152,7 +8277,8 @@
         "ADDENDUM_REQUIRED": "L’avenant Academy doit être signé avant l’envoi.",
         "LOCKED": "Ce cours ne peut pas être modifié pour l’instant.",
         "READ_ONLY": "Ce cours est en lecture seule.",
-        "NOTHING_TO_SUBMIT": "Rien de nouveau à envoyer."
+        "NOTHING_TO_SUBMIT": "Rien de nouveau à envoyer.",
+        "QUIZ_INCOMPLETE": "Chaque question du quiz doit avoir un énoncé et toutes ses réponses."
       },
       "pendingBadge": "En attente de validation",
       "studio": {
@@ -8190,6 +8316,28 @@
           "REQUEST_CHANGES": "Modifications demandées au mentor.",
           "APPROVE_MODULES": "Modules validés : ils sont visibles.",
           "REJECT_MODULES": "Modules renvoyés au mentor."
+        }
+      },
+      "quiz": {
+        "add": "Ajouter un quiz de fin de module",
+        "title": "Quiz · {count, plural, one {# question} other {# questions}}",
+        "draft": "Rédiger avec l’IA",
+        "saveFirst": "Enregistrez le module et ses leçons pour rédiger avec l’IA.",
+        "hint": "Cochez la bonne réponse de chaque question. Les apprenants doivent obtenir 70 % pour réussir.",
+        "prompt": "Question",
+        "removeQuestion": "Supprimer la question",
+        "correct": "Bonne réponse",
+        "markCorrect": "Réponse {n} est la bonne",
+        "option": "Réponse {n}",
+        "removeOption": "Supprimer la réponse",
+        "addOption": "Ajouter une réponse",
+        "addQuestion": "Ajouter une question",
+        "errors": {
+          "UNAVAILABLE": "La rédaction par IA n’est pas disponible.",
+          "NO_LESSONS": "Ajoutez et enregistrez des leçons d’abord.",
+          "RATE_LIMITED": "Trop de demandes. Réessayez plus tard.",
+          "LOCKED": "Ce module ne peut plus être modifié.",
+          "generic": "La rédaction a échoué. Réessayez."
         }
       }
     },
@@ -8269,6 +8417,24 @@
       "title": "{count, plural, one {# cours à relire} other {# cours à relire}}",
       "course": "Nouveau cours",
       "modules": "{count, plural, one {# nouveau module} other {# nouveaux modules}}"
+    },
+    "moderation": {
+      "title": "Avis, questions et certificats",
+      "subtitle": "Les avis et questions sont publiés tout de suite ; masquez ceux qui ne respectent pas les règles.",
+      "loadError": "Chargement impossible.",
+      "actionError": "L’action a échoué. Réessayez.",
+      "reviews": "Avis ({count})",
+      "questions": "Questions ({count})",
+      "certificates": "Certificats ({count})",
+      "stars": "{n, plural, one {# étoile} other {# étoiles}}",
+      "hidden": "masqué",
+      "hide": "Masquer",
+      "show": "Afficher",
+      "empty": "Rien pour l’instant.",
+      "answers": "{count, plural, =0 {Aucune réponse} one {# réponse} other {# réponses}}",
+      "revoked": "révoqué",
+      "revoke": "Révoquer",
+      "restore": "Rétablir"
     }
   },
   "refunds": {

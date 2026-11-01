@@ -219,3 +219,46 @@ export const ACADEMY_DEFAULT_FIELDS = [
   'product',
   'leadership',
 ] as const;
+
+/* ─────────────────────────── Learning (phase 5) ─────────────────────────── */
+/*
+ * Owner decisions of 2026-11-01:
+ *   - certificate = every released lesson watched to 90 % (watch time counted
+ *     on the server, not the "mark as done" button) AND every module quiz
+ *     passed at 70 %, retries allowed;
+ *   - reviews by learners (buyers or Pass) who watched 25 % of the course, live
+ *     at once, the admin can hide them, the mentor replies once;
+ *   - lesson Q&A is public to the course's learners.
+ */
+export const ACADEMY_CERT_LESSON_WATCHED = 0.9;
+export const ACADEMY_QUIZ_PASS_SCORE = 0.7;
+export const ACADEMY_REVIEW_MIN_WATCHED = 0.25;
+
+/** Quiz limits, shared by the builder and the server. */
+export const ACADEMY_QUIZ_MAX_QUESTIONS = 20;
+export const ACADEMY_QUIZ_MIN_OPTIONS = 2;
+export const ACADEMY_QUIZ_MAX_OPTIONS = 5;
+
+/** Score of one attempt, 0–1. An empty quiz never passes. */
+export function quizScore(correctIndexes: number[], answers: number[]): number {
+  if (correctIndexes.length === 0) return 0;
+  const right = correctIndexes.filter((c, i) => answers[i] === c).length;
+  return right / correctIndexes.length;
+}
+
+export function isQuizPassed(score: number): boolean {
+  return score + 1e-9 >= ACADEMY_QUIZ_PASS_SCORE;
+}
+
+/**
+ * Fastest playback speed the player offers. Watch time is wall-clock time, so a
+ * learner at 2× covers 90 % of a lesson in 45 % of its length: the rule below
+ * must not punish them for it.
+ */
+export const ACADEMY_MAX_PLAYBACK_RATE = 2;
+
+/** A lesson counts towards the certificate once 90 % of it was watched (at up to 2×). */
+export function isLessonWatched(watchedSec: number, durationSec: number): boolean {
+  if (durationSec <= 0) return false;
+  return watchedSec * ACADEMY_MAX_PLAYBACK_RATE >= durationSec * ACADEMY_CERT_LESSON_WATCHED;
+}

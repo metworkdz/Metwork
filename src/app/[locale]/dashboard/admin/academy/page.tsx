@@ -9,6 +9,7 @@ import { Link } from '@/i18n/routing';
 import { resolveText } from '@/lib/localized-text';
 import { isLocale, type Locale } from '@/i18n/config';
 import { CoursesAdmin, type AdminCourseRow } from '@/components/features/academy/admin/courses-admin';
+import { AcademyModeration } from '@/components/features/academy/admin/academy-moderation';
 
 interface PageProps { params: Promise<{ locale: string }> }
 
@@ -61,6 +62,7 @@ export default async function AdminAcademyPage({ params }: PageProps) {
         mentors={[...d.mentors].sort((a, b) => a.fullName.localeCompare(b.fullName)).map((m) => ({ id: m.id, fullName: m.fullName }))}
         locale={(isLocale(locale) ? locale : 'fr') as Locale}
       />
+      <AcademyModeration />
     </div>
   );
 }

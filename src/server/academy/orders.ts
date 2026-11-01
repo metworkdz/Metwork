@@ -403,13 +403,13 @@ export async function verifyAcademyOrder(orderId: string, userId: string): Promi
 
 export type RefundCheck =
   | { eligible: true; endsAt: string; amountDzd: number }
-  | { eligible: false; reason: 'NOT_FOUND' | 'NOT_A_PURCHASE' | 'ALREADY_REFUNDED' | 'WINDOW_CLOSED' | 'WATCHED_TOO_MUCH' | 'FREE' };
+  | { eligible: false; reason: 'NOT_FOUND' | 'NOT_A_PURCHASE' | 'ALREADY_REFUNDED' | 'WINDOW_CLOSED' | 'WATCHED_TOO_MUCH' | 'FREE' | 'CERTIFIED' };
 
 function releasedSeconds(course: AcademyCourseRecord | undefined): number {
   return (course?.modules ?? []).filter(isLiveModule).flatMap((m) => m.lessons).reduce((s, l) => s + l.durationSec, 0);
 }
 
-/** Owner rule: within 7 days, under 25 % of the released course watched, no certificate (none exist yet). */
+/** Owner rule: within 7 days, under 25 % of the released course watched, no certificate. */
 export async function refundCheck(userId: string, enrollmentId: string, now = new Date()): Promise<RefundCheck> {
   const d = await db.read();
   const e = d.academyEnrollments?.find((x) => x.id === enrollmentId && x.userId === userId);
@@ -419,6 +419,9 @@ export async function refundCheck(userId: string, enrollmentId: string, now = ne
   if (e.pricePaidDzd <= 0) return { eligible: false, reason: 'FREE' };
   const endsAt = refundWindowEndsAt(e.createdAt);
   if (now >= endsAt || e.earningsReleasedAt) return { eligible: false, reason: 'WINDOW_CLOSED' };
+  if ((d.academyCertificates ?? []).some((c) => c.userId === userId && c.courseId === e.courseId && !c.revokedAt)) {
+    return { eligible: false, reason: 'CERTIFIED' };
+  }
   const total = releasedSeconds(d.academyCourses?.find((c) => c.id === e.courseId));
   const watched = await academyRepo().courseWatchSeconds(userId, e.courseId);
   if (total > 0 && watched >= total * ACADEMY_REFUND_MAX_WATCHED) return { eligible: false, reason: 'WATCHED_TOO_MUCH' };

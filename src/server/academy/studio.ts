@@ -134,6 +134,7 @@ function asDraftInput(c: AcademyCourseRecord): CourseDraftInput {
       title: m.title,
       comingSoon: m.comingSoon,
       lessons: m.lessons.map((l) => ({ id: l.id, title: l.title, description: l.description, isPreview: l.isPreview })),
+      quiz: m.quiz ? { questions: m.quiz.questions.map((q) => ({ ...q })) } : null,
     })),
   };
 }
@@ -305,5 +306,7 @@ export async function reviewCourse(courseId: string, review: ReviewAction): Prom
     c.updatedAt = now;
     return c;
   });
-  return updated ? { ok: true, value: updated } : { ok: false, code: 'NOT_FOUND' };
+  if (!updated) return { ok: false, code: 'NOT_FOUND' };
+  if (review.action === 'APPROVE_MODULES') await (await import('./notify')).notifyModulesReleased(course, updated);
+  return { ok: true, value: updated };
 }

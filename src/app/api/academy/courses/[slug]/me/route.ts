@@ -21,7 +21,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   const session = await readSession();
   const q = await quoteForBuyer(session?.user ?? null, slug);
   if (!q.ok) return jsonError(404, q.code, 'Course not found');
-  const viaPass = Boolean(session && !q.owned && q.course.includedInPass && activePass(await db.read(), session.user.id));
+  const d = await db.read();
+  const viaPass = Boolean(session && !q.owned && q.course.includedInPass && activePass(d, session.user.id));
+  const wishlisted = Boolean(session && d.users.find((u) => u.id === session.user.id)?.academyWishlist?.includes(q.course.id));
   return json({
     signedIn: Boolean(session),
     viaPass,
@@ -30,5 +32,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     owned: q.owned || session?.user.role === 'ADMIN',
     premium: q.premium,
     quote: q.quote,
+    courseId: q.course.id,
+    wishlisted,
   });
 }

@@ -57,6 +57,10 @@
       "schedule": "15 3 * * *"
     },
     {
+      "path": "/api/cron/academy-reminders",
+      "schedule": "0 9 * * *"
+    },
+    {
       "path": "/api/cron/academy-pass",
       "schedule": "45 2 * * *"
     }

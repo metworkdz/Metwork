@@ -26,6 +26,8 @@ export async function getLearnView(viewer: Viewer, slug: string, locale: string)
   const progress = await academyRepo().progressFor(viewer.id, course.id);
   const done = new Set(progress.filter((p) => p.completedAt).map((p) => p.lessonId));
   const outline = buildOutline(viewer, course, d.academyEnrollments, done, (t) => resolveText(t, locale), d);
+  const passed = new Set((d.academyQuizResults ?? []).filter((r) => r.userId === viewer.id && r.courseId === course.id && r.passedAt).map((r) => r.moduleId));
+  for (const m of outline.modules) if (m.quiz) m.quiz.passed = passed.has(m.id);
   const playable = outline.modules.flatMap((m) => m.lessons).filter((l) => l.playable);
   const resume = playable.find((l) => !l.completed) ?? playable[0] ?? null;
   return {

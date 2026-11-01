@@ -36,6 +36,7 @@ import type { BuilderCourse, PublishProblem } from '@/server/academy/catalog';
 import type { AcademyVideoStatus } from '@/server/db/store';
 import { LocalizedField } from './localized-field';
 import { CoverUpload } from './cover-upload';
+import { QuizEditor, isQuestionComplete, type QuizQuestionState } from './quiz-editor';
 import { cn } from '@/lib/utils';
 
 type ServerLesson = BuilderCourse['modules'][number]['lessons'][number];
@@ -60,6 +61,7 @@ interface ModuleState {
   /** A mentor's module awaiting admin approval. */
   pending: boolean;
   lessons: LessonState[];
+  quiz: QuizQuestionState[];
 }
 
 interface FieldOption { id: string; label: string }
@@ -88,6 +90,7 @@ function fromServer(c: BuilderCourse): ModuleState[] {
       key: l.id, id: l.id, title: l.title, description: l.description, isPreview: l.isPreview,
       hasVideo: l.hasVideo, videoStatus: l.videoStatus, durationSec: l.durationSec,
     })),
+    quiz: (m.quiz?.questions ?? []).map((q) => ({ key: q.id, id: q.id, prompt: q.prompt, options: q.options, correctIndex: q.correctIndex })),
   }));
 }
 
@@ -185,13 +188,18 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
         description: l.description,
         isPreview: l.isPreview,
       })),
+      quiz: m.quiz.length ? {
+        questions: m.quiz.map((q) => ({ ...(q.id ? { id: q.id } : {}), prompt: q.prompt, options: q.options, correctIndex: q.correctIndex })),
+      } : null,
     })),
   });
 
   const missingTitle = modules.some((m) => !m.title || m.lessons.some((l) => !l.title));
+  const incompleteQuiz = modules.some((m) => m.quiz.some((q) => !isQuestionComplete(q)));
 
   async function save(): Promise<boolean> {
     if (missingTitle) { setMessage({ kind: 'error', text: t('errors.MISSING_TITLE') }); return false; }
+    if (incompleteQuiz) { setMessage({ kind: 'error', text: t('errors.QUIZ_INCOMPLETE') }); return false; }
     setBusy('save');
     setMessage(null);
     try {
@@ -338,7 +346,7 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
   const totalDuration = useMemo(() => modules.filter((m) => !m.comingSoon).flatMap((m) => m.lessons).reduce((s, l) => s + l.durationSec, 0), [modules]);
 
   return (
-    <div className={cn('space-y-6', studio ? 'pb-44 lg:pb-24' : 'pb-24')}>
+    <div className="space-y-6 pb-44 lg:pb-24">
       {/* ── Top bar ── */}
       <div className="flex flex-wrap items-center gap-3">
         {studio
@@ -482,10 +490,18 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
                     </li>
                   )}
                 </ol>
+                <QuizEditor
+                  key={`quiz-${m.key}`}
+                  questions={m.quiz}
+                  lang={lang}
+                  moduleId={m.id}
+                  draftUrl={m.id && m.lessons.some((l) => l.id) ? `${apiBase}/courses/${course.id}/quiz-draft` : null}
+                  onChange={(next) => editModules((ms) => ms.map((x, i) => (i === mi ? { ...x, quiz: next } : x)))}
+                />
               </fieldset>
             ))}
             {modules.length < 30 && canAddModule && !readOnly && (
-              <Button type="button" variant="outline" onClick={() => editModules((ms) => [...ms, { key: tmpKey(), title: { source: lang, [lang]: t('newModule', { n: ms.length + 1 }) }, comingSoon: false, pending: Boolean(studio) && editMode === 'ADD_MODULES', lessons: [] }])}>
+              <Button type="button" variant="outline" onClick={() => editModules((ms) => [...ms, { key: tmpKey(), title: { source: lang, [lang]: t('newModule', { n: ms.length + 1 }) }, comingSoon: false, pending: Boolean(studio) && editMode === 'ADD_MODULES', lessons: [], quiz: [] }])}>
                 <Plus className="me-1 size-4" />{t('addModule')}
               </Button>
             )}
@@ -644,11 +660,11 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
         </div>
       </div>
 
-      {/* ── Save bar ── In the Studio it sits above the portal's mobile tab bar and beside its w-64 sidebar. */}
+      {/* ── Save bar ── On phones it sits above the mobile tab bar (the portal's in the Studio, the
+          dashboard's for the admin), and beside the sidebar on desktop. */}
       {!readOnly && (
-      <div className={cn('fixed inset-x-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur',
-        studio ? 'bottom-[calc(4.25rem+env(safe-area-inset-bottom))] lg:bottom-0 lg:ps-64' : 'bottom-0 lg:ps-72')}
-        style={studio ? undefined : { paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+      <div className={cn('fixed inset-x-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur lg:bottom-0',
+        studio ? 'bottom-[calc(4.25rem+env(safe-area-inset-bottom))] lg:ps-64' : 'bottom-[calc(3.25rem+1px+env(safe-area-inset-bottom))] lg:ps-72')}>
         <div className="mx-auto flex max-w-6xl items-center gap-3">
           <p role="status" className={cn('min-w-0 flex-1 truncate text-sm', message?.kind === 'error' ? 'text-destructive' : 'text-muted-foreground')}>
             {message?.text ?? (dirty ? t('unsaved') : t('allSaved'))}

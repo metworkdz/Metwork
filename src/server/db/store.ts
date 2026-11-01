@@ -187,6 +187,10 @@ export interface UserRecord {
    * can't clobber sibling keys.
    */
   notificationsSeen?: Record<string, string> | null;
+  /** Startup Academy wishlist: course ids, newest first. */
+  academyWishlist?: string[];
+  /** Turned off the Academy "keep going" reminder emails. */
+  academyRemindersOff?: boolean;
 }
 
 export interface SessionRecord {
@@ -1469,6 +1473,20 @@ export interface AcademyModuleRecord {
    */
   pendingReview?: boolean;
   lessons: AcademyLessonRecord[];
+  /** End-of-module quiz; passing every quiz (≥ 70 %) is part of the certificate. */
+  quiz?: AcademyQuizRecord | null;
+}
+
+export interface AcademyQuizQuestionRecord {
+  id: string;
+  prompt: LocalizedText;
+  options: LocalizedText[];
+  /** Never sent to a learner's browser: answers are marked on the server. */
+  correctIndex: number;
+}
+
+export interface AcademyQuizRecord {
+  questions: AcademyQuizQuestionRecord[];
 }
 
 export type AcademyCourseStatus = 'DRAFT' | 'IN_REVIEW' | 'CHANGES_REQUESTED' | 'PUBLISHED' | 'ARCHIVED';
@@ -1559,6 +1577,66 @@ export interface AcademyOrderRecord {
   enrollmentId: string | null;
   createdAt: string;
   paidAt: string | null;
+}
+
+/** A learner's result on one module quiz (one row per learner and module). */
+export interface AcademyQuizResultRecord {
+  userId: string;
+  courseId: string;
+  moduleId: string;
+  bestScore: number;
+  attempts: number;
+  /** First time the quiz was passed; never cleared by a worse later attempt. */
+  passedAt: string | null;
+  lastAttemptAt: string;
+}
+
+/** A learner's review of a course: one per learner and course, editable. */
+export interface AcademyReviewRecord {
+  id: string;
+  userId: string;
+  courseId: string;
+  /** 1–5. */
+  rating: number;
+  /** Optional text, ≤ 2 000 characters. */
+  text: string | null;
+  createdAt: string;
+  updatedAt: string;
+  /** Hidden by an admin: out of the course page and the average. */
+  hiddenAt: string | null;
+  hiddenBy: string | null;
+  /** The mentor's single public reply. */
+  reply: { mentorId: string; text: string; at: string } | null;
+}
+
+/**
+ * A course certificate. Its number is frozen when issued; it stays valid when
+ * the course changes or the Pass ends. Only an admin revokes it.
+ */
+export interface AcademyCertificateRecord {
+  id: string;
+  /** "ACA-2026-0001", sequential per year. */
+  number: string;
+  /** Random, unguessable: the public verification link and QR code. */
+  verifyToken: string;
+  userId: string;
+  courseId: string;
+  /** What the certificate says, frozen at issue. */
+  fullName: string;
+  courseTitle: string;
+  mentorNames: string;
+  access: 'OWNED' | 'PASS';
+  issuedAt: string;
+  emailedAt: string | null;
+  revokedAt: string | null;
+}
+
+/** Reminder emails sent to a learner about one unfinished course. */
+export interface AcademyReminderRecord {
+  userId: string;
+  courseId: string;
+  count: number;
+  lastSentAt: string;
 }
 
 /** One month of a Pass to settle between mentors (an annual Pass has 12). */
@@ -1712,7 +1790,11 @@ export type AuditAction =
   /** An Academy course was published, unpublished or archived. */
   | 'ACADEMY_COURSE_STATUS_CHANGED'
   /** An Academy course with no buyers was deleted. */
-  | 'ACADEMY_COURSE_DELETED';
+  | 'ACADEMY_COURSE_DELETED'
+  /** An Academy review or Q&A post was hidden or shown again. */
+  | 'ACADEMY_CONTENT_MODERATED'
+  /** An Academy certificate was revoked or restored. */
+  | 'ACADEMY_CERTIFICATE_REVOKED';
 
 export interface AuditLogRecord {
   id: string;
@@ -3725,6 +3807,8 @@ export type NotificationType =
   | 'ACADEMY_REFUNDED'
   /** Startup Academy Pass: started, renewed, renewing soon or ended. */
   | 'ACADEMY_PASS'
+  /** Startup Academy learning: certificate issued, question answered, new module released. */
+  | 'ACADEMY_LEARNING'
   /** Refunds: a request was opened, accepted, paid or declined; or a payment arrived. */
   | 'REFUND_REQUESTED'
   | 'REFUND_UPDATE'
@@ -4505,6 +4589,10 @@ export interface DbShape {
   academyEnrollments?: AcademyEnrollmentRecord[];
   /** Startup Academy — course and Pass purchase attempts (wallet or card). */
   academyOrders?: AcademyOrderRecord[];
+  academyQuizResults?: AcademyQuizResultRecord[];
+  academyReviews?: AcademyReviewRecord[];
+  academyCertificates?: AcademyCertificateRecord[];
+  academyReminders?: AcademyReminderRecord[];
   /** Startup Academy — Pass terms (one per paid month or year). */
   academyPasses?: AcademyPassRecord[];
   /** Audit log entries for admin actions. */

@@ -20,6 +20,7 @@ import type { Locale } from '@/i18n/config';
 import type { BuilderCourse, PublishProblem } from '@/server/academy/catalog';
 import { CourseBuilder, type StudioEditMode } from '@/components/features/academy/admin/course-builder';
 import { formatDzd } from '@/components/features/academy/format';
+import { AcademyInbox } from './academy-inbox';
 import { BrandButton, EmptyBlock, ErrorBanner, Field, GhostButton, SectionCard, SectionHeading, Spinner, StatTile } from './shared';
 
 type AddendumState = 'NONE' | 'DRAFT' | 'PENDING_SIGNATURE' | 'SIGNED';
@@ -182,6 +183,8 @@ export function AcademySection({ onOpenContract }: { onOpenContract: () => void 
           </ul>
         )}
       </SectionCard>
+
+      {data.courses.some((c) => c.status === 'PUBLISHED' || c.status === 'ARCHIVED') && <AcademyInbox />}
     </div>
   );
 }

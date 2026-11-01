@@ -1,6 +1,7 @@
 /**
  * Draft the missing languages of a course's texts (title, subtitle,
- * description, outcomes, module and lesson titles) with Claude.
+ * description, outcomes, module and lesson titles, quiz questions and
+ * options) with Claude.
  *
  * Only empty languages are filled, and each one is marked `drafted` so the
  * builder shows it needs a read; a language a person wrote is never touched.
@@ -44,6 +45,10 @@ function collect(c: AcademyCourseRecord): Map<string, LocalizedText> {
       out.set(`lesson:${l.id}`, l.title);
       if (l.description) out.set(`lessonDesc:${l.id}`, l.description);
     }
+    for (const q of m.quiz?.questions ?? []) {
+      out.set(`quizQ:${q.id}`, q.prompt);
+      q.options.forEach((o, i) => out.set(`quizO:${q.id}:${i}`, o));
+    }
   }
   return out;
 }
@@ -56,6 +61,14 @@ function apply(c: AcademyCourseRecord, key: string, next: LocalizedText): void {
   else if (kind === 'description') c.description = next;
   else if (kind === 'outcome') { const i = Number(id); if (c.outcomes[i]) c.outcomes[i] = next; }
   else if (kind === 'module') { const m = c.modules.find((x) => x.id === id); if (m) m.title = next; }
+  else if (kind === 'quizQ' || kind === 'quizO') {
+    const [, , index] = key.split(':');
+    for (const m of c.modules) {
+      const q = m.quiz?.questions.find((x) => x.id === id);
+      if (q && kind === 'quizQ') q.prompt = next;
+      if (q && kind === 'quizO') { const i = Number(index); if (q.options[i]) q.options[i] = next; }
+    }
+  }
   else if (kind === 'lesson' || kind === 'lessonDesc') {
     for (const m of c.modules) {
       const l = m.lessons.find((x) => x.id === id);
@@ -63,6 +76,13 @@ function apply(c: AcademyCourseRecord, key: string, next: LocalizedText): void {
       if (l && kind === 'lessonDesc') l.description = next;
     }
   }
+}
+
+/** The builder's limit for each kind of text, so a drafted translation always saves. */
+function maxLength(key: string): number {
+  if (key.startsWith('quizQ:')) return 300;
+  if (key.startsWith('quizO:')) return 200;
+  return 5000;
 }
 
 type Translator = (items: Item[]) => Promise<Map<string, Partial<Record<Locale, string>>>>;
@@ -164,7 +184,7 @@ export async function draftCourseTranslations(courseId: string, translator: Tran
       let next = current;
       for (const l of asked.targets) {
         const v = (got[l] ?? '').trim();
-        if (v && !(next[l] ?? '').trim()) { next = withTranslation(next, l, v.slice(0, 5000), true); n++; }
+        if (v && !(next[l] ?? '').trim()) { next = withTranslation(next, l, v.slice(0, maxLength(key)), true); n++; }
       }
       if (next !== current) apply(c, key, next);
     }

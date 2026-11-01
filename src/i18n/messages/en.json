@@ -677,6 +677,30 @@
         "DRAFT": "Metwork is preparing your Academy addendum.",
         "PENDING_SIGNATURE": "Your Academy addendum is waiting for your signature.",
         "sign": "Sign the addendum"
+      },
+      "inbox": {
+        "title": "Questions and reviews",
+        "subtitle": "Answer the learners of your courses.",
+        "loadError": "Could not load.",
+        "questionsTab": "Questions",
+        "reviewsTab": "Reviews",
+        "noQuestions": "No questions yet.",
+        "toAnswer": "To answer",
+        "answers": "{count, plural, =0 {No answers} one {# answer} other {# answers}}",
+        "noReviews": "No reviews yet.",
+        "back": "Back",
+        "you": "you",
+        "answerPlaceholder": "Your answer, visible to the course’s learners…",
+        "rateLimited": "Too many answers in a short time. Try again later.",
+        "sendError": "Sending failed. Try again.",
+        "send": "Post answer",
+        "alreadyReplied": "You have already replied to this review.",
+        "stars": "{n, plural, one {# star} other {# stars}}",
+        "replyPlaceholder": "Your public reply…",
+        "replyOnce": "One reply per review, shown on the course page.",
+        "publishReply": "Publish",
+        "cancel": "Cancel",
+        "reply": "Reply"
       }
     }
   },
@@ -8014,6 +8038,107 @@
       "cancelYes": "Confirm",
       "keep": "Keep",
       "resume": "Resume renewal"
+    },
+    "learning": {
+      "loading": "Loading",
+      "cancel": "Cancel",
+      "errors": {
+        "RATE_LIMITED": "Too many posts in a short time. Try again later.",
+        "generic": "Something went wrong. Try again."
+      },
+      "wishlist": {
+        "save": "Save to my list",
+        "saved": "In my list"
+      },
+      "reviews": {
+        "title": "Learner reviews",
+        "average": "Average rating {average} out of 5",
+        "summary": "{average} / 5 · {count, plural, one {# review} other {# reviews}}",
+        "count": "({count, plural, one {# review} other {# reviews}})",
+        "yours": "Your review",
+        "stars": "{n, plural, one {# star} other {# stars}}",
+        "edit": "Edit",
+        "formTitle": "Review this course",
+        "ratingLabel": "Your rating",
+        "placeholder": "What did you learn? What could be better? (optional)",
+        "publish": "Publish",
+        "cancel": "Cancel",
+        "watchMore": "You can review the course once you have watched a quarter of it.",
+        "saved": "Thank you, your review is published.",
+        "error": "Your review could not be saved.",
+        "loading": "Loading reviews",
+        "empty": "No reviews yet.",
+        "reply": "Reply from {name}"
+      },
+      "qa": {
+        "tab": "Questions",
+        "askPlaceholder": "Ask a question about this lesson…",
+        "ask": "Post question",
+        "publicHint": "Visible to the course’s learners and the mentor.",
+        "empty": "No questions yet. Be the first!",
+        "answerPlaceholder": "Your answer…",
+        "send": "Reply",
+        "answer": "Reply",
+        "mentor": "Mentor",
+        "team": "Metwork team",
+        "hidden": "Hidden"
+      },
+      "notes": {
+        "tab": "My notes",
+        "placeholder": "Write down an idea at this point of the video…",
+        "add": "Add note",
+        "privateHint": "Your notes are private. They keep the moment in the video.",
+        "empty": "No notes on this lesson.",
+        "jump": "Go to {time}",
+        "delete": "Delete note"
+      },
+      "certificate": {
+        "title": "Certificate",
+        "issued": "Certificate no. {number}",
+        "download": "Download PDF",
+        "verify": "Verification page",
+        "lessons": "Lessons watched: {done} / {total}",
+        "quizzes": "Quizzes passed: {done} / {total}",
+        "claim": "Get my certificate",
+        "rule": "Watch every lesson to the end and pass every quiz with 70 % to earn it.",
+        "errors": {
+          "NAME_MISSING": "Add your full name to your profile: it is printed on the certificate.",
+          "NOT_ELIGIBLE": "Some lessons or quizzes are still to finish.",
+          "RATE_LIMITED": "Too many tries. Try again later.",
+          "generic": "The certificate could not be created. Try again."
+        }
+      },
+      "quiz": {
+        "eyebrow": "Quiz · Module {n}",
+        "sidebar": "Module quiz",
+        "passedShort": "Passed",
+        "questions": "{count, plural, one {# question} other {# questions}}",
+        "programme": "End-of-module quiz · {count, plural, one {# question} other {# questions}}",
+        "locked": "The quiz is part of the full course.",
+        "rule": "Answer every question. {percent} % correct to pass; you can try again.",
+        "alreadyPassed": "Quiz already passed ({percent} %).",
+        "passed": "Passed: {percent} % correct.",
+        "failed": "{percent} % correct, not quite enough.",
+        "retryHint": "Look again at the flagged questions and retry.",
+        "wrong": "Look again",
+        "retry": "Try again",
+        "submit": "Submit my answers",
+        "best": "Best score: {percent} % · {attempts, plural, one {# try} other {# tries}}",
+        "errors": {
+          "RATE_LIMITED": "Too many tries in an hour. Take a break and come back later.",
+          "INVALID_ANSWERS": "The quiz has changed. Reload the page.",
+          "generic": "Your answers could not be sent. Try again."
+        },
+        "backToCourse": "Back to the course"
+      },
+      "reminders": {
+        "label": "Reminders to keep going",
+        "hint": "An email when a course you started has been paused for a week (at most 3 per course)."
+      },
+      "my": {
+        "certificates": "My certificates",
+        "wishlist": "My list"
+      }
     }
   },
   "academyAdmin": {
@@ -8152,7 +8277,8 @@
         "ADDENDUM_REQUIRED": "The Academy addendum must be signed before sending.",
         "LOCKED": "This course cannot be changed right now.",
         "READ_ONLY": "This course is read only.",
-        "NOTHING_TO_SUBMIT": "Nothing new to send."
+        "NOTHING_TO_SUBMIT": "Nothing new to send.",
+        "QUIZ_INCOMPLETE": "Every quiz question needs a prompt and all its answers."
       },
       "pendingBadge": "Awaiting approval",
       "studio": {
@@ -8190,6 +8316,28 @@
           "REQUEST_CHANGES": "Changes requested from the mentor.",
           "APPROVE_MODULES": "Modules approved: they are now visible.",
           "REJECT_MODULES": "Modules sent back to the mentor."
+        }
+      },
+      "quiz": {
+        "add": "Add an end-of-module quiz",
+        "title": "Quiz · {count, plural, one {# question} other {# questions}}",
+        "draft": "Draft with AI",
+        "saveFirst": "Save the module and its lessons to draft with AI.",
+        "hint": "Tick the right answer of each question. Learners need 70 % to pass.",
+        "prompt": "Question",
+        "removeQuestion": "Remove question",
+        "correct": "Right answer",
+        "markCorrect": "Answer {n} is right",
+        "option": "Answer {n}",
+        "removeOption": "Remove answer",
+        "addOption": "Add an answer",
+        "addQuestion": "Add a question",
+        "errors": {
+          "UNAVAILABLE": "AI drafting is not available.",
+          "NO_LESSONS": "Add and save lessons first.",
+          "RATE_LIMITED": "Too many requests. Try again later.",
+          "LOCKED": "This module can no longer be edited.",
+          "generic": "Drafting failed. Try again."
         }
       }
     },
@@ -8269,6 +8417,24 @@
       "title": "{count, plural, one {# course to review} other {# courses to review}}",
       "course": "New course",
       "modules": "{count, plural, one {# new module} other {# new modules}}"
+    },
+    "moderation": {
+      "title": "Reviews, questions and certificates",
+      "subtitle": "Reviews and questions go live at once; hide those that break the rules.",
+      "loadError": "Could not load.",
+      "actionError": "The action failed. Try again.",
+      "reviews": "Reviews ({count})",
+      "questions": "Questions ({count})",
+      "certificates": "Certificates ({count})",
+      "stars": "{n, plural, one {# star} other {# stars}}",
+      "hidden": "hidden",
+      "hide": "Hide",
+      "show": "Show",
+      "empty": "Nothing yet.",
+      "answers": "{count, plural, =0 {No answers} one {# answer} other {# answers}}",
+      "revoked": "revoked",
+      "revoke": "Revoke",
+      "restore": "Restore"
     }
   },
   "refunds": {

@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api-client';
 import type { CourseQuote } from '@/lib/academy';
 import { formatDzd } from './format';
+import { WishlistButton } from './wishlist-button';
 
-interface Me { signedIn: boolean; canBuy: boolean; owned: boolean; viaPass: boolean; premium: boolean; quote: CourseQuote }
+interface Me { signedIn: boolean; canBuy: boolean; owned: boolean; viaPass: boolean; premium: boolean; quote: CourseQuote; courseId: string; wishlisted: boolean }
 
 /**
  * The buy button, personalised: "Continue" for an owner, the member's own price
@@ -41,6 +42,7 @@ export function CourseCta({ slug }: { slug: string }) {
         <Link href={{ pathname: '/academy/checkout', query: { course: slug } }}>{t('course.buy')}</Link>
       </Button>
       {me && !me.canBuy && <p className="text-xs text-muted-foreground">{t('checkout.errors.NOT_A_BUYER')}</p>}
+      {me?.signedIn && <WishlistButton courseId={me.courseId} initial={me.wishlisted} />}
     </div>
   );
 }

@@ -15,12 +15,16 @@ import {
   type AcademyCourseRecord,
   type AcademyLessonRecord,
   type AcademyModuleRecord,
+  type AcademyReviewRecord,
   type MentorRecord,
 } from '@/server/db/store';
 import {
   ACADEMY_AUDIO_LANGUAGES,
   ACADEMY_LEVELS,
   ACADEMY_MIN_COURSE_PRICE_DZD,
+  ACADEMY_QUIZ_MAX_OPTIONS,
+  ACADEMY_QUIZ_MAX_QUESTIONS,
+  ACADEMY_QUIZ_MIN_OPTIONS,
   coursePriceError,
   discounted,
   isLiveModule,
@@ -45,6 +49,8 @@ export const LIMITS = {
   modules: 30,
   lessonsPerModule: 60,
   mentors: 3,
+  quizPrompt: 300,
+  quizOption: 200,
 } as const;
 
 /** A LocalizedText with every language at most `max` characters. */
@@ -75,11 +81,20 @@ const lessonSchema = z.object({
   isPreview: z.boolean().default(false),
 });
 
+const quizQuestionSchema = z.object({
+  id: z.string().regex(ID_RE).optional(),
+  prompt: localized(LIMITS.quizPrompt),
+  options: z.array(localized(LIMITS.quizOption)).min(ACADEMY_QUIZ_MIN_OPTIONS).max(ACADEMY_QUIZ_MAX_OPTIONS),
+  correctIndex: z.number().int().min(0),
+}).refine((q) => q.correctIndex < q.options.length, 'correctIndex out of range');
+
 const moduleSchema = z.object({
   id: z.string().regex(ID_RE).optional(),
   title: localized(LIMITS.title),
   comingSoon: z.boolean().default(false),
   lessons: z.array(lessonSchema).max(LIMITS.lessonsPerModule),
+  /** No questions ⇒ no quiz. */
+  quiz: z.object({ questions: z.array(quizQuestionSchema).max(ACADEMY_QUIZ_MAX_QUESTIONS) }).nullish(),
 });
 
 /** What the builder sends on save. Video fields are deliberately absent: only uploads set them. */
@@ -219,11 +234,20 @@ export async function saveCourseDraft(courseId: string, input: CourseDraftInput,
       // and only the mentor path opens new modules as pending.
       const prevModule = oldModules.get(id);
       const pendingReview = prevModule ? Boolean(prevModule.pendingReview) : Boolean(opts.newModulesPendingReview);
+      // Question ids are kept like lesson ids, so a learner's answers still line up after an edit.
+      const questionIds = new Set((prevModule?.quiz?.questions ?? []).map((q) => q.id));
+      const questions = (m.quiz?.questions ?? []).map((q) => {
+        let qid = keepOrNewId(q.id, questionIds);
+        if (used.has(qid)) qid = randomUUID();
+        used.add(qid);
+        return { id: qid, prompt: q.prompt, options: q.options, correctIndex: q.correctIndex };
+      });
       return {
         id,
         title: m.title,
         comingSoon: m.comingSoon,
         ...(pendingReview ? { pendingReview: true } : {}),
+        quiz: questions.length ? { questions } : null,
         lessons: m.lessons.map((l): AcademyLessonRecord => {
           let lessonId = keepOrNewId(l.id, lessonIds);
           if (used.has(lessonId)) lessonId = randomUUID();
@@ -262,7 +286,11 @@ export async function saveCourseDraft(courseId: string, input: CourseDraftInput,
     });
     return c;
   });
-  return saved ? { ok: true, value: saved } : { ok: false, code: 'NOT_FOUND' };
+  if (!saved) return { ok: false, code: 'NOT_FOUND' };
+  // A module switched from "coming soon" to live: tell the learners following the course.
+  // Imported lazily: notify reaches orders and access, which import this module.
+  await (await import('./notify')).notifyModulesReleased(current, saved);
+  return { ok: true, value: saved };
 }
 
 /** Why a course cannot go live, in the order an author would fix them. */
@@ -394,10 +422,31 @@ export interface PublicCourseCard {
   comingSoonModules: number;
   mentors: PublicMentorChip[];
   publishedAt: string | null;
+  /** Visible reviews only. `average` null while nobody has reviewed. */
+  rating: CourseRating;
 }
 
+export interface CourseRating { average: number | null; count: number }
+
+/** Average stars of each course, from reviews the admin has not hidden. */
+export function ratingsByCourse(reviews: AcademyReviewRecord[] | undefined): Map<string, CourseRating> {
+  const sums = new Map<string, { total: number; count: number }>();
+  for (const r of reviews ?? []) {
+    if (r.hiddenAt) continue;
+    const s = sums.get(r.courseId) ?? { total: 0, count: 0 };
+    s.total += r.rating;
+    s.count += 1;
+    sums.set(r.courseId, s);
+  }
+  const out = new Map<string, CourseRating>();
+  for (const [id, s] of sums) out.set(id, { average: Math.round((s.total / s.count) * 10) / 10, count: s.count });
+  return out;
+}
+
+const NO_RATING: CourseRating = { average: null, count: 0 };
+
 export interface PublicLesson { id: string; title: string; durationSec: number; isPreview: boolean }
-export interface PublicModule { id: string; title: string; comingSoon: boolean; durationSec: number; lessons: PublicLesson[] }
+export interface PublicModule { id: string; title: string; comingSoon: boolean; durationSec: number; lessons: PublicLesson[]; quizQuestions: number }
 
 export interface PublicCourseDetail extends PublicCourseCard {
   description: string;
@@ -421,7 +470,7 @@ function mentorChip(m: MentorRecord): PublicMentorChip {
 
 const releasedLessons = (c: AcademyCourseRecord) => c.modules.filter(isLiveModule).flatMap((m) => m.lessons);
 
-function toCard(c: AcademyCourseRecord, locale: string, mentors: MentorRecord[], premiumRate: number): PublicCourseCard {
+function toCard(c: AcademyCourseRecord, locale: string, mentors: MentorRecord[], premiumRate: number, ratings?: Map<string, CourseRating>): PublicCourseCard {
   const lessons = releasedLessons(c);
   return {
     id: c.id,
@@ -443,12 +492,13 @@ function toCard(c: AcademyCourseRecord, locale: string, mentors: MentorRecord[],
       .filter((m): m is MentorRecord => Boolean(m))
       .map(mentorChip),
     publishedAt: c.publishedAt,
+    rating: ratings?.get(c.id) ?? NO_RATING,
   };
 }
 
-function toDetail(c: AcademyCourseRecord, locale: string, mentors: MentorRecord[], premiumRate: number): PublicCourseDetail {
+function toDetail(c: AcademyCourseRecord, locale: string, mentors: MentorRecord[], premiumRate: number, ratings?: Map<string, CourseRating>): PublicCourseDetail {
   return {
-    ...toCard(c, locale, mentors, premiumRate),
+    ...toCard(c, locale, mentors, premiumRate, ratings),
     description: resolveText(c.description, locale),
     outcomes: c.outcomes.map((o) => resolveText(o, locale)).filter(Boolean),
     modules: c.modules.filter(isVisibleModule).map((m) => ({
@@ -463,6 +513,7 @@ function toDetail(c: AcademyCourseRecord, locale: string, mentors: MentorRecord[
         durationSec: m.comingSoon ? 0 : l.durationSec,
         isPreview: !m.comingSoon && l.isPreview,
       })),
+      quizQuestions: m.quiz?.questions.length ?? 0,
     })),
   };
 }
@@ -499,7 +550,8 @@ export async function listPublicCourses(locale: string, filters: CatalogFilters 
     }
     return true;
   });
-  const cards = courses.map((c) => toCard(c, locale, d.mentors, pricing.premiumDiscountRate));
+  const ratings = ratingsByCourse(d.academyReviews);
+  const cards = courses.map((c) => toCard(c, locale, d.mentors, pricing.premiumDiscountRate, ratings));
   const sort = filters.sort ?? 'newest';
   cards.sort((a, b) => {
     if (sort === 'price-asc') return a.priceDzd - b.priceDzd;
@@ -513,7 +565,7 @@ export async function listPublicCourses(locale: string, filters: CatalogFilters 
 export async function getPublicCourse(slug: string, locale: string): Promise<PublicCourseDetail | null> {
   const [d, pricing] = await Promise.all([db.read(), getAcademyPricing()]);
   const c = (d.academyCourses ?? []).find((x) => x.slug === slug && x.status === 'PUBLISHED');
-  return c ? toDetail(c, locale, d.mentors, pricing.premiumDiscountRate) : null;
+  return c ? toDetail(c, locale, d.mentors, pricing.premiumDiscountRate, ratingsByCourse(d.academyReviews)) : null;
 }
 
 export interface PublicAcademyMentor extends PublicMentorChip {
@@ -535,7 +587,7 @@ export async function getPublicMentor(slug: string, locale: string): Promise<Pub
   if (!m || !isMentorApproved(m)) return null;
   const courses = (d.academyCourses ?? [])
     .filter((c) => c.status === 'PUBLISHED' && c.mentorIds.includes(m.id))
-    .map((c) => toCard(c, locale, d.mentors, pricing.premiumDiscountRate));
+    .map((c) => toCard(c, locale, d.mentors, pricing.premiumDiscountRate, ratingsByCourse(d.academyReviews)));
   if (!courses.length) return null;
   return {
     ...mentorChip(m),

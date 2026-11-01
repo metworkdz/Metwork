@@ -37,14 +37,31 @@ export function courseAccessFor(
   return null;
 }
 
-export async function lessonAccess(viewer: Viewer, courseId: string, lessonId: string): Promise<AccessResult> {
+type StoreData = Awaited<ReturnType<typeof db.read>>;
+
+export type CourseAccessResult =
+  | { ok: true; access: 'ADMIN' | 'OWNED' | 'PASS' | null; course: AcademyCourseRecord; d: StoreData }
+  | { ok: false; code: 'NOT_FOUND' };
+
+/**
+ * The course as this viewer may reach it at all. `access` null = a published
+ * course they have not bought (previews only). Drafts are for admins;
+ * archived courses stay open to their buyers only.
+ */
+export async function courseReach(viewer: Viewer, courseId: string): Promise<CourseAccessResult> {
   const d = await db.read();
   const course = d.academyCourses?.find((c) => c.id === courseId);
   if (!course) return { ok: false, code: 'NOT_FOUND' };
   const courseAccess = courseAccessFor(viewer, course, d.academyEnrollments, d);
-  // Drafts are for admins; archived courses stay open to their buyers only.
   if (course.status !== 'PUBLISHED' && (courseAccess === null || courseAccess === 'PASS')) return { ok: false, code: 'NOT_FOUND' };
   if (course.status !== 'PUBLISHED' && course.status !== 'ARCHIVED' && courseAccess !== 'ADMIN') return { ok: false, code: 'NOT_FOUND' };
+  return { ok: true, access: courseAccess, course, d };
+}
+
+export async function lessonAccess(viewer: Viewer, courseId: string, lessonId: string): Promise<AccessResult> {
+  const reach = await courseReach(viewer, courseId);
+  if (!reach.ok) return reach;
+  const { course, access: courseAccess } = reach;
 
   const mod = course.modules.find((m) => m.lessons.some((l) => l.id === lessonId));
   const lesson = mod?.lessons.find((l) => l.id === lessonId);
@@ -65,7 +82,14 @@ export interface OutlineLesson {
   isPreview: boolean;
   completed: boolean;
 }
-export interface OutlineModule { id: string; title: string; comingSoon: boolean; lessons: OutlineLesson[] }
+export interface OutlineModule {
+  id: string;
+  title: string;
+  comingSoon: boolean;
+  lessons: OutlineLesson[];
+  /** End-of-module quiz of a released module; `passed` is filled by the learn view. */
+  quiz: { questions: number; passed: boolean } | null;
+}
 
 /**
  * The course as this viewer sees it in the player sidebar: which lessons play
@@ -95,6 +119,7 @@ export function buildOutline(
         playable: (access === 'ADMIN' || (isLiveModule(m) && (access === 'OWNED' || access === 'PASS' || l.isPreview))) && l.videoStatus === 'READY',
         completed: completedLessonIds.has(l.id),
       })),
+      quiz: (m.quiz?.questions.length ?? 0) > 0 && (isLiveModule(m) || access === 'ADMIN') ? { questions: m.quiz!.questions.length, passed: false } : null,
     })),
   };
 }

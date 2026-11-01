@@ -5,6 +5,7 @@ import { requireApiRole, requireApprovedApiSession } from '@/server/auth/api-gua
 import { isAcademyEnabled } from '@/config/feature-flags';
 import { requireConsultant } from '@/server/mentors/access';
 import { fromZod, jsonError } from '@/server/http/json';
+import { checkRateLimitDistributed } from '@/lib/rate-limit';
 
 export type Parsed<T> = { ok: true; data: T } | { ok: false; response: Response };
 
@@ -47,4 +48,27 @@ const STUDIO_STATUS: Record<string, number> = {
 /** Map a Studio / catalogue error to an HTTP response. */
 export function studioError(code: string, problems?: string[]) {
   return jsonError(STUDIO_STATUS[code] ?? 422, code, code, problems ? { problems } : undefined);
+}
+
+/** Ids in Academy paths and bodies (uuids, seeded ids). */
+export const ACADEMY_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
+export function isAcademyId(v: string): boolean {
+  return ACADEMY_ID_RE.test(v);
+}
+
+const LEARNER_STATUS: Record<string, number> = {
+  NOT_FOUND: 404, LOCKED: 403, NOT_READY: 409, NO_QUIZ: 404, INVALID_ANSWERS: 422, NOT_ELIGIBLE: 409, NAME_MISSING: 422,
+  NOT_LEARNER: 403, WATCH_MORE: 409, ALREADY_REPLIED: 409, NOT_YOUR_COURSE: 403, EMPTY: 422, NOT_A_QUESTION: 422, FULL: 409,
+};
+
+/** Map a learner-side Academy error (quiz, certificate, review, Q&A) to an HTTP response. */
+export function learnerError(code: string, details?: Record<string, unknown>) {
+  return jsonError(LEARNER_STATUS[code] ?? 422, code, code, details);
+}
+
+/** One sliding-window budget per account and action. */
+export async function rateLimited(key: string, max: number, windowMs: number): Promise<Response | null> {
+  if (await checkRateLimitDistributed(key, max, windowMs)) return null;
+  return jsonError(429, 'RATE_LIMITED', 'Too many requests. Try again later.');
 }
