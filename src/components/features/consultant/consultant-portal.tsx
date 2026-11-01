@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  ArrowUpRight, BadgeCheck, Building2, CalendarClock, CalendarDays, Check, ChevronRight, Copy, FileSignature, GraduationCap, Link2, Loader2, LogOut,
+  ArrowUpRight, BadgeCheck, BookOpenCheck, Building2, CalendarClock, CalendarDays, Check, ChevronRight, Copy, FileSignature, GraduationCap, Link2, Loader2, LogOut,
   MessageSquareText, Plus, ReceiptText, Share2, ShieldOff, TrendingUp, User, Wallet,
 } from 'lucide-react';
 import { consultantService, type ConsultantContract, type ConsultantMe, type ConsultantMentor } from '@/services/consultant.service';
@@ -32,12 +32,14 @@ import { SpacesSection } from './portal/spaces-section';
 import { ProgramsSection } from './portal/programs-section';
 import { ContractSection } from './portal/contract-section';
 import { InvoicesSection } from './portal/invoices-section';
+import { AcademySection } from './portal/academy-section';
+import { isAcademyEnabled } from '@/config/feature-flags';
 import { LanguageSwitcher } from './portal/language-switcher';
 import { AppLogo, Avatar, FlowSheet, fmtDZD } from './portal/shared';
 import { PushToggle } from '@/components/pwa/push-toggle';
 import { disablePush } from '@/lib/push-client';
 
-type Tab = 'consultations' | 'programs' | 'spaces' | 'availability' | 'profile' | 'earnings' | 'wallet' | 'invoices' | 'contract';
+type Tab = 'consultations' | 'programs' | 'spaces' | 'availability' | 'profile' | 'earnings' | 'wallet' | 'invoices' | 'contract' | 'academy';
 
 /**
  * The 4 destinations promoted to the mobile bottom bar — everything else
@@ -198,6 +200,7 @@ function Dashboard({
     { key: 'wallet', label: t('nav.wallet'), icon: Wallet },
     { key: 'invoices', label: t('nav.invoices'), icon: ReceiptText },
   ];
+  if (isAcademyEnabled()) tabs.push({ key: 'academy', label: t('nav.academy'), icon: BookOpenCheck });
   // The tab appears only once a contract exists. A consultant who has never
   // been sent one has nothing to look at, and an always-present empty tab
   // would just add a dead end to the nav.
@@ -443,6 +446,7 @@ function Dashboard({
           {tab === 'earnings' && <EarningsSection />}
           {tab === 'wallet' && <WalletSection wallet={me.wallet} onChange={reload} />}
           {tab === 'invoices' && <InvoicesSection />}
+          {tab === 'academy' && <AcademySection onOpenContract={() => { void loadContracts(); setTab('contract'); }} />}
           {tab === 'contract' && (
             <ContractSection contracts={contracts} loading={contractsLoading} onChanged={loadContracts} />
           )}

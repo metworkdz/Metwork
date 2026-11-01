@@ -23,6 +23,8 @@ import {
   ACADEMY_MIN_COURSE_PRICE_DZD,
   coursePriceError,
   discounted,
+  isLiveModule,
+  isVisibleModule,
   type AcademyAudioLanguage,
   type AcademyLevel,
 } from '@/lib/academy';
@@ -180,7 +182,12 @@ function keepOrNewId(id: string | undefined, known: Set<string>): string {
  * stored lesson with the same id, so a request can never point a lesson at
  * another video.
  */
-export async function saveCourseDraft(courseId: string, input: CourseDraftInput): Promise<CatalogResult<AcademyCourseRecord>> {
+export interface SaveOptions {
+  /** Mentor edits of a published course: modules the course does not have yet start pending review. */
+  newModulesPendingReview?: boolean;
+}
+
+export async function saveCourseDraft(courseId: string, input: CourseDraftInput, opts: SaveOptions = {}): Promise<CatalogResult<AcademyCourseRecord>> {
   // Validate everything before the store update: db.update has no rollback.
   const priceErr = coursePriceError(input.priceDzd);
   if (priceErr === 'BELOW_MINIMUM') return { ok: false, code: 'PRICE_BELOW_MINIMUM' };
@@ -199,6 +206,7 @@ export async function saveCourseDraft(courseId: string, input: CourseDraftInput)
     const c = d.academyCourses?.find((x) => x.id === courseId);
     if (!c) return null;
     const oldLessons = new Map(c.modules.flatMap((m) => m.lessons).map((l) => [l.id, l]));
+    const oldModules = new Map(c.modules.map((m) => [m.id, m]));
     const moduleIds = new Set(c.modules.map((m) => m.id));
     const lessonIds = new Set(oldLessons.keys());
     const used = new Set<string>();
@@ -207,10 +215,15 @@ export async function saveCourseDraft(courseId: string, input: CourseDraftInput)
       let id = keepOrNewId(m.id, moduleIds);
       if (used.has(id)) id = randomUUID();
       used.add(id);
+      // Review state is never set by the builder: kept from the stored module,
+      // and only the mentor path opens new modules as pending.
+      const prevModule = oldModules.get(id);
+      const pendingReview = prevModule ? Boolean(prevModule.pendingReview) : Boolean(opts.newModulesPendingReview);
       return {
         id,
         title: m.title,
         comingSoon: m.comingSoon,
+        ...(pendingReview ? { pendingReview: true } : {}),
         lessons: m.lessons.map((l): AcademyLessonRecord => {
           let lessonId = keepOrNewId(l.id, lessonIds);
           if (used.has(lessonId)) lessonId = randomUUID();
@@ -266,7 +279,7 @@ export async function publishProblems(course: AcademyCourseRecord): Promise<Publ
   const problems: PublishProblem[] = [];
   if (!course.thumbnailUrl) problems.push('NO_THUMBNAIL');
   if (!course.description) problems.push('NO_DESCRIPTION');
-  const released = course.modules.filter((m) => !m.comingSoon);
+  const released = course.modules.filter(isLiveModule);
   const lessons = released.flatMap((m) => m.lessons);
   if (!lessons.length) problems.push('NO_RELEASED_LESSON');
   if (lessons.some((l) => l.videoStatus !== 'READY')) problems.push('VIDEO_NOT_READY');
@@ -406,7 +419,7 @@ function mentorChip(m: MentorRecord): PublicMentorChip {
   };
 }
 
-const releasedLessons = (c: AcademyCourseRecord) => c.modules.filter((m) => !m.comingSoon).flatMap((m) => m.lessons);
+const releasedLessons = (c: AcademyCourseRecord) => c.modules.filter(isLiveModule).flatMap((m) => m.lessons);
 
 function toCard(c: AcademyCourseRecord, locale: string, mentors: MentorRecord[], premiumRate: number): PublicCourseCard {
   const lessons = releasedLessons(c);
@@ -424,7 +437,7 @@ function toCard(c: AcademyCourseRecord, locale: string, mentors: MentorRecord[],
     thumbnailUrl: c.thumbnailUrl,
     durationSec: lessons.reduce((s, l) => s + l.durationSec, 0),
     lessonCount: lessons.length,
-    comingSoonModules: c.modules.filter((m) => m.comingSoon).length,
+    comingSoonModules: c.modules.filter((m) => isVisibleModule(m) && m.comingSoon).length,
     mentors: c.mentorIds
       .map((id) => mentors.find((m) => m.id === id))
       .filter((m): m is MentorRecord => Boolean(m))
@@ -438,7 +451,7 @@ function toDetail(c: AcademyCourseRecord, locale: string, mentors: MentorRecord[
     ...toCard(c, locale, mentors, premiumRate),
     description: resolveText(c.description, locale),
     outcomes: c.outcomes.map((o) => resolveText(o, locale)).filter(Boolean),
-    modules: c.modules.map((m) => ({
+    modules: c.modules.filter(isVisibleModule).map((m) => ({
       id: m.id,
       title: resolveText(m.title, locale),
       comingSoon: m.comingSoon,

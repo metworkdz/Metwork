@@ -72,7 +72,8 @@
       "programs": "البرامج",
       "contract": "العقد",
       "more": "المزيد",
-      "invoices": "الفوترة"
+      "invoices": "الفوترة",
+      "academy": "الأكاديمية"
     },
     "signin": {
       "heading": "تسجيل دخول المستشار",
@@ -651,6 +652,32 @@
       "convertKeeps": "يبقى {number} في القائمة، موسوماً «محوَّل» ومقفلاً.",
       "actionFailed": "فشل الإجراء. أعد المحاولة.",
       "convertNoteHint": "منقولة من الفاتورة المبدئية: عدّلها أو امسحها للفاتورة."
+    },
+    "academy": {
+      "title": "دوراتي",
+      "subtitle": "أنشئ دوراتك على Startup Academy. تراجعها Metwork قبل النشر.",
+      "new": "دورة جديدة",
+      "newTitle": "عنوان الدورة",
+      "newTitleHint": "اكتبه بلغتك، وتترجمه Metwork بعد ذلك.",
+      "pickField": "اختر مجالاً…",
+      "create": "إنشاء المسودة",
+      "empty": "لا توجد دورات بعد.",
+      "loadError": "تعذّر تحميل دوراتك.",
+      "createError": "تعذّر إنشاء الدورة.",
+      "pendingModules": "{count, plural, one {وحدة بانتظار الموافقة} other {# وحدات بانتظار الموافقة}}",
+      "readOnly": "للقراءة فقط",
+      "courseStats": "{buyers} مشترين · {earned} أرباح",
+      "stats": {
+        "buyers": "المشترون",
+        "passMinutes": "دقائق Pass هذا الشهر",
+        "earned": "أرباح الأكاديمية"
+      },
+      "addendum": {
+        "NONE": "للنشر على Startup Academy، سترسل لك Metwork ملحقاً للتوقيع. يمكنك من الآن تحضير دوراتك.",
+        "DRAFT": "تحضّر Metwork ملحق الأكاديمية الخاص بك.",
+        "PENDING_SIGNATURE": "ملحق الأكاديمية بانتظار توقيعك.",
+        "sign": "توقيع الملحق"
+      }
     }
   },
   "common": {
@@ -8121,7 +8148,49 @@
         "NOT_READY": "الدورة غير جاهزة: راجع القائمة الجانبية.",
         "MISSING_TITLE": "كل وحدة وكل درس يحتاج عنوانًا.",
         "UPLOAD_FAILED": "فشل الرفع. حاول مجددًا.",
-        "generic": "حدث خطأ."
+        "generic": "حدث خطأ.",
+        "ADDENDUM_REQUIRED": "يجب توقيع ملحق الأكاديمية قبل الإرسال.",
+        "LOCKED": "لا يمكن تعديل هذه الدورة حالياً.",
+        "READ_ONLY": "هذه الدورة للقراءة فقط.",
+        "NOTHING_TO_SUBMIT": "لا جديد للإرسال."
+      },
+      "pendingBadge": "بانتظار الموافقة",
+      "studio": {
+        "back": "دوراتي",
+        "submitted": "أُرسلت إلى Metwork للمراجعة.",
+        "reviewTitle": "مراجعة Metwork",
+        "noteFromMetwork": "ملاحظة من Metwork",
+        "addendumNeeded": "وقّع أولاً ملحق الأكاديمية (تبويب العقد) لتتمكن من إرسال دورة.",
+        "submit": "إرسال للمراجعة",
+        "submitModules": "إرسال الوحدات الجديدة",
+        "modulesInReview": "وحداتك الجديدة قيد المراجعة لدى Metwork.",
+        "inPass": "هذه الدورة مشمولة في Academy Pass.",
+        "notInPass": "هذه الدورة غير مشمولة في Academy Pass.",
+        "mode": {
+          "ADD_MODULES": "هذه الدورة منشورة: يمكنك إضافة وحدات تبقى مخفية حتى توافق عليها Metwork. لتغيير أي شيء آخر، راسل Metwork.",
+          "LOCKED": "هذه الدورة مقفلة أثناء المراجعة.",
+          "READ_ONLY": "هذه الدورة تديرها Metwork: للقراءة فقط."
+        },
+        "locked": {
+          "DRAFT": "هذه المسودة مقفلة.",
+          "IN_REVIEW": "تراجع Metwork دورتك. ستصلك الإجابة هنا.",
+          "CHANGES_REQUESTED": "طلبت Metwork تعديلات.",
+          "PUBLISHED": "هذه الدورة منشورة.",
+          "ARCHIVED": "هذه الدورة مؤرشفة."
+        }
+      },
+      "adminReview": {
+        "courseSubmitted": "أرسل المرشد هذه الدورة للمراجعة. انشرها أو اطلب تعديلات.",
+        "modulesSubmitted": "يقترح المرشد وحدات جديدة (باللون البرتقالي).",
+        "note": "ملاحظة للمرشد (إلزامية لطلب تعديلات أو الرفض)",
+        "requestChanges": "طلب تعديلات",
+        "approveModules": "الموافقة على الوحدات",
+        "rejectModules": "رفض الوحدات",
+        "done": {
+          "REQUEST_CHANGES": "طُلبت تعديلات من المرشد.",
+          "APPROVE_MODULES": "تمت الموافقة على الوحدات وأصبحت ظاهرة.",
+          "REJECT_MODULES": "أُعيدت الوحدات إلى المرشد."
+        }
       }
     },
     "settings": {
@@ -8152,7 +8221,25 @@
         "INVALID_RATE": "يجب أن تكون النسبة بين 0 و99.",
         "INVALID_STAMP_URL": "يجب أن يكون الختم صورة مستضافة على Cloudinary ‏(https://res.cloudinary.com/…).",
         "MENTOR_NOT_FOUND": "المرشد غير موجود.",
-        "generic": "حدث خطأ."
+        "generic": "حدث خطأ.",
+        "ALREADY_EXISTS": "لهذا المرشد ملحق بالفعل.",
+        "CONSULTANT_NOT_FOUND": "المرشد غير موجود.",
+        "INCOMPLETE_CONSULTANT_PROFILE": "ملف المرشد غير مكتمل (الهوية أو العنوان أو الهاتف).",
+        "NO_TEMPLATE": "لا يوجد نص للملحق."
+      },
+      "addendum": {
+        "title": "ملحق الأكاديمية (المرشدون)",
+        "hint": "نص الملحق الذي يوقّعه كل مرشد قبل إرسال دورة. المتغيرات: '{{academy_share}}' و'{{academy_metwork_share}}' ومتغيرات عقد المستشار. يجب أن يراجعه محامٍ.",
+        "reset": "العودة إلى النص الافتراضي",
+        "prepare": "تحضير الملحق",
+        "prepared": "تم تحضير الملحق: أرسله من صفحة العقود.",
+        "send": "الإرسال من العقود",
+        "state": {
+          "NONE": "لا يوجد ملحق",
+          "DRAFT": "الملحق جاهز للإرسال",
+          "PENDING_SIGNATURE": "تم إرسال الملحق",
+          "SIGNED": "الملحق موقّع"
+        }
       }
     },
     "analytics": {
@@ -8177,6 +8264,11 @@
       "topCourse": "الدورة",
       "topSales": "المبيعات",
       "topRevenue": "الإيراد"
+    },
+    "review": {
+      "title": "{count, plural, one {دورة واحدة للمراجعة} other {# دورات للمراجعة}}",
+      "course": "دورة جديدة",
+      "modules": "{count, plural, one {وحدة جديدة} other {# وحدات جديدة}}"
     }
   },
   "refunds": {

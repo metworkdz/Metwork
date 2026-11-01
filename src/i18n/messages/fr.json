@@ -72,7 +72,8 @@
       "programs": "Programmes",
       "contract": "Contrat",
       "more": "Plus",
-      "invoices": "Facturation"
+      "invoices": "Facturation",
+      "academy": "Academy"
     },
     "signin": {
       "heading": "Connexion consultant",
@@ -651,6 +652,32 @@
       "convertKeeps": "{number} reste dans la liste, marquée « Convertie » et verrouillée.",
       "actionFailed": "L’action a échoué. Réessayez.",
       "convertNoteHint": "Reprise de la proforma : modifiez-la ou videz-la pour la facture."
+    },
+    "academy": {
+      "title": "Mes cours",
+      "subtitle": "Créez vos cours Startup Academy. Metwork les relit avant publication.",
+      "new": "Nouveau cours",
+      "newTitle": "Titre du cours",
+      "newTitleHint": "Écrit dans votre langue ; Metwork traduit ensuite.",
+      "pickField": "Choisir un domaine…",
+      "create": "Créer le brouillon",
+      "empty": "Aucun cours pour l’instant.",
+      "loadError": "Impossible de charger vos cours.",
+      "createError": "Impossible de créer le cours.",
+      "pendingModules": "{count, plural, one {# module en attente} other {# modules en attente}}",
+      "readOnly": "Lecture seule",
+      "courseStats": "{buyers} acheteurs · {earned} gagnés",
+      "stats": {
+        "buyers": "Acheteurs",
+        "passMinutes": "Minutes Pass ce mois",
+        "earned": "Gains Academy"
+      },
+      "addendum": {
+        "NONE": "Pour publier sur Startup Academy, Metwork doit vous envoyer un avenant à signer. Vous pouvez déjà préparer vos cours.",
+        "DRAFT": "Votre avenant Academy est en préparation chez Metwork.",
+        "PENDING_SIGNATURE": "Votre avenant Academy attend votre signature.",
+        "sign": "Signer l’avenant"
+      }
     }
   },
   "common": {
@@ -8121,7 +8148,49 @@
         "NOT_READY": "Le cours n’est pas prêt : voir la liste à droite.",
         "MISSING_TITLE": "Chaque module et chaque leçon doit avoir un titre.",
         "UPLOAD_FAILED": "L’envoi a échoué. Réessayez.",
-        "generic": "Une erreur est survenue."
+        "generic": "Une erreur est survenue.",
+        "ADDENDUM_REQUIRED": "L’avenant Academy doit être signé avant l’envoi.",
+        "LOCKED": "Ce cours ne peut pas être modifié pour l’instant.",
+        "READ_ONLY": "Ce cours est en lecture seule.",
+        "NOTHING_TO_SUBMIT": "Rien de nouveau à envoyer."
+      },
+      "pendingBadge": "En attente de validation",
+      "studio": {
+        "back": "Mes cours",
+        "submitted": "Envoyé à Metwork pour relecture.",
+        "reviewTitle": "Relecture Metwork",
+        "noteFromMetwork": "Note de Metwork",
+        "addendumNeeded": "Signez d’abord l’avenant Academy (onglet Contrat) pour pouvoir envoyer un cours.",
+        "submit": "Envoyer en relecture",
+        "submitModules": "Envoyer les nouveaux modules",
+        "modulesInReview": "Vos nouveaux modules sont en relecture chez Metwork.",
+        "inPass": "Ce cours est inclus dans l’Academy Pass.",
+        "notInPass": "Ce cours n’est pas inclus dans l’Academy Pass.",
+        "mode": {
+          "ADD_MODULES": "Ce cours est publié : vous pouvez ajouter des modules. Ils resteront cachés jusqu’à leur validation par Metwork. Pour modifier le reste, écrivez à Metwork.",
+          "LOCKED": "Ce cours est verrouillé pendant la relecture.",
+          "READ_ONLY": "Ce cours est géré par Metwork : lecture seule."
+        },
+        "locked": {
+          "DRAFT": "Ce brouillon est verrouillé.",
+          "IN_REVIEW": "Metwork relit votre cours. Vous recevrez une réponse ici.",
+          "CHANGES_REQUESTED": "Metwork demande des modifications.",
+          "PUBLISHED": "Ce cours est publié.",
+          "ARCHIVED": "Ce cours est archivé."
+        }
+      },
+      "adminReview": {
+        "courseSubmitted": "Le mentor a envoyé ce cours en relecture. Publiez-le, ou demandez des modifications.",
+        "modulesSubmitted": "Le mentor propose de nouveaux modules (en orange).",
+        "note": "Note au mentor (obligatoire pour demander des modifications ou refuser)",
+        "requestChanges": "Demander des modifications",
+        "approveModules": "Valider les modules",
+        "rejectModules": "Refuser les modules",
+        "done": {
+          "REQUEST_CHANGES": "Modifications demandées au mentor.",
+          "APPROVE_MODULES": "Modules validés : ils sont visibles.",
+          "REJECT_MODULES": "Modules renvoyés au mentor."
+        }
       }
     },
     "settings": {
@@ -8152,7 +8221,25 @@
         "INVALID_RATE": "Un pourcentage doit être entre 0 et 99.",
         "INVALID_STAMP_URL": "Le cachet doit être une image hébergée sur Cloudinary (https://res.cloudinary.com/…).",
         "MENTOR_NOT_FOUND": "Mentor introuvable.",
-        "generic": "Une erreur est survenue."
+        "generic": "Une erreur est survenue.",
+        "ALREADY_EXISTS": "Ce mentor a déjà un avenant.",
+        "CONSULTANT_NOT_FOUND": "Mentor introuvable.",
+        "INCOMPLETE_CONSULTANT_PROFILE": "Le profil du mentor est incomplet (identité, adresse ou téléphone).",
+        "NO_TEMPLATE": "Aucun texte d’avenant."
+      },
+      "addendum": {
+        "title": "Avenant Academy (mentors)",
+        "hint": "Texte de l’avenant que chaque mentor signe avant d’envoyer un cours. Variables : '{{academy_share}}', '{{academy_metwork_share}}' et celles du contrat consultant. À faire relire par un juriste.",
+        "reset": "Revenir au texte par défaut",
+        "prepare": "Préparer l’avenant",
+        "prepared": "Avenant préparé : envoyez-le depuis la page Contrats.",
+        "send": "Envoyer depuis Contrats",
+        "state": {
+          "NONE": "Pas d’avenant",
+          "DRAFT": "Avenant prêt à envoyer",
+          "PENDING_SIGNATURE": "Avenant envoyé",
+          "SIGNED": "Avenant signé"
+        }
       }
     },
     "analytics": {
@@ -8177,6 +8264,11 @@
       "topCourse": "Cours",
       "topSales": "Ventes",
       "topRevenue": "Revenu"
+    },
+    "review": {
+      "title": "{count, plural, one {# cours à relire} other {# cours à relire}}",
+      "course": "Nouveau cours",
+      "modules": "{count, plural, one {# nouveau module} other {# nouveaux modules}}"
     }
   },
   "refunds": {

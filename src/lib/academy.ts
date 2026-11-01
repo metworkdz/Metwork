@@ -181,6 +181,20 @@ export function creditableWatchSeconds(input: {
   return Math.min(add, Math.max(0, dailyCap - Math.max(0, Math.floor(input.alreadyTodaySec))));
 }
 
+/* ─────────────────────────── Module visibility ─────────────────────────── */
+
+type ModuleFlags = { comingSoon: boolean; pendingReview?: boolean };
+
+/** Shown to learners at all (a mentor's module awaiting approval is not). */
+export function isVisibleModule(m: ModuleFlags): boolean {
+  return !m.pendingReview;
+}
+
+/** Released: visible and not announced as "coming soon" — its lessons play and count. */
+export function isLiveModule(m: ModuleFlags): boolean {
+  return !m.pendingReview && !m.comingSoon;
+}
+
 /* ─────────────────────────── Catalogue vocabulary ─────────────────────────── */
 
 export const ACADEMY_LEVELS = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] as const;

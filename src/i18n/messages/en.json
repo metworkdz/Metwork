@@ -72,7 +72,8 @@
       "programs": "Programs",
       "contract": "Contract",
       "more": "More",
-      "invoices": "Invoicing"
+      "invoices": "Invoicing",
+      "academy": "Academy"
     },
     "signin": {
       "heading": "Consultant sign-in",
@@ -651,6 +652,32 @@
       "convertKeeps": "{number} stays in the list, marked “Converted” and locked.",
       "actionFailed": "The action failed. Try again.",
       "convertNoteHint": "Carried over from the proforma: edit or clear it for the invoice."
+    },
+    "academy": {
+      "title": "My courses",
+      "subtitle": "Create your Startup Academy courses. Metwork reviews them before publishing.",
+      "new": "New course",
+      "newTitle": "Course title",
+      "newTitleHint": "Written in your language; Metwork translates it afterwards.",
+      "pickField": "Pick a field…",
+      "create": "Create draft",
+      "empty": "No courses yet.",
+      "loadError": "Could not load your courses.",
+      "createError": "Could not create the course.",
+      "pendingModules": "{count, plural, one {# module pending} other {# modules pending}}",
+      "readOnly": "Read only",
+      "courseStats": "{buyers} buyers · {earned} earned",
+      "stats": {
+        "buyers": "Buyers",
+        "passMinutes": "Pass minutes this month",
+        "earned": "Academy earnings"
+      },
+      "addendum": {
+        "NONE": "To publish on Startup Academy, Metwork will send you an addendum to sign. You can already prepare your courses.",
+        "DRAFT": "Metwork is preparing your Academy addendum.",
+        "PENDING_SIGNATURE": "Your Academy addendum is waiting for your signature.",
+        "sign": "Sign the addendum"
+      }
     }
   },
   "common": {
@@ -8121,7 +8148,49 @@
         "NOT_READY": "The course is not ready: see the list on the right.",
         "MISSING_TITLE": "Every module and lesson needs a title.",
         "UPLOAD_FAILED": "Upload failed. Try again.",
-        "generic": "Something went wrong."
+        "generic": "Something went wrong.",
+        "ADDENDUM_REQUIRED": "The Academy addendum must be signed before sending.",
+        "LOCKED": "This course cannot be changed right now.",
+        "READ_ONLY": "This course is read only.",
+        "NOTHING_TO_SUBMIT": "Nothing new to send."
+      },
+      "pendingBadge": "Awaiting approval",
+      "studio": {
+        "back": "My courses",
+        "submitted": "Sent to Metwork for review.",
+        "reviewTitle": "Metwork review",
+        "noteFromMetwork": "Note from Metwork",
+        "addendumNeeded": "Sign the Academy addendum first (Contract tab) to send a course.",
+        "submit": "Send for review",
+        "submitModules": "Send the new modules",
+        "modulesInReview": "Your new modules are being reviewed by Metwork.",
+        "inPass": "This course is included in the Academy Pass.",
+        "notInPass": "This course is not included in the Academy Pass.",
+        "mode": {
+          "ADD_MODULES": "This course is published: you can add modules. They stay hidden until Metwork approves them. To change anything else, write to Metwork.",
+          "LOCKED": "This course is locked during review.",
+          "READ_ONLY": "This course is managed by Metwork: read only."
+        },
+        "locked": {
+          "DRAFT": "This draft is locked.",
+          "IN_REVIEW": "Metwork is reviewing your course. You will get an answer here.",
+          "CHANGES_REQUESTED": "Metwork asked for changes.",
+          "PUBLISHED": "This course is published.",
+          "ARCHIVED": "This course is archived."
+        }
+      },
+      "adminReview": {
+        "courseSubmitted": "The mentor sent this course for review. Publish it, or ask for changes.",
+        "modulesSubmitted": "The mentor proposes new modules (in orange).",
+        "note": "Note to the mentor (required to ask for changes or reject)",
+        "requestChanges": "Ask for changes",
+        "approveModules": "Approve modules",
+        "rejectModules": "Reject modules",
+        "done": {
+          "REQUEST_CHANGES": "Changes requested from the mentor.",
+          "APPROVE_MODULES": "Modules approved: they are now visible.",
+          "REJECT_MODULES": "Modules sent back to the mentor."
+        }
       }
     },
     "settings": {
@@ -8152,7 +8221,25 @@
         "INVALID_RATE": "A percentage must be between 0 and 99.",
         "INVALID_STAMP_URL": "The stamp must be an image hosted on Cloudinary (https://res.cloudinary.com/…).",
         "MENTOR_NOT_FOUND": "Mentor not found.",
-        "generic": "Something went wrong."
+        "generic": "Something went wrong.",
+        "ALREADY_EXISTS": "This mentor already has an addendum.",
+        "CONSULTANT_NOT_FOUND": "Mentor not found.",
+        "INCOMPLETE_CONSULTANT_PROFILE": "The mentor profile is incomplete (identity, address or phone).",
+        "NO_TEMPLATE": "No addendum text."
+      },
+      "addendum": {
+        "title": "Academy addendum (mentors)",
+        "hint": "The addendum each mentor signs before sending a course. Variables: '{{academy_share}}', '{{academy_metwork_share}}' and the consultant contract ones. Have a lawyer review it.",
+        "reset": "Back to the default text",
+        "prepare": "Prepare addendum",
+        "prepared": "Addendum prepared: send it from the Contracts page.",
+        "send": "Send from Contracts",
+        "state": {
+          "NONE": "No addendum",
+          "DRAFT": "Addendum ready to send",
+          "PENDING_SIGNATURE": "Addendum sent",
+          "SIGNED": "Addendum signed"
+        }
       }
     },
     "analytics": {
@@ -8177,6 +8264,11 @@
       "topCourse": "Course",
       "topSales": "Sales",
       "topRevenue": "Revenue"
+    },
+    "review": {
+      "title": "{count, plural, one {# course to review} other {# courses to review}}",
+      "course": "New course",
+      "modules": "{count, plural, one {# new module} other {# new modules}}"
     }
   },
   "refunds": {

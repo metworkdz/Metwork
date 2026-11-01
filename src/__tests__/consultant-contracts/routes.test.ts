@@ -266,7 +266,7 @@ describe('serialisation', () => {
     expect(dto).not.toHaveProperty('finalPdfPublicId');
     expect(dto).not.toHaveProperty('signature');
     expect(Object.keys(dto).sort()).toEqual([
-      'commissionRate', 'contentSnapshot', 'id', 'locked', 'payoutDetails', 'payoutMethod',
+      'commissionRate', 'contentSnapshot', 'id', 'kind', 'locked', 'payoutDetails', 'payoutMethod',
       'pdfUrl', 'sentAt', 'signedAt', 'signerPhoneSnapshot', 'status',
     ]);
   });

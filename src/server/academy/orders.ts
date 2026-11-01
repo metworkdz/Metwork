@@ -29,6 +29,7 @@ import {
 import {
   ACADEMY_REFUND_MAX_WATCHED,
   canBuyAcademy,
+  isLiveModule,
   isAcademyPremium,
   mentorShareRate,
   quoteCourse,
@@ -405,7 +406,7 @@ export type RefundCheck =
   | { eligible: false; reason: 'NOT_FOUND' | 'NOT_A_PURCHASE' | 'ALREADY_REFUNDED' | 'WINDOW_CLOSED' | 'WATCHED_TOO_MUCH' | 'FREE' };
 
 function releasedSeconds(course: AcademyCourseRecord | undefined): number {
-  return (course?.modules ?? []).filter((m) => !m.comingSoon).flatMap((m) => m.lessons).reduce((s, l) => s + l.durationSec, 0);
+  return (course?.modules ?? []).filter(isLiveModule).flatMap((m) => m.lessons).reduce((s, l) => s + l.durationSec, 0);
 }
 
 /** Owner rule: within 7 days, under 25 % of the released course watched, no certificate (none exist yet). */

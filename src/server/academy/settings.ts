@@ -29,6 +29,7 @@ function withDefaults(stored: Partial<AcademySettingsRecord> | null | undefined)
     premiumDiscountRate: isValidRate(stored.premiumDiscountRate) ? stored.premiumDiscountRate : base.premiumDiscountRate,
     defaultMentorShareRate: isValidRate(stored.defaultMentorShareRate) ? stored.defaultMentorShareRate : base.defaultMentorShareRate,
     certificateStampUrl: typeof stored.certificateStampUrl === 'string' && stored.certificateStampUrl ? stored.certificateStampUrl : null,
+    addendumTemplate: typeof stored.addendumTemplate === 'string' && stored.addendumTemplate.trim() ? stored.addendumTemplate : null,
     updatedAt: stored.updatedAt ?? base.updatedAt,
     updatedBy: stored.updatedBy ?? null,
   };
@@ -54,7 +55,7 @@ export async function getAcademyPricing(): Promise<AcademyPricing> {
 }
 
 export type AcademySettingsPatch = Partial<Pick<AcademySettingsRecord,
-  'passMonthlyPriceDzd' | 'passAnnualDiscountRate' | 'premiumDiscountRate' | 'defaultMentorShareRate' | 'certificateStampUrl'>>;
+  'passMonthlyPriceDzd' | 'passAnnualDiscountRate' | 'premiumDiscountRate' | 'defaultMentorShareRate' | 'certificateStampUrl' | 'addendumTemplate'>>;
 
 export type UpdateSettingsResult =
   | { ok: true; settings: AcademySettingsRecord }

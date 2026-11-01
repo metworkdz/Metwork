@@ -1419,6 +1419,8 @@ export interface AcademySettingsRecord {
   defaultMentorShareRate: number;
   /** Metwork stamp printed on every Academy certificate. Null ⇒ none. */
   certificateStampUrl: string | null;
+  /** The Academy addendum mentors sign; null ⇒ the built-in text (lib/academy-addendum-text). */
+  addendumTemplate?: string | null;
   updatedAt: string;
   /** UserRecord.id of the admin who last saved. */
   updatedBy: string | null;
@@ -1461,6 +1463,11 @@ export interface AcademyModuleRecord {
   title: LocalizedText;
   /** Announced but not released yet ("Bientôt"): shown in the programme, not playable. */
   comingSoon: boolean;
+  /**
+   * Added by the mentor to a PUBLISHED course and not approved yet: invisible
+   * to learners (not even "coming soon") until the admin approves it.
+   */
+  pendingReview?: boolean;
   lessons: AcademyLessonRecord[];
 }
 
@@ -1491,6 +1498,8 @@ export interface AcademyCourseRecord {
   /** Admin note when changes are requested or the course is refused. */
   reviewNote: string | null;
   submittedAt: string | null;
+  /** The mentor asked for review of new modules on a published course. */
+  modulesSubmittedAt?: string | null;
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -4323,6 +4332,12 @@ export interface ConsultantContractOtpState {
 
 export interface ConsultantContractRecord {
   id: string;
+  /**
+   * Which agreement this is. Absent ⇒ CONSULTANT (the partnership contract).
+   * ACADEMY_ADDENDUM = the Startup Academy addendum a mentor signs before
+   * submitting courses (same signing flow, its own template).
+   */
+  kind?: 'CONSULTANT' | 'ACADEMY_ADDENDUM';
   /** MentorRecord.id of the signing consultant. */
   consultantId: string;
   status: ConsultantContractStatus;

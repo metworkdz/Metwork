@@ -13,6 +13,7 @@
 import { db, type AcademyCourseRecord, type AcademyLessonRecord } from '@/server/db/store';
 import { activeEnrollment } from './orders';
 import { activePass } from './pass-core';
+import { isLiveModule, isVisibleModule } from '@/lib/academy';
 
 export type LessonAccess = 'ADMIN' | 'OWNED' | 'PASS' | 'PREVIEW';
 
@@ -48,9 +49,9 @@ export async function lessonAccess(viewer: Viewer, courseId: string, lessonId: s
   const mod = course.modules.find((m) => m.lessons.some((l) => l.id === lessonId));
   const lesson = mod?.lessons.find((l) => l.id === lessonId);
   if (!mod || !lesson) return { ok: false, code: 'NOT_FOUND' };
-  if (mod.comingSoon && courseAccess !== 'ADMIN') return { ok: false, code: 'NOT_READY' };
+  if (!isLiveModule(mod) && courseAccess !== 'ADMIN') return { ok: false, code: 'NOT_READY' };
 
-  const access: LessonAccess | null = courseAccess ?? (lesson.isPreview && !mod.comingSoon ? 'PREVIEW' : null);
+  const access: LessonAccess | null = courseAccess ?? (lesson.isPreview && isLiveModule(mod) ? 'PREVIEW' : null);
   if (!access) return { ok: false, code: 'LOCKED' };
   if (lesson.videoStatus !== 'READY' || !lesson.videoId) return { ok: false, code: 'NOT_READY' };
   return { ok: true, access, course, lesson };
@@ -81,16 +82,17 @@ export function buildOutline(
   const access = courseAccessFor(viewer, course, enrollments, passes);
   return {
     access,
-    modules: course.modules.map((m) => ({
+    // A module awaiting approval exists only for admins.
+    modules: course.modules.filter((m) => access === 'ADMIN' || isVisibleModule(m)).map((m) => ({
       id: m.id,
       title: resolve(m.title),
       comingSoon: m.comingSoon,
       lessons: m.lessons.map((l) => ({
         id: l.id,
         title: resolve(l.title),
-        durationSec: m.comingSoon ? 0 : l.durationSec,
-        isPreview: l.isPreview && !m.comingSoon,
-        playable: (access === 'ADMIN' || (!m.comingSoon && (access === 'OWNED' || access === 'PASS' || l.isPreview))) && l.videoStatus === 'READY',
+        durationSec: isLiveModule(m) ? l.durationSec : 0,
+        isPreview: l.isPreview && isLiveModule(m),
+        playable: (access === 'ADMIN' || (isLiveModule(m) && (access === 'OWNED' || access === 'PASS' || l.isPreview))) && l.videoStatus === 'READY',
         completed: completedLessonIds.has(l.id),
       })),
     })),

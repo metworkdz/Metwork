@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { ZodError, type ZodTypeAny, type z } from 'zod';
 import { requireApiRole, requireApprovedApiSession } from '@/server/auth/api-guards';
 import { isAcademyEnabled } from '@/config/feature-flags';
+import { requireConsultant } from '@/server/mentors/access';
 import { fromZod, jsonError } from '@/server/http/json';
 
 export type Parsed<T> = { ok: true; data: T } | { ok: false; response: Response };
@@ -31,4 +32,19 @@ export async function requireAcademyAdmin() {
 export async function requireAcademyLearner() {
   if (!isAcademyEnabled()) return { ok: false as const, response: jsonError(404, 'NOT_FOUND', 'Not found') };
   return requireApprovedApiSession();
+}
+
+/** A signed-in consultant (mentor) using the Studio. */
+export async function requireStudioMentor() {
+  if (!isAcademyEnabled()) return { ok: false as const, response: jsonError(404, 'NOT_FOUND', 'Not found') };
+  return requireConsultant();
+}
+
+const STUDIO_STATUS: Record<string, number> = {
+  NOT_FOUND: 404, READ_ONLY: 403, LOCKED: 409, ADDENDUM_REQUIRED: 403, NOT_READY: 422, NOTHING_TO_SUBMIT: 422, SLUG_TAKEN: 409, HAS_ENROLLMENTS: 409,
+};
+
+/** Map a Studio / catalogue error to an HTTP response. */
+export function studioError(code: string, problems?: string[]) {
+  return jsonError(STUDIO_STATUS[code] ?? 422, code, code, problems ? { problems } : undefined);
 }

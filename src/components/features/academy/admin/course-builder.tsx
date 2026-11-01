@@ -1,8 +1,14 @@
 'use client';
 
 /**
- * Admin course builder: texts in fr / en / ar, classification, price, cover,
- * and the programme (modules → lessons) with direct video upload per lesson.
+ * Course builder — the admin's, and the mentor Studio's (`studio` prop): texts
+ * in fr / en / ar, classification, price, cover, and the programme (modules →
+ * lessons) with direct video upload per lesson.
+ *
+ * In the Studio, `editMode` decides what is editable: FULL (a draft), or
+ * ADD_MODULES (a published course: only the mentor's new modules, which stay
+ * hidden from learners until the admin approves them). The server enforces the
+ * same rules; the locks here only spare the mentor a refused save.
  *
  * The page sends the whole builder state on save (PUT); the server keeps each
  * lesson's video from its stored record, so nothing here can point a lesson at
@@ -51,14 +57,20 @@ interface ModuleState {
   id?: string;
   title: LocalizedText | null;
   comingSoon: boolean;
+  /** A mentor's module awaiting admin approval. */
+  pending: boolean;
   lessons: LessonState[];
 }
 
 interface FieldOption { id: string; label: string }
 interface MentorOption { id: string; fullName: string; approved: boolean }
 
+export type StudioEditMode = 'FULL' | 'ADD_MODULES' | 'LOCKED' | 'READ_ONLY';
+
 interface CourseBuilderProps {
   initial: BuilderCourse;
+  /** Present in the mentor Studio; absent for the admin. */
+  studio?: { editMode: StudioEditMode; addendumSigned: boolean; onBack(): void };
   initialProblems: PublishProblem[];
   fields: FieldOption[];
   mentors: MentorOption[];
@@ -71,7 +83,7 @@ const tmpKey = () => `tmp-${++seq}`;
 
 function fromServer(c: BuilderCourse): ModuleState[] {
   return c.modules.map((m) => ({
-    key: m.id, id: m.id, title: m.title, comingSoon: m.comingSoon,
+    key: m.id, id: m.id, title: m.title, comingSoon: m.comingSoon, pending: Boolean(m.pendingReview),
     lessons: m.lessons.map((l: ServerLesson) => ({
       key: l.id, id: l.id, title: l.title, description: l.description, isPreview: l.isPreview,
       hasVideo: l.hasVideo, videoStatus: l.videoStatus, durationSec: l.durationSec,
@@ -94,10 +106,18 @@ function move<T>(arr: T[], i: number, by: number): T[] {
   return next;
 }
 
-export function CourseBuilder({ initial, initialProblems, fields, mentors, premiumDiscountRate, locale }: CourseBuilderProps) {
+export function CourseBuilder({ initial, initialProblems, fields, mentors, premiumDiscountRate, locale, studio }: CourseBuilderProps) {
   const t = useTranslations('academyAdmin.builder');
   const tc = useTranslations('academy');
   const router = useRouter();
+  const apiBase = studio ? '/consultant/academy' : '/admin/academy';
+  const [editMode, setEditMode] = useState<StudioEditMode>(studio?.editMode ?? 'FULL');
+  // What can be touched: everything for the admin; per edit mode in the Studio.
+  const canEditCourse = !studio || editMode === 'FULL';
+  const canEditModule = (m: Pick<ModuleState, 'pending'>) => canEditCourse || (editMode === 'ADD_MODULES' && m.pending);
+  const canAddModule = canEditCourse || editMode === 'ADD_MODULES';
+  const readOnly = Boolean(studio) && (editMode === 'LOCKED' || editMode === 'READ_ONLY');
+  const [reviewNote, setReviewNote] = useState('');
 
   const [course, setCourse] = useState(initial);
   const [modules, setModules] = useState<ModuleState[]>(() => fromServer(initial));
@@ -128,13 +148,14 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
 
   const errorText = useCallback((err: unknown) => {
     if (err instanceof ApiClientError) {
-      const known = ['PRICE_BELOW_MINIMUM', 'PRICE_INVALID', 'SLUG_TAKEN', 'FIELD_NOT_FOUND', 'MENTOR_NOT_FOUND', 'VALIDATION_ERROR', 'HAS_ENROLLMENTS', 'UNAVAILABLE', 'FAILED', 'RATE_LIMITED', 'NOT_READY'];
+      const known = ['PRICE_BELOW_MINIMUM', 'PRICE_INVALID', 'SLUG_TAKEN', 'FIELD_NOT_FOUND', 'MENTOR_NOT_FOUND', 'VALIDATION_ERROR', 'HAS_ENROLLMENTS', 'UNAVAILABLE', 'FAILED', 'RATE_LIMITED', 'NOT_READY', 'ADDENDUM_REQUIRED', 'LOCKED', 'READ_ONLY', 'NOTHING_TO_SUBMIT'];
       return known.includes(err.code) ? t(`errors.${err.code}`) : err.message;
     }
     return t('errors.generic');
   }, [t]);
 
-  const applyServer = (c: BuilderCourse, p: PublishProblem[]) => {
+  const applyServer = (c: BuilderCourse, p: PublishProblem[], mode?: StudioEditMode) => {
+    if (mode) setEditMode(mode);
     setCourse(c);
     setModules(fromServer(c));
     setProblems(p);
@@ -174,8 +195,8 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
     setBusy('save');
     setMessage(null);
     try {
-      const res = await apiClient.put<{ course: BuilderCourse; problems: PublishProblem[] }>(`/admin/academy/courses/${course.id}`, payload());
-      applyServer(res.course, res.problems);
+      const res = await apiClient.put<{ course: BuilderCourse; problems: PublishProblem[]; editMode?: StudioEditMode }>(`${apiBase}/courses/${course.id}`, payload());
+      applyServer(res.course, res.problems, res.editMode);
       setMessage({ kind: 'ok', text: t('saved') });
       return true;
     } catch (err) {
@@ -191,8 +212,8 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
     setBusy('translate');
     setMessage(null);
     try {
-      const res = await apiClient.post<{ filled: number; course: BuilderCourse; problems: PublishProblem[] }>(`/admin/academy/courses/${course.id}/translate`);
-      applyServer(res.course, res.problems);
+      const res = await apiClient.post<{ filled: number; course: BuilderCourse; problems: PublishProblem[]; editMode?: StudioEditMode }>(`${apiBase}/courses/${course.id}/translate`);
+      applyServer(res.course, res.problems, res.editMode);
       setMessage({ kind: 'ok', text: t('translated', { count: res.filled }) });
     } catch (err) {
       setMessage({ kind: 'error', text: errorText(err) });
@@ -217,12 +238,47 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
     }
   }
 
+  /** Mentor: send the draft, or the new modules, to Metwork for review. */
+  async function submitForReview() {
+    if (dirty && !(await save())) return;
+    setBusy('status');
+    setMessage(null);
+    try {
+      const res = await apiClient.post<{ course: BuilderCourse; editMode: StudioEditMode }>(`${apiBase}/courses/${course.id}/submit`);
+      applyServer(res.course, problems, res.editMode);
+      setMessage({ kind: 'ok', text: t('studio.submitted') });
+    } catch (err) {
+      if (err instanceof ApiClientError && Array.isArray(err.details?.problems)) setProblems(err.details.problems as PublishProblem[]);
+      setMessage({ kind: 'error', text: errorText(err) });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** Admin: answer a mentor's submission. */
+  async function review(action: 'REQUEST_CHANGES' | 'APPROVE_MODULES' | 'REJECT_MODULES') {
+    setBusy('status');
+    setMessage(null);
+    try {
+      const res = await apiClient.post<{ course: BuilderCourse; problems: PublishProblem[] }>(`/admin/academy/courses/${course.id}/review`,
+        action === 'APPROVE_MODULES' ? { action } : { action, note: reviewNote });
+      applyServer(res.course, res.problems);
+      setReviewNote('');
+      setMessage({ kind: 'ok', text: t(`adminReview.done.${action}`) });
+    } catch (err) {
+      setMessage({ kind: 'error', text: errorText(err) });
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function remove() {
     setBusy('delete');
     try {
-      await apiClient.delete(`/admin/academy/courses/${course.id}`);
+      await apiClient.delete(`${apiBase}/courses/${course.id}`);
       setDirty(false);
-      router.push('/dashboard/admin/academy');
+      if (studio) studio.onBack();
+      else router.push('/dashboard/admin/academy');
     } catch (err) {
       setMessage({ kind: 'error', text: errorText(err) });
       setBusy(null);
@@ -237,14 +293,14 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
 
   const refresh = useCallback(async (lessonId: string, attempt = 0) => {
     try {
-      const res = await apiClient.post<{ status: AcademyVideoStatus; durationSec: number }>(`/admin/academy/courses/${course.id}/lessons/${lessonId}/refresh`);
+      const res = await apiClient.post<{ status: AcademyVideoStatus; durationSec: number }>(`${apiBase}/courses/${course.id}/lessons/${lessonId}/refresh`);
       setModules((ms) => ms.map((m) => ({ ...m, lessons: m.lessons.map((l) => l.id === lessonId ? { ...l, videoStatus: res.status, durationSec: res.durationSec, hasVideo: true } : l) })));
       // Processing takes minutes on the host: keep asking for a while.
       if ((res.status === 'PROCESSING' || res.status === 'UPLOADING') && attempt < 60) {
         pollers.current[lessonId] = setTimeout(() => void refresh(lessonId, attempt + 1), 15_000);
       }
     } catch { /* the refresh button stays available */ }
-  }, [course.id]);
+  }, [course.id, apiBase]);
 
   async function uploadVideo(mi: number, li: number, file: File) {
     const lesson = modules[mi]?.lessons[li];
@@ -252,7 +308,7 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
     const lessonId = lesson.id;
     setMessage(null);
     try {
-      const ticket = await apiClient.post<{ url: string; fields: Record<string, string>; fileField: string }>(`/admin/academy/courses/${course.id}/lessons/${lessonId}/upload`);
+      const ticket = await apiClient.post<{ url: string; fields: Record<string, string>; fileField: string }>(`${apiBase}/courses/${course.id}/lessons/${lessonId}/upload`);
       setLesson(mi, li, { videoStatus: 'UPLOADING', hasVideo: true });
       const form = new FormData();
       for (const [k, v] of Object.entries(ticket.fields)) form.append(k, v);
@@ -282,10 +338,12 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
   const totalDuration = useMemo(() => modules.filter((m) => !m.comingSoon).flatMap((m) => m.lessons).reduce((s, l) => s + l.durationSec, 0), [modules]);
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className={cn('space-y-6', studio ? 'pb-44 lg:pb-24' : 'pb-24')}>
       {/* ── Top bar ── */}
       <div className="flex flex-wrap items-center gap-3">
-        <Button asChild variant="ghost" size="sm"><Link href="/dashboard/admin/academy"><ArrowLeft className="me-1 size-4 rtl:rotate-180" />{t('back')}</Link></Button>
+        {studio
+          ? <Button type="button" variant="ghost" size="sm" onClick={studio.onBack}><ArrowLeft className="me-1 size-4 rtl:rotate-180" />{t('studio.back')}</Button>
+          : <Button asChild variant="ghost" size="sm"><Link href="/dashboard/admin/academy"><ArrowLeft className="me-1 size-4 rtl:rotate-180" />{t('back')}</Link></Button>}
         <h1 className="min-w-0 flex-1 truncate font-display text-xl font-extrabold">{resolveText(course.title, locale) || t('untitled')}</h1>
         <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-bold', statusTone[course.status])}>{t(`status.${course.status}`)}</span>
         {course.status === 'PUBLISHED' && (
@@ -306,14 +364,18 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
           ))}
         </div>
         <span className="text-xs text-muted-foreground">{t('sourceIs', { lang: t(`lang.${course.title.source}`) })}</span>
-        <Button type="button" variant="outline" size="sm" className="ms-auto" onClick={translate} disabled={busy !== null}>
+        <Button type="button" variant="outline" size="sm" className={cn('ms-auto', !canEditCourse && 'hidden')} onClick={translate} disabled={busy !== null}>
           {busy === 'translate' ? <Loader2 className="me-1 size-4 animate-spin" /> : <Languages className="me-1 size-4" />}{t('translate')}
         </Button>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-6">
+          {studio && editMode !== 'FULL' && (
+            <p className="rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">{t(`studio.mode.${editMode}`)}</p>
+          )}
           {/* ── Texts ── */}
+          <fieldset disabled={!canEditCourse} className="m-0 min-w-0 border-0 p-0">
           <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
             <h2 className="font-display text-base font-extrabold">{t('sections.texts')}</h2>
             <div className="space-y-1.5">
@@ -346,6 +408,7 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
               )}
             </div>
           </section>
+          </fieldset>
 
           {/* ── Programme ── */}
           <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
@@ -354,9 +417,10 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
               <span className="text-xs text-muted-foreground">{t('programmeSummary', { modules: modules.length, duration: fmtDuration(totalDuration) || '0:00' })}</span>
             </div>
             {modules.map((m, mi) => (
-              <div key={m.key} className="rounded-xl border border-border">
+              <fieldset key={m.key} disabled={!canEditModule(m)} className={cn('m-0 min-w-0 rounded-xl border p-0', m.pending ? 'border-amber-300 dark:border-amber-600' : 'border-border')}>
                 <div className="flex flex-wrap items-start gap-2 border-b border-border bg-muted/40 p-3">
                   <span className="mt-2 text-xs font-bold text-muted-foreground">{t('moduleN', { n: mi + 1 })}</span>
+                  {m.pending && <span className="mt-1.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">{t('pendingBadge')}</span>}
                   <div className="min-w-[200px] flex-1">
                     <LocalizedField id={`m-${m.key}`} value={m.title} lang={lang} maxLength={120} aria-label={t('fields.moduleTitle')}
                       onChange={(v) => editModules((ms) => ms.map((x, i) => (i === mi ? { ...x, title: v } : x)))} />
@@ -366,8 +430,8 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
                     {t('comingSoon')}
                   </label>
                   <div className="flex">
-                    <Button type="button" variant="ghost" size="icon" aria-label={t('moveUp')} onClick={() => editModules((ms) => move(ms, mi, -1))}><ArrowUp className="size-4" /></Button>
-                    <Button type="button" variant="ghost" size="icon" aria-label={t('moveDown')} onClick={() => editModules((ms) => move(ms, mi, 1))}><ArrowDown className="size-4" /></Button>
+                    {canEditCourse && <Button type="button" variant="ghost" size="icon" aria-label={t('moveUp')} onClick={() => editModules((ms) => move(ms, mi, -1))}><ArrowUp className="size-4" /></Button>}
+                    {canEditCourse && <Button type="button" variant="ghost" size="icon" aria-label={t('moveDown')} onClick={() => editModules((ms) => move(ms, mi, 1))}><ArrowDown className="size-4" /></Button>}
                     <Button type="button" variant="ghost" size="icon" aria-label={t('remove')} onClick={() => editModules((ms) => ms.filter((_, i) => i !== mi))}><Trash2 className="size-4" /></Button>
                   </div>
                 </div>
@@ -418,10 +482,10 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
                     </li>
                   )}
                 </ol>
-              </div>
+              </fieldset>
             ))}
-            {modules.length < 30 && (
-              <Button type="button" variant="outline" onClick={() => editModules((ms) => [...ms, { key: tmpKey(), title: { source: lang, [lang]: t('newModule', { n: ms.length + 1 }) }, comingSoon: false, lessons: [] }])}>
+            {modules.length < 30 && canAddModule && !readOnly && (
+              <Button type="button" variant="outline" onClick={() => editModules((ms) => [...ms, { key: tmpKey(), title: { source: lang, [lang]: t('newModule', { n: ms.length + 1 }) }, comingSoon: false, pending: Boolean(studio) && editMode === 'ADD_MODULES', lessons: [] }])}>
                 <Plus className="me-1 size-4" />{t('addModule')}
               </Button>
             )}
@@ -431,26 +495,65 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
         {/* ── Side column ── */}
         <div className="min-w-0 space-y-6">
           <section className="space-y-3 rounded-2xl border border-border bg-card p-5">
-            <h2 className="font-display text-base font-extrabold">{t('sections.publish')}</h2>
+            <h2 className="font-display text-base font-extrabold">{studio ? t('studio.reviewTitle') : t('sections.publish')}</h2>
+            {course.reviewNote && (
+              <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+                <p className="font-semibold">{t('studio.noteFromMetwork')}</p>
+                <p className="mt-1 whitespace-pre-line">{course.reviewNote}</p>
+              </div>
+            )}
             {problems.length ? (
               <ul className="space-y-1.5 text-sm">
-                {problems.map((p) => (
+                {problems.filter((p) => !studio || p !== 'MENTOR_NOT_APPROVED').map((p) => (
                   <li key={p} className="flex items-start gap-2 text-amber-700 dark:text-amber-400"><AlertTriangle className="mt-0.5 size-4 shrink-0" />{t(`problems.${p}`)}</li>
                 ))}
               </ul>
             ) : (
               <p className="flex items-center gap-2 text-sm text-primary"><CheckCircle2 className="size-4" />{t('readyToPublish')}</p>
             )}
-            <div className="flex flex-wrap gap-2">
-              {course.status !== 'PUBLISHED' && <Button type="button" size="sm" disabled={busy !== null} onClick={() => changeStatus('PUBLISH')}>{t('publish')}</Button>}
-              {course.status === 'PUBLISHED' && <Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={() => changeStatus('UNPUBLISH')}>{t('unpublish')}</Button>}
-              {course.status !== 'ARCHIVED' && <Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={() => changeStatus('ARCHIVE')}>{t('archive')}</Button>}
-            </div>
+            {studio ? (
+              <div className="space-y-2">
+                {!studio.addendumSigned && <p className="text-sm text-muted-foreground">{t('studio.addendumNeeded')}</p>}
+                {editMode === 'FULL' && (
+                  <Button type="button" size="sm" disabled={busy !== null || !studio.addendumSigned} onClick={submitForReview}>{t('studio.submit')}</Button>
+                )}
+                {editMode === 'ADD_MODULES' && modules.some((m) => m.pending) && (
+                  course.modulesSubmittedAt
+                    ? <p className="text-sm text-muted-foreground">{t('studio.modulesInReview')}</p>
+                    : <Button type="button" size="sm" disabled={busy !== null || !studio.addendumSigned} onClick={submitForReview}>{t('studio.submitModules')}</Button>
+                )}
+                {editMode === 'LOCKED' && <p className="text-sm text-muted-foreground">{t(`studio.locked.${course.status}`)}</p>}
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  {course.status !== 'PUBLISHED' && <Button type="button" size="sm" disabled={busy !== null} onClick={() => changeStatus('PUBLISH')}>{t('publish')}</Button>}
+                  {course.status === 'PUBLISHED' && <Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={() => changeStatus('UNPUBLISH')}>{t('unpublish')}</Button>}
+                  {course.status !== 'ARCHIVED' && <Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={() => changeStatus('ARCHIVE')}>{t('archive')}</Button>}
+                </div>
+                {(course.status === 'IN_REVIEW' || course.modulesSubmittedAt) && (
+                  <div className="space-y-2 border-t border-border pt-3">
+                    <p className="text-sm font-semibold">{course.status === 'IN_REVIEW' ? t('adminReview.courseSubmitted') : t('adminReview.modulesSubmitted')}</p>
+                    <textarea aria-label={t('adminReview.note')} placeholder={t('adminReview.note')} value={reviewNote} maxLength={2000}
+                      onChange={(e) => setReviewNote(e.target.value)} className="min-h-20 w-full rounded-md border border-input bg-background p-2 text-sm" />
+                    <div className="flex flex-wrap gap-2">
+                      {course.status === 'IN_REVIEW'
+                        ? <Button type="button" size="sm" variant="outline" disabled={busy !== null || reviewNote.trim().length < 3} onClick={() => review('REQUEST_CHANGES')}>{t('adminReview.requestChanges')}</Button>
+                        : <>
+                            <Button type="button" size="sm" disabled={busy !== null} onClick={() => review('APPROVE_MODULES')}>{t('adminReview.approveModules')}</Button>
+                            <Button type="button" size="sm" variant="outline" disabled={busy !== null || reviewNote.trim().length < 3} onClick={() => review('REJECT_MODULES')}>{t('adminReview.rejectModules')}</Button>
+                          </>}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </section>
 
+          <fieldset disabled={!canEditCourse} className="m-0 min-w-0 space-y-6 border-0 p-0">
           <section className="space-y-3 rounded-2xl border border-border bg-card p-5">
             <h2 className="font-display text-base font-extrabold">{t('sections.cover')}</h2>
-            <CoverUpload url={course.thumbnailUrl} onUpload={(url) => edit('thumbnailUrl', url)} onError={(msg) => setMessage({ kind: 'error', text: msg })} />
+            <CoverUpload url={course.thumbnailUrl} endpoint={studio ? 'consultant' : 'admin'} onUpload={(url) => edit('thumbnailUrl', url)} onError={(msg) => setMessage({ kind: 'error', text: msg })} />
             <p className="text-xs text-muted-foreground">{t('coverHint')}</p>
           </section>
 
@@ -474,6 +577,7 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
                 {ACADEMY_AUDIO_LANGUAGES.map((a) => <option key={a} value={a}>{tc(`audio.${a}`)}</option>)}
               </select>
             </div>
+{!studio && (<>
             <fieldset className="space-y-1.5">
               <legend className="text-sm font-medium">{t('fields.mentors')}</legend>
               <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-input p-2">
@@ -495,6 +599,7 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
               <Label htmlFor="c-slug">{t('fields.slug')}</Label>
               <Input id="c-slug" dir="ltr" value={course.slug} maxLength={80} onChange={(e) => edit('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} />
             </div>
+            </>)}
           </section>
 
           <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
@@ -509,12 +614,19 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
                   : t('premiumPrice', { price: premiumPrice })}
               </p>
             </div>
+{studio
+              ? <p className="text-sm text-muted-foreground">{course.includedInPass ? t('studio.inPass') : t('studio.notInPass')}</p>
+              : (
             <label className="flex items-center gap-2 text-sm font-semibold">
               <input type="checkbox" checked={course.includedInPass} onChange={(e) => edit('includedInPass', e.target.checked)} />
               {t('fields.inPass')}
             </label>
+              )}
           </section>
 
+          </fieldset>
+
+          {(!studio || (editMode === 'FULL' && course.status === 'DRAFT' && !course.submittedAt)) && (
           <section className="rounded-2xl border border-destructive/30 p-5">
             {confirmDelete ? (
               <div className="space-y-2">
@@ -528,11 +640,15 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
               <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => setConfirmDelete(true)}><Trash2 className="me-1 size-4" />{t('delete')}</Button>
             )}
           </section>
+          )}
         </div>
       </div>
 
-      {/* ── Save bar ── */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur lg:ps-72" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+      {/* ── Save bar ── In the Studio it sits above the portal's mobile tab bar and beside its w-64 sidebar. */}
+      {!readOnly && (
+      <div className={cn('fixed inset-x-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur',
+        studio ? 'bottom-[calc(4.25rem+env(safe-area-inset-bottom))] lg:bottom-0 lg:ps-64' : 'bottom-0 lg:ps-72')}
+        style={studio ? undefined : { paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
         <div className="mx-auto flex max-w-6xl items-center gap-3">
           <p role="status" className={cn('min-w-0 flex-1 truncate text-sm', message?.kind === 'error' ? 'text-destructive' : 'text-muted-foreground')}>
             {message?.text ?? (dirty ? t('unsaved') : t('allSaved'))}
@@ -542,6 +658,7 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
           </Button>
         </div>
       </div>
+      )}
     </div>
   );
 }

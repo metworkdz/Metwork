@@ -456,3 +456,28 @@ withdrawable at once (the Pass is not refundable).
   two mutation checks (full-price base, concurrent settlement). Browser: Founder
   buys the monthly Pass (2 800 DA), course opens via Pass, cancel renewal, admin
   Analytics numbers, Arabic Pass page at 375 px.
+
+### Phase 4 — Mentor Studio (worktree `.claude/worktrees/academy-pass`, branch `feat/academy-pass`)
+- Owner decisions (2026-11-01): mentors sign an e-signed "Avenant Academy" through the
+  EXISTING consultant-contract system before submitting; on a PUBLISHED course a mentor may
+  only ADD modules, each hidden from learners until the admin approves it.
+- Addendum = consultant contract `kind: 'ACADEMY_ADDENDUM'` (`server/academy/addendum.ts`):
+  admin prepares it on Academy settings (share written in), sends it from Contracts, mentor
+  signs in the portal Contract tab. Default text `lib/academy-addendum-text.ts`, editable in
+  settings (`addendumTemplate`, null = default). **Needs a lawyer's review before use.**
+- `server/academy/studio.ts`: edit modes FULL (draft / changes requested), ADD_MODULES
+  (published), LOCKED (in review / archived), READ_ONLY (not created by this mentor).
+  `module.pendingReview` hides a module everywhere (`isVisibleModule` / `isLiveModule` in
+  `lib/academy`), incl. free-preview lessons. Admin review: request changes (note),
+  approve / reject modules; queue on the admin Academy page.
+- UI: the admin CourseBuilder takes a `studio` prop (fieldset locks, review panel, cover via
+  `/api/consultant/upload` kind `academy-cover`); portal tab "Academy" (`portal/academy-section.tsx`).
+- Fixed on the way: `academy-cover` upload would have overwritten the mentor's profile photo.
+- Preview landmine: Tailwind content paths are relative to the process cwd, and the
+  preview runs from the MAIN repo, so new arbitrary classes in the worktree are not
+  generated in the preview (production builds are fine).
+- Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2285/2285 (15 new).
+  Browser at 375 px fr + ar: portal Academy tab, create draft, builder save, review panel
+  locked without addendum, save bar above the portal tab bar; admin prepare addendum
+  (incomplete-profile error under the row, success → DRAFT, "Academy addendum" badge on
+  Contracts). Not seen live: the review queue with a real submission (unit-tested).

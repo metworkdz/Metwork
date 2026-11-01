@@ -9,6 +9,7 @@ import { db } from '@/server/db/store';
 import { academyRepo } from '@/server/academy/repo';
 import { refundCheck } from '@/server/academy/orders';
 import { resolveText } from '@/lib/localized-text';
+import { isLiveModule } from '@/lib/academy';
 import { CourseCover } from '@/components/features/academy/course-cover';
 import { RefundButton } from '@/components/features/academy/refund-button';
 import { formatDzd } from '@/components/features/academy/format';
@@ -41,7 +42,7 @@ export default async function AcademyMyLearningPage({ params }: { params: Promis
   const rows = await Promise.all(mine.map(async (e) => {
     const course = d.academyCourses?.find((c) => c.id === e.courseId);
     if (!course) return null;
-    const lessons = course.modules.filter((m) => !m.comingSoon).flatMap((m) => m.lessons);
+    const lessons = course.modules.filter(isLiveModule).flatMap((m) => m.lessons);
     const progress = await academyRepo().progressFor(session.user.id, course.id);
     const done = progress.filter((p) => p.completedAt && lessons.some((l) => l.id === p.lessonId)).length;
     const refund = await refundCheck(session.user.id, e.id);

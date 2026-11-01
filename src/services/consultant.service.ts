@@ -267,6 +267,7 @@ export interface ConsultantProgramInput {
  */
 export interface ConsultantContract {
   id: string;
+  kind: 'CONSULTANT' | 'ACADEMY_ADDENDUM';
   status: 'DRAFT' | 'PENDING_SIGNATURE' | 'SIGNED' | 'VOIDED';
   contentSnapshot: string;
   /** Frozen at send-time, 0–1. Read-only everywhere in the UI. */

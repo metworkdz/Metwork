@@ -4,7 +4,7 @@
  *
  * multipart/form-data:
  *   file — the binary (image for avatar/program, PDF for cv)
- *   kind — 'avatar' (default) | 'cv' | 'program' | 'invoice-logo' | 'invoice-stamp'
+ *   kind — 'avatar' (default) | 'cv' | 'program' | 'invoice-logo' | 'invoice-stamp' | 'academy-cover'
  *
  * Mirrors the admin upload route (/api/mentors/upload): Cloudinary when
  * configured, public/uploads disk fallback in dev. Guarded by the consultant
@@ -41,6 +41,8 @@ const UPLOAD_FOLDER = {
   program: 'metwork/consultant-programs',
   'invoice-logo': 'metwork/consultant-invoices',
   'invoice-stamp': 'metwork/consultant-invoices',
+  // Startup Academy course covers made in the mentor Studio.
+  'academy-cover': 'metwork/academy',
 } as const;
 
 export const runtime = 'nodejs';
@@ -67,7 +69,7 @@ export async function POST(req: NextRequest) {
 
   // An unknown kind falls back to 'avatar', which is what every caller that
   // omits it means — but each kind is listed, so adding one is deliberate.
-  const KINDS = ['avatar', 'cv', 'program', 'invoice-logo', 'invoice-stamp'] as const;
+  const KINDS = ['avatar', 'cv', 'program', 'invoice-logo', 'invoice-stamp', 'academy-cover'] as const;
   type UploadKind = (typeof KINDS)[number];
   const kindRaw = String(form.get('kind') ?? '');
   const kind: UploadKind = (KINDS as readonly string[]).includes(kindRaw)
@@ -116,9 +118,10 @@ export async function POST(req: NextRequest) {
     url = `/uploads/${sub}/${filename}`;
   }
 
-  // 'program' images belong to whichever ProgramRecord the caller is
-  // building, not to this consultant's own profile — write nothing.
-  if (kind !== 'program') {
+  // 'program' images and Academy covers belong to whatever the caller is
+  // building (a ProgramRecord, a course), not to this consultant's own
+  // profile — write nothing.
+  if (kind !== 'program' && kind !== 'academy-cover') {
     await db.update((d) => {
       const mentor = (d.mentors ?? []).find((m) => m.id === guard.mentorId);
       if (!mentor) return;

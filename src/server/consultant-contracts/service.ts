@@ -202,6 +202,15 @@ export interface CreateDraftContractInput {
   consultantId: string;
   /** UserRecord.id of the creating admin. */
   actorId: string;
+  /** Which agreement. Omitted ⇒ CONSULTANT, from the consultant template. */
+  kind?: 'CONSULTANT' | 'ACADEMY_ADDENDUM';
+  /** Template to merge instead of the consultant one (the Academy addendum). */
+  template?: string;
+}
+
+/** Second title line of the PDF for each agreement. */
+export function contractSubtitle(contract: Pick<ConsultantContractRecord, 'kind'>): string | undefined {
+  return contract.kind === 'ACADEMY_ADDENDUM' ? 'AVENANT STARTUP ACADEMY' : undefined;
 }
 
 export type CreateDraftContractResult =
@@ -258,7 +267,7 @@ export async function createDraftContract(
     const mentor = (d.mentors ?? []).find((m) => m.id === input.consultantId);
     if (!mentor) return { ok: false, reason: 'CONSULTANT_NOT_FOUND' };
 
-    const template = d.platformSettings?.consultantContractTemplate?.trim();
+    const template = (input.template ?? d.platformSettings?.consultantContractTemplate)?.trim();
     if (!template) return { ok: false, reason: 'NO_TEMPLATE' };
 
     // Refuse before anything is written: the merge below is one-shot and frozen.
@@ -289,6 +298,7 @@ export async function createDraftContract(
 
     const record: ConsultantContractRecord = {
       id: randomUUID(),
+      kind: input.kind ?? 'CONSULTANT',
       consultantId: input.consultantId,
       status: 'DRAFT',
       templateVersion: 1,
@@ -637,6 +647,7 @@ export async function signContract(
       adminStampUrl,
       metworkName: metwork?.name,
       metworkManager: data.platformSettings?.metworkManagerName ?? null,
+      titleSubtitle: contractSubtitle(contract),
     });
     stored = await storeSignedContractPdf(pdf, contract.id);
   } catch (err) {
@@ -741,6 +752,7 @@ export async function generateContractPreviewPdf(contractId: string): Promise<Bu
     adminStampUrl: null,
     metworkName: metwork?.name,
     metworkManager: data.platformSettings?.metworkManagerName ?? null,
+    titleSubtitle: contractSubtitle(contract),
     draft: true,
   });
 }
