@@ -1,6 +1,7 @@
 /**
  * Vercel Cron — Startup Academy Pass, daily at 02:45:
  *   1. renewals (reminder 3 days before; monthly renewal from the wallet; ended terms expire),
+ *   1b. incubator seats: each seat's holder gets the month that has just begun,
  *   2. settlement (every subscriber month that ended is split between the
  *      mentors watched and credited to their wallets).
  * Works on GET (what Vercel Cron sends) and POST. Both steps are idempotent.
@@ -8,6 +9,7 @@
  */
 import { NextResponse } from 'next/server';
 import { runPassRenewals, settlePassMonths } from '@/server/academy/pass';
+import { grantDueSeatMonths } from '@/server/academy/seats';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,9 +27,10 @@ async function handle(req: Request): Promise<Response> {
   }
   if (!isCronAuthorised(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const renewals = await runPassRenewals();
+  const seats = await grantDueSeatMonths();
   const settlement = await settlePassMonths();
-  console.info('[cron] academy-pass', { renewals, settlement });
-  return NextResponse.json({ ok: true, renewals, settlement });
+  console.info('[cron] academy-pass', { renewals, seats, settlement });
+  return NextResponse.json({ ok: true, renewals, seats, settlement });
 }
 
 export const GET = handle;

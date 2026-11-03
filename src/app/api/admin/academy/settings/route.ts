@@ -19,6 +19,7 @@ const schema = z.object({
   defaultMentorShareRate: z.number().optional(),
   certificateStampUrl: z.string().max(500).nullable().optional(),
   addendumTemplate: z.string().max(30_000).nullable().optional(),
+  seatTiers: z.array(z.object({ minSeats: z.number().int(), discountRate: z.number() })).max(5).nullable().optional(),
 }).strict();
 
 export async function GET() {

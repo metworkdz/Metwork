@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Link } from '@/i18n/routing';
 import { apiClient, ApiClientError } from '@/lib/api-client';
-import { passPrices } from '@/lib/academy';
+import { ACADEMY_DEFAULT_SEAT_TIERS, passPrices } from '@/lib/academy';
 import type { AcademySettingsRecord } from '@/server/db/store';
 
 type AddendumState = 'NONE' | 'DRAFT' | 'PENDING_SIGNATURE' | 'SIGNED';
@@ -31,6 +31,8 @@ export function AcademySettingsForm({ initial, mentors, defaultAddendum }: { ini
     stamp: initial.certificateStampUrl ?? '',
     addendum: initial.addendumTemplate ?? defaultAddendum,
   });
+  // Seat tiers as editable rows (percent as typed); stored as fractions.
+  const [tiers, setTiers] = useState(() => (initial.seatTiers ?? ACADEMY_DEFAULT_SEAT_TIERS).map((x) => ({ seats: String(x.minSeats), percent: String(pct(x.discountRate)) })));
   const [addenda, setAddenda] = useState(() => Object.fromEntries(mentors.map((m) => [m.id, m.addendum])));
   // Shown under the mentor's row: on a phone the page-level message is screens away.
   const [rowMsg, setRowMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null);
@@ -45,7 +47,7 @@ export function AcademySettingsForm({ initial, mentors, defaultAddendum }: { ini
     defaultMentorShareRate: (Number(s.share) || 0) / 100,
   });
 
-  const KNOWN = ['INVALID_PRICE', 'INVALID_RATE', 'INVALID_STAMP_URL', 'MENTOR_NOT_FOUND', 'ALREADY_EXISTS', 'CONSULTANT_NOT_FOUND', 'INCOMPLETE_CONSULTANT_PROFILE', 'NO_TEMPLATE'];
+  const KNOWN = ['INVALID_PRICE', 'INVALID_RATE', 'INVALID_SEAT_TIERS', 'INVALID_STAMP_URL', 'MENTOR_NOT_FOUND', 'ALREADY_EXISTS', 'CONSULTANT_NOT_FOUND', 'INCOMPLETE_CONSULTANT_PROFILE', 'NO_TEMPLATE'];
   const errorText = (err: unknown) => (err instanceof ApiClientError && KNOWN.includes(err.code) ? t(`errors.${err.code}`) : t('errors.generic'));
   const fail = (err: unknown) => setMsg({ ok: false, text: errorText(err) });
 
@@ -61,6 +63,10 @@ export function AcademySettingsForm({ initial, mentors, defaultAddendum }: { ini
         certificateStampUrl: s.stamp.trim() || null,
         // The built-in text is stored as null, so it keeps following the code.
         addendumTemplate: s.addendum.trim() === defaultAddendum.trim() ? null : s.addendum,
+        seatTiers: tiers
+          .filter((x) => x.seats.trim() && x.percent.trim())
+          .map((x) => ({ minSeats: Math.round(Number(x.seats)), discountRate: Number(x.percent) / 100 }))
+          .sort((a, b) => a.minSeats - b.minSeats),
       });
       setMsg({ ok: true, text: t('saved') });
     } catch (err) { fail(err); } finally { setBusy(null); }
@@ -110,6 +116,27 @@ export function AcademySettingsForm({ initial, mentors, defaultAddendum }: { ini
         </div>
         <p className="text-sm text-muted-foreground">{t('preview', preview)}</p>
         <p className="text-xs text-muted-foreground">{t('appliesToNew')}</p>
+      </section>
+
+      <section className="space-y-3 rounded-2xl border border-border bg-card p-5">
+        <h2 className="font-display text-base font-extrabold">{t('seats.title')}</h2>
+        <p className="text-xs text-muted-foreground">{t('seats.hint')}</p>
+        <ul className="space-y-2">
+          {tiers.map((tier, i) => (
+            <li key={i} className="flex flex-wrap items-center gap-2 text-sm">
+              <span>{t('seats.from')}</span>
+              <Input aria-label={t('seats.minSeats')} type="number" inputMode="numeric" min={2} className="h-9 w-20 text-base sm:text-sm" value={tier.seats}
+                onChange={(e) => setTiers(tiers.map((x, k) => (k === i ? { ...x, seats: e.target.value } : x)))} />
+              <span>{t('seats.seats')}</span>
+              <Input aria-label={t('seats.percent')} type="number" inputMode="decimal" min={0} max={99} className="h-9 w-20 text-base sm:text-sm" value={tier.percent}
+                onChange={(e) => setTiers(tiers.map((x, k) => (k === i ? { ...x, percent: e.target.value } : x)))} />
+              <span>%</span>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setTiers(tiers.filter((_, k) => k !== i))}>{t('seats.remove')}</Button>
+            </li>
+          ))}
+        </ul>
+        {tiers.length < 5 && <Button type="button" variant="outline" size="sm" onClick={() => setTiers([...tiers, { seats: '', percent: '' }])}>{t('seats.add')}</Button>}
+        <p className="text-xs text-muted-foreground">{t('seats.sharesNote')}</p>
       </section>
 
       <section className="space-y-4 rounded-2xl border border-border bg-card p-5">

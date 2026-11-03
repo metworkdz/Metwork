@@ -4,6 +4,7 @@
  *
  *   CERTIFICATE  — the learner's certificate is ready (PDF attached)
  *   REMINDER     — "keep going": a started course has been idle for a week
+ *   GIFT         — someone offered you a course or a Pass month (claim link)
  *
  * Every send is awaited by its caller and never throws.
  */
@@ -18,14 +19,44 @@ function esc(v: string): string {
 
 export type AcademyEmailInput =
   | { kind: 'CERTIFICATE'; to: string; lang?: string | null; name: string; courseTitle: string; number: string; verifyUrl: string; pdf: Buffer | null }
-  | { kind: 'REMINDER'; to: string; lang?: string | null; name: string; courseTitle: string; slug: string; done: number; total: number };
+  | { kind: 'REMINDER'; to: string; lang?: string | null; name: string; courseTitle: string; slug: string; done: number; total: number }
+  | { kind: 'GIFT'; to: string; lang?: string | null; name: string; fromName: string; what: string; message: string | null; url: string; expiresAt: string | null };
 
 interface Copy { subject: string; title: string; body: string[]; cta: { href: string; label: string }; note?: string }
 
 function copyFor(input: AcademyEmailInput, lang: EmailLang): Copy {
   const name = esc(input.name.split(/\s+/)[0] ?? '');
-  const course = `<strong>${esc(input.courseTitle)}</strong>`;
   const prefix = lang === 'fr' ? '' : `/${lang}`;
+  if (input.kind === 'GIFT') {
+    const from = esc(input.fromName);
+    const what = `<strong>${esc(input.what)}</strong>`;
+    const quote = input.message ? `<em>« ${esc(input.message)} »</em>` : null;
+    const until = input.expiresAt ? new Date(input.expiresAt).toLocaleDateString(lang === 'ar' ? 'ar-DZ' : lang === 'en' ? 'en-GB' : 'fr-DZ', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    return {
+      en: {
+        subject: `${input.fromName} gave you a gift on Metwork Startup Academy`,
+        title: 'You have a gift',
+        body: [`Hello ${name},`, `${from} gave you ${what} on Metwork Startup Academy.`, ...(quote ? [quote] : [])],
+        cta: { href: input.url, label: 'Claim my gift' },
+        note: `Sign in or create your free Metwork account to claim it${until ? ` before ${until}` : ''}.`,
+      },
+      fr: {
+        subject: `${input.fromName} vous fait un cadeau sur Metwork Startup Academy`,
+        title: 'Vous avez reçu un cadeau',
+        body: [`Bonjour ${name},`, `${from} vous offre ${what} sur Metwork Startup Academy.`, ...(quote ? [quote] : [])],
+        cta: { href: input.url, label: 'Récupérer mon cadeau' },
+        note: `Connectez-vous ou créez votre compte Metwork gratuit pour le récupérer${until ? ` avant le ${until}` : ''}.`,
+      },
+      ar: {
+        subject: `${input.fromName} أهداك هدية على Metwork Startup Academy`,
+        title: 'لديك هدية',
+        body: [`مرحبًا ${name}،`, `أهداك ${from} ${what} على Metwork Startup Academy.`, ...(quote ? [quote] : [])],
+        cta: { href: input.url, label: 'استلام هديتي' },
+        note: `سجّل الدخول أو أنشئ حسابك المجاني على Metwork لاستلامها${until ? ` قبل ${until}` : ''}.`,
+      },
+    }[lang];
+  }
+  const course = `<strong>${esc(input.courseTitle)}</strong>`;
   if (input.kind === 'CERTIFICATE') {
     const num = `<span dir="ltr">${esc(input.number)}</span>`;
     return {
@@ -116,4 +147,8 @@ export async function sendAcademyEmail(input: AcademyEmailInput): Promise<boolea
     console.error('[academy] email failed:', err instanceof Error ? err.message : err);
     return false;
   }
+}
+
+export function sendGiftEmail(input: { to: string; lang?: string | null; recipientName: string; fromName: string; what: string; message: string | null; url: string; expiresAt: string | null }): Promise<boolean> {
+  return sendAcademyEmail({ kind: 'GIFT', to: input.to, lang: input.lang, name: input.recipientName, fromName: input.fromName, what: input.what, message: input.message, url: input.url, expiresAt: input.expiresAt });
 }

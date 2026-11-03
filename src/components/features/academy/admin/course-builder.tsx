@@ -37,6 +37,7 @@ import type { AcademyVideoStatus } from '@/server/db/store';
 import { LocalizedField } from './localized-field';
 import { CoverUpload } from './cover-upload';
 import { QuizEditor, isQuestionComplete, type QuizQuestionState } from './quiz-editor';
+import { SubtitlesPanel, type TrackState } from './subtitles-panel';
 import { cn } from '@/lib/utils';
 
 type ServerLesson = BuilderCourse['modules'][number]['lessons'][number];
@@ -51,6 +52,7 @@ interface LessonState {
   hasVideo: boolean;
   videoStatus: AcademyVideoStatus;
   durationSec: number;
+  subtitles: TrackState[];
 }
 
 interface ModuleState {
@@ -89,6 +91,7 @@ function fromServer(c: BuilderCourse): ModuleState[] {
     lessons: m.lessons.map((l: ServerLesson) => ({
       key: l.id, id: l.id, title: l.title, description: l.description, isPreview: l.isPreview,
       hasVideo: l.hasVideo, videoStatus: l.videoStatus, durationSec: l.durationSec,
+      subtitles: (l.subtitles ?? []).map((x) => ({ lang: x.lang, drafted: x.drafted })),
     })),
     quiz: (m.quiz?.questions ?? []).map((q) => ({ key: q.id, id: q.id, prompt: q.prompt, options: q.options, correctIndex: q.correctIndex })),
   }));
@@ -479,13 +482,18 @@ export function CourseBuilder({ initial, initialProblems, fields, mentors, premi
                             {t('freePreview')}
                           </label>
                         </div>
+                        {l.id && l.hasVideo && (
+                          <div className="mt-2">
+                            <SubtitlesPanel key={`subs-${l.id}`} base={`${apiBase}/courses/${course.id}/lessons/${l.id}/subtitles`} initial={l.subtitles} />
+                          </div>
+                        )}
                       </li>
                     );
                   })}
                   {m.lessons.length < 60 && (
                     <li>
                       <Button type="button" variant="outline" size="sm" onClick={() => editModules((ms) => ms.map((x, i) => (i === mi ? {
-                        ...x, lessons: [...x.lessons, { key: tmpKey(), title: { source: lang, [lang]: t('newLesson', { n: x.lessons.length + 1 }) }, description: null, isPreview: false, hasVideo: false, videoStatus: 'NONE' as const, durationSec: 0 }],
+                        ...x, lessons: [...x.lessons, { key: tmpKey(), title: { source: lang, [lang]: t('newLesson', { n: x.lessons.length + 1 }) }, description: null, isPreview: false, hasVideo: false, videoStatus: 'NONE' as const, durationSec: 0, subtitles: [] }],
                       } : x)))}><Plus className="me-1 size-4" />{t('addLesson')}</Button>
                     </li>
                   )}

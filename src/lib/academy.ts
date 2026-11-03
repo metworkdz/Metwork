@@ -262,3 +262,78 @@ export function isLessonWatched(watchedSec: number, durationSec: number): boolea
   if (durationSec <= 0) return false;
   return watchedSec * ACADEMY_MAX_PLAYBACK_RATE >= durationSec * ACADEMY_CERT_LESSON_WATCHED;
 }
+
+/* ─────────────────────────── Growth (phase 6) ─────────────────────────── */
+/*
+ * Owner decisions of 2026-11-02:
+ *   - incubators buy Pass seats from their wallet, cheaper per seat in bulk
+ *     (default −10 % from 10 seats, −20 % from 25; admin-editable); the mentors'
+ *     share stays on the FULL Pass price;
+ *   - a course or a Pass month can be gifted; unclaimed after 30 days it goes
+ *     back to the buyer's wallet; claimed, it is final;
+ *   - bundles: admin-priced learning paths; each mentor earns their share of
+ *     their course's FULL list price (Metwork absorbs the bundle discount);
+ *   - referral: the new member gets 10 % off their first Academy purchase, the
+ *     referrer 10 % of what they paid (max 1 000 DA), after the refund window.
+ */
+export interface SeatTier { minSeats: number; discountRate: number }
+
+export const ACADEMY_DEFAULT_SEAT_TIERS: SeatTier[] = [
+  { minSeats: 10, discountRate: 0.1 },
+  { minSeats: 25, discountRate: 0.2 },
+];
+export const ACADEMY_MAX_SEATS = 500;
+export const ACADEMY_MAX_SEAT_MONTHS = 12;
+
+/** The best tier the seat count reaches (0 below the first tier). */
+export function seatDiscountRate(seats: number, tiers: SeatTier[]): number {
+  return tiers.filter((t) => seats >= t.minSeats).reduce((best, t) => Math.max(best, t.discountRate), 0);
+}
+
+/** Tiers an admin may save: ascending seat counts, rates strictly inside 0–1, at most 5. */
+export function validSeatTiers(tiers: unknown): tiers is SeatTier[] {
+  if (!Array.isArray(tiers) || tiers.length > 5) return false;
+  let prev = 1;
+  for (const t of tiers) {
+    if (!t || typeof t !== 'object') return false;
+    const { minSeats, discountRate } = t as SeatTier;
+    if (!Number.isInteger(minSeats) || minSeats <= prev || minSeats > ACADEMY_MAX_SEATS || !isValidRate(discountRate)) return false;
+    prev = minSeats;
+  }
+  return true;
+}
+
+export interface SeatQuote { seats: number; months: number; unitListPriceDzd: number; unitPriceDzd: number; discountRate: number; amountDzd: number }
+
+/** What an incubator pays for `seats` Pass seats over `months` months. The ONE place a seat price is computed. */
+export function quoteSeats(seats: number, months: number, monthlyPassPriceDzd: number, tiers: SeatTier[]): SeatQuote {
+  const discountRate = seatDiscountRate(seats, tiers);
+  const unitPriceDzd = discounted(monthlyPassPriceDzd, discountRate);
+  return { seats, months, unitListPriceDzd: monthlyPassPriceDzd, unitPriceDzd, discountRate, amountDzd: unitPriceDzd * seats * months };
+}
+
+export const ACADEMY_GIFT_CLAIM_DAYS = 30;
+
+export const ACADEMY_REFERRAL_DISCOUNT_RATE = 0.1;
+export const ACADEMY_REFERRAL_REWARD_RATE = 0.1;
+export const ACADEMY_REFERRAL_REWARD_CAP_DZD = 1000;
+
+export function referralDiscountDzd(amountDzd: number): number {
+  return dinars(amountDzd * ACADEMY_REFERRAL_DISCOUNT_RATE);
+}
+
+export function referralRewardDzd(paidDzd: number): number {
+  return Math.min(ACADEMY_REFERRAL_REWARD_CAP_DZD, dinars(Math.max(0, paidDzd) * ACADEMY_REFERRAL_REWARD_RATE));
+}
+
+/**
+ * Split a bundle price over its courses by list-price weight, to the dinar,
+ * the remainder on the last course. Used for refunds course by course.
+ */
+export function allocateBundle(priceDzd: number, listPrices: number[]): number[] {
+  const total = listPrices.reduce((s, p) => s + p, 0);
+  if (total <= 0 || listPrices.length === 0) return listPrices.map(() => 0);
+  const parts = listPrices.map((p) => Math.floor((priceDzd * p) / total));
+  parts[parts.length - 1]! += priceDzd - parts.reduce((s, p) => s + p, 0);
+  return parts;
+}

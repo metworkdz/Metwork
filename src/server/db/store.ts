@@ -191,6 +191,8 @@ export interface UserRecord {
   academyWishlist?: string[];
   /** Turned off the Academy "keep going" reminder emails. */
   academyRemindersOff?: boolean;
+  /** Startup Academy referral code (created the first time the member asks for their link). */
+  academyReferralCode?: string;
 }
 
 export interface SessionRecord {
@@ -1425,9 +1427,18 @@ export interface AcademySettingsRecord {
   certificateStampUrl: string | null;
   /** The Academy addendum mentors sign; null ⇒ the built-in text (lib/academy-addendum-text). */
   addendumTemplate?: string | null;
+  /** Incubator Pass seats: discount by seats bought at once. Absent ⇒ ACADEMY_DEFAULT_SEAT_TIERS. */
+  seatTiers?: AcademySeatTier[] | null;
   updatedAt: string;
   /** UserRecord.id of the admin who last saved. */
   updatedBy: string | null;
+}
+
+export interface AcademySeatTier {
+  /** From this many seats in one purchase… */
+  minSeats: number;
+  /** …each seat-month costs this much less (fraction). */
+  discountRate: number;
 }
 
 /** A field a course is filed under. `label` null ⇒ i18n `academy.fields.<id>`. */
@@ -1460,6 +1471,17 @@ export interface AcademyLessonRecord {
   /** Watchable without buying (trailer-like). */
   isPreview: boolean;
   resources: AcademyResourceRecord[];
+  /** Subtitle tracks on the video host. The WebVTT text lives in Postgres (`academy_subtitles`). */
+  subtitles?: AcademySubtitleTrackRecord[];
+}
+
+export interface AcademySubtitleTrackRecord {
+  lang: 'fr' | 'en' | 'ar';
+  /** The host's file id (VdoCipher captions file). */
+  fileId: string;
+  /** Machine-translated and not re-uploaded by the author since. */
+  drafted: boolean;
+  updatedAt: string;
 }
 
 export interface AcademyModuleRecord {
@@ -1554,7 +1576,14 @@ export interface AcademyEnrollmentRecord {
 export interface AcademyOrderRecord {
   id: string;
   /** What is bought. Absent ⇒ COURSE (every order before the Pass existed). */
-  kind?: 'COURSE' | 'PASS';
+  kind?: 'COURSE' | 'PASS' | 'GIFT' | 'BUNDLE';
+  /** GIFT orders: the gift being paid for. */
+  giftId?: string;
+  /** BUNDLE orders: the path bought, and each course with its share of the price. */
+  bundleId?: string;
+  bundleItems?: AcademyBundleItem[];
+  /** First purchase through a referral link: the referrer, and the 10 % taken off. */
+  referral?: { referrerId: string; discountDzd: number } | null;
   /** PASS orders only. */
   passPlan?: 'MONTHLY' | 'ANNUAL';
   userId: string;
@@ -1577,6 +1606,100 @@ export interface AcademyOrderRecord {
   enrollmentId: string | null;
   createdAt: string;
   paidAt: string | null;
+}
+
+export interface AcademyBundleItem {
+  courseId: string;
+  listPriceDzd: number;
+  /** This course's part of what the buyer paid (by list-price weight); refunds return it. */
+  amountDzd: number;
+  mentorShares: { mentorId: string; rate: number }[];
+}
+
+/** A learning path: published courses in order, sold together at an admin price. */
+export interface AcademyBundleRecord {
+  id: string;
+  slug: string;
+  title: LocalizedText;
+  description: LocalizedText | null;
+  courseIds: string[];
+  priceDzd: number;
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Pass seats an incubator bought for its members: `seats` seats for `months`
+ * months from `startAt`. Each month a seat's holder gets a one-month Pass term
+ * (method SEAT), so access, the watch-time split and the analytics are the Pass's.
+ */
+export interface AcademySeatBatchRecord {
+  id: string;
+  incubatorId: string;
+  /** The manager whose wallet paid. */
+  paidBy: string;
+  seats: number;
+  months: number;
+  startAt: string;
+  /** Full monthly Pass price at purchase: the mentors' shares are computed on it. */
+  unitListPriceDzd: number;
+  unitPriceDzd: number;
+  discountRate: number;
+  amountDzd: number;
+  paymentRef: string;
+  clientReference: string;
+  seatList: AcademySeatRecord[];
+  createdAt: string;
+}
+
+export interface AcademySeatRecord {
+  id: string;
+  holderUserId: string | null;
+  /** The email or phone the manager typed — shown back instead of the account's own details. */
+  holderContact?: string | null;
+  /** Month indexes already granted as Pass terms (never taken back). */
+  grantedMonths: number[];
+}
+
+/** A course or a Pass month bought for someone else, claimed through a link. */
+export interface AcademyGiftRecord {
+  id: string;
+  buyerId: string;
+  kind: 'COURSE' | 'PASS';
+  courseId: string | null;
+  recipientName: string;
+  /** Email or phone the link was sent to. */
+  recipientContact: string;
+  message: string | null;
+  /** SHA-256 of the claim token; the token itself is only in the link. */
+  tokenHash: string;
+  status: 'PENDING_PAYMENT' | 'PAID' | 'CLAIMED' | 'REFUNDED' | 'FAILED';
+  orderId: string | null;
+  listPriceDzd: number;
+  amountDzd: number;
+  /** COURSE gifts: frozen with the order, credited at claim. */
+  mentorShares: { mentorId: string; rate: number }[];
+  paidAt: string | null;
+  /** Unclaimed by then ⇒ refunded to the buyer's wallet. */
+  expiresAt: string | null;
+  claimedBy: string | null;
+  claimedAt: string | null;
+  createdAt: string;
+}
+
+/** One referred first purchase: the referrer's 10 % back, credited after the refund window. */
+export interface AcademyReferralRecord {
+  id: string;
+  referrerId: string;
+  refereeId: string;
+  orderId: string;
+  paidDzd: number;
+  rewardDzd: number;
+  status: 'PENDING' | 'CREDITED' | 'VOID';
+  creditAfter: string;
+  creditedAt: string | null;
+  createdAt: string;
 }
 
 /** A learner's result on one module quiz (one row per learner and module). */
@@ -1668,7 +1791,7 @@ export interface AcademyPassRecord {
   listPriceDzd: number;
   amountDzd: number;
   discount: 'NONE' | 'PREMIUM';
-  method: 'WALLET' | 'CARD' | 'RENEWAL';
+  method: 'WALLET' | 'CARD' | 'RENEWAL' | 'SEAT' | 'GIFT';
   /** Order id, or the wallet reference of a renewal. */
   paymentRef: string;
   renewalReminderSentAt: string | null;
@@ -1794,7 +1917,9 @@ export type AuditAction =
   /** An Academy review or Q&A post was hidden or shown again. */
   | 'ACADEMY_CONTENT_MODERATED'
   /** An Academy certificate was revoked or restored. */
-  | 'ACADEMY_CERTIFICATE_REVOKED';
+  | 'ACADEMY_CERTIFICATE_REVOKED'
+  /** An Academy bundle (learning path) was created, edited, published or archived. */
+  | 'ACADEMY_BUNDLE_UPDATED';
 
 export interface AuditLogRecord {
   id: string;
@@ -4593,6 +4718,10 @@ export interface DbShape {
   academyReviews?: AcademyReviewRecord[];
   academyCertificates?: AcademyCertificateRecord[];
   academyReminders?: AcademyReminderRecord[];
+  academyBundles?: AcademyBundleRecord[];
+  academySeatBatches?: AcademySeatBatchRecord[];
+  academyGifts?: AcademyGiftRecord[];
+  academyReferrals?: AcademyReferralRecord[];
   /** Startup Academy — Pass terms (one per paid month or year). */
   academyPasses?: AcademyPassRecord[];
   /** Audit log entries for admin actions. */

@@ -24,6 +24,7 @@ import { applyMentorEarningToDraft } from '@/server/mentors/ledger';
 import { debitWalletInDraft } from '@/server/wallet/service';
 import { createNotification } from '@/server/notifications/create-notification';
 import { getAcademyPricing } from './settings';
+import { applyReferralToOrder } from './referral';
 import { activePass, grantPassInDraft, latestPass } from './pass-core';
 import { afterOrderSettled, openCardCheckout, payOrderFromWalletInDraft, type Buyer } from './orders';
 import { academyRepo } from './repo';
@@ -72,6 +73,8 @@ export interface StartPassInput {
   clientReference: string;
   appBaseUrl: string;
   locale: string;
+  /** Referral code from the visitor's cookie, if any (checked on the server). */
+  referralCode?: string | null;
 }
 
 /**
@@ -115,6 +118,7 @@ export async function startPassPurchase(input: StartPassInput): Promise<StartPas
     createdAt: new Date().toISOString(),
     paidAt: null,
   };
+  await applyReferralToOrder(order, user, input.referralCode);
   const label = input.plan === 'ANNUAL' ? 'Startup Academy Pass — annuel' : 'Startup Academy Pass — mensuel';
 
   if (input.method === 'WALLET') {

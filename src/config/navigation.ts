@@ -40,6 +40,7 @@ import {
   Tags,
 } from 'lucide-react';
 import type { UserRole } from '@/types/auth';
+import { isAcademyEnabled } from '@/config/feature-flags';
 
 export interface NavItem {
   /** Translation key for the label, resolved via next-intl */
@@ -162,6 +163,8 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.spaces',    href: '/dashboard/incubator/spaces',       icon: Building2 },
     { labelKey: 'dashboard.domiciliation', href: '/dashboard/incubator/domiciliation', icon: Mailbox },
     { labelKey: 'dashboard.programs',  href: '/dashboard/incubator/programs',     icon: Briefcase },
+    // Startup Academy Pass seats for the incubator's members — only once the Academy is on.
+    ...(isAcademyEnabled() ? [{ labelKey: 'dashboard.academySeats', href: '/dashboard/incubator/academy', icon: GraduationCap }] : []),
     { labelKey: 'dashboard.promoCodes', href: '/dashboard/incubator/promo-codes',  icon: Tag },
     { labelKey: 'dashboard.feedback',  href: '/dashboard/incubator/feedback',     icon: MessageSquare },
     { labelKey: 'dashboard.events',    href: '/dashboard/incubator/events',       icon: Calendar },

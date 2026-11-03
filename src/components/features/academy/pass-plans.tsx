@@ -77,6 +77,11 @@ export function PassPlans({ initial, premiumPercent }: { initial: Record<PassPla
         {plan('ANNUAL', false)}
       </div>
       {me && !me.canBuy && <p className="text-sm text-muted-foreground">{tm('checkout.errors.NOT_A_BUYER')}</p>}
+      {me?.canBuy && (
+        <p className="text-sm">
+          <Link href={{ pathname: '/academy/checkout', query: { pass: 'MONTHLY', gift: '1' } }} className="font-semibold text-primary hover:underline">{tm('gift.offerPass')}</Link>
+        </p>
+      )}
       {me && !me.premium && <p className="text-sm text-muted-foreground">{t('premiumNudge', { percent: premiumPercent })} <Link href="/pricing" className="font-semibold text-primary hover:underline">{t('premiumCta')}</Link></p>}
     </div>
   );

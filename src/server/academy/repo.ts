@@ -74,6 +74,9 @@ export interface LessonPost {
 
 export interface InactiveLearner { userId: string; courseId: string; lastAt: string }
 
+export type SubtitleLang = 'fr' | 'en' | 'ar';
+export interface LessonSubtitle { lessonId: string; lang: SubtitleLang; vtt: string; drafted: boolean; updatedAt: string }
+
 export interface AcademyRepo {
   progressFor(userId: string, courseId: string): Promise<LessonProgress[]>;
   /** Save the resume point; `completed` marks the lesson done (it stays done). */
@@ -114,6 +117,10 @@ export interface AcademyRepo {
   addPost(input: Omit<LessonPost, 'id' | 'createdAt' | 'hiddenAt' | 'hiddenBy'>): Promise<LessonPost>;
   setPostHidden(postId: string, hiddenBy: string | null): Promise<boolean>;
 
+  getSubtitle(lessonId: string, lang: SubtitleLang): Promise<LessonSubtitle | null>;
+  saveSubtitle(input: { lessonId: string; lang: SubtitleLang; vtt: string; drafted: boolean }): Promise<void>;
+  deleteSubtitle(lessonId: string, lang: SubtitleLang): Promise<void>;
+
   /** Erase a user's rows (account deletion). */
   deleteUser(userId: string): Promise<void>;
 }
@@ -133,8 +140,8 @@ interface LedgerRow {
   userId: string; lessonId: string; day: string; courseId: string; mentorId: string; access: WatchAccess; seconds: number;
 }
 interface StreamRow { userId: string; streamId: string; courseId: string; lessonId: string; lastSeenAt: string }
-interface MemoryState { progress: LessonProgress[]; ledger: LedgerRow[]; streams: StreamRow[]; notes: LessonNote[]; posts: LessonPost[] }
-const emptyState = (): MemoryState => ({ progress: [], ledger: [], streams: [], notes: [], posts: [] });
+interface MemoryState { progress: LessonProgress[]; ledger: LedgerRow[]; streams: StreamRow[]; notes: LessonNote[]; posts: LessonPost[]; subtitles: LessonSubtitle[] }
+const emptyState = (): MemoryState => ({ progress: [], ledger: [], streams: [], notes: [], posts: [], subtitles: [] });
 
 export function createMemoryAcademyRepo(persistPath?: string): AcademyRepo & { reset(): void } {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires -- dev-only file backend, kept out of client bundles
@@ -295,6 +302,22 @@ export function createMemoryAcademyRepo(persistPath?: string): AcademyRepo & { r
       p.hiddenBy = hiddenBy;
       save();
       return true;
+    },
+    async getSubtitle(lessonId, lang) {
+      load();
+      const x = s.subtitles.find((t) => t.lessonId === lessonId && t.lang === lang);
+      return x ? { ...x } : null;
+    },
+    async saveSubtitle({ lessonId, lang, vtt, drafted }) {
+      load();
+      s.subtitles = s.subtitles.filter((t) => !(t.lessonId === lessonId && t.lang === lang));
+      s.subtitles.push({ lessonId, lang, vtt, drafted, updatedAt: new Date().toISOString() });
+      save();
+    },
+    async deleteSubtitle(lessonId, lang) {
+      load();
+      s.subtitles = s.subtitles.filter((t) => !(t.lessonId === lessonId && t.lang === lang));
+      save();
     },
     async deleteUser(userId) {
       load();
@@ -462,6 +485,20 @@ export function createSupabaseAcademyRepo(client: SupabaseClient): AcademyRepo {
         .update({ hidden_at: hiddenBy ? new Date().toISOString() : null, hidden_by: hiddenBy })
         .eq('id', postId).select('id')) as Row[];
       return rows.length > 0;
+    },
+    async getSubtitle(lessonId, lang) {
+      const rows = check(await client.from('academy_subtitles').select('*').eq('lesson_id', lessonId).eq('lang', lang).limit(1)) as Row[];
+      const r = rows[0];
+      return r ? { lessonId: r.lesson_id as string, lang: r.lang as SubtitleLang, vtt: r.vtt as string, drafted: Boolean(r.drafted), updatedAt: r.updated_at as string } : null;
+    },
+    async saveSubtitle({ lessonId, lang, vtt, drafted }) {
+      check(await client.from('academy_subtitles').upsert(
+        { lesson_id: lessonId, lang, vtt, drafted, updated_at: new Date().toISOString() },
+        { onConflict: 'lesson_id,lang' },
+      ));
+    },
+    async deleteSubtitle(lessonId, lang) {
+      check(await client.from('academy_subtitles').delete().eq('lesson_id', lessonId).eq('lang', lang));
     },
     async deleteUser(userId) {
       check(await client.from('academy_progress').delete().eq('user_id', userId));

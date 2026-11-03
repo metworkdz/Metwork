@@ -56,6 +56,8 @@ export interface GrantPassInput {
   method: AcademyPassRecord['method'];
   paymentRef: string;
   now?: Date;
+  /** Monthly terms renew from the wallet by default; a gifted month never does. */
+  autoRenew?: boolean;
 }
 
 /**
@@ -78,7 +80,7 @@ export function grantPassInDraft(d: StoreDraft, input: GrantPassInput): AcademyP
     userId: input.userId,
     plan: input.plan,
     status: 'ACTIVE',
-    autoRenew: input.plan === 'MONTHLY',
+    autoRenew: input.autoRenew ?? input.plan === 'MONTHLY',
     periodStart: start,
     periodEnd: end,
     listPriceDzd: input.listPriceDzd,
@@ -89,6 +91,40 @@ export function grantPassInDraft(d: StoreDraft, input: GrantPassInput): AcademyP
     renewalReminderSentAt: null,
     slices: buildSlices(input.plan, start, end, input.listPriceDzd, input.amountDzd),
     createdAt: now,
+  };
+  d.academyPasses.push(record);
+  return record;
+}
+
+/**
+ * One month of an incubator seat for its holder, inside an open update: a
+ * fixed window (the seat's month, from now if assigned mid-month), never
+ * renewing. One slice whose base is the FULL monthly Pass price, so the
+ * mentors' share is the Pass's (owner rule). Idempotent on `paymentRef`.
+ */
+export function grantSeatTermInDraft(
+  d: StoreDraft,
+  input: { userId: string; start: string; end: string; listPriceDzd: number; amountDzd: number; paymentRef: string; now: string },
+): AcademyPassRecord {
+  if (!Array.isArray(d.academyPasses)) d.academyPasses = [];
+  const existing = d.academyPasses.find((p) => p.paymentRef === input.paymentRef);
+  if (existing) return existing;
+  const record: AcademyPassRecord = {
+    id: randomUUID(),
+    userId: input.userId,
+    plan: 'MONTHLY',
+    status: 'ACTIVE',
+    autoRenew: false,
+    periodStart: input.start,
+    periodEnd: input.end,
+    listPriceDzd: input.listPriceDzd,
+    amountDzd: input.amountDzd,
+    discount: 'NONE',
+    method: 'SEAT',
+    paymentRef: input.paymentRef,
+    renewalReminderSentAt: null,
+    slices: [{ start: input.start, end: input.end, baseDzd: input.listPriceDzd, paidDzd: input.amountDzd, settledAt: null, lines: [] }],
+    createdAt: input.now,
   };
   d.academyPasses.push(record);
   return record;

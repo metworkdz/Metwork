@@ -2381,7 +2381,8 @@
     },
     "contract": "Contract",
     "programApprovals": "Programs to review",
-    "academy": "Startup Academy"
+    "academy": "Startup Academy",
+    "academySeats": "Startup Academy"
   },
   "pages": {
     "consultationPay": {
@@ -7904,7 +7905,9 @@
         "PROVIDER_FAILED": "The card payment could not start. Try again in a moment.",
         "RATE_LIMITED": "Too many attempts. Try again later.",
         "generic": "Something went wrong. Try again.",
-        "ALREADY_SUBSCRIBED": "Your Pass already renews automatically."
+        "ALREADY_SUBSCRIBED": "Your Pass already renews automatically.",
+        "BAD_CONTACT": "Enter a valid email or phone number.",
+        "BUNDLE_NOT_FOUND": "This path is no longer available."
       },
       "result": {
         "paidTitle": "Course unlocked",
@@ -7919,12 +7922,33 @@
         "retry": "Try again",
         "passTitle": "Academy Pass activated",
         "passDesc": "Every course included in the Pass is open.",
-        "browsePass": "See Pass courses"
+        "browsePass": "See Pass courses",
+        "giftTitle": "Gift sent!",
+        "giftDesc": "They received the link to claim their gift. You can follow it in My learning.",
+        "giftFollow": "Follow my gifts",
+        "bundleTitle": "Path unlocked",
+        "bundleDesc": "Every course of the path is yours, for life.",
+        "bundleDescOwned": "The path’s courses are yours. Those you already had were refunded to your wallet.",
+        "bundleStart": "See my courses"
       },
       "passTerms": "I accept the Academy Pass terms: personal access, streaming only, monthly renewal from the wallet (cancel anytime), non-refundable subscription.",
       "passPrice": "Pass price",
       "passNote": "Cancel anytime from “My learning”: you keep access until the end of the paid period.",
-      "passQueued": "Your current Pass runs until {date}: the new period starts then."
+      "passQueued": "Your current Pass runs until {date}: the new period starts then.",
+      "gift": {
+        "legend": "Who is it for?",
+        "name": "Their first and last name",
+        "contact": "Their email or WhatsApp number",
+        "contactPlaceholder": "name@example.com or 0555 12 34 56",
+        "contactHint": "We send them the link to claim the gift on their Metwork account.",
+        "message": "A short note (optional)",
+        "terms": "I accept that the gift is final once claimed; unclaimed after 30 days, it is refunded to my wallet."
+      },
+      "bundleTerms": "I accept the terms: each course of the path can be refunded within 7 days if less than 25 % was watched.",
+      "bundleOwned": "{count, plural, one {# course you already own is not charged.} other {# courses you already own are not charged.}}",
+      "bundleList": "Courses bought separately",
+      "bundleSaving": "Path saving",
+      "referralDiscount": "Referral (−10 % on first purchase)"
     },
     "player": {
       "loading": "Loading the video",
@@ -8139,6 +8163,62 @@
         "certificates": "My certificates",
         "wishlist": "My list"
       }
+    },
+    "paths": {
+      "title": "Learning paths",
+      "eyebrow": "Path · {count, plural, one {# course} other {# courses}}",
+      "courses": "{count, plural, one {# course} other {# courses}}",
+      "saving": "Instead of {list}: you save {saving}.",
+      "lifetime": "Lifetime access to every course of the path",
+      "buy": "Buy the path",
+      "ownedHint": "Already own one of the courses? It is not charged: the price drops accordingly.",
+      "programme": "The courses, in order",
+      "step": "Course {n}"
+    },
+    "gift": {
+      "checkoutTitle": "Give as a gift",
+      "passItem": "1 month of Academy Pass",
+      "passItemDesc": "Every Pass course for one month, no renewal.",
+      "note": "The link is sent as soon as you pay. Unclaimed after 30 days, the gift is refunded to your wallet.",
+      "offerCourse": "Give this course",
+      "offerPass": "Give a month of Academy Pass",
+      "claim": "Claim my gift",
+      "title": "{name}, you have a gift",
+      "offered": "{from} gave you “{what}” on Metwork Startup Academy.",
+      "notFoundTitle": "Invalid link",
+      "notFoundDesc": "This link does not exist or was replaced. Ask the sender to send it again.",
+      "alreadyClaimed": "This gift has already been claimed.",
+      "expired": "This link has expired.",
+      "signIn": "Sign in to claim it",
+      "signUp": "Create my free account",
+      "signUpHint": "Once your account is created, open this link again to claim the gift.",
+      "until": "Claim it before {date}.",
+      "errors": {
+        "EXPIRED": "This link has expired.",
+        "ALREADY_CLAIMED": "This gift has already been claimed.",
+        "ALREADY_OWNED": "You already have this course on your account.",
+        "RATE_LIMITED": "Too many tries. Try again later.",
+        "generic": "The gift could not be claimed. Try again."
+      },
+      "mine": {
+        "title": "Gifts I gave",
+        "claimed": "Claimed",
+        "refunded": "Not claimed, refunded to your wallet",
+        "waiting": "Waiting, until {date}",
+        "waitingNoDate": "Waiting",
+        "resend": "Send the link again",
+        "resent": "Link sent again",
+        "resendError": "Could not send"
+      }
+    },
+    "referral": {
+      "title": "Invite a friend",
+      "desc": "Your friend gets −10 % on their first Academy purchase, and you get 10 % of what they pay (up to 1 000 DA) in your wallet after 7 days.",
+      "shareText": "I recommend Metwork Startup Academy: −10 % on your first course with my link",
+      "copy": "Copy",
+      "copied": "Copied",
+      "whatsapp": "WhatsApp",
+      "stats": "{invited, plural, =0 {Nobody has used your link yet.} one {# friend bought} other {# friends bought}} · {pending} pending · {earned} received"
     }
   },
   "academyAdmin": {
@@ -8339,6 +8419,31 @@
           "LOCKED": "This module can no longer be edited.",
           "generic": "Drafting failed. Try again."
         }
+      },
+      "subtitles": {
+        "toggle": "Subtitles ({count})",
+        "drafted": "AI draft — to check",
+        "uploaded": "Uploaded",
+        "none": "None",
+        "replace": "Replace",
+        "upload": "Upload .vtt",
+        "view": "Read",
+        "remove": "Delete",
+        "translate": "Translate the other languages (AI)",
+        "hint": "Upload the .vtt from the whisper pipeline, then translate. To fix a draft, upload a corrected file in its language.",
+        "viewing": "{lang} subtitles",
+        "close": "Close",
+        "errors": {
+          "INVALID_VTT": "This file is not valid WebVTT.",
+          "TOO_LARGE": "File too large (1 MB max).",
+          "NO_VIDEO": "Upload the video first.",
+          "NO_SOURCE": "Upload your subtitles in one language first.",
+          "UNAVAILABLE": "AI translation is not available.",
+          "RATE_LIMITED": "Too many requests. Try again later.",
+          "LOCKED": "This lesson can no longer be edited.",
+          "UPSTREAM": "The video host did not answer. Try again.",
+          "generic": "The action failed."
+        }
       }
     },
     "settings": {
@@ -8373,7 +8478,8 @@
         "ALREADY_EXISTS": "This mentor already has an addendum.",
         "CONSULTANT_NOT_FOUND": "Mentor not found.",
         "INCOMPLETE_CONSULTANT_PROFILE": "The mentor profile is incomplete (identity, address or phone).",
-        "NO_TEMPLATE": "No addendum text."
+        "NO_TEMPLATE": "No addendum text.",
+        "INVALID_SEAT_TIERS": "Invalid tiers: increasing seat counts (at least 2) and discounts between 0 and 99 %."
       },
       "addendum": {
         "title": "Academy addendum (mentors)",
@@ -8388,6 +8494,17 @@
           "PENDING_SIGNATURE": "Addendum sent",
           "SIGNED": "Addendum signed"
         }
+      },
+      "seats": {
+        "title": "Incubator seats (volume discount)",
+        "hint": "Discount on the monthly Pass price by the number of seats bought at once.",
+        "from": "From",
+        "minSeats": "Number of seats",
+        "seats": "seats:",
+        "percent": "Discount in %",
+        "remove": "Remove",
+        "add": "Add a tier",
+        "sharesNote": "Mentors keep their share of the full Pass price: Metwork absorbs the discount."
       }
     },
     "analytics": {
@@ -8411,7 +8528,19 @@
       "passHoursHint": "What mentor shares are split on",
       "topCourse": "Course",
       "topSales": "Sales",
-      "topRevenue": "Revenue"
+      "topRevenue": "Revenue",
+      "seats": "Incubator seats",
+      "seatsHint": "{batches} batches · {sold} seats · {assigned} assigned",
+      "gifts": "Gifts",
+      "giftsHint": "{paid} paid · {claimed} claimed · {waiting} waiting · {refunded} refunded",
+      "bundles": "Learning paths",
+      "bundlesHint": "{count} sales",
+      "referrals": "Referrals",
+      "referralsHint": "{pending} pending · {paid} paid · {discounts} in discounts",
+      "certificates": "Certificates issued",
+      "certificatesHint": "Courses completed with quizzes passed",
+      "rating": "Average rating",
+      "ratingHint": "{count} visible reviews"
     },
     "review": {
       "title": "{count, plural, one {# course to review} other {# courses to review}}",
@@ -8435,6 +8564,43 @@
       "revoked": "revoked",
       "revoke": "Revoke",
       "restore": "Restore"
+    },
+    "bundles": {
+      "link": "Learning paths (bundles) →",
+      "title": "Learning paths",
+      "subtitle": "Published courses sold together at a price you choose. Mentors earn their share of their course’s full price.",
+      "edit": "Edit path",
+      "new": "New path",
+      "language": "Language",
+      "fieldTitle": "Title",
+      "fieldDescription": "Description",
+      "fieldCourses": "Courses, in order",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "remove": "Remove",
+      "addCourse": "Add a course…",
+      "fieldPrice": "Path price (DA)",
+      "priceHint": "Courses bought separately: {list}",
+      "fieldStatus": "Status",
+      "status": {
+        "DRAFT": "Draft",
+        "PUBLISHED": "Published",
+        "ARCHIVED": "Archived"
+      },
+      "sharesNote": "Metwork absorbs the discount: each mentor gets their share of their course’s full price. The price must cover at least those shares.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "needCourses": "You need at least two published courses.",
+      "empty": "No paths yet.",
+      "courses": "{count, plural, one {# course} other {# courses}}",
+      "errors": {
+        "COURSE_NOT_PUBLISHED": "Every course must be published.",
+        "PRICE_INVALID": "The price must be at least 2 900 DA and no more than the courses bought separately.",
+        "PRICE_BELOW_SHARES": "This price does not cover the mentors’ share. Raise it.",
+        "DUPLICATE_COURSE": "A course is listed twice.",
+        "VALIDATION_ERROR": "Check the title and the courses (2 to 12).",
+        "generic": "Saving failed."
+      }
     }
   },
   "refunds": {
@@ -8574,6 +8740,46 @@
       "errLoad": "Could not load.",
       "loadError": "Could not load this list.",
       "opened": "Refund opened."
+    }
+  },
+  "academyIncubator": {
+    "title": "Startup Academy",
+    "subtitle": "Give your members the Academy Pass: every Pass course, paid from your wallet.",
+    "noIncubator": "No incubator is linked to this account.",
+    "buyTitle": "Buy seats",
+    "buyDesc": "{price} per seat per month. The more seats, the less each one costs:",
+    "tier": "From {seats} seats: −{percent} %",
+    "seats": "Number of seats",
+    "months": "Number of months (1 to 12)",
+    "unit": "Price per seat per month",
+    "total": "Total",
+    "wallet": "Wallet balance",
+    "buy": "Pay {total} from the wallet",
+    "topUp": "Top up the wallet",
+    "rules": "Each month, the member holding a seat gets a month of Pass. You can reassign a seat: the month already started stays with the previous member. A seat with no member is not carried over.",
+    "empty": "You have no seats yet.",
+    "batchTitle": "{seats, plural, one {# seat} other {# seats}} · {months, plural, one {# month} other {# months}}",
+    "batchEnded": "Ended on {date}",
+    "batchUntil": "Until {date}",
+    "seatN": "Seat {n}",
+    "free": "Free",
+    "reassign": "Change",
+    "assign": "Assign",
+    "unassign": "Free the seat",
+    "contactPlaceholder": "Member’s email or phone",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "reassignHint": "The current month stays with the current member; the new member gets it from next month.",
+    "errors": {
+      "INSUFFICIENT_FUNDS": "Not enough balance. Top up the incubator wallet.",
+      "WALLET_FROZEN": "The wallet is frozen. Contact Metwork.",
+      "INVALID_QUANTITY": "Between 1 and 500 seats, 1 to 12 months.",
+      "RATE_LIMITED": "Too many requests. Try again later.",
+      "MEMBER_NOT_FOUND": "No Metwork account with this email or number. The member must create an account first.",
+      "NOT_A_LEARNER": "This account cannot take courses (only entrepreneurs and freelancers can).",
+      "ALREADY_SEATED": "This member already has a seat in this batch.",
+      "ENDED": "This batch has ended.",
+      "generic": "The action failed. Try again."
     }
   }
 }

@@ -29,7 +29,19 @@ export default async function AcademyCheckoutReturnPage({ params }: PageProps) {
     return (
       <div className={box}>
         <CheckCircle2 className="mx-auto size-14 text-primary" aria-hidden />
-        {view.order.kind === 'PASS' ? (
+        {view.order.kind === 'GIFT' ? (
+          <>
+            <h1 className="mt-4 font-display text-2xl font-extrabold">{t('giftTitle')}</h1>
+            <p className="mt-2 text-muted-foreground">{t('giftDesc')}</p>
+            <Button asChild size="lg" className="mt-6"><Link href="/academy/my">{t('giftFollow')}</Link></Button>
+          </>
+        ) : view.order.kind === 'BUNDLE' ? (
+          <>
+            <h1 className="mt-4 font-display text-2xl font-extrabold">{t('bundleTitle')}</h1>
+            <p className="mt-2 text-muted-foreground">{view.duplicate ? t('bundleDescOwned') : t('bundleDesc')}</p>
+            <Button asChild size="lg" className="mt-6"><Link href="/academy/my">{t('bundleStart')}</Link></Button>
+          </>
+        ) : view.order.kind === 'PASS' ? (
           <>
             <h1 className="mt-4 font-display text-2xl font-extrabold">{t('passTitle')}</h1>
             <p className="mt-2 text-muted-foreground">{t('passDesc')}</p>
@@ -51,7 +63,7 @@ export default async function AcademyCheckoutReturnPage({ params }: PageProps) {
         <XCircle className="mx-auto size-14 text-destructive" aria-hidden />
         <h1 className="mt-4 font-display text-2xl font-extrabold">{t('failedTitle')}</h1>
         <p className="mt-2 text-muted-foreground">{t('failedDesc')}</p>
-        <Button asChild size="lg" variant="outline" className="mt-6"><Link href={view.order.kind === 'PASS' ? '/academy/pass' : { pathname: '/academy/checkout', query: { course: view.courseSlug } }}>{t('retry')}</Link></Button>
+        <Button asChild size="lg" variant="outline" className="mt-6"><Link href={view.order.kind === 'PASS' ? '/academy/pass' : view.order.kind === 'GIFT' || view.order.kind === 'BUNDLE' ? '/academy/courses' : { pathname: '/academy/checkout', query: { course: view.courseSlug } }}>{t('retry')}</Link></Button>
       </div>
     );
   }

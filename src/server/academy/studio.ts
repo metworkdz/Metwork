@@ -163,6 +163,18 @@ export async function saveMentorCourse(mentorId: string, courseId: string, input
   return res.ok ? res : { ok: false, code: res.code };
 }
 
+/**
+ * May the mentor change this lesson's files (video, subtitles) now? Their own
+ * draft, or a module of theirs still awaiting approval on a live course.
+ */
+export async function mentorCanEditLesson(mentorId: string, courseId: string, lessonId: string): Promise<boolean> {
+  const course = await ownedCourse(mentorId, courseId);
+  if (!course) return false;
+  const mode = editModeFor(course, mentorId);
+  const mod = course.modules.find((m) => m.lessons.some((l) => l.id === lessonId));
+  return Boolean(mod) && (mode === 'FULL' || (mode === 'ADD_MODULES' && Boolean(mod!.pendingReview)));
+}
+
 /** Upload a lesson video — only for lessons the mentor may edit now. */
 export async function mentorLessonUpload(mentorId: string, courseId: string, lessonId: string): Promise<StudioResult<UploadForm>> {
   const course = await ownedCourse(mentorId, courseId);

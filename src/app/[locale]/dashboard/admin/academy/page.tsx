@@ -40,6 +40,7 @@ export default async function AdminAcademyPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <DashboardPageHeader title={t('list.title')} subtitle={t('list.subtitle')} />
+      <Link href="/dashboard/admin/academy/bundles" className="inline-flex text-sm font-semibold text-primary hover:underline">{t('bundles.link')}</Link>
       {queue.length > 0 && (
         <section className="rounded-2xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950/30">
           <h2 className="font-display text-base font-extrabold">{t('review.title', { count: queue.length })}</h2>

@@ -1,12 +1,14 @@
 /**
  * Vercel Cron — Startup Academy: course sales past the 7-day refund window move
- * their mentors' earnings from held to withdrawable.
+ * their mentors' earnings from held to withdrawable, referral rewards past the
+ * window are credited, and gifts unclaimed for 30 days are refunded.
  *
  * Schedule: `15 3 * * *` (daily). Works on GET (what Vercel Cron sends) and
  * POST. Logic in `releaseAcademyEarnings` (idempotent). Secured by CRON_SECRET.
  */
 import { NextResponse } from 'next/server';
 import { releaseAcademyEarnings } from '@/server/academy/orders';
+import { refundExpiredGifts } from '@/server/academy/gifts';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,7 +25,7 @@ async function handle(req: Request): Promise<Response> {
     return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 501 });
   }
   if (!isCronAuthorised(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const result = await releaseAcademyEarnings();
+  const result = { ...(await releaseAcademyEarnings()), gifts: await refundExpiredGifts() };
   console.info('[cron] academy-release-earnings', result);
   return NextResponse.json({ ok: true, ...result });
 }

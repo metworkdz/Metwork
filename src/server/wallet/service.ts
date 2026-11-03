@@ -170,7 +170,11 @@ export async function chargeWallet(input: ChargeInput): Promise<ChargeResult> {
  */
 export function creditRefundInDraft(
   d: StoreDraft,
-  input: { userId: string; amount: number; description: string; reference: string; metadata?: Record<string, unknown> },
+  input: {
+    userId: string; amount: number; description: string; reference: string; metadata?: Record<string, unknown>;
+    /** REFUND by default; ADJUSTMENT for a credit that is not money coming back (e.g. a referral reward). */
+    type?: 'REFUND' | 'ADJUSTMENT';
+  },
 ): TransactionRecord | null {
   if (!Number.isInteger(input.amount) || input.amount <= 0) return null;
   let wallet = d.wallets.find((w) => w.userId === input.userId);
@@ -187,7 +191,7 @@ export function creditRefundInDraft(
     id: randomUUID(),
     walletId: wallet.id,
     userId: input.userId,
-    type: 'REFUND',
+    type: input.type ?? 'REFUND',
     amount: input.amount,
     balanceAfter: wallet.balance,
     status: 'COMPLETED',

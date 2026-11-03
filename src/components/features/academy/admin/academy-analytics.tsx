@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { BookOpen, GraduationCap, HandCoins, Percent, PlayCircle, RotateCcw, TrendingUp, Wallet } from 'lucide-react';
+import { Award, BookOpen, Building2, Gift, GraduationCap, HandCoins, Layers, Percent, PlayCircle, RotateCcw, Star, TrendingUp, UserPlus, Wallet } from 'lucide-react';
 import { StatCard } from '@/components/shared/stat-card';
 import { getAcademyAnalytics } from '@/server/academy/analytics';
 import { formatDzd } from '@/components/features/academy/format';
@@ -26,6 +26,12 @@ export async function AcademyAnalyticsSection({ locale }: { locale: string }) {
         <StatCard icon={Percent} label={t('discounts')} value={money(a.discountsAbsorbedDzd)} hint={t('discountsHint')} />
         <StatCard icon={RotateCcw} label={t('refunds')} value={money(a.sales.refundedDzd)} hint={t('refundsHint', { count: a.sales.refundedCount })} />
         <StatCard icon={PlayCircle} label={t('passHours')} value={a.passHoursThisMonth.toLocaleString(locale === 'ar' ? 'ar-DZ' : 'fr-DZ')} hint={t('passHoursHint')} />
+        <StatCard icon={Building2} label={t('seats')} value={money(a.seats.revenueDzd)} hint={t('seatsHint', { batches: a.seats.batches, sold: a.seats.seatsSold, assigned: a.seats.seatsAssigned })} />
+        <StatCard icon={Gift} label={t('gifts')} value={money(a.gifts.revenueDzd)} hint={t('giftsHint', { paid: a.gifts.paid, claimed: a.gifts.claimed, waiting: a.gifts.waiting, refunded: a.gifts.refunded })} />
+        <StatCard icon={Layers} label={t('bundles')} value={money(a.bundles.revenueDzd)} hint={t('bundlesHint', { count: a.bundles.sales })} />
+        <StatCard icon={UserPlus} label={t('referrals')} value={a.referrals.count} hint={t('referralsHint', { pending: a.referrals.pending, paid: money(a.referrals.rewardsPaidDzd), discounts: money(a.referrals.discountsDzd) })} />
+        <StatCard icon={Award} label={t('certificates')} value={a.learning.certificates} hint={t('certificatesHint')} />
+        <StatCard icon={Star} label={t('rating')} value={a.learning.averageRating === null ? '—' : String(a.learning.averageRating)} hint={t('ratingHint', { count: a.learning.reviews })} />
       </div>
       {a.topCourses.length > 0 && (
         <div className="overflow-x-auto rounded-2xl border border-border">

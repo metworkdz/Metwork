@@ -514,3 +514,38 @@ withdrawable at once (the Pass is not refundable).
   reminders switch), admin moderation hide, builder quiz edit + save, mentor inbox + reply.
   Not exercised live: the AI quiz draft (cost rule; unit-tested with an injected drafter),
   real email/push delivery, the reminder cron on Supabase.
+
+### Phase 6 — Growth (same worktree / branch)
+- Owner decisions (2026-11-02): incubator Pass seats with bulk tiers (default −10 % from 10,
+  −20 % from 25, editable in Academy settings), mentors on the FULL Pass price; gifts of a
+  course or a Pass month via claim link, 30 days then refund to the buyer's wallet, final once
+  claimed; bundles = admin-priced learning paths, mentors on their course's FULL list price;
+  referral = −10 % first Academy purchase, referrer 10 % back capped 1 000 DA after the 7-day
+  window; subtitles = author uploads the whisper .vtt, Haiku 4.5 drafts the other languages.
+- **Apply `supabase/migrations/20261102000000_academy_growth.sql` before deploying**
+  (`academy_subtitles`). Seats, gifts, bundles, referrals live in the JSONB store.
+- One settlement still: `settleOrderInDraft` gained GIFT and BUNDLE branches and records the
+  referral for every kind; `enrollAndCreditInDraft` is the ONE place an enrollment is paid for
+  (course, bundle, claimed gift); `sharesForEnrollment` lets refunds/release find bundle shares.
+  `creditRefundInDraft` takes `type: 'ADJUSTMENT'` (referral rewards).
+- Seats (`seats.ts`): each month the holder gets a one-month SEAT Pass term (fixed window,
+  never renews, base = full price), granted 26 h ahead by the academy-pass cron so access never
+  lapses; reassigning changes future months only. Incubator page `/dashboard/incubator/academy`
+  (menu entry only while the Academy flag is on). Phone matching via `nationalDigits`
+  (`+213 0555…` = `0555…` = `555…`).
+- Gifts (`gifts.ts`): token in the link only (hash stored, new token on resend), email or
+  WhatsApp (exported `deliverClientText`), claim page `/academy/gift/{token}`, refund in the
+  academy-release-earnings cron. Bundles (`bundles.ts`): `/academy/paths/{slug}`, catalogue
+  section, admin page; price floor = mentors' shares; owned courses priced out; not combined
+  with Premium. Referral (`referral.ts`): `?ref=CODE` → HttpOnly cookie → checkout.
+  Subtitles (`subtitles.ts`, `lib/vtt.ts`): VdoCipher `POST /videos/{id}/files?language=`.
+- Analytics: seat and gifted Pass months no longer counted as Pass revenue; bundles keep what was
+  not refunded; new cards (seats, gifts, bundles, referrals, certificates, rating).
+- Fixed on the way: referral record was skipped for Pass purchases (test caught it).
+- Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2321/2321 (16 new).
+  Browser at 375 px fr + ar: referral link → bundle at 7 200 DA (store checked: 2 880 + 4 320,
+  mentors 1 200 + 1 800 held, 720 DA reward pending), Arabic gift of a Pass month → claim page
+  → claimed (GIFT term, no renewal), incubator buys 10 seats (31 500 DA) and assigns by phone,
+  admin tiers / analytics / bundle editor in Arabic, subtitle upload + read in the builder.
+  Not exercised live: VdoCipher subtitle upload, the AI subtitle draft (cost rule), real
+  email/WhatsApp delivery of gift links, card payments for gifts/bundles.

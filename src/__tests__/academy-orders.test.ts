@@ -214,9 +214,9 @@ describe('refunds and release', () => {
   it('after 7 days the cron releases the earning, and the refund is closed', async () => {
     await buy('u-free');
     const e = (await db.read()).academyEnrollments![0]!;
-    expect(await releaseAcademyEarnings(new Date(Date.now() + 6 * 86_400_000))).toEqual({ released: 0 });
-    expect(await releaseAcademyEarnings(new Date(Date.now() + 8 * 86_400_000))).toEqual({ released: 1 });
-    expect(await releaseAcademyEarnings(new Date(Date.now() + 9 * 86_400_000))).toEqual({ released: 0 });
+    expect(await releaseAcademyEarnings(new Date(Date.now() + 6 * 86_400_000))).toMatchObject({ released: 0 });
+    expect(await releaseAcademyEarnings(new Date(Date.now() + 8 * 86_400_000))).toMatchObject({ released: 1 });
+    expect(await releaseAcademyEarnings(new Date(Date.now() + 9 * 86_400_000))).toMatchObject({ released: 0 });
     expect(await mentorWallet('m-1')).toMatchObject({ pendingBalance: 0, availableBalance: 870 });
     expect(await refundCheck('u-free', e.id)).toEqual({ eligible: false, reason: 'WINDOW_CLOSED' });
   });

@@ -1,9 +1,11 @@
+import { Suspense } from 'react';
 import { isAcademyEnabled } from '@/config/feature-flags';
 import { PublicShell } from '@/components/layout/public-shell';
 import { Footer } from '@/components/layout/footer';
 import { AcademyHeader } from '@/components/features/academy/academy-header';
 import { getLandingVisibility } from '@/lib/landing-visibility';
 import { ACADEMY_THEME_BOOTSTRAP, ACADEMY_THEME_ROOT_ATTR } from '@/lib/academy-theme';
+import { ReferralCapture } from '@/components/features/academy/referral-capture';
 
 /**
  * Startup Academy frame. Before launch (`isAcademyEnabled()` off) /academy is
@@ -23,6 +25,7 @@ export default async function AcademyLayout({ children }: { children: React.Reac
     >
       <script dangerouslySetInnerHTML={{ __html: ACADEMY_THEME_BOOTSTRAP }} />
       <AcademyHeader />
+      <Suspense fallback={null}><ReferralCapture /></Suspense>
       <main className="min-w-0 flex-1">{children}</main>
       <Footer landingVisibility={landingVisibility} />
     </div>

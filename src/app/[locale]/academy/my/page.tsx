@@ -20,6 +20,10 @@ import { listAcademyFields } from '@/server/academy/settings';
 import { listMyCertificates } from '@/server/academy/certificates';
 import { CourseCard } from '@/components/features/academy/course-card';
 import { RemindersToggle } from '@/components/features/academy/reminders-toggle';
+import { ReferralCard } from '@/components/features/academy/referral-card';
+import { MyGifts } from '@/components/features/academy/my-gifts';
+import { referralSummary } from '@/server/academy/referral';
+import { listMyGifts } from '@/server/academy/gifts';
 import { Award, Download, ShieldCheck } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -46,6 +50,8 @@ export default async function AcademyMyLearningPage({ params }: { params: Promis
   const pass = await passStatusFor(session.user);
   const me = d.users.find((u) => u.id === session.user.id);
   const wishIds = me?.academyWishlist ?? [];
+  const [referral, gifts] = await Promise.all([referralSummary(session.user.id), listMyGifts(session.user.id, locale)]);
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://metwork.dz').replace(/\/+$/, '');
   const [certificates, published] = await Promise.all([listMyCertificates(session.user.id), wishIds.length ? listPublicCourses(locale) : Promise.resolve([])]);
   const fields = wishIds.length ? await listAcademyFields({ includeHidden: true }) : [];
   const fieldLabel = (id: string) => { const f = fields.find((x) => x.id === id); return f?.label ? resolveText(f.label, locale) : t(`fields.${id}.name`); };
@@ -135,6 +141,24 @@ export default async function AcademyMyLearningPage({ params }: { params: Promis
           <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {wishlist.map((c) => <CourseCard key={c.id} course={c} locale={locale} fieldLabel={fieldLabel(c.fieldId)} />)}
           </div>
+        </section>
+      )}
+
+      {gifts.length > 0 && (
+        <section className="mt-10">
+          <h2 className="font-display text-xl font-extrabold">{t('gift.mine.title')}</h2>
+          <div className="mt-4"><MyGifts gifts={gifts} /></div>
+        </section>
+      )}
+
+      {referral && (
+        <section className="mt-10">
+          <ReferralCard
+            link={`${appUrl}/${locale}/academy?ref=${referral.code}`}
+            invited={referral.invited}
+            pending={referral.pending}
+            earned={t('money', { price: formatDzd(referral.earnedDzd, locale) })}
+          />
         </section>
       )}
 

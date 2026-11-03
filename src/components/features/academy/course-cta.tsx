@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { Gift } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api-client';
@@ -24,11 +25,20 @@ export function CourseCta({ slug }: { slug: string }) {
     apiClient.get<Me>(`/academy/courses/${slug}/me`).then(setMe).catch(() => setMe(null));
   }, [slug]);
 
+  const giftLink = (
+    <Link href={{ pathname: '/academy/checkout', query: { course: slug, gift: '1' } }} className="flex items-center justify-center gap-1.5 py-1 text-sm font-semibold text-primary hover:underline">
+      <Gift className="size-4" aria-hidden />{t('gift.offerCourse')}
+    </Link>
+  );
+
   if (me?.owned || me?.viaPass) {
     return (
-      <Button asChild size="lg" className="w-full font-bold">
-        <Link href={`/academy/learn/${slug}`}>{me.owned ? t('course.continue') : t('course.watchWithPass')}</Link>
-      </Button>
+      <div className="space-y-2">
+        <Button asChild size="lg" className="w-full font-bold">
+          <Link href={`/academy/learn/${slug}`}>{me.owned ? t('course.continue') : t('course.watchWithPass')}</Link>
+        </Button>
+        {me.signedIn && me.canBuy && giftLink}
+      </div>
     );
   }
   return (
@@ -43,6 +53,7 @@ export function CourseCta({ slug }: { slug: string }) {
       </Button>
       {me && !me.canBuy && <p className="text-xs text-muted-foreground">{t('checkout.errors.NOT_A_BUYER')}</p>}
       {me?.signedIn && <WishlistButton courseId={me.courseId} initial={me.wishlisted} />}
+      {me?.signedIn && me.canBuy && giftLink}
     </div>
   );
 }
