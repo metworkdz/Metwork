@@ -117,7 +117,7 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled, onDeleted,
     }
   }
 
-  // Oldest date first, newest last (see lib/invoice-order).
+  // Newest date first, oldest last (see lib/invoice-order).
   const ordered = sortByInvoiceDate(rows);
   const filtered = q.trim()
     ? ordered.filter((i) => {
