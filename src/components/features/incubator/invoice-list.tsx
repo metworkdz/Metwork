@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/table';
 import { InlineEmptyState } from '@/components/shared/inline-empty-state';
 import { formatDZD } from '@/server/invoices/engine';
+import { sortByInvoiceDate } from '@/lib/invoice-order';
 import type { InvoiceKind, InvoiceRecord } from '@/server/db/store';
 
 export type InvoiceListItem = InvoiceRecord;
@@ -116,13 +117,15 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled, onDeleted,
     }
   }
 
+  // Oldest date first, newest last (see lib/invoice-order).
+  const ordered = sortByInvoiceDate(rows);
   const filtered = q.trim()
-    ? rows.filter((i) => {
+    ? ordered.filter((i) => {
         const needle = q.toLowerCase();
         const clientName = (i.clientSnapshot.legalName ?? i.clientSnapshot.name).toLowerCase();
         return i.number.toLowerCase().includes(needle) || clientName.includes(needle);
       })
-    : rows;
+    : ordered;
 
   async function cancelInvoice(invoice: InvoiceListItem) {
     if (!confirm(t(copy.confirmCancel, { number: invoice.number }))) return;
