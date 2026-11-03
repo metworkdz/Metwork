@@ -64,3 +64,26 @@ export function checkConversionDay(
 export function issuedAtForDay(day: string, now: Date = new Date()): string {
   return invoiceDayOf(now.toISOString()) === day ? now.toISOString() : `${day}T12:00:00.000Z`;
 }
+
+/* ─────────────── Issue date of a NEW document ─────────────── */
+
+/**
+ * Earliest day a new document can be dated. A sanity floor, not a business
+ * rule: it keeps a typo ("0202") from allocating a counter for the year 202
+ * and from printing a year the "NN/YYYY" number cannot hold.
+ */
+export const INVOICE_MIN_DAY = '2000-01-01';
+
+export type IssueDayError = 'INVALID_DATE' | 'TOO_OLD' | 'IN_FUTURE';
+
+/**
+ * The date a new document is issued on. Defaults to today (the form does that);
+ * any earlier day is allowed, because a host often records a sale after the
+ * fact. A future day is not: an invoice dated tomorrow records nothing yet.
+ */
+export function checkIssueDay(day: string, now: Date = new Date()): IssueDayError | null {
+  if (!isValidDay(day)) return 'INVALID_DATE';
+  if (day < INVOICE_MIN_DAY) return 'TOO_OLD';
+  if (day > algiersToday(now)) return 'IN_FUTURE';
+  return null;
+}

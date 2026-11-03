@@ -399,6 +399,8 @@ export interface ConsultantInvoiceInput {
   withStamp?: boolean;
   note?: string | null;
   seq?: number;
+  /** The document's date, "YYYY-MM-DD". Omitted = today. */
+  issuedOn?: string;
 }
 
 export const consultantService = {

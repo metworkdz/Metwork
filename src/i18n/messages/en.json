@@ -657,7 +657,15 @@
       "convertDone": "Invoice {number} created",
       "convertKeeps": "{number} stays in the list, marked “Converted” and locked.",
       "actionFailed": "The action failed. Try again.",
-      "convertNoteHint": "Carried over from the proforma: edit or clear it for the invoice."
+      "convertNoteHint": "Carried over from the proforma: edit or clear it for the invoice.",
+      "invoiceDate": "Document date",
+      "invoiceDateHint": "Today by default. You can choose an earlier date.",
+      "invoiceDateBackdated": "Earlier date: the document will be printed with it. Check that your numbering still follows the order of dates.",
+      "invoiceDateFuture": "The date cannot be later than today.",
+      "invoiceDateInvalid": "Choose a valid date.",
+      "invoiceDateLocked": "The date is fixed once the document is issued.",
+      "validityBeforeDate": "The validity date cannot be earlier than the document date.",
+      "willBeNumberedYear": "Will be numbered automatically in the {year} series."
     }
   },
   "common": {
@@ -1897,7 +1905,16 @@
       "editTitle": "Edit {number}",
       "editSubtitle": "The number and date stay the same. The client and letterhead are read as they are today.",
       "numberLocked": "An issued document keeps its number.",
-      "editSubmit": "Save changes"
+      "editSubmit": "Save changes",
+      "labelDate": "Invoice date",
+      "dateHint": "Today by default. You can choose an earlier date, with no limit.",
+      "dateBackdated": "Earlier date: this document will be printed with it. Check that your numbering still follows the order of dates.",
+      "dateFuture": "The date cannot be later than today.",
+      "dateInvalid": "Choose a valid date.",
+      "dateLocked": "The date is fixed once the document is issued.",
+      "validityBeforeDate": "The validity date cannot be earlier than the document date.",
+      "numberAuto": "Automatic",
+      "numberAutoYear": "Numbered automatically in the {year} series"
     },
     "listingTable": {
       "newListing": "New listing",

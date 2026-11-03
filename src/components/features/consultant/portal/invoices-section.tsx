@@ -30,7 +30,7 @@ import {
   SectionCard, SectionHeading, Spinner, cpInputClassLight, uploadConsultantFile,
 } from './shared';
 import { cn } from '@/lib/utils';
-import { algiersToday, checkConversionDay, conversionDayBounds } from '@/lib/invoice-date';
+import { algiersToday, checkConversionDay, checkIssueDay, conversionDayBounds, INVOICE_MIN_DAY, invoiceDayOf } from '@/lib/invoice-date';
 
 type View = 'documents' | 'clients' | 'settings';
 type KindFilter = 'ALL' | ConsultantInvoiceKind;
@@ -463,6 +463,8 @@ function CreateSheet({
   const [vatRate, setVatRate] = useState(String(editing?.vatRate ?? defaultVatRate));
   const [paymentMethod, setPaymentMethod] = useState<'ESPECE' | 'CHEQUE' | 'VIREMENT' | 'CARTE' | 'TPE'>(editing?.paymentMethod ?? 'ESPECE');
   const [validUntil, setValidUntil] = useState(editing?.validUntil ?? defaultValidUntil());
+  // The document's date: today unless the host picks an earlier one.
+  const [issuedOn, setIssuedOn] = useState(() => (editing ? invoiceDayOf(editing.issuedAt) : algiersToday()));
   const [note, setNote] = useState(editing?.note ?? '');
   const [withStamp, setWithStamp] = useState(Boolean(editing?.withStamp));
   const [saving, setSaving] = useState(false);
@@ -480,7 +482,12 @@ function CreateSheet({
     return computeInvoiceTotals(parsed, Number(vatRate) || 0, paymentMethod, kind);
   }, [lines, vatRate, paymentMethod, kind]);
 
-  const ready = client !== null && lines.some((l) => l.designation.trim() && Number(l.unitPriceHt) > 0);
+  const dayError = editing ? null : checkIssueDay(issuedOn);
+  const validityBeforeDate = !editing && kind === 'DEVIS' && Boolean(validUntil) && validUntil < issuedOn;
+  const backdated = !editing && !dayError && issuedOn !== algiersToday();
+  const issueYear = dayError ? new Date().getUTCFullYear() : Number(issuedOn.slice(0, 4));
+  const ready = client !== null && dayError === null && !validityBeforeDate &&
+    lines.some((l) => l.designation.trim() && Number(l.unitPriceHt) > 0);
 
   async function submit() {
     setSaving(true);
@@ -515,6 +522,7 @@ function CreateSheet({
         paymentMethod,
         validUntil: kind === 'DEVIS' ? validUntil : null,
         note: note.trim() || null,
+        issuedOn,
       });
       await onIssued();
     } catch (e) {
@@ -556,9 +564,35 @@ function CreateSheet({
           ))}
         </div>
 
+        <Field
+          label={t('invoiceDate')}
+          hint={editing
+            ? t('invoiceDateLocked')
+            : dayError
+              ? t(dayError === 'IN_FUTURE' ? 'invoiceDateFuture' : 'invoiceDateInvalid')
+              : validityBeforeDate
+                ? t('validityBeforeDate')
+                : backdated
+                  ? t('invoiceDateBackdated')
+                  : t('invoiceDateHint')}
+        >
+          <input
+            type="date"
+            className={cpInputClassLight}
+            value={issuedOn}
+            min={INVOICE_MIN_DAY}
+            max={algiersToday()}
+            disabled={Boolean(editing)}
+            aria-invalid={dayError !== null}
+            onChange={(e) => setIssuedOn(e.target.value)}
+          />
+        </Field>
+
         {nextSeq && !editing && (
           <p className="text-xs text-muted-foreground">
-            {t('willBeNumbered', { number: String(nextSeq[kind]).padStart(2, '0') })}
+            {issueYear === new Date().getUTCFullYear()
+              ? t('willBeNumbered', { number: String(nextSeq[kind]).padStart(2, '0') })
+              : t('willBeNumberedYear', { year: issueYear })}
           </p>
         )}
 

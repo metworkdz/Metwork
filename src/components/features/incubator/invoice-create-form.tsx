@@ -12,6 +12,7 @@
  */
 import { useInvoicingPaths } from './invoicing-paths';
 import { useMemo, useState } from 'react';
+import { algiersToday, checkIssueDay, INVOICE_MIN_DAY, invoiceDayOf } from '@/lib/invoice-date';
 import { useTranslations } from 'next-intl';
 import {
   AlertTriangle, ArrowLeft, CheckCircle2, Download, FileSignature, FileText,
@@ -109,6 +110,10 @@ export function InvoiceCreateForm({
 
   const [kind, setKind] = useState<InvoiceKind>(editing?.kind ?? initialKind);
   const [seq, setSeq] = useState(String(editing?.seq ?? nextSeq[initialKind]));
+  // The number stays automatic until the host types in the field.
+  const [seqTouched, setSeqTouched] = useState(false);
+  // The document's date: today unless the host picks an earlier one.
+  const [issuedOn, setIssuedOn] = useState(() => (editing ? invoiceDayOf(editing.issuedAt) : algiersToday()));
   const [validUntil, setValidUntil] = useState(
     editing ? (editing.validUntil ?? '') : initialKind === 'DEVIS' ? dayFromNow(30) : '',
   );
@@ -170,8 +175,19 @@ export function InvoiceCreateForm({
   const showTimbre = kind === 'FACTURE' && paymentMethod === 'ESPECE';
   const wordsPreview = parsedLines.length > 0 ? amountToFrenchWords(totals.net) : null;
 
-  const parsedSeq = Number(seq);
-  const seqValid = Number.isInteger(parsedSeq) && parsedSeq > 0 && parsedSeq <= 999_999;
+  // A new document's date; an edited draft keeps the one it was issued with.
+  const dayError = editing ? null : checkIssueDay(issuedOn);
+  const invoiceYear = editing || dayError ? year : Number(issuedOn.slice(0, 4));
+  const sameYear = invoiceYear === year;
+  const backdated = !editing && !dayError && issuedOn !== algiersToday();
+  // The offered number belongs to THIS year's counter; for another year the
+  // server allocates that year's next one unless the host types a number.
+  const seqShown = editing || seqTouched ? seq : sameYear ? String(nextSeq[kind]) : '';
+  const seqBlank = seqShown.trim() === '';
+  const parsedSeq = Number(seqShown);
+  const seqValid = (seqBlank && !sameYear && !editing) ||
+    (Number.isInteger(parsedSeq) && parsedSeq > 0 && parsedSeq <= 999_999);
+  const validityBeforeDate = !editing && Boolean(validUntil) && validUntil < issuedOn;
   // A devis with no end date is an open-ended commitment to that price; the
   // API refuses it too, this just says so before the round trip.
   const needsValidity = kind === 'DEVIS' && !validUntil;
@@ -180,6 +196,7 @@ export function InvoiceCreateForm({
   const needsBankRib = paymentMethod === 'VIREMENT' && !hasBankRib;
   const canSubmit =
     legalComplete && !needsBankRib && client !== null && seqValid && !needsValidity &&
+    dayError === null && !validityBeforeDate &&
     parsedLines.length > 0 && parsedLines.length === lines.length && vatValid;
 
   function setLine(key: string, patch: Partial<LineDraft>) {
@@ -193,7 +210,7 @@ export function InvoiceCreateForm({
    */
   function chooseKind(next: InvoiceKind) {
     setKind(next);
-    setSeq(String(nextSeq[next]));
+    setSeqTouched(false);
     setValidUntil(next === 'DEVIS' ? (validUntil || dayFromNow(30)) : next === 'PROFORMA' ? validUntil : '');
     setError(null);
   }
@@ -273,7 +290,8 @@ export function InvoiceCreateForm({
           // Only sent when it was actually changed: left alone, the server
           // allocates inside its own transaction, which is what makes two
           // simultaneous creates impossible to collide.
-          seq: parsedSeq === nextSeq[kind] ? undefined : parsedSeq,
+          seq: seqTouched && !seqBlank && !(sameYear && parsedSeq === nextSeq[kind]) ? parsedSeq : undefined,
+          issuedOn,
         }),
       });
       if (!res.ok) {
@@ -406,10 +424,11 @@ export function InvoiceCreateForm({
                     max="999999"
                     step="1"
                     className="mt-1 max-w-[9rem]"
-                    value={seq}
+                    value={seqShown}
                     readOnly={Boolean(editing)}
-                    onChange={(e) => setSeq(e.target.value)}
-                    required
+                    placeholder={sameYear ? undefined : t('numberAuto')}
+                    onChange={(e) => { setSeq(e.target.value); setSeqTouched(true); }}
+                    required={sameYear || Boolean(editing)}
                   />
                   {/* Under the field, not beside it: the resulting number is
                       what the incubator is actually choosing, and in a half
@@ -418,9 +437,48 @@ export function InvoiceCreateForm({
                     'mt-1.5 text-sm font-medium tabular-nums',
                     seqValid ? 'text-foreground' : 'text-destructive',
                   )}>
-                    {seqValid ? formatInvoiceNumber(parsedSeq, year, kind) : t('numberInvalid')}
+                    {!seqValid
+                      ? t('numberInvalid')
+                      : seqBlank
+                        ? t('numberAutoYear', { year: invoiceYear })
+                        : formatInvoiceNumber(parsedSeq, invoiceYear, kind)}
                   </p>
                   <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{editing ? t('numberLocked') : t('numberHint')}</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="inv-date">{t('labelDate')}</Label>
+                  <Input
+                    id="inv-date"
+                    type="date"
+                    className="mt-1 max-w-[11rem]"
+                    value={issuedOn}
+                    min={INVOICE_MIN_DAY}
+                    max={algiersToday()}
+                    disabled={Boolean(editing)}
+                    aria-invalid={dayError !== null}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      // Another year means another counter: drop a typed number.
+                      if (next.slice(0, 4) !== issuedOn.slice(0, 4)) setSeqTouched(false);
+                      setIssuedOn(next);
+                    }}
+                    required
+                  />
+                  <p className={cn(
+                    'mt-1.5 text-xs leading-relaxed',
+                    dayError || validityBeforeDate ? 'text-destructive' : backdated ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground',
+                  )}>
+                    {editing
+                      ? t('dateLocked')
+                      : dayError
+                        ? t(dayError === 'IN_FUTURE' ? 'dateFuture' : 'dateInvalid')
+                        : validityBeforeDate
+                          ? t('validityBeforeDate')
+                          : backdated
+                            ? t('dateBackdated')
+                            : t('dateHint')}
+                  </p>
                 </div>
 
                 {kind !== 'FACTURE' && (
