@@ -1630,6 +1630,8 @@ export type AuditAction =
   | 'REFUND_ACCEPTED'
   | 'REFUND_REJECTED'
   | 'REFUND_PAID'
+  /** An issuer deleted one of their own CANCELLED invoices / proformas / devis. */
+  | 'INVOICE_DELETED'
   | 'PAYOUT_BANK_ACCOUNT_SET'
   | 'PAYOUT_SENT'
   | 'ACCOUNT_DELETED'
@@ -4477,6 +4479,12 @@ export interface DbShape {
   /** Active consultant portal sessions (mentorId-keyed). */
   mentorSessions: MentorSessionRecord[];
   /** "Remember this device" tokens for trusted-device PIN unlock. */
+  /**
+   * Cancelled invoices their issuer deleted, kept whole. The live list no longer
+   * shows them and their number is free again, but the record stays recoverable
+   * (accounting records are kept for years). Optional — readers default to [].
+   */
+  deletedInvoices?: Array<{ deletedAt: string; deletedById: string; invoice: InvoiceRecord }>;
   mentorDeviceTokens: MentorDeviceTokenRecord[];
   /** Consultant email-verification tokens (separate from user `emailTokens`). */
   mentorEmailTokens?: MentorEmailTokenRecord[];

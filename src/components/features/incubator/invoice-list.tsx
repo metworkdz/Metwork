@@ -12,7 +12,7 @@
 import { useInvoicingPaths } from './invoicing-paths';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlertTriangle, Ban, Download, FileCheck2, FilePlus2, FileText, Pencil, Plus, Search, Stamp } from 'lucide-react';
+import { AlertTriangle, Ban, Download, Trash2, FileCheck2, FilePlus2, FileText, Pencil, Plus, Search, Stamp } from 'lucide-react';
 import { ConvertToInvoiceDialog } from './convert-to-invoice-dialog';
 import { Link } from '@/i18n/routing';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +35,8 @@ interface Props {
   legalComplete: boolean;
   /** The owner of the rows records the cancellation — see InvoicesTabs. */
   onCancelled: (id: string) => void;
+  /** A cancelled row was deleted; `source` is the proforma it released, if any. */
+  onDeleted: (id: string, source: InvoiceListItem | null) => void;
   /** A row the server rewrote, or a new one (see InvoicesTabs). */
   onChanged: (invoice: InvoiceListItem) => void;
   hasStamp: boolean;
@@ -83,7 +85,7 @@ function formatDay(day: string): string {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : day;
 }
 
-export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged, hasStamp, factureNumberFor, latestFactureDay }: Props) {
+export function InvoiceList({ kind, rows, legalComplete, onCancelled, onDeleted, onChanged, hasStamp, factureNumberFor, latestFactureDay }: Props) {
   const paths = useInvoicingPaths();
   const t = useTranslations('incubator.invoicesPage');
   const copy = COPY[kind];
@@ -93,6 +95,7 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged,
   const showValidity = kind !== 'FACTURE';
   const [q, setQ] = useState('');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [stampingId, setStampingId] = useState<string | null>(null);
   const [converting, setConverting] = useState<InvoiceListItem | null>(null);
 
@@ -133,6 +136,30 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged,
       if (res.ok) onCancelled(invoice.id);
     } finally {
       setCancellingId(null);
+    }
+  }
+
+  /** Remove a CANCELLED document. Its number is free again. */
+  async function deleteInvoice(invoice: InvoiceListItem) {
+    if (!confirm(t('confirmDelete', { number: invoice.number }))) return;
+    setDeletingId(invoice.id);
+    try {
+      const res = await fetch(`${paths.api}/invoices/${invoice.id}`, { method: 'DELETE' });
+      const body = await res.json().catch(() => null) as
+        | { number?: string; seq?: number; nextAutomatic?: boolean; source?: InvoiceListItem | null; error?: { message?: string } }
+        | null;
+      if (!res.ok) {
+        alert(body?.error?.message ?? t('actionFailed'));
+        return;
+      }
+      onDeleted(invoice.id, body?.source ?? null);
+      // Say what to do with the freed number: the next automatic one, or — when
+      // it sits in the middle of the series — the Numéro field of the form.
+      alert(body?.nextAutomatic
+        ? t('deletedNextAuto', { number: invoice.number })
+        : t('deletedFree', { number: invoice.number, seq: invoice.seq }));
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -287,6 +314,18 @@ export function InvoiceList({ kind, rows, legalComplete, onCancelled, onChanged,
                               >
                                 <FileCheck2 className="size-4" />
                                 {t('actionConvert')}
+                              </Button>
+                            )}
+                            {cancelled && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title={t('actionDelete')}
+                                aria-label={t('actionDelete')}
+                                loading={deletingId === invoice.id}
+                                onClick={() => void deleteInvoice(invoice)}
+                              >
+                                <Trash2 className="size-4 text-destructive" />
                               </Button>
                             )}
                             {!cancelled && !converted && (

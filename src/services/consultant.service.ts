@@ -589,6 +589,11 @@ export const consultantService = {
       `/consultant/invoices/${encodeURIComponent(id)}`,
       { status: 'CANCELLED' },
     ),
+  /** Remove a CANCELLED document; its number is free again. */
+  deleteInvoice: (id: string) =>
+    apiClient.delete<{ deleted: true; number: string; seq: number; year: number; nextAutomatic: boolean }>(
+      `/consultant/invoices/${encodeURIComponent(id)}`,
+    ),
   /** The PDF is streamed, so the caller opens this URL rather than fetching JSON. */
   invoicePdfPath: (id: string) => `/api/consultant/invoices/${encodeURIComponent(id)}/pdf`,
 

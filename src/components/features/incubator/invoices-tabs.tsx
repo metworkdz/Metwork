@@ -10,6 +10,7 @@
  * components is how they would drift apart.
  */
 import { useState } from 'react';
+import { useRouter } from '@/i18n/routing';
 import { formatInvoiceNumber } from '@/server/invoices/engine';
 import { invoiceDayOf } from '@/lib/invoice-date';
 import { useTranslations } from 'next-intl';
@@ -52,9 +53,18 @@ export function InvoicesTabs({ invoices, receipts, legalComplete, hasStamp, fact
    * moment you looked at another tab and came back.
    */
   const [rows, setRows] = useState(invoices);
+  const router = useRouter();
 
   const markCancelled = (id: string) =>
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, status: 'CANCELLED' as const } : r)));
+  /** A cancelled row was deleted; a proforma it had been converted from is unlocked again. */
+  const markDeleted = (id: string, source: InvoiceListItem | null) => {
+    setRows((rs) => rs
+      .filter((r) => r.id !== id)
+      .map((r) => (source && r.id === source.id ? source : r)));
+    // The freed number changes the counters the page was loaded with.
+    router.refresh();
+  };
   /** A row the server rewrote (stamp, conversion) — or a new one (the facture a conversion created). */
   const upsert = (invoice: InvoiceListItem) =>
     setRows((rs) => (rs.some((r) => r.id === invoice.id)
@@ -135,6 +145,7 @@ export function InvoicesTabs({ invoices, receipts, legalComplete, hasStamp, fact
             rows={visible}
             legalComplete={legalComplete}
             onCancelled={markCancelled}
+            onDeleted={markDeleted}
             onChanged={upsert}
             hasStamp={hasStamp}
             factureNumberFor={factureNumberFor}

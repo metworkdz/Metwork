@@ -11,7 +11,7 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
-import { handleDraftStamp, handleEditDraft } from '@/server/invoices/draft-routes';
+import { handleDeleteInvoice, handleDraftStamp, handleEditDraft } from '@/server/invoices/draft-routes';
 import { requireInvoicingFreelancer } from '@/server/invoices/freelancer-access';
 import { ownsInvoice } from '@/server/invoices/owner';
 
@@ -72,4 +72,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!guard.ok) return guard.response;
   const { id } = await params;
   return handleEditDraft(req, guard.owner, id);
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = await requireInvoicingFreelancer();
+  if (!guard.ok) return guard.response;
+  const { id } = await params;
+  return handleDeleteInvoice(guard.owner, id, { id: guard.user.id, email: guard.user.email });
 }

@@ -314,6 +314,28 @@ function DocumentRow({ invoice, onChanged, hasStamp, onEdit, onConvert }: {
           </GhostButton>
         )}
         {cancelled && <span className="self-center text-xs text-muted-foreground">{t('cancelled')}</span>}
+        {cancelled && (
+          <GhostButton
+            tone="light"
+            disabled={busy}
+            onClick={async () => {
+              // A deleted document is gone for good; its number becomes free.
+              if (!window.confirm(t('confirmDelete', { number: invoice.number }))) return;
+              setBusy(true);
+              try {
+                const r = await consultantService.deleteInvoice(invoice.id);
+                await onChanged();
+                window.alert(r.nextAutomatic
+                  ? t('deletedNextAuto', { number: r.number })
+                  : t('deletedFree', { number: r.number, seq: r.seq }));
+              } catch (e) {
+                window.alert(e instanceof Error ? e.message : t('deleteFailed'));
+              } finally { setBusy(false); }
+            }}
+          >
+            <Trash2 className="size-3.5" /> {t('delete')}
+          </GhostButton>
+        )}
       </div>
     </div>
   );
@@ -467,6 +489,8 @@ function CreateSheet({
   const [issuedOn, setIssuedOn] = useState(() => (editing ? invoiceDayOf(editing.issuedAt) : algiersToday()));
   const [note, setNote] = useState(editing?.note ?? '');
   const [withStamp, setWithStamp] = useState(Boolean(editing?.withStamp));
+  // Blank = the next automatic number. Typed = re-use a number freed by a deletion.
+  const [seqInput, setSeqInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -486,7 +510,9 @@ function CreateSheet({
   const validityBeforeDate = !editing && kind === 'DEVIS' && Boolean(validUntil) && validUntil < issuedOn;
   const backdated = !editing && !dayError && issuedOn !== algiersToday();
   const issueYear = dayError ? new Date().getUTCFullYear() : Number(issuedOn.slice(0, 4));
-  const ready = client !== null && dayError === null && !validityBeforeDate &&
+  const seqValue = seqInput.trim() === '' ? undefined : Number(seqInput);
+  const seqInvalid = seqValue !== undefined && !(Number.isInteger(seqValue) && seqValue > 0 && seqValue <= 999_999);
+  const ready = client !== null && dayError === null && !validityBeforeDate && !seqInvalid &&
     lines.some((l) => l.designation.trim() && Number(l.unitPriceHt) > 0);
 
   async function submit() {
@@ -523,6 +549,7 @@ function CreateSheet({
         validUntil: kind === 'DEVIS' ? validUntil : null,
         note: note.trim() || null,
         issuedOn,
+        ...(seqValue !== undefined ? { seq: seqValue } : {}),
       });
       await onIssued();
     } catch (e) {
@@ -587,6 +614,23 @@ function CreateSheet({
             onChange={(e) => setIssuedOn(e.target.value)}
           />
         </Field>
+
+        {!editing && (
+          <Field label={t('numberOverride')} hint={seqInvalid ? t('numberOverrideInvalid') : t('numberOverrideHint')}>
+            <input
+              type="number"
+              min={1}
+              max={999999}
+              step={1}
+              inputMode="numeric"
+              placeholder={t('numberAutomatic')}
+              className={cpInputClassLight}
+              value={seqInput}
+              aria-invalid={seqInvalid}
+              onChange={(e) => setSeqInput(e.target.value)}
+            />
+          </Field>
+        )}
 
         {nextSeq && !editing && (
           <p className="text-xs text-muted-foreground">

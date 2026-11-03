@@ -665,7 +665,16 @@
       "invoiceDateInvalid": "Choisissez une date valide.",
       "invoiceDateLocked": "La date est figée une fois le document émis.",
       "validityBeforeDate": "La date de validité ne peut pas précéder la date du document.",
-      "willBeNumberedYear": "Numérotation automatique dans la série {year}."
+      "willBeNumberedYear": "Numérotation automatique dans la série {year}.",
+      "delete": "Supprimer",
+      "confirmDelete": "Supprimer définitivement {number} ? Son numéro redevient disponible. Cette action est irréversible.",
+      "deletedNextAuto": "{number} a été supprimé. Votre prochain document prendra ce numéro.",
+      "deletedFree": "{number} a été supprimé et son numéro est libre. Pour le réutiliser, saisissez {seq} dans le champ Numéro lors de la création de votre prochain document.",
+      "deleteFailed": "Impossible de supprimer ce document. Réessayez.",
+      "numberOverride": "Numéro (facultatif)",
+      "numberOverrideHint": "Laissez vide pour le prochain numéro automatique. Saisissez un numéro pour réutiliser un numéro libéré par une suppression.",
+      "numberOverrideInvalid": "Saisissez un nombre entier entre 1 et 999999.",
+      "numberAutomatic": "Automatique"
     }
   },
   "common": {
@@ -1826,7 +1835,11 @@
       "convertClose": "Fermer",
       "convertNote": "Note de la facture",
       "convertNotePlaceholder": "ex. Facture réglée par virement le…",
-      "convertNoteHint": "Reprise de la proforma : modifiez-la ou videz-la pour la facture."
+      "convertNoteHint": "Reprise de la proforma : modifiez-la ou videz-la pour la facture.",
+      "actionDelete": "Supprimer le document annulé",
+      "confirmDelete": "Supprimer définitivement {number} ? Son numéro redevient disponible. Cette action est irréversible.",
+      "deletedNextAuto": "{number} a été supprimé. Votre prochain document prendra ce numéro.",
+      "deletedFree": "{number} a été supprimé et son numéro est libre. Pour le réutiliser, saisissez {seq} dans le champ Numéro lors de la création de votre prochain document."
     },
     "invoiceForm": {
       "sectionClient": "Client",
