@@ -40,6 +40,10 @@ import {
   Tags,
 } from 'lucide-react';
 import type { UserRole } from '@/types/auth';
+import { isAcademyAnnounced } from '@/config/feature-flags';
+
+/** Until the public launch the site links to the coming-soon page, even while /academy works by direct link. */
+const ACADEMY_PUBLIC_HREF = isAcademyAnnounced() ? '/academy' : '/startupacademy';
 
 export interface NavItem {
   /** Translation key for the label, resolved via next-intl */
@@ -79,7 +83,7 @@ export const publicNavItems: readonly PublicNavItem[] = [
       { labelKey: 'nav.events', href: '/events', icon: Calendar },
       { labelKey: 'nav.spaces', href: '/spaces', icon: Building2 },
       { labelKey: 'nav.mentors', href: '/mentors', icon: Star },
-      { labelKey: 'nav.academy', href: '/academy', icon: GraduationCap },
+      { labelKey: 'nav.academy', href: ACADEMY_PUBLIC_HREF, icon: GraduationCap },
     ],
   },
   { labelKey: 'nav.forFreelancers', href: '/freelancers', icon: Briefcase },
@@ -108,7 +112,7 @@ export const footerNavGroups = [
     links: [
       { labelKey: 'footer.about', href: '/about' },
       { labelKey: 'footer.contact', href: '/contact' },
-      { labelKey: 'nav.academy', href: '/academy' },
+      { labelKey: 'nav.academy', href: ACADEMY_PUBLIC_HREF },
     ],
   },
   {
@@ -162,6 +166,8 @@ export const dashboardNavByRole: Record<UserRole, NavItem[]> = {
     { labelKey: 'dashboard.spaces',    href: '/dashboard/incubator/spaces',       icon: Building2 },
     { labelKey: 'dashboard.domiciliation', href: '/dashboard/incubator/domiciliation', icon: Mailbox },
     { labelKey: 'dashboard.programs',  href: '/dashboard/incubator/programs',     icon: Briefcase },
+    // Startup Academy Pass seats for the incubator's members — only once the Academy is on.
+    ...(isAcademyAnnounced() ? [{ labelKey: 'dashboard.academySeats', href: '/dashboard/incubator/academy', icon: GraduationCap }] : []),
     { labelKey: 'dashboard.promoCodes', href: '/dashboard/incubator/promo-codes',  icon: Tag },
     { labelKey: 'dashboard.feedback',  href: '/dashboard/incubator/feedback',     icon: MessageSquare },
     { labelKey: 'dashboard.events',    href: '/dashboard/incubator/events',       icon: Calendar },

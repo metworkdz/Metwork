@@ -10,6 +10,9 @@ import { appendAuditLog } from '@/server/audit/service';
 import {
   ACADEMY_DEFAULTS,
   ACADEMY_DEFAULT_FIELDS,
+  ACADEMY_DEFAULT_SEAT_TIERS,
+  validSeatTiers,
+  type SeatTier,
   ACADEMY_MAX_PRICE_DZD,
   isValidRate,
   type AcademyPricing,
@@ -29,6 +32,8 @@ function withDefaults(stored: Partial<AcademySettingsRecord> | null | undefined)
     premiumDiscountRate: isValidRate(stored.premiumDiscountRate) ? stored.premiumDiscountRate : base.premiumDiscountRate,
     defaultMentorShareRate: isValidRate(stored.defaultMentorShareRate) ? stored.defaultMentorShareRate : base.defaultMentorShareRate,
     certificateStampUrl: typeof stored.certificateStampUrl === 'string' && stored.certificateStampUrl ? stored.certificateStampUrl : null,
+    addendumTemplate: typeof stored.addendumTemplate === 'string' && stored.addendumTemplate.trim() ? stored.addendumTemplate : null,
+    seatTiers: validSeatTiers(stored.seatTiers) ? stored.seatTiers : null,
     updatedAt: stored.updatedAt ?? base.updatedAt,
     updatedBy: stored.updatedBy ?? null,
   };
@@ -53,12 +58,17 @@ export async function getAcademyPricing(): Promise<AcademyPricing> {
   };
 }
 
+/** The seat tiers in force: the admin's, else the defaults. */
+export function seatTiersOf(s: AcademySettingsRecord): SeatTier[] {
+  return s.seatTiers ?? ACADEMY_DEFAULT_SEAT_TIERS;
+}
+
 export type AcademySettingsPatch = Partial<Pick<AcademySettingsRecord,
-  'passMonthlyPriceDzd' | 'passAnnualDiscountRate' | 'premiumDiscountRate' | 'defaultMentorShareRate' | 'certificateStampUrl'>>;
+  'passMonthlyPriceDzd' | 'passAnnualDiscountRate' | 'premiumDiscountRate' | 'defaultMentorShareRate' | 'certificateStampUrl' | 'addendumTemplate' | 'seatTiers'>>;
 
 export type UpdateSettingsResult =
   | { ok: true; settings: AcademySettingsRecord }
-  | { ok: false; code: 'INVALID_PRICE' | 'INVALID_RATE' | 'INVALID_STAMP_URL' };
+  | { ok: false; code: 'INVALID_PRICE' | 'INVALID_RATE' | 'INVALID_STAMP_URL' | 'INVALID_SEAT_TIERS' };
 
 /** The stamp is drawn into certificate PDFs, whose image fetcher only reads Cloudinary. */
 function isCloudinaryUrl(v: string): boolean {
@@ -84,6 +94,7 @@ export async function updateAcademySettings(
   if (patch.certificateStampUrl !== undefined && patch.certificateStampUrl !== null && !isCloudinaryUrl(patch.certificateStampUrl)) {
     return { ok: false, code: 'INVALID_STAMP_URL' };
   }
+  if (patch.seatTiers !== undefined && patch.seatTiers !== null && !validSeatTiers(patch.seatTiers)) return { ok: false, code: 'INVALID_SEAT_TIERS' };
 
   const before = await getAcademySettings();
   const settings = await db.update((d) => {

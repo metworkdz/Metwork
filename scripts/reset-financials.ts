@@ -184,7 +184,7 @@ async function main() {
     return;
   }
 
-  const { error } = await supabase.from('app_state').upsert({ id: 1, data: after }, { onConflict: 'id' });
+  const { error } = await supabase.from('app_state').upsert({ id: 1, data: { ...after, _rev: (Number((after as { _rev?: unknown })._rev) || 0) + 1 } }, { onConflict: 'id' });
   if (error) {
     console.error('✘ Supabase upsert failed:', error.message, `(code: ${error.code})`);
     process.exit(1);

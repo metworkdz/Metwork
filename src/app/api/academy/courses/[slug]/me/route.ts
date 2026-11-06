@@ -9,6 +9,8 @@ import { readSession } from '@/server/auth/session';
 import { isAcademyEnabled } from '@/config/feature-flags';
 import { canBuyAcademy } from '@/lib/academy';
 import { quoteForBuyer } from '@/server/academy/orders';
+import { activePass } from '@/server/academy/pass-core';
+import { db } from '@/server/db/store';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,11 +21,18 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   const session = await readSession();
   const q = await quoteForBuyer(session?.user ?? null, slug);
   if (!q.ok) return jsonError(404, q.code, 'Course not found');
+  const d = await db.read();
+  const viaPass = Boolean(session && !q.owned && q.course.includedInPass && activePass(d, session.user.id));
+  const wishlisted = Boolean(session && d.users.find((u) => u.id === session.user.id)?.academyWishlist?.includes(q.course.id));
   return json({
     signedIn: Boolean(session),
+    viaPass,
+    includedInPass: q.course.includedInPass,
     canBuy: session ? canBuyAcademy(session.user.role) : true,
     owned: q.owned || session?.user.role === 'ADMIN',
     premium: q.premium,
     quote: q.quote,
+    courseId: q.course.id,
+    wishlisted,
   });
 }

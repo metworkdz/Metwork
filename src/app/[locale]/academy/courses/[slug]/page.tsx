@@ -12,6 +12,8 @@ import { siteConfig } from '@/config/site';
 import { CourseCover } from '@/components/features/academy/course-cover';
 import { CourseCta } from '@/components/features/academy/course-cta';
 import { formatClock, formatDuration, formatDzd } from '@/components/features/academy/format';
+import { ReviewsSection } from '@/components/features/academy/reviews-section';
+import { Stars } from '@/components/features/academy/stars';
 
 export const revalidate = 60;
 
@@ -69,6 +71,13 @@ export default async function AcademyCoursePage({ params }: PageProps) {
             </nav>
             <h1 className="mt-3 text-balance font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">{course.title}</h1>
             {course.subtitle && <p className="mt-3 max-w-2xl text-pretty text-base text-muted-foreground sm:text-lg">{course.subtitle}</p>}
+            {course.rating.count > 0 && course.rating.average !== null && (
+              <a href="#reviews" className="mt-4 inline-flex items-center gap-2 text-sm hover:underline">
+                <span className="font-bold text-amber-600 dark:text-amber-400">{course.rating.average}</span>
+                <Stars value={course.rating.average} label={t('learning.reviews.average', { average: course.rating.average })} />
+                <span className="text-muted-foreground">{t('learning.reviews.count', { count: course.rating.count })}</span>
+              </a>
+            )}
             <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
               <li className="flex items-center gap-1.5"><Signal className="size-4" aria-hidden />{t(`levels.${course.level}`)}</li>
               <li className="flex items-center gap-1.5"><Languages className="size-4" aria-hidden />{t(`audio.${course.audioLanguage}`)}</li>
@@ -151,6 +160,11 @@ export default async function AcademyCoursePage({ params }: PageProps) {
                         </span>
                       </li>
                     ))}
+                    {m.quizQuestions > 0 && !m.comingSoon && (
+                      <li className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-muted-foreground">
+                        <Award className="size-4 shrink-0" aria-hidden />{t('learning.quiz.programme', { count: m.quizQuestions })}
+                      </li>
+                    )}
                   </ul>
                 </details>
               ))}
@@ -163,6 +177,8 @@ export default async function AcademyCoursePage({ params }: PageProps) {
               <p className="mt-3 whitespace-pre-line text-pretty leading-relaxed text-muted-foreground">{course.description}</p>
             </section>
           )}
+
+          <ReviewsSection courseId={course.id} average={course.rating.average} count={course.rating.count} />
 
           {course.mentors.length > 0 && (
             <section>

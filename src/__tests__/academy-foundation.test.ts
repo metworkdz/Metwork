@@ -25,7 +25,7 @@ import { createVdoCipherProvider, isVdoCipherId, mapVdoStatus } from '@/server/a
 import { createMockVideoProvider } from '@/server/academy/video/mock';
 import { accountCode, maskPhone, watermarkLabel } from '@/server/academy/watermark';
 import { createMemoryAcademyRepo } from '@/server/academy/repo';
-import { isAcademyEnabled } from '@/config/feature-flags';
+import { isAcademyAnnounced, isAcademyEnabled, isAcademyStudioEnabled } from '@/config/feature-flags';
 
 const ADMIN = { id: 'admin-1', email: 'admin@metwork.dz' };
 const VID = '0123456789abcdef0123456789abcdef';
@@ -279,12 +279,15 @@ describe('progress and watch-time storage', () => {
 });
 
 describe('launch flag', () => {
-  it('off by default; the preview env turns it on', () => {
+  it('open by link, not announced, closed to consultants; the preview env turns everything on', () => {
     const before = process.env.NEXT_PUBLIC_ACADEMY_PREVIEW;
     delete process.env.NEXT_PUBLIC_ACADEMY_PREVIEW;
-    expect(isAcademyEnabled()).toBe(false);
-    process.env.NEXT_PUBLIC_ACADEMY_PREVIEW = 'true';
     expect(isAcademyEnabled()).toBe(true);
+    expect(isAcademyAnnounced()).toBe(false);
+    expect(isAcademyStudioEnabled()).toBe(false);
+    process.env.NEXT_PUBLIC_ACADEMY_PREVIEW = 'true';
+    expect(isAcademyAnnounced()).toBe(true);
+    expect(isAcademyStudioEnabled()).toBe(true);
     if (before === undefined) delete process.env.NEXT_PUBLIC_ACADEMY_PREVIEW;
     else process.env.NEXT_PUBLIC_ACADEMY_PREVIEW = before;
   });

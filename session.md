@@ -413,3 +413,149 @@ Metwork WALLET for wallet and card purchases alike.
   receipt email.
 - Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2238/2238 (18 new);
   two mutation checks (full-price share, concurrent refund) turn tests red.
+
+### Phase 3 — Academy Pass (worktree `.claude/worktrees/academy-pass`, branch `feat/academy-pass`)
+Phase 2 landed in `69f4089` together with the refund-engine session's work
+(owner's instruction: let that session commit first, then verify both together:
+tsc 0, 2258/2258). From here the Academy works in its own worktree.
+Owner decisions: mentors' share of the Pass is computed on the FULL Pass price
+(Metwork absorbs Premium); each subscriber month is settled when it ends and is
+withdrawable at once (the Pass is not refundable).
+- `server/academy/pass-core.ts` (no imports from orders/pass, to avoid an import
+  cycle): `activePass`, `latestPass`, `buildSlices` (annual = 12 monthly slices,
+  remainder on the last), `grantPassInDraft` (a new term starts at the end of the
+  current one; the queued term takes over renewal).
+- `server/academy/pass.ts`: `passStatusFor`, `startPassPurchase` (wallet or card,
+  through the same order flow as courses: orders gain `kind: 'PASS'`), cancel /
+  resume (`setPassAutoRenew`), `runPassRenewals` (3-day reminder, monthly renewal
+  from the wallet at the LIVE price and Premium status, lapse when short, yearly
+  never auto-charged), `splitSlice` + `settlePassMonths` (per subscriber:
+  full month price × mentor share × that subscriber's seconds on the mentor ÷ their
+  total; credited AVAILABLE via the one `applyMentorEarningToDraft`, kind
+  `ACADEMY_PASS`; claimed inside the write). Cron `/api/cron/academy-pass` 02:45.
+- `orders.ts` refactor: `openCardCheckout` and `payOrderFromWalletInDraft` shared by
+  course and Pass purchases; settlement branches on `order.kind`.
+- Access: `PASS` for PUBLISHED courses with `includedInPass` (archived leave the
+  Pass); an owned course is always OWNED, so its watch time never enters the Pass split.
+- Pages: `/academy/pass` (prices personalised by `/api/academy/pass/me`, FAQ),
+  checkout `?pass=MONTHLY|ANNUAL`, return page for Pass orders, Pass card in
+  `/academy/my` (cancel / resume), "Watch with my Pass" on course pages, Pass link
+  in the Academy header. Academy section at the top of admin Analytics
+  (`server/academy/analytics.ts`): net, subscribers / MRR, sales, Pass revenue,
+  mentor shares held / available, discounts absorbed, refunds, Pass hours, top courses.
+- Fixed from phase 2: an Academy refund now also marks the commission row REVERSED
+  (it was still counted as revenue), and `getConsultationRevenueSummary` skips
+  `academy-*` rows (they were counted as consultations).
+- Worktree landmines: the worktree is INSIDE the main repo, so Node finds the main
+  `node_modules` by walking up. Symlinking `node_modules` into it gave Next two
+  Reacts ("reading 'useContext' of null", lost sessions). The browser tool reads the
+  MAIN `.claude/launch.json`: add a config there only for the check and remove it
+  after. The auto-commit hook in the worktree also sweeps `.local-db.json`: restore
+  it before committing.
+- Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2270/2270 (12 new),
+  two mutation checks (full-price base, concurrent settlement). Browser: Founder
+  buys the monthly Pass (2 800 DA), course opens via Pass, cancel renewal, admin
+  Analytics numbers, Arabic Pass page at 375 px.
+
+### Phase 4 — Mentor Studio (worktree `.claude/worktrees/academy-pass`, branch `feat/academy-pass`)
+- Owner decisions (2026-11-01): mentors sign an e-signed "Avenant Academy" through the
+  EXISTING consultant-contract system before submitting; on a PUBLISHED course a mentor may
+  only ADD modules, each hidden from learners until the admin approves it.
+- Addendum = consultant contract `kind: 'ACADEMY_ADDENDUM'` (`server/academy/addendum.ts`):
+  admin prepares it on Academy settings (share written in), sends it from Contracts, mentor
+  signs in the portal Contract tab. Default text `lib/academy-addendum-text.ts`, editable in
+  settings (`addendumTemplate`, null = default). **Needs a lawyer's review before use.**
+- `server/academy/studio.ts`: edit modes FULL (draft / changes requested), ADD_MODULES
+  (published), LOCKED (in review / archived), READ_ONLY (not created by this mentor).
+  `module.pendingReview` hides a module everywhere (`isVisibleModule` / `isLiveModule` in
+  `lib/academy`), incl. free-preview lessons. Admin review: request changes (note),
+  approve / reject modules; queue on the admin Academy page.
+- UI: the admin CourseBuilder takes a `studio` prop (fieldset locks, review panel, cover via
+  `/api/consultant/upload` kind `academy-cover`); portal tab "Academy" (`portal/academy-section.tsx`).
+- Fixed on the way: `academy-cover` upload would have overwritten the mentor's profile photo.
+- Preview landmine: Tailwind content paths are relative to the process cwd, and the
+  preview runs from the MAIN repo, so new arbitrary classes in the worktree are not
+  generated in the preview (production builds are fine).
+- Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2285/2285 (15 new).
+  Browser at 375 px fr + ar: portal Academy tab, create draft, builder save, review panel
+  locked without addendum, save bar above the portal tab bar; admin prepare addendum
+  (incomplete-profile error under the row, success → DRAFT, "Academy addendum" badge on
+  Contracts). Not seen live: the review queue with a real submission (unit-tested).
+
+### Phase 5 — Learning experience (same worktree / branch)
+- Owner decisions (2026-11-01): certificate = every released lesson watched to 90 % AND
+  every module quiz passed at 70 % (retries allowed); reviews by buyers / Pass learners who
+  watched 25 %, live at once, admin can hide, mentor replies once; lesson Q&A public to the
+  course's learners; quizzes written by the author with a Haiku 4.5 draft button.
+- **Apply `supabase/migrations/20261101000000_academy_learning.sql` before deploying**
+  (`academy_notes`, `academy_posts`, `academy_inactive_learners`; RLS on, no policies).
+  Reviews, quiz results, certificates and reminder logs are bounded → JSONB store.
+- Quizzes: `module.quiz` (builder `quiz-editor.tsx`, ids kept across saves, included in the
+  translation drafts); learner view never carries `correctIndex` (`server/academy/quiz.ts`);
+  page `/academy/learn/{slug}/quiz/{moduleId}`. AI draft `server/academy/quiz-draft.ts`
+  (Haiku 4.5, nothing saved, output cleaned, rate-limited; mentors only for editable modules).
+- Certificates (`server/academy/certificates.ts`): "watched" = completion stamp AND
+  server-side watch time ≥ 90 % at up to 2× speed (`isLessonWatched`), so "mark as done" or
+  a seek is not enough. Claimed by the learner, `ACA-YYYY-NNNN`, frozen, emailed with the PDF
+  (participation-certificate renderer + Academy stamp), verified on the existing
+  `/attestation/{token}` page. Issued ⇒ refund refused (`CERTIFIED`). Admin revoke/restore.
+- Reviews `reviews.ts` (name shown "Amina B."), Q&A + notes `qa.ts` (notes pinned to the
+  video moment via `player-bus.ts`), wishlist + reminder opt-out on the user record,
+  `notify.ts`: new-module notices (buyers, wishlisters, Pass learners who started),
+  "keep going" emails (`/api/cron/academy-reminders`, daily 09:00 UTC, idle 7–14 days, once
+  per pause, max 3 per course, fr/en/ar). Admin moderation panel on the Academy page;
+  mentor inbox (questions unanswered first + reviews) in the portal Academy tab.
+- Fixed on the way: the admin builder's save bar was under the dashboard's phone tab bar
+  (tapping "Enregistrer" opened "Plus"); the mentor push link pointed to a non-existent path.
+- Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2305/2305 (20 new).
+  Browser at 375 px fr + ar: course page (rating, reviews, post a review, wishlist), lesson
+  page (Q&A, note at 0:04, sidebar quiz row, certificate card), quiz fail → retry → pass,
+  claim → ACA-2026-0001, PDF checked, Arabic verification page, My learning (certificates,
+  reminders switch), admin moderation hide, builder quiz edit + save, mentor inbox + reply.
+  Not exercised live: the AI quiz draft (cost rule; unit-tested with an injected drafter),
+  real email/push delivery, the reminder cron on Supabase.
+
+### Phase 6 — Growth (same worktree / branch)
+- Owner decisions (2026-11-02): incubator Pass seats with bulk tiers (default −10 % from 10,
+  −20 % from 25, editable in Academy settings), mentors on the FULL Pass price; gifts of a
+  course or a Pass month via claim link, 30 days then refund to the buyer's wallet, final once
+  claimed; bundles = admin-priced learning paths, mentors on their course's FULL list price;
+  referral = −10 % first Academy purchase, referrer 10 % back capped 1 000 DA after the 7-day
+  window; subtitles = author uploads the whisper .vtt, Haiku 4.5 drafts the other languages.
+- **Apply `supabase/migrations/20261102000000_academy_growth.sql` before deploying**
+  (`academy_subtitles`). Seats, gifts, bundles, referrals live in the JSONB store.
+- One settlement still: `settleOrderInDraft` gained GIFT and BUNDLE branches and records the
+  referral for every kind; `enrollAndCreditInDraft` is the ONE place an enrollment is paid for
+  (course, bundle, claimed gift); `sharesForEnrollment` lets refunds/release find bundle shares.
+  `creditRefundInDraft` takes `type: 'ADJUSTMENT'` (referral rewards).
+- Seats (`seats.ts`): each month the holder gets a one-month SEAT Pass term (fixed window,
+  never renews, base = full price), granted 26 h ahead by the academy-pass cron so access never
+  lapses; reassigning changes future months only. Incubator page `/dashboard/incubator/academy`
+  (menu entry only while the Academy flag is on). Phone matching via `nationalDigits`
+  (`+213 0555…` = `0555…` = `555…`).
+- Gifts (`gifts.ts`): token in the link only (hash stored, new token on resend), email or
+  WhatsApp (exported `deliverClientText`), claim page `/academy/gift/{token}`, refund in the
+  academy-release-earnings cron. Bundles (`bundles.ts`): `/academy/paths/{slug}`, catalogue
+  section, admin page; price floor = mentors' shares; owned courses priced out; not combined
+  with Premium. Referral (`referral.ts`): `?ref=CODE` → HttpOnly cookie → checkout.
+  Subtitles (`subtitles.ts`, `lib/vtt.ts`): VdoCipher `POST /videos/{id}/files?language=`.
+- Analytics: seat and gifted Pass months no longer counted as Pass revenue; bundles keep what was
+  not refunded; new cards (seats, gifts, bundles, referrals, certificates, rating).
+- Fixed on the way: referral record was skipped for Pass purchases (test caught it).
+- Verification: tsc 0, lint 0 errors (17 old warnings), vitest 2321/2321 (16 new).
+  Browser at 375 px fr + ar: referral link → bundle at 7 200 DA (store checked: 2 880 + 4 320,
+  mentors 1 200 + 1 800 held, 720 DA reward pending), Arabic gift of a Pass month → claim page
+  → claimed (GIFT term, no renewal), incubator buys 10 seats (31 500 DA) and assigns by phone,
+  admin tiers / analytics / bundle editor in Arabic, subtitle upload + read in the builder.
+  Not exercised live: VdoCipher subtitle upload, the AI subtitle draft (cost rule), real
+  email/WhatsApp delivery of gift links, card payments for gifts/bundles.
+
+## 2026-11-06 — Supabase egress: reducing reads
+- Why: October hit 8.79 GB against the 5 GB Free limit (Metwork 7.07 GB, all PostgREST; crossed ~19 Oct); grace ends 21 Nov. Full document read = 889 KB raw, ~276 KB gzip; revision query = 15 bytes.
+- `db.load`: when the 10 s copy expires, ask only for `data->>_rev`; download only if it moved, or after 15 min (safety net for edits that don't bump `_rev`).
+- `db.update`: a mutator that changes nothing writes nothing and bumps nothing, but re-runs on fresh data if the revision moved (decisions like "not enough funds" must be made on current data). The consultation-reminder cron was rewriting the whole document 96 times a day.
+- `db.peek(keys)`: read named collections only. The 4 reconcilers and the reminder pre-check use it (same filters, ~20 KB instead of 276 KB).
+- New daily cron `sweep-expired-tokens`: sessions, OTPs, email tokens, consultant sessions and device tokens expired over a day ago.
+- Scripts writing `app_state` directly now bump `_rev`. Any new direct writer must too.
+- Not done: moving `consultantContracts.signature` / `contentSnapshot` (218 KB raw) out of the document; signed legal data, needs its own careful change.
+- Verify after deploy: daily egress on the Supabase usage page.

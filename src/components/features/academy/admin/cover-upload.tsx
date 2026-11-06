@@ -5,8 +5,13 @@ import { useTranslations } from 'next-intl';
 import { ImagePlus, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-/** 16:9 course cover, uploaded through the generic image endpoint into the `academy` folder. */
-export function CoverUpload({ url, onUpload, onError }: { url: string | null; onUpload: (url: string) => void; onError: (msg: string) => void }) {
+/**
+ * 16:9 course cover, uploaded into the `academy` folder — through the generic
+ * image endpoint for the admin, or the consultant upload route in the Studio.
+ */
+export function CoverUpload({ url, onUpload, onError, endpoint = 'admin' }: {
+  url: string | null; onUpload: (url: string) => void; onError: (msg: string) => void; endpoint?: 'admin' | 'consultant';
+}) {
   const t = useTranslations('academyAdmin.builder');
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -16,8 +21,9 @@ export function CoverUpload({ url, onUpload, onError }: { url: string | null; on
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('folder', 'academy');
-      const res = await fetch('/api/upload', { method: 'POST', credentials: 'include', body: fd });
+      if (endpoint === 'consultant') fd.append('kind', 'academy-cover');
+      else fd.append('folder', 'academy');
+      const res = await fetch(endpoint === 'consultant' ? '/api/consultant/upload' : '/api/upload', { method: 'POST', credentials: 'include', body: fd });
       const data = (await res.json().catch(() => ({}))) as { url?: string; error?: { message?: string } };
       if (!res.ok || !data.url) return onError(data.error?.message ?? t('errors.UPLOAD_FAILED'));
       onUpload(data.url);

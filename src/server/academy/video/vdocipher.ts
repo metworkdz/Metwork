@@ -60,7 +60,7 @@ export function createVdoCipherProvider(apiSecret: string, fetchImpl: FetchLike 
         headers: {
           Authorization: `Apisecret ${apiSecret}`,
           Accept: 'application/json',
-          ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+          ...(typeof init.body === 'string' ? { 'Content-Type': 'application/json' } : {}),
           ...(init.headers ?? {}),
         },
         signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -131,6 +131,23 @@ export function createVdoCipherProvider(apiSecret: string, fetchImpl: FetchLike 
     async deleteVideo(videoId): Promise<void> {
       const res = await call(`/videos?videos=${assertId(videoId)}`, { method: 'DELETE' });
       if (!res.ok && res.status !== 404) throw new VideoProviderError(`VdoCipher delete failed (${res.status})`, 'UPSTREAM');
+    },
+
+    // docs: vdocipher.com/docs/server/videomanagement/files/upload-captions (multipart, `file`, ?language=)
+    async addSubtitle({ videoId, language, vtt }): Promise<string> {
+      const form = new FormData();
+      form.append('file', new Blob([vtt], { type: 'text/vtt' }), `${language}.vtt`);
+      // No JSON content type here: fetch sets the multipart boundary itself.
+      const res = await call(`/videos/${assertId(videoId)}/files/?language=${language}`, { method: 'POST', body: form, headers: {} });
+      const body = await json<{ id?: number | string }>(res, 'subtitle upload');
+      if (body.id === undefined || body.id === null) throw new VideoProviderError('VdoCipher subtitle: unexpected response', 'UPSTREAM');
+      return String(body.id);
+    },
+
+    async deleteSubtitle({ videoId, fileId }): Promise<void> {
+      if (!/^\d{1,20}$/.test(fileId)) throw new VideoProviderError('Bad file id', 'BAD_ID');
+      const res = await call(`/videos/${assertId(videoId)}/files/${fileId}`, { method: 'DELETE' });
+      if (!res.ok && res.status !== 404) throw new VideoProviderError(`VdoCipher subtitle delete failed (${res.status})`, 'UPSTREAM');
     },
   };
 }

@@ -1,8 +1,7 @@
 /**
- * The pre-launch Startup Academy page (waitlist form), shown at /academy while
- * `isAcademyEnabled()` is off. Moved verbatim from the former
- * (public)/academy/page.tsx when the Academy got its own route tree; the
- * route (`app/[locale]/academy/page.tsx`) keeps the visibility gate and metadata.
+ * The pre-launch Startup Academy page (waitlist form), shown at /startupacademy
+ * until the public launch (`isAcademyAnnounced()`). The route
+ * (`(public)/startupacademy/page.tsx`) keeps the visibility gate and metadata.
  */
 import { getTranslations } from 'next-intl/server';
 import {

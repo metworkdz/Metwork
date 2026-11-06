@@ -185,7 +185,7 @@ export interface ApplyMentorEarningInput {
  * moves no money.
  */
 function earningLabel(kind: MentorEarningKind): string {
-  return kind === 'PROGRAM' ? 'program' : kind === 'ACADEMY_COURSE' ? 'Academy course' : 'consultation';
+  return kind === 'PROGRAM' ? 'program' : kind === 'ACADEMY_COURSE' ? 'Academy course' : kind === 'ACADEMY_PASS' ? 'Academy Pass watch time' : 'consultation';
 }
 
 export function applyMentorEarningToDraft(
@@ -194,8 +194,8 @@ export function applyMentorEarningToDraft(
 ): CreditPendingEarningResult {
   const { mentorId, bookingId, grossAmount } = input;
   // Checked before anything is written: db.update has no rollback.
-  if ((input.kind ?? 'CONSULTATION') === 'ACADEMY_COURSE' && input.frozenPlatformRate == null) {
-    throw new Error('ACADEMY_COURSE earnings need the frozen Academy share');
+  if ((input.kind === 'ACADEMY_COURSE' || input.kind === 'ACADEMY_PASS') && input.frozenPlatformRate == null) {
+    throw new Error('Academy earnings need the frozen Academy share');
   }
   const basePrice =
     input.consultantShareBase != null && input.consultantShareBase > 0
@@ -282,7 +282,9 @@ export function applyMentorEarningToDraft(
       ? 'Program earning'
       : kind === 'ACADEMY_COURSE'
         ? 'Academy course sale (held during the 7-day refund window)'
-        : 'Consultation earning (held until completed)',
+        : kind === 'ACADEMY_PASS'
+          ? 'Academy Pass watch time (monthly share)'
+          : 'Consultation earning (held until completed)',
     metadata: {
       gross: split.gross,
       basePrice: promo.basePrice,

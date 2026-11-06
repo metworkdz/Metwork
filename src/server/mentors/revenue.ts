@@ -76,6 +76,8 @@ export async function getConsultationRevenueSummary(): Promise<ConsultationReven
     // A refunded sale keeps its audit row but no longer counts as platform revenue.
     if (t.status === 'REVERSED') continue;
     if (!t.bookingId || cancelled.has(t.bookingId)) continue;
+    // Startup Academy sales and Pass shares have their own section in admin Analytics.
+    if (t.bookingId.startsWith('academy-')) continue;
 
     const md = t.metadata ?? {};
     const collected = num(md.gross);

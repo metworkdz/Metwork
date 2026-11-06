@@ -31,7 +31,22 @@ export async function verifyCertificate(token: string): Promise<CertificateVerif
   if (!/^[A-Za-z0-9_-]{16,40}$/.test(token)) return { status: 'NOT_FOUND' };
   const d = await db.read();
   const cert = (d.certificates ?? []).find((c) => c.verifyToken === token);
-  if (!cert) return { status: 'NOT_FOUND' };
+  if (!cert) {
+    // Startup Academy certificates share the page and the token format.
+    const aca = (d.academyCertificates ?? []).find((c) => c.verifyToken === token);
+    if (!aca) return { status: 'NOT_FOUND' };
+    return {
+      status: aca.revokedAt ? 'REVOKED' : 'VALID',
+      number: aca.number,
+      fullName: aca.fullName,
+      civility: null,
+      programTitle: aca.courseTitle,
+      organizer: aca.mentorNames ? `Metwork Startup Academy · ${aca.mentorNames}` : 'Metwork Startup Academy',
+      startDate: aca.issuedAt,
+      endDate: aca.issuedAt,
+      issuedAt: aca.issuedAt,
+    };
+  }
 
   const reg = (d.registrations ?? []).find((r) => r.id === cert.registrationId);
   const valid = !cert.revokedAt && reg?.status === 'CONFIRMED' && !reg.absent;

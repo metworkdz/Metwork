@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { ArrowLeft, CheckCircle2, Circle, Lock, PlayCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Circle, ClipboardCheck, Lock, PlayCircle } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { assertAcademyEnabled } from '@/server/academy/guard';
@@ -10,12 +10,17 @@ import { getLearnView } from '@/server/academy/learn';
 import { getPublicCourse } from '@/server/academy/catalog';
 import { LessonPlayer } from '@/components/features/academy/lesson-player';
 import { MarkCompleteButton } from '@/components/features/academy/mark-complete-button';
+import { LessonTabs } from '@/components/features/academy/lesson-tabs';
+import { CertificateCard } from '@/components/features/academy/certificate-card';
 import { formatClock } from '@/components/features/academy/format';
 import { cn } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
-interface PageProps { params: Promise<{ locale: string; slug: string; lessonId: string }> }
+interface PageProps {
+  params: Promise<{ locale: string; slug: string; lessonId: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params;
@@ -24,9 +29,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: course?.title ?? 'Startup Academy', robots: { index: false } };
 }
 
-export default async function AcademyLessonPage({ params }: PageProps) {
+export default async function AcademyLessonPage({ params, searchParams }: PageProps) {
   assertAcademyEnabled();
   const { locale, slug, lessonId } = await params;
+  const { tab } = await searchParams;
   setRequestLocale(locale);
   const session = await readSession();
   if (!session) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/academy/learn/${slug}/${lessonId}`)}`);
@@ -76,10 +82,14 @@ export default async function AcademyLessonPage({ params }: PageProps) {
                 {next && <Button asChild><Link href={`/academy/learn/${slug}/${next.id}`}>{t('player.next')}</Link></Button>}
               </div>
             </div>
+            {lesson.playable && (
+              <LessonTabs courseId={view.course.id} lessonId={lesson.id} canDiscuss={Boolean(view.access)} initialTab={tab === 'notes' ? 'notes' : 'qa'} />
+            )}
           </div>
         </div>
 
         <aside className="border-border bg-card lg:min-h-[70vh] lg:border-s">
+          {(view.access === 'OWNED' || view.access === 'PASS') && <CertificateCard courseId={view.course.id} />}
           <p className="px-4 pb-2 pt-4 font-display font-extrabold">{t('player.content')}</p>
           <nav aria-label={t('player.content')} className="pb-6">
             {view.modules.map((m, mi) => (
@@ -106,6 +116,15 @@ export default async function AcademyLessonPage({ params }: PageProps) {
                       </li>
                     );
                   })}
+                  {m.quiz && (
+                    <li>
+                      <Link href={`/academy/learn/${slug}/quiz/${m.id}`} className="flex items-start gap-3 px-4 py-2.5 text-sm hover:bg-accent/60">
+                        <ClipboardCheck className={cn('mt-0.5 size-4 shrink-0', m.quiz.passed && 'text-primary')} aria-hidden />
+                        <span className="min-w-0 flex-1">{t('learning.quiz.sidebar')}</span>
+                        <span className="shrink-0 text-xs text-muted-foreground">{m.quiz.passed ? t('learning.quiz.passedShort') : t('learning.quiz.questions', { count: m.quiz.questions })}</span>
+                      </Link>
+                    </li>
+                  )}
                 </ul>
               </div>
             ))}

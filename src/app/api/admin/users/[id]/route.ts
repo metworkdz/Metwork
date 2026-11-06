@@ -149,6 +149,11 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     store.taxTaskStates        = (store.taxTaskStates ?? []).filter((s) => s.userId !== id);
     store.copilotUsage         = (store.copilotUsage ?? []).filter((u) => u.userId !== id);
     store.guideProgress = (store.guideProgress ?? []).filter((g) => g.userId !== id);
+    // Startup Academy learning data: reviews, quiz results, reminders and certificates go with the account.
+    store.academyReviews      = (store.academyReviews ?? []).filter((r) => r.userId !== id);
+    store.academyQuizResults  = (store.academyQuizResults ?? []).filter((r) => r.userId !== id);
+    store.academyReminders    = (store.academyReminders ?? []).filter((r) => r.userId !== id);
+    store.academyCertificates = (store.academyCertificates ?? []).filter((c) => c.userId !== id);
     store.pushSubscriptions = (store.pushSubscriptions ?? []).filter((s) => !(s.ownerType === 'USER' && s.ownerId === id));
     store.messageReports       = (store.messageReports ?? []).filter((r) => r.reporterId !== id && r.reportedId !== id);
     store.quoteRequests        = (store.quoteRequests ?? []).filter((q) => q.entrepreneurId !== id && q.freelancerId !== id);

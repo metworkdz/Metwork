@@ -196,7 +196,7 @@ async function main() {
     membershipPlanConfigs: nextConfigs,
     meta: { ...meta, [FLAG]: nowIso },
   };
-  const { error } = await supabase.from('app_state').upsert({ id: 1, data: after_ }, { onConflict: 'id' });
+  const { error } = await supabase.from('app_state').upsert({ id: 1, data: { ...after_, _rev: (Number((after_ as { _rev?: unknown })._rev) || 0) + 1 } }, { onConflict: 'id' });
   if (error) {
     console.error('✘ Supabase upsert failed:', error.message, `(code: ${error.code})`);
     process.exit(1);

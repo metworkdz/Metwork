@@ -25,6 +25,10 @@
       "schedule": "0 0 * * *"
     },
     {
+      "path": "/api/cron/sweep-expired-tokens",
+      "schedule": "30 1 * * *"
+    },
+    {
       "path": "/api/cron/process-downgrades",
       "schedule": "0 1 * * *"
     },
@@ -55,6 +59,14 @@
     {
       "path": "/api/cron/academy-release-earnings",
       "schedule": "15 3 * * *"
+    },
+    {
+      "path": "/api/cron/academy-reminders",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/academy-pass",
+      "schedule": "45 2 * * *"
     }
   ]
 }

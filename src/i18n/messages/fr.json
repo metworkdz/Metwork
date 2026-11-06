@@ -72,7 +72,8 @@
       "programs": "Programmes",
       "contract": "Contrat",
       "more": "Plus",
-      "invoices": "Facturation"
+      "invoices": "Facturation",
+      "academy": "Academy"
     },
     "signin": {
       "heading": "Connexion consultant",
@@ -675,6 +676,56 @@
       "numberOverrideHint": "Laissez vide pour le prochain numéro automatique. Saisissez un numéro pour réutiliser un numéro libéré par une suppression.",
       "numberOverrideInvalid": "Saisissez un nombre entier entre 1 et 999999.",
       "numberAutomatic": "Automatique"
+    },
+    "academy": {
+      "title": "Mes cours",
+      "subtitle": "Créez vos cours Startup Academy. Metwork les relit avant publication.",
+      "new": "Nouveau cours",
+      "newTitle": "Titre du cours",
+      "newTitleHint": "Écrit dans votre langue ; Metwork traduit ensuite.",
+      "pickField": "Choisir un domaine…",
+      "create": "Créer le brouillon",
+      "empty": "Aucun cours pour l’instant.",
+      "loadError": "Impossible de charger vos cours.",
+      "createError": "Impossible de créer le cours.",
+      "pendingModules": "{count, plural, one {# module en attente} other {# modules en attente}}",
+      "readOnly": "Lecture seule",
+      "courseStats": "{buyers} acheteurs · {earned} gagnés",
+      "stats": {
+        "buyers": "Acheteurs",
+        "passMinutes": "Minutes Pass ce mois",
+        "earned": "Gains Academy"
+      },
+      "addendum": {
+        "NONE": "Pour publier sur Startup Academy, Metwork doit vous envoyer un avenant à signer. Vous pouvez déjà préparer vos cours.",
+        "DRAFT": "Votre avenant Academy est en préparation chez Metwork.",
+        "PENDING_SIGNATURE": "Votre avenant Academy attend votre signature.",
+        "sign": "Signer l’avenant"
+      },
+      "inbox": {
+        "title": "Questions et avis",
+        "subtitle": "Répondez aux apprenants de vos cours.",
+        "loadError": "Chargement impossible.",
+        "questionsTab": "Questions",
+        "reviewsTab": "Avis",
+        "noQuestions": "Aucune question pour l’instant.",
+        "toAnswer": "À répondre",
+        "answers": "{count, plural, =0 {Aucune réponse} one {# réponse} other {# réponses}}",
+        "noReviews": "Aucun avis pour l’instant.",
+        "back": "Retour",
+        "you": "vous",
+        "answerPlaceholder": "Votre réponse, visible par les apprenants du cours…",
+        "rateLimited": "Trop de réponses en peu de temps. Réessayez plus tard.",
+        "sendError": "L’envoi a échoué. Réessayez.",
+        "send": "Publier la réponse",
+        "alreadyReplied": "Vous avez déjà répondu à cet avis.",
+        "stars": "{n, plural, one {# étoile} other {# étoiles}}",
+        "replyPlaceholder": "Votre réponse publique…",
+        "replyOnce": "Une seule réponse par avis, visible sur la page du cours.",
+        "publishReply": "Publier",
+        "cancel": "Annuler",
+        "reply": "Répondre"
+      }
     }
   },
   "common": {
@@ -2376,7 +2427,8 @@
     },
     "contract": "Contrat",
     "programApprovals": "Programmes à valider",
-    "academy": "Startup Academy"
+    "academy": "Startup Academy",
+    "academySeats": "Startup Academy"
   },
   "pages": {
     "consultationPay": {
@@ -7692,7 +7744,8 @@
       "links": {
         "home": "L’Academy",
         "courses": "Cours",
-        "my": "Mon apprentissage"
+        "my": "Mon apprentissage",
+        "pass": "Academy Pass"
       }
     },
     "theme": {
@@ -7859,7 +7912,8 @@
       "mentor": "Votre mentor",
       "mentors": "Vos mentors",
       "continue": "Continuer le cours",
-      "yourPrice": "Votre prix membre : {price} DA"
+      "yourPrice": "Votre prix membre : {price} DA",
+      "watchWithPass": "Regarder avec mon Pass"
     },
     "mentor": {
       "metaTitle": "{name} · Mentor Startup Academy",
@@ -7896,7 +7950,10 @@
         "WALLET_FROZEN": "Votre wallet est bloqué. Contactez le support.",
         "PROVIDER_FAILED": "Le paiement par carte n’a pas pu démarrer. Réessayez dans un instant.",
         "RATE_LIMITED": "Trop de tentatives. Réessayez plus tard.",
-        "generic": "Une erreur est survenue. Réessayez."
+        "generic": "Une erreur est survenue. Réessayez.",
+        "ALREADY_SUBSCRIBED": "Votre Pass se renouvelle déjà automatiquement.",
+        "BAD_CONTACT": "Entrez un email ou un numéro de téléphone valide.",
+        "BUNDLE_NOT_FOUND": "Ce parcours n’est plus disponible."
       },
       "result": {
         "paidTitle": "Cours débloqué",
@@ -7908,8 +7965,36 @@
         "pendingTitle": "Paiement en cours de confirmation",
         "pendingDesc": "Nous vérifions le paiement auprès de la banque. Cette page se met à jour toute seule.",
         "start": "Commencer le cours",
-        "retry": "Réessayer"
-      }
+        "retry": "Réessayer",
+        "passTitle": "Academy Pass activé",
+        "passDesc": "Tous les cours inclus dans le Pass sont ouverts.",
+        "browsePass": "Voir les cours du Pass",
+        "giftTitle": "Cadeau envoyé !",
+        "giftDesc": "La personne a reçu le lien pour récupérer son cadeau. Vous pouvez suivre son statut dans Mon apprentissage.",
+        "giftFollow": "Suivre mes cadeaux",
+        "bundleTitle": "Parcours débloqué",
+        "bundleDesc": "Tous les cours du parcours sont à vous, pour toujours.",
+        "bundleDescOwned": "Les cours du parcours sont à vous. Ceux que vous aviez déjà ont été remboursés sur votre wallet.",
+        "bundleStart": "Voir mes cours"
+      },
+      "passTerms": "J’accepte les conditions de l’Academy Pass : accès personnel, lecture en streaming uniquement, renouvellement mensuel depuis le wallet (annulable à tout moment), abonnement non remboursable.",
+      "passPrice": "Prix du Pass",
+      "passNote": "Annulable à tout moment depuis « Mon apprentissage » : vous gardez l’accès jusqu’à la fin de la période payée.",
+      "passQueued": "Votre Pass actuel court jusqu’au {date} : la nouvelle période commencera à cette date.",
+      "gift": {
+        "legend": "Pour qui ?",
+        "name": "Prénom et nom de la personne",
+        "contact": "Son email ou son numéro WhatsApp",
+        "contactPlaceholder": "nom@exemple.com ou 0555 12 34 56",
+        "contactHint": "Nous lui envoyons le lien pour récupérer le cadeau sur son compte Metwork.",
+        "message": "Un petit mot (facultatif)",
+        "terms": "J’accepte que le cadeau soit définitif une fois récupéré ; non récupéré en 30 jours, il est remboursé sur mon wallet."
+      },
+      "bundleTerms": "J’accepte les conditions : chaque cours du parcours peut être remboursé dans les 7 jours si moins de 25 % ont été vus.",
+      "bundleOwned": "{count, plural, one {# cours que vous avez déjà n’est pas facturé.} other {# cours que vous avez déjà ne sont pas facturés.}}",
+      "bundleList": "Prix des cours séparément",
+      "bundleSaving": "Économie du parcours",
+      "referralDiscount": "Parrainage (−10 % sur le 1er achat)"
     },
     "player": {
       "loading": "Chargement de la vidéo",
@@ -7954,6 +8039,232 @@
       "desc": "Appliqué automatiquement au paiement, sans code.",
       "saved": "Déjà économisé : {amount}",
       "cta": "Explorer l’Academy"
+    },
+    "passPage": {
+      "metaTitle": "Academy Pass · Startup Academy",
+      "metaDescription": "Tous les cours de la Startup Academy pour un abonnement mensuel ou annuel.",
+      "title": "Tous les cours. Un seul abonnement.",
+      "subtitle": "{count, plural, =0 {Les cours inclus dans le Pass} one {# cours inclus} other {# cours inclus}}, les nouveaux dès leur sortie, les certificats. −{percent} % en payant à l’année.",
+      "popular": "Le plus choisi",
+      "monthlyName": "Academy Pass mensuel",
+      "annualName": "Academy Pass annuel",
+      "perMonth": "par mois · renouvelé depuis votre wallet",
+      "perYear": "par an · soit {perMonth} par mois",
+      "yourPremiumPrice": "Votre prix membre Founder / Premium",
+      "monthlyRenew": "Renouvelé chaque mois depuis le wallet, annulable à tout moment",
+      "annualRenew": "Payé une fois pour 12 mois, sans prélèvement automatique",
+      "features": {
+        "all": "Tous les cours inclus dans le Pass",
+        "new": "Les nouveaux cours et modules dès leur sortie",
+        "certificates": "Certificats de réussite inclus",
+        "cancel": "Sans engagement : annulez quand vous voulez",
+        "oneYear": "12 mois d’accès, payés une seule fois"
+      },
+      "subscribe": "S’abonner",
+      "extend": "Prolonger mon Pass",
+      "manage": "Gérer mon Pass",
+      "activeRenewing": "Votre Pass est actif et se renouvelle le {date}.",
+      "activeEnding": "Votre Pass est actif jusqu’au {date}.",
+      "premiumNudge": "Membres Founder et Premium : −{percent} % sur le Pass.",
+      "premiumCta": "Voir les abonnements",
+      "faqTitle": "Questions fréquentes",
+      "faq": {
+        "cancel": {
+          "q": "Que se passe-t-il si j’annule ?",
+          "a": "Le Pass ne se renouvelle plus. Vous gardez l’accès jusqu’à la fin du mois payé, et vos certificats restent à vous."
+        },
+        "download": {
+          "q": "Puis-je télécharger les vidéos ?",
+          "a": "Non. Les cours se regardent en streaming sur Metwork, sur ordinateur et téléphone, un écran à la fois."
+        },
+        "renew": {
+          "q": "Comment se passe le renouvellement ?",
+          "a": "Le Pass mensuel est prélevé sur votre wallet à la date anniversaire. Vous recevez un rappel 3 jours avant. Sans solde suffisant, le Pass s’arrête."
+        },
+        "courses": {
+          "q": "Quels cours sont inclus ?",
+          "a": "Tous les cours marqués « Pass » dans le catalogue. Un cours retiré du catalogue sort du Pass."
+        },
+        "certificate": {
+          "q": "Ai-je un certificat avec le Pass ?",
+          "a": "Oui. Terminez un cours pendant votre abonnement et le certificat vous reste, même après."
+        },
+        "refund": {
+          "q": "Le Pass est-il remboursable ?",
+          "a": "Non, mais vous pouvez l’annuler à tout moment. Les cours achetés à l’unité restent remboursables sous 7 jours."
+        }
+      }
+    },
+    "passCard": {
+      "monthly": "Academy Pass mensuel",
+      "annual": "Academy Pass annuel",
+      "renewsOn": "Se renouvelle le {date}",
+      "endsOn": "Actif jusqu’au {date}",
+      "renewalAmount": "{amount} prélevés sur votre wallet",
+      "noRenewal": "Pas de renouvellement automatique",
+      "browse": "Cours du Pass",
+      "cancel": "Annuler le renouvellement",
+      "cancelConfirm": "Accès conservé jusqu’au {date}.",
+      "cancelYes": "Confirmer",
+      "keep": "Garder",
+      "resume": "Reprendre le renouvellement"
+    },
+    "learning": {
+      "loading": "Chargement",
+      "cancel": "Annuler",
+      "errors": {
+        "RATE_LIMITED": "Trop d’envois en peu de temps. Réessayez plus tard.",
+        "generic": "Une erreur est survenue. Réessayez."
+      },
+      "wishlist": {
+        "save": "Ajouter à ma liste",
+        "saved": "Dans ma liste"
+      },
+      "reviews": {
+        "title": "Avis des apprenants",
+        "average": "Note moyenne {average} sur 5",
+        "summary": "{average} / 5 · {count, plural, one {# avis} other {# avis}}",
+        "count": "({count, plural, one {# avis} other {# avis}})",
+        "yours": "Votre avis",
+        "stars": "{n, plural, one {# étoile} other {# étoiles}}",
+        "edit": "Modifier",
+        "formTitle": "Donnez votre avis sur ce cours",
+        "ratingLabel": "Votre note",
+        "placeholder": "Qu’avez-vous appris ? Qu’est-ce qui pourrait être amélioré ? (facultatif)",
+        "publish": "Publier",
+        "cancel": "Annuler",
+        "watchMore": "Vous pourrez donner votre avis après avoir suivi un quart du cours.",
+        "saved": "Merci, votre avis est publié.",
+        "error": "Votre avis n’a pas pu être enregistré.",
+        "loading": "Chargement des avis",
+        "empty": "Pas encore d’avis sur ce cours.",
+        "reply": "Réponse de {name}"
+      },
+      "qa": {
+        "tab": "Questions",
+        "askPlaceholder": "Posez une question sur cette leçon…",
+        "ask": "Publier la question",
+        "publicHint": "Visible par les apprenants du cours et le mentor.",
+        "empty": "Aucune question pour l’instant. Soyez le premier !",
+        "answerPlaceholder": "Votre réponse…",
+        "send": "Répondre",
+        "answer": "Répondre",
+        "mentor": "Mentor",
+        "team": "Équipe Metwork",
+        "hidden": "Masqué"
+      },
+      "notes": {
+        "tab": "Mes notes",
+        "placeholder": "Notez une idée à ce moment de la vidéo…",
+        "add": "Ajouter la note",
+        "privateHint": "Vos notes sont privées. Elles gardent le moment de la vidéo.",
+        "empty": "Aucune note sur cette leçon.",
+        "jump": "Aller à {time}",
+        "delete": "Supprimer la note"
+      },
+      "certificate": {
+        "title": "Certificat",
+        "issued": "Certificat n° {number}",
+        "download": "Télécharger le PDF",
+        "verify": "Page de vérification",
+        "lessons": "Leçons suivies : {done} / {total}",
+        "quizzes": "Quiz réussis : {done} / {total}",
+        "claim": "Obtenir mon certificat",
+        "rule": "Suivez chaque leçon jusqu’au bout et réussissez chaque quiz à 70 % pour l’obtenir.",
+        "errors": {
+          "NAME_MISSING": "Ajoutez votre nom complet à votre profil : il est imprimé sur le certificat.",
+          "NOT_ELIGIBLE": "Il reste des leçons ou des quiz à terminer.",
+          "RATE_LIMITED": "Trop d’essais. Réessayez plus tard.",
+          "generic": "Le certificat n’a pas pu être créé. Réessayez."
+        }
+      },
+      "quiz": {
+        "eyebrow": "Quiz · Module {n}",
+        "sidebar": "Quiz du module",
+        "passedShort": "Réussi",
+        "questions": "{count, plural, one {# question} other {# questions}}",
+        "programme": "Quiz de fin de module · {count, plural, one {# question} other {# questions}}",
+        "locked": "Le quiz fait partie du cours complet.",
+        "rule": "Répondez à toutes les questions. {percent} % de bonnes réponses pour réussir ; vous pouvez réessayer.",
+        "alreadyPassed": "Quiz déjà réussi ({percent} %).",
+        "passed": "Réussi : {percent} % de bonnes réponses.",
+        "failed": "{percent} % de bonnes réponses, pas encore assez.",
+        "retryHint": "Revoyez les questions signalées et réessayez.",
+        "wrong": "À revoir",
+        "retry": "Réessayer",
+        "submit": "Valider mes réponses",
+        "best": "Meilleur score : {percent} % · {attempts, plural, one {# essai} other {# essais}}",
+        "errors": {
+          "RATE_LIMITED": "Trop d’essais en une heure. Faites une pause et revenez plus tard.",
+          "INVALID_ANSWERS": "Le quiz a changé. Rechargez la page.",
+          "generic": "Vos réponses n’ont pas pu être envoyées. Réessayez."
+        },
+        "backToCourse": "Retour au cours"
+      },
+      "reminders": {
+        "label": "Rappels pour continuer mes cours",
+        "hint": "Un email quand un cours commencé est en pause depuis une semaine (3 au plus par cours)."
+      },
+      "my": {
+        "certificates": "Mes certificats",
+        "wishlist": "Ma liste"
+      }
+    },
+    "paths": {
+      "title": "Parcours",
+      "eyebrow": "Parcours · {count, plural, one {# cours} other {# cours}}",
+      "courses": "{count, plural, one {# cours} other {# cours}}",
+      "saving": "Au lieu de {list} : vous économisez {saving}.",
+      "lifetime": "Accès à vie à chaque cours du parcours",
+      "buy": "Acheter le parcours",
+      "ownedHint": "Vous avez déjà un des cours ? Il n’est pas facturé : le prix baisse d’autant.",
+      "programme": "Les cours, dans l’ordre",
+      "step": "Cours {n}"
+    },
+    "gift": {
+      "checkoutTitle": "Offrir",
+      "passItem": "1 mois d’Academy Pass",
+      "passItemDesc": "Tous les cours du Pass pendant un mois, sans renouvellement.",
+      "note": "Le lien est envoyé dès le paiement. Non récupéré en 30 jours, le cadeau est remboursé sur votre wallet.",
+      "offerCourse": "Offrir ce cours",
+      "offerPass": "Offrir un mois d’Academy Pass",
+      "claim": "Récupérer mon cadeau",
+      "title": "{name}, vous avez un cadeau",
+      "offered": "{from} vous offre « {what} » sur Metwork Startup Academy.",
+      "notFoundTitle": "Lien invalide",
+      "notFoundDesc": "Ce lien n’existe pas ou a été remplacé. Demandez à la personne de vous le renvoyer.",
+      "alreadyClaimed": "Ce cadeau a déjà été récupéré.",
+      "expired": "Ce lien a expiré.",
+      "signIn": "Se connecter pour le récupérer",
+      "signUp": "Créer mon compte gratuit",
+      "signUpHint": "Après avoir créé votre compte, rouvrez ce lien pour récupérer le cadeau.",
+      "until": "À récupérer avant le {date}.",
+      "errors": {
+        "EXPIRED": "Ce lien a expiré.",
+        "ALREADY_CLAIMED": "Ce cadeau a déjà été récupéré.",
+        "ALREADY_OWNED": "Vous avez déjà ce cours sur votre compte.",
+        "RATE_LIMITED": "Trop d’essais. Réessayez plus tard.",
+        "generic": "Le cadeau n’a pas pu être récupéré. Réessayez."
+      },
+      "mine": {
+        "title": "Mes cadeaux offerts",
+        "claimed": "Récupéré",
+        "refunded": "Non récupéré, remboursé sur votre wallet",
+        "waiting": "En attente, jusqu’au {date}",
+        "waitingNoDate": "En attente",
+        "resend": "Renvoyer le lien",
+        "resent": "Lien renvoyé",
+        "resendError": "Envoi impossible"
+      }
+    },
+    "referral": {
+      "title": "Invitez un ami",
+      "desc": "Votre ami a −10 % sur son premier achat Academy, et vous recevez 10 % de ce qu’il paie (jusqu’à 1 000 DA) sur votre wallet après 7 jours.",
+      "shareText": "Je te conseille Metwork Startup Academy : −10 % sur ton premier cours avec mon lien",
+      "copy": "Copier",
+      "copied": "Copié",
+      "whatsapp": "WhatsApp",
+      "stats": "{invited, plural, =0 {Personne n’a encore utilisé votre lien.} one {# ami a acheté} other {# amis ont acheté}} · {pending} en attente · {earned} reçus"
     }
   },
   "academyAdmin": {
@@ -8088,7 +8399,97 @@
         "NOT_READY": "Le cours n’est pas prêt : voir la liste à droite.",
         "MISSING_TITLE": "Chaque module et chaque leçon doit avoir un titre.",
         "UPLOAD_FAILED": "L’envoi a échoué. Réessayez.",
-        "generic": "Une erreur est survenue."
+        "generic": "Une erreur est survenue.",
+        "ADDENDUM_REQUIRED": "L’avenant Academy doit être signé avant l’envoi.",
+        "LOCKED": "Ce cours ne peut pas être modifié pour l’instant.",
+        "READ_ONLY": "Ce cours est en lecture seule.",
+        "NOTHING_TO_SUBMIT": "Rien de nouveau à envoyer.",
+        "QUIZ_INCOMPLETE": "Chaque question du quiz doit avoir un énoncé et toutes ses réponses."
+      },
+      "pendingBadge": "En attente de validation",
+      "studio": {
+        "back": "Mes cours",
+        "submitted": "Envoyé à Metwork pour relecture.",
+        "reviewTitle": "Relecture Metwork",
+        "noteFromMetwork": "Note de Metwork",
+        "addendumNeeded": "Signez d’abord l’avenant Academy (onglet Contrat) pour pouvoir envoyer un cours.",
+        "submit": "Envoyer en relecture",
+        "submitModules": "Envoyer les nouveaux modules",
+        "modulesInReview": "Vos nouveaux modules sont en relecture chez Metwork.",
+        "inPass": "Ce cours est inclus dans l’Academy Pass.",
+        "notInPass": "Ce cours n’est pas inclus dans l’Academy Pass.",
+        "mode": {
+          "ADD_MODULES": "Ce cours est publié : vous pouvez ajouter des modules. Ils resteront cachés jusqu’à leur validation par Metwork. Pour modifier le reste, écrivez à Metwork.",
+          "LOCKED": "Ce cours est verrouillé pendant la relecture.",
+          "READ_ONLY": "Ce cours est géré par Metwork : lecture seule."
+        },
+        "locked": {
+          "DRAFT": "Ce brouillon est verrouillé.",
+          "IN_REVIEW": "Metwork relit votre cours. Vous recevrez une réponse ici.",
+          "CHANGES_REQUESTED": "Metwork demande des modifications.",
+          "PUBLISHED": "Ce cours est publié.",
+          "ARCHIVED": "Ce cours est archivé."
+        }
+      },
+      "adminReview": {
+        "courseSubmitted": "Le mentor a envoyé ce cours en relecture. Publiez-le, ou demandez des modifications.",
+        "modulesSubmitted": "Le mentor propose de nouveaux modules (en orange).",
+        "note": "Note au mentor (obligatoire pour demander des modifications ou refuser)",
+        "requestChanges": "Demander des modifications",
+        "approveModules": "Valider les modules",
+        "rejectModules": "Refuser les modules",
+        "done": {
+          "REQUEST_CHANGES": "Modifications demandées au mentor.",
+          "APPROVE_MODULES": "Modules validés : ils sont visibles.",
+          "REJECT_MODULES": "Modules renvoyés au mentor."
+        }
+      },
+      "quiz": {
+        "add": "Ajouter un quiz de fin de module",
+        "title": "Quiz · {count, plural, one {# question} other {# questions}}",
+        "draft": "Rédiger avec l’IA",
+        "saveFirst": "Enregistrez le module et ses leçons pour rédiger avec l’IA.",
+        "hint": "Cochez la bonne réponse de chaque question. Les apprenants doivent obtenir 70 % pour réussir.",
+        "prompt": "Question",
+        "removeQuestion": "Supprimer la question",
+        "correct": "Bonne réponse",
+        "markCorrect": "Réponse {n} est la bonne",
+        "option": "Réponse {n}",
+        "removeOption": "Supprimer la réponse",
+        "addOption": "Ajouter une réponse",
+        "addQuestion": "Ajouter une question",
+        "errors": {
+          "UNAVAILABLE": "La rédaction par IA n’est pas disponible.",
+          "NO_LESSONS": "Ajoutez et enregistrez des leçons d’abord.",
+          "RATE_LIMITED": "Trop de demandes. Réessayez plus tard.",
+          "LOCKED": "Ce module ne peut plus être modifié.",
+          "generic": "La rédaction a échoué. Réessayez."
+        }
+      },
+      "subtitles": {
+        "toggle": "Sous-titres ({count})",
+        "drafted": "Brouillon IA — à relire",
+        "uploaded": "Envoyé",
+        "none": "Aucun",
+        "replace": "Remplacer",
+        "upload": "Envoyer .vtt",
+        "view": "Lire",
+        "remove": "Supprimer",
+        "translate": "Traduire les autres langues (IA)",
+        "hint": "Envoyez le .vtt du pipeline whisper, puis traduisez. Pour corriger un brouillon, envoyez un fichier corrigé dans sa langue.",
+        "viewing": "Sous-titres {lang}",
+        "close": "Fermer",
+        "errors": {
+          "INVALID_VTT": "Ce fichier n’est pas un WebVTT valide.",
+          "TOO_LARGE": "Fichier trop lourd (1 Mo max).",
+          "NO_VIDEO": "Envoyez d’abord la vidéo.",
+          "NO_SOURCE": "Envoyez d’abord vos sous-titres dans une langue.",
+          "UNAVAILABLE": "La traduction IA n’est pas disponible.",
+          "RATE_LIMITED": "Trop de demandes. Réessayez plus tard.",
+          "LOCKED": "Cette leçon ne peut plus être modifiée.",
+          "UPSTREAM": "L’hébergeur vidéo n’a pas répondu. Réessayez.",
+          "generic": "L’action a échoué."
+        }
       }
     },
     "settings": {
@@ -8119,7 +8520,132 @@
         "INVALID_RATE": "Un pourcentage doit être entre 0 et 99.",
         "INVALID_STAMP_URL": "Le cachet doit être une image hébergée sur Cloudinary (https://res.cloudinary.com/…).",
         "MENTOR_NOT_FOUND": "Mentor introuvable.",
-        "generic": "Une erreur est survenue."
+        "generic": "Une erreur est survenue.",
+        "ALREADY_EXISTS": "Ce mentor a déjà un avenant.",
+        "CONSULTANT_NOT_FOUND": "Mentor introuvable.",
+        "INCOMPLETE_CONSULTANT_PROFILE": "Le profil du mentor est incomplet (identité, adresse ou téléphone).",
+        "NO_TEMPLATE": "Aucun texte d’avenant.",
+        "INVALID_SEAT_TIERS": "Paliers invalides : des nombres de places croissants (au moins 2) et des remises entre 0 et 99 %."
+      },
+      "addendum": {
+        "title": "Avenant Academy (mentors)",
+        "hint": "Texte de l’avenant que chaque mentor signe avant d’envoyer un cours. Variables : '{{academy_share}}', '{{academy_metwork_share}}' et celles du contrat consultant. À faire relire par un juriste.",
+        "reset": "Revenir au texte par défaut",
+        "prepare": "Préparer l’avenant",
+        "prepared": "Avenant préparé : envoyez-le depuis la page Contrats.",
+        "send": "Envoyer depuis Contrats",
+        "state": {
+          "NONE": "Pas d’avenant",
+          "DRAFT": "Avenant prêt à envoyer",
+          "PENDING_SIGNATURE": "Avenant envoyé",
+          "SIGNED": "Avenant signé"
+        }
+      },
+      "seats": {
+        "title": "Places incubateurs (remise par volume)",
+        "hint": "Remise sur le prix mensuel du Pass selon le nombre de places achetées en une fois.",
+        "from": "Dès",
+        "minSeats": "Nombre de places",
+        "seats": "places :",
+        "percent": "Remise en %",
+        "remove": "Retirer",
+        "add": "Ajouter un palier",
+        "sharesNote": "Les mentors gardent leur part sur le prix plein du Pass : Metwork absorbe la remise."
+      }
+    },
+    "analytics": {
+      "title": "Startup Academy",
+      "subtitle": "{published, plural, =0 {Aucun cours publié} one {# cours publié} other {# cours publiés}} · {drafts, plural, =0 {aucun brouillon} one {# brouillon} other {# brouillons}}",
+      "metworkNet": "Revenu net Metwork",
+      "metworkNetHint": "Ventes + Pass − parts des mentors",
+      "passActive": "Abonnés Pass actifs",
+      "passActiveHint": "{monthly} mensuels · {annual} annuels · MRR {mrr}",
+      "sales": "Ventes de cours",
+      "salesHint": "{count, plural, one {# vente} other {# ventes}} · ce mois {month}",
+      "passRevenue": "Revenus du Pass",
+      "passRevenueHint": "Ce mois : {month}",
+      "mentors": "Parts des mentors",
+      "mentorsHint": "En attente {held} · disponibles {paid}",
+      "discounts": "Remises absorbées",
+      "discountsHint": "Remises Founder / Premium prises en charge par Metwork",
+      "refunds": "Remboursements",
+      "refundsHint": "{count, plural, =0 {Aucun cours remboursé} one {# cours remboursé} other {# cours remboursés}}",
+      "passHours": "Heures vues (Pass, ce mois)",
+      "passHoursHint": "Base du partage entre mentors",
+      "topCourse": "Cours",
+      "topSales": "Ventes",
+      "topRevenue": "Revenu",
+      "seats": "Places incubateurs",
+      "seatsHint": "{batches} lots · {sold} places · {assigned} attribuées",
+      "gifts": "Cadeaux",
+      "giftsHint": "{paid} payés · {claimed} récupérés · {waiting} en attente · {refunded} remboursés",
+      "bundles": "Parcours",
+      "bundlesHint": "{count} ventes",
+      "referrals": "Parrainages",
+      "referralsHint": "{pending} en attente · {paid} versés · {discounts} de remises",
+      "certificates": "Certificats délivrés",
+      "certificatesHint": "Cours terminés avec quiz réussis",
+      "rating": "Note moyenne",
+      "ratingHint": "{count} avis visibles"
+    },
+    "review": {
+      "title": "{count, plural, one {# cours à relire} other {# cours à relire}}",
+      "course": "Nouveau cours",
+      "modules": "{count, plural, one {# nouveau module} other {# nouveaux modules}}"
+    },
+    "moderation": {
+      "title": "Avis, questions et certificats",
+      "subtitle": "Les avis et questions sont publiés tout de suite ; masquez ceux qui ne respectent pas les règles.",
+      "loadError": "Chargement impossible.",
+      "actionError": "L’action a échoué. Réessayez.",
+      "reviews": "Avis ({count})",
+      "questions": "Questions ({count})",
+      "certificates": "Certificats ({count})",
+      "stars": "{n, plural, one {# étoile} other {# étoiles}}",
+      "hidden": "masqué",
+      "hide": "Masquer",
+      "show": "Afficher",
+      "empty": "Rien pour l’instant.",
+      "answers": "{count, plural, =0 {Aucune réponse} one {# réponse} other {# réponses}}",
+      "revoked": "révoqué",
+      "revoke": "Révoquer",
+      "restore": "Rétablir"
+    },
+    "bundles": {
+      "link": "Parcours (bundles) →",
+      "title": "Parcours",
+      "subtitle": "Des cours publiés vendus ensemble à un prix choisi. Les mentors gagnent leur part sur le prix plein de leur cours.",
+      "edit": "Modifier le parcours",
+      "new": "Nouveau parcours",
+      "language": "Langue",
+      "fieldTitle": "Titre",
+      "fieldDescription": "Description",
+      "fieldCourses": "Cours, dans l’ordre",
+      "moveUp": "Monter",
+      "moveDown": "Descendre",
+      "remove": "Retirer",
+      "addCourse": "Ajouter un cours…",
+      "fieldPrice": "Prix du parcours (DA)",
+      "priceHint": "Prix des cours séparément : {list}",
+      "fieldStatus": "Statut",
+      "status": {
+        "DRAFT": "Brouillon",
+        "PUBLISHED": "Publié",
+        "ARCHIVED": "Archivé"
+      },
+      "sharesNote": "Metwork absorbe la remise : chaque mentor reçoit sa part du prix plein de son cours. Le prix doit couvrir au moins ces parts.",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "needCourses": "Il faut au moins deux cours publiés.",
+      "empty": "Aucun parcours.",
+      "courses": "{count, plural, one {# cours} other {# cours}}",
+      "errors": {
+        "COURSE_NOT_PUBLISHED": "Tous les cours doivent être publiés.",
+        "PRICE_INVALID": "Le prix doit être d’au moins 2 900 DA et ne pas dépasser le prix des cours séparément.",
+        "PRICE_BELOW_SHARES": "Ce prix ne couvre pas la part des mentors. Augmentez-le.",
+        "DUPLICATE_COURSE": "Un cours est en double.",
+        "VALIDATION_ERROR": "Vérifiez le titre et les cours (2 à 12).",
+        "generic": "L’enregistrement a échoué."
       }
     }
   },
@@ -8287,5 +8813,45 @@
     "disabledTitle": "Partage indisponible",
     "disabledBody": "Le partage sur LinkedIn n’est pas disponible pour le moment. Réessayez plus tard.",
     "poweredBy": "Attestation délivrée via"
+  },
+  "academyIncubator": {
+    "title": "Startup Academy",
+    "subtitle": "Offrez l’Academy Pass à vos membres : tous les cours du Pass, payés depuis votre wallet.",
+    "noIncubator": "Aucun incubateur n’est rattaché à ce compte.",
+    "buyTitle": "Acheter des places",
+    "buyDesc": "{price} par place et par mois. Plus vous prenez de places, moins chaque place coûte :",
+    "tier": "Dès {seats} places : −{percent} %",
+    "seats": "Nombre de places",
+    "months": "Nombre de mois (1 à 12)",
+    "unit": "Prix par place et par mois",
+    "total": "Total",
+    "wallet": "Solde du wallet",
+    "buy": "Payer {total} depuis le wallet",
+    "topUp": "Recharger le wallet",
+    "rules": "Chaque mois, le membre qui a la place reçoit un mois de Pass. Vous pouvez réattribuer une place : le mois déjà commencé reste au membre précédent. Une place sans membre n’est pas reportée.",
+    "empty": "Vous n’avez pas encore de places.",
+    "batchTitle": "{seats, plural, one {# place} other {# places}} · {months, plural, one {# mois} other {# mois}}",
+    "batchEnded": "Terminé le {date}",
+    "batchUntil": "Jusqu’au {date}",
+    "seatN": "Place {n}",
+    "free": "Libre",
+    "reassign": "Changer",
+    "assign": "Attribuer",
+    "unassign": "Libérer la place",
+    "contactPlaceholder": "Email ou téléphone du membre",
+    "confirm": "Valider",
+    "cancel": "Annuler",
+    "reassignHint": "Le mois en cours reste au membre actuel ; le nouveau membre l’aura dès le mois prochain.",
+    "errors": {
+      "INSUFFICIENT_FUNDS": "Solde insuffisant. Rechargez le wallet de l’incubateur.",
+      "WALLET_FROZEN": "Le wallet est bloqué. Contactez Metwork.",
+      "INVALID_QUANTITY": "Entre 1 et 500 places, de 1 à 12 mois.",
+      "RATE_LIMITED": "Trop de demandes. Réessayez plus tard.",
+      "MEMBER_NOT_FOUND": "Aucun compte Metwork avec cet email ou ce numéro. Le membre doit d’abord créer son compte.",
+      "NOT_A_LEARNER": "Ce compte ne peut pas suivre les cours (seuls les entrepreneurs et freelances le peuvent).",
+      "ALREADY_SEATED": "Ce membre a déjà une place dans ce lot.",
+      "ENDED": "Ce lot est terminé.",
+      "generic": "L’action a échoué. Réessayez."
+    }
   }
 }

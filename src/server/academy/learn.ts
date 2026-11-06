@@ -7,7 +7,7 @@ import { buildOutline, courseAccessFor, type OutlineModule, type Viewer } from '
 export interface LearnView {
   course: AcademyCourseRecord;
   title: string;
-  access: 'ADMIN' | 'OWNED' | null;
+  access: 'ADMIN' | 'OWNED' | 'PASS' | null;
   modules: OutlineModule[];
   completedCount: number;
   playableCount: number;
@@ -19,13 +19,15 @@ export async function getLearnView(viewer: Viewer, slug: string, locale: string)
   const d = await db.read();
   const course = (d.academyCourses ?? []).find((c) => c.slug === slug);
   if (!course) return null;
-  const access = courseAccessFor(viewer, course, d.academyEnrollments);
+  const access = courseAccessFor(viewer, course, d.academyEnrollments, d);
   // Published for everyone (previews); archived only for its buyers; drafts for admins.
-  if (course.status !== 'PUBLISHED' && !(course.status === 'ARCHIVED' && access) && access !== 'ADMIN') return null;
+  if (course.status !== 'PUBLISHED' && !(course.status === 'ARCHIVED' && access === 'OWNED') && access !== 'ADMIN') return null;
 
   const progress = await academyRepo().progressFor(viewer.id, course.id);
   const done = new Set(progress.filter((p) => p.completedAt).map((p) => p.lessonId));
-  const outline = buildOutline(viewer, course, d.academyEnrollments, done, (t) => resolveText(t, locale));
+  const outline = buildOutline(viewer, course, d.academyEnrollments, done, (t) => resolveText(t, locale), d);
+  const passed = new Set((d.academyQuizResults ?? []).filter((r) => r.userId === viewer.id && r.courseId === course.id && r.passedAt).map((r) => r.moduleId));
+  for (const m of outline.modules) if (m.quiz) m.quiz.passed = passed.has(m.id);
   const playable = outline.modules.flatMap((m) => m.lessons).filter((l) => l.playable);
   const resume = playable.find((l) => !l.completed) ?? playable[0] ?? null;
   return {

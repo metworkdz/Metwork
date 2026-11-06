@@ -124,7 +124,7 @@ async function main() {
     console.log('\n✓ Applied by someone else in the meantime — nothing written.');
     return;
   }
-  const { error } = await supabase.from('app_state').upsert({ id: 1, data: toWrite }, { onConflict: 'id' });
+  const { error } = await supabase.from('app_state').upsert({ id: 1, data: { ...toWrite, _rev: (Number((toWrite as { _rev?: unknown })._rev) || 0) + 1 } }, { onConflict: 'id' });
   if (error) {
     console.error('✘ Write failed:', error.message);
     process.exit(1);

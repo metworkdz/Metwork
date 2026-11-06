@@ -45,6 +45,38 @@ export interface AddWatchInput {
   lessonDurationSec: number;
 }
 
+export interface LessonNote {
+  id: string;
+  userId: string;
+  courseId: string;
+  lessonId: string;
+  positionSec: number;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PostAuthorKind = 'USER' | 'MENTOR' | 'ADMIN';
+
+/** A question (parentId null) or an answer in a lesson's Q&A. */
+export interface LessonPost {
+  id: string;
+  courseId: string;
+  lessonId: string;
+  parentId: string | null;
+  authorKind: PostAuthorKind;
+  authorId: string;
+  body: string;
+  createdAt: string;
+  hiddenAt: string | null;
+  hiddenBy: string | null;
+}
+
+export interface InactiveLearner { userId: string; courseId: string; lastAt: string }
+
+export type SubtitleLang = 'fr' | 'en' | 'ar';
+export interface LessonSubtitle { lessonId: string; lang: SubtitleLang; vtt: string; drafted: boolean; updatedAt: string }
+
 export interface AcademyRepo {
   progressFor(userId: string, courseId: string): Promise<LessonProgress[]>;
   /** Save the resume point; `completed` marks the lesson done (it stays done). */
@@ -66,6 +98,29 @@ export interface AcademyRepo {
    * `TAKEN` = another device opened a stream since.
    */
   touchStream(userId: string, streamId: string): Promise<{ ok: true; elapsedSec: number } | { ok: false; reason: 'TAKEN' }>;
+  /** Seconds watched of each lesson of one course by one user, all days and accesses. */
+  lessonWatchSeconds(userId: string, courseId: string): Promise<Record<string, number>>;
+  /** Learners whose last progress on a course is in [from, to). */
+  inactiveLearners(fromIso: string, toIso: string): Promise<InactiveLearner[]>;
+
+  listNotes(userId: string, courseId: string): Promise<LessonNote[]>;
+  addNote(input: Omit<LessonNote, 'id' | 'createdAt' | 'updatedAt'>): Promise<LessonNote>;
+  /** Only the note's owner; false when there is no such note of theirs. */
+  updateNote(userId: string, noteId: string, body: string): Promise<boolean>;
+  deleteNote(userId: string, noteId: string): Promise<boolean>;
+
+  /** A lesson's Q&A, oldest first. Hidden posts only when asked (admins). */
+  listPosts(courseId: string, lessonId: string, opts?: { includeHidden?: boolean }): Promise<LessonPost[]>;
+  /** Recent posts of several courses, newest first (mentor and admin inboxes). */
+  listCoursePosts(courseIds: string[], limit: number): Promise<LessonPost[]>;
+  getPost(postId: string): Promise<LessonPost | null>;
+  addPost(input: Omit<LessonPost, 'id' | 'createdAt' | 'hiddenAt' | 'hiddenBy'>): Promise<LessonPost>;
+  setPostHidden(postId: string, hiddenBy: string | null): Promise<boolean>;
+
+  getSubtitle(lessonId: string, lang: SubtitleLang): Promise<LessonSubtitle | null>;
+  saveSubtitle(input: { lessonId: string; lang: SubtitleLang; vtt: string; drafted: boolean }): Promise<void>;
+  deleteSubtitle(lessonId: string, lang: SubtitleLang): Promise<void>;
+
   /** Erase a user's rows (account deletion). */
   deleteUser(userId: string): Promise<void>;
 }
@@ -85,8 +140,8 @@ interface LedgerRow {
   userId: string; lessonId: string; day: string; courseId: string; mentorId: string; access: WatchAccess; seconds: number;
 }
 interface StreamRow { userId: string; streamId: string; courseId: string; lessonId: string; lastSeenAt: string }
-interface MemoryState { progress: LessonProgress[]; ledger: LedgerRow[]; streams: StreamRow[] }
-const emptyState = (): MemoryState => ({ progress: [], ledger: [], streams: [] });
+interface MemoryState { progress: LessonProgress[]; ledger: LedgerRow[]; streams: StreamRow[]; notes: LessonNote[]; posts: LessonPost[]; subtitles: LessonSubtitle[] }
+const emptyState = (): MemoryState => ({ progress: [], ledger: [], streams: [], notes: [], posts: [], subtitles: [] });
 
 export function createMemoryAcademyRepo(persistPath?: string): AcademyRepo & { reset(): void } {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires -- dev-only file backend, kept out of client bundles
@@ -166,11 +221,113 @@ export function createMemoryAcademyRepo(persistPath?: string): AcademyRepo & { r
       save();
       return { ok: true, elapsedSec };
     },
+    async lessonWatchSeconds(userId, courseId) {
+      load();
+      const out: Record<string, number> = {};
+      for (const r of s.ledger) if (r.userId === userId && r.courseId === courseId) out[r.lessonId] = (out[r.lessonId] ?? 0) + r.seconds;
+      return out;
+    },
+    async inactiveLearners(fromIso, toIso) {
+      load();
+      const last = new Map<string, InactiveLearner>();
+      for (const p of s.progress) {
+        const k = `${p.userId}\u0000${p.courseId}`;
+        const cur = last.get(k);
+        if (!cur || p.updatedAt > cur.lastAt) last.set(k, { userId: p.userId, courseId: p.courseId, lastAt: p.updatedAt });
+      }
+      const from = Date.parse(fromIso), to = Date.parse(toIso);
+      return [...last.values()].filter((x) => { const t = Date.parse(x.lastAt); return t >= from && t < to; });
+    },
+    async listNotes(userId, courseId) {
+      load();
+      return s.notes.filter((n) => n.userId === userId && n.courseId === courseId)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map((n) => ({ ...n }));
+    },
+    async addNote(input) {
+      load();
+      const at = new Date().toISOString();
+      const note: LessonNote = { ...input, positionSec: Math.max(0, Math.floor(input.positionSec)), id: randomUUID(), createdAt: at, updatedAt: at };
+      s.notes.push(note);
+      save();
+      return { ...note };
+    },
+    async updateNote(userId, noteId, body) {
+      load();
+      const n = s.notes.find((x) => x.id === noteId && x.userId === userId);
+      if (!n) return false;
+      n.body = body;
+      n.updatedAt = new Date().toISOString();
+      save();
+      return true;
+    },
+    async deleteNote(userId, noteId) {
+      load();
+      const before = s.notes.length;
+      s.notes = s.notes.filter((x) => !(x.id === noteId && x.userId === userId));
+      save();
+      return s.notes.length < before;
+    },
+    async listPosts(courseId, lessonId, opts) {
+      load();
+      return s.posts.filter((p) => p.courseId === courseId && p.lessonId === lessonId && (opts?.includeHidden || !p.hiddenAt))
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map((p) => ({ ...p }));
+    },
+    async listCoursePosts(courseIds, limit) {
+      load();
+      const ids = new Set(courseIds);
+      return s.posts.filter((p) => ids.has(p.courseId))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit).map((p) => ({ ...p }));
+    },
+    async getPost(postId) {
+      load();
+      const p = s.posts.find((x) => x.id === postId);
+      return p ? { ...p } : null;
+    },
+    async addPost(input) {
+      load();
+      // Strictly increasing timestamps keep "oldest first" stable within a millisecond.
+      const lastAt = s.posts.reduce((m, p) => (p.createdAt > m ? p.createdAt : m), '');
+      let at = new Date().toISOString();
+      if (at <= lastAt) at = new Date(Date.parse(lastAt) + 1).toISOString();
+      const post: LessonPost = { ...input, id: randomUUID(), createdAt: at, hiddenAt: null, hiddenBy: null };
+      s.posts.push(post);
+      save();
+      return { ...post };
+    },
+    async setPostHidden(postId, hiddenBy) {
+      load();
+      const p = s.posts.find((x) => x.id === postId);
+      if (!p) return false;
+      p.hiddenAt = hiddenBy ? new Date().toISOString() : null;
+      p.hiddenBy = hiddenBy;
+      save();
+      return true;
+    },
+    async getSubtitle(lessonId, lang) {
+      load();
+      const x = s.subtitles.find((t) => t.lessonId === lessonId && t.lang === lang);
+      return x ? { ...x } : null;
+    },
+    async saveSubtitle({ lessonId, lang, vtt, drafted }) {
+      load();
+      s.subtitles = s.subtitles.filter((t) => !(t.lessonId === lessonId && t.lang === lang));
+      s.subtitles.push({ lessonId, lang, vtt, drafted, updatedAt: new Date().toISOString() });
+      save();
+    },
+    async deleteSubtitle(lessonId, lang) {
+      load();
+      s.subtitles = s.subtitles.filter((t) => !(t.lessonId === lessonId && t.lang === lang));
+      save();
+    },
     async deleteUser(userId) {
       load();
       s.progress = s.progress.filter((p) => p.userId !== userId);
       s.ledger = s.ledger.filter((r) => r.userId !== userId);
       s.streams = s.streams.filter((r) => r.userId !== userId);
+      s.notes = s.notes.filter((n) => n.userId !== userId);
+      // Their questions go with their answers (the table cascades the same way).
+      const gone = new Set(s.posts.filter((p) => p.authorKind === 'USER' && p.authorId === userId).map((p) => p.id));
+      s.posts = s.posts.filter((p) => !gone.has(p.id) && !(p.parentId && gone.has(p.parentId)));
       save();
     },
   };
@@ -194,6 +351,32 @@ const toProgress = (r: Row): LessonProgress => ({
   completedAt: (r.completed_at as string | null) ?? null,
   updatedAt: r.updated_at as string,
 });
+
+const toNote = (r: Row): LessonNote => ({
+  id: r.id as string,
+  userId: r.user_id as string,
+  courseId: r.course_id as string,
+  lessonId: r.lesson_id as string,
+  positionSec: Number(r.position_sec ?? 0),
+  body: r.body as string,
+  createdAt: r.created_at as string,
+  updatedAt: r.updated_at as string,
+});
+
+const toPost = (r: Row): LessonPost => ({
+  id: r.id as string,
+  courseId: r.course_id as string,
+  lessonId: r.lesson_id as string,
+  parentId: (r.parent_id as string | null) ?? null,
+  authorKind: r.author_kind as PostAuthorKind,
+  authorId: r.author_id as string,
+  body: r.body as string,
+  createdAt: r.created_at as string,
+  hiddenAt: (r.hidden_at as string | null) ?? null,
+  hiddenBy: (r.hidden_by as string | null) ?? null,
+});
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function createSupabaseAcademyRepo(client: SupabaseClient): AcademyRepo {
   return {
@@ -240,10 +423,90 @@ export function createSupabaseAcademyRepo(client: SupabaseClient): AcademyRepo {
       if (!r || r.elapsed_sec === null || r.elapsed_sec === undefined) return { ok: false, reason: 'TAKEN' };
       return { ok: true, elapsedSec: Math.max(0, Number(r.elapsed_sec)) };
     },
+    async lessonWatchSeconds(userId, courseId) {
+      const rows = check(await client.from('academy_watch_ledger').select('lesson_id, seconds').eq('user_id', userId).eq('course_id', courseId)) as Row[];
+      const out: Record<string, number> = {};
+      for (const r of rows) out[r.lesson_id as string] = (out[r.lesson_id as string] ?? 0) + Number(r.seconds ?? 0);
+      return out;
+    },
+    async inactiveLearners(fromIso, toIso) {
+      const rows = check(await client.rpc('academy_inactive_learners', { p_from: fromIso, p_to: toIso })) as Row[];
+      return rows.map((r) => ({ userId: r.user_id as string, courseId: r.course_id as string, lastAt: r.last_at as string }));
+    },
+    async listNotes(userId, courseId) {
+      const rows = check(await client.from('academy_notes').select('*').eq('user_id', userId).eq('course_id', courseId).order('created_at')) as Row[];
+      return rows.map(toNote);
+    },
+    async addNote(input) {
+      const at = new Date().toISOString();
+      const rows = check(await client.from('academy_notes').insert({
+        id: randomUUID(), user_id: input.userId, course_id: input.courseId, lesson_id: input.lessonId,
+        position_sec: Math.max(0, Math.floor(input.positionSec)), body: input.body, created_at: at, updated_at: at,
+      }).select('*')) as Row[];
+      return toNote(rows[0]!);
+    },
+    async updateNote(userId, noteId, body) {
+      if (!UUID_RE.test(noteId)) return false;
+      const rows = check(await client.from('academy_notes').update({ body, updated_at: new Date().toISOString() })
+        .eq('id', noteId).eq('user_id', userId).select('id')) as Row[];
+      return rows.length > 0;
+    },
+    async deleteNote(userId, noteId) {
+      if (!UUID_RE.test(noteId)) return false;
+      const rows = check(await client.from('academy_notes').delete().eq('id', noteId).eq('user_id', userId).select('id')) as Row[];
+      return rows.length > 0;
+    },
+    async listPosts(courseId, lessonId, opts) {
+      let q = client.from('academy_posts').select('*').eq('course_id', courseId).eq('lesson_id', lessonId);
+      if (!opts?.includeHidden) q = q.is('hidden_at', null);
+      return (check(await q.order('created_at').limit(500)) as Row[]).map(toPost);
+    },
+    async listCoursePosts(courseIds, limit) {
+      if (courseIds.length === 0) return [];
+      const rows = check(await client.from('academy_posts').select('*').in('course_id', courseIds)
+        .order('created_at', { ascending: false }).limit(limit)) as Row[];
+      return rows.map(toPost);
+    },
+    async getPost(postId) {
+      if (!UUID_RE.test(postId)) return null;
+      const rows = check(await client.from('academy_posts').select('*').eq('id', postId).limit(1)) as Row[];
+      return rows[0] ? toPost(rows[0]) : null;
+    },
+    async addPost(input) {
+      const rows = check(await client.from('academy_posts').insert({
+        id: randomUUID(), course_id: input.courseId, lesson_id: input.lessonId, parent_id: input.parentId,
+        author_kind: input.authorKind, author_id: input.authorId, body: input.body, created_at: new Date().toISOString(),
+      }).select('*')) as Row[];
+      return toPost(rows[0]!);
+    },
+    async setPostHidden(postId, hiddenBy) {
+      if (!UUID_RE.test(postId)) return false;
+      const rows = check(await client.from('academy_posts')
+        .update({ hidden_at: hiddenBy ? new Date().toISOString() : null, hidden_by: hiddenBy })
+        .eq('id', postId).select('id')) as Row[];
+      return rows.length > 0;
+    },
+    async getSubtitle(lessonId, lang) {
+      const rows = check(await client.from('academy_subtitles').select('*').eq('lesson_id', lessonId).eq('lang', lang).limit(1)) as Row[];
+      const r = rows[0];
+      return r ? { lessonId: r.lesson_id as string, lang: r.lang as SubtitleLang, vtt: r.vtt as string, drafted: Boolean(r.drafted), updatedAt: r.updated_at as string } : null;
+    },
+    async saveSubtitle({ lessonId, lang, vtt, drafted }) {
+      check(await client.from('academy_subtitles').upsert(
+        { lesson_id: lessonId, lang, vtt, drafted, updated_at: new Date().toISOString() },
+        { onConflict: 'lesson_id,lang' },
+      ));
+    },
+    async deleteSubtitle(lessonId, lang) {
+      check(await client.from('academy_subtitles').delete().eq('lesson_id', lessonId).eq('lang', lang));
+    },
     async deleteUser(userId) {
       check(await client.from('academy_progress').delete().eq('user_id', userId));
       check(await client.from('academy_watch_ledger').delete().eq('user_id', userId));
       check(await client.from('academy_streams').delete().eq('user_id', userId));
+      check(await client.from('academy_notes').delete().eq('user_id', userId));
+      // Answers under their questions go with them (on delete cascade).
+      check(await client.from('academy_posts').delete().eq('author_kind', 'USER').eq('author_id', userId));
     },
   };
 }

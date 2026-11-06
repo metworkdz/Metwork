@@ -9,6 +9,8 @@ import { listAcademyFields } from '@/server/academy/settings';
 import { ACADEMY_AUDIO_LANGUAGES, ACADEMY_LEVELS, type AcademyAudioLanguage, type AcademyLevel } from '@/lib/academy';
 import { resolveText } from '@/lib/localized-text';
 import { CourseCard } from '@/components/features/academy/course-card';
+import { PathCard } from '@/components/features/academy/path-card';
+import { listPublicBundles } from '@/server/academy/bundles';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -49,12 +51,23 @@ export default async function AcademyCatalogPage({ params, searchParams }: PageP
     return f?.label ? resolveText(f.label, locale) : t(`fields.${id}.name`);
   };
   const filtered = Boolean(fieldId || level || audio || inPass || q);
+  // Learning paths head the unfiltered catalogue.
+  const paths = filtered ? [] : await listPublicBundles(locale);
   const select = 'h-10 w-full rounded-lg border border-input bg-background px-3 text-sm';
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">{fieldId ? fieldLabel(fieldId) : t('catalog.title')}</h1>
       <p className="mt-2 text-muted-foreground">{t('catalog.count', { count: courses.length })}</p>
+
+      {paths.length > 0 && (
+        <section className="mt-6">
+          <h2 className="font-display text-lg font-extrabold">{t('paths.title')}</h2>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {paths.map((p) => <PathCard key={p.id} path={p} locale={locale} />)}
+          </div>
+        </section>
+      )}
 
       {/* Field chips: the quickest filter, one tap on a phone. */}
       <nav aria-label={t('catalog.fields')} className="-mx-4 mt-6 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">

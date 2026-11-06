@@ -35,9 +35,12 @@ process.env.API_INTERNAL_URL ??= 'http://localhost:3000/api';
 interface MockState {
   /** The JSON blob normally stored in app_state.data */
   blob: Record<string, unknown> | null;
+  /** Every SELECT made, by its column list ('data' = the whole document). */
+  reads: string[];
+  writes: number;
 }
 
-const mockState: MockState = { blob: null };
+const mockState: MockState = { blob: null, reads: [], writes: 0 };
 
 /**
  * TEST-ONLY: replace the stored row behind the store's back — what another
@@ -50,9 +53,28 @@ export function writeMockBlobAsAnotherInstance(mutate: (blob: Record<string, unk
   mockState.blob = blob;
 }
 
+/** TEST-ONLY: change the stored row WITHOUT moving its revision (a manual SQL edit). */
+export function writeMockBlobWithoutRevision(mutate: (blob: Record<string, unknown>) => void): void {
+  const blob = structuredClone(mockState.blob ?? {});
+  mutate(blob);
+  mockState.blob = blob;
+}
+
+/** TEST-ONLY: the SELECTs made so far ('data' = the whole document), emptied on read. */
+export function takeMockReads(): string[] {
+  return mockState.reads.splice(0);
+}
+
+/** TEST-ONLY: how many times the document has been written. */
+export function mockWriteCount(): number {
+  return mockState.writes;
+}
+
 /** Reset the mock store to a known starting point before each test. */
 export function resetMockDb(): void {
   mockState.blob = null;
+  mockState.reads = [];
+  mockState.writes = 0;
 }
 
 beforeEach(() => {
@@ -66,6 +88,8 @@ beforeEach(() => {
 // Mock @supabase/supabase-js — minimal shape, just enough for store.ts.
 // store.ts only uses:
 //   supabase.from('app_state').select('data').eq('id', 1).single()
+//   supabase.from('app_state').select('rev:data->>_rev').eq('id', 1).single()
+//   supabase.from('app_state').select('bookings:data->bookings,…').eq('id', 1).single()
 //   supabase.from('app_state').upsert({ id: 1, data: blob }, { onConflict: 'id' })
 //   supabase.from('app_state').update({ data }).eq('id', 1).eq|is(<rev>).select('id')
 // ────────────────────────────────────────────────────────────────────────
@@ -74,7 +98,7 @@ vi.mock('@supabase/supabase-js', () => {
   const createClient = () => ({
     from(_table: string) {
       return {
-        select(_cols: string) {
+        select(cols: string) {
           return {
             eq(_col: string, _val: unknown) {
               return {
@@ -82,6 +106,17 @@ vi.mock('@supabase/supabase-js', () => {
                   if (mockState.blob === null) {
                     // Mimic PGRST116 "no rows" so store.ts knows to seed.
                     return { data: null, error: { code: 'PGRST116', message: 'no rows' } };
+                  }
+                  mockState.reads.push(cols);
+                  if (cols !== 'data') {
+                    // Aliased JSON paths, as PostgREST answers them: `->>` is text, `->` keeps the value.
+                    const row: Record<string, unknown> = {};
+                    for (const part of cols.split(',')) {
+                      const m = /^(\w+):data(->>|->)(\w+)$/.exec(part)!;
+                      const v = mockState.blob[m[3]!];
+                      row[m[1]!] = v === undefined ? null : m[2] === '->>' ? String(v) : structuredClone(v);
+                    }
+                    return { data: row, error: null };
                   }
                   // A copy, like a real round trip: the store must never share objects with the row.
                   return { data: { data: structuredClone(mockState.blob) }, error: null };
@@ -113,6 +148,7 @@ vi.mock('@supabase/supabase-js', () => {
               const current = raw === undefined || raw === null ? null : String(raw);
               if (mockState.blob === null || current !== expected) return { data: [], error: null };
               mockState.blob = structuredClone(patch.data);
+              mockState.writes += 1;
               return { data: [{ id: 1 }], error: null };
             },
           };

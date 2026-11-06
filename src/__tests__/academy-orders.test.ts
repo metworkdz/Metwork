@@ -191,6 +191,8 @@ describe('refunds and release', () => {
     expect(await wallet('u-founder')).toBe(10_000);
     expect(await mentorWallet('m-1')).toMatchObject({ pendingBalance: 0, availableBalance: 0 });
     expect(await refundEnrollment('u-founder', e.id)).toEqual({ ok: false, reason: 'ALREADY_REFUNDED' });
+    // A refunded sale no longer counts as Metwork revenue.
+    expect((await db.read()).mentorLedgerTxns!.find((t) => t.type === 'COMMISSION')?.status).toBe('REVERSED');
     expect(await lessonAccess({ id: 'u-founder', role: 'ENTREPRENEUR' }, 'c-1', 'l-2')).toMatchObject({ ok: false, code: 'LOCKED' });
   });
 
@@ -212,9 +214,9 @@ describe('refunds and release', () => {
   it('after 7 days the cron releases the earning, and the refund is closed', async () => {
     await buy('u-free');
     const e = (await db.read()).academyEnrollments![0]!;
-    expect(await releaseAcademyEarnings(new Date(Date.now() + 6 * 86_400_000))).toEqual({ released: 0 });
-    expect(await releaseAcademyEarnings(new Date(Date.now() + 8 * 86_400_000))).toEqual({ released: 1 });
-    expect(await releaseAcademyEarnings(new Date(Date.now() + 9 * 86_400_000))).toEqual({ released: 0 });
+    expect(await releaseAcademyEarnings(new Date(Date.now() + 6 * 86_400_000))).toMatchObject({ released: 0 });
+    expect(await releaseAcademyEarnings(new Date(Date.now() + 8 * 86_400_000))).toMatchObject({ released: 1 });
+    expect(await releaseAcademyEarnings(new Date(Date.now() + 9 * 86_400_000))).toMatchObject({ released: 0 });
     expect(await mentorWallet('m-1')).toMatchObject({ pendingBalance: 0, availableBalance: 870 });
     expect(await refundCheck('u-free', e.id)).toEqual({ eligible: false, reason: 'WINDOW_CLOSED' });
   });

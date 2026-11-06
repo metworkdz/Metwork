@@ -179,6 +179,7 @@ export function ContractsManager() {
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant={STATUS_VARIANT[c.status]}>{STATUS_LABEL[c.status]}</Badge>
+                        {c.kind === 'ACADEMY_ADDENDUM' && <Badge variant="outline" className="ms-2">Academy addendum</Badge>}
                         {c.locked && (
                           <span className="ms-2 text-xs text-destructive" title="Signing is locked after too many failed codes">
                             locked

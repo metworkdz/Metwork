@@ -36,5 +36,10 @@ export function createMockVideoProvider(): VideoProvider & { reset(): void; toke
     async deleteVideo(videoId) {
       deleted.add(videoId);
     },
+    async addSubtitle({ videoId }) {
+      if (!known(videoId)) throw new VideoProviderError('Unknown video', 'NOT_FOUND');
+      return String(Math.floor(Math.random() * 1e9));
+    },
+    async deleteSubtitle() { /* nothing stored */ },
   };
 }

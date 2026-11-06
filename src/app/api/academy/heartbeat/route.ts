@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { json, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { lessonAccess } from '@/server/academy/access';
+import { algiersDay } from '@/lib/academy';
 import { academyRepo } from '@/server/academy/repo';
 import { parseBody, requireAcademyLearner } from '@/server/academy/http';
 
@@ -25,11 +26,6 @@ const schema = z.object({
   playing: z.boolean(),
   ended: z.boolean().default(false),
 });
-
-/** Africa/Algiers calendar day (UTC+1, no DST). */
-function algiersDay(now = new Date()): string {
-  return new Date(now.getTime() + 3600_000).toISOString().slice(0, 10);
-}
 
 export async function POST(req: NextRequest) {
   const g = await requireAcademyLearner();

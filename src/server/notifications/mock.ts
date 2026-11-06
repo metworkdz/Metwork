@@ -341,7 +341,8 @@ export function sendPasswordResetEmail(email: string, link: string): Promise<voi
  * has no template restriction). Self-catching — never throws. AWAITABLE so
  * serverless routes can hold the response until the send actually happened.
  */
-function deliverClientText(phone: string, text: string, tag: string): Promise<void> {
+/** WhatsApp, falling back to SMS (Infobip), or a log line when no provider is set. Never throws. */
+export function deliverClientText(phone: string, text: string, tag: string): Promise<void> {
   if (process.env.SMS_PROVIDER !== 'infobip') {
     // eslint-disable-next-line no-console
     console.log(`${banner} WHATSAPP (${tag}) → ${phone} :: ${text.slice(0, 80)}…`);

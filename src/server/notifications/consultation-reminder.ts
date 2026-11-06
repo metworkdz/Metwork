@@ -79,6 +79,18 @@ export async function sendConsultationRemindersDue(now = new Date()): Promise<Re
   const consultantHorizonMs = nowMs + REMINDER_WINDOW_HOURS * 60 * 60_000;
   const clientHorizonMs = nowMs + CLIENT_REMINDER_WINDOW_HOURS * 60 * 60_000;
 
+  // Runs every 15 minutes and usually finds nothing: look first, without
+  // downloading the whole document. The claim below decides again on fresh data.
+  const { mentorBookings } = await db.peek(['mentorBookings']);
+  const anyDue = (mentorBookings ?? []).some((b) => {
+    if (b.instantBook !== true || !REMINDABLE.has(b.status)) return false;
+    const startMs = bookingStartMs(b);
+    if (startMs === null || startMs <= nowMs) return false;
+    return (!b.consultantReminderSentAt && startMs <= consultantHorizonMs)
+      || (!b.clientReminderSentAt && b.status === 'READY' && startMs <= clientHorizonMs);
+  });
+  if (!anyDue) return { sent: 0, clientSent: 0, skippedNoMentor: 0 };
+
   // Single atomic claim pass: stamp every due booking (both passes) and
   // collect who to notify.
   const due = await db.update<{ consultant: MentorBookingRecord[]; client: MentorBookingRecord[] }>((d) => {

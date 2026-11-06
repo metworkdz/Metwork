@@ -12,6 +12,8 @@ import type { ConsultantContractRecord, ConsultantContractPayoutMethod, Consulta
 
 export interface ConsultantContractDto {
   id: string;
+  /** CONSULTANT (the main contract) or ACADEMY_ADDENDUM. */
+  kind: 'CONSULTANT' | 'ACADEMY_ADDENDUM';
   status: ConsultantContractStatus;
   /** The French contract body, exactly as frozen at send-time. */
   contentSnapshot: string;
@@ -39,6 +41,7 @@ export function toConsultantContractDto(
 ): ConsultantContractDto {
   return {
     id: record.id,
+    kind: record.kind ?? 'CONSULTANT',
     status: record.status,
     contentSnapshot: record.contentSnapshot,
     commissionRate: record.commissionRate,

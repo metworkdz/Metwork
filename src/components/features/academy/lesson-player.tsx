@@ -15,6 +15,7 @@ import { Loader2, MonitorSmartphone, Pause, Play } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { apiClient, ApiClientError } from '@/lib/api-client';
+import { playerBus, type PlayerHandle } from './player-bus';
 
 interface PlaybackSession {
   provider: 'vdocipher' | 'mock';
@@ -26,8 +27,6 @@ interface PlaybackSession {
   durationSec: number;
 }
 
-/** What both players expose to the heartbeat loop. */
-interface PlayerHandle { position(): number }
 
 declare global {
   interface Window {
@@ -136,7 +135,8 @@ function VdoCipherFrame({ session, handle, onPlay, onPause, onEnded }: FrameProp
       if (cancelled || !iframe.current || !window.VdoPlayer) return;
       const player = window.VdoPlayer.getInstance(iframe.current);
       const video = player.video;
-      handle.current = { position: () => video.currentTime || 0 };
+      handle.current = { position: () => video.currentTime || 0, seek: (sec) => { video.currentTime = sec; } };
+      playerBus.set(handle.current);
       video.addEventListener('play', onPlay);
       video.addEventListener('pause', onPause);
       video.addEventListener('ended', onEnded);
@@ -150,7 +150,7 @@ function VdoCipherFrame({ session, handle, onPlay, onPause, onEnded }: FrameProp
       s.onload = attach;
       document.body.appendChild(s);
     }
-    return () => { cancelled = true; handle.current = null; };
+    return () => { cancelled = true; handle.current = null; playerBus.set(null); };
   }, [session, handle, onPlay, onPause, onEnded]);
 
   return (
@@ -173,7 +173,14 @@ function MockPlayer({ session, handle, onPlay, onPause, onEnded }: FrameProps) {
   const posRef = useRef(session.resumeAt);
   const duration = session.durationSec || 90;
 
-  useEffect(() => { handle.current = { position: () => posRef.current }; return () => { handle.current = null; }; }, [handle]);
+  useEffect(() => {
+    handle.current = {
+      position: () => posRef.current,
+      seek: (sec) => { posRef.current = Math.min(duration, Math.max(0, sec)); setPos(posRef.current); },
+    };
+    playerBus.set(handle.current);
+    return () => { handle.current = null; playerBus.set(null); };
+  }, [handle, duration]);
   useEffect(() => {
     if (!isPlaying) return;
     const id = setInterval(() => {

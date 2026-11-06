@@ -158,7 +158,7 @@ async function main() {
   // Single atomic upsert of the whole document — only `mentors` replaced,
   // every other collection and unknown/legacy key preserved verbatim.
   const after: Blob = { ...blob, mentors: next };
-  const { error } = await supabase.from('app_state').upsert({ id: 1, data: after }, { onConflict: 'id' });
+  const { error } = await supabase.from('app_state').upsert({ id: 1, data: { ...after, _rev: (Number((after as { _rev?: unknown })._rev) || 0) + 1 } }, { onConflict: 'id' });
   if (error) {
     console.error('✘ Supabase upsert failed:', error.message, `(code: ${error.code})`);
     process.exit(1);

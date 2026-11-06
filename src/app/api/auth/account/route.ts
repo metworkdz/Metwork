@@ -123,6 +123,11 @@ export async function DELETE(req: NextRequest) {
     d.taxTaskStates      = (d.taxTaskStates ?? []).filter((s) => s.userId !== userId);
     d.copilotUsage       = (d.copilotUsage ?? []).filter((u) => u.userId !== userId);
     d.guideProgress = (d.guideProgress ?? []).filter((g) => g.userId !== userId);
+    // Startup Academy learning data: reviews, quiz results, reminders and certificates go with the account.
+    d.academyReviews      = (d.academyReviews ?? []).filter((r) => r.userId !== userId);
+    d.academyQuizResults  = (d.academyQuizResults ?? []).filter((r) => r.userId !== userId);
+    d.academyReminders    = (d.academyReminders ?? []).filter((r) => r.userId !== userId);
+    d.academyCertificates = (d.academyCertificates ?? []).filter((c) => c.userId !== userId);
     d.pushSubscriptions = (d.pushSubscriptions ?? []).filter((s) => !(s.ownerType === 'USER' && s.ownerId === userId));
     d.messageReports     = (d.messageReports ?? []).filter((r) => r.reporterId !== userId && r.reportedId !== userId);
     d.quoteRequests      = (d.quoteRequests ?? []).filter((q) => q.entrepreneurId !== userId && q.freelancerId !== userId);

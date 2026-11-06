@@ -187,6 +187,12 @@ export interface UserRecord {
    * can't clobber sibling keys.
    */
   notificationsSeen?: Record<string, string> | null;
+  /** Startup Academy wishlist: course ids, newest first. */
+  academyWishlist?: string[];
+  /** Turned off the Academy "keep going" reminder emails. */
+  academyRemindersOff?: boolean;
+  /** Startup Academy referral code (created the first time the member asks for their link). */
+  academyReferralCode?: string;
 }
 
 export interface SessionRecord {
@@ -1419,9 +1425,20 @@ export interface AcademySettingsRecord {
   defaultMentorShareRate: number;
   /** Metwork stamp printed on every Academy certificate. Null ⇒ none. */
   certificateStampUrl: string | null;
+  /** The Academy addendum mentors sign; null ⇒ the built-in text (lib/academy-addendum-text). */
+  addendumTemplate?: string | null;
+  /** Incubator Pass seats: discount by seats bought at once. Absent ⇒ ACADEMY_DEFAULT_SEAT_TIERS. */
+  seatTiers?: AcademySeatTier[] | null;
   updatedAt: string;
   /** UserRecord.id of the admin who last saved. */
   updatedBy: string | null;
+}
+
+export interface AcademySeatTier {
+  /** From this many seats in one purchase… */
+  minSeats: number;
+  /** …each seat-month costs this much less (fraction). */
+  discountRate: number;
 }
 
 /** A field a course is filed under. `label` null ⇒ i18n `academy.fields.<id>`. */
@@ -1454,6 +1471,17 @@ export interface AcademyLessonRecord {
   /** Watchable without buying (trailer-like). */
   isPreview: boolean;
   resources: AcademyResourceRecord[];
+  /** Subtitle tracks on the video host. The WebVTT text lives in Postgres (`academy_subtitles`). */
+  subtitles?: AcademySubtitleTrackRecord[];
+}
+
+export interface AcademySubtitleTrackRecord {
+  lang: 'fr' | 'en' | 'ar';
+  /** The host's file id (VdoCipher captions file). */
+  fileId: string;
+  /** Machine-translated and not re-uploaded by the author since. */
+  drafted: boolean;
+  updatedAt: string;
 }
 
 export interface AcademyModuleRecord {
@@ -1461,7 +1489,26 @@ export interface AcademyModuleRecord {
   title: LocalizedText;
   /** Announced but not released yet ("Bientôt"): shown in the programme, not playable. */
   comingSoon: boolean;
+  /**
+   * Added by the mentor to a PUBLISHED course and not approved yet: invisible
+   * to learners (not even "coming soon") until the admin approves it.
+   */
+  pendingReview?: boolean;
   lessons: AcademyLessonRecord[];
+  /** End-of-module quiz; passing every quiz (≥ 70 %) is part of the certificate. */
+  quiz?: AcademyQuizRecord | null;
+}
+
+export interface AcademyQuizQuestionRecord {
+  id: string;
+  prompt: LocalizedText;
+  options: LocalizedText[];
+  /** Never sent to a learner's browser: answers are marked on the server. */
+  correctIndex: number;
+}
+
+export interface AcademyQuizRecord {
+  questions: AcademyQuizQuestionRecord[];
 }
 
 export type AcademyCourseStatus = 'DRAFT' | 'IN_REVIEW' | 'CHANGES_REQUESTED' | 'PUBLISHED' | 'ARCHIVED';
@@ -1491,6 +1538,8 @@ export interface AcademyCourseRecord {
   /** Admin note when changes are requested or the course is refused. */
   reviewNote: string | null;
   submittedAt: string | null;
+  /** The mentor asked for review of new modules on a published course. */
+  modulesSubmittedAt?: string | null;
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -1526,7 +1575,19 @@ export interface AcademyEnrollmentRecord {
  */
 export interface AcademyOrderRecord {
   id: string;
+  /** What is bought. Absent ⇒ COURSE (every order before the Pass existed). */
+  kind?: 'COURSE' | 'PASS' | 'GIFT' | 'BUNDLE';
+  /** GIFT orders: the gift being paid for. */
+  giftId?: string;
+  /** BUNDLE orders: the path bought, and each course with its share of the price. */
+  bundleId?: string;
+  bundleItems?: AcademyBundleItem[];
+  /** First purchase through a referral link: the referrer, and the 10 % taken off. */
+  referral?: { referrerId: string; discountDzd: number } | null;
+  /** PASS orders only. */
+  passPlan?: 'MONTHLY' | 'ANNUAL';
   userId: string;
+  /** COURSE orders; '' for a PASS order. */
   courseId: string;
   /** Client idempotency key: a retried request never creates a second order. */
   clientReference: string;
@@ -1545,6 +1606,197 @@ export interface AcademyOrderRecord {
   enrollmentId: string | null;
   createdAt: string;
   paidAt: string | null;
+}
+
+export interface AcademyBundleItem {
+  courseId: string;
+  listPriceDzd: number;
+  /** This course's part of what the buyer paid (by list-price weight); refunds return it. */
+  amountDzd: number;
+  mentorShares: { mentorId: string; rate: number }[];
+}
+
+/** A learning path: published courses in order, sold together at an admin price. */
+export interface AcademyBundleRecord {
+  id: string;
+  slug: string;
+  title: LocalizedText;
+  description: LocalizedText | null;
+  courseIds: string[];
+  priceDzd: number;
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Pass seats an incubator bought for its members: `seats` seats for `months`
+ * months from `startAt`. Each month a seat's holder gets a one-month Pass term
+ * (method SEAT), so access, the watch-time split and the analytics are the Pass's.
+ */
+export interface AcademySeatBatchRecord {
+  id: string;
+  incubatorId: string;
+  /** The manager whose wallet paid. */
+  paidBy: string;
+  seats: number;
+  months: number;
+  startAt: string;
+  /** Full monthly Pass price at purchase: the mentors' shares are computed on it. */
+  unitListPriceDzd: number;
+  unitPriceDzd: number;
+  discountRate: number;
+  amountDzd: number;
+  paymentRef: string;
+  clientReference: string;
+  seatList: AcademySeatRecord[];
+  createdAt: string;
+}
+
+export interface AcademySeatRecord {
+  id: string;
+  holderUserId: string | null;
+  /** The email or phone the manager typed — shown back instead of the account's own details. */
+  holderContact?: string | null;
+  /** Month indexes already granted as Pass terms (never taken back). */
+  grantedMonths: number[];
+}
+
+/** A course or a Pass month bought for someone else, claimed through a link. */
+export interface AcademyGiftRecord {
+  id: string;
+  buyerId: string;
+  kind: 'COURSE' | 'PASS';
+  courseId: string | null;
+  recipientName: string;
+  /** Email or phone the link was sent to. */
+  recipientContact: string;
+  message: string | null;
+  /** SHA-256 of the claim token; the token itself is only in the link. */
+  tokenHash: string;
+  status: 'PENDING_PAYMENT' | 'PAID' | 'CLAIMED' | 'REFUNDED' | 'FAILED';
+  orderId: string | null;
+  listPriceDzd: number;
+  amountDzd: number;
+  /** COURSE gifts: frozen with the order, credited at claim. */
+  mentorShares: { mentorId: string; rate: number }[];
+  paidAt: string | null;
+  /** Unclaimed by then ⇒ refunded to the buyer's wallet. */
+  expiresAt: string | null;
+  claimedBy: string | null;
+  claimedAt: string | null;
+  createdAt: string;
+}
+
+/** One referred first purchase: the referrer's 10 % back, credited after the refund window. */
+export interface AcademyReferralRecord {
+  id: string;
+  referrerId: string;
+  refereeId: string;
+  orderId: string;
+  paidDzd: number;
+  rewardDzd: number;
+  status: 'PENDING' | 'CREDITED' | 'VOID';
+  creditAfter: string;
+  creditedAt: string | null;
+  createdAt: string;
+}
+
+/** A learner's result on one module quiz (one row per learner and module). */
+export interface AcademyQuizResultRecord {
+  userId: string;
+  courseId: string;
+  moduleId: string;
+  bestScore: number;
+  attempts: number;
+  /** First time the quiz was passed; never cleared by a worse later attempt. */
+  passedAt: string | null;
+  lastAttemptAt: string;
+}
+
+/** A learner's review of a course: one per learner and course, editable. */
+export interface AcademyReviewRecord {
+  id: string;
+  userId: string;
+  courseId: string;
+  /** 1–5. */
+  rating: number;
+  /** Optional text, ≤ 2 000 characters. */
+  text: string | null;
+  createdAt: string;
+  updatedAt: string;
+  /** Hidden by an admin: out of the course page and the average. */
+  hiddenAt: string | null;
+  hiddenBy: string | null;
+  /** The mentor's single public reply. */
+  reply: { mentorId: string; text: string; at: string } | null;
+}
+
+/**
+ * A course certificate. Its number is frozen when issued; it stays valid when
+ * the course changes or the Pass ends. Only an admin revokes it.
+ */
+export interface AcademyCertificateRecord {
+  id: string;
+  /** "ACA-2026-0001", sequential per year. */
+  number: string;
+  /** Random, unguessable: the public verification link and QR code. */
+  verifyToken: string;
+  userId: string;
+  courseId: string;
+  /** What the certificate says, frozen at issue. */
+  fullName: string;
+  courseTitle: string;
+  mentorNames: string;
+  access: 'OWNED' | 'PASS';
+  issuedAt: string;
+  emailedAt: string | null;
+  revokedAt: string | null;
+}
+
+/** Reminder emails sent to a learner about one unfinished course. */
+export interface AcademyReminderRecord {
+  userId: string;
+  courseId: string;
+  count: number;
+  lastSentAt: string;
+}
+
+/** One month of a Pass to settle between mentors (an annual Pass has 12). */
+export interface AcademyPassSliceRecord {
+  start: string;
+  end: string;
+  /** The FULL list price of this month: what the mentors' shares are computed on. */
+  baseDzd: number;
+  /** What the subscriber actually paid for this month (audit). */
+  paidDzd: number;
+  settledAt: string | null;
+  /** Frozen at settlement. Empty = nothing watched: the month stays with Metwork. */
+  lines: { mentorId: string; seconds: number; rate: number; amountDzd: number }[];
+}
+
+/**
+ * One paid term of the Academy Pass (a month, or a year). A renewal creates a
+ * new record and expires the old one, like `userMemberships`.
+ */
+export interface AcademyPassRecord {
+  id: string;
+  userId: string;
+  plan: 'MONTHLY' | 'ANNUAL';
+  status: 'ACTIVE' | 'EXPIRED';
+  /** Monthly terms renew from the wallet unless cancelled; annual never auto-charges. */
+  autoRenew: boolean;
+  periodStart: string;
+  periodEnd: string;
+  listPriceDzd: number;
+  amountDzd: number;
+  discount: 'NONE' | 'PREMIUM';
+  method: 'WALLET' | 'CARD' | 'RENEWAL' | 'SEAT' | 'GIFT';
+  /** Order id, or the wallet reference of a renewal. */
+  paymentRef: string;
+  renewalReminderSentAt: string | null;
+  slices: AcademyPassSliceRecord[];
+  createdAt: string;
 }
 
 /* ──────────────────── Membership plan configuration ──────────────────── */
@@ -1663,7 +1915,13 @@ export type AuditAction =
   /** An Academy course was published, unpublished or archived. */
   | 'ACADEMY_COURSE_STATUS_CHANGED'
   /** An Academy course with no buyers was deleted. */
-  | 'ACADEMY_COURSE_DELETED';
+  | 'ACADEMY_COURSE_DELETED'
+  /** An Academy review or Q&A post was hidden or shown again. */
+  | 'ACADEMY_CONTENT_MODERATED'
+  /** An Academy certificate was revoked or restored. */
+  | 'ACADEMY_CERTIFICATE_REVOKED'
+  /** An Academy bundle (learning path) was created, edited, published or archived. */
+  | 'ACADEMY_BUNDLE_UPDATED';
 
 export interface AuditLogRecord {
   id: string;
@@ -3684,6 +3942,10 @@ export type NotificationType =
   /** Startup Academy: a course was unlocked or refunded. */
   | 'ACADEMY_ENROLLED'
   | 'ACADEMY_REFUNDED'
+  /** Startup Academy Pass: started, renewed, renewing soon or ended. */
+  | 'ACADEMY_PASS'
+  /** Startup Academy learning: certificate issued, question answered, new module released. */
+  | 'ACADEMY_LEARNING'
   /** Refunds: a request was opened, accepted, paid or declined; or a payment arrived. */
   | 'REFUND_REQUESTED'
   | 'REFUND_UPDATE'
@@ -4291,6 +4553,12 @@ export interface ConsultantContractOtpState {
 
 export interface ConsultantContractRecord {
   id: string;
+  /**
+   * Which agreement this is. Absent ⇒ CONSULTANT (the partnership contract).
+   * ACADEMY_ADDENDUM = the Startup Academy addendum a mentor signs before
+   * submitting courses (same signing flow, its own template).
+   */
+  kind?: 'CONSULTANT' | 'ACADEMY_ADDENDUM';
   /** MentorRecord.id of the signing consultant. */
   consultantId: string;
   status: ConsultantContractStatus;
@@ -4461,8 +4729,18 @@ export interface DbShape {
   academyCourses?: AcademyCourseRecord[];
   /** Startup Academy — lifetime course access (purchases, grants, gifts). */
   academyEnrollments?: AcademyEnrollmentRecord[];
-  /** Startup Academy — course purchase attempts (wallet or card). */
+  /** Startup Academy — course and Pass purchase attempts (wallet or card). */
   academyOrders?: AcademyOrderRecord[];
+  academyQuizResults?: AcademyQuizResultRecord[];
+  academyReviews?: AcademyReviewRecord[];
+  academyCertificates?: AcademyCertificateRecord[];
+  academyReminders?: AcademyReminderRecord[];
+  academyBundles?: AcademyBundleRecord[];
+  academySeatBatches?: AcademySeatBatchRecord[];
+  academyGifts?: AcademyGiftRecord[];
+  academyReferrals?: AcademyReferralRecord[];
+  /** Startup Academy — Pass terms (one per paid month or year). */
+  academyPasses?: AcademyPassRecord[];
   /** Audit log entries for admin actions. */
   auditLogs: AuditLogRecord[];
   /** In-app notifications per user. */
@@ -4748,11 +5026,19 @@ let cacheAt = 0;
  * Vercel spins up multiple warm serverless instances simultaneously. A write
  * that lands on instance A updates A's cache and Supabase, but instance B
  * still holds its own stale snapshot. After CACHE_TTL_MS, every instance
- * discards its snapshot and re-reads from Supabase — bounding the window
- * during which different instances return different data for mentors / events
- * / spaces.
+ * checks with Supabase — bounding the window during which different instances
+ * return different data for mentors / events / spaces.
+ *
+ * The check asks only for the document's revision (a few bytes). The whole
+ * document (hundreds of KB, and what the plan's data allowance is spent on) is
+ * downloaded only when the revision moved, or after FULL_RELOAD_MS as a safety
+ * net for anything that changes the row without bumping `_rev`, such as a
+ * manual edit in the SQL editor.
  */
 const CACHE_TTL_MS = 10_000; // 10 s — safe for production read volumes
+const FULL_RELOAD_MS = 15 * 60_000;
+/** When this instance last downloaded the whole document. */
+let fullLoadAt = 0;
 let writeQueue: Promise<unknown> = Promise.resolve();
 
 /**
@@ -4902,9 +5188,31 @@ async function applyOneTimeMigrations(): Promise<void> {
   if (changed) await persist(cache!);
 }
 
+const revisionOf = (d: DbShape): string | null => (d._rev === undefined || d._rev === null ? null : String(d._rev));
+
+/** The stored document's revision, without its contents. 'UNKNOWN' sends the caller to a full load. */
+async function storedRevision(): Promise<string | null | 'UNKNOWN'> {
+  try {
+    const { data, error } = await getSupabase().from('app_state').select('rev:data->>_rev').eq('id', 1).single();
+    if (error) return 'UNKNOWN';
+    return (data as unknown as { rev: string | null }).rev ?? null;
+  } catch {
+    return 'UNKNOWN';
+  }
+}
+
 async function load(): Promise<DbShape> {
   if (cache && Date.now() - cacheAt < CACHE_TTL_MS) return cache;
-  // Cache is absent or stale — discard and re-fetch.
+  if (cache && !isLocalMode() && Date.now() - fullLoadAt < FULL_RELOAD_MS) {
+    const held = cache;
+    const stored = await storedRevision();
+    // `held` may have been replaced during the await; only vouch for the copy we asked about.
+    if (cache === held && stored !== 'UNKNOWN' && stored === revisionOf(held)) {
+      cacheAt = Date.now();
+      return held;
+    }
+  }
+  // Cache is absent or out of date — discard and re-fetch.
   cache = null;
 
   if (isLocalMode()) {
@@ -4937,7 +5245,28 @@ async function load(): Promise<DbShape> {
   await applyOneTimeMigrations();
 
   cacheAt = Date.now();
+  fullLoadAt = cacheAt;
   return cache!;
+}
+
+/**
+ * Read a few collections without downloading the whole document — for jobs that
+ * run often and usually find nothing to do (the 15-minute crons). Read-only
+ * selection only: anything that then acts goes through `update`, which loads
+ * the whole document as usual.
+ */
+export async function peek<K extends keyof DbShape>(keys: readonly K[]): Promise<Pick<DbShape, K>> {
+  if (isLocalMode() || (cache && Date.now() - cacheAt < CACHE_TTL_MS)) {
+    return structuredClone(await load());
+  }
+  const columns = keys.map((k) => `${String(k)}:data->${String(k)}`).join(',');
+  const { data, error } = await getSupabase().from('app_state').select(columns).eq('id', 1).single();
+  // No row yet, or any other trouble: the full load decides what to do about it.
+  if (error) return structuredClone(await load());
+  const row = data as unknown as Partial<DbShape>;
+  const out = {} as Pick<DbShape, K>;
+  for (const k of keys) out[k] = structuredClone(row[k] ?? empty[k]) as DbShape[K];
+  return out;
 }
 
 /**
@@ -5014,12 +5343,26 @@ export async function update<T>(mutator: (db: DbShape) => T | Promise<T>): Promi
     for (let attempt = 1; ; attempt++) {
       const db = await load();
       const rev = db._rev;
+      const before = JSON.stringify(db);
       let result: T;
       try {
         result = await mutator(db);
       } catch (err) {
         cache = null;
         throw err;
+      }
+      // Nothing changed (a cron that found nothing due): no write, and no new
+      // revision that would send every other instance to download the document.
+      // The decision behind it ("not enough funds", "already claimed") must still
+      // be made on current data, which the conditional write used to guarantee:
+      // if the document moved on, run the mutator again on the fresh copy.
+      if (JSON.stringify(db) === before) {
+        if (isLocalMode() || (await storedRevision()) === revisionOf(db)) return result;
+        cache = null;
+        if (attempt >= MAX_WRITE_ATTEMPTS) {
+          throw new Error('Store write conflict: the document kept changing under this write');
+        }
+        continue;
       }
       db._rev = (rev ?? 0) + 1;
       let written: boolean;
@@ -5049,7 +5392,7 @@ export async function update<T>(mutator: (db: DbShape) => T | Promise<T>): Promi
   return next;
 }
 
-export const db = { read, update };
+export const db = { read, peek, update };
 
 /**
  * TEST-ONLY: reset the in-process cache and write queue so the next read
@@ -5064,5 +5407,6 @@ export const db = { read, update };
 export function __resetCacheForTests(): void {
   cache = null;
   cacheAt = 0;
+  fullLoadAt = 0;
   writeQueue = Promise.resolve();
 }

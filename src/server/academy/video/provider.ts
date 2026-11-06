@@ -46,6 +46,10 @@ export interface VideoProvider {
   /** A short-lived token for one viewer, with their watermark burnt into playback. */
   createPlaybackToken(input: { videoId: string; watermark: string; ttlSec: number }): Promise<PlaybackToken>;
   deleteVideo(videoId: string): Promise<void>;
+  /** Attach a WebVTT subtitle track (ISO 639-1 language); returns the host's file id. */
+  addSubtitle(input: { videoId: string; language: 'fr' | 'en' | 'ar'; vtt: string }): Promise<string>;
+  /** Remove a subtitle track. A track the host no longer has is not an error. */
+  deleteSubtitle(input: { videoId: string; fileId: string }): Promise<void>;
 }
 
 export class VideoProviderError extends Error {

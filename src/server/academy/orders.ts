@@ -27,8 +27,11 @@ import {
   type UserRecord,
 } from '@/server/db/store';
 import {
+  ACADEMY_GIFT_CLAIM_DAYS,
   ACADEMY_REFUND_MAX_WATCHED,
   canBuyAcademy,
+  referralRewardDzd,
+  isLiveModule,
   isAcademyPremium,
   mentorShareRate,
   quoteCourse,
@@ -47,10 +50,12 @@ import { getSlickPayTransferStatus } from '@/server/payments/slickpay-provider';
 import { ProviderNotConfiguredError } from '@/server/payments/errors';
 import { createNotification } from '@/server/notifications/create-notification';
 import { getAcademyPricing } from './settings';
+import { grantPassInDraft } from './pass-core';
 import { academyRepo } from './repo';
+import { applyReferralToOrder } from './referral';
 
 type StoreDraft = Parameters<Parameters<typeof db.update>[0]>[0];
-type Buyer = Pick<UserRecord, 'id' | 'role' | 'fullName' | 'email' | 'phone' | 'membershipCode' | 'membershipTier' | 'membershipExpiresAt'>;
+export type Buyer = Pick<UserRecord, 'id' | 'role' | 'fullName' | 'email' | 'phone' | 'membershipCode' | 'membershipTier' | 'membershipExpiresAt'>;
 
 /** The enrollment that gives this user the course for life, if any. */
 export function activeEnrollment(
@@ -108,6 +113,60 @@ function settleOrderInDraft(d: StoreDraft, order: AcademyOrderRecord, providerRe
   order.status = 'PAID';
   order.paidAt = now;
   if (providerRef) order.providerRef = providerRef;
+  // Every kind of first purchase (course, Pass, bundle) records the referrer's reward.
+  if (order.referral) recordReferralInDraft(d, order, now);
+
+  if (order.kind === 'PASS') {
+    // A second payment while subscribed is not wasted: it queues the next term.
+    grantPassInDraft(d, {
+      userId: order.userId,
+      plan: order.passPlan ?? 'MONTHLY',
+      listPriceDzd: order.listPriceDzd,
+      amountDzd: order.amountDzd,
+      discount: order.discount,
+      method: order.method,
+      paymentRef: order.id,
+    });
+    return { claimed: true, order, enrollment: null, duplicate: false };
+  }
+
+  if (order.kind === 'GIFT') {
+    // The money waits with Metwork until the recipient claims (then the mentors are credited) or the link expires.
+    const gift = d.academyGifts?.find((g) => g.id === order.giftId);
+    if (gift && gift.status === 'PENDING_PAYMENT') {
+      gift.status = 'PAID';
+      gift.paidAt = now;
+      gift.expiresAt = new Date(Date.parse(now) + ACADEMY_GIFT_CLAIM_DAYS * 24 * 3600 * 1000).toISOString();
+    }
+    return { claimed: true, order, enrollment: null, duplicate: false };
+  }
+
+  if (order.kind === 'BUNDLE') {
+    let first: AcademyEnrollmentRecord | null = null;
+    let returned = 0;
+    for (const item of order.bundleItems ?? []) {
+      // Bought one of the courses meanwhile: that course's part goes back to the wallet.
+      if (activeEnrollment(d.academyEnrollments, order.userId, item.courseId)) {
+        returned += item.amountDzd;
+        creditRefundInDraft(d, {
+          userId: order.userId,
+          amount: item.amountDzd,
+          description: 'Startup Academy — course already owned, part of the bundle returned',
+          reference: `academy-bundle-owned-${order.id}-${item.courseId}`,
+          metadata: { orderId: order.id, courseId: item.courseId },
+        });
+        continue;
+      }
+      const e = enrollAndCreditInDraft(d, {
+        userId: order.userId, courseId: item.courseId, source: 'PURCHASE', listPriceDzd: item.listPriceDzd, amountDzd: item.amountDzd,
+        discount: order.discount, mentorShares: item.mentorShares, paymentRef: order.id, bucket: 'PENDING', now,
+      });
+      first ??= e;
+    }
+    order.enrollmentId = first?.id ?? null;
+    if (returned > 0) order.duplicateRefunded = true;
+    return { claimed: true, order, enrollment: first, duplicate: returned > 0 };
+  }
 
   if (!Array.isArray(d.academyEnrollments)) d.academyEnrollments = [];
   if (activeEnrollment(d.academyEnrollments, order.userId, order.courseId)) {
@@ -122,43 +181,126 @@ function settleOrderInDraft(d: StoreDraft, order: AcademyOrderRecord, providerRe
     return { claimed: true, order, enrollment: null, duplicate: true };
   }
 
+  const enrollment = enrollAndCreditInDraft(d, {
+    userId: order.userId, courseId: order.courseId, source: 'PURCHASE', listPriceDzd: order.listPriceDzd, amountDzd: order.amountDzd,
+    discount: order.discount, mentorShares: order.mentorShares, paymentRef: order.id, bucket: 'PENDING', now,
+  });
+  order.enrollmentId = enrollment.id;
+  return { claimed: true, order, enrollment, duplicate: false };
+}
+
+export interface EnrollInput {
+  userId: string;
+  courseId: string;
+  source: AcademyEnrollmentRecord['source'];
+  listPriceDzd: number;
+  amountDzd: number;
+  discount: AcademyEnrollmentRecord['discount'];
+  mentorShares: { mentorId: string; rate: number }[];
+  paymentRef: string;
+  /** PENDING while a refund is possible (purchases); AVAILABLE when it never is (claimed gifts). */
+  bucket: 'PENDING' | 'AVAILABLE';
+  now: string;
+}
+
+/**
+ * Grant a course for life and credit its mentors, inside an open update.
+ * Each mentor earns their share of the FULL list price (owner rule), split
+ * evenly between co-mentors. The ONE place an enrollment is paid for.
+ */
+export function enrollAndCreditInDraft(d: StoreDraft, input: EnrollInput): AcademyEnrollmentRecord {
+  if (!Array.isArray(d.academyEnrollments)) d.academyEnrollments = [];
   const enrollment: AcademyEnrollmentRecord = {
     id: randomUUID(),
-    userId: order.userId,
-    courseId: order.courseId,
-    source: 'PURCHASE',
-    listPriceDzd: order.listPriceDzd,
-    pricePaidDzd: order.amountDzd,
-    discount: order.discount,
-    mentorShareRate: order.mentorShares[0]?.rate ?? 0,
-    paymentRef: order.id,
-    createdAt: now,
+    userId: input.userId,
+    courseId: input.courseId,
+    source: input.source,
+    listPriceDzd: input.listPriceDzd,
+    pricePaidDzd: input.amountDzd,
+    discount: input.discount,
+    mentorShareRate: input.mentorShares[0]?.rate ?? 0,
+    paymentRef: input.paymentRef,
+    createdAt: input.now,
     refundedAt: null,
     revokedAt: null,
-    earningsReleasedAt: null,
+    // Nothing held: there is no refund window to wait for.
+    earningsReleasedAt: input.bucket === 'AVAILABLE' ? input.now : null,
   };
   d.academyEnrollments.push(enrollment);
-  order.enrollmentId = enrollment.id;
-
-  // Each mentor: their share of the FULL price, split evenly between co-mentors.
-  const n = order.mentorShares.length || 1;
-  for (const share of order.mentorShares) {
+  const n = input.mentorShares.length || 1;
+  for (const share of input.mentorShares) {
     applyMentorEarningToDraft(d, {
       mentorId: share.mentorId,
       bookingId: earningKey(enrollment.id),
-      grossAmount: Math.round(order.amountDzd / n),
-      consultantShareBase: Math.round(order.listPriceDzd / n),
-      tierDiscountAmount: Math.round((order.listPriceDzd - order.amountDzd) / n),
+      grossAmount: Math.round(input.amountDzd / n),
+      consultantShareBase: Math.round(input.listPriceDzd / n),
+      tierDiscountAmount: Math.round((input.listPriceDzd - input.amountDzd) / n),
       kind: 'ACADEMY_COURSE',
-      bucket: 'PENDING',
+      bucket: input.bucket,
       frozenPlatformRate: 1 - share.rate,
     });
   }
-  return { claimed: true, order, enrollment, duplicate: false };
+  return enrollment;
+}
+
+/** The mentors paid on one enrollment of an order (a bundle order carries them per course). */
+export function sharesForEnrollment(order: AcademyOrderRecord | undefined, courseId: string): { mentorId: string; rate: number }[] {
+  if (!order) return [];
+  return order.bundleItems?.find((i) => i.courseId === courseId)?.mentorShares ?? order.mentorShares;
+}
+
+/**
+ * A referred first purchase: the referrer's 10 % back (capped), credited by the
+ * release cron once the refund window has passed. One per referred member.
+ */
+function recordReferralInDraft(d: StoreDraft, order: AcademyOrderRecord, now: string): void {
+  if (!order.referral) return;
+  if (!Array.isArray(d.academyReferrals)) d.academyReferrals = [];
+  if (d.academyReferrals.some((r) => r.refereeId === order.userId)) return;
+  d.academyReferrals.push({
+    id: randomUUID(),
+    referrerId: order.referral.referrerId,
+    refereeId: order.userId,
+    orderId: order.id,
+    paidDzd: order.amountDzd,
+    rewardDzd: referralRewardDzd(order.amountDzd),
+    status: 'PENDING',
+    creditAfter: refundWindowEndsAt(now).toISOString(),
+    creditedAt: null,
+    createdAt: now,
+  });
 }
 
 async function afterClaim(outcome: SettleOutcome): Promise<void> {
   if (!outcome.claimed) return;
+  if (outcome.order.kind === 'PASS') {
+    await createNotification({
+      userId: outcome.order.userId,
+      type: 'ACADEMY_PASS',
+      title: 'Academy Pass activé',
+      body: 'Tous les cours inclus dans le Pass sont ouverts. Bon apprentissage !',
+      href: '/academy/courses',
+    });
+    return;
+  }
+  if (outcome.order.kind === 'GIFT') {
+    // The claim link goes to the recipient; imported lazily (gifts imports this module).
+    await (await import('./gifts')).sendGiftLink(outcome.order.giftId ?? '');
+    return;
+  }
+  if (outcome.order.kind === 'BUNDLE') {
+    const bundle = (await db.read()).academyBundles?.find((b) => b.id === outcome.order.bundleId);
+    await createNotification({
+      userId: outcome.order.userId,
+      type: 'ACADEMY_ENROLLED',
+      title: 'Parcours débloqué',
+      body: outcome.duplicate
+        ? `« ${bundle ? resolveText(bundle.title, 'fr') : ''} » est à vous. Les cours que vous aviez déjà ont été remboursés sur votre wallet.`
+        : `« ${bundle ? resolveText(bundle.title, 'fr') : ''} » est à vous, pour toujours. Bon apprentissage !`,
+      href: '/academy/my',
+    });
+    return;
+  }
   const course = (await db.read()).academyCourses?.find((c) => c.id === outcome.order.courseId);
   const title = course ? resolveText(course.title, 'fr') : '';
   await createNotification({
@@ -187,6 +329,8 @@ export interface StartPurchaseInput {
   clientReference: string;
   appBaseUrl: string;
   locale: string;
+  /** Referral code from the visitor's cookie, if any (checked on the server). */
+  referralCode?: string | null;
 }
 
 export async function startCoursePurchase(input: StartPurchaseInput): Promise<StartPurchaseResult> {
@@ -227,23 +371,12 @@ export async function startCoursePurchase(input: StartPurchaseInput): Promise<St
     createdAt: new Date().toISOString(),
     paidAt: null,
   };
+  await applyReferralToOrder(order, user, input.referralCode);
 
   if (input.method === 'WALLET') {
     const result = await db.update((d) => {
       if (activeEnrollment(d.academyEnrollments, user.id, course.id)) return { ok: false as const, code: 'ALREADY_OWNED' as const };
-      const debit = debitWalletInDraft(d, {
-        userId: user.id,
-        amount: order.amountDzd,
-        description: `Startup Academy — ${resolveText(course.title, 'fr')}`,
-        reference: `academy-order-${order.id}`,
-        metadata: { orderId: order.id, courseId: course.id, listPriceDzd: order.listPriceDzd, discount: order.discount },
-      });
-      if (!debit.ok) return debit.reason === 'INSUFFICIENT_FUNDS'
-        ? { ok: false as const, code: 'INSUFFICIENT_FUNDS' as const, balance: debit.balance, required: debit.required }
-        : { ok: false as const, code: 'WALLET_FROZEN' as const };
-      if (!Array.isArray(d.academyOrders)) d.academyOrders = [];
-      d.academyOrders.push(order);
-      return { ok: true as const, outcome: settleOrderInDraft(d, order, null) };
+      return payOrderFromWalletInDraft(d, order, `Startup Academy — ${resolveText(course.title, 'fr')}`);
     });
     if (!result.ok) return result;
     await afterClaim(result.outcome);
@@ -251,12 +384,30 @@ export async function startCoursePurchase(input: StartPurchaseInput): Promise<St
   }
 
   // Card: record the order, then open the hosted checkout with the order id as external id.
+  const card = await openCardCheckout(order, user, input.appBaseUrl, input.locale, `Startup Academy — ${resolveText(course.title, input.locale)}`);
+  if (!card.ok) return card;
+  return card.state === 'PAID'
+    ? { ok: true, state: 'PAID', orderId: order.id, courseSlug: course.slug }
+    : { ok: true, state: 'REDIRECT', orderId: order.id, redirectUrl: card.redirectUrl };
+}
+
+/**
+ * Record a card order and open the hosted checkout (course or Pass). The order
+ * id is the provider's external id, which routes the webhook back here.
+ */
+export async function openCardCheckout(
+  order: AcademyOrderRecord,
+  user: Buyer,
+  appBaseUrl: string,
+  locale: string,
+  description: string,
+): Promise<{ ok: true; state: 'PAID' } | { ok: true; state: 'REDIRECT'; redirectUrl: string } | { ok: false; code: 'PROVIDER_FAILED' }> {
   await db.update((d) => {
     if (!Array.isArray(d.academyOrders)) d.academyOrders = [];
     d.academyOrders.push(order);
   });
-  const base = input.appBaseUrl.replace(/\/$/, '');
-  const returnUrl = `${base}/${input.locale}/academy/checkout/return/${order.id}`;
+  const base = appBaseUrl.replace(/\/$/, '');
+  const returnUrl = `${base}/${locale}/academy/checkout/return/${order.id}`;
   const provider = getActiveProvider();
   let res;
   try {
@@ -267,8 +418,8 @@ export async function startCoursePurchase(input: StartPurchaseInput): Promise<St
       returnUrl,
       webhookUrl: `${base}/api/webhooks/payments/${provider.code}`,
       customer: { fullName: user.fullName, email: user.email, phone: user.phone ?? '' },
-      description: `Startup Academy — ${resolveText(course.title, input.locale)}`.slice(0, 120),
-      locale: input.locale,
+      description: description.slice(0, 120),
+      locale,
     });
   } catch (err) {
     console.error('[academy] checkout init failed', String(err));
@@ -281,11 +432,31 @@ export async function startCoursePurchase(input: StartPurchaseInput): Promise<St
   });
   if (res.status === 'COMPLETED') {
     await settleAcademyOrder(order.id, res.providerRef);
-    return { ok: true, state: 'PAID', orderId: order.id, courseSlug: course.slug };
+    return { ok: true, state: 'PAID' };
   }
   if (res.status === 'FAILED' || !res.redirectUrl) return { ok: false, code: 'PROVIDER_FAILED' };
-  return { ok: true, state: 'REDIRECT', orderId: order.id, redirectUrl: res.redirectUrl };
+  return { ok: true, state: 'REDIRECT', redirectUrl: res.redirectUrl };
 }
+
+/** Wallet-pay an order inside an open update and settle it there (course or Pass). */
+export function payOrderFromWalletInDraft(d: StoreDraft, order: AcademyOrderRecord, description: string) {
+  const debit = debitWalletInDraft(d, {
+    userId: order.userId,
+    amount: order.amountDzd,
+    description,
+    reference: `academy-order-${order.id}`,
+    metadata: { orderId: order.id, kind: order.kind ?? 'COURSE', courseId: order.courseId || null, listPriceDzd: order.listPriceDzd, discount: order.discount },
+  });
+  if (!debit.ok) return debit.reason === 'INSUFFICIENT_FUNDS'
+    ? { ok: false as const, code: 'INSUFFICIENT_FUNDS' as const, balance: debit.balance, required: debit.required }
+    : { ok: false as const, code: 'WALLET_FROZEN' as const };
+  if (!Array.isArray(d.academyOrders)) d.academyOrders = [];
+  d.academyOrders.push(order);
+  return { ok: true as const, outcome: settleOrderInDraft(d, order, null) };
+}
+
+/** Run the post-settlement side effects (notification) for a claimed order. */
+export { afterClaim as afterOrderSettled };
 
 /** Settle a card order whose payment is confirmed. Idempotent. */
 export async function settleAcademyOrder(orderId: string, providerRef: string | null): Promise<SettleOutcome | null> {
@@ -321,6 +492,7 @@ export async function settleAcademyOrderFromWebhook(
 export type OrderView =
   | { state: 'NOT_FOUND' }
   | { state: 'PAID' | 'PENDING' | 'FAILED'; order: AcademyOrderRecord; courseSlug: string; duplicate: boolean };
+// For a PASS order `courseSlug` is ''; the return page sends the member to the catalogue.
 
 /**
  * The buyer came back from the hosted checkout: ask the provider (never trust
@@ -350,13 +522,13 @@ export async function verifyAcademyOrder(orderId: string, userId: string): Promi
 
 export type RefundCheck =
   | { eligible: true; endsAt: string; amountDzd: number }
-  | { eligible: false; reason: 'NOT_FOUND' | 'NOT_A_PURCHASE' | 'ALREADY_REFUNDED' | 'WINDOW_CLOSED' | 'WATCHED_TOO_MUCH' | 'FREE' };
+  | { eligible: false; reason: 'NOT_FOUND' | 'NOT_A_PURCHASE' | 'ALREADY_REFUNDED' | 'WINDOW_CLOSED' | 'WATCHED_TOO_MUCH' | 'FREE' | 'CERTIFIED' };
 
 function releasedSeconds(course: AcademyCourseRecord | undefined): number {
-  return (course?.modules ?? []).filter((m) => !m.comingSoon).flatMap((m) => m.lessons).reduce((s, l) => s + l.durationSec, 0);
+  return (course?.modules ?? []).filter(isLiveModule).flatMap((m) => m.lessons).reduce((s, l) => s + l.durationSec, 0);
 }
 
-/** Owner rule: within 7 days, under 25 % of the released course watched, no certificate (none exist yet). */
+/** Owner rule: within 7 days, under 25 % of the released course watched, no certificate. */
 export async function refundCheck(userId: string, enrollmentId: string, now = new Date()): Promise<RefundCheck> {
   const d = await db.read();
   const e = d.academyEnrollments?.find((x) => x.id === enrollmentId && x.userId === userId);
@@ -366,6 +538,9 @@ export async function refundCheck(userId: string, enrollmentId: string, now = ne
   if (e.pricePaidDzd <= 0) return { eligible: false, reason: 'FREE' };
   const endsAt = refundWindowEndsAt(e.createdAt);
   if (now >= endsAt || e.earningsReleasedAt) return { eligible: false, reason: 'WINDOW_CLOSED' };
+  if ((d.academyCertificates ?? []).some((c) => c.userId === userId && c.courseId === e.courseId && !c.revokedAt)) {
+    return { eligible: false, reason: 'CERTIFIED' };
+  }
   const total = releasedSeconds(d.academyCourses?.find((c) => c.id === e.courseId));
   const watched = await academyRepo().courseWatchSeconds(userId, e.courseId);
   if (total > 0 && watched >= total * ACADEMY_REFUND_MAX_WATCHED) return { eligible: false, reason: 'WATCHED_TOO_MUCH' };
@@ -391,8 +566,11 @@ export async function refundEnrollment(userId: string, enrollmentId: string): Pr
       reference: `academy-refund-${e.id}`,
       metadata: { enrollmentId: e.id, courseId: e.courseId },
     });
-    for (const share of order?.mentorShares ?? []) {
+    for (const share of sharesForEnrollment(order, e.courseId)) {
       voidPendingEarningInDraft(d, { mentorId: share.mentorId, bookingId: earningKey(e.id), description: 'Academy course refunded within 7 days' });
+      // A refunded sale is no longer platform revenue either (same as the refund engine's reversal).
+      const commission = d.mentorLedgerTxns?.find((t) => t.mentorId === share.mentorId && t.reference === `mentor-commission-${earningKey(e.id)}`);
+      if (commission) commission.status = 'REVERSED';
     }
     return true;
   });
@@ -414,14 +592,14 @@ export async function refundEnrollment(userId: string, enrollmentId: string): Pr
  * held to withdrawable. Idempotent per enrollment (`earningsReleasedAt`, and the
  * ledger's own release reference).
  */
-export async function releaseAcademyEarnings(now = new Date()): Promise<{ released: number }> {
+export async function releaseAcademyEarnings(now = new Date()): Promise<{ released: number; referrals: { credited: number; voided: number } }> {
   const released = await db.update((d) => {
     let n = 0;
     for (const e of d.academyEnrollments ?? []) {
       if (e.source !== 'PURCHASE' || e.refundedAt || e.revokedAt || e.earningsReleasedAt) continue;
       if (refundWindowEndsAt(e.createdAt) > now) continue;
       const order = d.academyOrders?.find((o) => o.id === e.paymentRef);
-      for (const share of order?.mentorShares ?? []) {
+      for (const share of sharesForEnrollment(order, e.courseId)) {
         releaseEarningInDraft(d, { mentorId: share.mentorId, bookingId: earningKey(e.id), description: 'Academy course sale released after the refund window' });
       }
       e.earningsReleasedAt = now.toISOString();
@@ -429,5 +607,44 @@ export async function releaseAcademyEarnings(now = new Date()): Promise<{ releas
     }
     return n;
   });
-  return { released };
+  const referrals = await releaseReferralRewards(now);
+  return { released, referrals };
+}
+
+/**
+ * Daily, with the earnings release: referral rewards whose refund window has
+ * passed are credited to the referrer's wallet — 10 % of what the referred
+ * member kept paying (refunded courses no longer count), capped. Idempotent
+ * (status + the wallet reference).
+ */
+export async function releaseReferralRewards(now = new Date()): Promise<{ credited: number; voided: number }> {
+  return db.update((d) => {
+    let credited = 0;
+    let voided = 0;
+    for (const r of d.academyReferrals ?? []) {
+      if (r.status !== 'PENDING' || r.creditAfter > now.toISOString()) continue;
+      const refunded = (d.academyEnrollments ?? [])
+        .filter((e) => e.paymentRef === r.orderId && e.refundedAt)
+        .reduce((sum, e) => sum + e.pricePaidDzd, 0);
+      const reward = referralRewardDzd(r.paidDzd - refunded);
+      if (reward <= 0 || !d.users.some((u) => u.id === r.referrerId)) {
+        r.status = 'VOID';
+        voided++;
+        continue;
+      }
+      creditRefundInDraft(d, {
+        userId: r.referrerId,
+        amount: reward,
+        type: 'ADJUSTMENT',
+        description: 'Startup Academy — parrainage',
+        reference: `academy-referral-${r.id}`,
+        metadata: { referralId: r.id, orderId: r.orderId },
+      });
+      r.rewardDzd = reward;
+      r.status = 'CREDITED';
+      r.creditedAt = now.toISOString();
+      credited++;
+    }
+    return { credited, voided };
+  });
 }
