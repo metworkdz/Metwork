@@ -174,7 +174,7 @@ async function logSend(sb: SupabaseClient, record: CampaignSend): Promise<void> 
   const blob = await readBlob(sb);
   const existing = Array.isArray(blob.campaignSends) ? (blob.campaignSends as CampaignSend[]) : [];
   const next = { ...blob, campaignSends: [...existing, record] };
-  const { error } = await sb.from('app_state').upsert({ id: 1, data: next }, { onConflict: 'id' });
+  const { error } = await sb.from('app_state').upsert({ id: 1, data: { ...next, _rev: (Number((next as { _rev?: unknown })._rev) || 0) + 1 } }, { onConflict: 'id' });
   if (error) throw new Error(`campaignSends write failed: ${error.message}`);
 }
 

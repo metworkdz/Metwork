@@ -549,3 +549,13 @@ withdrawable at once (the Pass is not refundable).
   admin tiers / analytics / bundle editor in Arabic, subtitle upload + read in the builder.
   Not exercised live: VdoCipher subtitle upload, the AI subtitle draft (cost rule), real
   email/WhatsApp delivery of gift links, card payments for gifts/bundles.
+
+## 2026-11-06 — Supabase egress: reducing reads
+- Why: October hit 8.79 GB against the 5 GB Free limit (Metwork 7.07 GB, all PostgREST; crossed ~19 Oct); grace ends 21 Nov. Full document read = 889 KB raw, ~276 KB gzip; revision query = 15 bytes.
+- `db.load`: when the 10 s copy expires, ask only for `data->>_rev`; download only if it moved, or after 15 min (safety net for edits that don't bump `_rev`).
+- `db.update`: a mutator that changes nothing writes nothing and bumps nothing, but re-runs on fresh data if the revision moved (decisions like "not enough funds" must be made on current data). The consultation-reminder cron was rewriting the whole document 96 times a day.
+- `db.peek(keys)`: read named collections only. The 4 reconcilers and the reminder pre-check use it (same filters, ~20 KB instead of 276 KB).
+- New daily cron `sweep-expired-tokens`: sessions, OTPs, email tokens, consultant sessions and device tokens expired over a day ago.
+- Scripts writing `app_state` directly now bump `_rev`. Any new direct writer must too.
+- Not done: moving `consultantContracts.signature` / `contentSnapshot` (218 KB raw) out of the document; signed legal data, needs its own careful change.
+- Verify after deploy: daily egress on the Supabase usage page.

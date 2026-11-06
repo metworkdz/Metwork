@@ -5017,11 +5017,19 @@ let cacheAt = 0;
  * Vercel spins up multiple warm serverless instances simultaneously. A write
  * that lands on instance A updates A's cache and Supabase, but instance B
  * still holds its own stale snapshot. After CACHE_TTL_MS, every instance
- * discards its snapshot and re-reads from Supabase — bounding the window
- * during which different instances return different data for mentors / events
- * / spaces.
+ * checks with Supabase — bounding the window during which different instances
+ * return different data for mentors / events / spaces.
+ *
+ * The check asks only for the document's revision (a few bytes). The whole
+ * document (hundreds of KB, and what the plan's data allowance is spent on) is
+ * downloaded only when the revision moved, or after FULL_RELOAD_MS as a safety
+ * net for anything that changes the row without bumping `_rev`, such as a
+ * manual edit in the SQL editor.
  */
 const CACHE_TTL_MS = 10_000; // 10 s — safe for production read volumes
+const FULL_RELOAD_MS = 15 * 60_000;
+/** When this instance last downloaded the whole document. */
+let fullLoadAt = 0;
 let writeQueue: Promise<unknown> = Promise.resolve();
 
 /**
@@ -5171,9 +5179,31 @@ async function applyOneTimeMigrations(): Promise<void> {
   if (changed) await persist(cache!);
 }
 
+const revisionOf = (d: DbShape): string | null => (d._rev === undefined || d._rev === null ? null : String(d._rev));
+
+/** The stored document's revision, without its contents. 'UNKNOWN' sends the caller to a full load. */
+async function storedRevision(): Promise<string | null | 'UNKNOWN'> {
+  try {
+    const { data, error } = await getSupabase().from('app_state').select('rev:data->>_rev').eq('id', 1).single();
+    if (error) return 'UNKNOWN';
+    return (data as unknown as { rev: string | null }).rev ?? null;
+  } catch {
+    return 'UNKNOWN';
+  }
+}
+
 async function load(): Promise<DbShape> {
   if (cache && Date.now() - cacheAt < CACHE_TTL_MS) return cache;
-  // Cache is absent or stale — discard and re-fetch.
+  if (cache && !isLocalMode() && Date.now() - fullLoadAt < FULL_RELOAD_MS) {
+    const held = cache;
+    const stored = await storedRevision();
+    // `held` may have been replaced during the await; only vouch for the copy we asked about.
+    if (cache === held && stored !== 'UNKNOWN' && stored === revisionOf(held)) {
+      cacheAt = Date.now();
+      return held;
+    }
+  }
+  // Cache is absent or out of date — discard and re-fetch.
   cache = null;
 
   if (isLocalMode()) {
@@ -5206,7 +5236,28 @@ async function load(): Promise<DbShape> {
   await applyOneTimeMigrations();
 
   cacheAt = Date.now();
+  fullLoadAt = cacheAt;
   return cache!;
+}
+
+/**
+ * Read a few collections without downloading the whole document — for jobs that
+ * run often and usually find nothing to do (the 15-minute crons). Read-only
+ * selection only: anything that then acts goes through `update`, which loads
+ * the whole document as usual.
+ */
+export async function peek<K extends keyof DbShape>(keys: readonly K[]): Promise<Pick<DbShape, K>> {
+  if (isLocalMode() || (cache && Date.now() - cacheAt < CACHE_TTL_MS)) {
+    return structuredClone(await load());
+  }
+  const columns = keys.map((k) => `${String(k)}:data->${String(k)}`).join(',');
+  const { data, error } = await getSupabase().from('app_state').select(columns).eq('id', 1).single();
+  // No row yet, or any other trouble: the full load decides what to do about it.
+  if (error) return structuredClone(await load());
+  const row = data as unknown as Partial<DbShape>;
+  const out = {} as Pick<DbShape, K>;
+  for (const k of keys) out[k] = structuredClone(row[k] ?? empty[k]) as DbShape[K];
+  return out;
 }
 
 /**
@@ -5283,12 +5334,26 @@ export async function update<T>(mutator: (db: DbShape) => T | Promise<T>): Promi
     for (let attempt = 1; ; attempt++) {
       const db = await load();
       const rev = db._rev;
+      const before = JSON.stringify(db);
       let result: T;
       try {
         result = await mutator(db);
       } catch (err) {
         cache = null;
         throw err;
+      }
+      // Nothing changed (a cron that found nothing due): no write, and no new
+      // revision that would send every other instance to download the document.
+      // The decision behind it ("not enough funds", "already claimed") must still
+      // be made on current data, which the conditional write used to guarantee:
+      // if the document moved on, run the mutator again on the fresh copy.
+      if (JSON.stringify(db) === before) {
+        if (isLocalMode() || (await storedRevision()) === revisionOf(db)) return result;
+        cache = null;
+        if (attempt >= MAX_WRITE_ATTEMPTS) {
+          throw new Error('Store write conflict: the document kept changing under this write');
+        }
+        continue;
       }
       db._rev = (rev ?? 0) + 1;
       let written: boolean;
@@ -5318,7 +5383,7 @@ export async function update<T>(mutator: (db: DbShape) => T | Promise<T>): Promi
   return next;
 }
 
-export const db = { read, update };
+export const db = { read, peek, update };
 
 /**
  * TEST-ONLY: reset the in-process cache and write queue so the next read
@@ -5333,5 +5398,6 @@ export const db = { read, update };
 export function __resetCacheForTests(): void {
   cache = null;
   cacheAt = 0;
+  fullLoadAt = 0;
   writeQueue = Promise.resolve();
 }

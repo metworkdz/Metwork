@@ -741,7 +741,7 @@ export async function reconcilePendingPaymentLinks(
   const olderThanMs = opts.olderThanMs ?? 5 * 60_000;
   const limit = opts.limit ?? 200;
   const cutoff = Date.now() - olderThanMs;
-  const data = await db.read();
+  const data = await db.peek(['paymentLinks']);
   const candidates = (data.paymentLinks ?? [])
     .filter(
       (l) =>

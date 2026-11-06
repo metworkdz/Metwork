@@ -118,7 +118,7 @@ async function main(): Promise<void> {
       : {}),
   };
 
-  const { error: upErr } = await supabase.from('app_state').upsert({ id: 1, data: after }, { onConflict: 'id' });
+  const { error: upErr } = await supabase.from('app_state').upsert({ id: 1, data: { ...after, _rev: (Number((after as { _rev?: unknown })._rev) || 0) + 1 } }, { onConflict: 'id' });
   if (upErr) {
     console.error('✘ Supabase upsert failed:', upErr.message);
     process.exit(1);

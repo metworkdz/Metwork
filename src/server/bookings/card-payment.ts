@@ -1140,8 +1140,8 @@ export async function reconcilePendingCardBookings(
   const olderThanMs = opts.olderThanMs ?? 5 * 60_000;
   const limit = opts.limit ?? 200;
   const cutoff = Date.now() - olderThanMs;
-  const data = await db.read();
-  const candidates = data.bookings
+  const data = await db.peek(['bookings']);
+  const candidates = (data.bookings ?? [])
     .filter(
       (b) =>
         b.paymentMethod === 'card' &&
