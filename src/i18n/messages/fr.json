@@ -5965,6 +5965,9 @@
     "payInCashOnSiteDesc": "Réservez maintenant, payez la totalité sur place"
   },
   "formBuilder": {
+    "showWhenLabel": "Afficher cette question",
+    "showWhenAlways": "Toujours",
+    "showWhenIf": "Seulement si « {question} » = « {option} »",
     "title": "Formulaire d'inscription",
     "subtitle": "Ajoutez des questions personnalisées pour les candidats.",
     "addField": "Ajouter un champ",

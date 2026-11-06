@@ -197,6 +197,8 @@ export interface RegistrationFormField {
   optionKeys?: string[] | null;
   required: boolean;
   order: number;
+  /** Ask this question only when an earlier one was answered a certain way. */
+  showWhen?: { order: number; equals: string } | null;
 }
 
 export type RegistrationStatus = 'CONFIRMED' | 'WAITLISTED' | 'CANCELLED';

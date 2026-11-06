@@ -38,6 +38,7 @@ import { ApiClientError } from '@/lib/api-client';
 import { formatCurrency } from '@/lib/format';
 import { resolveListingPricing } from '@/lib/listing-price';
 import { questionLabel, questionOptions } from '@/lib/registration-question';
+import { isQuestionVisible } from '@/lib/registration-conditions';
 import { computeClientDeposit } from '@/lib/deposit';
 import { safeUUID } from '@/lib/safe-uuid';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
@@ -197,12 +198,20 @@ export function RegistrationForm({
 
   /* ── Steps ─────────────────────────────────────────────────────────────── */
 
+  // Questions that depend on an earlier answer appear only once it matches.
+  // A controlling question always sits earlier, so the step the visitor is on
+  // never moves under them while they answer.
+  const visibleFields = useMemo(
+    () => formFields.filter((f) => isQuestionVisible(f, formFields, (id) => form.answers[id])),
+    [formFields, form.answers],
+  );
+
   const steps = useMemo<Step[]>(() => {
     const list: Step[] = [{ kind: 'identity' }];
-    for (const field of formFields) list.push({ kind: 'question', field });
+    for (const field of visibleFields) list.push({ kind: 'question', field });
     if (isPaid && (onlineOffered || cashOffered || cashOnSiteOffered)) list.push({ kind: 'payment' });
     return list;
-  }, [formFields, isPaid, onlineOffered, cashOffered, cashOnSiteOffered]);
+  }, [visibleFields, isPaid, onlineOffered, cashOffered, cashOnSiteOffered]);
 
   const step = steps[Math.min(stepIndex, steps.length - 1)]!;
   const isLast = stepIndex >= steps.length - 1;
@@ -260,7 +269,7 @@ export function RegistrationForm({
   /* ── Submission ────────────────────────────────────────────────────────── */
 
   function collectAnswers() {
-    return formFields.map((f) => ({
+    return visibleFields.map((f) => ({
       fieldId: f.id,
       value:
         form.answers[f.id] ??

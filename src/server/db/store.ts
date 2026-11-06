@@ -2443,6 +2443,8 @@ export interface RegistrationFormFieldRecord {
   required: boolean;
   /** Display order (0-indexed). */
   order: number;
+  /** Ask only when an earlier question (by `order`) was answered `equals`. Absent = always asked. */
+  showWhen?: { order: number; equals: string } | null;
   createdAt: string;
   updatedAt: string;
 }

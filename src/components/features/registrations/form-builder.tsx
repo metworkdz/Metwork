@@ -37,6 +37,7 @@ import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
 import { keysSurvivingEdit } from '@/lib/registration-question';
+import { cn } from '@/lib/utils';
 import type { RegistrationFieldType, RegistrationFormField } from '@/types/domain';
 
 const FIELD_TYPE_OPTIONS: { value: RegistrationFieldType; labelKey: string }[] = [
@@ -75,7 +76,16 @@ interface BuilderField {
    * their mind expects.
    */
   _seed: { label: string; options: string[] } | null;
+  /**
+   * "Ask only if" rule: the controlling row's `_key` (not its position, which
+   * moves as rows are reordered) and the option that unlocks this question.
+   * Turned back into a position on save.
+   */
+  showWhen: { key: string; equals: string } | null;
 }
+
+/** An earlier choice question another row may depend on. */
+interface ChoiceRef { key: string; label: string; options: string[] }
 
 interface RegistrationFormBuilderProps {
   entityType: 'PROGRAM' | 'EVENT';
@@ -99,14 +109,27 @@ function toBuilderField(f: RegistrationFormField): BuilderField {
     labelKey: f.labelKey ?? null,
     optionKeys: f.optionKeys ?? null,
     _seed: f.labelKey ? { label: f.label, options: f.options ?? [] } : null,
+    showWhen: null,
   };
+}
+
+/** Load the stored rules, re-pointing each from a position to the row's key. */
+function toBuilderFields(initial: RegistrationFormField[]): BuilderField[] {
+  const rows = initial.map(toBuilderField);
+  return rows.map((row, i) => {
+    const rule = initial[i]?.showWhen;
+    const controller = rule ? rows[rule.order] : undefined;
+    return rule && controller && rule.order < i
+      ? { ...row, showWhen: { key: controller._key, equals: rule.equals } }
+      : row;
+  });
 }
 
 /** A question the host wrote themselves — never template-translated. */
 function emptyField(): BuilderField {
   return {
     _key: newKey(), label: '', type: 'SHORT_TEXT', options: [], required: false,
-    labelKey: null, optionKeys: null, _seed: null,
+    labelKey: null, optionKeys: null, _seed: null, showWhen: null,
   };
 }
 
@@ -118,7 +141,7 @@ export function RegistrationFormBuilder({
 }: RegistrationFormBuilderProps) {
   const t = useTranslations('formBuilder');
   const tQuestions = useTranslations('defaultQuestions');
-  const [fields, setFields] = useState<BuilderField[]>(initialFields.map(toBuilderField));
+  const [fields, setFields] = useState<BuilderField[]>(() => toBuilderFields(initialFields));
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -141,6 +164,7 @@ export function RegistrationFormBuilder({
       labelKey: f.labelKey,
       optionKeys: f.optionKeys,
       _seed: { label: f.label, options: f.options ?? [] },
+      showWhen: null,
     }));
     setFields((prev) => [...prev, ...defaults]);
     setSaved(false);
@@ -250,6 +274,13 @@ export function RegistrationFormBuilder({
                 optionKeys,
                 required: f.required,
                 order: i,
+                // Position of the controlling row now; dropped if it was
+                // deleted or moved below this one (it must stay earlier).
+                showWhen: (() => {
+                  if (!f.showWhen) return null;
+                  const at = fields.findIndex((c) => c._key === f.showWhen!.key);
+                  return at >= 0 && at < i ? { order: at, equals: f.showWhen.equals } : null;
+                })(),
               };
             }),
           }),
@@ -313,11 +344,16 @@ export function RegistrationFormBuilder({
             onUpdateOption: (oi: number, v: string) => updateOption(field._key, oi, v),
             onRemoveOption: (oi: number) => removeOption(field._key, oi),
           };
+          // Earlier choice questions this one may depend on.
+          const earlier: ChoiceRef[] = fields
+            .slice(0, idx)
+            .filter((c) => CHOICE_TYPES.includes(c.type) && c.options.some((o) => o.trim()))
+            .map((c) => ({ key: c._key, label: c.label, options: c.options.filter((o) => o.trim()) }));
           return (
             <div key={field._key}>
               {/* Desktop: inline editor (unchanged) */}
               <div className="hidden lg:block">
-                <FieldEditor field={field} index={idx} total={fields.length} {...handlers} />
+                <FieldEditor field={field} index={idx} total={fields.length} earlier={earlier} {...handlers} />
               </div>
               {/* Mobile: compact card + bottom-sheet editor */}
               <MobileFieldCard
@@ -325,6 +361,7 @@ export function RegistrationFormBuilder({
                 field={field}
                 index={idx}
                 total={fields.length}
+                earlier={earlier}
                 {...handlers}
               />
             </div>
@@ -389,6 +426,7 @@ function FieldEditor({
   field,
   index,
   total,
+  earlier,
   onUpdate,
   onRemove,
   onMove,
@@ -399,6 +437,7 @@ function FieldEditor({
   field: BuilderField;
   index: number;
   total: number;
+  earlier: ChoiceRef[];
   onUpdate: (p: Partial<BuilderField>) => void;
   onRemove: () => void;
   onMove: (dir: 'up' | 'down') => void;
@@ -485,6 +524,8 @@ function FieldEditor({
         </button>
       </div>
 
+      <ShowWhenSelect field={field} earlier={earlier} onUpdate={onUpdate} />
+
       {/* Options editor for DROPDOWN / MULTIPLE_CHOICE / CHECKBOX */}
       {isChoiceType && (
         <div className="pt-1 space-y-2">
@@ -528,6 +569,56 @@ function FieldEditor({
   );
 }
 
+/* ─────────────────────────── ShowWhenSelect ───────────────────────────
+ * "Always ask" or "only ask if <earlier question> = <option>". Hidden on the
+ * first question and whenever no earlier choice question exists to depend on. */
+
+function ShowWhenSelect({
+  field,
+  earlier,
+  onUpdate,
+  tall,
+}: {
+  field: BuilderField;
+  earlier: ChoiceRef[];
+  onUpdate: (p: Partial<BuilderField>) => void;
+  tall?: boolean;
+}) {
+  const t = useTranslations('formBuilder');
+  if (earlier.length === 0) return null;
+
+  // "<key>|<option>" — the key never contains a pipe, so split on the first.
+  const value = field.showWhen ? `${field.showWhen.key}|${field.showWhen.equals}` : '';
+  const known = earlier.some((c) => c.key === field.showWhen?.key && c.options.includes(field.showWhen.equals));
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium text-muted-foreground">{t('showWhenLabel')}</Label>
+      <select
+        value={known ? value : ''}
+        onChange={(e) => {
+          const v = e.target.value;
+          const at = v.indexOf('|');
+          onUpdate({ showWhen: v ? { key: v.slice(0, at), equals: v.slice(at + 1) } : null });
+        }}
+        className={cn(
+          'flex w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          tall ? 'h-11' : 'h-8',
+        )}
+      >
+        <option value="">{t('showWhenAlways')}</option>
+        {earlier.flatMap((c) =>
+          c.options.map((o) => (
+            <option key={`${c.key}|${o}`} value={`${c.key}|${o}`}>
+              {t('showWhenIf', { question: c.label.trim() || t('untitledField'), option: o })}
+            </option>
+          )),
+        )}
+      </select>
+    </div>
+  );
+}
+
 /* ────────────────────────── MobileFieldCard ──────────────────────────
  * Touch-first variant shown only below `lg`. The summary card exposes large
  * (44px) tap targets; editing happens in a bottom sheet so inputs are
@@ -538,6 +629,7 @@ function MobileFieldCard({
   field,
   index,
   total,
+  earlier,
   onUpdate,
   onRemove,
   onMove,
@@ -549,6 +641,7 @@ function MobileFieldCard({
   field: BuilderField;
   index: number;
   total: number;
+  earlier: ChoiceRef[];
   onUpdate: (p: Partial<BuilderField>) => void;
   onRemove: () => void;
   onMove: (dir: 'up' | 'down') => void;
@@ -576,6 +669,7 @@ function MobileFieldCard({
         type: snap.type,
         options: snap.options,
         required: snap.required,
+        showWhen: snap.showWhen,
       });
     }
     setOpen(false);
@@ -689,6 +783,8 @@ function MobileFieldCard({
                 />
                 <span className="text-sm text-muted-foreground">{t('required')}</span>
               </label>
+
+              <ShowWhenSelect field={field} earlier={earlier} onUpdate={onUpdate} tall />
 
               {isChoiceType && (
                 <div className="space-y-2">

@@ -5965,6 +5965,9 @@
     "payInCashOnSiteDesc": "Reserve now, pay the full amount on site"
   },
   "formBuilder": {
+    "showWhenLabel": "Show this question",
+    "showWhenAlways": "Always",
+    "showWhenIf": "Only if “{question}” = “{option}”",
     "title": "Registration Form",
     "subtitle": "Add custom questions for applicants to answer when registering.",
     "addField": "Add field",

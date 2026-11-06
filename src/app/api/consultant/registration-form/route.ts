@@ -39,6 +39,8 @@ const fieldSchema = z.object({
   optionKeys: z.array(z.string().min(1).max(80)).nullable().optional().transform((v) => v ?? null),
   required: z.boolean().default(false),
   order:    z.number().int().min(0).default(0),
+  /** Ask only when an earlier question (by position) was answered `equals`. */
+  showWhen: z.object({ order: z.number().int().min(0), equals: z.string().min(1).max(200) }).nullable().optional().transform((v) => v ?? null),
 });
 
 const replaceSchema = z.object({
@@ -107,6 +109,8 @@ export async function POST(req: NextRequest) {
           : null,
       required: f.required,
       order:    i,
+      // Only a rule that points at an EARLIER question is kept — it can't cycle.
+      showWhen: f.showWhen && f.showWhen.order < i ? f.showWhen : null,
     })),
   );
 

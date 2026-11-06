@@ -31,6 +31,7 @@ import {
   type DeskPaymentPlan,
 } from '@/server/bookings/desk-payment';
 import { getProgramOwner, isProgramPubliclyReachable } from '@/server/programs/ownership';
+import { isQuestionVisible } from '@/lib/registration-conditions';
 
 /* ─────────────────────────── Owner scope ─────────────────────────── */
 
@@ -289,6 +290,7 @@ export async function replaceFormFields(
       optionKeys: f.optionKeys ?? null,
       required: f.required,
       order: i,
+      showWhen: f.showWhen ?? null,
       createdAt: now,
       updatedAt: now,
     }));
@@ -887,8 +889,11 @@ export function findMissingRequiredAnswer(
   const fields = (data.registrationFormFields ?? []).filter(
     (f) => f.entityType === entityType && f.entityId === entityId,
   );
+  const answerOf = (id: string) => answers.find((a) => a.fieldId === id)?.value;
   for (const field of fields) {
     if (!field.required) continue;
+    // A question the applicant was never shown can't be "missing".
+    if (!isQuestionVisible(field, fields, answerOf)) continue;
     const answer = answers.find((a) => a.fieldId === field.id);
     const missing =
       !answer ||

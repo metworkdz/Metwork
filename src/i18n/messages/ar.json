@@ -5965,6 +5965,9 @@
     "payInCashOnSiteDesc": "احجز الآن وادفع المبلغ كاملاً في المكان"
   },
   "formBuilder": {
+    "showWhenLabel": "عرض هذا السؤال",
+    "showWhenAlways": "دائمًا",
+    "showWhenIf": "فقط إذا كان «{question}» = «{option}»",
     "title": "نموذج التسجيل",
     "subtitle": "أضف أسئلة مخصصة للمتقدمين عند التسجيل.",
     "addField": "إضافة حقل",
