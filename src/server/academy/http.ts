@@ -2,7 +2,7 @@
 import type { NextRequest } from 'next/server';
 import { ZodError, type ZodTypeAny, type z } from 'zod';
 import { requireApiRole, requireApprovedApiSession } from '@/server/auth/api-guards';
-import { isAcademyEnabled } from '@/config/feature-flags';
+import { isAcademyEnabled, isAcademyStudioEnabled } from '@/config/feature-flags';
 import { requireConsultant } from '@/server/mentors/access';
 import { fromZod, jsonError } from '@/server/http/json';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
@@ -37,7 +37,7 @@ export async function requireAcademyLearner() {
 
 /** A signed-in consultant (mentor) using the Studio. */
 export async function requireStudioMentor() {
-  if (!isAcademyEnabled()) return { ok: false as const, response: jsonError(404, 'NOT_FOUND', 'Not found') };
+  if (!isAcademyStudioEnabled()) return { ok: false as const, response: jsonError(404, 'NOT_FOUND', 'Not found') };
   return requireConsultant();
 }
 

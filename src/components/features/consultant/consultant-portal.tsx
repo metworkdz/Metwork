@@ -33,7 +33,7 @@ import { ProgramsSection } from './portal/programs-section';
 import { ContractSection } from './portal/contract-section';
 import { InvoicesSection } from './portal/invoices-section';
 import { AcademySection } from './portal/academy-section';
-import { isAcademyEnabled } from '@/config/feature-flags';
+import { isAcademyStudioEnabled } from '@/config/feature-flags';
 import { LanguageSwitcher } from './portal/language-switcher';
 import { AppLogo, Avatar, FlowSheet, fmtDZD } from './portal/shared';
 import { PushToggle } from '@/components/pwa/push-toggle';
@@ -200,7 +200,7 @@ function Dashboard({
     { key: 'wallet', label: t('nav.wallet'), icon: Wallet },
     { key: 'invoices', label: t('nav.invoices'), icon: ReceiptText },
   ];
-  if (isAcademyEnabled()) tabs.push({ key: 'academy', label: t('nav.academy'), icon: BookOpenCheck });
+  if (isAcademyStudioEnabled()) tabs.push({ key: 'academy', label: t('nav.academy'), icon: BookOpenCheck });
   // The tab appears only once a contract exists. A consultant who has never
   // been sent one has nothing to look at, and an always-present empty tab
   // would just add a dead end to the nav.

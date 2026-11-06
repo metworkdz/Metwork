@@ -18,6 +18,7 @@
  * Non-blocking rule: a failed upload returns an error and touches nothing —
  * the account/profile state can never be corrupted.
  */
+import { isAcademyStudioEnabled } from '@/config/feature-flags';
 import { randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
   const kind: UploadKind = (KINDS as readonly string[]).includes(kindRaw)
     ? (kindRaw as UploadKind)
     : 'avatar';
+  if (kind === 'academy-cover' && !isAcademyStudioEnabled()) return jsonError(404, 'NOT_FOUND', 'Not found');
   /** Everything except the CV is an image. */
   const isImage = kind !== 'cv';
   const file = form.get('file');

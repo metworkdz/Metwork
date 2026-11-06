@@ -36,6 +36,7 @@ const SECTION_BY_ROOT: Record<string, LandingSection> = {
   '/spaces': 'spaces',
   '/mentors': 'mentors',
   '/academy': 'academy',
+  '/startupacademy': 'academy',
   '/incubators': 'incubators',
   '/investors': 'investors',
   '/freelancers': 'freelancers',

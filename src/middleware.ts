@@ -1,6 +1,7 @@
 import createMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 import { routing } from '@/i18n/routing';
+import { isAcademyEnabled } from '@/config/feature-flags';
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -87,6 +88,16 @@ export default function middleware(req: NextRequest) {
   }
 
   const { locale, path } = stripLocale(pathname);
+
+  // Startup Academy before launch: the whole /academy tree is a true 404 (a
+  // notFound() in the pages would answer 200, because the root loading.tsx
+  // streams). Rewriting to a path no route matches is what gives the real status.
+  if (!isAcademyEnabled() && (path === '/academy' || path.startsWith('/academy/'))) {
+    const url = req.nextUrl.clone();
+    url.pathname = `/${locale ?? routing.defaultLocale}/academy-not-launched`;
+    return NextResponse.rewrite(url);
+  }
+
   const session = req.cookies.get(AUTH_COOKIE)?.value;
   const localePrefix = locale ? `/${locale}` : '';
 

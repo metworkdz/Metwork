@@ -65,18 +65,35 @@ export function isFreelancerPremiumOnSale(): boolean {
 }
 
 /**
- * Startup Academy (the e-learning platform at /academy).
+ * Startup Academy (the e-learning platform at /academy) opens in three steps,
+ * one switch each, so a link can go to testers before anything is announced:
  *
- * OFF until launch: /academy keeps showing the "coming soon" page with its
- * waitlist form. `NEXT_PUBLIC_ACADEMY_PREVIEW=true` shows the new Academy on a
- * local or preview deployment without flipping this for everyone. Inlined at
- * build time, so a Vercel env change needs a redeploy.
+ *   1. ACADEMY_LIVE — /academy works for anyone who has the link, including
+ *      buying (the routes, the pages, the APIs). Off: the whole tree is a 404.
+ *   2. ACADEMY_ANNOUNCED — the public launch: the site's menu and footer point
+ *      to /academy (not the coming-soon page at /startupacademy, which then
+ *      redirects), search engines may index it, the Premium perk card and the
+ *      incubators' seats menu appear.
+ *   3. ACADEMY_STUDIO_LIVE — consultants: the portal's Academy tab, the Studio
+ *      API, and the notices sent to mentors.
  *
- * What it controls: the /academy layout and every page under it, and (from
- * phase 2) the Academy API routes, each of which refuses on its own.
+ * `NEXT_PUBLIC_ACADEMY_PREVIEW=true` turns all three on for a local or preview
+ * deployment. Inlined at build time, so a Vercel env change needs a redeploy.
  */
-const ACADEMY_LIVE = false;
+const ACADEMY_LIVE = true;
+const ACADEMY_ANNOUNCED = false;
+const ACADEMY_STUDIO_LIVE = false;
+
+const academyPreview = () => process.env.NEXT_PUBLIC_ACADEMY_PREVIEW === 'true';
 
 export function isAcademyEnabled(): boolean {
-  return ACADEMY_LIVE || process.env.NEXT_PUBLIC_ACADEMY_PREVIEW === 'true';
+  return ACADEMY_LIVE || academyPreview();
+}
+
+export function isAcademyAnnounced(): boolean {
+  return ACADEMY_ANNOUNCED || academyPreview();
+}
+
+export function isAcademyStudioEnabled(): boolean {
+  return ACADEMY_STUDIO_LIVE || academyPreview();
 }

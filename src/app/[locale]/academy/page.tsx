@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { isAcademyEnabled } from '@/config/feature-flags';
+import { assertAcademyEnabled } from '@/server/academy/guard';
 import { assertLandingVisible } from '@/lib/landing-visibility';
-import { AcademyComingSoon } from '@/components/features/academy/academy-coming-soon';
 import { AcademyLanding } from '@/components/features/academy/academy-landing';
 import { getAcademyPricing, listAcademyFields } from '@/server/academy/settings';
 import { listPublicCourses } from '@/server/academy/catalog';
@@ -17,23 +16,21 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   // Gate here too: metadata resolves before the first byte, so a hidden section
-  // returns a real 404 status (the page-body gate alone streams 200 + 404 UI).
+  // or an Academy not launched yet returns a real 404 status (the page-body
+  // gate alone streams 200 + 404 UI).
+  assertAcademyEnabled();
   await assertLandingVisible('academy');
   const { locale } = await params;
   setRequestLocale(locale);
-  if (!isAcademyEnabled()) {
-    const t = await getTranslations('pages.academy');
-    return { title: t('metaTitle'), description: t('metaDescription') };
-  }
   const t = await getTranslations('academy.meta');
   return { title: t('title'), description: t('description') };
 }
 
 export default async function AcademyPage({ params }: PageProps) {
+  assertAcademyEnabled();
   await assertLandingVisible('academy');
   const { locale } = await params;
   setRequestLocale(locale);
-  if (!isAcademyEnabled()) return <AcademyComingSoon />;
 
   const [pricing, fields, courses] = await Promise.all([getAcademyPricing(), listAcademyFields(), listPublicCourses(locale)]);
   return <AcademyLanding locale={locale} pricing={pricing} fields={fields} courses={courses.slice(0, 4)} />;

@@ -11,6 +11,7 @@ import { db, type AcademyCourseRecord } from '@/server/db/store';
 import { resolveText } from '@/lib/localized-text';
 import { createNotification } from '@/server/notifications/create-notification';
 import { pushToMentor } from '@/server/notifications/push';
+import { isAcademyStudioEnabled } from '@/config/feature-flags';
 import { academyRepo, type LessonNote, type LessonPost, type PostAuthorKind } from './repo';
 import { courseReach, lessonAccess, type Viewer } from './access';
 import { reviewerName } from './reviews';
@@ -126,6 +127,8 @@ async function notifyAnswer(d: StoreData, question: LessonPost, answer: LessonPo
 }
 
 async function notifyMentors(d: StoreData, question: LessonPost) {
+  // Consultants hear about the Academy only once their side is open.
+  if (!isAcademyStudioEnabled()) return;
   const course = d.academyCourses?.find((c) => c.id === question.courseId);
   if (!course) return;
   for (const mentorId of course.mentorIds) {

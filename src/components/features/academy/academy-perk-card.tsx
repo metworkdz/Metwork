@@ -4,14 +4,14 @@ import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { db } from '@/server/db/store';
 import { getAcademyPricing } from '@/server/academy/settings';
-import { isAcademyEnabled } from '@/config/feature-flags';
+import { isAcademyAnnounced } from '@/config/feature-flags';
 import { isAcademyPremium } from '@/lib/academy';
 import type { UserRecord } from '@/server/db/store';
 import { formatDzd } from './format';
 
 /** The Academy discount among a Premium member's perks, with what it already saved them. */
 export async function AcademyPerkCard({ user, locale }: { user: UserRecord; locale: string }) {
-  if (!isAcademyEnabled() || !isAcademyPremium(user)) return null;
+  if (!isAcademyAnnounced() || !isAcademyPremium(user)) return null;
   const t = await getTranslations('academy.perk');
   const tm = await getTranslations('academy');
   const [pricing, d] = await Promise.all([getAcademyPricing(), db.read()]);
