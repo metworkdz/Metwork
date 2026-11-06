@@ -1,0 +1,16 @@
+# Never upload these when deploying with the Vercel CLI.
+# "Startup Academy" is the local video production folder (100+ GB of media).
+/Startup Academy
+/.claude
+/backups
+/tests/screenshots
+/test-results
+/playwright-report
+/.next
+/node_modules
+.DS_Store
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.wav

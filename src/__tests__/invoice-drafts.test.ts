@@ -221,3 +221,71 @@ describe('the note on conversion', () => {
     expect((await db.read()).invoices!.find((i) => i.id === b.id)!.note).toBe('Avance de 50 %');
   });
 });
+
+describe('converting with a chosen invoice date', () => {
+  const convert = async (id: string, body: Record<string, unknown>) => {
+    const { POST } = await import('@/app/api/incubator/invoices/[id]/convert/route');
+    return POST(new NextRequest('http://localhost/x', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+    }), ctx(id));
+  };
+  /** Pretend the proforma was issued on `iso`. */
+  const backdate = (id: string, iso: string) =>
+    db.update((d) => { d.invoices!.find((i) => i.id === id)!.issuedAt = iso; });
+  const day = (offsetDays: number) =>
+    new Date(Date.now() + 3_600_000 + offsetDays * 86_400_000).toISOString().slice(0, 10);
+
+  it('dates the facture on the chosen day, and the PDF prints that day', async () => {
+    const fp = await issue('PROFORMA');
+    await backdate(fp.id, `${day(-20)}T09:00:00.000Z`);
+    const chosen = day(-5);
+    const res = await convert(fp.id, { paymentMethod: 'CHEQUE', withStamp: false, issuedOn: chosen });
+    expect(res.status).toBe(201);
+    const { invoice } = await res.json() as { invoice: InvoiceRecord };
+    expect(invoice.issuedAt).toBe(`${chosen}T12:00:00.000Z`);
+    const [y, m, d] = chosen.split('-');
+    expect(buildInvoiceViewModel(invoice).date).toBe(`${d}/${m}/${y}`);
+  });
+
+  it('accepts the proforma’s own day and today, refuses before and after', async () => {
+    const a = await issue('PROFORMA');
+    await backdate(a.id, `${day(-3)}T09:00:00.000Z`);
+    const before = await convert(a.id, { paymentMethod: 'CHEQUE', withStamp: false, issuedOn: day(-4) });
+    expect(before.status).toBe(422);
+    expect((await before.json()).error.code).toBe('BEFORE_SOURCE');
+    const future = await convert(a.id, { paymentMethod: 'CHEQUE', withStamp: false, issuedOn: day(1) });
+    expect((await future.json()).error.code).toBe('IN_FUTURE');
+    expect((await convert(a.id, { paymentMethod: 'CHEQUE', withStamp: false, issuedOn: '2026-02-30' })).status).toBe(422);
+    expect((await convert(a.id, { paymentMethod: 'CHEQUE', withStamp: false, issuedOn: day(-3) })).status).toBe(201);
+
+    const b = await issue('PROFORMA');
+    const today = await convert(b.id, { paymentMethod: 'CHEQUE', withStamp: false, issuedOn: day(0) });
+    expect(today.status).toBe(201);
+  });
+
+  it('a refused date burns no facture number and leaves the proforma open', async () => {
+    const fp = await issue('PROFORMA');
+    await backdate(fp.id, `${day(-2)}T09:00:00.000Z`);
+    await convert(fp.id, { paymentMethod: 'CHEQUE', withStamp: false, issuedOn: day(-10) });
+    const d = await db.read();
+    expect(d.incubators.find((i) => i.id === INC)!.invoiceCounters?.[String(new Date().getUTCFullYear())]).toBeUndefined();
+    expect(d.invoices!.find((i) => i.id === fp.id)!.convertedToInvoiceId).toBeFalsy();
+  });
+
+  it('a facture dated in an earlier year takes that year’s number', async () => {
+    const fp = await issue('PROFORMA');
+    const lastYear = new Date().getUTCFullYear() - 1;
+    await backdate(fp.id, `${lastYear}-12-20T09:00:00.000Z`);
+    await db.update((d) => { d.incubators[0]!.invoiceCounters = { [String(lastYear)]: 41 }; });
+    const res = await convert(fp.id, { paymentMethod: 'CHEQUE', withStamp: false, issuedOn: `${lastYear}-12-28` });
+    expect(res.status).toBe(201);
+    const { invoice } = await res.json() as { invoice: InvoiceRecord };
+    expect(invoice).toMatchObject({ number: `42/${lastYear}`, year: lastYear, seq: 42 });
+  });
+
+  it('without a date it is still today', async () => {
+    const fp = await issue('PROFORMA');
+    const { invoice } = await (await convert(fp.id, { paymentMethod: 'CHEQUE', withStamp: false })).json() as { invoice: InvoiceRecord };
+    expect(Math.abs(Date.parse(invoice.issuedAt) - Date.now())).toBeLessThan(60_000);
+  });
+});

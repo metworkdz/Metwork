@@ -10,7 +10,9 @@
  * components is how they would drift apart.
  */
 import { useState } from 'react';
+import { useRouter } from '@/i18n/routing';
 import { formatInvoiceNumber } from '@/server/invoices/engine';
+import { invoiceDayOf } from '@/lib/invoice-date';
 import { useTranslations } from 'next-intl';
 import { FileText, FileSignature, ReceiptText, ScrollText } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -33,11 +35,16 @@ interface Props {
   factureYear: number;
   /** The facture counter's next value when the page loaded. */
   nextFactureSeq: number;
+  /**
+   * Every year's counters, as stored. A proforma converted with an earlier
+   * date takes that year's number, so the preview needs more than this year.
+   */
+  invoiceCounters?: Record<string, number> | null;
   /** Booking receipts are an incubator thing; other issuers hide the tab. */
   showReceipts?: boolean;
 }
 
-export function InvoicesTabs({ invoices, receipts, legalComplete, hasStamp, factureYear, nextFactureSeq, showReceipts = true }: Props) {
+export function InvoicesTabs({ invoices, receipts, legalComplete, hasStamp, factureYear, nextFactureSeq, invoiceCounters, showReceipts = true }: Props) {
   const t = useTranslations('incubator.invoicesPage');
   const [tab, setTab] = useState<InvoiceKind | 'receipts'>('FACTURE');
   /**
@@ -46,9 +53,18 @@ export function InvoicesTabs({ invoices, receipts, legalComplete, hasStamp, fact
    * moment you looked at another tab and came back.
    */
   const [rows, setRows] = useState(invoices);
+  const router = useRouter();
 
   const markCancelled = (id: string) =>
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, status: 'CANCELLED' as const } : r)));
+  /** A cancelled row was deleted; a proforma it had been converted from is unlocked again. */
+  const markDeleted = (id: string, source: InvoiceListItem | null) => {
+    setRows((rs) => rs
+      .filter((r) => r.id !== id)
+      .map((r) => (source && r.id === source.id ? source : r)));
+    // The freed number changes the counters the page was loaded with.
+    router.refresh();
+  };
   /** A row the server rewrote (stamp, conversion) — or a new one (the facture a conversion created). */
   const upsert = (invoice: InvoiceListItem) =>
     setRows((rs) => (rs.some((r) => r.id === invoice.id)
@@ -70,6 +86,24 @@ export function InvoicesTabs({ invoices, receipts, legalComplete, hasStamp, fact
   ];
 
   const visible = tab === 'PROFORMA' ? proformas : tab === 'DEVIS' ? devis : factures;
+
+  /** The number a conversion dated in `year` would take (a preview — the server allocates). */
+  const factureNumberFor = (year: number) => {
+    const counted = invoiceCounters?.[String(year)] ?? (year === factureYear ? nextFactureSeq - 1 : 0);
+    // Factures converted since the page loaded have taken numbers too.
+    const since = rows.filter(
+      (r) => r.convertedFromId && r.year === year && !invoices.some((i) => i.id === r.id),
+    ).length;
+    return formatInvoiceNumber(counted + 1 + since, year, 'FACTURE');
+  };
+  /** The latest day already used by a live facture of `year` — numbering should stay chronological. */
+  const latestFactureDay = (year: number): string | null =>
+    factures
+      .filter((f) => f.status !== 'CANCELLED' && f.year === year)
+      .reduce<string | null>((max, f) => {
+        const day = invoiceDayOf(f.issuedAt);
+        return max === null || day > max ? day : max;
+      }, null);
 
   return (
     <div className="space-y-5">
@@ -111,14 +145,11 @@ export function InvoicesTabs({ invoices, receipts, legalComplete, hasStamp, fact
             rows={visible}
             legalComplete={legalComplete}
             onCancelled={markCancelled}
+            onDeleted={markDeleted}
             onChanged={upsert}
             hasStamp={hasStamp}
-            nextFactureNumber={formatInvoiceNumber(
-              // Factures converted since the page loaded have taken numbers too.
-              nextFactureSeq + rows.filter((r) => r.convertedFromId && !invoices.some((i) => i.id === r.id)).length,
-              factureYear,
-              'FACTURE',
-            )}
+            factureNumberFor={factureNumberFor}
+            latestFactureDay={latestFactureDay}
           />
         )}
     </div>

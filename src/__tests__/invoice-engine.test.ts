@@ -66,6 +66,8 @@ describe('computeStampDuty — brackets and boundaries', () => {
   it('is 0 for CHEQUE and VIREMENT regardless of amount', () => {
     expect(computeStampDuty(500_000, 'CHEQUE')).toBe(0);
     expect(computeStampDuty(500_000, 'VIREMENT')).toBe(0);
+    expect(computeStampDuty(500_000, 'CARTE')).toBe(0); // card online
+    expect(computeStampDuty(500_000, 'TPE')).toBe(0); // card on a terminal is not cash either
   });
 
   it('applies 1% up to and including 30 000', () => {

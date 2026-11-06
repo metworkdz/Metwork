@@ -81,6 +81,7 @@ export default async function IncubatorInvoicesPage({ params }: PageProps) {
         hasStamp={Boolean(incubator?.stampUrl?.trim())}
         factureYear={new Date().getUTCFullYear()}
         nextFactureSeq={peekNextSeq({ invoiceCounters: incubator?.invoiceCounters ?? null }, new Date().getUTCFullYear(), 'FACTURE')}
+        invoiceCounters={incubator?.invoiceCounters ?? null}
       />
     </div>
   );

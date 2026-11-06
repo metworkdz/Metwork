@@ -18,7 +18,17 @@ function getResend(): Resend | null {
   return _resend;
 }
 
-const from = (): string => process.env.EMAIL_FROM ?? 'noreply@metwork.dz';
+/**
+ * The From header. Inboxes list the display name, so a bare
+ * `noreply@metwork.dz` showed up as « noreply »: give it the brand name. An
+ * EMAIL_FROM that already carries a name (`Name <addr>`) is used as is.
+ */
+export function senderAddress(raw: string | undefined = process.env.EMAIL_FROM): string {
+  const addr = raw?.trim() || 'noreply@metwork.dz';
+  return addr.includes('<') ? addr : `Metwork <${addr}>`;
+}
+
+const from = (): string => senderAddress();
 
 interface SendOptions {
   to: string;

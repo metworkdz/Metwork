@@ -11,7 +11,7 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { db } from '@/server/db/store';
 import { fromZod, json, jsonError } from '@/server/http/json';
-import { handleDraftStamp, handleEditDraft } from '@/server/invoices/draft-routes';
+import { handleDeleteInvoice, handleDraftStamp, handleEditDraft } from '@/server/invoices/draft-routes';
 import { isInstantBookEnabled } from '@/server/consultations/instant-book';
 import { requireInvoicingConsultant } from '@/server/invoices/consultant-access';
 import { ownsInvoice } from '@/server/invoices/owner';
@@ -76,4 +76,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!guard.ok) return guard.response;
   const { id } = await params;
   return handleEditDraft(req, guard.owner, id);
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!isInstantBookEnabled()) return jsonError(404, 'NOT_FOUND', 'Not found');
+  const guard = await requireInvoicingConsultant();
+  if (!guard.ok) return guard.response;
+  const { id } = await params;
+  return handleDeleteInvoice(guard.owner, id, { id: guard.mentor.id, email: guard.mentor.email ?? '' });
 }

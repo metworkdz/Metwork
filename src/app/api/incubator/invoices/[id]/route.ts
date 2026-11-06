@@ -3,6 +3,7 @@
  * PUT   /api/incubator/invoices/[id]  — edit a proforma / devis (same number)
  * PATCH /api/incubator/invoices/[id]  — { status: 'CANCELLED' } any document,
  *                                       or { withStamp } a proforma / devis
+ * DELETE /api/incubator/invoices/[id] — remove a CANCELLED document (frees its number)
  *
  * A FACTURE is a legal document: no field edits, ever — the correction path
  * is cancel + reissue. Proformas and devis are not accounting records and may
@@ -14,7 +15,7 @@ import { requireApiRole, requireApprovedApiRole } from '@/server/auth/api-guards
 import { db } from '@/server/db/store';
 import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
-import { handleDraftStamp, handleEditDraft } from '@/server/invoices/draft-routes';
+import { handleDeleteInvoice, handleDraftStamp, handleEditDraft } from '@/server/invoices/draft-routes';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -94,4 +95,16 @@ export async function PUT(
   if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile linked to this account');
   const { id } = await params;
   return handleEditDraft(req, { type: 'INCUBATOR', id: inc.id }, id);
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const guard = await requireApprovedApiRole(['INCUBATOR']);
+  if (!guard.ok) return guard.response;
+  const inc = await findIncubatorByUserEmail(guard.user.email);
+  if (!inc) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile linked to this account');
+  const { id } = await params;
+  return handleDeleteInvoice({ type: 'INCUBATOR', id: inc.id }, id, { id: guard.user.id, email: guard.user.email });
 }

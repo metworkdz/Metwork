@@ -39,6 +39,17 @@ interface MockState {
 
 const mockState: MockState = { blob: null };
 
+/**
+ * TEST-ONLY: replace the stored row behind the store's back — what another
+ * serverless instance writing to Supabase looks like to this one.
+ */
+export function writeMockBlobAsAnotherInstance(mutate: (blob: Record<string, unknown>) => void): void {
+  const blob = structuredClone(mockState.blob ?? {});
+  mutate(blob);
+  blob._rev = (typeof blob._rev === 'number' ? blob._rev : 0) + 1;
+  mockState.blob = blob;
+}
+
 /** Reset the mock store to a known starting point before each test. */
 export function resetMockDb(): void {
   mockState.blob = null;
@@ -56,6 +67,7 @@ beforeEach(() => {
 // store.ts only uses:
 //   supabase.from('app_state').select('data').eq('id', 1).single()
 //   supabase.from('app_state').upsert({ id: 1, data: blob }, { onConflict: 'id' })
+//   supabase.from('app_state').update({ data }).eq('id', 1).eq|is(<rev>).select('id')
 // ────────────────────────────────────────────────────────────────────────
 
 vi.mock('@supabase/supabase-js', () => {
@@ -71,15 +83,40 @@ vi.mock('@supabase/supabase-js', () => {
                     // Mimic PGRST116 "no rows" so store.ts knows to seed.
                     return { data: null, error: { code: 'PGRST116', message: 'no rows' } };
                   }
-                  return { data: { data: mockState.blob }, error: null };
+                  // A copy, like a real round trip: the store must never share objects with the row.
+                  return { data: { data: structuredClone(mockState.blob) }, error: null };
                 },
               };
             },
           };
         },
         async upsert(row: { id: number; data: Record<string, unknown> }) {
-          mockState.blob = row.data;
+          mockState.blob = structuredClone(row.data);
           return { error: null };
+        },
+        // The conditional write: .update({data}).eq('id',1).is('data->_rev',null)
+        // or .eq('data->>_rev','N'), then .select('id'). Matches only while the
+        // stored revision is the one the writer loaded.
+        update(patch: { data: Record<string, unknown> }) {
+          let expected: string | null | undefined;
+          const chain = {
+            eq(col: string, val: unknown) {
+              if (col === 'data->>_rev') expected = String(val);
+              return chain;
+            },
+            is(col: string, val: null) {
+              if (col === 'data->_rev') expected = val;
+              return chain;
+            },
+            async select(_cols: string) {
+              const raw = mockState.blob?._rev;
+              const current = raw === undefined || raw === null ? null : String(raw);
+              if (mockState.blob === null || current !== expected) return { data: [], error: null };
+              mockState.blob = structuredClone(patch.data);
+              return { data: [{ id: 1 }], error: null };
+            },
+          };
+          return chain;
         },
       };
     },

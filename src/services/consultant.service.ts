@@ -306,7 +306,7 @@ export interface ConsultantInvoice {
   clientSnapshot: { name: string; legalName?: string | null; clientType: 'COMPANY' | 'INDIVIDUAL' };
   lines: ConsultantInvoiceLine[];
   vatRate: number;
-  paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT';
+  paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT' | 'CARTE' | 'TPE';
   totals: { ht: number; tva: number; ttc: number; timbre: number; net: number };
   status: 'ISSUED' | 'CANCELLED';
   clientId?: string | null;
@@ -394,12 +394,14 @@ export interface ConsultantInvoiceInput {
   };
   lines: ConsultantInvoiceLine[];
   vatRate?: number;
-  paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT';
+  paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT' | 'CARTE' | 'TPE';
   kind?: ConsultantInvoiceKind;
   validUntil?: string | null;
   withStamp?: boolean;
   note?: string | null;
   seq?: number;
+  /** The document's date, "YYYY-MM-DD". Omitted = today. */
+  issuedOn?: string;
 }
 
 export const consultantService = {
@@ -579,7 +581,7 @@ export const consultantService = {
   setInvoiceStamp: (id: string, withStamp: boolean) =>
     apiClient.patch<{ invoice: ConsultantInvoice }>(`/consultant/invoices/${encodeURIComponent(id)}`, { withStamp }),
   /** Turn a proforma / devis into a facture (next facture number, today). */
-  convertInvoice: (id: string, body: { paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT'; withStamp: boolean; note?: string | null }) =>
+  convertInvoice: (id: string, body: { paymentMethod: 'ESPECE' | 'CHEQUE' | 'VIREMENT' | 'CARTE' | 'TPE'; withStamp: boolean; note?: string | null; issuedOn?: string }) =>
     apiClient.post<{ invoice: ConsultantInvoice; source: ConsultantInvoice }>(
       `/consultant/invoices/${encodeURIComponent(id)}/convert`, body,
     ),
@@ -587,6 +589,11 @@ export const consultantService = {
     apiClient.patch<{ invoice: ConsultantInvoice }>(
       `/consultant/invoices/${encodeURIComponent(id)}`,
       { status: 'CANCELLED' },
+    ),
+  /** Remove a CANCELLED document; its number is free again. */
+  deleteInvoice: (id: string) =>
+    apiClient.delete<{ deleted: true; number: string; seq: number; year: number; nextAutomatic: boolean }>(
+      `/consultant/invoices/${encodeURIComponent(id)}`,
     ),
   /** The PDF is streamed, so the caller opens this URL rather than fetching JSON. */
   invoicePdfPath: (id: string) => `/api/consultant/invoices/${encodeURIComponent(id)}/pdf`,

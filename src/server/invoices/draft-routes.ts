@@ -7,6 +7,7 @@ import { z, ZodError } from 'zod';
 
 import { fromZod, json, jsonError } from '@/server/http/json';
 import type { InvoiceOwner } from '@/server/invoices/owner';
+import { deleteCancelledInvoice, type DeleteActor } from '@/server/invoices/delete';
 import { convertDraftToInvoice, editDraftDocument, editDraftSchema, setDraftStamp, type DraftResult } from '@/server/invoices/drafts';
 
 function reply(result: DraftResult) {
@@ -31,10 +32,12 @@ export async function handleDraftStamp(owner: InvoiceOwner, id: string, withStam
 }
 
 const convertSchema = z.object({
-  paymentMethod: z.enum(['ESPECE', 'CHEQUE', 'VIREMENT']),
+  paymentMethod: z.enum(['ESPECE', 'CHEQUE', 'VIREMENT', 'CARTE', 'TPE']),
   withStamp: z.boolean(),
   /** The facture's note — prefilled from the proforma, editable, may be cleared. */
   note: z.string().max(600).optional().nullable(),
+  /** The facture's date, "YYYY-MM-DD". Bounds are checked against the source in drafts.ts. */
+  issuedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 /** POST …/invoices/[id]/convert — returns the new facture and the locked source. */
@@ -51,5 +54,13 @@ export async function handleConvertDraft(req: NextRequest, owner: InvoiceOwner, 
   const result = await convertDraftToInvoice(owner, id, input);
   return result.ok
     ? json({ invoice: result.invoice, source: result.source }, { status: 201 })
+    : jsonError(result.status, result.code, result.message);
+}
+
+/** DELETE …/invoices/[id] — only a CANCELLED document; frees its number. */
+export async function handleDeleteInvoice(owner: InvoiceOwner, id: string, actor: DeleteActor) {
+  const result = await deleteCancelledInvoice(owner, id, actor);
+  return result.ok
+    ? json({ deleted: true, number: result.number, seq: result.seq, year: result.year, nextAutomatic: result.nextAutomatic, source: result.releasedSource })
     : jsonError(result.status, result.code, result.message);
 }

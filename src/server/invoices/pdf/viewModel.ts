@@ -92,6 +92,8 @@ const PAYMENT_LABELS: Record<InvoiceRecord['paymentMethod'], string> = {
   ESPECE: 'Espèce',
   CHEQUE: 'Chèque',
   VIREMENT: 'Virement bancaire',
+  CARTE: 'Carte bancaire (paiement en ligne)',
+  TPE: 'TPE (paiement par carte sur place)',
 };
 
 const TITLES: Record<InvoiceKind, string> = {

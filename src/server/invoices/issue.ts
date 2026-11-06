@@ -20,6 +20,7 @@ import {
   computeInvoiceTotals,
   formatInvoiceNumber,
 } from '@/server/invoices/engine';
+import { algiersToday, checkIssueDay, INVOICE_MIN_DAY, invoiceDayOf, issuedAtForDay } from '@/lib/invoice-date';
 import {
   findIssuer,
   issuerLegalGate,
@@ -59,7 +60,7 @@ export const invoiceFieldsSchema = z
     clientDraft: clientDraftSchema.optional(),
     lines: z.array(lineSchema).min(1).max(100),
     vatRate: z.number().min(0).max(100).optional(),
-    paymentMethod: z.enum(['ESPECE', 'CHEQUE', 'VIREMENT']),
+    paymentMethod: z.enum(['ESPECE', 'CHEQUE', 'VIREMENT', 'CARTE', 'TPE']),
     template: z.enum(['CLASSIC', 'GREEN_BAND', 'MINIMAL']).optional(),
     /** Which document to issue. Absent = FACTURE, as it always was. */
     kind: z.enum(['FACTURE', 'PROFORMA', 'DEVIS']).optional(),
@@ -78,6 +79,14 @@ export const invoiceFieldsSchema = z
   });
 
 export const issueInvoiceSchema = invoiceFieldsSchema
+  .extend({
+    /**
+     * The document's date, "YYYY-MM-DD". Omitted = today. Any earlier day is
+     * accepted (see checkIssueDay); it also picks the numbering year. Only on
+     * issue: editing a draft keeps the date it was issued with.
+     */
+    issuedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  })
   .refine((v) => v.clientId || v.clientDraft, {
     message: 'Provide clientId or clientDraft',
     path: ['clientId'],
@@ -165,9 +174,41 @@ export async function issueInvoice(
 
   const vatRate = input.vatRate ?? pre.profile.defaultVatRate;
   const template = input.template ?? pre.profile.invoiceTemplate;
-  const now = new Date().toISOString();
-  const year = new Date().getUTCFullYear();
+  const clock = new Date();
+  const now = clock.toISOString();
   const kind = input.kind ?? 'FACTURE';
+
+  // The date is checked BEFORE the counter moves: a refusal must not burn a number.
+  let issuedAt = now;
+  if (input.issuedOn !== undefined) {
+    const bad = checkIssueDay(input.issuedOn, clock);
+    if (bad) {
+      return {
+        ok: false,
+        status: 422,
+        code: bad,
+        message: bad === 'INVALID_DATE'
+          ? 'Date du document invalide.'
+          : bad === 'TOO_OLD'
+            ? `La date ne peut pas être antérieure au ${INVOICE_MIN_DAY.split('-').reverse().join('/')}.`
+            : `La date ne peut pas être postérieure à aujourd’hui (${algiersToday(clock).split('-').reverse().join('/')}).`,
+      };
+    }
+    issuedAt = issuedAtForDay(input.issuedOn, clock);
+  }
+  // A document's numbers run per calendar year of its OWN date: a facture
+  // dated in 2025 takes 2025's next number, not this year's.
+  const year = new Date(issuedAt).getUTCFullYear();
+  // Only checked when the host chose the date: an API caller that never sends
+  // one keeps the old behaviour.
+  if (input.issuedOn !== undefined && input.validUntil && input.validUntil < invoiceDayOf(issuedAt)) {
+    return {
+      ok: false,
+      status: 422,
+      code: 'VALIDITY_BEFORE_DATE',
+      message: 'La date de validité ne peut pas précéder la date du document.',
+    };
+  }
 
   return db.update<IssueInvoiceResult>((d) => {
     const issuer = findIssuer(d, owner);
@@ -218,7 +259,7 @@ export async function issueInvoice(
       year,
       seq,
       validUntil: input.validUntil ?? null,
-      issuedAt: now,
+      issuedAt,
       clientId,
       clientSnapshot,
       issuerSnapshot: issuerSnapshotFrom(issuer.profile),

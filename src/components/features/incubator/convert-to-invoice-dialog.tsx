@@ -4,8 +4,9 @@
  * « Convertir en facture » — one confirmation, then a real facture.
  *
  * Everything is copied from the proforma / devis on the server; the host only
- * confirms what changes when it becomes a facture: the number it will take,
- * today's date, how it is actually paid, and the stamp. A client with an
+ * confirms what changes when it becomes a facture: its date (chosen, between
+ * the proforma's date and today — lib/invoice-date), the number that date's
+ * year will give it, how it is actually paid, and the stamp. A client with an
  * empty legal block is flagged here, while it can still be fixed.
  */
 import { useInvoicingPaths } from './invoicing-paths';
@@ -21,30 +22,37 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { clientLegalGap } from '@/lib/client-legal-gap';
 import { formatDZD } from '@/server/invoices/engine';
+import { Input } from '@/components/ui/input';
+import { algiersToday, checkConversionDay, conversionDayBounds } from '@/lib/invoice-date';
 import type { InvoicePaymentMethod, InvoiceRecord } from '@/server/db/store';
 
 interface Props {
   source: InvoiceRecord | null;
-  /** « 15/2026 » — the facture number it will take (a preview; the server allocates). */
-  nextNumber: string;
+  /** « 15/2026 » — the number a facture dated in `year` will take (a preview; the server allocates). */
+  numberFor: (year: number) => string;
+  /** The latest day used by a live facture of `year`, if any. */
+  latestFactureDay: (year: number) => string | null;
   hasStamp: boolean;
   onOpenChange: (open: boolean) => void;
   /** The new facture and the now-locked source. */
   onConverted: (invoice: InvoiceRecord, source: InvoiceRecord) => void;
 }
 
-const METHODS: Array<{ id: InvoicePaymentMethod; key: 'methodEspece' | 'methodCheque' | 'methodVirement' }> = [
+const METHODS: Array<{ id: InvoicePaymentMethod; key: 'methodEspece' | 'methodCheque' | 'methodVirement' | 'methodCarte' | 'methodTpe' }> = [
   { id: 'ESPECE', key: 'methodEspece' },
   { id: 'CHEQUE', key: 'methodCheque' },
   { id: 'VIREMENT', key: 'methodVirement' },
+  { id: 'CARTE', key: 'methodCarte' },
+  { id: 'TPE', key: 'methodTpe' },
 ];
 
-export function ConvertToInvoiceDialog({ source, nextNumber, hasStamp, onOpenChange, onConverted }: Props) {
+export function ConvertToInvoiceDialog({ source, numberFor, latestFactureDay, hasStamp, onOpenChange, onConverted }: Props) {
   const paths = useInvoicingPaths();
   const t = useTranslations('incubator.invoicesPage');
   const [paymentMethod, setPaymentMethod] = useState<InvoicePaymentMethod>('ESPECE');
   const [withStamp, setWithStamp] = useState(false);
   const [note, setNote] = useState('');
+  const [issuedOn, setIssuedOn] = useState(() => algiersToday());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<InvoiceRecord | null>(null);
@@ -56,22 +64,32 @@ export function ConvertToInvoiceDialog({ source, nextNumber, hasStamp, onOpenCha
     setPaymentMethod(source.paymentMethod);
     setWithStamp(hasStamp && Boolean(source.withStamp));
     setNote(source.note ?? '');
+    setIssuedOn(algiersToday());
     setError(null);
     setDone(null);
   }
 
   const snap = source?.clientSnapshot;
+
+  // The date rule is the server's own (lib/invoice-date), so the picker never
+  // offers a day the server refuses; the server still re-checks.
+  const bounds = source ? conversionDayBounds(source.issuedAt) : null;
+  const dayError = source ? checkConversionDay(issuedOn, source.issuedAt) : null;
+  const chosenYear = dayError ? null : Number(issuedOn.slice(0, 4));
+  const nextNumber = chosenYear ? numberFor(chosenYear) : '—';
+  const latest = chosenYear ? latestFactureDay(chosenYear) : null;
+  const outOfOrder = latest !== null && issuedOn < latest;
   const gap = snap ? clientLegalGap({ ...snap, fullName: snap.name }) : null;
 
   async function convert() {
-    if (!source) return;
+    if (!source || dayError) return;
     setSaving(true);
     setError(null);
     try {
       const res = await fetch(`${paths.api}/invoices/${source.id}/convert`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentMethod, withStamp: hasStamp && withStamp, note: note.trim() || null }),
+        body: JSON.stringify({ paymentMethod, withStamp: hasStamp && withStamp, note: note.trim() || null, issuedOn }),
       });
       const body = await res.json().catch(() => null) as
         { invoice?: InvoiceRecord; source?: InvoiceRecord; error?: { message?: string } } | null;
@@ -115,8 +133,6 @@ export function ConvertToInvoiceDialog({ source, nextNumber, hasStamp, onOpenCha
             <dl className="grid grid-cols-[8.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-sm">
               <dt className="text-muted-foreground">{t('convertNumber')}</dt>
               <dd className="font-semibold tabular-nums">{nextNumber}</dd>
-              <dt className="text-muted-foreground">{t('convertDate')}</dt>
-              <dd className="tabular-nums">{new Date().toLocaleDateString('fr-DZ')}</dd>
               <dt className="text-muted-foreground">{t('colClient')}</dt>
               <dd className="truncate">{snap?.legalName ?? snap?.name}</dd>
               <dt className="text-muted-foreground">{t('convertBase')}</dt>
@@ -129,6 +145,35 @@ export function ConvertToInvoiceDialog({ source, nextNumber, hasStamp, onOpenCha
                 {t('convertLegalGap')}
               </p>
             )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="convert-date">{t('convertDate')}</Label>
+              <Input
+                id="convert-date" type="date" required value={issuedOn}
+                min={bounds?.min} max={bounds?.max}
+                aria-invalid={dayError !== null}
+                aria-describedby="convert-date-help"
+                onChange={(e) => setIssuedOn(e.target.value)}
+              />
+              <p
+                id="convert-date-help"
+                className={`text-xs ${dayError ? 'text-destructive' : 'text-muted-foreground'}`}
+              >
+                {dayError === 'BEFORE_SOURCE'
+                  ? t('convertDateBefore', { min: frDay(bounds!.min), number: source?.number ?? '' })
+                  : dayError === 'IN_FUTURE'
+                    ? t('convertDateFuture')
+                    : dayError === 'INVALID_DATE'
+                      ? t('convertDateInvalid')
+                      : t('convertDateHint', { min: frDay(bounds?.min ?? ''), number: source?.number ?? '' })}
+              </p>
+              {outOfOrder && latest && (
+                <p className="flex items-start gap-2 rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+                  <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                  {t('convertDateOutOfOrder', { year: chosenYear ?? '', latest: frDay(latest) })}
+                </p>
+              )}
+            </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="convert-method">{t('colMethod')}</Label>
@@ -166,11 +211,17 @@ export function ConvertToInvoiceDialog({ source, nextNumber, hasStamp, onOpenCha
 
             <DialogFooter>
               <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>{t('convertCancel')}</Button>
-              <Button onClick={() => void convert()} loading={saving}>{t('convertConfirm', { number: nextNumber })}</Button>
+              <Button onClick={() => void convert()} loading={saving} disabled={dayError !== null}>{t('convertConfirm', { number: nextNumber })}</Button>
             </DialogFooter>
           </>
         )}
       </DialogContent>
     </Dialog>
   );
+}
+
+/** "2026-10-17" → "17/10/2026", as the invoice prints it. */
+function frDay(day: string): string {
+  const [y, m, d] = day.split('-');
+  return y && m && d ? `${d}/${m}/${y}` : day;
 }

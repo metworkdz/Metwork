@@ -30,6 +30,7 @@ import {
   SectionCard, SectionHeading, Spinner, cpInputClassLight, uploadConsultantFile,
 } from './shared';
 import { cn } from '@/lib/utils';
+import { algiersToday, checkConversionDay, checkIssueDay, conversionDayBounds, INVOICE_MIN_DAY, invoiceDayOf } from '@/lib/invoice-date';
 
 type View = 'documents' | 'clients' | 'settings';
 type KindFilter = 'ALL' | ConsultantInvoiceKind;
@@ -207,7 +208,15 @@ function DocumentsView({
       {converting && (
         <ConvertSheet
           source={converting}
-          nextNumber={data.nextSeq ? `${String(data.nextSeq.FACTURE).padStart(2, '0')}/${new Date().getUTCFullYear()}` : ''}
+          numberFor={(year) => {
+            // This year's counter is authoritative; an earlier year's next
+            // number follows the highest facture issued in it (numbers are
+            // never deleted — a cancelled facture keeps its number).
+            const seq = year === new Date().getUTCFullYear() && data.nextSeq
+              ? data.nextSeq.FACTURE
+              : Math.max(0, ...data.items.filter((i) => (i.kind ?? 'FACTURE') === 'FACTURE' && i.year === year).map((i) => i.seq)) + 1;
+            return `${String(seq).padStart(2, '0')}/${year}`;
+          }}
           hasStamp={Boolean(settings.issuer.stampUrl)}
           canTransfer={settings.canInvoiceByTransfer}
           onClose={() => setConverting(null)}
@@ -305,6 +314,28 @@ function DocumentRow({ invoice, onChanged, hasStamp, onEdit, onConvert }: {
           </GhostButton>
         )}
         {cancelled && <span className="self-center text-xs text-muted-foreground">{t('cancelled')}</span>}
+        {cancelled && (
+          <GhostButton
+            tone="light"
+            disabled={busy}
+            onClick={async () => {
+              // A deleted document is gone for good; its number becomes free.
+              if (!window.confirm(t('confirmDelete', { number: invoice.number }))) return;
+              setBusy(true);
+              try {
+                const r = await consultantService.deleteInvoice(invoice.id);
+                await onChanged();
+                window.alert(r.nextAutomatic
+                  ? t('deletedNextAuto', { number: r.number })
+                  : t('deletedFree', { number: r.number, seq: r.seq }));
+              } catch (e) {
+                window.alert(e instanceof Error ? e.message : t('deleteFailed'));
+              } finally { setBusy(false); }
+            }}
+          >
+            <Trash2 className="size-3.5" /> {t('delete')}
+          </GhostButton>
+        )}
       </div>
     </div>
   );
@@ -312,9 +343,10 @@ function DocumentRow({ invoice, onChanged, hasStamp, onEdit, onConvert }: {
 
 /* ═══════════════════ Convert ═══════════════════ */
 
-function ConvertSheet({ source, nextNumber, hasStamp, canTransfer, onClose, onConverted }: {
+function ConvertSheet({ source, numberFor, hasStamp, canTransfer, onClose, onConverted }: {
   source: ConsultantInvoice;
-  nextNumber: string;
+  /** The number a facture dated in `year` will take (preview; the server allocates). */
+  numberFor: (year: number) => string;
   hasStamp: boolean;
   canTransfer: boolean;
   onClose: () => void;
@@ -327,12 +359,19 @@ function ConvertSheet({ source, nextNumber, hasStamp, canTransfer, onClose, onCo
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<ConsultantInvoice | null>(null);
+  const [issuedOn, setIssuedOn] = useState(() => algiersToday());
+  // The server's own date rule (lib/invoice-date) — it re-checks anyway.
+  const bounds = conversionDayBounds(source.issuedAt);
+  const dayError = checkConversionDay(issuedOn, source.issuedAt);
+  const nextNumber = dayError ? '—' : numberFor(Number(issuedOn.slice(0, 4)));
+  const frDay = (day: string) => day.split('-').reverse().join('/');
 
   async function convert() {
+    if (dayError) return;
     setSaving(true);
     setError(null);
     try {
-      const { invoice } = await consultantService.convertInvoice(source.id, { paymentMethod, withStamp: hasStamp && withStamp, note: note.trim() || null });
+      const { invoice } = await consultantService.convertInvoice(source.id, { paymentMethod, withStamp: hasStamp && withStamp, note: note.trim() || null, issuedOn });
       setDone(invoice);
       await onConverted();
     } catch (e) {
@@ -353,7 +392,7 @@ function ConvertSheet({ source, nextNumber, hasStamp, canTransfer, onClose, onCo
           <Download className="size-4" /> {t('downloadPdf')}
         </BrandButton>
       ) : (
-        <BrandButton tone="light" className="w-full" loading={saving} onClick={convert}>
+        <BrandButton tone="light" className="w-full" loading={saving} disabled={dayError !== null} onClick={convert}>
           {t('convertConfirm', { number: nextNumber })}
         </BrandButton>
       )}
@@ -365,11 +404,29 @@ function ConvertSheet({ source, nextNumber, hasStamp, canTransfer, onClose, onCo
         ) : (
           <>
             <p className="text-sm text-muted-foreground">{t('convertHint')}</p>
+            <Field
+              label={t('convertDate')}
+              hint={dayError === 'BEFORE_SOURCE'
+                ? t('convertDateBefore', { min: frDay(bounds.min), number: source.number })
+                : dayError === 'IN_FUTURE'
+                  ? t('convertDateFuture')
+                  : dayError === 'INVALID_DATE'
+                    ? t('convertDateInvalid')
+                    : t('convertDateHint', { min: frDay(bounds.min), number: source.number })}
+            >
+              <input
+                type="date" required className={cpInputClassLight} value={issuedOn}
+                min={bounds.min} max={bounds.max} aria-invalid={dayError !== null}
+                onChange={(e) => setIssuedOn(e.target.value)}
+              />
+            </Field>
             <Field label={t('paymentMethod')}>
               <select className={cpInputClassLight} value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as 'ESPECE')}>
                 <option value="ESPECE">{t('payEspece')}</option>
                 <option value="CHEQUE">{t('payCheque')}</option>
+                <option value="CARTE">{t('payCarte')}</option>
+                <option value="TPE">{t('payTpe')}</option>
                 <option value="VIREMENT" disabled={!canTransfer}>
                   {canTransfer ? t('payVirement') : t('payVirementNoRib')}
                 </option>
@@ -426,10 +483,14 @@ function CreateSheet({
     ? editing.lines.map((l) => ({ designation: l.designation, quantity: String(l.quantity), unitPriceHt: String(l.unitPriceHt) }))
     : [{ designation: '', quantity: '1', unitPriceHt: '' }]);
   const [vatRate, setVatRate] = useState(String(editing?.vatRate ?? defaultVatRate));
-  const [paymentMethod, setPaymentMethod] = useState<'ESPECE' | 'CHEQUE' | 'VIREMENT'>(editing?.paymentMethod ?? 'ESPECE');
+  const [paymentMethod, setPaymentMethod] = useState<'ESPECE' | 'CHEQUE' | 'VIREMENT' | 'CARTE' | 'TPE'>(editing?.paymentMethod ?? 'ESPECE');
   const [validUntil, setValidUntil] = useState(editing?.validUntil ?? defaultValidUntil());
+  // The document's date: today unless the host picks an earlier one.
+  const [issuedOn, setIssuedOn] = useState(() => (editing ? invoiceDayOf(editing.issuedAt) : algiersToday()));
   const [note, setNote] = useState(editing?.note ?? '');
   const [withStamp, setWithStamp] = useState(Boolean(editing?.withStamp));
+  // Blank = the next automatic number. Typed = re-use a number freed by a deletion.
+  const [seqInput, setSeqInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -445,7 +506,14 @@ function CreateSheet({
     return computeInvoiceTotals(parsed, Number(vatRate) || 0, paymentMethod, kind);
   }, [lines, vatRate, paymentMethod, kind]);
 
-  const ready = client !== null && lines.some((l) => l.designation.trim() && Number(l.unitPriceHt) > 0);
+  const dayError = editing ? null : checkIssueDay(issuedOn);
+  const validityBeforeDate = !editing && kind === 'DEVIS' && Boolean(validUntil) && validUntil < issuedOn;
+  const backdated = !editing && !dayError && issuedOn !== algiersToday();
+  const issueYear = dayError ? new Date().getUTCFullYear() : Number(issuedOn.slice(0, 4));
+  const seqValue = seqInput.trim() === '' ? undefined : Number(seqInput);
+  const seqInvalid = seqValue !== undefined && !(Number.isInteger(seqValue) && seqValue > 0 && seqValue <= 999_999);
+  const ready = client !== null && dayError === null && !validityBeforeDate && !seqInvalid &&
+    lines.some((l) => l.designation.trim() && Number(l.unitPriceHt) > 0);
 
   async function submit() {
     setSaving(true);
@@ -480,6 +548,8 @@ function CreateSheet({
         paymentMethod,
         validUntil: kind === 'DEVIS' ? validUntil : null,
         note: note.trim() || null,
+        issuedOn,
+        ...(seqValue !== undefined ? { seq: seqValue } : {}),
       });
       await onIssued();
     } catch (e) {
@@ -521,9 +591,52 @@ function CreateSheet({
           ))}
         </div>
 
+        <Field
+          label={t('invoiceDate')}
+          hint={editing
+            ? t('invoiceDateLocked')
+            : dayError
+              ? t(dayError === 'IN_FUTURE' ? 'invoiceDateFuture' : 'invoiceDateInvalid')
+              : validityBeforeDate
+                ? t('validityBeforeDate')
+                : backdated
+                  ? t('invoiceDateBackdated')
+                  : t('invoiceDateHint')}
+        >
+          <input
+            type="date"
+            className={cpInputClassLight}
+            value={issuedOn}
+            min={INVOICE_MIN_DAY}
+            max={algiersToday()}
+            disabled={Boolean(editing)}
+            aria-invalid={dayError !== null}
+            onChange={(e) => setIssuedOn(e.target.value)}
+          />
+        </Field>
+
+        {!editing && (
+          <Field label={t('numberOverride')} hint={seqInvalid ? t('numberOverrideInvalid') : t('numberOverrideHint')}>
+            <input
+              type="number"
+              min={1}
+              max={999999}
+              step={1}
+              inputMode="numeric"
+              placeholder={t('numberAutomatic')}
+              className={cpInputClassLight}
+              value={seqInput}
+              aria-invalid={seqInvalid}
+              onChange={(e) => setSeqInput(e.target.value)}
+            />
+          </Field>
+        )}
+
         {nextSeq && !editing && (
           <p className="text-xs text-muted-foreground">
-            {t('willBeNumbered', { number: String(nextSeq[kind]).padStart(2, '0') })}
+            {issueYear === new Date().getUTCFullYear()
+              ? t('willBeNumbered', { number: String(nextSeq[kind]).padStart(2, '0') })
+              : t('willBeNumberedYear', { year: issueYear })}
           </p>
         )}
 
@@ -594,6 +707,8 @@ function CreateSheet({
             >
               <option value="ESPECE">{t('payEspece')}</option>
               <option value="CHEQUE">{t('payCheque')}</option>
+              <option value="CARTE">{t('payCarte')}</option>
+              <option value="TPE">{t('payTpe')}</option>
               {/* A transfer invoice has to say where to pay. */}
               <option value="VIREMENT" disabled={!canTransfer}>
                 {canTransfer ? t('payVirement') : t('payVirementNoRib')}

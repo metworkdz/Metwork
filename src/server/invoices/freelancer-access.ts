@@ -108,6 +108,8 @@ export function freelancerInvoicingContext(data: Awaited<ReturnType<typeof db.re
     hasStamp: !!issuer?.profile.stampUrl,
     year,
     nextSeq: issuer ? peekNextSeqFor(issuer.counterHolder, year) : { FACTURE: 1, PROFORMA: 1, DEVIS: 1 },
+    /** Every year's counters — a facture converted with an earlier date takes that year's number. */
+    invoiceCounters: issuer?.counterHolder.invoiceCounters ?? null,
     invoices: invoicesFor(data, owner),
   };
 }
