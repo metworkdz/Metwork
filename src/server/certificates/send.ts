@@ -26,6 +26,7 @@ import {
   renderIssuedCertificates,
   type IssuedCertificate,
 } from './issue';
+import { certificateShareUrl, linkedInConfig } from './linkedin/config';
 import { loadCertificateImages } from './render';
 import { formatCertificateDates } from './text';
 
@@ -42,6 +43,9 @@ const COPY: Record<EmailLang, {
   body: (title: string, organizer: string, dates: string) => string;
   attached: string;
   verify: string;
+  /** Above the LinkedIn button — shown only when sharing is configured. */
+  shareIntro: string;
+  share: string;
   number: (n: string) => string;
 }> = {
   fr: {
@@ -51,6 +55,8 @@ const COPY: Record<EmailLang, {
     body: (t, o, d) => `Merci d’avoir participé à la formation <strong>« ${t} »</strong>, organisée par ${o} ${d}.`,
     attached: 'Vous trouverez votre attestation en pièce jointe, au format PDF.',
     verify: 'Vérifier l’attestation',
+    shareIntro: 'Partagez votre réussite : votre attestation est publiée sur votre profil LinkedIn, avec un texte prêt à l’emploi, en un clic.',
+    share: 'Partager sur LinkedIn',
     number: (n) => `Attestation N° ${n}`,
   },
   en: {
@@ -60,6 +66,8 @@ const COPY: Record<EmailLang, {
     body: (t, o, d) => `Thank you for taking part in <strong>“${t}”</strong>, organised by ${o} (${d}).`,
     attached: 'Your certificate is attached to this email as a PDF.',
     verify: 'Verify the certificate',
+    shareIntro: 'Share your achievement: your certificate is posted on your LinkedIn profile, with a ready-made text, in one click.',
+    share: 'Share on LinkedIn',
     number: (n) => `Certificate No. ${n}`,
   },
   ar: {
@@ -69,6 +77,8 @@ const COPY: Record<EmailLang, {
     body: (t, o, d) => `شكراً لمشاركتك في التكوين <strong>« ${t} »</strong> الذي نظّمه ${o} (${d}).`,
     attached: 'تجد شهادتك مرفقة بهذا البريد بصيغة PDF.',
     verify: 'التحقق من الشهادة',
+    shareIntro: 'شارك نجاحك: تُنشر شهادتك على ملفك في LinkedIn مع نص جاهز، بنقرة واحدة.',
+    share: 'المشاركة على LinkedIn',
     number: (n) => `الشهادة رقم ${n}`,
   },
 };
@@ -103,6 +113,8 @@ export function certificateEmail(item: IssuedCertificate): { subject: string; ht
   const cert = item.certificate;
   const dates = emailDates(lang, cert.startDate, cert.endDate);
   const verifyUrl = certificateVerifyUrl(cert.verifyToken);
+  // Only when Metwork's LinkedIn app is configured — no button to a dead page.
+  const shareUrl = linkedInConfig() ? certificateShareUrl(cert.id, lang) : null;
 
   const html = layout(`
     <div dir="${dir}" style="text-align:${align};">
@@ -112,6 +124,11 @@ export function certificateEmail(item: IssuedCertificate): { subject: string; ht
         ${c.body(esc(cert.programTitle), esc(cert.organizer), esc(dates))}
       </p>
       <p style="margin:0 0 20px;font-size:15px;color:#3f3f46;line-height:1.6;">${c.attached}</p>
+      ${shareUrl ? `
+      <p style="margin:0 0 12px;font-size:15px;color:#3f3f46;line-height:1.6;">${c.shareIntro}</p>
+      <p style="margin:0 0 20px;">
+        <a href="${esc(shareUrl)}" style="display:inline-block;padding:12px 24px;background:#0a66c2;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">${c.share}</a>
+      </p>` : ''}
       <p style="margin:0 0 20px;">
         <a href="${esc(verifyUrl)}" style="display:inline-block;padding:12px 24px;background:#30a735;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">${c.verify}</a>
       </p>

@@ -59,7 +59,10 @@ const nextConfig = {
     // module — webpack cannot bundle its .node binary, so it must stay external
     // and be loaded from node_modules. Production uses @libsql/client (pure
     // HTTP) where this does not apply. See METWORK_OS_DEVELOPMENT_RULES.md R-30.
-    serverComponentsExternalPackages: ['pdfkit', 'better-sqlite3'],
+    // `pdfjs-dist` + `@napi-rs/canvas` rasterise a certificate for LinkedIn
+    // (src/server/certificates/linkedin/image.ts): the canvas is a native .node
+    // binary, and pdfjs loads its worker at runtime — both stay external.
+    serverComponentsExternalPackages: ['pdfkit', 'better-sqlite3', 'pdfjs-dist', '@napi-rs/canvas'],
     // NO outputFileTracingIncludes for the PDF fonts, deliberately.
     //
     // This block used to list routes so the embedded TTFs would reach their

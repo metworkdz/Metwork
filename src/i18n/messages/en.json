@@ -8261,5 +8261,31 @@
       "loadError": "Could not load this list.",
       "opened": "Refund opened."
     }
+  },
+  "certificateLinkedIn": {
+    "metaTitle": "Share my certificate on LinkedIn",
+    "eyebrow": "Metwork certificate",
+    "title": "Share your achievement on LinkedIn",
+    "intro": "This is exactly what will be posted on your profile: the text, your certificate with its QR code, and a mention of the Metwork page.",
+    "previewLabel": "Preview of your post",
+    "imageAlt": "Certificate of participation — {title}",
+    "publish": "Post on LinkedIn",
+    "consentNote": "LinkedIn will ask you to allow Metwork the first time. Nothing is posted without your consent, and you can edit or delete the post on LinkedIn.",
+    "publishedTitle": "It’s posted!",
+    "publishedBody": "Your certificate is now on your LinkedIn profile.",
+    "justPublished": "Your post is live.",
+    "alreadyPublished": "You have already posted this certificate.",
+    "viewPost": "View my post",
+    "errorCancelled": "Posting was cancelled on LinkedIn. You can try again whenever you like.",
+    "errorBusy": "This certificate is already being posted. Wait a minute, then reload the page.",
+    "errorRateLimited": "Too many attempts. Try again in a few minutes.",
+    "errorLinkedIn": "LinkedIn did not accept the post. Try again in a moment; if it keeps failing, contact the organiser.",
+    "notFoundTitle": "Link not found",
+    "notFoundBody": "This share link is not valid. Use the button in the email that brought you your certificate.",
+    "revokedTitle": "Certificate not valid",
+    "revokedBody": "This certificate is no longer valid and cannot be shared. Contact the training's organiser.",
+    "disabledTitle": "Sharing unavailable",
+    "disabledBody": "Sharing on LinkedIn is not available right now. Please try again later.",
+    "poweredBy": "Certificate issued through"
   }
 }

@@ -8261,5 +8261,31 @@
       "loadError": "Impossible de charger cette liste.",
       "opened": "Remboursement ouvert."
     }
+  },
+  "certificateLinkedIn": {
+    "metaTitle": "Partager mon attestation sur LinkedIn",
+    "eyebrow": "Attestation Metwork",
+    "title": "Partagez votre réussite sur LinkedIn",
+    "intro": "Voici exactement ce qui sera publié sur votre profil : le texte, votre attestation avec son QR code, et la mention de la page Metwork.",
+    "previewLabel": "Aperçu de votre publication",
+    "imageAlt": "Attestation de participation — {title}",
+    "publish": "Publier sur LinkedIn",
+    "consentNote": "LinkedIn vous demandera d’autoriser Metwork la première fois. Rien n’est publié sans votre accord, et vous pourrez modifier ou supprimer la publication depuis LinkedIn.",
+    "publishedTitle": "C’est publié !",
+    "publishedBody": "Votre attestation est maintenant sur votre profil LinkedIn.",
+    "justPublished": "Votre publication est en ligne.",
+    "alreadyPublished": "Vous avez déjà publié cette attestation.",
+    "viewPost": "Voir ma publication",
+    "errorCancelled": "La publication a été annulée sur LinkedIn. Vous pouvez réessayer quand vous voulez.",
+    "errorBusy": "Une publication est déjà en cours pour cette attestation. Patientez une minute, puis rechargez la page.",
+    "errorRateLimited": "Trop de tentatives. Réessayez dans quelques minutes.",
+    "errorLinkedIn": "LinkedIn n’a pas accepté la publication. Réessayez dans un instant ; si le problème persiste, contactez l’organisateur.",
+    "notFoundTitle": "Lien introuvable",
+    "notFoundBody": "Ce lien de partage n’est pas valide. Utilisez le bouton de l’e-mail qui vous a apporté votre attestation.",
+    "revokedTitle": "Attestation non valable",
+    "revokedBody": "Cette attestation n’est plus valable et ne peut pas être partagée. Contactez l’organisateur de la formation.",
+    "disabledTitle": "Partage indisponible",
+    "disabledBody": "Le partage sur LinkedIn n’est pas disponible pour le moment. Réessayez plus tard.",
+    "poweredBy": "Attestation délivrée via"
   }
 }

@@ -118,6 +118,24 @@ const serverSchema = z.object({
   VDOCIPHER_API_SECRET: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined), z.string().optional()),
   /** Shared token in the VdoCipher webhook URL (?token=…). Required in production for the webhook to act. */
   VDOCIPHER_WEBHOOK_TOKEN: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined), z.string().min(24).optional()),
+  /**
+   * LinkedIn app (Metwork's, on developer.linkedin.com) with the products
+   * « Sign In with LinkedIn using OpenID Connect » and « Share on LinkedIn ».
+   * Lets a participant publish their certificate with one click. Optional:
+   * without the id and secret the « Partager sur LinkedIn » button is hidden.
+   */
+  LINKEDIN_CLIENT_ID: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined), z.string().optional()),
+  LINKEDIN_CLIENT_SECRET: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined), z.string().optional()),
+  /**
+   * The Metwork company page's numeric id — the @mention in every post.
+   * Format-checked by the feature, not here: a typo must switch the button
+   * off, never stop the whole site from booting.
+   */
+  LINKEDIN_ORGANIZATION_ID: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined), z.string().optional()),
+  /** The page name EXACTLY as LinkedIn shows it (case-sensitive) — or the tag stays plain text. */
+  LINKEDIN_ORGANIZATION_NAME: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined), z.string().default('Metwork')),
+  /** LinkedIn-Version header (YYYYMM). Each version is supported for about a year. */
+  LINKEDIN_API_VERSION: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined), z.string().default('202610')),
 });
 
 const clientEnv = {

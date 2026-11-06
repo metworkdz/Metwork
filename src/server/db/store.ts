@@ -2275,6 +2275,15 @@ export interface CertificateRecord {
   emailClaimedAt?: string | null;
   /** Set when the host marks the participant absent after issuing. */
   revokedAt?: string | null;
+  /**
+   * The participant published this certificate on LinkedIn — the post's URN
+   * (`urn:li:share:…`) and when. One post per certificate: a second click
+   * opens the existing post instead of publishing it twice.
+   */
+  linkedinPostUrn?: string | null;
+  linkedinSharedAt?: string | null;
+  /** A publish in flight (same claim pattern as emailClaimedAt). */
+  linkedinClaimedAt?: string | null;
 }
 
 /**
@@ -4470,6 +4479,12 @@ export interface DbShape {
   mentorConsultations: MentorConsultationRecord[];
   /** Refund requests across every payment kind. Optional — legacy blobs predate it; readers default to []. */
   refundRequests?: RefundRequestRecord[];
+  /**
+   * Cancelled invoices their issuer deleted, kept whole. The live list no longer
+   * shows them and their number is free again, but the record stays recoverable
+   * (accounting records are kept for years). Optional — readers default to [].
+   */
+  deletedInvoices?: Array<{ deletedAt: string; deletedById: string; invoice: InvoiceRecord }>;
   /** Parallel, mentorId-keyed consultant earnings wallets (pending/available). */
   mentorWallets: MentorWalletRecord[];
   /** Append-only ledger backing the mentor wallets. */
@@ -4479,12 +4494,6 @@ export interface DbShape {
   /** Active consultant portal sessions (mentorId-keyed). */
   mentorSessions: MentorSessionRecord[];
   /** "Remember this device" tokens for trusted-device PIN unlock. */
-  /**
-   * Cancelled invoices their issuer deleted, kept whole. The live list no longer
-   * shows them and their number is free again, but the record stays recoverable
-   * (accounting records are kept for years). Optional — readers default to [].
-   */
-  deletedInvoices?: Array<{ deletedAt: string; deletedById: string; invoice: InvoiceRecord }>;
   mentorDeviceTokens: MentorDeviceTokenRecord[];
   /** Consultant email-verification tokens (separate from user `emailTokens`). */
   mentorEmailTokens?: MentorEmailTokenRecord[];
