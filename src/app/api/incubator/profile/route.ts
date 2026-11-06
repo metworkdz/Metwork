@@ -141,7 +141,10 @@ export async function PATCH(req: NextRequest) {
       user.updatedAt = now;
     }
 
-    return { incubator: { ...incubator }, user: user ? { ...user } : null };
+    if (!user) return { incubator: { ...incubator }, user: null };
+    // Never echo the password hash back to the browser.
+    const { passwordHash: _ph, ...safeUser } = user;
+    return { incubator: { ...incubator }, user: safeUser };
   });
 
   if (!result) return jsonError(404, 'INCUBATOR_NOT_FOUND', 'No incubator profile found');
