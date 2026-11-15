@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Space_Grotesk } from 'next/font/google';
+import { spaceGroteskCrm as spaceGrotesk } from '@/fonts';
 import './crm.css';
 
 /**
@@ -10,17 +10,11 @@ import './crm.css';
  * `children`, and <html>/<body> live in `[locale]/layout.tsx` — which the CRM
  * never traverses. So this layout MUST supply them itself.
  *
- * Space Grotesk is instantiated here rather than reusing the platform's
+ * Space Grotesk (self-hosted, see `@/fonts`) gets its own instance rather than reusing the platform's
  * `--font-grotesk` (defined in `[locale]/layout.tsx`, out of reach from here).
  * The variable is named `--font-grotesk-crm` so the two can never collide
  * (dev rules R-7).
  */
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-grotesk-crm',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-});
 
 export const metadata: Metadata = {
   title: {
