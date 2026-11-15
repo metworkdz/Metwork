@@ -6042,6 +6042,9 @@
     "outcomes": "ما النتائج التي تتوقعها من هذا البرنامج؟"
   },
   "registrationsTable": {
+    "viewFile": "عرض",
+    "downloadFile": "تنزيل",
+    "filesAttached": "الملفات المرفقة: {count}",
     "title": "التسجيلات",
     "subtitle": "{count} تسجيل إجمالي لـ {title}",
     "exportCsv": "تصدير CSV",

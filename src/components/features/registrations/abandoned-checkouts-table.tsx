@@ -25,7 +25,7 @@ interface AbandonedCheckout {
   email: string;
   phone: string;
   amount: number;
-  answers: Array<{ fieldId: string; value: string | string[] }>;
+  answers: Array<{ fieldId: string; value: string | string[]; file?: { name: string } }>;
   lastAttemptAt: string;
   attempts: number;
   /** Every attempt by this person — all of them go when the row is deleted. */
@@ -228,7 +228,10 @@ function AbandonedRow({
                       {field ? questionLabel(field, tq) : answer.fieldId}
                     </dt>
                     <dd className="mt-0.5 whitespace-pre-wrap text-sm">
-                      {Array.isArray(answer.value) ? answer.value.join(', ') : answer.value}
+                      {/* An uploaded file's value is its storage id: show the name instead. */}
+                      {answer.file
+                        ? answer.file.name
+                        : Array.isArray(answer.value) ? answer.value.join(', ') : answer.value}
                     </dd>
                   </div>
                 );

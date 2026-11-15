@@ -14,13 +14,15 @@
  * `isRegistrationFilePublicId`; the local backend still refuses anything that
  * would resolve outside its folder, as defence in depth.
  */
-import { promises as fs } from 'node:fs';
+import { createReadStream, promises as fs } from 'node:fs';
+import { Readable } from 'node:stream';
 import path from 'node:path';
 import {
   destroyAuthenticatedRaw,
   getAuthenticatedRawResource,
   isConfigured,
   readAuthenticatedRawHead,
+  signedRawDownloadUrl,
 } from '@/lib/cloudinary';
 
 export type StorageMode = 'cloudinary' | 'local' | 'unavailable';
@@ -98,4 +100,70 @@ export async function writeLocalRegistrationFile(publicId: string, buffer: Buffe
   const full = localPath(publicId);
   await fs.mkdir(path.dirname(full), { recursive: true });
   await fs.writeFile(full, buffer);
+}
+
+/** What `openRegistrationFile` hands back: the bytes as a stream, and how many there are. */
+export interface OpenedRegistrationFile {
+  body: ReadableStream<Uint8Array>;
+  bytes: number | null;
+}
+
+/**
+ * Open a stored file for streaming to its owner. Returns null when it is gone
+ * or cannot be read.
+ *
+ * The first chunk is checked with `accept` BEFORE anything is returned: a
+ * signed Cloudinary link that fails can still answer 200 with an HTML error
+ * page, and the owner must never be served that as their applicant's file.
+ * The chunk is then put back in front of the rest, so nothing is lost.
+ */
+export async function openRegistrationFile(
+  publicId: string,
+  accept: (firstChunk: Uint8Array) => boolean,
+): Promise<OpenedRegistrationFile | null> {
+  let source: ReadableStream<Uint8Array> | null = null;
+  let bytes: number | null = null;
+
+  if (registrationFileStorageMode() === 'cloudinary') {
+    const res = await fetch(signedRawDownloadUrl(publicId));
+    if (!res.ok || !res.body) return null;
+    source = res.body;
+    const len = Number(res.headers.get('content-length'));
+    bytes = Number.isFinite(len) && len > 0 ? len : null;
+  } else {
+    let size: number;
+    try {
+      size = (await fs.stat(localPath(publicId))).size;
+    } catch {
+      return null;
+    }
+    source = Readable.toWeb(createReadStream(localPath(publicId))) as ReadableStream<Uint8Array>;
+    bytes = size;
+  }
+
+  const reader = source.getReader();
+  const first = await reader.read();
+  if (first.done || !first.value || !accept(first.value)) {
+    await reader.cancel().catch(() => undefined);
+    return null;
+  }
+
+  const head = first.value;
+  let sentHead = false;
+  const body = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      if (!sentHead) {
+        sentHead = true;
+        controller.enqueue(head);
+        return;
+      }
+      const next = await reader.read();
+      if (next.done) controller.close();
+      else controller.enqueue(next.value);
+    },
+    cancel(reason) {
+      return reader.cancel(reason);
+    },
+  });
+  return { body, bytes };
 }

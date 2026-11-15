@@ -6042,6 +6042,9 @@
     "outcomes": "Quels résultats attendez-vous de ce programme ?"
   },
   "registrationsTable": {
+    "viewFile": "Voir",
+    "downloadFile": "Télécharger",
+    "filesAttached": "Fichiers joints : {count}",
     "title": "Inscriptions",
     "subtitle": "{count} inscriptions au total pour {title}",
     "exportCsv": "Exporter CSV",

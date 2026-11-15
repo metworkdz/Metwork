@@ -241,7 +241,7 @@ export function RegistrationFileField({
  * run renders as "pdf.عرض" because the dot is bidi-neutral and joins the wrong
  * side; the extension is set as its own left-to-right piece so it stays ".pdf".
  */
-function FileName({ name }: { name: string }) {
+export function FileName({ name }: { name: string }) {
   const dot = name.lastIndexOf('.');
   const base = dot > 0 ? name.slice(0, dot) : name;
   const ext = dot > 0 ? name.slice(dot) : '';

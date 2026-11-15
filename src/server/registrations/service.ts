@@ -614,6 +614,15 @@ export async function listRegistrations(
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
+/** One registration, only if it belongs to this owner. Null otherwise — never a hint that it exists. */
+export async function findOwnedRegistration(
+  id: string,
+  owner: OwnerScope,
+): Promise<RegistrationRecord | null> {
+  const data = await db.read();
+  return (data.registrations ?? []).find((r) => r.id === id && ownedBy(r, owner)) ?? null;
+}
+
 export type CancelRegistrationResult =
   | { ok: true; registration: RegistrationRecord }
   | { ok: false; reason: 'NOT_FOUND' | 'PAID_ONLINE' };
@@ -1266,6 +1275,10 @@ export async function buildRegistrationsCsv(
     .filter((f) => f.entityType === entityType && f.entityId === entityId)
     .sort((a, b) => a.order - b.order);
 
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/+$/, '');
+  const filesPath =
+    owner.kind === 'MENTOR' ? '/api/consultant/registrations' : '/api/incubator/registrations';
+
   const baseHeaders = ['ID', 'Full Name', 'Email', 'Phone', 'Status', 'Date'];
   const customHeaders = fields.map((f) => f.label);
   const allHeaders = [...baseHeaders, ...customHeaders];
@@ -1293,6 +1306,12 @@ export async function buildRegistrationsCsv(
     const custom = fields.map((f) => {
       const answer = reg.answers.find((a) => a.fieldId === f.id);
       if (!answer) return '';
+      // A file is not its storage id: give the owner a link that works. It
+      // points at the owner-only download route, so it needs a login and never
+      // expires — a signed storage link would be dead before the sheet is opened.
+      if (f.type === 'FILE') {
+        return answer.file ? `${appUrl}${filesPath}/${reg.id}/files/${f.id}` : '';
+      }
       const v = answer.value;
       return Array.isArray(v) ? v.join(', ') : String(v);
     });

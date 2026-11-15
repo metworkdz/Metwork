@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { AddParticipantDialog } from './add-participant-dialog';
 import { EditParticipantDialog } from './edit-participant-dialog';
 import { AnswerSummaryPanel } from './answer-summary';
+import { AnswerValue, FileCountBadge } from './registration-answer';
 import type { Registration, RegistrationFormField, RegistrationStatus } from '@/types/domain';
 
 interface RegistrationsTableProps {
@@ -345,6 +346,7 @@ export function RegistrationsTable({
                   key={reg.id}
                   registration={reg}
                   formFields={formFields}
+                  endpoint={endpoint}
                   onCancel={() => handleCancel(reg.id)}
                   onEdit={() => setEditing(reg)}
                   onResend={() => void handleResend(reg.id)}
@@ -365,6 +367,7 @@ export function RegistrationsTable({
               key={reg.id}
               registration={reg}
               formFields={formFields}
+              endpoint={endpoint}
               onCancel={() => handleCancel(reg.id)}
               onEdit={() => setEditing(reg)}
               onResend={() => void handleResend(reg.id)}
@@ -422,6 +425,7 @@ export function RegistrationsTable({
 function RegistrationRow({
   registration: reg,
   formFields,
+  endpoint,
   onCancel,
   onDelete,
   onEdit,
@@ -432,6 +436,8 @@ function RegistrationRow({
 }: {
   registration: Registration;
   formFields: RegistrationFormField[];
+  /** Owner surface, for the file download links. */
+  endpoint: string;
   onCancel: () => void;
   onDelete: () => void;
   onEdit: () => void;
@@ -448,7 +454,12 @@ function RegistrationRow({
   return (
     <>
       <tr className="hover:bg-muted/30 transition-colors">
-        <td className="px-4 py-3 font-medium">{reg.fullName}</td>
+        <td className="px-4 py-3 font-medium">
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {reg.fullName}
+            <FileCountBadge reg={reg} />
+          </span>
+        </td>
         <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{reg.email}</td>
         <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{reg.phone}</td>
         <td className="px-4 py-3">
@@ -533,7 +544,7 @@ function RegistrationRow({
                 return (
                   <div key={field.id}>
                     <p className="text-xs font-medium text-muted-foreground">{field.label}</p>
-                    <p className="text-sm mt-0.5">{display}</p>
+                    <AnswerValue reg={reg} field={field} answer={answer} endpoint={endpoint} textClassName="text-sm mt-0.5" />
                   </div>
                 );
               })}
@@ -550,6 +561,7 @@ function RegistrationRow({
 function RegistrationCard({
   registration: reg,
   formFields,
+  endpoint,
   onCancel,
   onDelete,
   onEdit,
@@ -560,6 +572,8 @@ function RegistrationCard({
 }: {
   registration: Registration;
   formFields: RegistrationFormField[];
+  /** Owner surface, for the file download links. */
+  endpoint: string;
   onCancel: () => void;
   onDelete: () => void;
   onEdit: () => void;
@@ -577,7 +591,10 @@ function RegistrationCard({
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-medium">{reg.fullName}</p>
+          <p className="flex items-center gap-2 font-medium">
+            <span className="truncate">{reg.fullName}</span>
+            <FileCountBadge reg={reg} />
+          </p>
           {reg.email && <p className="truncate text-xs text-muted-foreground">{reg.email}</p>}
           {reg.phone && <p className="truncate text-xs text-muted-foreground">{reg.phone}</p>}
         </div>
@@ -658,7 +675,7 @@ function RegistrationCard({
             return (
               <div key={field.id}>
                 <p className="text-xs font-medium text-muted-foreground">{field.label}</p>
-                <p className="mt-0.5 text-sm">{display}</p>
+                <AnswerValue reg={reg} field={field} answer={answer} endpoint={endpoint} textClassName="mt-0.5 text-sm" />
               </div>
             );
           })}

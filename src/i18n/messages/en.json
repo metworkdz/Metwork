@@ -6042,6 +6042,9 @@
     "outcomes": "What outcomes do you expect from this program?"
   },
   "registrationsTable": {
+    "viewFile": "View",
+    "downloadFile": "Download",
+    "filesAttached": "Files attached: {count}",
     "title": "Registrations",
     "subtitle": "{count} total registrations for {title}",
     "exportCsv": "Export CSV",
