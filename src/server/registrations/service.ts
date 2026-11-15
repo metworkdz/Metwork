@@ -24,6 +24,7 @@ import {
   type EmailLang,
 } from '@/server/notifications/email';
 import { countAttendance } from '@/server/attendance';
+import { registrationFileIds, removeUnreferencedRegistrationFiles } from '@/server/registrations/file-cleanup';
 import { bookingHoldsSeat } from '@/server/bookings/status';
 import { pruneFeedbackForProgramSync, pruneFeedbackForRegistrationsSync } from '@/server/feedback/prune';
 import {
@@ -235,70 +236,104 @@ export async function updateFormField(
 
 /** Delete a form field. Also removes answers for this field from all registrations. */
 export async function deleteFormField(id: string, owner: OwnerScope): Promise<boolean> {
-  return db.update((d) => {
+  const orphaned: string[] = [];
+  const deleted = await db.update((d) => {
     const idx = (d.registrationFormFields ?? []).findIndex(
       (f) => f.id === id && ownedBy(f, owner),
     );
     if (idx === -1) return false;
     d.registrationFormFields.splice(idx, 1);
-    // Prune answers from existing registrations
-    d.registrations = (d.registrations ?? []).map((r) => ({
-      ...r,
-      answers: r.answers.filter((a) => a.fieldId !== id),
-    }));
+    // Prune answers from existing registrations — and remember the files they
+    // pointed at, which would otherwise sit in storage with no way to reach them.
+    d.registrations = (d.registrations ?? []).map((r) => {
+      orphaned.push(...registrationFileIds(r.answers.filter((a) => a.fieldId === id)));
+      return { ...r, answers: r.answers.filter((a) => a.fieldId !== id) };
+    });
     return true;
   });
+  if (deleted) await removeUnreferencedRegistrationFiles(orphaned);
+  return deleted;
 }
 
-/** Replace the entire form field list for an entity (used by bulk-save from the builder UI). */
+/**
+ * Replace the entire form field list for an entity (bulk-save from the builder).
+ *
+ * A row the builder loaded carries its field's `id`, and a saved row KEEPS it.
+ * That is what lets existing answers survive an edit: this used to mint a fresh
+ * id for every question on every save, so correcting a typo in a question
+ * detached every answer already collected from it — and, once questions could
+ * ask for a file, hid every pitch deck from the host. A row with no `id` (or one
+ * that is not this listing's) is a new question.
+ *
+ * A question the host removed takes its answers with it, and so do the files
+ * behind them. Turning a question INTO or OUT OF a file question does the same:
+ * a stored file id is not a text answer, and a text answer is not a file.
+ */
 export async function replaceFormFields(
   entityType: 'PROGRAM' | 'EVENT',
   entityId: string,
   owner: OwnerScope,
-  fields: Omit<
+  fields: (Omit<
     RegistrationFormFieldRecord,
     'id' | 'incubatorId' | 'mentorId' | 'entityType' | 'entityId' | 'createdAt' | 'updatedAt'
-  >[],
+  > & { id?: string | null })[],
 ): Promise<RegistrationFormFieldRecord[]> {
   const now = new Date().toISOString();
-  return db.update((d) => {
+  const orphaned: string[] = [];
+
+  const saved = await db.update((d) => {
     if (!Array.isArray(d.registrationFormFields)) d.registrationFormFields = [];
-    // Collect ids of fields being replaced so we can clean up orphaned answers
-    const oldIds = new Set(
-      d.registrationFormFields
-        .filter((f) => f.entityType === entityType && f.entityId === entityId)
-        .map((f) => f.id),
+
+    const before = d.registrationFormFields.filter(
+      (f) => f.entityType === entityType && f.entityId === entityId,
     );
-    // Remove old fields for this entity
+    const beforeById = new Map(before.map((f) => [f.id, f]));
+    const reused = new Set<string>();
+
     d.registrationFormFields = d.registrationFormFields.filter(
       (f) => !(f.entityType === entityType && f.entityId === entityId),
     );
-    // Map incoming fields: keep existing id if label matches an old field, otherwise new uuid
-    const existingByLabel = new Map<string, string>(); // label → old id
-    oldIds.forEach((oid) => {
-      // we already filtered them out so we can't recover the label, just generate new ids
-      void oid;
+
+    const newFields: RegistrationFormFieldRecord[] = fields.map((f, i) => {
+      const prior = f.id && !reused.has(f.id) ? beforeById.get(f.id) : undefined;
+      if (prior) reused.add(prior.id);
+      return {
+        id: prior ? prior.id : randomUUID(),
+        entityType,
+        entityId,
+        ...ownerFields(owner),
+        label: f.label,
+        labelKey: f.labelKey ?? null,
+        type: f.type,
+        options: f.options,
+        optionKeys: f.optionKeys ?? null,
+        required: f.required,
+        order: i,
+        showWhen: f.showWhen ?? null,
+        createdAt: prior ? prior.createdAt : now,
+        updatedAt: now,
+      };
     });
-    const newFields: RegistrationFormFieldRecord[] = fields.map((f, i) => ({
-      id: randomUUID(),
-      entityType,
-      entityId,
-      ...ownerFields(owner),
-      label: f.label,
-      labelKey: f.labelKey ?? null,
-      type: f.type,
-      options: f.options,
-      optionKeys: f.optionKeys ?? null,
-      required: f.required,
-      order: i,
-      showWhen: f.showWhen ?? null,
-      createdAt: now,
-      updatedAt: now,
-    }));
     d.registrationFormFields.push(...newFields);
-    void existingByLabel;
+
+    // Answers whose question is gone, or changed between file and not-file.
+    const detached = new Set<string>();
+    for (const old of before) {
+      const next = newFields.find((n) => n.id === old.id);
+      if (!next || (old.type === 'FILE') !== (next.type === 'FILE')) detached.add(old.id);
+    }
+    if (detached.size > 0) {
+      d.registrations = (d.registrations ?? []).map((r) => {
+        if (r.entityType !== entityType || r.entityId !== entityId) return r;
+        orphaned.push(...registrationFileIds(r.answers.filter((a) => detached.has(a.fieldId))));
+        return { ...r, answers: r.answers.filter((a) => !detached.has(a.fieldId)) };
+      });
+    }
     return newFields;
   });
+
+  await removeUnreferencedRegistrationFiles(orphaned);
+  return saved;
 }
 
 /* ─────────────────────────── Delete cascade ─────────────────────────── */
@@ -325,7 +360,11 @@ export function pruneListingChildrenSync(
   d: StoreDraft,
   entityType: 'PROGRAM' | 'EVENT',
   entityId: string,
-): { formFields: number; registrations: number } {
+): { formFields: number; registrations: number; fileIds: string[] } {
+  // Collected before the rows go, so the caller can delete the files after commit.
+  const fileIds = (d.registrations ?? [])
+    .filter((r) => r.entityType === entityType && r.entityId === entityId)
+    .flatMap((r) => registrationFileIds(r.answers));
   const fieldsBefore = (d.registrationFormFields ?? []).length;
   d.registrationFormFields = (d.registrationFormFields ?? []).filter(
     (f) => !(f.entityType === entityType && f.entityId === entityId),
@@ -347,6 +386,7 @@ export function pruneListingChildrenSync(
   return {
     formFields: fieldsBefore - d.registrationFormFields.length,
     registrations: regsBefore - (d.registrations ?? []).length,
+    fileIds,
   };
 }
 
@@ -698,7 +738,7 @@ export async function deleteRegistration(
   id: string,
   owner: OwnerScope,
 ): Promise<DeleteRegistrationResult> {
-  return db.update<DeleteRegistrationResult>((d) => {
+  const result = await db.update<DeleteRegistrationResult>((d) => {
     const idx = (d.registrations ?? []).findIndex((r) => r.id === id && ownedBy(r, owner));
     // Scoped: another owner's row is simply not found, never "forbidden".
     if (idx === -1) return { ok: false, reason: 'NOT_FOUND' };
@@ -714,6 +754,9 @@ export async function deleteRegistration(
     pruneFeedbackForRegistrationsSync(d, new Set([row.id]));
     return { ok: true, deleted: row };
   });
+  // The person is gone, so is what they uploaded (unless another record shares it).
+  if (result.ok) await removeUnreferencedRegistrationFiles(registrationFileIds(result.deleted.answers));
+  return result;
 }
 
 /* ─────────────────────────── Editing a registration ─────────────────────────── */

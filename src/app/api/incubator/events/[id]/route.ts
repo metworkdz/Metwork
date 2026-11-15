@@ -7,6 +7,7 @@ import { z, ZodError } from 'zod';
 import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
 import { pruneListingChildrenSync } from '@/server/registrations/service';
+import { removeUnreferencedRegistrationFiles } from '@/server/registrations/file-cleanup';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -123,6 +124,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
 
   const { id } = await params;
 
+  let orphanedFiles: string[] = [];
   const deleted = await db.update((d) => {
     const events = d.events ?? [];
     const idx = events.findIndex(
@@ -132,10 +134,11 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     events.splice(idx, 1);
     // Same mutation: the form and the registrations are meaningless without
     // the listing and were previously left orphaned.
-    pruneListingChildrenSync(d, 'EVENT', id);
+    orphanedFiles = pruneListingChildrenSync(d, 'EVENT', id).fileIds;
     return true;
   });
 
   if (!deleted) return jsonError(404, 'NOT_FOUND', 'Event not found');
+  await removeUnreferencedRegistrationFiles(orphanedFiles);
   return json({ ok: true });
 }

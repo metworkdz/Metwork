@@ -27,6 +27,7 @@ const bucket = {
   assets: new Map<string, Buffer>(),
   destroyed: [] as string[],
   throwOnLookup: false,
+  headUnreadable: false,
   lastSignOptions: undefined as { type?: string } | undefined,
 };
 
@@ -50,6 +51,7 @@ vi.mock('@/lib/cloudinary', () => ({
     return b ? { bytes: b.length } : null;
   },
   readAuthenticatedRawHead: async (id: string, n: number) => {
+    if (bucket.headUnreadable) return null;
     const b = bucket.assets.get(id);
     return b ? b.subarray(0, n) : null;
   },
@@ -147,6 +149,7 @@ beforeEach(async () => {
   bucket.assets.clear();
   bucket.destroyed = [];
   bucket.throwOnLookup = false;
+  bucket.headUnreadable = false;
   bucket.lastSignOptions = undefined;
   await seed();
 });
@@ -199,6 +202,16 @@ describe('sanitizeRegistrationFileName', () => {
     expect(sanitizeRegistrationFileName('photo.jpeg', 'image/jpeg')).toBe('photo.jpg');
     // The browser sends an extensionless name for the upload itself, so a missing name must still work.
     expect(sanitizeRegistrationFileName(undefined, 'application/pdf')).toBe('file.pdf');
+  });
+  it('strips invisible direction and zero-width controls that make a name lie', () => {
+    // RLO: "evil" + U+202E + "fdp.exe" renders as "evilexe.pdf" — a spoofed extension.
+    const out = sanitizeRegistrationFileName('evil\u202Efdp.exe.pdf', 'application/pdf');
+    expect(out).not.toMatch(/[\u202a-\u202e\u2066-\u2069\u200b-\u200f\u2060-\u206f\ufeff]/);
+    expect(sanitizeRegistrationFileName('a\u200Bb\u200Fc\uFEFF.pdf', 'application/pdf')).toBe('a b c.pdf');
+  });
+  it('keeps an Arabic or accented name exactly as typed', () => {
+    expect(sanitizeRegistrationFileName('عرض تقديمي للمشروع.pdf', 'application/pdf')).toBe('عرض تقديمي للمشروع.pdf');
+    expect(sanitizeRegistrationFileName('Présentation été 2026.jpeg', 'image/jpeg')).toBe('Présentation été 2026.jpg');
   });
   it('strips path parts, quotes and control characters, and bounds the length', () => {
     expect(sanitizeRegistrationFileName('../../etc/passwd"\r\n.pdf', 'application/pdf')).not.toMatch(/[/\\"\r\n]/);
@@ -367,6 +380,17 @@ describe('resolveFileAnswers', () => {
     expect(bucket.destroyed).toEqual([]);
   });
 
+  it('does not delete a good file just because its first bytes could not be read', async () => {
+    const id = upload(PDF_BYTES);
+    bucket.headUnreadable = true;
+    await expectRejected([{ fieldId: FILE_FIELD, value: id }], 'STORAGE_UNAVAILABLE');
+    expect(bucket.destroyed).toEqual([]);
+    expect(bucket.assets.has(id)).toBe(true);
+    // ...and the same file is accepted once storage answers again.
+    bucket.headUnreadable = false;
+    expect((await resolve([{ fieldId: FILE_FIELD, value: id }]))[0]!.file?.contentType).toBe('application/pdf');
+  });
+
   it('keeps only the first answer for a question answered twice', async () => {
     const a = upload(PDF_BYTES);
     const b = upload(PDF_BYTES);
@@ -412,6 +436,30 @@ describe('POST /api/registrations with a file', () => {
     expect(fileAnswer.value).toBe(id);
     expect(fileAnswer.file).toEqual({ name: 'deck.pdf', bytes: PDF_BYTES.length, contentType: 'application/pdf' });
     expect(reg.answers.find((a) => a.fieldId === TEXT_FIELD)).toEqual({ fieldId: TEXT_FIELD, value: 'TiziTech' });
+  });
+
+  it('answers with a summary only, never the stored record', async () => {
+    const res = await register([{ fieldId: FILE_FIELD, value: upload(PDF_BYTES), fileName: 'deck.pdf' }]);
+    const body = await res.json();
+    expect(Object.keys(body.registration).sort()).toEqual(
+      ['createdAt', 'entityId', 'entityType', 'id', 'status', 'updatedAt'],
+    );
+    expect(JSON.stringify(body)).not.toMatch(/registration-files|deck\.pdf|amina|\+2137/);
+  });
+
+  it('does not hand a second caller the first registrant\'s record when the email is already registered', async () => {
+    await register([{ fieldId: FILE_FIELD, value: upload(PDF_BYTES), fileName: 'secret-deck.pdf' }], 'victim@example.dz');
+    // Someone else submits with the victim's address and a different phone.
+    const res = await registerRoute(json('/api/registrations', {
+      entityType: 'EVENT', entityId: EVENT, fullName: 'Mallory', email: 'victim@example.dz', phone: '+213555000111', answers: [],
+    }, '10.9.9.9'));
+    const body = await res.json();
+    expect(body.alreadyRegistered).toBe(true);
+    const text = JSON.stringify(body);
+    expect(text).not.toContain('secret-deck');
+    expect(text).not.toContain('registration-files');
+    expect(text).not.toContain('Amina');
+    expect(text).not.toContain('+213700112233');
   });
 
   it('writes nothing when the file fails verification', async () => {

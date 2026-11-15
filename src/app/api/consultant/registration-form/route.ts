@@ -31,6 +31,8 @@ const FIELD_TYPES = [
 ] as const;
 
 const fieldSchema = z.object({
+  /** The question's id when the builder loaded it, so a save keeps its answers. Absent on a new one. */
+  id:       z.string().uuid().nullable().optional(),
   label:    z.string().min(1).max(200).transform((s) => s.trim()),
   /** `defaultQuestions` i18n key — see the incubator route. */
   labelKey:   z.string().min(1).max(80).nullable().optional().transform((v) => v ?? null),
@@ -99,6 +101,7 @@ export async function POST(req: NextRequest) {
     input.entityId,
     mentorScope(guard.mentorId),
     input.fields.map((f, i) => ({
+      id:       f.id ?? null,
       label:    f.label,
       labelKey: f.labelKey,
       type:     f.type,

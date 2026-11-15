@@ -21,9 +21,11 @@ import {
   destroyAuthenticatedRaw,
   getAuthenticatedRawResource,
   isConfigured,
+  listAuthenticatedRawByPrefix,
   readAuthenticatedRawHead,
   signedRawDownloadUrl,
 } from '@/lib/cloudinary';
+import { REGISTRATION_FILE_FOLDER } from '@/lib/upload-limits';
 
 export type StorageMode = 'cloudinary' | 'local' | 'unavailable';
 
@@ -125,7 +127,9 @@ export async function openRegistrationFile(
   let bytes: number | null = null;
 
   if (registrationFileStorageMode() === 'cloudinary') {
-    const res = await fetch(signedRawDownloadUrl(publicId));
+    // Bounds the wait for the response, not the body: a slow download of a
+    // 10 MB file to the owner must not be cut short by this.
+    const res = await fetch(signedRawDownloadUrl(publicId), { signal: AbortSignal.timeout(20_000) });
     if (!res.ok || !res.body) return null;
     source = res.body;
     const len = Number(res.headers.get('content-length'));
@@ -166,4 +170,29 @@ export async function openRegistrationFile(
     },
   });
   return { body, bytes };
+}
+
+/** Every stored registration file with when it was written — what the cleanup job inspects. */
+export async function listRegistrationFiles(
+  limit = 2000,
+): Promise<Array<{ publicId: string; createdAt: Date }>> {
+  if (registrationFileStorageMode() === 'cloudinary') {
+    return listAuthenticatedRawByPrefix(`${REGISTRATION_FILE_FOLDER}/`, limit);
+  }
+  const out: Array<{ publicId: string; createdAt: Date }> = [];
+  const root = localRoot();
+  async function walk(dir: string): Promise<void> {
+    let entries;
+    try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) await walk(full);
+      else if (out.length < limit) {
+        const st = await fs.stat(full);
+        out.push({ publicId: path.relative(root, full).split(path.sep).join('/'), createdAt: st.mtime });
+      }
+    }
+  }
+  await walk(path.join(root, REGISTRATION_FILE_FOLDER));
+  return out;
 }

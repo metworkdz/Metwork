@@ -59,6 +59,12 @@ const CHOICE_TYPES: RegistrationFieldType[] = ['DROPDOWN', 'MULTIPLE_CHOICE', 'C
 interface BuilderField {
   /** Temp UI-only id for React keys. Not sent to server. */
   _key: string;
+  /**
+   * The saved question's id, when it has been saved. Sent back so a save KEEPS
+   * the question — and with it every answer already collected — instead of
+   * replacing it with a new one. Null for a row added since the last save.
+   */
+  id: string | null;
   label: string;
   type: RegistrationFieldType;
   options: string[];
@@ -105,6 +111,7 @@ function newKey() { return `field-${++_key}`; }
 function toBuilderField(f: RegistrationFormField): BuilderField {
   return {
     _key: newKey(),
+    id: f.id,
     label: f.label,
     type: f.type,
     options: f.options ?? [],
@@ -131,7 +138,7 @@ function toBuilderFields(initial: RegistrationFormField[]): BuilderField[] {
 /** A question the host wrote themselves — never template-translated. */
 function emptyField(): BuilderField {
   return {
-    _key: newKey(), label: '', type: 'SHORT_TEXT', options: [], required: false,
+    _key: newKey(), id: null, label: '', type: 'SHORT_TEXT', options: [], required: false,
     labelKey: null, optionKeys: null, _seed: null, showWhen: null,
   };
 }
@@ -160,6 +167,7 @@ export function RegistrationFormBuilder({
   function insertDefaultQuestions() {
     const defaults = buildDefaultApplicationFields((k) => tQuestions(k)).map<BuilderField>((f) => ({
       _key: newKey(),
+      id: null,
       label: f.label,
       type: f.type,
       options: f.options ?? [],
@@ -270,6 +278,7 @@ export function RegistrationFormBuilder({
                 { label: f.label.trim(), options: options ?? [] },
               );
               return {
+                ...(f.id ? { id: f.id } : {}),
                 label: f.label.trim(),
                 labelKey,
                 type: f.type,
@@ -292,6 +301,14 @@ export function RegistrationFormBuilder({
           const data = await res.json() as { message?: string };
           setError(data.message ?? t('saveError'));
           return;
+        }
+        // Remember the ids the server just gave the new rows. Without this a
+        // second save would send them as new again and replace them, detaching
+        // any answers that arrived in between.
+        const saved = await res.json().catch(() => null) as { fields?: Array<{ id: string }> } | null;
+        const ids = saved?.fields;
+        if (ids && ids.length === fields.length) {
+          setFields((prev) => prev.map((f, i) => ({ ...f, id: ids[i]!.id })));
         }
         setSaved(true);
       } catch {

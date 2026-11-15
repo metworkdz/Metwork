@@ -68,6 +68,16 @@ export async function handleRegistrationFile(
   }
   if (!opened) return notFound();
 
+  // What is stored must still be what was verified. The signature that let the
+  // applicant upload stays valid for a while after they submit, so a file could
+  // be replaced behind the registration; a different size is the cheap tell, on
+  // top of the byte check above. (A header we cannot read is not held against it.)
+  if (opened.bytes !== null && opened.bytes !== file.bytes) {
+    await opened.body.cancel().catch(() => undefined);
+    console.error('[registration-files] Stored size no longer matches the verified size', publicId);
+    return notFound();
+  }
+
   const download = new URL(req.url).searchParams.get('download') === '1';
   return new Response(opened.body, {
     headers: {

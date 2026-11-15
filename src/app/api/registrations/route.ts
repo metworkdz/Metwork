@@ -216,10 +216,24 @@ export async function POST(req: NextRequest) {
     cashReservation,
   });
 
+  // Only what the page needs. This endpoint is public, and when the email has
+  // already registered it hands back the EXISTING row — which belongs to
+  // whoever owns that address, not to the caller. Returning the whole record
+  // would let anyone who knew an email read that person's phone, their answers
+  // and (now) the facts of the file they uploaded.
+  const summary = {
+    id: registration.id,
+    entityType: registration.entityType,
+    entityId: registration.entityId,
+    status: registration.status,
+    createdAt: registration.createdAt,
+    updatedAt: registration.updatedAt,
+  };
+
   if (alreadyRegistered) {
     return json(
       {
-        registration,
+        registration: summary,
         message: 'You are already registered for this event.',
         alreadyRegistered: true,
       },
@@ -227,5 +241,5 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return json({ registration, alreadyRegistered: false }, { status: 201 });
+  return json({ registration: summary, alreadyRegistered: false }, { status: 201 });
 }

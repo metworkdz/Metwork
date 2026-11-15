@@ -6066,6 +6066,7 @@
     "paginationInfo": "{from}–{to} of {total}",
     "addParticipant": {
       "cta": "Add participant",
+      "fileNote": "This form also asks for a file. Only the participant can attach it, from the online form.",
       "title": "Add a participant",
       "hint": "For someone who signed up at the office. They get the same confirmation email as an online registration, stating what they paid and what is left.",
       "labelName": "Full name",

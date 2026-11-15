@@ -6066,6 +6066,7 @@
     "paginationInfo": "{from}–{to} sur {total}",
     "addParticipant": {
       "cta": "Ajouter un participant",
+      "fileNote": "Ce formulaire demande aussi un fichier. Seul le participant peut le joindre, depuis le formulaire en ligne.",
       "title": "Ajouter un participant",
       "hint": "Pour une personne inscrite sur place. Elle reçoit le même email de confirmation qu'une inscription en ligne, indiquant ce qu'elle a payé et ce qui reste à régler.",
       "labelName": "Nom complet",

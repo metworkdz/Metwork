@@ -35,6 +35,8 @@ const FIELD_TYPES = [
 ] as const;
 
 const fieldSchema = z.object({
+  /** The question's id when the builder loaded it, so a save keeps its answers. Absent on a new one. */
+  id:       z.string().uuid().nullable().optional(),
   label:    z.string().min(1).max(200).transform((s) => s.trim()),
   /**
    * `defaultQuestions` i18n key for a seeded question, so the PUBLIC form can
@@ -127,6 +129,7 @@ export async function POST(req: NextRequest) {
     input.entityId,
     incubatorScope(inc.id),
     input.fields.map((f, i) => ({
+      id:       f.id ?? null,
       label:    f.label,
       // Only keep option keys that still line up with the options they name —
       // a host who edits one choice must not get the template's wording back.

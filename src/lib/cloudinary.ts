@@ -140,7 +140,11 @@ export async function readAuthenticatedRawHead(
   length: number,
 ): Promise<Buffer | null> {
   const url = signedRawDownloadUrl(publicId, { expiresInSeconds: 60 });
-  const res = await fetch(url, { headers: { Range: `bytes=0-${length - 1}` } });
+  // A hung CDN must not hold a registration request open until the platform kills it.
+  const res = await fetch(url, {
+    headers: { Range: `bytes=0-${length - 1}` },
+    signal: AbortSignal.timeout(8_000),
+  });
   if (!res.ok || !res.body) return null;
 
   const reader = res.body.getReader();
@@ -154,6 +158,33 @@ export async function readAuthenticatedRawHead(
   }
   await reader.cancel().catch(() => undefined);
   return Buffer.concat(chunks).subarray(0, length);
+}
+
+/**
+ * Every PRIVATE raw asset whose public_id starts with `prefix`, oldest data
+ * first as Cloudinary returns it. Pages through the Admin API; `limit` bounds
+ * the work of one run (the cleanup job picks up the rest tomorrow).
+ */
+export async function listAuthenticatedRawByPrefix(
+  prefix: string,
+  limit = 2000,
+): Promise<Array<{ publicId: string; createdAt: Date; bytes: number }>> {
+  const out: Array<{ publicId: string; createdAt: Date; bytes: number }> = [];
+  let cursor: string | undefined;
+  do {
+    const page = await cloudinary.api.resources({
+      resource_type: 'raw',
+      type: 'authenticated',
+      prefix,
+      max_results: 500,
+      ...(cursor ? { next_cursor: cursor } : {}),
+    });
+    for (const r of page.resources as Array<{ public_id: string; created_at: string; bytes: number }>) {
+      out.push({ publicId: r.public_id, createdAt: new Date(r.created_at), bytes: r.bytes });
+    }
+    cursor = page.next_cursor as string | undefined;
+  } while (cursor && out.length < limit);
+  return out.slice(0, limit);
 }
 
 /** Deletes a `raw` asset — used to clean up an upload we end up rejecting. */

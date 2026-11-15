@@ -12,6 +12,7 @@ import { CLOCK_TIME_PATTERN } from '@/lib/booking-when';
 import { z, ZodError } from 'zod';
 import { db } from '@/server/db/store';
 import { pruneListingChildrenSync } from '@/server/registrations/service';
+import { removeUnreferencedRegistrationFiles } from '@/server/registrations/file-cleanup';
 import { requireConsultant } from '@/server/mentors/access';
 import { canDeleteProgram, canEditProgram, type ProgramActor } from '@/server/programs/ownership';
 import { normalizeDepositConfig, validateCashDeposit } from '@/server/bookings/listing-payment';
@@ -179,6 +180,7 @@ export async function DELETE(
 
   const actor: ProgramActor = { kind: 'MENTOR', mentorId: guard.mentorId };
 
+  let orphanedFiles: string[] = [];
   const result = await db.update((d) => {
     const programs = d.programs ?? [];
     const idx = programs.findIndex((x) => x.id === id);
@@ -188,11 +190,12 @@ export async function DELETE(
     programs.splice(idx, 1);
     // Same mutation: the form and the registrations are meaningless
     // without the listing and were previously left orphaned.
-    pruneListingChildrenSync(d, 'PROGRAM', id);
+    orphanedFiles = pruneListingChildrenSync(d, 'PROGRAM', id).fileIds;
     return 'OK';
   });
 
   if (result === 'NOT_FOUND') return jsonError(404, 'NOT_FOUND', 'Program not found');
   if (result === 'FORBIDDEN') return jsonError(403, 'FORBIDDEN', 'Not your program');
+  await removeUnreferencedRegistrationFiles(orphanedFiles);
   return json({ ok: true });
 }

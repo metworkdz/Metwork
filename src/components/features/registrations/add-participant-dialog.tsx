@@ -73,10 +73,13 @@ export function AddParticipantDialog({
   const deposit = Math.min(Math.max(0, Math.round(Number(form.depositPaid) || 0)), total);
   const due = total - deposit;
 
+  // A file can only come from the participant, so it has no place on a form the
+  // host fills in for them; the server drops any file answer sent here anyway.
   const fields = useMemo(
-    () => [...formFields].sort((a, b) => a.order - b.order),
+    () => [...formFields].filter((f) => f.type !== 'FILE').sort((a, b) => a.order - b.order),
     [formFields],
   );
+  const hasFileQuestion = formFields.some((f) => f.type === 'FILE');
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
   const setAnswer = (fieldId: string, value: string | string[]) =>
@@ -237,6 +240,12 @@ export function AddParticipantDialog({
                 </div>
               );
             })}
+
+            {hasFileQuestion && (
+              <p className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                {t('fileNote')}
+              </p>
+            )}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">

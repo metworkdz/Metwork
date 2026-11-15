@@ -190,6 +190,10 @@ describe('what is never served', () => {
     await db.update((d) => { delete d.registrations[0]!.answers[0]!.file; });
     expect((await openEvent()).status).toBe(404);
   });
+  it('a file replaced behind the registration (same type, different size)', async () => {
+    await fs.writeFile(path.join(dir, eventFileId), Buffer.concat([Buffer.from('%PDF-1.7\n'), Buffer.alloc(99, 1)]));
+    expect((await openEvent()).status).toBe(404);
+  });
   it('a file that has gone missing from storage', async () => {
     await fs.rm(path.join(dir, eventFileId));
     expect((await openEvent()).status).toBe(404);
@@ -208,8 +212,14 @@ describe('with Cloudinary as storage', () => {
     vi.stubGlobal('fetch', fetchMock);
     const res = await openEvent();
     expect(res.status).toBe(200);
-    expect(fetchMock).toHaveBeenCalledWith(`https://dl.test/${eventFileId}`);
+    expect(fetchMock).toHaveBeenCalledWith(`https://dl.test/${eventFileId}`, expect.objectContaining({ signal: expect.anything() }));
     expect(Buffer.from(await res.arrayBuffer()).equals(PDF)).toBe(true);
+  });
+
+  it('refuses a stored object whose size no longer matches what was verified', async () => {
+    const other = Buffer.concat([PDF, Buffer.alloc(10)]);
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(other, { status: 200, headers: { 'content-length': String(other.length) } })));
+    expect((await openEvent()).status).toBe(404);
   });
 
   it('refuses a "200 with an HTML error page" from a failed signed link', async () => {

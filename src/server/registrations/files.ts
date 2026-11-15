@@ -124,8 +124,13 @@ export function sanitizeRegistrationFileName(
 ): string {
   const ext = contentType === 'application/pdf' ? 'pdf' : 'jpg';
   const base = (raw ?? '')
+    // Control characters, path and header-significant characters, and the
+    // invisible Unicode controls that let a name LIE about itself: the
+    // right-to-left override (U+202E) makes "evil\u202Efdp.exe" display as
+    // "evilexe.pdf", and zero-width characters make two names look identical.
+    // Arabic letters need none of these — the direction comes from the script.
     // eslint-disable-next-line no-control-regex
-    .replace(/[\u0000-\u001f\u007f"\\/<>:|?*]/g, ' ')
+    .replace(/[\u0000-\u001f\u007f-\u009f"\\/<>:|?*\u00ad\u061c\u180e\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/\.(pdf|jpe?g)$/i, '')
@@ -275,10 +280,15 @@ export async function resolveFileAnswers(
       throw fail('FILE_TOO_LARGE');
     }
 
-    const contentType = head ? sniffRegistrationFile(head) : null;
+    // Could not read the file at all: that is storage failing, not the visitor's
+    // file being wrong. Say so, and leave the file where it is — deleting it on a
+    // network blip would destroy a perfectly good upload.
+    if (!head) throw fail('STORAGE_UNAVAILABLE');
+
+    const contentType = sniffRegistrationFile(head);
     if (!contentType) {
       await removeRegistrationFile(publicId);
-      throw fail(head ? 'UNSUPPORTED_FILE_TYPE' : 'STORAGE_UNAVAILABLE');
+      throw fail('UNSUPPORTED_FILE_TYPE');
     }
 
     const file: RegistrationAnswerFile = {

@@ -79,7 +79,7 @@ async function prune(entityType: 'PROGRAM' | 'EVENT', entityId: string) {
 describe('pruneListingChildrenSync', () => {
   it('removes the deleted program\'s form and registrations', async () => {
     const removed = await prune('PROGRAM', PROG);
-    expect(removed).toEqual({ formFields: 2, registrations: 1 });
+    expect(removed).toEqual({ formFields: 2, registrations: 1, fileIds: [] });
 
     const d = await db.read();
     expect(d.registrationFormFields.map((f) => f.id).sort()).toEqual(['f3', 'f4', 'f5']);
@@ -110,7 +110,7 @@ describe('pruneListingChildrenSync', () => {
 
   it('cascades an event the same way', async () => {
     const removed = await prune('EVENT', EVENT);
-    expect(removed).toEqual({ formFields: 1, registrations: 1 });
+    expect(removed).toEqual({ formFields: 1, registrations: 1, fileIds: [] });
     const d = await db.read();
     expect(d.registrationFormFields.find((f) => f.id === 'f4')).toBeUndefined();
     expect(d.registrations.find((r) => r.id === 'r3')).toBeUndefined();
@@ -118,10 +118,10 @@ describe('pruneListingChildrenSync', () => {
 
   it('is a no-op the second time', async () => {
     await prune('PROGRAM', PROG);
-    expect(await prune('PROGRAM', PROG)).toEqual({ formFields: 0, registrations: 0 });
+    expect(await prune('PROGRAM', PROG)).toEqual({ formFields: 0, registrations: 0, fileIds: [] });
   });
 
   it('is a no-op for a listing that never had children', async () => {
-    expect(await prune('PROGRAM', 'never-existed')).toEqual({ formFields: 0, registrations: 0 });
+    expect(await prune('PROGRAM', 'never-existed')).toEqual({ formFields: 0, registrations: 0, fileIds: [] });
   });
 });

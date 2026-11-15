@@ -29,6 +29,10 @@
       "schedule": "30 1 * * *"
     },
     {
+      "path": "/api/cron/sweep-registration-files",
+      "schedule": "45 2 * * *"
+    },
+    {
       "path": "/api/cron/process-downgrades",
       "schedule": "0 1 * * *"
     },
