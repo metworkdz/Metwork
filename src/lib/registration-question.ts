@@ -19,6 +19,8 @@
  * (`useTranslations('defaultQuestions')` on the client, `getTranslations` on
  * the server), which keeps this importable from anywhere.
  */
+import type { Locale } from '@/i18n/config';
+import type { FieldTranslations } from '@/lib/registration-translations';
 
 /** The shape both the store record and the DTO satisfy. */
 export interface TranslatableQuestion {
@@ -26,6 +28,8 @@ export interface TranslatableQuestion {
   labelKey?: string | null;
   options?: string[] | null;
   optionKeys?: string[] | null;
+  /** Host translations of a host-written question — see `registration-translations.ts`. */
+  translations?: FieldTranslations | null;
 }
 
 /**
@@ -48,9 +52,22 @@ function lookup(translate: SafeTranslate, key: string | null | undefined): strin
   }
 }
 
-/** The question text to show. Falls back to the stored label. */
-export function questionLabel(field: TranslatableQuestion, translate: SafeTranslate): string {
-  return lookup(translate, field.labelKey) ?? field.label;
+/**
+ * The question text to show. A seeded question resolves through its key; a
+ * host-written one through the host's translation for `locale` when it has one.
+ * Anything else shows the stored label — the host's own words — so a missing
+ * translation is never an empty question. Pass no `locale` on the owner's
+ * surfaces, which read the source wording.
+ */
+export function questionLabel(
+  field: TranslatableQuestion,
+  translate: SafeTranslate,
+  locale?: Locale | string,
+): string {
+  const keyed = lookup(translate, field.labelKey);
+  if (keyed) return keyed;
+  const own = locale ? (field.translations?.[locale as Locale]?.label ?? '').trim() : '';
+  return own || field.label;
 }
 
 /**
@@ -61,12 +78,44 @@ export function questionLabel(field: TranslatableQuestion, translate: SafeTransl
 export function questionOptions(
   field: TranslatableQuestion,
   translate: SafeTranslate,
+  locale?: Locale | string,
 ): string[] | null {
   const options = field.options ?? null;
   if (!options) return null;
   const keys = field.optionKeys;
-  if (!keys?.length) return options;
-  return options.map((stored, i) => lookup(translate, keys[i]) ?? stored);
+  if (keys?.length) return options.map((stored, i) => lookup(translate, keys[i]) ?? stored);
+  // A host translation of the choices applies only when it lines up with the
+  // source choices one-for-one; otherwise the source is shown, never a guess.
+  const own = locale ? field.translations?.[locale as Locale]?.options : undefined;
+  if (own && own.length === options.length && own.every((o) => o.trim() !== '')) return own.map((o) => o.trim());
+  return options;
+}
+
+/** One selectable choice: what is SHOWN, and what is RECORDED when it is picked. */
+export interface Choice {
+  value: string;
+  label: string;
+}
+
+/**
+ * The choices of a question as the public form renders them.
+ *
+ * A host-written question records the SOURCE option whatever language it was
+ * shown in, so "Oui" and "نعم" both become "Yes" and counts, "ask only if" rules
+ * and exports never split by language. A seeded question keeps its long-standing
+ * behaviour (the answer is the text that was shown); the answer summary already
+ * folds those together across languages.
+ */
+export function questionChoices(
+  field: TranslatableQuestion,
+  translate: SafeTranslate,
+  locale?: Locale | string,
+): Choice[] | null {
+  const options = field.options ?? null;
+  if (!options) return null;
+  const labels = questionOptions(field, translate, locale) ?? options;
+  const seeded = !!field.optionKeys?.length;
+  return options.map((source, i) => ({ value: seeded ? labels[i]! : source, label: labels[i]! }));
 }
 
 /**

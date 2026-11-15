@@ -18,6 +18,7 @@ import {
   incubatorScope,
 } from '@/server/registrations/service';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { translationFields } from '@/server/registrations/translation-schema';
 import { db } from '@/server/db/store';
 
 export const runtime = 'nodejs';
@@ -50,6 +51,7 @@ const fieldSchema = z.object({
   optionKeys: z.array(z.string().min(1).max(80)).nullable().optional().transform((v) => v ?? null),
   required: z.boolean().default(false),
   order:    z.number().int().min(0).default(0),
+  ...translationFields,
   /** Ask only when an earlier question (by position) was answered `equals`. */
   showWhen: z.object({ order: z.number().int().min(0), equals: z.string().min(1).max(200) }).nullable().optional().transform((v) => v ?? null),
 });
@@ -141,6 +143,9 @@ export async function POST(req: NextRequest) {
       order:    i,
       // Only a rule that points at an EARLIER question is kept — it can't cycle.
       showWhen: f.showWhen && f.showWhen.order < i ? f.showWhen : null,
+      sourceLocale: f.sourceLocale,
+      translations: f.translations,
+      draftedLocales: f.draftedLocales,
     })),
   );
 

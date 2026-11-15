@@ -20,7 +20,12 @@
  * stops after printing.
  */
 import readline from 'node:readline';
-import { innovationBridgeFields, type FormField } from './forms/innovation-bridge-algeria';
+import {
+  SOURCE_LOCALE,
+  TRANSLATION_DRAFTED,
+  innovationBridgeFields,
+  type FormField,
+} from './forms/innovation-bridge-algeria';
 
 function arg(name: string, fallback?: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -71,7 +76,7 @@ async function main() {
   const fields: FormField[] = innovationBridgeFields;
 
   console.log(`Target: ${BASE}`);
-  console.log(`Form:   ${fields.length} questions (${fields.filter((f) => f.type === 'FILE').length} file uploads)\n`);
+  console.log(`Form:   ${fields.length} questions (${fields.filter((f) => f.type === 'FILE').length} file uploads), written in ${SOURCE_LOCALE}, translated to ${TRANSLATION_DRAFTED.join(' + ')} (flagged as drafts to check)\n`);
 
   const login = await api('/api/auth/login', {
     method: 'POST',
@@ -129,6 +134,12 @@ async function main() {
         options: f.options ?? null,
         required: f.required,
         order: i,
+        // Written in one language, shown in the visitor's. Answers are recorded in
+        // the source language. The translations are flagged as drafts until a person
+        // marks them as checked in the builder.
+        sourceLocale: SOURCE_LOCALE,
+        translations: f.translations,
+        draftedLocales: TRANSLATION_DRAFTED.filter((l) => f.translations[l]),
       })),
     }),
   });

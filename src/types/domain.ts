@@ -209,6 +209,19 @@ export interface RegistrationFormField {
   order: number;
   /** Ask this question only when an earlier one was answered a certain way. */
   showWhen?: { order: number; equals: string } | null;
+  /**
+   * The language `label` and `options` are written in — the fallback for every
+   * visitor and the source an automatic translation works from.
+   */
+  sourceLocale?: 'en' | 'fr' | 'ar' | null;
+  /**
+   * The wording and choices in other languages, for DISPLAY only. Answers are
+   * always recorded as the source option, whatever language was shown. See
+   * `@/lib/registration-translations`.
+   */
+  translations?: Partial<Record<'en' | 'fr' | 'ar', { label?: string; options?: string[] | null }>> | null;
+  /** Languages in `translations` that were machine-drafted and not yet read by a person. */
+  draftedLocales?: Array<'en' | 'fr' | 'ar'> | null;
 }
 
 export type RegistrationStatus = 'CONFIRMED' | 'WAITLISTED' | 'CANCELLED';

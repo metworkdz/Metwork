@@ -38,7 +38,7 @@ import { ApiClientError } from '@/lib/api-client';
 import { formatCurrency } from '@/lib/format';
 import { resolveListingPricing } from '@/lib/listing-price';
 import { MAX_REGISTRATION_FILE_MB } from '@/lib/upload-limits';
-import { questionLabel, questionOptions } from '@/lib/registration-question';
+import { questionChoices, questionLabel, type Choice } from '@/lib/registration-question';
 import { isQuestionVisible } from '@/lib/registration-conditions';
 import { RegistrationFileField, type AttachedFile } from './registration-file-field';
 import { computeClientDeposit } from '@/lib/deposit';
@@ -535,8 +535,10 @@ export function RegistrationForm({
           <QuestionStep
             key={step.field.id}
             field={step.field}
-            label={questionLabel(step.field, tq)}
-            options={questionOptions(step.field, tq)}
+            // The visitor's language. A translated question is SHOWN in it but the
+            // answer recorded is the host's own option (see questionChoices).
+            label={questionLabel(step.field, tq, locale)}
+            choices={questionChoices(step.field, tq, locale)}
             value={form.answers[step.field.id]}
             error={fieldErrors[step.field.id]}
             onChange={(v) => setAnswer(step.field.id, v)}
@@ -718,7 +720,7 @@ function IdentityStep({
 function QuestionStep({
   field,
   label,
-  options,
+  choices,
   value,
   error,
   onChange,
@@ -730,7 +732,7 @@ function QuestionStep({
   field: RegistrationFormField;
   /** Already resolved for this visitor — see `@/lib/registration-question`. */
   label: string;
-  options: string[] | null;
+  choices: Choice[] | null;
   value: string | string[] | undefined;
   error?: string;
   onChange: (v: string | string[]) => void;
@@ -755,7 +757,8 @@ function QuestionStep({
     <div>
       <StepHeading
         title={label}
-        hint={field.type === 'CHECKBOX' ? multiHint : undefined}
+        // "Choose all that apply" only means something with more than one box.
+        hint={field.type === 'CHECKBOX' && (choices?.length ?? 0) > 1 ? multiHint : undefined}
       />
 
       {(field.type === 'SHORT_TEXT' || field.type === 'PHONE' || field.type === 'EMAIL') && (
@@ -801,7 +804,7 @@ function QuestionStep({
         />
       )}
 
-      {field.type === 'DROPDOWN' && options && (
+      {field.type === 'DROPDOWN' && choices && (
         <select
           id={inputId}
           autoFocus
@@ -810,39 +813,41 @@ function QuestionStep({
           className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 sm:text-sm"
         >
           <option value="">{selectPlaceholder}</option>
-          {options.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
+          {choices.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
             </option>
           ))}
         </select>
       )}
 
-      {field.type === 'MULTIPLE_CHOICE' && options && (
+      {field.type === 'MULTIPLE_CHOICE' && choices && (
         <div className="flex flex-col gap-2">
-          {options.map((opt) => (
+          {choices.map((c) => (
             <ChoiceRow
-              key={opt}
-              selected={stringValue === opt}
-              onSelect={() => onChange(opt)}
+              key={c.value}
+              selected={stringValue === c.value}
+              onSelect={() => onChange(c.value)}
               type="radio"
               name={field.id}
-              label={opt}
+              label={c.label}
+              value={c.value}
             />
           ))}
         </div>
       )}
 
-      {field.type === 'CHECKBOX' && options && (
+      {field.type === 'CHECKBOX' && choices && (
         <div className="flex flex-col gap-2">
-          {options.map((opt) => (
+          {choices.map((c) => (
             <ChoiceRow
-              key={opt}
-              selected={arrayValue.includes(opt)}
-              onSelect={() => onToggle(opt)}
+              key={c.value}
+              selected={arrayValue.includes(c.value)}
+              onSelect={() => onToggle(c.value)}
               type="checkbox"
               name={field.id}
-              label={opt}
+              label={c.label}
+              value={c.value}
             />
           ))}
         </div>
@@ -883,12 +888,16 @@ function ChoiceRow({
   type,
   name,
   label,
+  value,
 }: {
   selected: boolean;
   onSelect: () => void;
   type: 'radio' | 'checkbox';
   name: string;
+  /** What is shown. */
   label: string;
+  /** What is recorded; defaults to the shown text. */
+  value?: string;
 }) {
   return (
     <label
@@ -902,7 +911,7 @@ function ChoiceRow({
       <input
         type={type}
         name={name}
-        value={label}
+        value={value ?? label}
         checked={selected}
         onChange={onSelect}
         className="size-4 shrink-0 accent-primary"

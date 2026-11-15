@@ -17,7 +17,7 @@
  *  - Live preview of the field label
  */
 import { useRef, useState, useTransition } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   Plus,
   Trash2,
@@ -46,6 +46,16 @@ import {
   findDuplicateOption,
   insertPastedOptions,
 } from '@/lib/registration-options';
+import {
+  dropDraftedTranslations,
+  type FieldTranslations,
+} from '@/lib/registration-translations';
+import { locales, type Locale } from '@/i18n/config';
+import {
+  TranslateBar,
+  TranslationsEditor,
+  sourceChoiceCount,
+} from './form-builder-translations';
 import { cn } from '@/lib/utils';
 import type { RegistrationFieldType, RegistrationFormField } from '@/types/domain';
 
@@ -98,6 +108,31 @@ interface BuilderField {
    * Turned back into a position on save.
    */
   showWhen: { key: string; equals: string } | null;
+  /**
+   * The wording and choices in other languages, for DISPLAY — answers are always
+   * recorded as the source option. See `@/lib/registration-translations`.
+   */
+  translations: FieldTranslations;
+  /** Languages in `translations` that are machine drafts nobody has read yet. */
+  drafted: Locale[];
+  /** Bumped when translations change from outside their editor, so it re-reads them. */
+  rev: number;
+}
+
+/**
+ * A question whose source wording was just edited: its machine drafts described
+ * the OLD wording, so they are dropped (and can be redrafted). Translations a
+ * person wrote or checked are kept.
+ */
+function withStaleDraftsDropped(f: BuilderField): BuilderField {
+  if (f.drafted.length === 0) return f;
+  const d = dropDraftedTranslations(f.translations, f.drafted);
+  return { ...f, translations: d.translations ?? {}, drafted: [], rev: f.rev + 1 };
+}
+
+/** Is this row still the seeded question, whose wording localizes by itself? */
+function isSeededUnedited(f: BuilderField): boolean {
+  return !!f.labelKey && !!f._seed && f.label.trim() === f._seed.label;
 }
 
 /** An earlier choice question another row may depend on. */
@@ -127,6 +162,9 @@ function toBuilderField(f: RegistrationFormField): BuilderField {
     optionKeys: f.optionKeys ?? null,
     _seed: f.labelKey ? { label: f.label, options: f.options ?? [] } : null,
     showWhen: null,
+    translations: f.translations ?? {},
+    drafted: f.draftedLocales ?? [],
+    rev: 0,
   };
 }
 
@@ -147,6 +185,7 @@ function emptyField(): BuilderField {
   return {
     _key: newKey(), id: null, label: '', type: 'SHORT_TEXT', options: [], required: false,
     labelKey: null, optionKeys: null, _seed: null, showWhen: null,
+    translations: {}, drafted: [], rev: 0,
   };
 }
 
@@ -162,6 +201,14 @@ export function RegistrationFormBuilder({
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const uiLocale = useLocale() as Locale;
+  /** The language the host's own wording is in — the fallback for every visitor. */
+  const [sourceLocale, setSourceLocale] = useState<Locale>(
+    () => initialFields.find((f) => f.sourceLocale)?.sourceLocale ?? uiLocale,
+  );
+  const [translating, setTranslating] = useState(false);
+  const [translateNote, setTranslateNote] = useState('');
+  const [translateError, setTranslateError] = useState('');
 
   /* ── Field mutations ──────────────────────────────────────────────── */
   function addField() {
@@ -183,6 +230,9 @@ export function RegistrationFormBuilder({
       optionKeys: f.optionKeys,
       _seed: { label: f.label, options: f.options ?? [] },
       showWhen: null,
+      translations: {},
+      drafted: [],
+      rev: 0,
     }));
     setFields((prev) => [...prev, ...defaults]);
     setSaved(false);
@@ -207,10 +257,110 @@ export function RegistrationFormBuilder({
   }
 
   function updateField(key: string, patch: Partial<BuilderField>) {
+    // Editing the wording (or type) invalidates machine drafts of the old wording.
+    const changesWording = 'label' in patch || 'type' in patch;
     setFields((prev) =>
-      prev.map((f) => (f._key === key ? { ...f, ...patch } : f)),
+      prev.map((f) => {
+        if (f._key !== key) return f;
+        const next = { ...f, ...patch };
+        return changesWording ? withStaleDraftsDropped(next) : next;
+      }),
     );
     setSaved(false);
+  }
+
+  /** Switching the source language: a translation INTO the new source would shadow the host's own words. */
+  function changeSourceLocale(next: Locale) {
+    setSourceLocale(next);
+    setFields((prev) =>
+      prev.map((f) => {
+        if (!f.translations[next]) return f;
+        const { [next]: _gone, ...rest } = f.translations;
+        return { ...f, translations: rest, drafted: f.drafted.filter((d) => d !== next), rev: f.rev + 1 };
+      }),
+    );
+    setSaved(false);
+  }
+
+  /**
+   * Draft the missing languages of every host-written question with Claude. It
+   * fills only what is empty, marks it as a draft, and stores nothing until the
+   * host has read it and pressed Save.
+   */
+  async function translateAll() {
+    setTranslateNote('');
+    setTranslateError('');
+    const rows = fields
+      .map((f, index) => ({ f, index }))
+      .filter(({ f }) => f.label.trim() && !isSeededUnedited(f));
+    const wanted = rows
+      .map(({ f, index }) => {
+        const isChoice = CHOICE_TYPES.includes(f.type);
+        const need = sourceChoiceCount(f);
+        const targets = locales.filter(
+          (l) =>
+            l !== sourceLocale &&
+            (!(f.translations[l]?.label ?? '').trim() ||
+              (isChoice && (f.translations[l]?.options?.length ?? 0) !== need)),
+        );
+        return { index, targets, label: f.label.trim(), options: isChoice ? cleanOptions(f.options) : null };
+      })
+      .filter((w) => w.targets.length > 0);
+    if (wanted.length === 0) { setTranslateNote(t('translateNothing')); return; }
+
+    setTranslating(true);
+    try {
+      const res = await fetch(`${endpoint}/translate`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceLocale,
+          fields: wanted.map(({ label, options, targets }) => ({ label, options, targets })),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { error?: { code?: string } };
+        setTranslateError(
+          res.status === 429 ? t('translateRateLimited')
+          : data.error?.code === 'TRANSLATION_UNAVAILABLE' ? t('translateUnavailable')
+          : t('translateFailed'),
+        );
+        return;
+      }
+      const data = await res.json() as { fields: FieldTranslations[] };
+      let count = 0;
+      setFields((prev) =>
+        prev.map((f, index) => {
+          const at = wanted.findIndex((w) => w.index === index);
+          const drafts = at >= 0 ? data.fields[at] : undefined;
+          if (!drafts) return f;
+          const translations: FieldTranslations = { ...f.translations };
+          const drafted = new Set(f.drafted);
+          for (const l of wanted[at]!.targets) {
+            const got = drafts[l];
+            if (!got) continue;
+            const have = translations[l] ?? {};
+            const next = { ...have };
+            // Fill only what is empty: a person's own wording is never overwritten.
+            if (got.label && !(have.label ?? '').trim()) next.label = got.label;
+            if (got.options && (have.options?.length ?? 0) !== sourceChoiceCount(f)) next.options = got.options;
+            if (next.label !== have.label || next.options !== have.options) {
+              translations[l] = next;
+              drafted.add(l);
+              count += 1;
+            }
+          }
+          return count === 0 ? f : { ...f, translations, drafted: locales.filter((l) => drafted.has(l)), rev: f.rev + 1 };
+        }),
+      );
+      setTranslateNote(count > 0 ? t('translateDone', { count }) : t('translateNothingBack'));
+      if (count > 0) setSaved(false);
+    } catch {
+      setTranslateError(t('translateFailed'));
+    } finally {
+      setTranslating(false);
+    }
   }
 
   function addOption(key: string) {
@@ -225,10 +375,10 @@ export function RegistrationFormBuilder({
     setFields((prev) =>
       prev.map((f) =>
         f._key === key
-          ? {
+          ? withStaleDraftsDropped({
               ...f,
               options: f.options.map((o, i) => (i === optIdx ? value : o)),
-            }
+            })
           : f,
       ),
     );
@@ -239,7 +389,9 @@ export function RegistrationFormBuilder({
   function pasteOptions(key: string, optIdx: number, text: string) {
     setFields((prev) =>
       prev.map((f) =>
-        f._key === key ? { ...f, options: insertPastedOptions(f.options, optIdx, text).options } : f,
+        f._key === key
+          ? withStaleDraftsDropped({ ...f, options: insertPastedOptions(f.options, optIdx, text).options })
+          : f,
       ),
     );
     setSaved(false);
@@ -249,7 +401,7 @@ export function RegistrationFormBuilder({
     setFields((prev) =>
       prev.map((f) =>
         f._key === key
-          ? { ...f, options: f.options.filter((_, i) => i !== optIdx) }
+          ? withStaleDraftsDropped({ ...f, options: f.options.filter((_, i) => i !== optIdx) })
           : f,
       ),
     );
@@ -265,6 +417,15 @@ export function RegistrationFormBuilder({
         if (cleanOptions(f.options).length < 1) return t('validationOptionsRequired', { label: f.label });
         const dup = findDuplicateOption(f.options);
         if (dup) return t('validationOptionsDuplicate', { label: f.label, option: dup });
+        // A language's choices must line up one-for-one with the source choices,
+        // or the wrong words would be shown for an option.
+        const expected = cleanOptions(f.options).length;
+        for (const l of locales) {
+          const got = f.translations[l]?.options?.length ?? 0;
+          if (got > 0 && got !== expected) {
+            return t('validationTranslationMismatch', { label: f.label, language: l.toUpperCase(), expected, got });
+          }
+        }
       }
     }
     return null;
@@ -308,6 +469,10 @@ export function RegistrationFormBuilder({
                 order: i,
                 // Position of the controlling row now; dropped if it was
                 // deleted or moved below this one (it must stay earlier).
+                sourceLocale,
+                // A seeded question localizes by its key; translations only apply to host-written ones.
+                translations: labelKey ? null : f.translations,
+                draftedLocales: labelKey ? null : f.drafted,
                 showWhen: (() => {
                   if (!f.showWhen) return null;
                   const at = fields.findIndex((c) => c._key === f.showWhen!.key);
@@ -365,6 +530,17 @@ export function RegistrationFormBuilder({
         </Button>
       </div>
 
+      {fields.some((f) => !isSeededUnedited(f)) && (
+        <TranslateBar
+          sourceLocale={sourceLocale}
+          onSourceChange={changeSourceLocale}
+          onTranslate={() => void translateAll()}
+          busy={translating}
+          note={translateNote}
+          error={translateError}
+        />
+      )}
+
       {/* Error */}
       {error && (
         <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
@@ -397,7 +573,7 @@ export function RegistrationFormBuilder({
             <div key={field._key}>
               {/* Desktop: inline editor (unchanged) */}
               <div className="hidden lg:block">
-                <FieldEditor field={field} index={idx} total={fields.length} earlier={earlier} {...handlers} />
+                <FieldEditor field={field} index={idx} total={fields.length} earlier={earlier} sourceLocale={sourceLocale} {...handlers} />
               </div>
               {/* Mobile: compact card + bottom-sheet editor */}
               <MobileFieldCard
@@ -406,6 +582,7 @@ export function RegistrationFormBuilder({
                 index={idx}
                 total={fields.length}
                 earlier={earlier}
+                sourceLocale={sourceLocale}
                 {...handlers}
               />
             </div>
@@ -479,6 +656,7 @@ function FieldEditor({
   index,
   total,
   earlier,
+  sourceLocale,
   onUpdate,
   onRemove,
   onMove,
@@ -491,6 +669,7 @@ function FieldEditor({
   index: number;
   total: number;
   earlier: ChoiceRef[];
+  sourceLocale: Locale;
   onUpdate: (p: Partial<BuilderField>) => void;
   onRemove: () => void;
   onMove: (dir: 'up' | 'down') => void;
@@ -629,6 +808,14 @@ function FieldEditor({
           </Button>
         </div>
       )}
+
+      {!(field.labelKey && field._seed && field.label.trim() === field._seed.label) && field.label.trim() !== '' && (
+        <TranslationsEditor
+          row={field}
+          sourceLocale={sourceLocale}
+          onChange={(patch) => onUpdate(patch)}
+        />
+      )}
     </div>
   );
 }
@@ -708,6 +895,7 @@ function MobileFieldCard({
   index,
   total,
   earlier,
+  sourceLocale,
   onUpdate,
   onRemove,
   onMove,
@@ -721,6 +909,7 @@ function MobileFieldCard({
   index: number;
   total: number;
   earlier: ChoiceRef[];
+  sourceLocale: Locale;
   onUpdate: (p: Partial<BuilderField>) => void;
   onRemove: () => void;
   onMove: (dir: 'up' | 'down') => void;
@@ -750,6 +939,9 @@ function MobileFieldCard({
         options: snap.options,
         required: snap.required,
         showWhen: snap.showWhen,
+        translations: snap.translations,
+        drafted: snap.drafted,
+        rev: snap.rev + 1,
       });
     }
     setOpen(false);
@@ -911,6 +1103,15 @@ function MobileFieldCard({
                     <Plus className="size-3" /> {t('addOption')}
                   </Button>
                 </div>
+              )}
+
+              {!(field.labelKey && field._seed && field.label.trim() === field._seed.label) && field.label.trim() !== '' && (
+                <TranslationsEditor
+                  row={field}
+                  sourceLocale={sourceLocale}
+                  onChange={(patch) => onUpdate(patch)}
+                  tall
+                />
               )}
             </div>
 

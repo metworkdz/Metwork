@@ -25,6 +25,7 @@ import {
 } from '@/server/notifications/email';
 import { countAttendance } from '@/server/attendance';
 import { cleanOptions, findDuplicateOption, formatAnswerValue } from '@/lib/registration-options';
+import { normalizeTranslations } from '@/lib/registration-translations';
 import { registrationFileIds, removeUnreferencedRegistrationFiles } from '@/server/registrations/file-cleanup';
 import { bookingHoldsSeat } from '@/server/bookings/status';
 import { pruneFeedbackForProgramSync, pruneFeedbackForRegistrationsSync } from '@/server/feedback/prune';
@@ -321,6 +322,8 @@ export async function replaceFormFields(
     const newFields: RegistrationFormFieldRecord[] = fields.map((f, i) => {
       const prior = f.id && !reused.has(f.id) ? beforeById.get(f.id) : undefined;
       if (prior) reused.add(prior.id);
+      // Only translations that line up with the (final) source choices are kept.
+      const tr = normalizeTranslations(f.translations, { type: f.type, options: f.options }, f.draftedLocales);
       return {
         id: prior ? prior.id : randomUUID(),
         entityType,
@@ -334,6 +337,9 @@ export async function replaceFormFields(
         required: f.required,
         order: i,
         showWhen: f.showWhen ?? null,
+        sourceLocale: f.sourceLocale ?? null,
+        translations: tr.translations,
+        draftedLocales: tr.drafted,
         createdAt: prior ? prior.createdAt : now,
         updatedAt: now,
       };
