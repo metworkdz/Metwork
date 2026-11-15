@@ -132,8 +132,21 @@ export async function addOfflineRegistration(
   // The desk answers the same required questions the public form does —
   // otherwise a walk-in arrives with half a record and the host finds out on
   // the day that they never asked.
-  const missing = findMissingRequiredAnswer(data, input.entityType, input.entityId, input.answers);
+  // A required FILE question is skipped here: the host cannot upload on the
+  // walk-in's behalf, and the question must not stop them seating the person.
+  const missing = findMissingRequiredAnswer(data, input.entityType, input.entityId, input.answers, {
+    skipFileFields: true,
+  });
   if (missing) return { ok: false, reason: 'MISSING_REQUIRED_FIELD', ...missing };
+
+  // Nothing at the desk can carry a file. Drop any FILE answer a client sent,
+  // so a public_id never lands on a registration without having been verified.
+  const fileFieldIds = new Set(
+    (data.registrationFormFields ?? [])
+      .filter((f) => f.entityType === input.entityType && f.entityId === input.entityId && f.type === 'FILE')
+      .map((f) => f.id),
+  );
+  const answers = input.answers.filter((a) => !fileFieldIds.has(a.fieldId));
 
   // A program whose dates are to confirm takes a pre-registration at the
   // desk too: the person is recorded, no booking and no money (a booking is a
@@ -153,7 +166,7 @@ export async function addOfflineRegistration(
     fullName: input.fullName,
     email,
     phone: input.phone,
-    answers: input.answers,
+    answers,
     locale: input.locale ?? null,
     cashReservation: !listing.startsAt || !listing.endsAt ? null : {
       listing: {

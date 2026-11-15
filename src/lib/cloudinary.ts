@@ -54,11 +54,20 @@ export interface SignedUploadParams {
   timestamp: number;
   publicId:  string;
   signature: string;
+  /**
+   * Set only for a PRIVATE upload. It is part of the signed string, so the
+   * browser must send exactly this `type` field — and cannot turn a private
+   * upload into a public one by dropping or changing it.
+   */
+  type?: 'authenticated';
   /** Full endpoint the browser POSTs the multipart form to. */
   uploadUrl: string;
 }
 
-export function signRawUpload(publicId: string): SignedUploadParams {
+export function signRawUpload(
+  publicId: string,
+  options: { type?: 'authenticated' } = {},
+): SignedUploadParams {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME!;
   const apiKey    = process.env.CLOUDINARY_API_KEY!;
   const apiSecret = process.env.CLOUDINARY_API_SECRET!;
@@ -67,7 +76,7 @@ export function signRawUpload(publicId: string): SignedUploadParams {
   // Only the params we sign may be sent by the browser — Cloudinary rebuilds
   // the string-to-sign from the received form fields and compares.
   const signature = cloudinary.utils.api_sign_request(
-    { public_id: publicId, timestamp },
+    { public_id: publicId, timestamp, ...(options.type ? { type: options.type } : {}) },
     apiSecret,
   );
 
@@ -77,6 +86,7 @@ export function signRawUpload(publicId: string): SignedUploadParams {
     timestamp,
     publicId,
     signature,
+    ...(options.type ? { type: options.type } : {}),
     uploadUrl: `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`,
   };
 }
@@ -99,6 +109,51 @@ export async function getRawResource(
     if ((e?.error?.http_code ?? e?.http_code) === 404) return null;
     throw err;
   }
+}
+
+/**
+ * Admin-API lookup for a PRIVATE (`authenticated`) raw asset. Returns its true
+ * byte size, or null when it does not exist.
+ */
+export async function getAuthenticatedRawResource(
+  publicId: string,
+): Promise<{ bytes: number } | null> {
+  try {
+    const r = await cloudinary.api.resource(publicId, { resource_type: 'raw', type: 'authenticated' });
+    return { bytes: r.bytes as number };
+  } catch (err) {
+    const e = err as { http_code?: number; error?: { http_code?: number } };
+    if ((e?.error?.http_code ?? e?.http_code) === 404) return null;
+    throw err;
+  }
+}
+
+/**
+ * The first `length` bytes of a PRIVATE raw asset, for checking what a file
+ * really is (the browser-reported MIME type is not trustworthy). Asks for a
+ * byte range; if the CDN ignores it and answers with the whole body, only the
+ * first `length` bytes are read before the stream is cancelled. Returns null
+ * when the asset cannot be fetched.
+ */
+export async function readAuthenticatedRawHead(
+  publicId: string,
+  length: number,
+): Promise<Buffer | null> {
+  const url = signedRawDownloadUrl(publicId, { expiresInSeconds: 60 });
+  const res = await fetch(url, { headers: { Range: `bytes=0-${length - 1}` } });
+  if (!res.ok || !res.body) return null;
+
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let got = 0;
+  while (got < length) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    got += value.byteLength;
+  }
+  await reader.cancel().catch(() => undefined);
+  return Buffer.concat(chunks).subarray(0, length);
 }
 
 /** Deletes a `raw` asset — used to clean up an upload we end up rejecting. */

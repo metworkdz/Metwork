@@ -31,6 +31,7 @@ const FIELD_TYPES = [
   'PHONE',
   'EMAIL',
   'URL',
+  'FILE',
 ] as const;
 
 const fieldSchema = z.object({

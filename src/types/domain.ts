@@ -178,7 +178,17 @@ export type RegistrationFieldType =
   | 'CHECKBOX'
   | 'PHONE'
   | 'EMAIL'
-  | 'URL';
+  | 'URL'
+  /** One PDF or JPG, uploaded privately. The answer value is its storage id. */
+  | 'FILE';
+
+/** What the server verified about an uploaded file. See `@/server/registrations/files`. */
+export interface RegistrationAnswerFile {
+  /** Display name only — sanitised, never used to build a path. */
+  name: string;
+  bytes: number;
+  contentType: 'application/pdf' | 'image/jpeg';
+}
 
 export interface RegistrationFormField {
   id: string;
@@ -212,7 +222,7 @@ export interface Registration {
   fullName: string;
   email: string;
   phone: string;
-  answers: Array<{ fieldId: string; value: string | string[] }>;
+  answers: Array<{ fieldId: string; value: string | string[]; file?: RegistrationAnswerFile }>;
   status: RegistrationStatus;
   clientId: string | null;
   /**

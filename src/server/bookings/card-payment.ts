@@ -44,6 +44,7 @@ import {
   type BookingPaymentMode,
   type BookingUnit,
   type IncubatorRecord,
+  type RegistrationAnswerRecord,
 } from '@/server/db/store';
 import { countAttendance } from '@/server/attendance';
 import { computeDeposit } from './pricing';
@@ -124,7 +125,7 @@ export interface CreateCardBookingInput {
    * EVENT only — see `BookingRecord.registrationDraft` for why they ride the
    * booking rather than a provisional registration row.
    */
-  registrationAnswers?: Array<{ fieldId: string; value: string | string[] }> | null;
+  registrationAnswers?: RegistrationAnswerRecord[] | null;
 }
 
 export type CreateCardBookingReason =

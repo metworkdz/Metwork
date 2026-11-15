@@ -12,6 +12,7 @@ import { randomUUID } from 'node:crypto';
 import {
   db,
   type RegistrationRecord,
+  type RegistrationAnswerRecord,
   type RegistrationFormFieldRecord,
   type RegistrationFieldType,
   type RegistrationStatus,
@@ -84,7 +85,7 @@ export interface CreateRegistrationInput {
   fullName: string;
   email: string;
   phone: string;
-  answers: Array<{ fieldId: string; value: string | string[] }>;
+  answers: RegistrationAnswerRecord[];
   /** Locale the visitor registered in, carried onto the row for emails. */
   locale?: string | null;
 }
@@ -885,6 +886,7 @@ export function findMissingRequiredAnswer(
   entityType: 'PROGRAM' | 'EVENT',
   entityId: string,
   answers: Array<{ fieldId: string; value: string | string[] }>,
+  options: { skipFileFields?: boolean } = {},
 ): { fieldId: string; label: string } | null {
   const fields = (data.registrationFormFields ?? []).filter(
     (f) => f.entityType === entityType && f.entityId === entityId,
@@ -892,6 +894,9 @@ export function findMissingRequiredAnswer(
   const answerOf = (id: string) => answers.find((a) => a.fieldId === id)?.value;
   for (const field of fields) {
     if (!field.required) continue;
+    // A host recording someone at the desk cannot upload on their behalf, so a
+    // required FILE question must not stop them seating a walk-in.
+    if (options.skipFileFields && field.type === 'FILE') continue;
     // A question the applicant was never shown can't be "missing".
     if (!isQuestionVisible(field, fields, answerOf)) continue;
     const answer = answers.find((a) => a.fieldId === field.id);

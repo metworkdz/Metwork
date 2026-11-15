@@ -228,7 +228,7 @@ export interface ConsultantRegistration {
 export interface ConsultantFormField {
   id: string;
   label: string;
-  type: 'SHORT_TEXT' | 'LONG_TEXT' | 'DROPDOWN' | 'MULTIPLE_CHOICE' | 'CHECKBOX' | 'PHONE' | 'EMAIL' | 'URL';
+  type: 'SHORT_TEXT' | 'LONG_TEXT' | 'DROPDOWN' | 'MULTIPLE_CHOICE' | 'CHECKBOX' | 'PHONE' | 'EMAIL' | 'URL' | 'FILE';
   options: string[] | null;
   required: boolean;
   order: number;

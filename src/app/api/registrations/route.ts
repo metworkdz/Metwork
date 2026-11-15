@@ -23,6 +23,11 @@ import { readSession } from '@/server/auth/session';
 import { checkRateLimitDistributed } from '@/lib/rate-limit';
 import { db } from '@/server/db/store';
 import { programDates } from '@/lib/program-dates';
+import {
+  RegistrationFileError,
+  registrationFileErrorResponse,
+  resolveFileAnswers,
+} from '@/server/registrations/files';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,6 +42,8 @@ const registrationSchema = z.object({
     z.object({
       fieldId: z.string().uuid(),
       value:   z.union([z.string(), z.array(z.string())]),
+      /** Shown name of an uploaded file. Display only; verified facts come from storage. */
+      fileName: z.string().max(255).optional(),
     }),
   ).default([]),
   /** Locale the visitor filled the form in, carried onto the row for emails. */
@@ -182,6 +189,17 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Verify any uploaded files (exist, belong to THIS question, really are a
+  // PDF/JPG, within size) and attach what storage measured. Same step as the
+  // paid card route, so the two can never disagree about what a valid file is.
+  let answers;
+  try {
+    answers = await resolveFileAnswers(data, input.entityType, input.entityId, input.answers);
+  } catch (err) {
+    if (err instanceof RegistrationFileError) return registrationFileErrorResponse(err);
+    throw err;
+  }
+
   // Authenticated user session (optional)
   const session = await readSession();
   const userId = session?.user?.id ?? null;
@@ -193,7 +211,7 @@ export async function POST(req: NextRequest) {
     fullName: input.fullName,
     email: input.email,
     phone: input.phone,
-    answers: input.answers,
+    answers,
     locale: input.locale ?? session?.user?.locale ?? null,
     cashReservation,
   });

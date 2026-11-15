@@ -127,6 +127,8 @@ export const createCardBookingSchema = z
         z.object({
           fieldId: z.string().uuid(),
           value: z.union([z.string().max(5000), z.array(z.string().max(500)).max(50)]),
+          /** Shown name of an uploaded file. Display only. */
+          fileName: z.string().max(255).optional(),
         }),
       )
       .max(60)

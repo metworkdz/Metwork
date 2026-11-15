@@ -794,7 +794,7 @@ export interface BookingRecord {
    */
   registrationDraft?: {
     entityType: 'PROGRAM' | 'EVENT';
-    answers: Array<{ fieldId: string; value: string | string[] }>;
+    answers: RegistrationAnswerRecord[];
     /** Locale the visitor registered in — used for the confirmation email. */
     locale?: string | null;
   } | null;
@@ -2403,7 +2403,27 @@ export type RegistrationFieldType =
   | 'CHECKBOX'
   | 'PHONE'
   | 'EMAIL'
-  | 'URL';
+  | 'URL'
+  /** One PDF or JPG, uploaded privately. The answer value is its storage id. */
+  | 'FILE';
+
+/**
+ * What the server verified about the file behind a `FILE` answer. Written only
+ * by `resolveFileAnswers` (never accepted from a request body).
+ */
+export interface RegistrationAnswerFile {
+  /** Display name only — sanitised, never used to build a path. */
+  name: string;
+  bytes: number;
+  contentType: 'application/pdf' | 'image/jpeg';
+}
+
+/** One answer on a registration. For a `FILE` field, `value` is the storage public_id. */
+export type RegistrationAnswerRecord = {
+  fieldId: string;
+  value: string | string[];
+  file?: RegistrationAnswerFile;
+};
 
 /**
  * One custom field definition for a program or event's registration form.
@@ -2470,7 +2490,7 @@ export interface RegistrationRecord {
   email: string;
   phone: string;
   /** Answers to custom form fields. */
-  answers: Array<{ fieldId: string; value: string | string[] }>;
+  answers: RegistrationAnswerRecord[];
   status: RegistrationStatus;
   /** FK to ClientRecord.id — set when a CRM client was matched or created. */
   clientId: string | null;

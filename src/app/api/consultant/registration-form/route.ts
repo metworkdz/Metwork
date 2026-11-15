@@ -27,7 +27,7 @@ export const dynamic = 'force-dynamic';
 
 const FIELD_TYPES = [
   'SHORT_TEXT', 'LONG_TEXT', 'DROPDOWN', 'MULTIPLE_CHOICE',
-  'CHECKBOX', 'PHONE', 'EMAIL', 'URL',
+  'CHECKBOX', 'PHONE', 'EMAIL', 'URL', 'FILE',
 ] as const;
 
 const fieldSchema = z.object({

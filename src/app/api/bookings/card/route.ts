@@ -31,6 +31,11 @@ import {
   getEventDiscountForUser,
 } from '@/server/memberships/service';
 import { findMissingRequiredAnswer } from '@/server/registrations/service';
+import {
+  RegistrationFileError,
+  registrationFileErrorResponse,
+  resolveFileAnswers,
+} from '@/server/registrations/files';
 import { db } from '@/server/db/store';
 
 export const runtime = 'nodejs';
@@ -87,11 +92,13 @@ export async function POST(req: NextRequest) {
   // A paid PROGRAM/EVENT registration answers the SAME required questions a
   // free one does — enforced here, before any money moves, with the shared
   // validator the free registration route uses.
+  let registrationAnswers: Awaited<ReturnType<typeof resolveFileAnswers>> | null = null;
   if (input.registrationAnswers && input.target.itemKind !== 'SPACE') {
     const entityId =
       input.target.itemKind === 'PROGRAM' ? input.target.programId : input.target.eventId;
+    const data = await db.read();
     const missing = findMissingRequiredAnswer(
-      await db.read(),
+      data,
       input.target.itemKind,
       entityId,
       input.registrationAnswers,
@@ -100,6 +107,20 @@ export async function POST(req: NextRequest) {
       return jsonError(422, 'MISSING_REQUIRED_FIELD', `Field "${missing.label}" is required`, {
         fieldId: missing.fieldId,
       });
+    }
+    // Verify uploaded files BEFORE any money moves, with the same function the
+    // free route uses. The verified facts (name, size, type) are what the
+    // intent carries to settlement.
+    try {
+      registrationAnswers = await resolveFileAnswers(
+        data,
+        input.target.itemKind,
+        entityId,
+        input.registrationAnswers,
+      );
+    } catch (err) {
+      if (err instanceof RegistrationFileError) return registrationFileErrorResponse(err);
+      throw err;
     }
   }
 
@@ -113,7 +134,7 @@ export async function POST(req: NextRequest) {
     promoCode: input.promoCode ?? null,
     membershipDiscount,
     locale: input.locale ?? ctx?.user.locale ?? 'fr',
-    registrationAnswers: input.registrationAnswers ?? null,
+    registrationAnswers,
   });
 
   if (!result.ok) {

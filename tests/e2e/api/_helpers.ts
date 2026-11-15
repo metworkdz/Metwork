@@ -163,7 +163,7 @@ export async function setRegistrationForm(
   entityId: string,
   fields: Array<{
     label: string;
-    type: 'SHORT_TEXT' | 'LONG_TEXT' | 'EMAIL' | 'PHONE' | 'URL' | 'DROPDOWN' | 'MULTIPLE_CHOICE' | 'CHECKBOX';
+    type: 'SHORT_TEXT' | 'LONG_TEXT' | 'EMAIL' | 'PHONE' | 'URL' | 'DROPDOWN' | 'MULTIPLE_CHOICE' | 'CHECKBOX' | 'FILE';
     options?: string[] | null;
     required?: boolean;
     /** `defaultQuestions` i18n key — makes the question render in the VISITOR's locale. */
