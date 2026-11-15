@@ -10,8 +10,8 @@
  *
  * Features:
  *  - Add / remove / reorder fields
- *  - All 7 field types: SHORT_TEXT, LONG_TEXT, DROPDOWN, MULTIPLE_CHOICE,
- *    CHECKBOX, PHONE, EMAIL
+ *  - Field types: SHORT_TEXT, LONG_TEXT, DROPDOWN, MULTIPLE_CHOICE,
+ *    CHECKBOX, PHONE, EMAIL, URL, and FILE (one private PDF/JPG upload)
  *  - Options editor for choice-type fields
  *  - Required / optional toggle
  *  - Live preview of the field label
@@ -29,6 +29,7 @@ import {
   ChevronDown,
   ListPlus,
   Pencil,
+  Paperclip,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
 import { keysSurvivingEdit } from '@/lib/registration-question';
+import { MAX_REGISTRATION_FILE_MB } from '@/lib/upload-limits';
 import { cn } from '@/lib/utils';
 import type { RegistrationFieldType, RegistrationFormField } from '@/types/domain';
 
@@ -49,6 +51,7 @@ const FIELD_TYPE_OPTIONS: { value: RegistrationFieldType; labelKey: string }[] =
   { value: 'DROPDOWN',        labelKey: 'typeDropdown' },
   { value: 'MULTIPLE_CHOICE', labelKey: 'typeMultipleChoice' },
   { value: 'CHECKBOX',        labelKey: 'typeCheckbox' },
+  { value: 'FILE',            labelKey: 'typeFile' },
 ];
 
 const CHOICE_TYPES: RegistrationFieldType[] = ['DROPDOWN', 'MULTIPLE_CHOICE', 'CHECKBOX'];
@@ -526,6 +529,8 @@ function FieldEditor({
 
       <ShowWhenSelect field={field} earlier={earlier} onUpdate={onUpdate} />
 
+      {field.type === 'FILE' && <FileFieldNote />}
+
       {/* Options editor for DROPDOWN / MULTIPLE_CHOICE / CHECKBOX */}
       {isChoiceType && (
         <div className="pt-1 space-y-2">
@@ -566,6 +571,20 @@ function FieldEditor({
         </div>
       )}
     </div>
+  );
+}
+
+/* ─────────────────────────── FileFieldNote ───────────────────────────
+ * A FILE question has nothing to configure: it always takes one PDF or JPG up to
+ * the platform limit, kept private to the listing's owner. The note says so, so
+ * the host knows what applicants will be offered and who can open the result. */
+function FileFieldNote() {
+  const t = useTranslations('formBuilder');
+  return (
+    <p className="flex items-start gap-2 rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+      <Paperclip className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+      {t('fileHint', { max: MAX_REGISTRATION_FILE_MB })}
+    </p>
   );
 }
 
@@ -785,6 +804,8 @@ function MobileFieldCard({
               </label>
 
               <ShowWhenSelect field={field} earlier={earlier} onUpdate={onUpdate} tall />
+
+              {field.type === 'FILE' && <FileFieldNote />}
 
               {isChoiceType && (
                 <div className="space-y-2">

@@ -5997,6 +5997,8 @@
     "typeMultipleChoice": "Multiple choice",
     "typeCheckbox": "Checkbox",
     "typeUrl": "Link (URL)",
+    "typeFile": "File upload",
+    "fileHint": "Applicants attach one PDF or JPG, up to {max} MB. Only you can open the file.",
     "validationLabelRequired": "All fields must have a label.",
     "validationOptionsRequired": "Field \"{label}\" needs at least one option."
   },

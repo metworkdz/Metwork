@@ -5997,6 +5997,8 @@
     "typeMultipleChoice": "اختيار متعدد",
     "typeCheckbox": "مربع اختيار",
     "typeUrl": "رابط (URL)",
+    "typeFile": "رفع ملف",
+    "fileHint": "يرفق المتقدمون ملف PDF أو JPG بحجم أقصاه {max} ميغابايت. أنت وحدك من يستطيع فتح الملف.",
     "validationLabelRequired": "يجب أن يكون لكل حقل تسمية.",
     "validationOptionsRequired": "الحقل \"{label}\" يحتاج خياراً واحداً على الأقل."
   },

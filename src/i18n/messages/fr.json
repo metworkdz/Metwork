@@ -5997,6 +5997,8 @@
     "typeMultipleChoice": "Choix multiple",
     "typeCheckbox": "Cases à cocher",
     "typeUrl": "Lien (URL)",
+    "typeFile": "Envoi de fichier",
+    "fileHint": "Les candidats joignent un PDF ou un JPG, {max} Mo maximum. Vous seul pouvez ouvrir le fichier.",
     "validationLabelRequired": "Tous les champs doivent avoir un libellé.",
     "validationOptionsRequired": "Le champ \"{label}\" nécessite au moins une option."
   },
