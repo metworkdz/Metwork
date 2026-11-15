@@ -37,8 +37,10 @@ import { bookingService } from '@/services/booking.service';
 import { ApiClientError } from '@/lib/api-client';
 import { formatCurrency } from '@/lib/format';
 import { resolveListingPricing } from '@/lib/listing-price';
+import { MAX_REGISTRATION_FILE_MB } from '@/lib/upload-limits';
 import { questionLabel, questionOptions } from '@/lib/registration-question';
 import { isQuestionVisible } from '@/lib/registration-conditions';
+import { RegistrationFileField, type AttachedFile } from './registration-file-field';
 import { computeClientDeposit } from '@/lib/deposit';
 import { safeUUID } from '@/lib/safe-uuid';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
@@ -117,6 +119,10 @@ export function RegistrationForm({
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [stepIndex, setStepIndex] = useState(0);
+  /** Name + size of each attached file, for the card (the answer itself is the storage id). */
+  const [files, setFiles] = useState<Record<string, AttachedFile>>({});
+  /** A file is mid-upload: leaving the step or submitting would silently drop it. */
+  const [uploadBusy, setUploadBusy] = useState(false);
   const headingRef = useRef<HTMLDivElement>(null);
   /** Idempotency key for the card intent — stable across retries. */
   const payRef = useRef<string>('');
@@ -228,6 +234,44 @@ export function RegistrationForm({
     setFieldErrors((prev) => ({ ...prev, [fieldId]: '' }));
   }
 
+  function setFile(fieldId: string, publicId: string, file: AttachedFile) {
+    setFiles((prev) => ({ ...prev, [fieldId]: file }));
+    setAnswer(fieldId, publicId);
+  }
+
+  function clearFile(fieldId: string) {
+    setFiles((prev) => {
+      const { [fieldId]: _gone, ...rest } = prev;
+      return rest;
+    });
+    setAnswer(fieldId, '');
+  }
+
+  /**
+   * The server refused a file on submit (it vanished, was the wrong type…).
+   * Take the visitor to that question with the file cleared and a clear
+   * message, rather than a generic error on a screen that has nothing to fix.
+   * Returns false when the error is not about a file.
+   */
+  function handleFileRejection(code: string | undefined, fieldId: unknown): boolean {
+    const known = ['INVALID_FILE', 'FILE_NOT_FOUND', 'FILE_TOO_LARGE', 'UNSUPPORTED_FILE_TYPE'];
+    if (!code || !known.includes(code) || typeof fieldId !== 'string') return false;
+    const at = steps.findIndex((st) => st.kind === 'question' && st.field.id === fieldId);
+    if (at < 0) return false;
+    clearFile(fieldId);
+    setFieldErrors({
+      [fieldId]:
+        code === 'FILE_TOO_LARGE'
+          ? t('errorFileSize', { max: MAX_REGISTRATION_FILE_MB })
+          : code === 'UNSUPPORTED_FILE_TYPE'
+            ? t('errorFileType')
+            : t('errorFileLost'),
+    });
+    setResult(null);
+    setStepIndex(at);
+    return true;
+  }
+
   function toggleCheckbox(fieldId: string, option: string) {
     const current = (form.answers[fieldId] as string[]) ?? [];
     setAnswer(
@@ -274,6 +318,8 @@ export function RegistrationForm({
       value:
         form.answers[f.id] ??
         (['CHECKBOX', 'MULTIPLE_CHOICE'].includes(f.type) ? [] : ''),
+      // Display name only — the server measures the real size and type itself.
+      ...(f.type === 'FILE' && files[f.id] ? { fileName: files[f.id]!.name } : {}),
     }));
   }
 
@@ -300,7 +346,7 @@ export function RegistrationForm({
         const data = (await res.json()) as {
           registration?: { status: string };
           alreadyRegistered?: boolean;
-          error?: { code?: string; message?: string };
+          error?: { code?: string; message?: string; details?: { fieldId?: unknown } };
           code?: string;
           message?: string;
         };
@@ -309,6 +355,7 @@ export function RegistrationForm({
         const message = data.error?.message ?? data.message;
 
         if (!res.ok) {
+          if (handleFileRejection(data.error?.code, data.error?.details?.fieldId)) return;
           if (res.status === 429) setResult({ type: 'error', message: t('errorRateLimited') });
           else if (res.status === 409)
             setResult({ type: 'error', message: message ?? t('errorDeadlinePassed') });
@@ -353,6 +400,7 @@ export function RegistrationForm({
         // Leave the SPA for the hosted-checkout pay page.
         window.location.assign(res.payPath);
       } catch (err) {
+        if (err instanceof ApiClientError && handleFileRejection(err.code, err.details?.fieldId)) return;
         setResult({ type: 'error', message: mapPayError(err) });
       }
     });
@@ -493,6 +541,14 @@ export function RegistrationForm({
             error={fieldErrors[step.field.id]}
             onChange={(v) => setAnswer(step.field.id, v)}
             onToggle={(opt) => toggleCheckbox(step.field.id, opt)}
+            fileUpload={{
+              entityType,
+              entityId,
+              file: files[step.field.id] ?? null,
+              onUploaded: (publicId, file) => setFile(step.field.id, publicId, file),
+              onRemove: () => clearFile(step.field.id),
+              onBusyChange: setUploadBusy,
+            }}
             selectPlaceholder={t('selectPlaceholder')}
             multiHint={t('multiHint')}
           />
@@ -549,7 +605,7 @@ export function RegistrationForm({
       {/* Actions — padded for the iOS home indicator so the CTA is never
           half-hidden behind it on a phone. */}
       <div className="flex flex-col gap-2 pb-[env(safe-area-inset-bottom)]">
-        <Button type="submit" className="w-full" size="lg" disabled={isPending}>
+        <Button type="submit" className="w-full" size="lg" disabled={isPending || uploadBusy}>
           {isPending ? (
             <>
               <Loader2 className="size-4 animate-spin" /> {t('submitting')}
@@ -569,7 +625,7 @@ export function RegistrationForm({
           <button
             type="button"
             onClick={goBack}
-            disabled={isPending}
+            disabled={isPending || uploadBusy}
             className="inline-flex min-h-11 items-center justify-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
           >
             <ArrowLeft className="size-4 rtl:rotate-180" />
@@ -667,6 +723,7 @@ function QuestionStep({
   error,
   onChange,
   onToggle,
+  fileUpload,
   selectPlaceholder,
   multiHint,
 }: {
@@ -678,6 +735,15 @@ function QuestionStep({
   error?: string;
   onChange: (v: string | string[]) => void;
   onToggle: (opt: string) => void;
+  /** What the File upload question needs from the form. */
+  fileUpload: {
+    entityType: 'PROGRAM' | 'EVENT';
+    entityId: string;
+    file: AttachedFile | null;
+    onUploaded: (publicId: string, file: AttachedFile) => void;
+    onRemove: () => void;
+    onBusyChange: (busy: boolean) => void;
+  };
   selectPlaceholder: string;
   multiHint: string;
 }) {
@@ -782,7 +848,22 @@ function QuestionStep({
         </div>
       )}
 
-      {error && (
+      {field.type === 'FILE' && (
+        <RegistrationFileField
+          entityType={fileUpload.entityType}
+          entityId={fileUpload.entityId}
+          fieldId={field.id}
+          value={stringValue}
+          file={fileUpload.file}
+          error={error}
+          onUploaded={fileUpload.onUploaded}
+          onRemove={fileUpload.onRemove}
+          onBusyChange={fileUpload.onBusyChange}
+        />
+      )}
+
+      {/* The file field shows its own error beside the control it belongs to. */}
+      {error && field.type !== 'FILE' && (
         <p role="alert" className="mt-2 text-xs text-destructive">
           {error}
         </p>
