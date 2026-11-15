@@ -43,7 +43,9 @@ interface Item { key: string; text: string; targets: Locale[] }
 export type Translator = (source: Locale, items: Item[]) => Promise<Map<string, Partial<Record<Locale, string>>>>;
 
 async function claudeTranslate(source: Locale, items: Item[]): Promise<Map<string, Partial<Record<Locale, string>>>> {
-  const apiKey = serverEnvVars.ANTHROPIC_API_KEY;
+  // Trimmed: a key pasted into the Vercel dashboard often carries a trailing
+  // newline, which the API rejects as an invalid header rather than as a bad key.
+  const apiKey = serverEnvVars.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) throw new Error('TRANSLATION_UNAVAILABLE');
   const ai = new Anthropic({ apiKey });
   const res = await ai.beta.messages.create({
@@ -123,7 +125,10 @@ export async function draftFormTranslations(
     }
   } catch (err) {
     if (err instanceof Error && err.message === 'TRANSLATION_UNAVAILABLE') return { ok: false, code: 'UNAVAILABLE' };
-    console.error('[registration-form] translation failed', String(err));
+    // The status is what tells a bad key (401/403) from a bad request (400), a
+    // retired model (404) or an overloaded API (429/5xx) in the deployment logs.
+    const detail = err instanceof Anthropic.APIError ? `${err.status ?? '?'} ${err.message}` : String(err);
+    console.error('[registration-form] translation failed:', detail);
     return { ok: false, code: 'FAILED' };
   }
 
