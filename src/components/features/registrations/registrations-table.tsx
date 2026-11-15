@@ -26,6 +26,7 @@ import { AddParticipantDialog } from './add-participant-dialog';
 import { EditParticipantDialog } from './edit-participant-dialog';
 import { AnswerSummaryPanel } from './answer-summary';
 import { AnswerValue, FileCountBadge } from './registration-answer';
+import { formatAnswerValue } from '@/lib/registration-options';
 import type { Registration, RegistrationFormField, RegistrationStatus } from '@/types/domain';
 
 interface RegistrationsTableProps {
@@ -537,9 +538,7 @@ function RegistrationRow({
               {formFields.map((field) => {
                 const answer = reg.answers.find((a) => a.fieldId === field.id);
                 if (!answer) return null;
-                const display = Array.isArray(answer.value)
-                  ? answer.value.join(', ')
-                  : String(answer.value);
+                const display = formatAnswerValue(answer.value);
                 if (!display) return null;
                 return (
                   <div key={field.id}>
@@ -668,9 +667,7 @@ function RegistrationCard({
           {formFields.map((field) => {
             const answer = reg.answers.find((a) => a.fieldId === field.id);
             if (!answer) return null;
-            const display = Array.isArray(answer.value)
-              ? answer.value.join(', ')
-              : String(answer.value);
+            const display = formatAnswerValue(answer.value);
             if (!display) return null;
             return (
               <div key={field.id}>

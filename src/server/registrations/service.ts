@@ -24,6 +24,7 @@ import {
   type EmailLang,
 } from '@/server/notifications/email';
 import { countAttendance } from '@/server/attendance';
+import { cleanOptions, findDuplicateOption, formatAnswerValue } from '@/lib/registration-options';
 import { registrationFileIds, removeUnreferencedRegistrationFiles } from '@/server/registrations/file-cleanup';
 import { bookingHoldsSeat } from '@/server/bookings/status';
 import { pruneFeedbackForProgramSync, pruneFeedbackForRegistrationsSync } from '@/server/feedback/prune';
@@ -253,6 +254,29 @@ export async function deleteFormField(id: string, owner: OwnerScope): Promise<bo
   });
   if (deleted) await removeUnreferencedRegistrationFiles(orphaned);
   return deleted;
+}
+
+/**
+ * What is wrong with the choices of a question set, if anything — shared by the
+ * incubator and consultant save routes so they answer identically. Choice
+ * questions need at least one choice, and a choice may not appear twice (two
+ * identical radio rows cannot be told apart, and an answer cannot say which was
+ * meant).
+ */
+export function findInvalidOptions(
+  fields: ReadonlyArray<{ label: string; type: string; options?: string[] | null }>,
+): { code: 'OPTIONS_REQUIRED' | 'DUPLICATE_OPTIONS'; message: string } | null {
+  for (const f of fields) {
+    if (!['DROPDOWN', 'MULTIPLE_CHOICE', 'CHECKBOX'].includes(f.type)) continue;
+    if (!f.options || cleanOptions(f.options).length < 1) {
+      return { code: 'OPTIONS_REQUIRED', message: `Field "${f.label}" of type ${f.type} requires at least one option` };
+    }
+    const dup = findDuplicateOption(f.options);
+    if (dup) {
+      return { code: 'DUPLICATE_OPTIONS', message: `Field "${f.label}" lists the option "${dup}" more than once` };
+    }
+  }
+  return null;
 }
 
 /**
@@ -1356,7 +1380,7 @@ export async function buildRegistrationsCsv(
         return answer.file ? `${appUrl}${filesPath}/${reg.id}/files/${f.id}` : '';
       }
       const v = answer.value;
-      return Array.isArray(v) ? v.join(', ') : String(v);
+      return formatAnswerValue(v);
     });
     rows.push(csvRow([...base, ...custom]));
   }

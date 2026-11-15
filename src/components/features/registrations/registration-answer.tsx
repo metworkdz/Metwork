@@ -16,13 +16,14 @@ import { useTranslations } from 'next-intl';
 import { Download, ExternalLink, FileText, ImageIcon, Paperclip } from 'lucide-react';
 import { FileName } from './registration-file-field';
 import { formatFileSize } from '@/lib/registration-file-upload';
+import { formatAnswerValue } from '@/lib/registration-options';
 import type { Registration, RegistrationFormField } from '@/types/domain';
 
 type Answer = Registration['answers'][number];
 
 /** The text form of an answer, for everything that is not a file. */
 export function answerText(answer: Answer): string {
-  return Array.isArray(answer.value) ? answer.value.join(', ') : String(answer.value);
+  return formatAnswerValue(answer.value);
 }
 
 /** How many files this participant attached. */

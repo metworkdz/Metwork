@@ -16,6 +16,7 @@ import { useTranslations } from 'next-intl';
 import { ChevronDown, ChevronUp, Phone, Mail, Loader2, RotateCcw, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { formatAnswerValue } from '@/lib/registration-options';
 import { questionLabel } from '@/lib/registration-question';
 import type { RegistrationFormField } from '@/types/domain';
 
@@ -231,7 +232,7 @@ function AbandonedRow({
                       {/* An uploaded file's value is its storage id: show the name instead. */}
                       {answer.file
                         ? answer.file.name
-                        : Array.isArray(answer.value) ? answer.value.join(', ') : answer.value}
+                        : formatAnswerValue(answer.value)}
                     </dd>
                   </div>
                 );

@@ -17,6 +17,7 @@ import { requireConsultant } from '@/server/mentors/access';
 import {
   listFormFields,
   replaceFormFields,
+  findInvalidOptions,
   deleteFormField,
   mentorScope,
 } from '@/server/registrations/service';
@@ -37,7 +38,7 @@ const fieldSchema = z.object({
   /** `defaultQuestions` i18n key — see the incubator route. */
   labelKey:   z.string().min(1).max(80).nullable().optional().transform((v) => v ?? null),
   type:     z.enum(FIELD_TYPES),
-  options:  z.array(z.string().min(1).max(200)).nullable().optional().transform((v) => v ?? null),
+  options:  z.array(z.string().trim().min(1).max(200)).nullable().optional().transform((v) => v ?? null),
   optionKeys: z.array(z.string().min(1).max(80)).nullable().optional().transform((v) => v ?? null),
   required: z.boolean().default(false),
   order:    z.number().int().min(0).default(0),
@@ -88,13 +89,9 @@ export async function POST(req: NextRequest) {
     return jsonError(403, 'FORBIDDEN', 'This program does not belong to you');
   }
 
-  for (const f of input.fields) {
-    if (['DROPDOWN', 'MULTIPLE_CHOICE', 'CHECKBOX'].includes(f.type)) {
-      if (!f.options || f.options.length < 1) {
-        return jsonError(422, 'OPTIONS_REQUIRED', `Field "${f.label}" of type ${f.type} requires at least one option`);
-      }
-    }
-  }
+  // Choice questions need choices, and no choice may appear twice.
+  const invalid = findInvalidOptions(input.fields);
+  if (invalid) return jsonError(422, invalid.code, invalid.message);
 
   const fields = await replaceFormFields(
     'PROGRAM',

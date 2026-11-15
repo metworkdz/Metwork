@@ -39,6 +39,13 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { buildDefaultApplicationFields } from '@/server/programs/default-application-questions';
 import { keysSurvivingEdit } from '@/lib/registration-question';
 import { MAX_REGISTRATION_FILE_MB } from '@/lib/upload-limits';
+import {
+  MAX_FORM_FIELDS,
+  MAX_OPTION_LENGTH,
+  cleanOptions,
+  findDuplicateOption,
+  insertPastedOptions,
+} from '@/lib/registration-options';
 import { cn } from '@/lib/utils';
 import type { RegistrationFieldType, RegistrationFormField } from '@/types/domain';
 
@@ -228,6 +235,16 @@ export function RegistrationFormBuilder({
     setSaved(false);
   }
 
+  /** A pasted list becomes one choice per line (see insertPastedOptions). */
+  function pasteOptions(key: string, optIdx: number, text: string) {
+    setFields((prev) =>
+      prev.map((f) =>
+        f._key === key ? { ...f, options: insertPastedOptions(f.options, optIdx, text).options } : f,
+      ),
+    );
+    setSaved(false);
+  }
+
   function removeOption(key: string, optIdx: number) {
     setFields((prev) =>
       prev.map((f) =>
@@ -241,10 +258,13 @@ export function RegistrationFormBuilder({
 
   /* ── Validation ──────────────────────────────────────────────────── */
   function validate(): string | null {
+    if (fields.length > MAX_FORM_FIELDS) return t('validationTooManyFields', { max: MAX_FORM_FIELDS });
     for (const f of fields) {
       if (!f.label.trim()) return t('validationLabelRequired');
-      if (CHOICE_TYPES.includes(f.type) && f.options.filter((o) => o.trim()).length < 1) {
-        return t('validationOptionsRequired', { label: f.label });
+      if (CHOICE_TYPES.includes(f.type)) {
+        if (cleanOptions(f.options).length < 1) return t('validationOptionsRequired', { label: f.label });
+        const dup = findDuplicateOption(f.options);
+        if (dup) return t('validationOptionsDuplicate', { label: f.label, option: dup });
       }
     }
     return null;
@@ -267,7 +287,7 @@ export function RegistrationFormBuilder({
             entityId,
             fields: fields.map((f, i) => {
               const options = CHOICE_TYPES.includes(f.type)
-                ? f.options.filter((o) => o.trim())
+                ? cleanOptions(f.options)
                 : null;
               // An edited question stops being the template's — see
               // keysSurvivingEdit for why the key has to go with the wording.
@@ -298,8 +318,11 @@ export function RegistrationFormBuilder({
           }),
         });
         if (!res.ok) {
-          const data = await res.json() as { message?: string };
-          setError(data.message ?? t('saveError'));
+          // The API's errors are { error: { code, message } }; reading the top
+          // level (as this used to) showed "Failed to save" for every refusal,
+          // however specific the reason.
+          const data = await res.json().catch(() => ({})) as { error?: { message?: string }; message?: string };
+          setError(data.error?.message ?? data.message ?? t('saveError'));
           return;
         }
         // Remember the ids the server just gave the new rows. Without this a
@@ -362,6 +385,7 @@ export function RegistrationFormBuilder({
             onMove: (dir: 'up' | 'down') => moveField(field._key, dir),
             onAddOption: () => addOption(field._key),
             onUpdateOption: (oi: number, v: string) => updateOption(field._key, oi, v),
+            onPasteOptions: (oi: number, text: string) => pasteOptions(field._key, oi, text),
             onRemoveOption: (oi: number) => removeOption(field._key, oi),
           };
           // Earlier choice questions this one may depend on.
@@ -389,6 +413,12 @@ export function RegistrationFormBuilder({
         })}
       </div>
 
+      {fields.length >= MAX_FORM_FIELDS && (
+        <p className="text-center text-xs text-muted-foreground">
+          {t('fieldLimitReached', { max: MAX_FORM_FIELDS })}
+        </p>
+      )}
+
       {/* Add-field actions */}
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button
@@ -396,6 +426,7 @@ export function RegistrationFormBuilder({
           size="sm"
           className="hidden w-full gap-1.5 border-dashed lg:flex"
           onClick={addField}
+          disabled={fields.length >= MAX_FORM_FIELDS}
         >
           <Plus className="size-4" /> {t('addField')}
         </Button>
@@ -418,6 +449,7 @@ export function RegistrationFormBuilder({
           variant="outline"
           className="h-11 flex-1 gap-1.5"
           onClick={addField}
+          disabled={fields.length >= MAX_FORM_FIELDS}
         >
           <Plus className="size-4" /> {t('addField')}
         </Button>
@@ -452,6 +484,7 @@ function FieldEditor({
   onMove,
   onAddOption,
   onUpdateOption,
+  onPasteOptions,
   onRemoveOption,
 }: {
   field: BuilderField;
@@ -463,6 +496,7 @@ function FieldEditor({
   onMove: (dir: 'up' | 'down') => void;
   onAddOption: () => void;
   onUpdateOption: (idx: number, val: string) => void;
+  onPasteOptions: (idx: number, text: string) => void;
   onRemoveOption: (idx: number) => void;
 }) {
   const t = useTranslations('formBuilder');
@@ -501,6 +535,7 @@ function FieldEditor({
           <Input
             value={field.label}
             onChange={(e) => onUpdate({ label: e.target.value })}
+            maxLength={MAX_OPTION_LENGTH}
             placeholder={t('fieldLabelPlaceholder')}
             className="h-8 text-sm"
           />
@@ -553,16 +588,23 @@ function FieldEditor({
         <div className="pt-1 space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-xs font-medium text-muted-foreground">
-              {t('options')}
+              {t('options')} <span className="tabular-nums">({field.options.length})</span>
             </Label>
             <Badge variant="outline" className="text-[10px]">{t('optionsHint')}</Badge>
           </div>
-          <div className="space-y-1.5">
+          {/* A long list (the 58 wilayas) scrolls inside its own box instead of
+              making the whole form thousands of pixels tall. */}
+          <div className="max-h-80 space-y-1.5 overflow-y-auto pe-1">
             {field.options.map((opt, oi) => (
               <div key={oi} className="flex gap-1.5">
                 <Input
                   value={opt}
                   onChange={(e) => onUpdateOption(oi, e.target.value)}
+                  onPaste={(e) => {
+                    const text = e.clipboardData.getData('text');
+                    if (/[\r\n]/.test(text.trim())) { e.preventDefault(); onPasteOptions(oi, text); }
+                  }}
+                  maxLength={MAX_OPTION_LENGTH}
                   placeholder={`${t('option')} ${oi + 1}`}
                   className="h-8 text-sm"
                 />
@@ -671,6 +713,7 @@ function MobileFieldCard({
   onMove,
   onAddOption,
   onUpdateOption,
+  onPasteOptions,
   onRemoveOption,
 }: {
   className?: string;
@@ -683,6 +726,7 @@ function MobileFieldCard({
   onMove: (dir: 'up' | 'down') => void;
   onAddOption: () => void;
   onUpdateOption: (idx: number, val: string) => void;
+  onPasteOptions: (idx: number, text: string) => void;
   onRemoveOption: (idx: number) => void;
 }) {
   const t = useTranslations('formBuilder');
@@ -792,6 +836,7 @@ function MobileFieldCard({
                 <Input
                   value={field.label}
                   onChange={(e) => onUpdate({ label: e.target.value })}
+                  maxLength={MAX_OPTION_LENGTH}
                   placeholder={t('fieldLabelPlaceholder')}
                   className="h-11 text-sm"
                 />
@@ -827,15 +872,22 @@ function MobileFieldCard({
               {isChoiceType && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs font-medium text-muted-foreground">{t('options')}</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      {t('options')} <span className="tabular-nums">({field.options.length})</span>
+                    </Label>
                     <Badge variant="outline" className="text-[10px]">{t('optionsHint')}</Badge>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="max-h-[40vh] space-y-1.5 overflow-y-auto pe-1">
                     {field.options.map((opt, oi) => (
                       <div key={oi} className="flex gap-1.5">
                         <Input
                           value={opt}
                           onChange={(e) => onUpdateOption(oi, e.target.value)}
+                          onPaste={(e) => {
+                            const text = e.clipboardData.getData('text');
+                            if (/[\r\n]/.test(text.trim())) { e.preventDefault(); onPasteOptions(oi, text); }
+                          }}
+                          maxLength={MAX_OPTION_LENGTH}
                           placeholder={`${t('option')} ${oi + 1}`}
                           className="h-11 text-sm"
                         />

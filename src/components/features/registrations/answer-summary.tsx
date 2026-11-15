@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl';
 import { BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
 
 import { questionLabel, questionOptions } from '@/lib/registration-question';
+import { visibleSummaryRows } from '@/lib/registration-options';
 import type { AnswerSummary } from '@/server/registrations/answer-summary';
 
 interface Props {
@@ -26,6 +27,8 @@ export function AnswerSummaryPanel({ entityType, entityId, endpoint, version }: 
   const tq = useTranslations('defaultQuestions');
   const [summary, setSummary] = useState<AnswerSummary | null>(null);
   const [open, setOpen] = useState(true);
+  /** Questions whose long list of choices the host expanded. */
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const controller = new AbortController();
@@ -40,7 +43,9 @@ export function AnswerSummaryPanel({ entityType, entityId, endpoint, version }: 
     return () => controller.abort();
   }, [entityType, entityId, endpoint, version]);
 
-  const questions = summary?.questions.filter((q) => q.answered > 0) ?? [];
+  // A question with a single choice (a "tick to confirm" declaration) has nothing
+  // to compare: everyone who got through it ticked it.
+  const questions = summary?.questions.filter((q) => q.answered > 0 && q.options.length > 1) ?? [];
   if (!summary || questions.length === 0) return null;
 
   const pct = (n: number, of: number) => (of > 0 ? Math.round((n / of) * 100) : 0);
@@ -66,9 +71,11 @@ export function AnswerSummaryPanel({ entityType, entityId, endpoint, version }: 
           {questions.map((q) => {
             const options = questionOptions(q, (k) => tq(k)) ?? q.options;
             const multi = q.type === 'CHECKBOX';
-            const rows = options
+            const allRows = options
               .map((label, i) => ({ label, count: q.counts[i] ?? 0 }))
               .sort((a, b) => b.count - a.count);
+            const isExpanded = expanded.has(q.fieldId);
+            const { rows, hidden } = visibleSummaryRows(allRows, { showAll: isExpanded });
             return (
               <div key={q.fieldId} className="space-y-2">
                 <div>
@@ -94,6 +101,22 @@ export function AnswerSummaryPanel({ entityType, entityId, endpoint, version }: 
                     <li className="text-xs text-muted-foreground">{t('other', { count: q.other })}</li>
                   )}
                 </ul>
+                {/* 58 wilayas would be 57 empty bars: show what was picked, and count the rest. */}
+                {(hidden > 0 || isExpanded) && allRows.length > 8 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpanded((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(q.fieldId)) next.delete(q.fieldId); else next.add(q.fieldId);
+                        return next;
+                      })
+                    }
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
+                    {isExpanded ? t('showFewer') : t('showAll', { count: hidden })}
+                  </button>
+                )}
               </div>
             );
           })}
