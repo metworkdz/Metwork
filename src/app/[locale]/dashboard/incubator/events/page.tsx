@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { DashboardPageHeader } from '@/components/shared/dashboard-page-header';
 import { EventsManager } from '@/components/features/incubator/events-manager';
 import { requireRole } from '@/lib/auth-guards';
+import { db } from '@/server/db/store';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -11,13 +12,19 @@ export default async function IncubatorEventsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('pages.dashboard');
-  await requireRole(['INCUBATOR']);
+  const user = await requireRole(['INCUBATOR']);
+
+  const data = await db.read();
+  const incubator = data.incubators.find((i) => i.managerId === user.id);
+  const published = incubator
+    ? (data.events ?? []).filter((e) => e.incubatorId === incubator.id && e.isActive).length
+    : 0;
 
   return (
     <div className="space-y-6">
       <DashboardPageHeader
         title={t('incubator.events.title')}
-        subtitle={t('incubator.events.subtitle')}
+        subtitle={t('incubator.events.subtitle', { count: published })}
       />
       <EventsManager />
     </div>

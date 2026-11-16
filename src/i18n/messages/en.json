@@ -3020,7 +3020,7 @@
         },
         "events": {
           "title": "Events",
-          "subtitle": "Pitch nights, demo days, and meetups."
+          "subtitle": "{count} published — pitch nights, demo days, and meetups."
         },
         "revenue": {
           "title": "Revenue",

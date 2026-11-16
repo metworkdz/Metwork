@@ -174,6 +174,8 @@ export interface Event {
   cashDepositValue?: number;
   /** URL slug for the public detail page. May be absent on legacy records. */
   slug?: string | null;
+  /** False while the host keeps it as a draft. Absent on public copies (only active events are public). */
+  isActive?: boolean;
 }
 
 /* ─────────────────────────── Registration system ─────────────────────────── */

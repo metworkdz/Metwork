@@ -40,6 +40,7 @@ function fromRecord(r: EventRecord, attendeeCount = 0, audience: Audience = 'PUB
     cashDepositType:        r.cashDepositType,
     cashDepositValue:       r.cashDepositValue,
     slug:                   r.slug ?? null,
+    isActive:               r.isActive,
   };
 }
 

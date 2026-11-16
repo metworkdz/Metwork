@@ -17,7 +17,7 @@ export function programPublicUrl(program: { id: string; slug?: string | null }):
   return `${window.location.origin}/programs/${encodeURIComponent(program.slug || program.id)}`;
 }
 
-async function copyText(text: string) {
+export async function copyText(text: string) {
   try {
     await navigator.clipboard.writeText(text);
   } catch {

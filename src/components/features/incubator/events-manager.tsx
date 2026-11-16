@@ -1,19 +1,22 @@
 'use client';
 
 import { isUnlimited } from '@/lib/seat-limit';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { Calendar, ClipboardList, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ListingManagementTable, type ListingColumn } from './listing-management-table';
 import { EventFormDialog } from './event-form-dialog';
+import { EventsMobileList } from './events-mobile-list';
+import { CopyEventLinkButton } from '@/components/features/events/copy-event-link';
 import { formatCurrency, formatDate } from '@/lib/format';
 import type { Event as PlatformEvent } from '@/types/domain';
 import type { Locale } from '@/i18n/config';
 
 export function EventsManager() {
   const t = useTranslations('incubator.eventsManager');
+  const tVis = useTranslations('programVisibility');
   const locale = useLocale() as Locale;
   const router = useRouter();
   const [rows, setRows] = useState<PlatformEvent[]>([]);
@@ -22,7 +25,8 @@ export function EventsManager() {
   // FIX: BUG-2 — edit state
   const [editingEvent, setEditingEvent] = useState<PlatformEvent | null>(null);
 
-  async function fetchEvents() {
+  // Memoised so the effect below can depend on it (the error copy is translated).
+  const fetchEvents = useCallback(async () => {
     setLoading(true);
     setFetchError(null);
     try {
@@ -35,11 +39,11 @@ export function EventsManager() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [t]);
 
   useEffect(() => {
     void fetchEvents();
-  }, []);
+  }, [fetchEvents]);
 
   async function handleDelete(id: string) {
     if (!confirm(t('confirmDelete'))) return;
@@ -60,6 +64,14 @@ export function EventsManager() {
         <div>
           <div className="font-medium">{e.title}</div>
           <div className="text-xs text-muted-foreground">{e.city}</div>
+          {e.isActive === false ? (
+            <Badge variant="warning" className="mt-1">{tVis('draft')}</Badge>
+          ) : (
+            // Same one-click share the programs list has.
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <CopyEventLinkButton event={e} className="h-7 gap-1.5 px-2 text-xs" />
+            </div>
+          )}
         </div>
       ),
     },
@@ -76,7 +88,9 @@ export function EventsManager() {
       key: 'mode',
       label: t('colMode'),
       render: (e) =>
-        e.isOnline ? <Badge variant="info">{t('modeOnline')}</Badge> : <Badge variant="outline">{t('modeInPerson')}</Badge>,
+        e.isOnline
+          ? <Badge variant="info">{t('modeOnline')}</Badge>
+          : <Badge variant="outline" className="whitespace-nowrap">{t('modeInPerson')}</Badge>,
     },
     {
       key: 'attendance',
@@ -94,7 +108,7 @@ export function EventsManager() {
             </div>
             <div className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full bg-emerald-500"
+                className="h-full bg-primary"
                 style={{ width: `${Math.min(100, Math.round(ratio * 100))}%` }}
               />
             </div>
@@ -141,8 +155,13 @@ export function EventsManager() {
     );
   }
 
+  const openRegistrations = (e: PlatformEvent) =>
+    router.push(`/dashboard/incubator/events/${e.id}` as Parameters<typeof router.push>[0]);
+
   return (
     <>
+      {/* Desktop (lg+) — management table. */}
+      <div className="hidden lg:block">
       <ListingManagementTable
         rows={rows}
         columns={columns}
@@ -156,7 +175,7 @@ export function EventsManager() {
           {
             label: t('actionRegistrations'),
             icon: <ClipboardList className="size-4" />,
-            onSelect: (e) => router.push(`/dashboard/incubator/events/${e.id}` as Parameters<typeof router.push>[0]),
+            onSelect: (e) => openRegistrations(e),
           },
           {
             label: t('actionEdit'),
@@ -170,6 +189,16 @@ export function EventsManager() {
             destructive: true,
           },
         ]}
+      />
+      </div>
+
+      {/* Mobile (below lg) — tap-friendly cards, same as the programs page. */}
+      <EventsMobileList
+        events={rows}
+        createSlot={<EventFormDialog onCreated={() => void fetchEvents()} />}
+        onRegistrations={openRegistrations}
+        onEdit={(e) => setEditingEvent(e)}
+        onDelete={(id) => void handleDelete(id)}
       />
       {/* FIX: BUG-2 — edit dialog rendered outside the table, controlled by editingEvent state */}
       {editingEvent && (
