@@ -5,6 +5,7 @@
  * city + status selects, search box, sort. The first filtered match
  * renders as a wider featured card.
  */
+import { hasRoom } from '@/lib/seat-limit';
 import { useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Search } from 'lucide-react';
@@ -39,7 +40,8 @@ interface ProgramsExplorerProps {
 
 function isOpen(p: Program, taken: number): boolean {
   // A pre-registration (dates to confirm) has no deadline to pass.
-  return !programDeadlinePassed(p) && taken < p.seatsTotal;
+  // `hasRoom` is always true for a program with no seat limit.
+  return !programDeadlinePassed(p) && hasRoom(p, taken);
 }
 
 export function ProgramsExplorer({ programs, cities, attendance }: ProgramsExplorerProps) {

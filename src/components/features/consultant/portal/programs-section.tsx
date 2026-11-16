@@ -250,7 +250,9 @@ export function ProgramsSection() {
                       : tVis('datesTbc')}
                   </p>
                   <p className="mt-1 text-xs text-primary">
-                    {t('seats', { taken: p.seatsTaken, total: p.seatsTotal })}
+                    {p.unlimitedCapacity
+                      ? t('registeredNoLimit', { count: p.seatsTaken })
+                      : t('seats', { taken: p.seatsTaken, total: p.seatsTotal })}
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-1.5">
@@ -327,7 +329,19 @@ export function ProgramsSection() {
             <input
               id="p-seats" type="number" min={1} className={cpInputClassLight} value={draft.seatsTotal}
               onChange={(e) => set('seatsTotal', e.target.value)}
+              disabled={draft.unlimitedCapacity}
             />
+            <label htmlFor="p-unlimited" className="mt-2 flex cursor-pointer items-start gap-2">
+              <input
+                id="p-unlimited" type="checkbox" className="mt-0.5 size-4"
+                checked={draft.unlimitedCapacity}
+                onChange={(e) => set('unlimitedCapacity', e.target.checked)}
+              />
+              <span>
+                <span className="block text-sm">{t('labelUnlimited')}</span>
+                <span className="block text-xs opacity-70">{t('unlimitedHint')}</span>
+              </span>
+            </label>
           </Field>
           <DatesTbcToggle checked={draft.datesTbc} onChange={(v) => set('datesTbc', v)} />
 
@@ -559,7 +573,9 @@ function ProgramDetailView({ program, onBack }: { program: ConsultantProgram; on
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-sm font-semibold text-foreground">{program.title}</h2>
           <p className="text-xs text-muted-foreground">
-            {t('seats', { taken: program.seatsTaken, total: program.seatsTotal })}
+            {program.unlimitedCapacity
+              ? t('registeredNoLimit', { count: program.seatsTaken })
+              : t('seats', { taken: program.seatsTaken, total: program.seatsTotal })}
           </p>
         </div>
       </div>

@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from '@/i18n/routing';
 import { findEventBySlugOrId, listFormFields } from '@/server/registrations/service';
 import { getEventAttendance } from '@/server/bookings/service';
+import { isUnlimited } from '@/lib/seat-limit';
 import { RegistrationForm } from '@/components/features/registrations/registration-form';
 import { ImageCarousel } from '@/components/shared/image-carousel';
 import { ListingPriceBlock } from '@/components/shared/listing-price-block';
@@ -69,8 +70,11 @@ export default async function EventDetailPage({ params }: PageProps) {
     listFormFields('EVENT', event.id),
   ]);
 
-  const spotsLeft = event.capacity - attendeeCount;
-  const isFull = spotsLeft <= 0;
+  // With no seat limit `attendeeCount` is null and there is no "spots left" — the
+  // page shows "Open registration" and is never "full". The number never reaches the HTML.
+  const unlimited = isUnlimited(event);
+  const spotsLeft = unlimited || attendeeCount === null ? null : Math.max(0, event.capacity - attendeeCount);
+  const isFull = spotsLeft !== null && spotsLeft <= 0;
   const isPast = new Date(event.eventDate) < new Date();
   const canRegister = !isFull && !isPast;
 
@@ -132,9 +136,11 @@ export default async function EventDetailPage({ params }: PageProps) {
               ) : (
                 <Badge variant="outline" className="gap-1">
                   <Users className="size-3" />
-                  {spotsLeft === 1
-                    ? t('spotsRemainingOne')
-                    : t('spotsRemainingMany', { count: spotsLeft })}
+                  {spotsLeft === null
+                    ? t('openRegistration')
+                    : spotsLeft === 1
+                      ? t('spotsRemainingOne')
+                      : t('spotsRemainingMany', { count: spotsLeft })}
                 </Badge>
               )}
             </div>

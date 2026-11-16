@@ -160,7 +160,7 @@ export function bookingMoney(b: BookingRecord): BookingMoney {
 
 export function computeProgramFinance(
   data: FinanceData,
-  program: Pick<ProgramRecord, 'id' | 'seatsTotal'>,
+  program: Pick<ProgramRecord, 'id' | 'seatsTotal' | 'unlimitedCapacity'>,
   now: Date = new Date(),
 ): ProgramFinanceReport {
   const bookings = (data.bookings ?? []).filter(
@@ -254,7 +254,8 @@ export function computeProgramFinance(
     ? Math.ceil(expensesTotal / netPerTicket)
     : expensesTotal === 0 ? 0 : null;
 
-  const seatsTotal = Math.max(0, program.seatsTotal ?? 0);
+  // No seat limit ⇒ no total, so no fill rate (null) — it only ever goes to the owner.
+  const seatsTotal = program.unlimitedCapacity === true ? 0 : Math.max(0, program.seatsTotal ?? 0);
 
   return {
     programId: program.id,

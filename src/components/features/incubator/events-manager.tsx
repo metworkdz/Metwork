@@ -1,5 +1,6 @@
 'use client';
 
+import { isUnlimited } from '@/lib/seat-limit';
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
@@ -81,6 +82,10 @@ export function EventsManager() {
       key: 'attendance',
       label: t('colAttendance'),
       render: (e) => {
+        // Owner view: the real count, with "No limit" in place of a ratio and bar.
+        if (isUnlimited(e)) {
+          return <div className="tabular-nums">{t('registeredNoLimit', { count: e.attendeeCount })}</div>;
+        }
         const ratio = e.capacity === 0 ? 0 : e.attendeeCount / e.capacity;
         return (
           <div>
@@ -179,6 +184,7 @@ export function EventsManager() {
             onlinePrice: editingEvent.onlinePrice,
             cashPrice: editingEvent.cashPrice,
             capacity: editingEvent.capacity,
+            unlimitedCapacity: editingEvent.unlimitedCapacity,
             isOnline: editingEvent.isOnline,
             eventDate: editingEvent.eventDate,
             acceptedPaymentMethods: editingEvent.acceptedPaymentMethods ?? ['ONLINE'],

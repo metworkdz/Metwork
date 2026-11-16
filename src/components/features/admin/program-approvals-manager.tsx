@@ -23,6 +23,7 @@ export interface ProgramReviewView {
   type: string;
   price: number;
   seatsTotal: number;
+  unlimitedCapacity?: boolean;
   startDate: string | null;
   endDate: string | null;
   visibility: 'PUBLIC' | 'UNLISTED';
@@ -114,7 +115,7 @@ export function ProgramApprovalsManager({ initial }: { initial: ProgramReviewVie
                     {p.startDate ? `${day(p.startDate)}${p.endDate && p.endDate !== p.startDate ? ` → ${day(p.endDate)}` : ''}` : t('datesTbc')}
                   </span>
                   {p.city && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" />{p.city}</span>}
-                  <span className="inline-flex items-center gap-1"><Users className="size-3.5" />{t('seats', { count: p.seatsTotal })}</span>
+                  <span className="inline-flex items-center gap-1"><Users className="size-3.5" />{p.unlimitedCapacity ? t('noLimit') : t('seats', { count: p.seatsTotal })}</span>
                   <span>{t('submitted', { date: day(p.createdAt) })}</span>
                 </p>
                 <p dir="auto" className="line-clamp-3 whitespace-pre-line text-sm">{p.description}</p>

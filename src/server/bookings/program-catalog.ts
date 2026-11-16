@@ -6,6 +6,7 @@
  */
 import { db, type ProgramRecord } from '@/server/db/store';
 import { countAttendance } from '@/server/attendance';
+import { isUnlimited } from '@/lib/seat-limit';
 import {
   isProgramPubliclyListed,
   isProgramPubliclyReachable,
@@ -15,7 +16,15 @@ import {
 import type { Program } from '@/types/domain';
 import { programDatesTbc } from '@/lib/program-dates';
 
-function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
+/**
+ * Who the copy is for. PUBLIC is the default on purpose: a program with no seat
+ * limit must not tell anyone how many people enrolled, so forgetting to say
+ * "OWNER" fails toward privacy. Only the host's own dashboard asks for OWNER.
+ */
+type Audience = 'PUBLIC' | 'OWNER';
+
+function fromRecord(r: ProgramRecord, seatsTaken = 0, audience: Audience = 'PUBLIC'): Program {
+  const hideCounts = isUnlimited(r) && audience === 'PUBLIC';
   return {
     id:                     r.id,
     incubatorId:            r.incubatorId,
@@ -32,8 +41,9 @@ function fromRecord(r: ProgramRecord, seatsTaken = 0): Program {
     price:                  r.price,
     onlinePrice:            r.onlinePrice ?? null,
     cashPrice:              r.cashPrice ?? null,
-    seatsTotal:             r.seatsTotal,
-    seatsTaken,
+    seatsTotal:             hideCounts ? 0 : r.seatsTotal,
+    seatsTaken:             hideCounts ? 0 : seatsTaken,
+    ...(isUnlimited(r) ? { unlimitedCapacity: true } : {}),
     deadline:               r.deadline,
     startDate:              r.startDate,
     startTime:              r.startTime ?? null,
@@ -86,7 +96,7 @@ export async function listProgramsByIncubator(incubatorId: string): Promise<Prog
   return (data.programs ?? [])
     .filter((p) => p.incubatorId === incubatorId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map((p) => fromRecord(p, countAttendance(data, 'PROGRAM', p.id)));
+    .map((p) => fromRecord(p, countAttendance(data, 'PROGRAM', p.id), 'OWNER'));
 }
 
 /** List all programs (active and inactive) owned by a specific consultant. */
@@ -95,5 +105,5 @@ export async function listProgramsByMentor(mentorId: string): Promise<Program[]>
   return (data.programs ?? [])
     .filter((p) => p.mentorId === mentorId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map((p) => fromRecord(p, countAttendance(data, 'PROGRAM', p.id)));
+    .map((p) => fromRecord(p, countAttendance(data, 'PROGRAM', p.id), 'OWNER'));
 }

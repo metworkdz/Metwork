@@ -42,6 +42,7 @@ export default async function AdminProgramApprovalsPage({ params }: { params: Pr
         type: p.type,
         price: p.price ?? 0,
         seatsTotal: p.seatsTotal ?? 0,
+        unlimitedCapacity: p.unlimitedCapacity === true,
         startDate: dates?.startDate ?? null,
         endDate: dates?.endDate ?? null,
         visibility: p.visibility === 'UNLISTED' ? 'UNLISTED' : 'PUBLIC',

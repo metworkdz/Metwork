@@ -119,6 +119,12 @@ export interface Program {
   cashPrice?: number | null;
   seatsTotal: number;
   seatsTaken: number;
+  /**
+   * No seat limit. On the PUBLIC version of a listing with no limit, `seatsTotal`
+   * and `seatsTaken` are 0 and must not be read: nobody outside the host's team
+   * may learn how many people registered. See `@/lib/seat-limit`.
+   */
+  unlimitedCapacity?: boolean;
   deadline: string | null;
   startDate: string | null;
   /** Local wall-clock start time "HH:MM". Absent ⇒ no time is shown. */
@@ -159,6 +165,8 @@ export interface Event {
   isOnline: boolean;
   capacity: number;
   attendeeCount: number;
+  /** See `Program.unlimitedCapacity` — `capacity` / `attendeeCount` are 0 for the public. */
+  unlimitedCapacity?: boolean;
   eventDate: string;
   acceptedPaymentMethods: PaymentMethod[];
   /** Cash deposit config — present only when CASH is accepted. */

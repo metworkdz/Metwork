@@ -12,6 +12,7 @@ import { findIncubatorByUserEmail } from '@/server/incubator/service';
 import { listProgramsByIncubator } from '@/server/bookings/program-catalog';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
+import { DEFAULT_PROGRAM_SEATS } from '@/lib/seat-limit';
 import { allocateProgramSlug } from '@/server/programs/slug';
 import { PROGRAM_DATES_ERRORS, resolveProgramDates } from '@/server/programs/dates';
 
@@ -29,7 +30,10 @@ const createProgramSchema = z.object({
   /** Optional split pricing — fall back to `price` when omitted. */
   onlinePrice: z.number().int().min(0).optional().nullable(),
   cashPrice:   z.number().int().min(0).optional().nullable(),
-  seatsTotal:  z.number().int().min(1).max(10_000),
+  /** Required unless `unlimitedCapacity` is on. */
+  seatsTotal:  z.number().int().min(1).max(10_000).optional(),
+  /** "No limit on registrations": nobody is refused or waitlisted, and the public never sees a count. */
+  unlimitedCapacity: z.boolean().optional(),
   deadline:    z.string().datetime().nullable().optional(),
   startDate:   z.string().datetime().nullable().optional(),
   /** Local wall-clock start time "HH:MM" (24h). Optional. */
@@ -81,6 +85,14 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
+  // A limit is required unless the host chose "No limit on registrations".
+  if (!input.unlimitedCapacity && input.seatsTotal === undefined) {
+    return jsonError(422, 'VALIDATION_ERROR', 'Invalid input', {
+      fieldErrors: { seatsTotal: ['Required unless registrations have no limit'] },
+    });
+  }
+
+
   // Cash is allowed for every subscription plan; the deposit (and any platform
   // commission) is settled online — so we honor the incubator's choice as-is.
   const paymentMethods = input.acceptedPaymentMethods;
@@ -122,7 +134,8 @@ export async function POST(req: NextRequest) {
       price:                  input.price,
       onlinePrice:            input.onlinePrice ?? null,
       cashPrice:              input.cashPrice ?? null,
-      seatsTotal:             input.seatsTotal,
+      seatsTotal:             input.seatsTotal ?? DEFAULT_PROGRAM_SEATS,
+      ...(input.unlimitedCapacity ? { unlimitedCapacity: true } : {}),
       deadline:               dates.value.deadline,
       startDate:              dates.value.startDate,
       startTime:              input.startTime ?? null,

@@ -6,10 +6,19 @@
  */
 import { db, type EventRecord } from '@/server/db/store';
 import { countAttendance } from '@/server/attendance';
+import { isUnlimited } from '@/lib/seat-limit';
 import { isPubliclyVisibleIncubator, visibleIncubatorIds } from '@/server/incubator/visibility';
 import type { Event as PlatformEvent } from '@/types/domain';
 
-function fromRecord(r: EventRecord, attendeeCount = 0): PlatformEvent {
+/**
+ * Who the copy is for. PUBLIC is the default on purpose: a listing with no seat
+ * limit must not tell anyone how many people registered, so forgetting to say
+ * "OWNER" fails toward privacy. Only the host's own dashboard asks for OWNER.
+ */
+type Audience = 'PUBLIC' | 'OWNER';
+
+function fromRecord(r: EventRecord, attendeeCount = 0, audience: Audience = 'PUBLIC'): PlatformEvent {
+  const hideCounts = isUnlimited(r) && audience === 'PUBLIC';
   return {
     id:                     r.id,
     incubatorId:            r.incubatorId,
@@ -23,8 +32,9 @@ function fromRecord(r: EventRecord, attendeeCount = 0): PlatformEvent {
     onlinePrice:            r.onlinePrice ?? null,
     cashPrice:              r.cashPrice ?? null,
     isOnline:               r.isOnline,
-    capacity:               r.capacity,
-    attendeeCount,
+    capacity:               hideCounts ? 0 : r.capacity,
+    attendeeCount:          hideCounts ? 0 : attendeeCount,
+    ...(isUnlimited(r) ? { unlimitedCapacity: true } : {}),
     eventDate:              r.eventDate,
     acceptedPaymentMethods: r.acceptedPaymentMethods,
     cashDepositType:        r.cashDepositType,
@@ -58,5 +68,5 @@ export async function listEventsByIncubator(incubatorId: string): Promise<Platfo
   return (data.events ?? [])
     .filter((e) => e.incubatorId === incubatorId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map((e) => fromRecord(e, countAttendance(data, 'EVENT', e.id)));
+    .map((e) => fromRecord(e, countAttendance(data, 'EVENT', e.id), 'OWNER'));
 }

@@ -32,7 +32,7 @@ interface EventFormDialogProps {
   initialData?: {
     title?: string; description?: string; city?: string; price?: number;
     onlinePrice?: number | null; cashPrice?: number | null;
-    capacity?: number; isOnline?: boolean; eventDate?: string;
+    capacity?: number; unlimitedCapacity?: boolean; isOnline?: boolean; eventDate?: string;
     acceptedPaymentMethods?: ('ONLINE' | 'CASH')[]; imageUrl?: string | null;
     imageUrls?: string[] | null;
     cashDepositType?: 'FIXED' | 'PERCENT'; cashDepositValue?: number;
@@ -58,6 +58,7 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
   const [onlinePrice, setOnlinePrice] = useState('');
   const [cashPrice, setCashPrice] = useState('');
   const [capacity, setCapacity] = useState('50');
+  const [unlimited, setUnlimited] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
   const [eventDate, setEventDate] = useState('');
   const [acceptedMethods, setAcceptedMethods] = useState<('ONLINE' | 'CASH')[]>(['ONLINE', 'CASH']);
@@ -75,6 +76,7 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
       setOnlinePrice(initialData.onlinePrice != null ? String(initialData.onlinePrice) : '');
       setCashPrice(initialData.cashPrice != null ? String(initialData.cashPrice) : '');
       setCapacity(initialData.capacity != null ? String(initialData.capacity) : '50');
+      setUnlimited(initialData.unlimitedCapacity === true);
       setIsOnline(initialData.isOnline ?? false);
       // FIX: BUG-2 — convert ISO date string back to YYYY-MM-DD for date input
       setEventDate(initialData.eventDate ? initialData.eventDate.substring(0, 10) : '');
@@ -103,7 +105,7 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
   function reset() {
     setTitle(''); setDescription(''); setCity('');
     setPrice('0'); setOnlinePrice(''); setCashPrice('');
-    setCapacity('50'); setIsOnline(false); setEventDate('');
+    setCapacity('50'); setUnlimited(false); setIsOnline(false); setEventDate('');
     setAcceptedMethods(['ONLINE', 'CASH']);
     setDepositType('PERCENT'); setDepositValue('10');
     setImageUrls([]);
@@ -128,7 +130,9 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
           price: Number(price),
           onlinePrice: onlinePrice.trim() === '' ? null : Number(onlinePrice),
           cashPrice: cashPrice.trim() === '' ? null : Number(cashPrice),
-          capacity: Number(capacity),
+          // The number is left alone while the limit is off, so switching it back on restores it.
+          ...(unlimited ? {} : { capacity: Number(capacity) }),
+          unlimitedCapacity: unlimited,
           isOnline,
           eventDate: new Date(`${eventDate}T12:00:00`).toISOString(),
           acceptedPaymentMethods: acceptedMethods,
@@ -224,7 +228,20 @@ export function EventFormDialog({ onCreated, editId, initialData, open: openProp
             </div>
             <div>
               <Label htmlFor="ev-cap">{t('labelCapacity')}</Label>
-              <Input id="ev-cap" type="number" min="1" className="mt-1" value={capacity} onChange={(e) => setCapacity(e.target.value)} required />
+              <Input id="ev-cap" type="number" min="1" className="mt-1" value={capacity} onChange={(e) => setCapacity(e.target.value)} required={!unlimited} disabled={unlimited} />
+              <div className="mt-2 flex items-start gap-2">
+                <input
+                  id="ev-unlimited"
+                  type="checkbox"
+                  className="mt-0.5 size-4 rounded border-input"
+                  checked={unlimited}
+                  onChange={(e) => setUnlimited(e.target.checked)}
+                />
+                <div>
+                  <Label htmlFor="ev-unlimited" className="cursor-pointer text-sm">{t('labelUnlimited')}</Label>
+                  <p className="text-xs text-muted-foreground">{t('unlimitedHint')}</p>
+                </div>
+              </div>
             </div>
           </div>
 

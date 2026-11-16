@@ -200,6 +200,8 @@ export interface ConsultantProgram {
   cashDepositValue?: number;
   seatsTotal: number;
   seatsTaken: number;
+  /** The host switched the seat limit off; the owner still sees the real counts. */
+  unlimitedCapacity?: boolean;
   /** All three null while the dates are to confirm (`datesTbc`). */
   deadline: string | null;
   startDate: string | null;
@@ -247,7 +249,9 @@ export interface ConsultantProgramInput {
   acceptedPaymentMethods: ('ONLINE' | 'CASH')[];
   cashDepositType?: 'FIXED' | 'PERCENT' | null;
   cashDepositValue?: number | null;
-  seatsTotal: number;
+  /** Left out while the limit is off, so the stored number is kept. */
+  seatsTotal?: number;
+  unlimitedCapacity?: boolean;
   /** All three null when `datesTbc`. */
   deadline: string | null;
   startDate: string | null;

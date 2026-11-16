@@ -338,7 +338,10 @@
       "reviewPending": "في انتظار المراجعة",
       "reviewPendingHint": "تراجع Metwork برنامجك. سيظهر في صفحة البرامج فور الموافقة عليه.",
       "reviewRejected": "مرفوض",
-      "reviewRejectedHint": "رفضته Metwork: {reason} عدّل البرنامج لإعادة إرساله."
+      "reviewRejectedHint": "رفضته Metwork: {reason} عدّل البرنامج لإعادة إرساله.",
+      "labelUnlimited": "بدون حد للتسجيل",
+      "unlimitedHint": "يمكن لأي شخص التسجيل. لا يُرفض أحد ولا يوضع أحد في قائمة الانتظار، وأنت وحدك ترى عدد المسجّلين.",
+      "registeredNoLimit": "{count} مسجّل · بدون حد"
     },
     "earnings": {
       "pending": "معلّق",
@@ -1512,7 +1515,8 @@
       "free": "مجاني",
       "confirmDelete": "حذف هذا البرنامج؟ لا يمكن التراجع عن هذا الإجراء.",
       "errorLoad": "تعذّر تحميل برامجك. يرجى التحديث.",
-      "errorDelete": "تعذّر حذف هذا البرنامج. يرجى المحاولة مرة أخرى."
+      "errorDelete": "تعذّر حذف هذا البرنامج. يرجى المحاولة مرة أخرى.",
+      "registeredNoLimit": "{count} مسجّل · بدون حد"
     },
     "spaces": {
       "colSpace": "الفضاء",
@@ -1706,7 +1710,9 @@
       "labelSplitPricing": "أسعار الدفع عبر الإنترنت والنقدي (اختياري)",
       "splitPricingHint": "اتركه فارغًا لاستخدام السعر الأساسي لكليهما. حدد سعرًا مختلفًا للدفع بالبطاقة عبر الإنترنت أو الحجوزات النقدية.",
       "labelOnlinePrice": "السعر عبر الإنترنت",
-      "labelCashPrice": "السعر النقدي"
+      "labelCashPrice": "السعر النقدي",
+      "labelUnlimited": "بدون حد للتسجيل",
+      "unlimitedHint": "يمكن لأي شخص التسجيل. لا يُرفض أحد ولا يوضع أحد في قائمة الانتظار، وأنت وحدك ترى عدد المسجّلين."
     },
     "eventsManager": {
       "loading": "جارٍ التحميل…",
@@ -1726,7 +1732,8 @@
       "emptyDescription": "جدول ليالي العروض والمعارض واللقاءات.",
       "actionEdit": "تعديل",
       "actionDelete": "حذف",
-      "actionRegistrations": "إدارة التسجيلات"
+      "actionRegistrations": "إدارة التسجيلات",
+      "registeredNoLimit": "{count} مسجّل · بدون حد"
     },
     "profileForm": {
       "sectionManager": "ملف المدير",
@@ -2083,7 +2090,9 @@
       "labelStartTime": "وقت البدء (اختياري)",
       "startTimeHint": "يظهر للمتقدمين. اتركه فارغاً إذا لم يكن للجلسات وقت محدد.",
       "labelEndTime": "وقت الانتهاء (اختياري)",
-      "depositZeroHint": "أدخل 0 (أو اتركه فارغاً) لعدم أخذ عربون — يدفع العميل المبلغ كاملاً في المكان."
+      "depositZeroHint": "أدخل 0 (أو اتركه فارغاً) لعدم أخذ عربون — يدفع العميل المبلغ كاملاً في المكان.",
+      "labelUnlimited": "بدون حد للتسجيل",
+      "unlimitedHint": "يمكن لأي شخص التسجيل. لا يُرفض أحد ولا يوضع أحد في قائمة الانتظار، وأنت وحدك ترى عدد المسجّلين."
     },
     "receiptModal": {
       "loading": "جارٍ التحميل…",
@@ -4103,7 +4112,9 @@
       "seatsLeft": "{count} مقاعد متبقية",
       "free": "مجاني",
       "register": "التسجيل",
-      "viewDetails": "عرض التفاصيل"
+      "viewDetails": "عرض التفاصيل",
+      "noLimit": "بلا حد",
+      "openRegistration": "التسجيل مفتوح"
     },
     "register": {
       "paymentMethod": "طريقة الدفع",
@@ -4190,7 +4201,10 @@
       "free": "مجاني",
       "perAttendee": "لكل مشارك",
       "fullText": "هذه الفعالية ممتلئة",
-      "pastText": "انتهت هذه الفعالية"
+      "pastText": "انتهت هذه الفعالية",
+      "openRegistration": "التسجيل مفتوح",
+      "noLimit": "بلا حد",
+      "online": "عبر الإنترنت"
     }
   },
   "programs": {
@@ -4206,7 +4220,8 @@
       "viewDetails": "عرض التفاصيل",
       "applyNow": "تقدم الآن",
       "preRegistration": "تسجيل مسبق",
-      "datesTbc": "التواريخ قيد التأكيد"
+      "datesTbc": "التواريخ قيد التأكيد",
+      "openRegistration": "التسجيل مفتوح"
     },
     "apply": {
       "paymentMethod": "طريقة الدفع",
@@ -4311,7 +4326,9 @@
       "datesTbcBody": "سجّل الآن مجاناً: سيُعلمك المنظّم بالتواريخ وبطريقة الدفع.",
       "indicativeFee": "سعر تقديري",
       "noDeadlineYet": "لا يوجد آخر أجل بعد",
-      "preRegister": "أسجّل مسبقاً"
+      "preRegister": "أسجّل مسبقاً",
+      "openRegistration": "التسجيل مفتوح",
+      "noLimit": "بلا حد"
     }
   },
   "admin": {
@@ -5377,7 +5394,8 @@
       "confirmReject": "رفض البرنامج",
       "cancel": "إلغاء",
       "reasonShown": "السبب: {reason}",
-      "failed": "فشل الإجراء. أعد المحاولة."
+      "failed": "فشل الإجراء. أعد المحاولة.",
+      "noLimit": "بدون حد للمقاعد"
     }
   },
   "bookings": {

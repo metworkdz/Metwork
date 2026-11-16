@@ -338,7 +338,10 @@
       "reviewPending": "En attente de validation",
       "reviewPendingHint": "Metwork vérifie votre programme. Il apparaîtra sur la page Programmes dès qu’il sera validé.",
       "reviewRejected": "Refusé",
-      "reviewRejectedHint": "Refusé par Metwork : {reason} Modifiez le programme pour le soumettre à nouveau."
+      "reviewRejectedHint": "Refusé par Metwork : {reason} Modifiez le programme pour le soumettre à nouveau.",
+      "labelUnlimited": "Pas de limite d'inscriptions",
+      "unlimitedHint": "Tout le monde peut s'inscrire. Personne n'est refusé ni mis en liste d'attente, et vous seul voyez le nombre d'inscrits.",
+      "registeredNoLimit": "{count} inscrits · Sans limite"
     },
     "earnings": {
       "pending": "En attente",
@@ -1512,7 +1515,8 @@
       "free": "Gratuit",
       "confirmDelete": "Supprimer ce programme ? Cette action est irréversible.",
       "errorLoad": "Impossible de charger vos programmes. Veuillez actualiser.",
-      "errorDelete": "Impossible de supprimer ce programme. Veuillez réessayer."
+      "errorDelete": "Impossible de supprimer ce programme. Veuillez réessayer.",
+      "registeredNoLimit": "{count} inscrits · Sans limite"
     },
     "spaces": {
       "colSpace": "Espace",
@@ -1706,7 +1710,9 @@
       "labelSplitPricing": "Tarifs en ligne et espèces (facultatif)",
       "splitPricingHint": "Laissez vide pour utiliser le prix de base pour les deux. Définissez un prix différent pour le paiement en ligne par carte ou en espèces.",
       "labelOnlinePrice": "Prix en ligne",
-      "labelCashPrice": "Prix en espèces"
+      "labelCashPrice": "Prix en espèces",
+      "labelUnlimited": "Pas de limite d'inscriptions",
+      "unlimitedHint": "Tout le monde peut s'inscrire. Personne n'est refusé ni mis en liste d'attente, et vous seul voyez le nombre d'inscrits."
     },
     "eventsManager": {
       "loading": "Chargement…",
@@ -1726,7 +1732,8 @@
       "emptyDescription": "Planifiez des soirées pitch, des journées de démonstration et des rencontres.",
       "actionEdit": "Modifier",
       "actionDelete": "Supprimer",
-      "actionRegistrations": "Gérer les inscriptions"
+      "actionRegistrations": "Gérer les inscriptions",
+      "registeredNoLimit": "{count} inscrits · Sans limite"
     },
     "profileForm": {
       "sectionManager": "Profil du gestionnaire",
@@ -2083,7 +2090,9 @@
       "labelStartTime": "Heure de début (facultatif)",
       "startTimeHint": "Affichée aux candidats. Laissez vide si les séances n’ont pas d’heure fixe.",
       "labelEndTime": "Heure de fin (facultatif)",
-      "depositZeroHint": "Saisissez 0 (ou laissez vide) pour ne pas prendre d’acompte — le client paie la totalité sur place."
+      "depositZeroHint": "Saisissez 0 (ou laissez vide) pour ne pas prendre d’acompte — le client paie la totalité sur place.",
+      "labelUnlimited": "Pas de limite d'inscriptions",
+      "unlimitedHint": "Tout le monde peut s'inscrire. Personne n'est refusé ni mis en liste d'attente, et vous seul voyez le nombre d'inscrits."
     },
     "receiptModal": {
       "loading": "Chargement…",
@@ -4103,7 +4112,9 @@
       "seatsLeft": "{count} places restantes",
       "free": "Gratuit",
       "register": "S'inscrire",
-      "viewDetails": "Voir les détails"
+      "viewDetails": "Voir les détails",
+      "noLimit": "Sans limite",
+      "openRegistration": "Inscriptions ouvertes"
     },
     "register": {
       "paymentMethod": "Mode de paiement",
@@ -4190,7 +4201,10 @@
       "free": "Gratuit",
       "perAttendee": "par participant",
       "fullText": "Cet événement est complet",
-      "pastText": "Cet événement a déjà eu lieu"
+      "pastText": "Cet événement a déjà eu lieu",
+      "openRegistration": "Inscriptions ouvertes",
+      "noLimit": "Sans limite",
+      "online": "En ligne"
     }
   },
   "programs": {
@@ -4206,7 +4220,8 @@
       "viewDetails": "Voir les détails",
       "applyNow": "Postuler",
       "preRegistration": "Pré-inscription",
-      "datesTbc": "Dates à confirmer"
+      "datesTbc": "Dates à confirmer",
+      "openRegistration": "Inscriptions ouvertes"
     },
     "apply": {
       "paymentMethod": "Mode de paiement",
@@ -4311,7 +4326,9 @@
       "datesTbcBody": "Inscrivez-vous dès maintenant, gratuitement : l’organisateur vous communiquera les dates et les modalités de paiement.",
       "indicativeFee": "tarif indicatif",
       "noDeadlineYet": "Pas encore de date limite",
-      "preRegister": "Je me pré-inscris"
+      "preRegister": "Je me pré-inscris",
+      "openRegistration": "Inscriptions ouvertes",
+      "noLimit": "Sans limite"
     }
   },
   "admin": {
@@ -5377,7 +5394,8 @@
       "confirmReject": "Refuser le programme",
       "cancel": "Annuler",
       "reasonShown": "Raison : {reason}",
-      "failed": "L’action a échoué. Réessayez."
+      "failed": "L’action a échoué. Réessayez.",
+      "noLimit": "Sans limite de places"
     }
   },
   "bookings": {

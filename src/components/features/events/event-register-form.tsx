@@ -16,6 +16,7 @@ import { walletService } from '@/services/wallet.service';
 import { bookingService } from '@/services/booking.service';
 import { ApiClientError } from '@/lib/api-client';
 import { formatCurrency } from '@/lib/format';
+import { statusIsFull } from '@/lib/seat-limit';
 import { cn } from '@/lib/utils';
 import { safeUUID } from '@/lib/safe-uuid';
 import { PromoCodeInput, type PromoResult } from '@/components/shared/promo-code-input';
@@ -91,7 +92,7 @@ export function EventRegisterForm({ event, status, onSuccess }: EventRegisterFor
   }, [isAuthed, isFree]);
 
   const passed = status?.eventPassed === true;
-  const full = status ? status.taken >= status.capacity : false;
+  const full = statusIsFull(status);
   const alreadyRegistered = !!status?.mine;
 
   // Membership tier discount (Builder 15 %, Founder 20 %) — mirrors the server.

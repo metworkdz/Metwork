@@ -14,6 +14,7 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 import type { Program } from '@/types/domain';
+import { isUnlimited } from '@/lib/seat-limit';
 import { programDates } from '@/lib/program-dates';
 
 interface ProgramCardProps {
@@ -35,9 +36,11 @@ export function ProgramCard({ program, taken, locale, onSelect, featured }: Prog
   const t = useTranslations('programs.card');
   const tc = useTranslations('common');
   const photoCount = program.imageUrls?.length ?? 0;
+  // No seat limit: no counter, no bar, never "full" — the public gets no number at all.
+  const noLimit = isUnlimited(program);
   const occupied = taken ?? program.seatsTaken;
-  const remaining = Math.max(0, program.seatsTotal - occupied);
-  const fillPct = Math.min(100, Math.round((occupied / program.seatsTotal) * 100));
+  const remaining = noLimit ? Number.POSITIVE_INFINITY : Math.max(0, program.seatsTotal - occupied);
+  const fillPct = noLimit ? 0 : Math.min(100, Math.round((occupied / program.seatsTotal) * 100));
   // Null while the dates are to confirm: a pre-registration, open, no countdown.
   const dates = programDates(program);
   const days = dates ? daysUntil(dates.deadline) : Number.POSITIVE_INFINITY;
@@ -136,7 +139,13 @@ export function ProgramCard({ program, taken, locale, onSelect, featured }: Prog
           )}
         </div>
 
-        {/* Capacity bar */}
+        {/* Capacity bar — replaced by a plain label when the host set no limit */}
+        {noLimit ? (
+          <div className="mt-4 flex items-center gap-1 text-xs font-medium text-foreground">
+            <Users className="size-3 text-muted-foreground" />
+            {t('openRegistration')}
+          </div>
+        ) : (
         <div className="mt-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1">
@@ -159,6 +168,7 @@ export function ProgramCard({ program, taken, locale, onSelect, featured }: Prog
             />
           </div>
         </div>
+        )}
 
         <div className="mt-5 flex items-end justify-between pt-1">
           <div>

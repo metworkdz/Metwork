@@ -34,10 +34,12 @@ export default async function EventsPage({ params }: PageProps) {
 
   const events = await listEvents();
 
+  // No entry at all for a listing with no seat limit: its number is never sent to the browser.
   const attendanceEntries = await Promise.all(
     events.map(async (e) => [e.id, (await getEventAttendance(e.id)).taken] as const),
   );
-  const attendance = Object.fromEntries(attendanceEntries);
+  const attendance: Record<string, number> = {};
+  for (const [id, taken] of attendanceEntries) if (taken !== null) attendance[id] = taken;
 
   const inventoryCities = new Set(events.map((e) => e.city));
   const cities = algerianCities

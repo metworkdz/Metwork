@@ -18,6 +18,7 @@ import { programHostName, programVisibility } from '@/server/programs/ownership'
 import { programDates, programDeadlinePassed } from '@/lib/program-dates';
 import { listFormFields } from '@/server/registrations/service';
 import { getProgramAttendance } from '@/server/bookings/service';
+import { isUnlimited } from '@/lib/seat-limit';
 import { programTypeLabel } from '@/components/features/programs/program-meta';
 import { RegistrationForm } from '@/components/features/registrations/registration-form';
 import { ImageCarousel } from '@/components/shared/image-carousel';
@@ -79,8 +80,11 @@ export default async function ProgramDetailPage({ params }: PageProps) {
     listFormFields('PROGRAM', program.id),
   ]);
 
-  const seatsLeft = program.seatsTotal - seatsTaken;
-  const isFull = seatsLeft <= 0;
+  // With no seat limit `seatsTaken` is null and there is no "seats left" — the page
+  // shows "Open registration" and is never "full". The number never reaches the HTML.
+  const unlimited = isUnlimited(program);
+  const seatsLeft = unlimited || seatsTaken === null ? null : Math.max(0, program.seatsTotal - seatsTaken);
+  const isFull = seatsLeft !== null && seatsLeft <= 0;
   // Dates still to confirm: a pre-registration — open, and free for now.
   const dates = programDates(program);
   const deadlinePassed = programDeadlinePassed(program);
@@ -137,7 +141,11 @@ export default async function ProgramDetailPage({ params }: PageProps) {
               ) : (
                 <Badge variant="outline" className="gap-1">
                   <Users className="size-3" />
-                  {seatsLeft === 1 ? t('seatsRemainingOne') : t('seatsRemainingMany', { count: seatsLeft })}
+                  {seatsLeft === null
+                    ? t('openRegistration')
+                    : seatsLeft === 1
+                      ? t('seatsRemainingOne')
+                      : t('seatsRemainingMany', { count: seatsLeft })}
                 </Badge>
               )}
             </div>

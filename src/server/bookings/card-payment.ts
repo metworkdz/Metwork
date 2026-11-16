@@ -47,6 +47,7 @@ import {
   type RegistrationAnswerRecord,
 } from '@/server/db/store';
 import { countAttendance } from '@/server/attendance';
+import { hasRoom, seatLimit } from '@/lib/seat-limit';
 import { computeDeposit } from './pricing';
 import { effectiveListingPrice } from './listing-payment';
 import { applyClockTime, isClockTime } from '@/lib/booking-when';
@@ -459,11 +460,15 @@ export async function createCardBookingIntent(
         }
       }
     } else {
-      const cap = item.promoKind === 'PROGRAM'
-        ? d.programs?.find((p) => p.id === item.itemId)?.seatsTotal ?? 0
-        : d.events?.find((e) => e.id === item.itemId)?.capacity ?? 0;
+      // The listing record itself (not a public copy), so "no limit" is read exactly
+      // as the host saved it. An unknown listing has no places, as before.
+      const listing = item.promoKind === 'PROGRAM'
+        ? d.programs?.find((p) => p.id === item.itemId)
+        : d.events?.find((e) => e.id === item.itemId);
       const taken = countAttendance(d, item.promoKind, item.itemId);
-      if (taken >= cap) return { ok: false, reason: 'CAPACITY_EXCEEDED', detail: { capacity: cap, taken } };
+      if (!listing || !hasRoom(listing, taken)) {
+        return { ok: false, reason: 'CAPACITY_EXCEEDED', detail: { capacity: listing ? (seatLimit(listing) ?? 0) : 0, taken } };
+      }
     }
 
     // Promo: validate now to freeze the discounted total, but DON'T consume —
@@ -661,11 +666,13 @@ async function applyCardSettlement(bookingId: string, providerRef: string | null
         : ({ ok: true } as const);
       oversold = !avail.ok;
     } else {
-      const cap = booking.itemKind === 'PROGRAM'
-        ? d.programs?.find((p) => p.id === booking.itemId)?.seatsTotal ?? 0
-        : d.events?.find((e) => e.id === booking.itemId)?.capacity ?? 0;
+      // A payment that settles on a listing with no limit can never be "oversold":
+      // there is no number to exceed. An unknown listing has no places, as before.
+      const listing = booking.itemKind === 'PROGRAM'
+        ? d.programs?.find((p) => p.id === booking.itemId)
+        : d.events?.find((e) => e.id === booking.itemId);
       const taken = countAttendance(d, booking.itemKind, booking.itemId);
-      oversold = taken >= cap;
+      oversold = !listing || !hasRoom(listing, taken);
     }
 
     if (oversold) {

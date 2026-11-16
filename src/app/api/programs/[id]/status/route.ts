@@ -27,8 +27,8 @@ export async function GET(
 
   return json({
     programId: id,
-    capacity: program.seatsTotal,
-    taken: att.taken,
+    // With no seat limit the public is told only that — never how many enrolled.
+    ...(att.unlimited ? { unlimited: true } : { capacity: program.seatsTotal, taken: att.taken }),
     deadline: program.deadline,
     // Never passed while the dates are to confirm: there is no deadline yet.
     deadlinePassed: programDeadlinePassed(program),

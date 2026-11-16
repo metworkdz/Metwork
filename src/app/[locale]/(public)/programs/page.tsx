@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ProgramsExplorer } from '@/components/features/programs/programs-explorer';
 import { listPrograms } from '@/server/bookings/program-catalog';
 import { getProgramAttendance } from '@/server/bookings/service';
+import { hasRoom } from '@/lib/seat-limit';
 import { algerianCities } from '@/config/cities';
 import { assertLandingVisible } from '@/lib/landing-visibility';
 import { programDateSortKey, programDates, programDeadlinePassed } from '@/lib/program-dates';
@@ -36,10 +37,12 @@ export default async function ProgramsPage({ params }: PageProps) {
   const programs = await listPrograms();
 
   // Live attendance map keyed by program id (bookings are the source of truth).
+  // No entry at all for a program with no seat limit: its number is never sent to the browser.
   const attendanceEntries = await Promise.all(
     programs.map(async (p) => [p.id, (await getProgramAttendance(p.id)).taken] as const),
   );
-  const attendance = Object.fromEntries(attendanceEntries);
+  const attendance: Record<string, number> = {};
+  for (const [id, taken] of attendanceEntries) if (taken !== null) attendance[id] = taken;
 
   // Build the city facet from inventory, ordered by canonical city list.
   const inventoryCities = new Set(programs.map((p) => p.city));
@@ -52,14 +55,14 @@ export default async function ProgramsPage({ params }: PageProps) {
   // A pre-registration (dates to confirm) is open too — it has no deadline yet.
   const openNow = programs.filter((p) => {
     const taken = attendance[p.id] ?? p.seatsTaken;
-    return !programDeadlinePassed(p, now) && taken < p.seatsTotal;
+    return !programDeadlinePassed(p, now) && hasRoom(p, taken);
   }).length;
 
   // Closing-soonest open program for the urgency callout — dated ones only.
   const closingNext = programs
     .filter((p) => {
       const taken = attendance[p.id] ?? p.seatsTaken;
-      return programDates(p) !== null && !programDeadlinePassed(p, now) && taken < p.seatsTotal;
+      return programDates(p) !== null && !programDeadlinePassed(p, now) && hasRoom(p, taken);
     })
     .sort((a, b) => programDateSortKey(a, 'deadline') - programDateSortKey(b, 'deadline'))[0];
   const closingDeadline = closingNext ? programDates(closingNext)?.deadline : null;

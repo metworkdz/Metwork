@@ -14,6 +14,7 @@ import {
 import { FixedDateCalendar } from '@/components/shared/fixed-date-calendar';
 import { bookingService } from '@/services/booking.service';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/format';
+import { isUnlimited, statusIsFull, statusSeatsLeft } from '@/lib/seat-limit';
 import type { Locale } from '@/i18n/config';
 import type { Event as PlatformEvent } from '@/types/domain';
 import type { BookingDto, ItemAttendanceStatus } from '@/types/booking';
@@ -28,6 +29,8 @@ export function EventDetailSheet({ event, open, onOpenChange }: EventDetailSheet
   const t = useTranslations('events.detail');
   const locale = useLocale() as Locale;
   const [status, setStatus] = useState<ItemAttendanceStatus | null>(null);
+  // No seat limit: no capacity tile number, no counter — and the server sends none.
+  const noLimit = (!!event && isUnlimited(event)) || status?.unlimited === true;
   const [success, setSuccess] = useState<{ booking: BookingDto; newBalance: number; paid: boolean } | null>(null);
 
   useEffect(() => {
@@ -85,7 +88,9 @@ export function EventDetailSheet({ event, open, onOpenChange }: EventDetailSheet
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <Users className="size-3.5" />
-                  {t('registered', { count: (status?.taken ?? event.attendeeCount) })}/{event.capacity}
+                  {noLimit
+                    ? t('openRegistration')
+                    : <>{t('registered', { count: (status?.taken ?? event.attendeeCount) })}/{event.capacity}</>}
                 </span>
               </div>
 
@@ -108,11 +113,11 @@ export function EventDetailSheet({ event, open, onOpenChange }: EventDetailSheet
                 <DetailTile
                   icon={<Users className="size-4" />}
                   label={t('capacity')}
-                  value={t('attendees', { count: event.capacity })}
+                  value={noLimit ? t('noLimit') : t('attendees', { count: event.capacity })}
                   hint={
-                    status
-                      ? t('seatsLeft', { count: Math.max(0, status.capacity - status.taken) })
-                      : t('seatsLeft', { count: Math.max(0, event.capacity - event.attendeeCount) })
+                    noLimit
+                      ? t('openRegistration')
+                      : t('seatsLeft', { count: statusSeatsLeft(status) ?? Math.max(0, event.capacity - event.attendeeCount) })
                   }
                 />
                 <DetailTile
@@ -129,7 +134,7 @@ export function EventDetailSheet({ event, open, onOpenChange }: EventDetailSheet
                   state={
                     status?.eventPassed
                       ? 'closed'
-                      : status && status.taken >= status.capacity
+                      : statusIsFull(status)
                         ? 'full'
                         : 'open'
                   }

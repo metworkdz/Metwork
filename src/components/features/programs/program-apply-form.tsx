@@ -21,6 +21,7 @@ import { walletService } from '@/services/wallet.service';
 import { bookingService } from '@/services/booking.service';
 import { ApiClientError } from '@/lib/api-client';
 import { formatCurrency } from '@/lib/format';
+import { statusIsFull } from '@/lib/seat-limit';
 import { cn } from '@/lib/utils';
 import { safeUUID } from '@/lib/safe-uuid';
 import { resolveListingPricing } from '@/lib/listing-price';
@@ -130,7 +131,7 @@ export function ProgramApplyForm({ program, status, onSuccess }: ProgramApplyFor
   }, [isAuthed, isFree]);
 
   const closed = status?.deadlinePassed === true;
-  const full = status ? status.taken >= status.capacity : false;
+  const full = statusIsFull(status);
   const alreadyApplied = !!status?.mine;
   /** Base for the CHOSEN method — never `program.price` directly. */
   const basePrice = isCash ? pricing.cash : pricing.online;

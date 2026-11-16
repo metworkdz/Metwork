@@ -25,6 +25,7 @@ import {
 } from '@/server/notifications/email';
 import { countAttendance } from '@/server/attendance';
 import { cleanOptions, findDuplicateOption, formatAnswerValue } from '@/lib/registration-options';
+import { seatLimit } from '@/lib/seat-limit';
 import { normalizeTranslations } from '@/lib/registration-translations';
 import { registrationFileIds, removeUnreferencedRegistrationFiles } from '@/server/registrations/file-cleanup';
 import { bookingHoldsSeat } from '@/server/bookings/status';
@@ -670,6 +671,68 @@ export async function createRegistration(input: InsertRegistrationInput): Promis
   return result;
 }
 
+/**
+ * Everyone still waiting on this listing gets their place — used when the host
+ * switches the seat limit OFF, because there is nothing left to wait for.
+ *
+ * Runs inside the caller's `db.update`, in the same mutation that flips the flag,
+ * so the listing and its waitlist can never disagree. Returns the ids it
+ * confirmed, so the caller can email them once the change has committed.
+ */
+export function confirmWaitlistedSync(
+  d: StoreDraft,
+  entityType: 'PROGRAM' | 'EVENT',
+  entityId: string,
+): string[] {
+  const now = new Date().toISOString();
+  const confirmed: string[] = [];
+  for (const r of d.registrations ?? []) {
+    if (r.entityType !== entityType || r.entityId !== entityId || r.status !== 'WAITLISTED') continue;
+    r.status = 'CONFIRMED';
+    r.updatedAt = now;
+    confirmed.push(r.id);
+  }
+  return confirmed;
+}
+
+/**
+ * Apply a save request's "No limit on registrations" choice to a listing, inside
+ * the caller's `db.update`. `undefined` leaves the setting alone. Switching it ON
+ * confirms the waitlist; the confirmed ids are returned for `sendWaitlistConfirmations`.
+ * The flag is stored only when on (absent = limited), and the numeric capacity is
+ * never touched, so switching back restores it.
+ */
+export function applyUnlimitedSync(
+  d: StoreDraft,
+  entityType: 'PROGRAM' | 'EVENT',
+  listing: { id: string; unlimitedCapacity?: boolean },
+  next: boolean | undefined,
+): string[] {
+  if (next === undefined) return [];
+  const was = listing.unlimitedCapacity === true;
+  if (next) listing.unlimitedCapacity = true;
+  else delete listing.unlimitedCapacity;
+  return next && !was ? confirmWaitlistedSync(d, entityType, listing.id) : [];
+}
+
+/**
+ * Send the normal "your registration is confirmed" email to people who were just
+ * confirmed off a waitlist. After the change has committed; each send is
+ * independent and never throws (a failed email must not undo the host's save).
+ * Awaited by the caller — a floating promise is lost when the platform freezes
+ * the function at the end of the request.
+ */
+export async function sendWaitlistConfirmations(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const data = await db.read();
+  const rows = (data.registrations ?? []).filter((r) => ids.includes(r.id) && r.status === 'CONFIRMED');
+  for (let i = 0; i < rows.length; i += 10) {
+    await Promise.all(
+      rows.slice(i, i + 10).map((r) => sendConfirmationEmail(r, data, r.entityType, r.entityId, null)),
+    );
+  }
+}
+
 /** List registrations for an entity, newest first. */
 export async function listRegistrations(
   entityType: 'PROGRAM' | 'EVENT',
@@ -997,10 +1060,12 @@ function getEntityCapacity(
 ): number | null {
   if (entityType === 'PROGRAM') {
     const p = (data.programs ?? []).find((p) => p.id === entityId);
-    return p?.seatsTotal ?? null;
+    // null = no limit: either the listing is unknown or the host switched it off,
+    // and in both cases nobody is waitlisted.
+    return p ? seatLimit(p) : null;
   }
   const e = (data.events ?? []).find((e) => e.id === entityId);
-  return e?.capacity ?? null;
+  return e ? seatLimit(e) : null;
 }
 
 /**

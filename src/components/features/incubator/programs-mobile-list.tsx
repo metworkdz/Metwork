@@ -1,5 +1,6 @@
 'use client';
 
+import { isUnlimited } from '@/lib/seat-limit';
 import type { ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Briefcase, ClipboardList, Pencil, Trash2 } from 'lucide-react';
@@ -102,14 +103,18 @@ export function ProgramsMobileList({
                 <div className="mt-2.5">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{t('colSeats')}</span>
-                    <span className="tabular-nums">{p.seatsTaken}/{p.seatsTotal}</span>
+                    <span className="tabular-nums">
+                      {isUnlimited(p) ? t('registeredNoLimit', { count: p.seatsTaken }) : `${p.seatsTaken}/${p.seatsTotal}`}
+                    </span>
                   </div>
+                  {!isUnlimited(p) && (
                   <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                     <div
                       className="h-full bg-primary"
                       style={{ width: `${Math.min(100, Math.round(ratio * 100))}%` }}
                     />
                   </div>
+                  )}
                 </div>
 
                 <div className="mt-3 flex gap-2">

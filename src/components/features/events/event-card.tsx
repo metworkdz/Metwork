@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { EventDateBlock } from './event-date-block';
 import { formatCurrency } from '@/lib/format';
+import { isUnlimited } from '@/lib/seat-limit';
 import { cn } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 import type { Event as PlatformEvent } from '@/types/domain';
@@ -20,9 +21,11 @@ interface EventCardProps {
 
 export function EventCard({ event, taken, locale, onSelect }: EventCardProps) {
   const t = useTranslations('events.card');
+  // No seat limit: no counter, no bar, never "full" — the public gets no number at all.
+  const noLimit = isUnlimited(event);
   const occupied = taken ?? event.attendeeCount;
-  const remaining = Math.max(0, event.capacity - occupied);
-  const fillPct = Math.min(100, Math.round((occupied / event.capacity) * 100));
+  const remaining = noLimit ? Number.POSITIVE_INFINITY : Math.max(0, event.capacity - occupied);
+  const fillPct = noLimit ? 0 : Math.min(100, Math.round((occupied / event.capacity) * 100));
   const passed = Date.parse(event.eventDate) <= Date.now();
   const full = remaining === 0;
   const closed = passed || full;
@@ -76,10 +79,16 @@ export function EventCard({ event, taken, locale, onSelect }: EventCardProps) {
         <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
             <Users className="size-3" />
-            {occupied}/{event.capacity}
+            {noLimit ? t('noLimit') : `${occupied}/${event.capacity}`}
           </span>
           <span aria-hidden>·</span>
-          {full ? (
+          {noLimit ? (
+            passed ? (
+              <span className="font-medium">{t('past')}</span>
+            ) : (
+              <span className="font-medium text-foreground">{t('openRegistration')}</span>
+            )
+          ) : full ? (
             <span className="font-medium text-destructive">{t('full')}</span>
           ) : passed ? (
             <span className="font-medium">{t('past')}</span>
@@ -87,6 +96,7 @@ export function EventCard({ event, taken, locale, onSelect }: EventCardProps) {
             <span className="font-medium text-foreground">{t('seatsLeft', { count: remaining })}</span>
           )}
         </div>
+        {!noLimit && (
         <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-muted">
           <div
             className={cn(
@@ -96,6 +106,7 @@ export function EventCard({ event, taken, locale, onSelect }: EventCardProps) {
             style={{ width: `${fillPct}%` }}
           />
         </div>
+        )}
 
         <div className="mt-4 flex items-end justify-between">
           <p className="text-base font-semibold tabular-nums">

@@ -12,6 +12,7 @@ import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db, type ClientRecord, type SpaceRecord } from '@/server/db/store';
 import { checkSpaceAvailability } from '@/server/bookings/availability';
 import { countAttendance } from '@/server/attendance';
+import { hasRoom } from '@/lib/seat-limit';
 import { holdDeskForBooking } from '@/server/spaces/availability';
 import { fromZod, json, jsonError } from '@/server/http/json';
 
@@ -130,7 +131,7 @@ export async function POST(req: NextRequest) {
       // it could refuse a seat that was genuinely free. `countAttendance` is
       // what the public badge and the booking gate read; this now agrees.
       const taken = countAttendance(d, 'PROGRAM', input.itemId);
-      if (taken >= program.seatsTotal) return 'PROGRAM_FULL' as const;
+      if (!hasRoom(program, taken)) return 'PROGRAM_FULL' as const;
       itemName = program.title;
       city = program.city;
     }

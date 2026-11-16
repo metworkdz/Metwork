@@ -25,8 +25,8 @@ export async function GET(
 
   return json({
     eventId: id,
-    capacity: event.capacity,
-    taken: att.taken,
+    // With no seat limit the public is told only that — never how many registered.
+    ...(att.unlimited ? { unlimited: true } : { capacity: event.capacity, taken: att.taken }),
     eventDate: event.eventDate,
     eventPassed: Date.parse(event.eventDate) <= Date.now(),
     mine: att.mine

@@ -26,6 +26,7 @@
  */
 import { db, type RegistrationRecord } from '@/server/db/store';
 import { countAttendance } from '@/server/attendance';
+import { hasRoom } from '@/lib/seat-limit';
 import { resolveListingPricing } from '@/lib/listing-price';
 import { applyClockTime, isClockTime } from '@/lib/booking-when';
 import { dispatchReceiptIfDue } from '@/server/bookings/card-payment';
@@ -80,6 +81,8 @@ interface ListingSnapshot {
   startsAtHasClockTime: boolean;
   cashPrice: number;
   seatsTotal: number;
+  /** The host switched the seat limit off — nobody is refused for lack of places. */
+  unlimitedCapacity?: boolean;
 }
 
 export async function addOfflineRegistration(
@@ -105,6 +108,7 @@ export async function addOfflineRegistration(
       endsAt: dates ? dates.endDate : null,
       cashPrice: resolveListingPricing(p.price, p).cash,
       seatsTotal: p.seatsTotal,
+      unlimitedCapacity: p.unlimitedCapacity,
     };
   } else {
     const e = (data.events ?? []).find((x) => x.id === input.entityId);
@@ -120,12 +124,13 @@ export async function addOfflineRegistration(
       endsAt: e.eventDate,
       cashPrice: resolveListingPricing(e.price, e).cash,
       seatsTotal: e.capacity,
+      unlimitedCapacity: e.unlimitedCapacity,
     };
   }
 
   // Capacity, read the same way every other surface reads it. A host adding
   // someone at the desk is exactly when a room quietly goes over its number.
-  if (countAttendance(data, input.entityType, input.entityId) >= listing.seatsTotal) {
+  if (!hasRoom(listing, countAttendance(data, input.entityType, input.entityId))) {
     return { ok: false, reason: 'FULL' };
   }
 

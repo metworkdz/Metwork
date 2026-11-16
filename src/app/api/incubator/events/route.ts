@@ -12,6 +12,7 @@ import { listEventsByIncubator } from '@/server/bookings/event-catalog';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
 import { slugify, uniqueSlug } from '@/lib/slugify';
+import { DEFAULT_EVENT_CAPACITY } from '@/lib/seat-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,7 +28,10 @@ const createEventSchema = z.object({
   onlinePrice: z.number().int().min(0).optional().nullable(),
   cashPrice:   z.number().int().min(0).optional().nullable(),
   isOnline:    z.boolean().default(false),
-  capacity:    z.number().int().min(1).max(100_000),
+  /** Required unless `unlimitedCapacity` is on. */
+  capacity:    z.number().int().min(1).max(100_000).optional(),
+  /** "No limit on registrations": nobody is refused or waitlisted, and the public never sees a count. */
+  unlimitedCapacity: z.boolean().optional(),
   eventDate:   z.string().datetime(),
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).default(['ONLINE', 'CASH']),
   /** Cash deposit (paid online by card). Required when CASH is accepted. */
@@ -68,6 +72,13 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
+  // A limit is required unless the host chose "No limit on registrations".
+  if (!input.unlimitedCapacity && input.capacity === undefined) {
+    return jsonError(422, 'VALIDATION_ERROR', 'Invalid input', {
+      fieldErrors: { capacity: ['Required unless registrations have no limit'] },
+    });
+  }
+
   // Cash is allowed for every subscription plan; the deposit (and any platform
   // commission) is settled online — so we honor the incubator's choice as-is.
   const paymentMethods = input.acceptedPaymentMethods;
@@ -103,7 +114,8 @@ export async function POST(req: NextRequest) {
       onlinePrice:            input.onlinePrice ?? null,
       cashPrice:              input.cashPrice ?? null,
       isOnline:               input.isOnline,
-      capacity:               input.capacity,
+      capacity:               input.capacity ?? DEFAULT_EVENT_CAPACITY,
+      ...(input.unlimitedCapacity ? { unlimitedCapacity: true } : {}),
       eventDate:              input.eventDate,
       acceptedPaymentMethods: paymentMethods,
       ...depositConfig,

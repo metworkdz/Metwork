@@ -31,6 +31,7 @@ import { findEventById } from './event-catalog';
 import { effectiveListingPrice } from './listing-payment';
 import { applyClockTime, isClockTime } from '@/lib/booking-when';
 import { countAttendance } from '@/server/attendance';
+import { hasRoom, isUnlimited } from '@/lib/seat-limit';
 import { resolveMemberBenefits } from '@/server/memberships/service';
 import { isNetworkPassEnabled } from '@/config/feature-flags';
 import { validatePromoCodeSync as validatePromoCode, consumePromoCodeSync as consumePromoCode, ensurePromoCodesSeeded, resolvePromoItem } from '@/server/promo-codes/service';
@@ -1055,7 +1056,7 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
     // Capacity — unified count (active bookings + confirmed registrations),
     // NOT the cached `seatsTaken`.
     const taken = countAttendance(d, 'PROGRAM', program.id);
-    if (taken >= program.seatsTotal) {
+    if (!hasRoom(program, taken)) {
       return { ok: false, reason: 'CAPACITY_EXCEEDED', capacity: program.seatsTotal, taken };
     }
 
@@ -1188,11 +1189,19 @@ export async function applyToProgram(args: ApplyToProgramArgs): Promise<ApplyToP
   });
 }
 
-/** Public attendance count + my-status, used by the detail sheet. */
+/**
+ * Public attendance count + my-status, used by the detail sheet and the pages.
+ *
+ * PRIVACY: for a program whose host switched the seat limit off, `taken` is null —
+ * the number is not computed, so no public caller can send it to a browser by
+ * forgetting a check. The host sees the real count in their own dashboard.
+ */
 export async function getProgramAttendance(programId: string, userId?: string) {
   const data = await db.read();
+  const program = (data.programs ?? []).find((p) => p.id === programId);
+  const unlimited = !!program && isUnlimited(program);
   // Unified seat count (active bookings + confirmed registrations).
-  const taken = countAttendance(data, 'PROGRAM', programId);
+  const taken: number | null = unlimited ? null : countAttendance(data, 'PROGRAM', programId);
   // `mine` stays booking-specific — it powers the explorer detail sheet's
   // "you've applied" chip, which only reflects the wallet booking flow.
   const mine = userId
@@ -1205,7 +1214,7 @@ export async function getProgramAttendance(programId: string, userId?: string) {
           b.status !== 'REFUNDED',
       ) ?? null
     : null;
-  return { taken, mine };
+  return { taken, unlimited, mine };
 }
 
 /* ─────────────────────────── Events ─────────────────────────── */
@@ -1260,7 +1269,7 @@ export async function registerForEvent(
 
     // Capacity — unified count (active bookings + confirmed registrations).
     const taken = countAttendance(d, 'EVENT', event.id);
-    if (taken >= event.capacity) {
+    if (!hasRoom(event, taken)) {
       return { ok: false, reason: 'CAPACITY_EXCEEDED', capacity: event.capacity, taken };
     }
 
@@ -1395,10 +1404,16 @@ export async function registerForEvent(
   });
 }
 
+/**
+ * Public attendance count + my-status for an event. Same privacy rule as
+ * `getProgramAttendance`: `taken` is null when the host switched the limit off.
+ */
 export async function getEventAttendance(eventId: string, userId?: string) {
   const data = await db.read();
+  const event = (data.events ?? []).find((e) => e.id === eventId);
+  const unlimited = !!event && isUnlimited(event);
   // Unified seat count (active bookings + confirmed registrations).
-  const taken = countAttendance(data, 'EVENT', eventId);
+  const taken: number | null = unlimited ? null : countAttendance(data, 'EVENT', eventId);
   // `mine` stays booking-specific (explorer detail sheet "you're registered").
   const mine = userId
     ? data.bookings.find(
@@ -1410,5 +1425,5 @@ export async function getEventAttendance(eventId: string, userId?: string) {
           b.status !== 'REFUNDED',
       ) ?? null
     : null;
-  return { taken, mine };
+  return { taken, unlimited, mine };
 }

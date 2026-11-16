@@ -21,6 +21,7 @@ import { formatDate, formatRelativeTime } from '@/lib/format';
 import type { Locale } from '@/i18n/config';
 import type { Program } from '@/types/domain';
 import { programDates } from '@/lib/program-dates';
+import { isUnlimited, statusIsFull, statusSeatsLeft } from '@/lib/seat-limit';
 import { Link } from '@/i18n/routing';
 import type { BookingDto, ItemAttendanceStatus } from '@/types/booking';
 
@@ -36,6 +37,8 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
   const dates = program ? programDates(program) : null;
   const locale = useLocale() as Locale;
   const [status, setStatus] = useState<ItemAttendanceStatus | null>(null);
+  // No seat limit: no seat-count tile number, no counter — and the server sends none.
+  const noLimit = (!!program && isUnlimited(program)) || status?.unlimited === true;
   const [success, setSuccess] = useState<{ booking: BookingDto; newBalance: number; paid: boolean } | null>(null);
 
   // Reset success when sheet closes or program changes.
@@ -86,7 +89,7 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <Users className="size-3.5" />
-                  {t('enrolled', { count: status?.taken ?? program.seatsTaken })}
+                  {noLimit ? t('openRegistration') : t('enrolled', { count: status?.taken ?? program.seatsTaken })}
                 </span>
               </div>
 
@@ -118,11 +121,11 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                 <DetailTile
                   icon={<Users className="size-4" />}
                   label={t('cohortSize')}
-                  value={t('seats', { count: program.seatsTotal })}
+                  value={noLimit ? t('noLimit') : t('seats', { count: program.seatsTotal })}
                   hint={
-                    status
-                      ? t('seatsLeft', { count: Math.max(0, status.capacity - status.taken) })
-                      : t('seatsLeft', { count: Math.max(0, program.seatsTotal - program.seatsTaken) })
+                    noLimit
+                      ? t('openRegistration')
+                      : t('seatsLeft', { count: statusSeatsLeft(status) ?? Math.max(0, program.seatsTotal - program.seatsTaken) })
                   }
                 />
                 <DetailTile
@@ -149,7 +152,7 @@ export function ProgramDetailSheet({ program, open, onOpenChange }: ProgramDetai
                   state={
                     status?.deadlinePassed
                       ? 'closed'
-                      : status && status.taken >= status.capacity
+                      : statusIsFull(status)
                         ? 'full'
                         : 'open'
                   }

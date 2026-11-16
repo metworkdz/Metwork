@@ -1,5 +1,6 @@
 'use client';
 
+import { isUnlimited } from '@/lib/seat-limit';
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
@@ -120,6 +121,10 @@ export function ProgramsManager() {
       key: 'seats',
       label: t('colSeats'),
       render: (p) => {
+        // Owner view: the real count, with "No limit" in place of a ratio and bar.
+        if (isUnlimited(p)) {
+          return <div className="tabular-nums">{t('registeredNoLimit', { count: p.seatsTaken })}</div>;
+        }
         const ratio = p.seatsTotal === 0 ? 0 : p.seatsTaken / p.seatsTotal;
         return (
           <div>

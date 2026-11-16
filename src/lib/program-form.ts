@@ -60,6 +60,11 @@ export interface ProgramFormValues {
   /** Blank ⇒ falls back to `price`. */
   cashPrice: string;
   seatsTotal: string;
+  /**
+   * "No limit on registrations". The number above is KEPT while this is on, so
+   * switching it back off restores the host's own figure.
+   */
+  unlimitedCapacity: boolean;
   /** "YYYY-MM-DD" from a date input. */
   deadline: string;
   startDate: string;
@@ -90,6 +95,7 @@ export function emptyProgramForm(): ProgramFormValues {
     onlinePrice: '',
     cashPrice: '',
     seatsTotal: '20',
+    unlimitedCapacity: false,
     deadline: '',
     startDate: '',
     startTime: '',
@@ -117,6 +123,7 @@ export interface ProgramFormSource {
   onlinePrice?: number | null;
   cashPrice?: number | null;
   seatsTotal?: number | null;
+  unlimitedCapacity?: boolean | null;
   deadline?: string | null;
   startDate?: string | null;
   startTime?: string | null;
@@ -159,6 +166,7 @@ export function toProgramFormSource(program: ProgramFormSource): ProgramFormSour
     onlinePrice: program.onlinePrice,
     cashPrice: program.cashPrice,
     seatsTotal: program.seatsTotal,
+    unlimitedCapacity: program.unlimitedCapacity,
     deadline: program.deadline,
     startDate: program.startDate,
     startTime: program.startTime,
@@ -186,6 +194,7 @@ export function programFormFromRecord(source: ProgramFormSource): ProgramFormVal
     onlinePrice: source.onlinePrice != null ? String(source.onlinePrice) : '',
     cashPrice: source.cashPrice != null ? String(source.cashPrice) : '',
     seatsTotal: source.seatsTotal != null ? String(source.seatsTotal) : base.seatsTotal,
+    unlimitedCapacity: source.unlimitedCapacity === true,
     deadline: isoToDateInput(source.deadline),
     startDate: isoToDateInput(source.startDate),
     startTime: source.startTime ?? '',
@@ -246,8 +255,9 @@ export function validateProgramForm(v: ProgramFormValues): ProgramFormError | nu
   if (v.description.trim().length < 10) return 'description';
   if (!v.city.trim()) return 'city';
 
+  // With no limit the number is not used, so it cannot be wrong.
   const seats = Number(v.seatsTotal);
-  if (!Number.isFinite(seats) || seats < 1) return 'seats';
+  if (!v.unlimitedCapacity && (!Number.isFinite(seats) || seats < 1)) return 'seats';
 
   for (const amount of [v.price, v.onlinePrice, v.cashPrice]) {
     if (amount.trim() === '') continue;
@@ -289,7 +299,9 @@ export interface ProgramPayload {
   price: number;
   onlinePrice: number | null;
   cashPrice: number | null;
-  seatsTotal: number;
+  /** Left out while the limit is off, so the stored number is never overwritten. */
+  seatsTotal?: number;
+  unlimitedCapacity: boolean;
   /** All three null when `datesTbc`. */
   deadline: string | null;
   startDate: string | null;
@@ -328,7 +340,8 @@ export function programFormToPayload(v: ProgramFormValues): ProgramPayload {
     // Blank means "no separate rate" — the resolver falls back to `price`.
     onlinePrice: v.onlinePrice.trim() === '' ? null : Number(v.onlinePrice),
     cashPrice: v.cashPrice.trim() === '' ? null : Number(v.cashPrice),
-    seatsTotal: Number(v.seatsTotal),
+    ...(v.unlimitedCapacity ? {} : { seatsTotal: Number(v.seatsTotal) }),
+    unlimitedCapacity: v.unlimitedCapacity,
     deadline: v.datesTbc ? null : dateInputToIso(v.deadline),
     startDate: v.datesTbc ? null : dateInputToIso(v.startDate),
     // Blank ⇒ the program publishes no start time, which is how every program

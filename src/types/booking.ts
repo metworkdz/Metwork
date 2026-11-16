@@ -64,8 +64,13 @@ export interface ApplyOrRegisterResponse {
 }
 
 export interface ItemAttendanceStatus {
-  capacity: number;
-  taken: number;
+  /**
+   * True when the host switched the seat limit off. Then `capacity` and `taken`
+   * are ABSENT — the public is never sent how many people registered.
+   */
+  unlimited?: boolean;
+  capacity?: number;
+  taken?: number;
   /** Set on programs only — events use `eventPassed`. */
   deadline?: string;
   deadlinePassed?: boolean;

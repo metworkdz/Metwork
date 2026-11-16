@@ -338,7 +338,10 @@
       "reviewPending": "Awaiting review",
       "reviewPendingHint": "Metwork is reviewing your program. It will appear on the Programs page once approved.",
       "reviewRejected": "Rejected",
-      "reviewRejectedHint": "Rejected by Metwork: {reason} Edit the program to submit it again."
+      "reviewRejectedHint": "Rejected by Metwork: {reason} Edit the program to submit it again.",
+      "labelUnlimited": "No limit on registrations",
+      "unlimitedHint": "Anyone can register. Nobody is refused or put on a waiting list, and only you see how many people registered.",
+      "registeredNoLimit": "{count} registered · No limit"
     },
     "earnings": {
       "pending": "Pending",
@@ -1512,7 +1515,8 @@
       "free": "Free",
       "confirmDelete": "Delete this program? This cannot be undone.",
       "errorLoad": "Could not load your programs. Please refresh.",
-      "errorDelete": "Could not delete this program. Please try again."
+      "errorDelete": "Could not delete this program. Please try again.",
+      "registeredNoLimit": "{count} registered · No limit"
     },
     "spaces": {
       "colSpace": "Space",
@@ -1706,7 +1710,9 @@
       "labelSplitPricing": "Online & cash pricing (optional)",
       "splitPricingHint": "Leave empty to use the base price for both. Set a different price for online card payment or cash bookings.",
       "labelOnlinePrice": "Online price",
-      "labelCashPrice": "Cash price"
+      "labelCashPrice": "Cash price",
+      "labelUnlimited": "No limit on registrations",
+      "unlimitedHint": "Anyone can register. Nobody is refused or put on a waiting list, and only you see how many people registered."
     },
     "eventsManager": {
       "loading": "Loading…",
@@ -1726,7 +1732,8 @@
       "emptyDescription": "Schedule pitch nights, demo days, and meetups.",
       "actionEdit": "Edit",
       "actionDelete": "Delete",
-      "actionRegistrations": "Manage Registrations"
+      "actionRegistrations": "Manage Registrations",
+      "registeredNoLimit": "{count} registered · No limit"
     },
     "profileForm": {
       "sectionManager": "Manager profile",
@@ -2083,7 +2090,9 @@
       "labelStartTime": "Start time (optional)",
       "startTimeHint": "Shown to applicants. Leave empty if sessions have no fixed hour.",
       "labelEndTime": "End time (optional)",
-      "depositZeroHint": "Enter 0 (or leave blank) to take no deposit — the client pays the full amount on site."
+      "depositZeroHint": "Enter 0 (or leave blank) to take no deposit — the client pays the full amount on site.",
+      "labelUnlimited": "No limit on registrations",
+      "unlimitedHint": "Anyone can register. Nobody is refused or put on a waiting list, and only you see how many people registered."
     },
     "receiptModal": {
       "loading": "Loading…",
@@ -4103,7 +4112,9 @@
       "seatsLeft": "{count} seats left",
       "free": "Free",
       "register": "Register",
-      "viewDetails": "View details"
+      "viewDetails": "View details",
+      "noLimit": "No limit",
+      "openRegistration": "Open registration"
     },
     "register": {
       "paymentMethod": "Payment method",
@@ -4190,7 +4201,10 @@
       "free": "Free",
       "perAttendee": "per attendee",
       "fullText": "This event is full",
-      "pastText": "This event has already taken place"
+      "pastText": "This event has already taken place",
+      "openRegistration": "Open registration",
+      "noLimit": "No limit",
+      "online": "Online"
     }
   },
   "programs": {
@@ -4206,7 +4220,8 @@
       "viewDetails": "View details",
       "applyNow": "Apply now",
       "preRegistration": "Pre-registration",
-      "datesTbc": "Dates to be confirmed"
+      "datesTbc": "Dates to be confirmed",
+      "openRegistration": "Open registration"
     },
     "apply": {
       "paymentMethod": "Payment method",
@@ -4311,7 +4326,9 @@
       "datesTbcBody": "Sign up now, free of charge: the organiser will share the dates and how to pay.",
       "indicativeFee": "indicative price",
       "noDeadlineYet": "No deadline yet",
-      "preRegister": "Pre-register"
+      "preRegister": "Pre-register",
+      "openRegistration": "Open registration",
+      "noLimit": "No limit"
     }
   },
   "admin": {
@@ -5377,7 +5394,8 @@
       "confirmReject": "Reject the program",
       "cancel": "Cancel",
       "reasonShown": "Reason: {reason}",
-      "failed": "The action failed. Try again."
+      "failed": "The action failed. Try again.",
+      "noLimit": "No seat limit"
     }
   },
   "bookings": {

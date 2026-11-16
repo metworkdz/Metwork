@@ -7,7 +7,11 @@ import { CLOCK_TIME_PATTERN } from '@/lib/booking-when';
 import { z, ZodError } from 'zod';
 import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
-import { pruneListingChildrenSync } from '@/server/registrations/service';
+import {
+  applyUnlimitedSync,
+  pruneListingChildrenSync,
+  sendWaitlistConfirmations,
+} from '@/server/registrations/service';
 import { removeUnreferencedRegistrationFiles } from '@/server/registrations/file-cleanup';
 import { canDeleteProgram, canEditProgram, type ProgramActor } from '@/server/programs/ownership';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
@@ -40,6 +44,8 @@ const patchSchema = z.object({
   onlinePrice: z.number().int().nonnegative().nullable().optional(),
   cashPrice: z.number().int().nonnegative().nullable().optional(),
   seatsTotal: z.number().int().positive().optional(),
+  /** Switch the seat limit off / back on. The number of seats is kept either way. */
+  unlimitedCapacity: z.boolean().optional(),
   deadline:  isoDate.nullable().optional(),
   startDate: isoDate.nullable().optional(),
   startTime: z.string().regex(CLOCK_TIME_PATTERN, 'startTime must be HH:MM').nullable().optional(),
@@ -91,6 +97,8 @@ export async function PATCH(
   };
 
   let depositError: string | null = null;
+  // Waitlisted people confirmed because the limit was switched off — emailed after the save.
+  let confirmedFromWaitlist: string[] = [];
   const program = await db.update((d) => {
     const p = (d.programs ?? []).find((x) => x.id === id);
     if (!p) return null;
@@ -142,6 +150,7 @@ export async function PATCH(
     if (input.onlinePrice !== undefined) p.onlinePrice = input.onlinePrice;
     if (input.cashPrice !== undefined) p.cashPrice = input.cashPrice;
     if (input.seatsTotal !== undefined) p.seatsTotal = input.seatsTotal;
+    confirmedFromWaitlist = applyUnlimitedSync(d, 'PROGRAM', p, input.unlimitedCapacity);
     if (dates?.ok) {
       p.datesTbc = dates.value.datesTbc;
       p.deadline = dates.value.deadline;
@@ -167,7 +176,8 @@ export async function PATCH(
     const [status, message] = PROGRAM_DATES_ERRORS[program];
     return jsonError(status, program, message);
   }
-  return json({ program });
+  await sendWaitlistConfirmations(confirmedFromWaitlist);
+  return json({ program, confirmedFromWaitlist: confirmedFromWaitlist.length });
 }
 
 export async function DELETE(

@@ -84,7 +84,7 @@ function bookingRow(o: BookingOpts) {
   };
 }
 
-async function seed(opts: { seats?: number; bookings?: BookingOpts[] } = {}): Promise<void> {
+async function seed(opts: { seats?: number; unlimited?: boolean; bookings?: BookingOpts[] } = {}): Promise<void> {
   await db.update((d) => {
     d.incubators = [
       { id: INC, name: 'Paid Reg Incubator', status: 'ACTIVE', managerId: MGR, email: 'p@x.dz' } as never,
@@ -112,6 +112,7 @@ async function seed(opts: { seats?: number; bookings?: BookingOpts[] } = {}): Pr
         cashPrice: CASH_TOTAL,
         seatsTotal: opts.seats ?? 20,
         seatsTaken: 0,
+        ...(opts.unlimited ? { unlimitedCapacity: true } : {}),
         deadline: '2030-01-01T00:00:00.000Z',
         startDate: '2030-02-01T00:00:00.000Z',
         endDate: '2030-03-01T00:00:00.000Z',
@@ -251,6 +252,43 @@ describe('capacity is binding at settlement', () => {
     const voided = (await db.read()).bookings.find((b) => b.id === 'bk-b')!;
     expect(voided.status).toBe('CANCELLED');
     expect(voided.declineReason).toBe('SLOT_TAKEN_AFTER_PAYMENT');
+  });
+});
+
+describe('capacity at settlement — with no seat limit', () => {
+  it('never voids a paid booking, however many came before — nobody is refunded for a "full" room', async () => {
+    // One seat on file, but the host switched the limit off: every payer is settled.
+    const ids = Array.from({ length: 12 }, (_, i) => ({ id: `bk-${i}`, email: `payer${i}@example.dz` }));
+    await seed({ seats: 1, unlimited: true, bookings: ids });
+
+    for (const { id } of ids) {
+      expect(await settleCardBookingFromWebhook(id, `p-${id}`, 'COMPLETED')).toBe('SETTLED');
+    }
+    expect(await registrations()).toHaveLength(12);
+    expect(await attendance()).toBe(12);
+    expect((await db.read()).bookings.filter((b) => b.status === 'CANCELLED')).toHaveLength(0);
+  });
+
+  it('the card checkout never answers CAPACITY_EXCEEDED, while a limited one still does', async () => {
+    const { createCardBookingIntent } = await import('@/server/bookings/card-payment');
+    const intent = (ref: string) => createCardBookingIntent({
+      target: { itemKind: 'PROGRAM', programId: PROG },
+      paymentMode: 'ONLINE_FULL',
+      customer: { fullName: 'Karim', email: `${ref}@x.dz`, phone: '+213700112233' },
+      clientReference: ref,
+      locale: 'fr',
+    } as never);
+
+    // Limited and already full: refused, as before.
+    await seed({ seats: 1, bookings: [{ id: 'bk-a', email: 'first@example.dz' }] });
+    await settleCardBookingFromWebhook('bk-a', 'p-a', 'COMPLETED');
+    expect(await intent('ref-full')).toMatchObject({ ok: false, reason: 'CAPACITY_EXCEEDED' });
+
+    // Same program, limit switched off: accepted.
+    await seed({ seats: 1, unlimited: true, bookings: [{ id: 'bk-a', email: 'first@example.dz' }] });
+    await settleCardBookingFromWebhook('bk-a', 'p-a', 'COMPLETED');
+    const open = await intent('ref-open');
+    expect(open.ok, JSON.stringify(open)).toBe(true);
   });
 });
 

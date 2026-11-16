@@ -231,7 +231,20 @@ export function ProgramFormDialog({ onCreated, editId, initialData, open: openPr
             </div>
             <div>
               <Label htmlFor="p-seats">{t('labelTotalSeats')}</Label>
-              <Input id="p-seats" type="number" min="1" className="mt-1" value={form.seatsTotal} onChange={(e) => set('seatsTotal', e.target.value)} required />
+              <Input id="p-seats" type="number" min="1" className="mt-1" value={form.seatsTotal} onChange={(e) => set('seatsTotal', e.target.value)} required={!form.unlimitedCapacity} disabled={form.unlimitedCapacity} />
+              <div className="mt-2 flex items-start gap-2">
+                <input
+                  id="p-unlimited"
+                  type="checkbox"
+                  className="mt-0.5 size-4 rounded border-input"
+                  checked={form.unlimitedCapacity}
+                  onChange={(e) => set('unlimitedCapacity', e.target.checked)}
+                />
+                <div>
+                  <Label htmlFor="p-unlimited" className="cursor-pointer text-sm">{t('labelUnlimited')}</Label>
+                  <p className="text-xs text-muted-foreground">{t('unlimitedHint')}</p>
+                </div>
+              </div>
             </div>
           </div>
 

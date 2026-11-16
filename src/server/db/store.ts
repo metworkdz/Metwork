@@ -2285,6 +2285,13 @@ export interface ProgramRecord {
   cashPrice?: number | null;
   seatsTotal: number;
   /**
+   * The host switched the seat limit off ("No limit on registrations"): nobody is
+   * refused or waitlisted and the public is never shown how many registered.
+   * `seatsTotal` is kept so switching the limit back on restores it. Absent on
+   * every older record = limited. See `@/lib/seat-limit`.
+   */
+  unlimitedCapacity?: boolean;
+  /**
    * Application deadline, start and end dates. Null — all three together —
    * while the program's dates are still to confirm (`datesTbc`): a
    * pre-registration published before the host has fixed them. Read them
@@ -2375,6 +2382,8 @@ export interface EventRecord {
   cashPrice?: number | null;
   isOnline: boolean;
   capacity: number;
+  /** See `ProgramRecord.unlimitedCapacity`. `capacity` is kept when switched off. */
+  unlimitedCapacity?: boolean;
   eventDate: string;
   acceptedPaymentMethods: PaymentMethod[];
   /** Deposit model for CASH bookings. Unset = legacy listing (no deposit configured). */

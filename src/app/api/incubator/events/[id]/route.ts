@@ -6,7 +6,11 @@ import type { NextRequest } from 'next/server';
 import { z, ZodError } from 'zod';
 import { requireApprovedApiRole } from '@/server/auth/api-guards';
 import { db } from '@/server/db/store';
-import { pruneListingChildrenSync } from '@/server/registrations/service';
+import {
+  applyUnlimitedSync,
+  pruneListingChildrenSync,
+  sendWaitlistConfirmations,
+} from '@/server/registrations/service';
 import { removeUnreferencedRegistrationFiles } from '@/server/registrations/file-cleanup';
 import { validateCashDeposit, normalizeDepositConfig } from '@/server/bookings/listing-payment';
 import { fromZod, json, jsonError } from '@/server/http/json';
@@ -25,6 +29,8 @@ const patchSchema = z.object({
   cashPrice: z.number().int().nonnegative().nullable().optional(),
   isOnline: z.boolean().optional(),
   capacity: z.number().int().positive().optional(),
+  /** Switch the seat limit off / back on. The capacity is kept either way. */
+  unlimitedCapacity: z.boolean().optional(),
   eventDate: z.string().datetime({ offset: true }).optional(),
   acceptedPaymentMethods: z.array(z.enum(['ONLINE', 'CASH'])).min(1).optional(),
   cashDepositType:  z.enum(['FIXED', 'PERCENT']).optional().nullable(),
@@ -64,6 +70,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   }
 
   let depositError: string | null = null;
+  // Waitlisted people confirmed because the limit was switched off — emailed after the save.
+  let confirmedFromWaitlist: string[] = [];
   const updated = await db.update((d) => {
     const event = (d.events ?? []).find(
       (e) => e.id === id && e.incubatorId === incubator.id,
@@ -103,6 +111,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (input.cashPrice !== undefined) event.cashPrice = input.cashPrice;
     if (input.isOnline !== undefined) event.isOnline = input.isOnline;
     if (input.capacity !== undefined) event.capacity = input.capacity;
+    confirmedFromWaitlist = applyUnlimitedSync(d, 'EVENT', event, input.unlimitedCapacity);
     if (input.eventDate !== undefined) event.eventDate = input.eventDate;
     if (input.status !== undefined) event.isActive = input.status === 'PUBLISHED';
     if (input.slug !== undefined) event.slug = input.slug ?? undefined;
@@ -112,7 +121,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
   if (updated === 'INVALID_DEPOSIT') return jsonError(400, 'INVALID_DEPOSIT', depositError ?? 'Invalid cash deposit configuration');
   if (!updated) return jsonError(404, 'NOT_FOUND', 'Event not found');
-  return json({ event: updated });
+  await sendWaitlistConfirmations(confirmedFromWaitlist);
+  return json({ event: updated, confirmedFromWaitlist: confirmedFromWaitlist.length });
 }
 
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
