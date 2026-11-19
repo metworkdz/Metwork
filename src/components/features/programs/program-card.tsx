@@ -102,11 +102,12 @@ export function ProgramCard({ program, taken, locale, onSelect, featured }: Prog
 
       <div className="flex flex-1 flex-col p-6">
         <div className="flex items-start justify-between gap-3">
-          <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <MapPin className="size-3" />
-            {program.city} · {program.hostName}
+          {/* min-w-0 + wrapping: a long host name wraps inside the card instead of running past it */}
+          <p className="flex min-w-0 items-start gap-1 text-xs text-muted-foreground">
+            <MapPin className="mt-0.5 size-3 shrink-0" />
+            <span className="min-w-0 [overflow-wrap:anywhere]">{program.city} · {program.hostName}</span>
           </p>
-          <Badge variant={dl.variant}>{dl.label}</Badge>
+          <Badge variant={dl.variant} className="shrink-0">{dl.label}</Badge>
         </div>
 
         <h3

@@ -117,6 +117,24 @@
   body {
     @apply bg-background font-sans text-foreground antialiased;
     font-feature-settings: 'rlig' 1, 'calt' 1, 'cv11' 1;
+    /* Text people type (a pasted URL, an email, a handle) has no spaces to wrap
+       at. Without this it runs straight out of its card. It only acts on a word
+       that would otherwise overflow, so ordinary text is unchanged. */
+    overflow-wrap: break-word;
+  }
+  /* A grid with no column template is ONE "auto" column, and an auto column grows
+     to fit its widest unbreakable word, which pushes the whole page wider than
+     the phone (the phone then zooms out). `minmax(0, 1fr)` pins it to the
+     container's width instead. `:where()` keeps this at zero specificity, so every
+     explicit grid-cols-* / sm:grid-cols-* still wins. */
+  :where(.grid:not(.grid-flow-col)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Same trap in a flex row: an item will not shrink below its content, so a long
+     name in a `flex-1` column pushes the row (and the page) wider. `flex-1` means
+     "take what is left", so it may shrink. Zero specificity: a `min-w-*` still wins. */
+  :where(.flex-1) {
+    min-width: 0;
   }
   /* Arabic locale uses Cairo font */
   html[lang='ar'] body {

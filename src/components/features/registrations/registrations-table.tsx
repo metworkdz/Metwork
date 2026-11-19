@@ -455,14 +455,16 @@ function RegistrationRow({
   return (
     <>
       <tr className="hover:bg-muted/30 transition-colors">
-        <td className="px-4 py-3 font-medium">
+        {/* `anywhere` on the text cells: a long unbroken email/name otherwise sets the
+            column's minimum width and stretches the whole table past its card. */}
+        <td className="px-4 py-3 font-medium [overflow-wrap:anywhere]">
           <span className="inline-flex flex-wrap items-center gap-2">
             {reg.fullName}
             <FileCountBadge reg={reg} />
           </span>
         </td>
-        <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{reg.email}</td>
-        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{reg.phone}</td>
+        <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell [overflow-wrap:anywhere]">{reg.email}</td>
+        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell whitespace-nowrap" dir="ltr">{reg.phone}</td>
         <td className="px-4 py-3">
           <StatusBadge status={reg.status} />
           <PaidLine reg={reg} />
@@ -542,7 +544,7 @@ function RegistrationRow({
                 if (!display) return null;
                 return (
                   <div key={field.id}>
-                    <p className="text-xs font-medium text-muted-foreground">{field.label}</p>
+                    <p className="text-xs font-medium text-muted-foreground [overflow-wrap:anywhere]">{field.label}</p>
                     <AnswerValue reg={reg} field={field} answer={answer} endpoint={endpoint} textClassName="text-sm mt-0.5" />
                   </div>
                 );
@@ -671,7 +673,7 @@ function RegistrationCard({
             if (!display) return null;
             return (
               <div key={field.id}>
-                <p className="text-xs font-medium text-muted-foreground">{field.label}</p>
+                <p className="text-xs font-medium text-muted-foreground [overflow-wrap:anywhere]">{field.label}</p>
                 <AnswerValue reg={reg} field={field} answer={answer} endpoint={endpoint} textClassName="mt-0.5 text-sm" />
               </div>
             );

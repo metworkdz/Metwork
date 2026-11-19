@@ -64,11 +64,14 @@ export function AnswerValue({
 }) {
   const t = useTranslations('registrationsTable');
 
+  // `anywhere`, not just `break-word`: a pasted link has no spaces, and only
+  // `anywhere` lets it shrink below its own length inside a grid, flex or table cell.
+  const wrap = '[overflow-wrap:anywhere]';
   if (field.type !== 'FILE') {
-    return <p className={textClassName}>{answerText(answer)}</p>;
+    return <p className={`${textClassName} ${wrap}`}>{answerText(answer)}</p>;
   }
   const file = answer.file;
-  if (!file) return <p className={textClassName}>—</p>;
+  if (!file) return <p className={`${textClassName} ${wrap}`}>—</p>;
 
   const href = `${endpoint}/${reg.id}/files/${field.id}`;
   const Icon = file.contentType === 'image/jpeg' ? ImageIcon : FileText;

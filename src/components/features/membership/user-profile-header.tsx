@@ -94,9 +94,9 @@ export function UserProfileHeader({
       </div>
 
       {/* Name + badge + meta */}
-      <div className="flex flex-1 flex-col items-center gap-1 sm:items-start">
+      <div className="flex min-w-0 flex-1 flex-col items-center gap-1 sm:items-start">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold leading-tight">{user.fullName}</h1>
+          <h1 className="text-2xl font-bold leading-tight [overflow-wrap:anywhere]">{user.fullName}</h1>
           {tier !== 'EXPLORER' && (
             <MembershipTierBadge tier={tier} size="md" />
           )}

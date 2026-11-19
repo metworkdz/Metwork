@@ -55,17 +55,18 @@ export function EventCard({ event, taken, locale, onSelect }: EventCardProps) {
 
       <div className="flex flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-3">
-          <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <MapPin className="size-3" />
-            {event.city} · {event.incubatorName}
+          {/* min-w-0 + wrapping: a long host name wraps inside the card instead of running past it */}
+          <p className="flex min-w-0 items-start gap-1 text-xs text-muted-foreground">
+            <MapPin className="mt-0.5 size-3 shrink-0" />
+            <span className="min-w-0 [overflow-wrap:anywhere]">{event.city} · {event.incubatorName}</span>
           </p>
           {event.isOnline ? (
-            <Badge variant="info" className="gap-1">
+            <Badge variant="info" className="shrink-0 gap-1">
               <Wifi className="size-3" />
               {t('online')}
             </Badge>
           ) : (
-            <Badge variant="outline">{t('inPerson')}</Badge>
+            <Badge variant="outline" className="shrink-0">{t('inPerson')}</Badge>
           )}
         </div>
 
